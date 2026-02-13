@@ -1,0 +1,46 @@
+{
+    "manifest_version": 3,
+    "name": "Aura Link — Ultimate AI Bridge",
+    "version": "2.0.0",
+    "description": "Bridge ultime entre votre projet local et les IA (Claude, ChatGPT, Arena). Injection de fichiers, arborescence interactive, sauvegarde directe.",
+    "icons": {
+        "16": "icons/icon16.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+    },
+    "permissions": [
+        "activeTab",
+        "scripting"
+    ],
+    "host_permissions": [
+        "http://localhost:3666/*",
+        "https://claude.ai/*",
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*",
+        "https://arena.lmsys.org/*",
+        "https://chat.lmsys.org/*",
+        "https://gemini.google.com/*",
+        "https://copilot.microsoft.com/*"
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "https://claude.ai/*",
+                "https://chatgpt.com/*",
+                "https://chat.openai.com/*",
+                "https://arena.lmsys.org/*",
+                "https://chat.lmsys.org/*",
+                "https://gemini.google.com/*",
+                "https://copilot.microsoft.com/*"
+            ],
+            "js": [
+                "content.js"
+            ],
+            "run_at": "document_idle"
+        }
+    ],
+    "action": {
+        "default_popup": "popup.html",
+        "default_title": "Aura Link — Ultimate AI Bridge"
+    }
+}
