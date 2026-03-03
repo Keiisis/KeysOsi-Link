@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-Content \"c:\\\\Users\\\\HP\\\\Desktop\\\\RETOUR GAGNANT TEMPLATE\\\\frontend\\\\app\\\\agent\\\\leads\\\\page.tsx\")",
+      "Bash(Select-Object -First 3)",
+      "Bash(xargs grep -l \"Passeport\\\\|Investissement\\\\|Construction\\\\|Création d''Entreprise\")",
+      "Bash(xargs grep -l \"useList\\\\|useCreate\\\\|useUpdate\\\\|useDelete\")",
+      "WebFetch(domain:retour-gagnant.vercel.app)",
+      "Bash(git add app/\\\\\\(routes\\\\\\)/services/[slug]/page.tsx app/admin/services/create/page.tsx app/admin/services/edit/[id]/page.tsx app/admin/services/page.tsx app/admin/users/create/page.tsx app/admin/users/page.tsx app/api/admin/)",
+      "Bash(git commit:*)",
+      "Bash(git push origin main)",
+      "Bash(git add app/api/admin/users/create/route.ts app/admin/users/create/page.tsx)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\HP\\Desktop\\RETOUR GAGNANT TEMPLATE\\frontend\\app\\api\\admin\\users"
+    ]
+  }
+}
