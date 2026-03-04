@@ -8,7 +8,7 @@ import Link from 'next/link'
 import {
     Calendar, MapPin, Clock, Users, Ticket, Crown,
     ArrowLeft, CheckCircle2, X, Share2, ChevronLeft, ChevronRight,
-    Phone, Mail, User, CreditCard,
+    Phone, Mail, User, CreditCard, ExternalLink,
 } from 'lucide-react'
 
 interface EventData {
@@ -25,10 +25,10 @@ const formatTime = (d: string) => new Date(d).toLocaleTimeString('fr-FR', { hour
 const formatPrice = (n: number) => new Intl.NumberFormat('fr-FR').format(n)
 
 const PAYMENT_METHODS = [
-    { id: 'kkiapay', label: 'Kkiapay (Mobile Money)', region: 'Bénin' },
-    { id: 'fedapay', label: 'FedaPay', region: 'Afrique Ouest' },
-    { id: 'stripe', label: 'Carte Bancaire (Stripe)', region: 'International' },
-    { id: 'paypal', label: 'PayPal', region: 'International' },
+    { id: 'kkiapay', label: 'Kkiapay', sub: 'Mobile Money — Bénin', color: '#008751' },
+    { id: 'fedapay', label: 'FedaPay', sub: 'Afrique de l\'Ouest', color: '#0ea5e9' },
+    { id: 'stripe', label: 'Carte Bancaire', sub: 'Stripe — International', color: '#6366f1' },
+    { id: 'paypal', label: 'PayPal', sub: 'International', color: '#0070ba' },
 ]
 
 export default function EventDetailPage() {
@@ -48,7 +48,7 @@ export default function EventDetailPage() {
 
     useEffect(() => {
         if (!slug) return
-        fetch(`/api/events?admin=false`)
+        fetch('/api/events?admin=false')
             .then(r => r.json())
             .then(d => {
                 const found = (d.events || []).find((e: EventData) => e.slug === slug)
@@ -72,22 +72,17 @@ export default function EventDetailPage() {
             setError('Veuillez remplir tous les champs obligatoires')
             return
         }
-        setSubmitting(true)
-        setError('')
+        setSubmitting(true); setError('')
         try {
             const res = await fetch(`/api/events/${event.id}/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...form, ticket_type: ticketType, payment_method: form.payment_method }),
+                body: JSON.stringify({ ...form, ticket_type: ticketType }),
             })
             const data = await res.json()
             if (!res.ok) throw new Error(data.error || 'Erreur')
-
-            if (data.requires_payment) {
-                setFormStep(2)
-            } else {
-                setSuccess(true)
-            }
+            if (data.requires_payment) setFormStep(2)
+            else setSuccess(true)
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Erreur lors de l\'inscription')
         } finally {
@@ -101,16 +96,20 @@ export default function EventDetailPage() {
         : images.map(i => ({ url: i.url, alt_text: i.alt_text }))
 
     if (loading) return (
-        <div className="min-h-screen bg-[#030a15] flex items-center justify-center">
-            <div className="w-8 h-8 border-2 border-[#008751] border-t-transparent rounded-full animate-spin" />
+        <div className="min-h-screen bg-white flex items-center justify-center">
+            <div className="w-10 h-10 border-3 border-[#008751] border-t-transparent rounded-full animate-spin" />
         </div>
     )
 
     if (!event) return (
-        <div className="min-h-screen bg-[#030a15] text-white flex flex-col items-center justify-center gap-4">
-            <Calendar size={48} className="text-gray-700" />
-            <p className="text-gray-500 font-bold">Événement introuvable</p>
-            <Link href="/evenements" className="text-[#008751] text-sm font-bold hover:underline flex items-center gap-1"><ArrowLeft size={14} /> Retour aux événements</Link>
+        <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4 text-center px-4">
+            <div className="w-20 h-20 rounded-[22px] bg-gray-50 flex items-center justify-center">
+                <Calendar size={36} className="text-gray-300" />
+            </div>
+            <p className="font-black text-[#1a2332] text-lg">Événement introuvable</p>
+            <Link href="/evenements" className="text-[#008751] text-sm font-bold hover:underline flex items-center gap-1">
+                <ArrowLeft size={14} /> Retour aux événements
+            </Link>
         </div>
     )
 
@@ -118,258 +117,455 @@ export default function EventDetailPage() {
     const isFree = price === 0
 
     return (
-        <div className="min-h-screen bg-[#030a15] text-white">
-            {/* Ambient */}
-            <div className="fixed inset-0 pointer-events-none z-0">
-                <div className="absolute top-0 right-0 w-[700px] h-[700px] rounded-full opacity-[0.05]"
-                    style={{ background: 'radial-gradient(circle, #008751, transparent 60%)' }} />
-            </div>
+        <div className="min-h-screen bg-[#fafbfc]">
 
-            <div className="relative z-10 max-w-6xl mx-auto px-4 pt-8 pb-20">
-                {/* Back */}
-                <Link href="/evenements" className="inline-flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-[#FCD116] transition-colors mb-8">
-                    <ArrowLeft size={14} /> Retour aux événements
-                </Link>
+            {/* ── HERO IMAGE ──────────────────────────────────────────── */}
+            {allImages.length > 0 && (
+                <div className="relative w-full h-[55vh] md:h-[60vh] overflow-hidden">
+                    <Image
+                        src={allImages[galleryIdx]?.url || ''}
+                        alt={allImages[galleryIdx]?.alt_text || event.title}
+                        fill className="object-cover"
+                    />
+                    {/* Gradient overlay bas */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#fafbfc] via-transparent to-black/20" />
+                    {/* Gradient overlay haut pour le bouton retour */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-transparent" />
 
-                <div className="grid lg:grid-cols-5 gap-8">
-                    {/* LEFT — Gallery + Description */}
+                    {/* Bouton retour */}
+                    <div className="absolute top-6 left-4 md:left-8 z-10 pt-16 md:pt-0">
+                        <Link href="/evenements"
+                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/90 backdrop-blur-sm text-[#1a2332] text-xs font-bold shadow-lg hover:bg-white transition-all border border-white/50">
+                            <ArrowLeft size={14} /> Retour
+                        </Link>
+                    </div>
+
+                    {/* Navigation galerie */}
+                    {allImages.length > 1 && (
+                        <>
+                            <button type="button" aria-label="Photo précédente" onClick={() => setGalleryIdx(i => (i - 1 + allImages.length) % allImages.length)}
+                                className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 backdrop-blur-sm text-[#1a2332] flex items-center justify-center hover:bg-white transition-all shadow-lg border border-white/50 cursor-pointer">
+                                <ChevronLeft size={18} />
+                            </button>
+                            <button type="button" aria-label="Photo suivante" onClick={() => setGalleryIdx(i => (i + 1) % allImages.length)}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 backdrop-blur-sm text-[#1a2332] flex items-center justify-center hover:bg-white transition-all shadow-lg border border-white/50 cursor-pointer">
+                                <ChevronRight size={18} />
+                            </button>
+                            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2">
+                                {allImages.map((_, idx) => (
+                                    <button type="button" key={idx} onClick={() => setGalleryIdx(idx)}
+                                        className={`h-1.5 rounded-full transition-all cursor-pointer ${idx === galleryIdx ? 'bg-[#008751] w-8' : 'bg-white/50 w-2'}`} />
+                                ))}
+                            </div>
+                        </>
+                    )}
+                </div>
+            )}
+
+            {/* ── CONTENU ─────────────────────────────────────────────── */}
+            <div className="max-w-6xl mx-auto px-4 pb-24"
+                style={{ marginTop: allImages.length > 0 ? '-3rem' : '7rem' }}>
+
+                {/* Bande drapeau décorative */}
+                <div className="h-[4px] rounded-full mb-8 max-w-xs"
+                    style={{ background: 'linear-gradient(90deg, #008751, #FCD116, #E8112D)' }} />
+
+                <div className="grid lg:grid-cols-5 gap-8 items-start">
+
+                    {/* ── GAUCHE — Description ── */}
                     <div className="lg:col-span-3 space-y-6">
-                        {/* Gallery */}
-                        {allImages.length > 0 && (
-                            <div className="relative rounded-[24px] overflow-hidden border border-white/[0.08]">
-                                <div className="relative h-72 md:h-96">
-                                    <Image src={allImages[galleryIdx]?.url || ''} alt={allImages[galleryIdx]?.alt_text || ''} fill className="object-cover" />
-                                </div>
-                                {allImages.length > 1 && (
-                                    <>
-                                        <button onClick={() => setGalleryIdx(i => (i - 1 + allImages.length) % allImages.length)}
-                                            className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 backdrop-blur-sm border border-white/10 cursor-pointer">
-                                            <ChevronLeft size={18} />
-                                        </button>
-                                        <button onClick={() => setGalleryIdx(i => (i + 1) % allImages.length)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 backdrop-blur-sm border border-white/10 cursor-pointer">
-                                            <ChevronRight size={18} />
-                                        </button>
-                                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                                            {allImages.map((_, idx) => (
-                                                <button key={idx} onClick={() => setGalleryIdx(idx)}
-                                                    className={`w-2 h-2 rounded-full transition-all cursor-pointer ${idx === galleryIdx ? 'bg-[#FCD116] w-6' : 'bg-white/30'}`} />
-                                            ))}
+
+                        {/* Header event */}
+                        <div className="bg-white rounded-[24px] border border-gray-100 p-7 md:p-8 space-y-4"
+                            style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
+
+                            {/* Catégorie + partage */}
+                            <div className="flex items-center justify-between">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-[#008751]/8 text-[#008751] border border-[#008751]/15">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#008751]" />
+                                    {event.category}
+                                </span>
+                                <button type="button"
+                                    className="w-9 h-9 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400 hover:text-[#008751] hover:border-[#008751]/20 transition-all cursor-pointer">
+                                    <Share2 size={14} />
+                                </button>
+                            </div>
+
+                            <h1 className="text-3xl md:text-4xl font-black font-heading tracking-tight text-[#1a2332] leading-tight">
+                                {event.title}
+                            </h1>
+
+                            {/* Méta-infos */}
+                            <div className="grid sm:grid-cols-2 gap-3">
+                                <div className="flex items-center gap-3 p-3 rounded-xl bg-[#f0fdf4] border border-[#008751]/10">
+                                    <div className="w-9 h-9 rounded-xl bg-[#008751]/10 flex items-center justify-center flex-shrink-0">
+                                        <Calendar size={15} className="text-[#008751]" />
+                                    </div>
+                                    <div>
+                                        <div className="text-[11px] text-gray-400 font-bold uppercase tracking-wide">Date</div>
+                                        <div className="text-xs font-bold text-[#1a2332]">{formatDate(event.start_date)}</div>
+                                        <div className="text-[10px] text-gray-400">
+                                            {formatTime(event.start_date)}
+                                            {event.end_date && ` — ${formatTime(event.end_date)}`}
                                         </div>
-                                    </>
+                                    </div>
+                                </div>
+
+                                {event.location && (
+                                    <div className="flex items-center gap-3 p-3 rounded-xl bg-[#fff1f2] border border-[#E8112D]/10">
+                                        <div className="w-9 h-9 rounded-xl bg-[#E8112D]/10 flex items-center justify-center flex-shrink-0">
+                                            <MapPin size={15} className="text-[#E8112D]" />
+                                        </div>
+                                        <div>
+                                            <div className="text-[11px] text-gray-400 font-bold uppercase tracking-wide">Lieu</div>
+                                            <div className="text-xs font-bold text-[#1a2332]">{event.location}</div>
+                                            {event.location_map_url && (
+                                                <a href={event.location_map_url} target="_blank" rel="noopener noreferrer"
+                                                    className="text-[10px] text-[#E8112D] hover:underline flex items-center gap-0.5">
+                                                    Voir sur Maps <ExternalLink size={9} />
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {event.max_capacity > 0 && (
+                                    <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                                        <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                            <Users size={15} className="text-gray-400" />
+                                        </div>
+                                        <div>
+                                            <div className="text-[11px] text-gray-400 font-bold uppercase tracking-wide">Capacité</div>
+                                            <div className="text-xs font-bold text-[#1a2332]">{event.max_capacity} places</div>
+                                        </div>
+                                    </div>
                                 )}
                             </div>
-                        )}
+                        </div>
 
                         {/* Description */}
-                        <div className="rounded-[24px] border border-white/[0.08] p-6 md:p-8 space-y-4"
-                            style={{ background: 'linear-gradient(145deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015))' }}>
-                            <h2 className="text-base font-black text-white uppercase tracking-wider">
-                                <span className="text-[#008751]">—</span> Description
+                        <div className="bg-white rounded-[24px] border border-gray-100 p-7 md:p-8"
+                            style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
+                            <h2 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <span className="w-4 h-[3px] rounded-full bg-[#008751]" />
+                                Description
                             </h2>
-                            <div className="prose prose-invert prose-sm max-w-none text-gray-300 leading-relaxed whitespace-pre-line">
+                            <div className="text-[15px] text-gray-600 leading-relaxed whitespace-pre-line">
                                 {event.description || event.short_description || 'Aucune description disponible.'}
                             </div>
                         </div>
+
+                        {/* Galerie thumbnails */}
+                        {allImages.length > 1 && (
+                            <div className="bg-white rounded-[24px] border border-gray-100 p-6"
+                                style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
+                                <h2 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <span className="w-4 h-[3px] rounded-full bg-[#FCD116]" />
+                                    Galerie ({allImages.length} photos)
+                                </h2>
+                                <div className="grid grid-cols-4 gap-2">
+                                    {allImages.map((img, idx) => (
+                                        <button type="button" key={idx} onClick={() => setGalleryIdx(idx)}
+                                            className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${idx === galleryIdx ? 'border-[#008751] shadow-md' : 'border-transparent hover:border-gray-200'}`}>
+                                            <Image src={img.url} alt={img.alt_text || ''} fill className="object-cover" />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    {/* RIGHT — Info card + CTA */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="rounded-[24px] border border-white/[0.08] p-6 space-y-5 sticky top-24"
-                            style={{ background: 'linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015))' }}>
+                    {/* ── DROITE — Sticky CTA ── */}
+                    <div className="lg:col-span-2">
+                        <div className="sticky top-24 space-y-4">
+                            <div className="bg-white rounded-[24px] border border-gray-100 overflow-hidden"
+                                style={{ boxShadow: '0 8px 40px rgba(0,135,81,0.12)' }}>
+                                {/* Top stripe */}
+                                <div className="h-[5px]"
+                                    style={{ background: 'linear-gradient(90deg, #008751, #FCD116, #E8112D)' }} />
 
-                            <span className="text-[10px] font-bold text-[#008751] uppercase tracking-widest">{event.category}</span>
-                            <h1 className="text-2xl font-black font-heading tracking-tight">{event.title}</h1>
-
-                            <div className="space-y-3">
-                                <div className="flex items-center gap-3 text-sm text-gray-400">
-                                    <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-[#FCD116]/10"><Calendar size={14} className="text-[#FCD116]" /></div>
+                                <div className="p-6 space-y-5">
                                     <div>
-                                        <div className="text-white font-bold text-xs">{formatDate(event.start_date)}</div>
-                                        <div className="text-gray-600 text-[11px]">{formatTime(event.start_date)}{event.end_date && ` — ${formatTime(event.end_date)}`}</div>
+                                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Rejoignez l&apos;événement</div>
+                                        <h3 className="text-lg font-black text-[#1a2332] leading-tight">{event.title}</h3>
+                                    </div>
+
+                                    {/* Prix */}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between p-4 rounded-2xl bg-[#f0fdf4] border border-[#008751]/15">
+                                            <div className="flex items-center gap-2">
+                                                <Ticket size={16} className="text-[#008751]" />
+                                                <span className="text-sm font-bold text-[#1a2332]">Standard</span>
+                                            </div>
+                                            {event.price_standard > 0 ? (
+                                                <span className="text-lg font-black text-[#008751]">
+                                                    {formatPrice(event.price_standard)}
+                                                    <span className="text-xs font-bold text-gray-400 ml-1">{event.currency}</span>
+                                                </span>
+                                            ) : (
+                                                <span className="text-sm font-black text-[#008751]">GRATUIT</span>
+                                            )}
+                                        </div>
+
+                                        {event.price_vip > 0 && (
+                                            <div className="flex items-center justify-between p-4 rounded-2xl bg-[#fefce8] border border-[#FCD116]/30">
+                                                <div className="flex items-center gap-2">
+                                                    <Crown size={16} className="text-amber-500" />
+                                                    <span className="text-sm font-bold text-[#1a2332]">VIP</span>
+                                                </div>
+                                                <span className="text-lg font-black text-amber-600">
+                                                    {formatPrice(event.price_vip)}
+                                                    <span className="text-xs font-bold text-gray-400 ml-1">{event.currency}</span>
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Boutons CTA */}
+                                    <div className="space-y-3">
+                                        <button type="button" onClick={() => openRegistration('standard')}
+                                            className="w-full py-4 rounded-2xl font-black text-sm text-white flex items-center justify-center gap-2.5 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                                            style={{
+                                                background: 'linear-gradient(135deg, #008751, #006039)',
+                                                boxShadow: '0 8px 32px rgba(0,135,81,0.35)',
+                                            }}>
+                                            <Ticket size={16} />
+                                            {event.price_standard === 0 ? 'Participer gratuitement' : `Participer — ${formatPrice(event.price_standard)} ${event.currency}`}
+                                        </button>
+
+                                        {event.price_vip > 0 && (
+                                            <button type="button" onClick={() => openRegistration('vip')}
+                                                className="w-full py-4 rounded-2xl font-black text-sm text-[#1a2332] flex items-center justify-center gap-2.5 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                                                style={{
+                                                    background: 'linear-gradient(135deg, #FCD116, #f59e0b)',
+                                                    boxShadow: '0 8px 32px rgba(252,209,22,0.4)',
+                                                }}>
+                                                <Crown size={16} />
+                                                Réserver VIP — {formatPrice(event.price_vip)} {event.currency}
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Infos supplémentaires */}
+                                    <div className="pt-2 border-t border-gray-50 space-y-2">
+                                        <div className="flex items-center gap-2 text-[11px] text-gray-400">
+                                            <CheckCircle2 size={12} className="text-[#008751]" />
+                                            Ticket envoyé par email après inscription
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[11px] text-gray-400">
+                                            <CheckCircle2 size={12} className="text-[#008751]" />
+                                            Paiement 100% sécurisé
+                                        </div>
+                                        {event.max_capacity > 0 && (
+                                            <div className="flex items-center gap-2 text-[11px] text-gray-400">
+                                                <Users size={12} className="text-[#008751]" />
+                                                Places limitées — {event.max_capacity} au total
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-                                {event.location && (
-                                    <div className="flex items-center gap-3 text-sm text-gray-400">
-                                        <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-[#008751]/10"><MapPin size={14} className="text-[#008751]" /></div>
-                                        <div className="text-white font-bold text-xs">{event.location}</div>
-                                    </div>
-                                )}
-                                {event.max_capacity > 0 && (
-                                    <div className="flex items-center gap-3 text-sm text-gray-400">
-                                        <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/5"><Users size={14} className="text-gray-400" /></div>
-                                        <div className="text-gray-500 text-xs">{event.max_capacity} places disponibles</div>
-                                    </div>
-                                )}
                             </div>
-
-                            <div className="border-t border-white/[0.06] pt-5 space-y-3">
-                                {/* Standard ticket */}
-                                <button
-                                    onClick={() => openRegistration('standard')}
-                                    className="w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2.5 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
-                                    style={{
-                                        background: 'linear-gradient(135deg, #008751, #006b40)',
-                                        boxShadow: '0 8px 32px rgba(0,135,81,0.35), 0 2px 8px rgba(0,0,0,0.4)',
-                                    }}
-                                >
-                                    <Ticket size={16} />
-                                    {isFree ? 'Participer gratuitement' : `Participer — ${formatPrice(event.price_standard)} ${event.currency}`}
-                                </button>
-
-                                {/* VIP ticket */}
-                                {event.price_vip > 0 && (
-                                    <button
-                                        onClick={() => openRegistration('vip')}
-                                        className="w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2.5 text-[#030a15] transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
-                                        style={{
-                                            background: 'linear-gradient(135deg, #FCD116, #f59e0b)',
-                                            boxShadow: '0 8px 32px rgba(252,209,22,0.35), 0 2px 8px rgba(0,0,0,0.4)',
-                                        }}
-                                    >
-                                        <Crown size={16} />
-                                        Réserver VIP — {formatPrice(event.price_vip)} {event.currency}
-                                    </button>
-                                )}
-                            </div>
-
-                            <button className="w-full py-3 rounded-2xl border border-white/[0.08] text-xs font-bold text-gray-500 flex items-center justify-center gap-2 hover:border-white/15 transition-all cursor-pointer">
-                                <Share2 size={13} /> Partager cet événement
-                            </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* ── REGISTRATION MODAL ── */}
+            {/* ── MODAL INSCRIPTION ─────────────────────────────────── */}
             <AnimatePresence>
                 {showModal && event && (
                     <motion.div
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
                         onClick={() => setShowModal(false)}
                     >
                         <motion.div
-                            initial={{ scale: 0.92, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.92, opacity: 0, y: 20 }}
+                            initial={{ scale: 0.94, opacity: 0, y: 16 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.94, opacity: 0, y: 16 }}
+                            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                             onClick={e => e.stopPropagation()}
-                            className="w-full max-w-lg rounded-[28px] border border-white/[0.08] overflow-hidden"
-                            style={{ background: 'linear-gradient(160deg, #0a1628, #06101e)' }}
+                            className="w-full max-w-md bg-white rounded-[28px] overflow-hidden"
+                            style={{ boxShadow: '0 32px 80px rgba(0,0,0,0.2)' }}
                         >
-                            {/* Header */}
-                            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
+                            {/* Bande drapeau top */}
+                            <div className="h-[5px]"
+                                style={{ background: ticketType === 'vip'
+                                    ? 'linear-gradient(90deg, #FCD116, #f59e0b)'
+                                    : 'linear-gradient(90deg, #008751, #006039)' }} />
+
+                            {/* Header modal */}
+                            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-50">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                                        style={{ background: ticketType === 'vip' ? 'linear-gradient(135deg, #FCD116, #f59e0b)' : 'linear-gradient(135deg, #008751, #006b40)' }}>
-                                        {ticketType === 'vip' ? <Crown size={18} className="text-[#030a15]" /> : <Ticket size={18} className="text-white" />}
+                                        style={{
+                                            background: ticketType === 'vip'
+                                                ? 'linear-gradient(135deg, #FCD116, #f59e0b)'
+                                                : 'linear-gradient(135deg, #008751, #006039)',
+                                        }}>
+                                        {ticketType === 'vip'
+                                            ? <Crown size={18} className="text-[#1a2332]" />
+                                            : <Ticket size={18} className="text-white" />}
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-black text-white">Inscription {ticketType === 'vip' ? 'VIP' : 'Standard'}</h3>
-                                        <p className="text-[10px] text-gray-600">{event.title}</p>
+                                        <h3 className="text-sm font-black text-[#1a2332]">
+                                            Inscription {ticketType === 'vip' ? 'VIP' : 'Standard'}
+                                        </h3>
+                                        <p className="text-[10px] text-gray-400 truncate max-w-[200px]">{event.title}</p>
                                     </div>
                                 </div>
-                                <button onClick={() => setShowModal(false)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-500 hover:text-white cursor-pointer">
+                                <button type="button" onClick={() => setShowModal(false)}
+                                    className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-[#1a2332] hover:bg-gray-100 cursor-pointer transition-all">
                                     <X size={16} />
                                 </button>
                             </div>
 
                             <div className="p-6 space-y-5">
                                 {success ? (
-                                    <div className="text-center py-8 space-y-4">
-                                        <div className="w-16 h-16 rounded-full mx-auto flex items-center justify-center"
-                                            style={{ background: 'linear-gradient(135deg, #008751, #0d9488)', boxShadow: '0 12px 40px rgba(0,135,81,0.4)' }}>
-                                            <CheckCircle2 size={32} className="text-white" />
+                                    /* ── SUCCESS ── */
+                                    <motion.div
+                                        initial={{ scale: 0.9, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        className="text-center py-8 space-y-4"
+                                    >
+                                        <div className="w-20 h-20 rounded-full mx-auto flex items-center justify-center"
+                                            style={{ background: 'linear-gradient(135deg, #008751, #006039)', boxShadow: '0 12px 40px rgba(0,135,81,0.3)' }}>
+                                            <CheckCircle2 size={36} className="text-white" />
                                         </div>
-                                        <h4 className="text-lg font-black text-white">Inscription confirmée !</h4>
-                                        <p className="text-gray-400 text-sm">Votre ticket vous sera envoyé par email à <strong className="text-[#FCD116]">{form.email}</strong></p>
-                                    </div>
+                                        <h4 className="text-xl font-black text-[#1a2332]">Inscription confirmée !</h4>
+                                        <p className="text-gray-500 text-sm leading-relaxed">
+                                            Votre ticket vous sera envoyé par email à{' '}
+                                            <strong className="text-[#008751]">{form.email}</strong>
+                                        </p>
+                                        <div className="flex items-center gap-2 justify-center text-[11px] text-gray-400 bg-gray-50 px-4 py-2 rounded-full border border-gray-100 w-fit mx-auto">
+                                            <CheckCircle2 size={11} className="text-[#008751]" />
+                                            Ticket généré et sécurisé anti-fraude
+                                        </div>
+                                        <button type="button" onClick={() => setShowModal(false)}
+                                            className="text-[#008751] text-sm font-bold hover:underline cursor-pointer">
+                                            Fermer
+                                        </button>
+                                    </motion.div>
                                 ) : (
                                     <>
-                                        {/* Step indicators */}
+                                        {/* Stepper */}
                                         <div className="flex items-center gap-2 justify-center">
                                             {['Informations', 'Paiement'].map((s, i) => (
                                                 <div key={s} className="flex items-center gap-2">
-                                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${formStep >= i ? 'bg-[#008751] text-white' : 'bg-white/5 text-gray-600'}`}>
+                                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black transition-all ${
+                                                        formStep >= i
+                                                            ? 'text-white shadow-md'
+                                                            : 'bg-gray-100 text-gray-400'
+                                                    }`}
+                                                    style={formStep >= i ? {
+                                                        background: ticketType === 'vip'
+                                                            ? 'linear-gradient(135deg, #FCD116, #f59e0b)'
+                                                            : 'linear-gradient(135deg, #008751, #006039)',
+                                                        color: ticketType === 'vip' ? '#1a2332' : 'white',
+                                                    } : {}}>
                                                         {i + 1}
                                                     </div>
-                                                    <span className={`text-[11px] font-bold ${formStep >= i ? 'text-white' : 'text-gray-600'}`}>{s}</span>
-                                                    {i < 1 && <div className={`w-8 h-px ${formStep > i ? 'bg-[#008751]' : 'bg-white/[0.06]'}`} />}
+                                                    <span className={`text-[11px] font-bold ${formStep >= i ? 'text-[#1a2332]' : 'text-gray-400'}`}>{s}</span>
+                                                    {i < 1 && (
+                                                        <div className={`w-8 h-px transition-all ${formStep > i ? 'bg-[#008751]' : 'bg-gray-200'}`} />
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>
 
+                                        {/* Étape 1 — Informations */}
                                         {formStep === 0 && (
                                             <div className="space-y-4">
-                                                <div>
-                                                    <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><User size={11} /> Nom complet *</label>
-                                                    <input type="text" value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))}
-                                                        className="w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white text-sm focus:outline-none focus:border-[#008751]/60 transition-all" placeholder="Ex: Marc Essou" />
-                                                </div>
-                                                <div>
-                                                    <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><Mail size={11} /> Email *</label>
-                                                    <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                                                        className="w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white text-sm focus:outline-none focus:border-[#008751]/60 transition-all" placeholder="votre@email.com" />
-                                                </div>
-                                                <div>
-                                                    <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><Phone size={11} /> Téléphone *</label>
-                                                    <input type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                                                        className="w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white text-sm focus:outline-none focus:border-[#008751]/60 transition-all" placeholder="+229 XX XX XX XX" />
-                                                </div>
-                                                <div>
-                                                    <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><Phone size={11} /> WhatsApp (optionnel)</label>
-                                                    <input type="tel" value={form.whatsapp} onChange={e => setForm(f => ({ ...f, whatsapp: e.target.value }))}
-                                                        className="w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white text-sm focus:outline-none focus:border-[#008751]/60 transition-all" placeholder="+229 XX XX XX XX" />
-                                                </div>
+                                                {[
+                                                    { key: 'full_name', label: 'Nom complet', icon: User, type: 'text', placeholder: 'Ex: Marc Essou', required: true },
+                                                    { key: 'email', label: 'Email', icon: Mail, type: 'email', placeholder: 'votre@email.com', required: true },
+                                                    { key: 'phone', label: 'Téléphone', icon: Phone, type: 'tel', placeholder: '+229 XX XX XX XX', required: true },
+                                                    { key: 'whatsapp', label: 'WhatsApp (optionnel)', icon: Phone, type: 'tel', placeholder: '+229 XX XX XX XX', required: false },
+                                                ].map(f => (
+                                                    <div key={f.key}>
+                                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                                                            <f.icon size={10} />
+                                                            {f.label}{f.required && <span className="text-[#E8112D]">*</span>}
+                                                        </label>
+                                                        <input
+                                                            type={f.type}
+                                                            value={form[f.key as keyof typeof form]}
+                                                            onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+                                                            placeholder={f.placeholder}
+                                                            className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-[#1a2332] text-sm focus:outline-none focus:border-[#008751] focus:ring-2 focus:ring-[#008751]/10 transition-all placeholder-gray-400"
+                                                        />
+                                                    </div>
+                                                ))}
                                             </div>
                                         )}
 
+                                        {/* Étape 2 — Paiement */}
                                         {formStep === 1 && !isFree && (
                                             <div className="space-y-4">
-                                                <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 flex items-center justify-between">
-                                                    <span className="text-xs font-bold text-gray-400">Montant à payer</span>
-                                                    <span className="text-lg font-black" style={{ color: ticketType === 'vip' ? '#FCD116' : '#008751' }}>
-                                                        {formatPrice(price)} {event.currency}
+                                                <div className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                                                    <span className="text-xs font-bold text-gray-500">Montant à payer</span>
+                                                    <span className="text-xl font-black"
+                                                        style={{ color: ticketType === 'vip' ? '#d97706' : '#008751' }}>
+                                                        {formatPrice(price)}
+                                                        <span className="text-sm font-bold text-gray-400 ml-1">{event.currency}</span>
                                                     </span>
                                                 </div>
-                                                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5"><CreditCard size={11} /> Moyen de paiement</label>
-                                                <div className="grid grid-cols-2 gap-3">
+                                                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                                                    <CreditCard size={10} /> Moyen de paiement
+                                                </label>
+                                                <div className="grid grid-cols-2 gap-2">
                                                     {PAYMENT_METHODS.map(pm => (
-                                                        <button key={pm.id} onClick={() => setForm(f => ({ ...f, payment_method: pm.id }))}
-                                                            className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${form.payment_method === pm.id ? 'border-[#008751]/50 bg-[#008751]/10' : 'border-white/[0.06] bg-white/[0.02] hover:border-white/15'}`}>
-                                                            <div className="text-xs font-bold text-white">{pm.label}</div>
-                                                            <div className="text-[10px] text-gray-600">{pm.region}</div>
+                                                        <button type="button" key={pm.id}
+                                                            onClick={() => setForm(f => ({ ...f, payment_method: pm.id }))}
+                                                            className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                                                                form.payment_method === pm.id
+                                                                    ? 'border-[#008751] bg-[#008751]/5 shadow-sm'
+                                                                    : 'border-gray-100 bg-gray-50 hover:border-gray-200'
+                                                            }`}>
+                                                            <div className="flex items-center gap-1.5 mb-0.5">
+                                                                <div className="w-2 h-2 rounded-full" style={{ background: pm.color }} />
+                                                                <div className="text-xs font-bold text-[#1a2332]">{pm.label}</div>
+                                                            </div>
+                                                            <div className="text-[10px] text-gray-400">{pm.sub}</div>
                                                         </button>
                                                     ))}
                                                 </div>
                                             </div>
                                         )}
 
-                                        {error && <p className="text-xs text-red-400 text-center bg-red-500/10 p-2 rounded-lg">{error}</p>}
+                                        {error && (
+                                            <p className="text-xs text-[#E8112D] text-center bg-[#E8112D]/5 p-3 rounded-xl border border-[#E8112D]/15">
+                                                {error}
+                                            </p>
+                                        )}
 
+                                        {/* Actions */}
                                         <div className="flex gap-3">
                                             {formStep > 0 && (
-                                                <button onClick={() => setFormStep(f => f - 1)}
-                                                    className="flex-1 py-3 rounded-2xl border border-white/[0.08] text-xs font-bold text-gray-400 hover:text-white cursor-pointer transition-all">
+                                                <button type="button" onClick={() => setFormStep(f => f - 1)}
+                                                    className="flex-1 py-3 rounded-2xl border border-gray-200 text-xs font-bold text-gray-500 hover:text-[#1a2332] hover:border-gray-300 cursor-pointer transition-all">
                                                     Retour
                                                 </button>
                                             )}
-                                            <button
+                                            <button type="button"
                                                 onClick={() => {
                                                     if (formStep === 0 && !isFree) setFormStep(1)
                                                     else handleSubmit()
                                                 }}
                                                 disabled={submitting}
-                                                className="flex-1 py-3 rounded-2xl text-xs font-black text-white disabled:opacity-50 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                                                className="flex-1 py-3 rounded-2xl text-xs font-black disabled:opacity-50 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
                                                 style={{
                                                     background: ticketType === 'vip'
                                                         ? 'linear-gradient(135deg, #FCD116, #f59e0b)'
-                                                        : 'linear-gradient(135deg, #008751, #006b40)',
-                                                    color: ticketType === 'vip' ? '#030a15' : 'white',
+                                                        : 'linear-gradient(135deg, #008751, #006039)',
+                                                    color: ticketType === 'vip' ? '#1a2332' : 'white',
                                                     boxShadow: ticketType === 'vip'
                                                         ? '0 8px 24px rgba(252,209,22,0.3)'
                                                         : '0 8px 24px rgba(0,135,81,0.3)',
-                                                }}
-                                            >
-                                                {submitting ? 'Envoi...' : formStep === 0 && !isFree ? 'Continuer' : isFree ? 'Confirmer l\'inscription' : 'Procéder au paiement'}
+                                                }}>
+                                                {submitting ? 'Envoi...'
+                                                    : formStep === 0 && !isFree ? 'Continuer'
+                                                    : isFree ? 'Confirmer l\'inscription'
+                                                    : 'Procéder au paiement'}
                                             </button>
                                         </div>
                                     </>
