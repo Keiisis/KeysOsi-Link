@@ -114,7 +114,7 @@ function Icon3D({
                         boxShadow: '0 1px 3px rgba(255,255,255,0.12) inset, 0 -1px 2px rgba(0,0,0,0.25) inset',
                     }} />
                 {/* Icon */}
-                <Icon size={size} className="relative z-10 text-white" style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.4))' }} />
+                <Icon size={size} className="relative z-10 text-white drop-shadow-lg" />
             </div>
         </div>
     )
