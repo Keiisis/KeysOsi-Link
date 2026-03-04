@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-    Calendar, MapPin, DollarSign, Users, Crown, Image as ImageIcon,
+    Calendar, MapPin, DollarSign, Users, Crown,
     Save, ArrowLeft, Type, AlignLeft, Globe, Tag,
 } from 'lucide-react'
+import EventImageUpload from '@/components/events/EventImageUpload'
 
 const CATEGORIES = [
     { value: 'conference', label: 'Conférence' },
@@ -152,9 +153,14 @@ export default function CreateEventPage() {
                     style={{ background: 'linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))' }}>
                     <h2 className="text-xs font-black text-gray-500 uppercase tracking-widest">Image & Options</h2>
 
-                    <Field label="URL image de couverture" icon={ImageIcon}>
-                        <input type="url" value={form.cover_image_url} onChange={e => set('cover_image_url', e.target.value)} className={inputClass} placeholder="https://..." />
-                    </Field>
+                    <EventImageUpload
+                        label="Image de couverture"
+                        value={form.cover_image_url}
+                        onChange={url => set('cover_image_url', url)}
+                        uploadType="cover"
+                        showUrlInput
+                        aspectRatio="video"
+                    />
 
                     <label className="flex items-center gap-3 cursor-pointer">
                         <input type="checkbox" checked={form.is_featured} onChange={e => set('is_featured', e.target.checked)} className="w-4 h-4 rounded accent-[#FCD116]" />

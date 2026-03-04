@@ -6,10 +6,11 @@ import {
     Calendar, Plus, Edit, Eye, Users, CheckCircle2, XCircle,
     Clock, Crown, Ticket, Search, ChevronDown, ExternalLink,
     Save, ArrowLeft, Type, AlignLeft, MapPin, DollarSign,
-    Globe, Tag, Loader2, QrCode, ShieldCheck, AlertTriangle,
+    Tag, Loader2, QrCode, ShieldCheck, AlertTriangle,
     X,
 } from 'lucide-react'
 import Link from 'next/link'
+import EventImageUpload from '@/components/events/EventImageUpload'
 
 interface EventData {
     id: string
@@ -225,10 +226,14 @@ function EventForm({
                     </Field>
                 </div>
 
-                <Field label="URL image de couverture" icon={Globe}>
-                    <input type="url" value={form.cover_image_url} onChange={e => set('cover_image_url', e.target.value)}
-                        className={inputClass} placeholder="https://..." />
-                </Field>
+                <EventImageUpload
+                    label="Image de couverture"
+                    value={form.cover_image_url}
+                    onChange={url => set('cover_image_url', url)}
+                    uploadType="cover"
+                    showUrlInput
+                    aspectRatio="video"
+                />
 
                 <label className="flex items-center gap-3 cursor-pointer">
                     <input type="checkbox" checked={form.is_featured} onChange={e => set('is_featured', e.target.checked)} className="w-4 h-4 rounded accent-[#FCD116]" />

@@ -104,6 +104,14 @@ ALTER TABLE public.event_images        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.event_registrations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.event_tickets       ENABLE ROW LEVEL SECURITY;
 
+-- Supprimer les politiques existantes avant de les recréer (idempotent)
+DROP POLICY IF EXISTS "events_public_read"         ON public.events;
+DROP POLICY IF EXISTS "events_service_all"         ON public.events;
+DROP POLICY IF EXISTS "event_images_service_all"   ON public.event_images;
+DROP POLICY IF EXISTS "event_images_public_read"   ON public.event_images;
+DROP POLICY IF EXISTS "registrations_service_all"  ON public.event_registrations;
+DROP POLICY IF EXISTS "tickets_service_all"        ON public.event_tickets;
+
 -- Lecture publique des événements publiés
 CREATE POLICY "events_public_read" ON public.events
     FOR SELECT USING (status = 'published');

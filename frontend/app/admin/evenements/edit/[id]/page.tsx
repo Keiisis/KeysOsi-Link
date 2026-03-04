@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import {
-    Calendar, MapPin, DollarSign, Users, Crown, Image as ImageIcon,
+    Calendar, MapPin, DollarSign, Users, Crown,
     Save, ArrowLeft, Type, AlignLeft, Globe, Tag, Trash2, Plus, Loader2,
 } from 'lucide-react'
+import EventImageUpload from '@/components/events/EventImageUpload'
 
 const CATEGORIES = [
     { value: 'conference', label: 'Conférence' },
@@ -55,7 +56,6 @@ export default function EditEventPage() {
     const [error, setError] = useState('')
     const [success, setSuccess] = useState(false)
     const [newImageUrl, setNewImageUrl] = useState('')
-    const [newImageAlt, setNewImageAlt] = useState('')
     const [addingImage, setAddingImage] = useState(false)
     const [images, setImages] = useState<EventImage[]>([])
     const [form, setForm] = useState<EventForm>({
@@ -128,13 +128,12 @@ export default function EditEventPage() {
             const res = await fetch(`/api/events/${id}/images`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: newImageUrl, alt_text: newImageAlt, sort_order: images.length }),
+                body: JSON.stringify({ url: newImageUrl, alt_text: '', sort_order: images.length }),
             })
             if (res.ok) {
                 const d = await res.json()
                 setImages(prev => [...prev, d.image])
                 setNewImageUrl('')
-                setNewImageAlt('')
             }
         } catch { /* */ }
         setAddingImage(false)
@@ -274,17 +273,14 @@ export default function EditEventPage() {
                     style={{ background: 'linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))' }}>
                     <h2 className="text-xs font-black text-gray-500 uppercase tracking-widest">Image de couverture & Options</h2>
 
-                    <Field label="URL image principale" icon={ImageIcon}>
-                        <input type="url" value={form.cover_image_url} onChange={e => set('cover_image_url', e.target.value)}
-                            className={inputClass} placeholder="https://..." />
-                    </Field>
-
-                    {form.cover_image_url && (
-                        <div className="relative w-full h-40 rounded-xl overflow-hidden border border-white/[0.06]">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={form.cover_image_url} alt="Aperçu" className="w-full h-full object-cover" />
-                        </div>
-                    )}
+                    <EventImageUpload
+                        label="Image de couverture"
+                        value={form.cover_image_url}
+                        onChange={url => set('cover_image_url', url)}
+                        uploadType="cover"
+                        showUrlInput
+                        aspectRatio="video"
+                    />
 
                     <label className="flex items-center gap-3 cursor-pointer">
                         <input type="checkbox" checked={form.is_featured} onChange={e => set('is_featured', e.target.checked)}
@@ -314,20 +310,22 @@ export default function EditEventPage() {
                     )}
 
                     <div className="space-y-3">
-                        <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Ajouter une photo</div>
-                        <div className="flex gap-2">
-                            <input type="url" value={newImageUrl} onChange={e => setNewImageUrl(e.target.value)}
-                                placeholder="URL de l'image..." className={`${inputClass} flex-1`} />
-                            <input type="text" value={newImageAlt} onChange={e => setNewImageAlt(e.target.value)}
-                                placeholder="Description..." className={`${inputClass} w-40`} />
-                            <button type="button" onClick={handleAddImage} disabled={!newImageUrl || addingImage}
-                                className="px-4 py-3 rounded-xl text-xs font-black text-white disabled:opacity-40 transition-all cursor-pointer flex items-center gap-2 flex-shrink-0"
+                        <EventImageUpload
+                            label="Ajouter une photo"
+                            value={newImageUrl}
+                            onChange={setNewImageUrl}
+                            uploadType="gallery"
+                            showUrlInput
+                            aspectRatio="auto"
+                        />
+                        {newImageUrl && (
+                            <button type="button" onClick={handleAddImage} disabled={addingImage}
+                                className="w-full py-2.5 rounded-xl text-xs font-black text-white flex items-center justify-center gap-2 disabled:opacity-40 cursor-pointer transition-all"
                                 style={{ background: 'linear-gradient(135deg, #008751, #006b40)' }}>
                                 {addingImage ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
-                                Ajouter
+                                Ajouter à la galerie
                             </button>
-                        </div>
-                        <p className="text-[10px] text-gray-600">Utilisez Supabase Storage ou un hébergeur d'images (Cloudinary, imgbb, etc.)</p>
+                        )}
                     </div>
                 </div>
 
