@@ -9,7 +9,8 @@
       "Bash(git add app/\\\\\\(routes\\\\\\)/services/[slug]/page.tsx app/admin/services/create/page.tsx app/admin/services/edit/[id]/page.tsx app/admin/services/page.tsx app/admin/users/create/page.tsx app/admin/users/page.tsx app/api/admin/)",
       "Bash(git commit:*)",
       "Bash(git push origin main)",
-      "Bash(git add app/api/admin/users/create/route.ts app/admin/users/create/page.tsx)"
+      "Bash(git add app/api/admin/users/create/route.ts app/admin/users/create/page.tsx)",
+      "Bash(git add app/admin/users/page.tsx)"
     ],
     "additionalDirectories": [
       "c:\\Users\\HP\\Desktop\\RETOUR GAGNANT TEMPLATE\\frontend\\app\\api\\admin\\users"
