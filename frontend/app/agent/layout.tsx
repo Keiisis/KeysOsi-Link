@@ -12,7 +12,7 @@ import {
     Menu, Bell, Search, Headphones, X,
     TrendingUp, BookOpen, CircleDot, ChevronRight,
     Shield, PanelLeftClose, PanelLeft,
-    Command, UserCog, Globe
+    Command, UserCog, Globe, Handshake
 } from 'lucide-react'
 
 // ═══════════════════════════════════════════
@@ -107,6 +107,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
     // Unread Counters
     const [unreadMessages, setUnreadMessages] = useState(0)
     const [unreadVoices, setUnreadVoices] = useState(0)
+    const [unreadPartenaires, setUnreadPartenaires] = useState(0)
 
     const isLoginPage = pathname === '/agent/login'
 
@@ -225,12 +226,14 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
 
         // Initial fetch
         const fetchUnread = async () => {
-            const [msgRes, voiceRes] = await Promise.all([
+            const [msgRes, voiceRes, partRes] = await Promise.all([
                 supabase.from('messages').select('id', { count: 'exact' }).eq('lu', false),
-                supabase.from('voice_messages').select('id', { count: 'exact' }).eq('is_read', false)
+                supabase.from('voice_messages').select('id', { count: 'exact' }).eq('is_read', false),
+                supabase.from('partner_applications').select('id', { count: 'exact' }).eq('is_read', false),
             ])
             setUnreadMessages(msgRes.count || 0)
             setUnreadVoices(voiceRes.count || 0)
+            setUnreadPartenaires(partRes.count || 0)
         }
 
         fetchUnread()
@@ -239,6 +242,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
         const channel = supabase.channel('agent_layout_badges')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, fetchUnread)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'voice_messages' }, fetchUnread)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'partner_applications' }, fetchUnread)
             .subscribe()
 
         return () => {
@@ -341,6 +345,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                 { title: 'Agenda', icon: CalendarDays, href: '/agent/agenda' },
                 { title: 'Documents', icon: FolderOpen, href: '/agent/documents' },
                 { title: 'Clients', icon: UsersIcon, href: '/agent/clients' },
+                { title: 'Partenaires', icon: Handshake, href: '/agent/partenaires', badge: unreadPartenaires },
             ],
         },
         {

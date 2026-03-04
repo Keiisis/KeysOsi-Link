@@ -44,9 +44,11 @@ export default function PartnersPage() {
                     <p className="text-gray-600 mb-8 max-w-xl mx-auto">
                         Rejoignez notre réseau de partenaires privilégiés et mettez en avant vos produits auprès de la diaspora.
                     </p>
-                    <Button className="bg-[#1a2332] text-white hover:bg-[#008751] transition-colors rounded-full px-8 py-6 text-lg">
-                        Devenir Partenaire
-                    </Button>
+                    <Link href="/devenir-partenaire">
+                        <Button className="bg-[#1a2332] text-white hover:bg-[#008751] transition-colors rounded-full px-8 py-6 text-lg">
+                            Devenir Partenaire
+                        </Button>
+                    </Link>
                 </div>
             </section>
         </div>
