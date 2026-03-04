@@ -11,6 +11,7 @@ import {
     ChevronRight, Star, Handshake
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import FileUpload from '@/components/ui/FileUpload'
 
 const CATEGORIES = [
     { value: 'Immobilier', label: 'Immobilier', emoji: '🏘️' },
@@ -481,16 +482,30 @@ export default function DevenirPartenairePage() {
                                 </Field>
 
                                 <div className="pt-2 border-t border-white/5">
-                                    <p className="text-xs font-black text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                    <p className="text-xs font-black text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
                                         <ImageIcon size={11} /> Visuels (optionnel)
                                     </p>
-                                    <div className="grid grid-cols-1 gap-4">
-                                        <Field label="URL de votre logo" hint="Lien direct vers une image PNG ou SVG (ex: Imgur, Google Drive public)">
-                                            <TextInput value={form.logo_url} onChange={v => set('logo_url', v)} placeholder="https://..." />
-                                        </Field>
-                                        <Field label="URL photo de couverture" hint="Image de votre établissement, produits ou services">
-                                            <TextInput value={form.cover_image_url} onChange={v => set('cover_image_url', v)} placeholder="https://..." />
-                                        </Field>
+                                    <div className="space-y-4">
+                                        <div className="flex gap-5 items-start">
+                                            <FileUpload
+                                                type="logo"
+                                                label="Logo"
+                                                value={form.logo_url}
+                                                onChange={v => set('logo_url', v)}
+                                                hint="PNG, JPG, WebP — max 5MB"
+                                                className="w-[120px] flex-shrink-0"
+                                            />
+                                            <div className="flex-1 text-xs text-gray-500 leading-relaxed pt-7">
+                                                Votre logo apparaîtra sur votre profil partenaire visible par tous les clients de la diaspora. Idéalement carré (500×500px minimum).
+                                            </div>
+                                        </div>
+                                        <FileUpload
+                                            type="cover"
+                                            label="Photo de couverture"
+                                            value={form.cover_image_url}
+                                            onChange={v => set('cover_image_url', v)}
+                                            hint="Image panoramique de votre établissement, produits ou services — 1200×400px recommandé"
+                                        />
                                     </div>
                                 </div>
 

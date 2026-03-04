@@ -10,6 +10,7 @@ import {
     ChevronDown, ChevronUp, Handshake, Clock, Ban
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import FileUpload from '@/components/ui/FileUpload'
 
 // ─────────────────────────────────────────────
 // Types
@@ -316,8 +317,25 @@ export default function AdminPartenaires() {
                                             <Inp label="Site web" value={form.website || ''} onChange={v => setForm(p => ({ ...p, website: v }))} placeholder="https://..." />
                                             <Inp label="Téléphone" value={form.phone || ''} onChange={v => setForm(p => ({ ...p, phone: v }))} placeholder="+229..." />
                                             <Inp label="Email" value={form.email || ''} onChange={v => setForm(p => ({ ...p, email: v }))} placeholder="contact@..." />
-                                            <Inp label="URL Logo" value={form.logo || ''} onChange={v => setForm(p => ({ ...p, logo: v }))} placeholder="https://..." />
-                                            <Inp label="URL Photo couverture" value={form.cover_image || ''} onChange={v => setForm(p => ({ ...p, cover_image: v }))} placeholder="https://..." />
+                                            <div className="flex items-start gap-4">
+                                                <FileUpload
+                                                    type="logo"
+                                                    label="Logo"
+                                                    value={form.logo || ''}
+                                                    onChange={v => setForm(p => ({ ...p, logo: v }))}
+                                                    hint="PNG, JPG, WebP — max 5MB"
+                                                    className="w-[100px] flex-shrink-0"
+                                                />
+                                            </div>
+                                            <div className="md:col-span-2">
+                                                <FileUpload
+                                                    type="cover"
+                                                    label="Photo de couverture"
+                                                    value={form.cover_image || ''}
+                                                    onChange={v => setForm(p => ({ ...p, cover_image: v }))}
+                                                    hint="1200×400px recommandé — JPG, PNG, WebP"
+                                                />
+                                            </div>
                                             <div className="md:col-span-2 space-y-1.5">
                                                 <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Description</label>
                                                 <textarea title="Description" value={form.description || ''} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={3}
