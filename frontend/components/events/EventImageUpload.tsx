@@ -8,7 +8,7 @@ interface EventImageUploadProps {
     label: string
     value: string
     onChange: (url: string) => void
-    uploadType?: 'cover' | 'gallery'
+    uploadType?: string
     /** Afficher le champ URL en plus du bouton upload */
     showUrlInput?: boolean
     aspectRatio?: 'video' | 'square' | 'auto'

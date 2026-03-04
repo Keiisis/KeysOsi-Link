@@ -10,7 +10,7 @@ import {
     Menu, Globe, Sparkles, User, HelpCircle,
     ShoppingBag, Receipt, UserCog, Tag,
     Mail, FileText, Compass, X, PanelLeftClose, PanelLeft,
-    BarChart3, FileSignature, FolderOpen, Palette, Calendar
+    BarChart3, FileSignature, FolderOpen, Palette, Calendar, Star
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -46,6 +46,7 @@ function AdminLayoutContent({
     const menuItems = [
         { title: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
         { title: 'Événements', icon: Calendar, href: '/admin/evenements' },
+        { title: 'Sponsors', icon: Star, href: '/admin/sponsors' },
         { title: 'Analytics', icon: BarChart3, href: '/admin/analytics' },
         { title: 'Frontend', icon: Palette, href: '/admin/frontend' },
         { title: 'Dossiers', icon: FileText, href: '/admin/dossiers' },
