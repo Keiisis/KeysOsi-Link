@@ -50,10 +50,6 @@ export function ProductCard({ product, index }: { product: Product, index: numbe
         })
     }
 
-    const formatPrice = (price: number) => {
-        return new Intl.NumberFormat('fr-FR').format(price)
-    }
-
     const handleAddToCart = (e: React.MouseEvent) => {
         e.preventDefault() // Protect from navigating to product detail
         if (isOutOfStock) return
@@ -132,8 +128,8 @@ export function ProductCard({ product, index }: { product: Product, index: numbe
                                     animate={heartBounce ? { scale: [1, 1.4, 1] } : {}}
                                     transition={{ duration: 0.4 }}
                                     className={`w-10 h-10 rounded-full backdrop-blur-md border flex items-center justify-center transition-all duration-300 pointer-events-auto ${isFav
-                                            ? 'bg-[#E8112D]/80 border-[#E8112D]/50 text-white shadow-lg shadow-[#E8112D]/30'
-                                            : 'bg-black/20 border-white/10 text-white opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0'
+                                        ? 'bg-[#E8112D]/80 border-[#E8112D]/50 text-white shadow-lg shadow-[#E8112D]/30'
+                                        : 'bg-black/20 border-white/10 text-white opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0'
                                         } ${isFav ? 'opacity-100 translate-x-0' : ''}`}
                                     title={isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}
                                 >

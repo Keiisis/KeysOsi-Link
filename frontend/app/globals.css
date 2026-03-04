@@ -50,6 +50,77 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* ═══════════════════════════════════════════════════════
+     🎨 SELECT & OPTION — Dark Theme Global Fix
+     Tous les sélecteurs du site ont un fond sombre lisible
+     ═══════════════════════════════════════════════════════ */
+
+  select {
+    background-color: #0a0f14;
+    color: #e5e7eb;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.75rem;
+    padding: 0.625rem 2.25rem 0.625rem 0.875rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 200ms ease;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem;
+  }
+
+  select:hover {
+    border-color: rgba(252, 209, 22, 0.3);
+    background-color: #0d1319;
+  }
+
+  select:focus {
+    outline: none;
+    border-color: rgba(252, 209, 22, 0.5);
+    box-shadow: 0 0 0 3px rgba(252, 209, 22, 0.08);
+  }
+
+  select option {
+    background-color: #0a0f14;
+    color: #e5e7eb;
+    padding: 0.5rem 0.75rem;
+  }
+
+  select option:hover,
+  select option:checked {
+    background-color: #1a2332;
+    color: #FCD116;
+  }
+
+  /* Ant Design Select overrides (admin panels) */
+  .ant-select-dropdown {
+    background-color: #0d1319 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .ant-select-item {
+    color: #e5e7eb !important;
+  }
+
+  .ant-select-item-option-active {
+    background-color: rgba(252, 209, 22, 0.1) !important;
+  }
+
+  .ant-select-item-option-selected {
+    background-color: rgba(0, 135, 81, 0.15) !important;
+    color: #FCD116 !important;
+  }
+
+  .ant-select-selector {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #e5e7eb !important;
+  }
 }
 
 @layer utilities {

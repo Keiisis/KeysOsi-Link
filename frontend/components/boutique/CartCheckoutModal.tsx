@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/lib/store/cartStore'
+import { Price } from '@/components/ui/Price'
 
 // ─── Déclarations des SDK tiers ────────────────────────────────────────────────
 declare global {
@@ -62,8 +63,6 @@ interface CartCheckoutModalProps {
 
 type PaymentProvider = 'kkiapay' | 'fedapay' | 'zeyow' | 'stripe' | 'paypal'
 type Step = 'info' | 'payment' | 'stripe-form' | 'paypal-form' | 'processing' | 'success' | 'error'
-
-const formatPrice = (price: number) => new Intl.NumberFormat('fr-FR').format(price)
 
 const SHIPPING_ZONES = [
     { id: 'benin', label: 'Bénin (Livraison gratuite)', flag: '🇧🇯', fee: 0 },
@@ -632,7 +631,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                 <div key={item.id} className="flex justify-between text-xs">
                                     <span className="text-gray-400 truncate flex-1">{item.title} x{item.quantity}</span>
                                     <span className="text-white font-bold ml-4">
-                                        {formatPrice(((item.sale_price && item.sale_price < item.price) ? item.sale_price : item.price) * item.quantity)}
+                                        <Price amount={((item.sale_price && item.sale_price < item.price) ? item.sale_price : item.price) * item.quantity} currency={currency as any} />
                                     </span>
                                 </div>
                             ))}
@@ -642,7 +641,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                 <span className="flex items-center gap-1 font-bold">
                                     <Tag size={12} /> Coupon ({appliedCoupon.code})
                                 </span>
-                                <span className="font-bold">-{formatPrice(appliedCoupon.discount_amount)} {currency}</span>
+                                <span className="font-bold">-<Price amount={appliedCoupon.discount_amount} currency={currency as any} /></span>
                             </div>
                         )}
                         {shippingFee > 0 && (
@@ -650,13 +649,13 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                 <span className="flex items-center gap-1 font-bold">
                                     <MapPin size={12} /> Livraison ({SHIPPING_ZONES.find(z => z.id === shippingZone)?.label})
                                 </span>
-                                <span className="font-bold text-white">+{formatPrice(shippingFee)} {currency}</span>
+                                <span className="font-bold text-white">+<Price amount={shippingFee} currency={currency as any} /></span>
                             </div>
                         )}
                         <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/5">
                             <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Total</span>
                             <span className="text-xl font-black text-[#FCD116] font-heading">
-                                {formatPrice(finalTotal)} <span className="text-xs text-gray-500">{currency}</span>
+                                <Price amount={finalTotal} currency={currency as any} />
                             </span>
                         </div>
                     </div>
@@ -701,8 +700,8 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                                 type="button"
                                                 onClick={() => setShippingZone(zone.id)}
                                                 className={`flex items-center justify-between px-4 py-3 rounded-xl border text-left transition-all text-xs ${shippingZone === zone.id
-                                                        ? 'bg-[#FCD116]/10 border-[#FCD116]/30 text-white'
-                                                        : 'bg-white/[0.02] border-white/5 text-gray-400 hover:border-white/10 hover:text-white'
+                                                    ? 'bg-[#FCD116]/10 border-[#FCD116]/30 text-white'
+                                                    : 'bg-white/[0.02] border-white/5 text-gray-400 hover:border-white/10 hover:text-white'
                                                     }`}
                                             >
                                                 <span className="flex items-center gap-2">
@@ -711,7 +710,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                                 </span>
                                                 <span className={`font-black ${zone.fee === 0 ? 'text-[#008751]' : 'text-white'
                                                     }`}>
-                                                    {zone.fee === 0 ? 'Gratuit' : `+${formatPrice(zone.fee)} ${currency}`}
+                                                    {zone.fee === 0 ? 'Gratuit' : <span className="flex items-center gap-1">+<Price amount={zone.fee} currency={currency as any} /></span>}
                                                 </span>
                                             </button>
                                         ))}
@@ -837,7 +836,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                     className="w-full h-14 rounded-xl bg-[#635BFF] text-white font-black text-sm hover:bg-[#635BFF]/80 transition-all disabled:opacity-50"
                                 >
                                     {stripeReady ? (
-                                        <>Payer {formatPrice(finalTotal)} {currency} <Lock size={14} className="ml-2" /></>
+                                        <span className="flex items-center gap-1 justify-center">Payer <Price amount={finalTotal} currency={currency as any} /> <Lock size={14} className="ml-2" /></span>
                                     ) : (
                                         <><Loader2 size={16} className="animate-spin mr-2" /> Chargement...</>
                                     )}
@@ -870,7 +869,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                     </div>
                                 </div>
                                 <p className="text-[10px] text-gray-600 text-center">
-                                    Montant: <span className="text-white font-bold">{formatPrice(finalTotal)} {currency}</span>
+                                    Montant: <span className="text-white font-bold"><Price amount={finalTotal} currency={currency as any} /></span>
                                 </p>
                                 <button
                                     type="button"

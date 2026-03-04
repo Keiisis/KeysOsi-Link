@@ -9,8 +9,8 @@ import { Button } from '@/components/ui/button'
 import Image from 'next/image'
 import { useState } from 'react'
 import { CartCheckoutModal } from './CartCheckoutModal'
-
-const formatPrice = (price: number) => new Intl.NumberFormat('fr-FR').format(price)
+import { Price } from '@/components/ui/Price'
+import { CurrencyCode } from '@/lib/currency'
 
 export function CartDrawer() {
     const { items, removeItem, updateQuantity, clearCart, itemCount, totalAmount, isOpen, closeCart } = useCart()
@@ -91,7 +91,7 @@ export function CartDrawer() {
                                                 <div className="flex-1 min-w-0">
                                                     <h4 className="text-sm font-bold text-white truncate">{item.title}</h4>
                                                     <p className="text-xs text-[#FCD116] font-black mt-1">
-                                                        {formatPrice(unitPrice)} {item.currency}
+                                                        <Price amount={unitPrice} currency={item.currency as CurrencyCode} />
                                                     </p>
 
                                                     {/* Quantitéy controls */}
@@ -124,7 +124,7 @@ export function CartDrawer() {
                                                         <Trash2 size={14} />
                                                     </button>
                                                     <p className="text-xs font-bold text-gray-400">
-                                                        {formatPrice(unitPrice * item.quantity)} {item.currency}
+                                                        <Price amount={unitPrice * item.quantity} currency={item.currency as CurrencyCode} />
                                                     </p>
                                                 </div>
                                             </motion.div>
@@ -139,7 +139,7 @@ export function CartDrawer() {
                                     <div className="flex justify-between items-center">
                                         <span className="text-xs text-gray-400 font-bold uppercase tracking-widest">Total</span>
                                         <span className="text-2xl font-black text-[#FCD116] font-heading">
-                                            {formatPrice(totalAmount)} <span className="text-xs text-gray-500">{items[0]?.currency}</span>
+                                            <Price amount={totalAmount} currency={items[0]?.currency as CurrencyCode} showSelector />
                                         </span>
                                     </div>
 

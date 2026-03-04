@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Product } from './ProductCard'
+import { Price } from '@/components/ui/Price'
 
 // ─── Déclarations des SDK tiers ────────────────────────────────────────────────
 declare global {
@@ -67,9 +68,6 @@ interface PaymentModalProps {
 
 type PaymentProvider = 'kkiapay' | 'fedapay' | 'zeyow' | 'stripe' | 'paypal'
 type Step = 'info' | 'payment' | 'stripe-form' | 'paypal-form' | 'processing' | 'success' | 'error'
-
-const formatPrice = (price: number) =>
-    new Intl.NumberFormat('fr-FR').format(price)
 
 export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModalProps) {
     const [step, setStep] = useState<Step>('info')
@@ -626,7 +624,7 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                                 <p className="text-[10px] text-gray-500 uppercase tracking-widest">Quantité: {quantity}</p>
                             </div>
                             <p className="text-xl font-black text-[#FCD116] font-heading">
-                                {formatPrice(totalAmount)} <span className="text-xs text-gray-500">{product.currency}</span>
+                                <Price amount={totalAmount} currency={product.currency as any} />
                             </p>
                         </div>
                     </div>
@@ -776,7 +774,7 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                                     className="w-full h-14 rounded-xl bg-[#635BFF] text-white font-black text-sm hover:bg-[#635BFF]/80 transition-all disabled:opacity-50"
                                 >
                                     {stripeReady ? (
-                                        <>Payer {formatPrice(totalAmount)} {product.currency} <Lock size={14} className="ml-2" /></>
+                                        <span className="flex justify-center items-center gap-1">Payer <Price amount={totalAmount} currency={product.currency as any} /> <Lock size={14} className="ml-2" /></span>
                                     ) : (
                                         <><Loader2 size={16} className="animate-spin mr-2" /> Chargement...</>
                                     )}
@@ -812,7 +810,7 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                                 </div>
 
                                 <p className="text-[10px] text-gray-600 text-center">
-                                    Montant: <span className="text-white font-bold">{formatPrice(totalAmount)} {product.currency}</span>
+                                    Montant: <span className="text-white font-bold"><Price amount={totalAmount} currency={product.currency as any} /></span>
                                 </p>
 
                                 <button

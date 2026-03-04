@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import {
-    CurrencyCode, CURRENCIES, detectUserCurrency,
+    CurrencyCode, detectUserCurrency,
     formatPrice, convertCurrency, refreshRates
 } from '@/lib/currency'
 
@@ -50,12 +50,12 @@ export function Price({
                 <select
                     value={displayCurrency}
                     onChange={e => setDisplayCurrency(e.target.value as CurrencyCode)}
-                    className="bg-transparent border border-white/10 rounded px-1 py-0.5 text-[0.7em] text-gray-400 cursor-pointer ml-1"
+                    className="bg-[#0a0f14] border border-white/10 rounded-lg px-2 py-1 text-[0.7em] text-gray-300 cursor-pointer ml-1 hover:border-[#FCD116]/30 focus:border-[#FCD116]/50 focus:outline-none transition-colors"
                     aria-label="Devise"
                 >
-                    {Object.values(CURRENCIES).map(c => (
-                        <option key={c.code} value={c.code}>{c.symbol}</option>
-                    ))}
+                    <option value="XOF">🇧🇯 FCFA</option>
+                    <option value="EUR">🇪🇺 EUR €</option>
+                    <option value="USD">🇺🇸 USD $</option>
                 </select>
             )}
         </span>
