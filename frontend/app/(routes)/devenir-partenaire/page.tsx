@@ -17,37 +17,37 @@ import FileUpload from '@/components/ui/FileUpload'
 // ─── Category definitions with real icons ────────────────────────────────────
 
 const CATEGORIES = [
-    { value: 'Immobilier',               label: 'Immobilier',               icon: Home,          from: '#059669', to: '#0d9488' },
-    { value: 'Agro-Business',            label: 'Agro-Business',            icon: Leaf,          from: '#65a30d', to: '#16a34a' },
-    { value: 'Art & Culture',            label: 'Art & Culture',            icon: Palette,       from: '#7c3aed', to: '#9333ea' },
-    { value: 'Services & Tech',          label: 'Services & Tech',          icon: Cpu,           from: '#2563eb', to: '#4f46e5' },
-    { value: 'Mode & Beauté',            label: 'Mode & Beauté',            icon: Gem,           from: '#db2777', to: '#e11d48' },
-    { value: 'Tourisme & Hôtellerie',    label: 'Tourisme & Hôtellerie',    icon: Plane,         from: '#ea580c', to: '#d97706' },
-    { value: 'Santé & Bien-être',        label: 'Santé & Bien-être',        icon: HeartPulse,    from: '#0d9488', to: '#0891b2' },
-    { value: 'Finance & Investissement', label: 'Finance & Investissement', icon: BarChart3,     from: '#d97706', to: '#ca8a04' },
-    { value: 'Éducation & Formation',    label: 'Éducation & Formation',    icon: GraduationCap, from: '#4f46e5', to: '#2563eb' },
-    { value: 'Commerce & Distribution',  label: 'Commerce & Distribution',  icon: ShoppingBag,   from: '#0891b2', to: '#0284c7' },
-    { value: 'Autre',                    label: 'Autre',                    icon: LayoutGrid,    from: '#6b7280', to: '#4b5563' },
+    { value: 'Immobilier', label: 'Immobilier', icon: Home, from: '#059669', to: '#0d9488' },
+    { value: 'Agro-Business', label: 'Agro-Business', icon: Leaf, from: '#65a30d', to: '#16a34a' },
+    { value: 'Art & Culture', label: 'Art & Culture', icon: Palette, from: '#7c3aed', to: '#9333ea' },
+    { value: 'Services & Tech', label: 'Services & Tech', icon: Cpu, from: '#2563eb', to: '#4f46e5' },
+    { value: 'Mode & Beauté', label: 'Mode & Beauté', icon: Gem, from: '#db2777', to: '#e11d48' },
+    { value: 'Tourisme & Hôtellerie', label: 'Tourisme & Hôtellerie', icon: Plane, from: '#ea580c', to: '#d97706' },
+    { value: 'Santé & Bien-être', label: 'Santé & Bien-être', icon: HeartPulse, from: '#0d9488', to: '#0891b2' },
+    { value: 'Finance & Investissement', label: 'Finance & Investissement', icon: BarChart3, from: '#d97706', to: '#ca8a04' },
+    { value: 'Éducation & Formation', label: 'Éducation & Formation', icon: GraduationCap, from: '#4f46e5', to: '#2563eb' },
+    { value: 'Commerce & Distribution', label: 'Commerce & Distribution', icon: ShoppingBag, from: '#0891b2', to: '#0284c7' },
+    { value: 'Autre', label: 'Autre', icon: LayoutGrid, from: '#6b7280', to: '#4b5563' },
 ]
 
 const PARTNERSHIP_TYPES = [
-    { value: 'produits',       label: 'Vente de produits',         sub: 'Proposez vos produits à la diaspora',     icon: Package,      from: '#ea580c', to: '#d97706' },
-    { value: 'services',       label: 'Offre de services',         sub: 'Services spécialisés pour nos membres',   icon: Wrench,       from: '#2563eb', to: '#4f46e5' },
-    { value: 'visibilite',     label: 'Visibilité & marketing',    sub: 'Boostez votre présence internationale',   icon: Megaphone,    from: '#FCD116', to: '#f59e0b' },
-    { value: 'distribution',   label: 'Distribution diaspora',     sub: 'Canal de distribution vers l\'étranger',  icon: Globe,        from: '#059669', to: '#0d9488' },
-    { value: 'investissement', label: 'Investissement conjoint',   sub: 'Co-investissement et croissance partagée',icon: PiggyBank,    from: '#d97706', to: '#ca8a04' },
-    { value: 'formation',      label: 'Formation & expertise',     sub: 'Transmettez votre savoir au réseau',      icon: GraduationCap,from: '#7c3aed', to: '#9333ea' },
+    { value: 'produits', label: 'Vente de produits', sub: 'Proposez vos produits à la diaspora', icon: Package, from: '#ea580c', to: '#d97706' },
+    { value: 'services', label: 'Offre de services', sub: 'Services spécialisés pour nos membres', icon: Wrench, from: '#2563eb', to: '#4f46e5' },
+    { value: 'visibilite', label: 'Visibilité & marketing', sub: 'Boostez votre présence internationale', icon: Megaphone, from: '#FCD116', to: '#f59e0b' },
+    { value: 'distribution', label: 'Distribution diaspora', sub: 'Canal de distribution vers l\'étranger', icon: Globe, from: '#059669', to: '#0d9488' },
+    { value: 'investissement', label: 'Investissement conjoint', sub: 'Co-investissement et croissance partagée', icon: PiggyBank, from: '#d97706', to: '#ca8a04' },
+    { value: 'formation', label: 'Formation & expertise', sub: 'Transmettez votre savoir au réseau', icon: GraduationCap, from: '#7c3aed', to: '#9333ea' },
 ]
 
 const YEARS_OPTIONS = ["Moins d'1 an", '1–3 ans', '3–5 ans', '5–10 ans', 'Plus de 10 ans']
-const TEAM_OPTIONS  = ['Seul(e)', '2–5 personnes', '6–20 personnes', '21–50 personnes', '+50 personnes']
+const TEAM_OPTIONS = ['Seul(e)', '2–5 personnes', '6–20 personnes', '21–50 personnes', '+50 personnes']
 const REVENUE_OPTIONS = ['Démarrage', 'Moins de 5M FCFA/an', '5–20M FCFA/an', '20–100M FCFA/an', 'Plus de 100M FCFA/an']
 
 const STEPS = [
-    { title: 'Votre Structure',  subtitle: 'Identité & localisation',  icon: Building2  },
-    { title: 'Votre Activité',   subtitle: 'Ce que vous proposez',     icon: TrendingUp },
-    { title: 'Coordonnées',      subtitle: 'Comment vous joindre',     icon: Mail       },
-    { title: 'Votre Candidature',subtitle: 'Pourquoi nous rejoindre',  icon: Send       },
+    { title: 'Votre Structure', subtitle: 'Identité & localisation', icon: Building2 },
+    { title: 'Votre Activité', subtitle: 'Ce que vous proposez', icon: TrendingUp },
+    { title: 'Coordonnées', subtitle: 'Comment vous joindre', icon: Mail },
+    { title: 'Votre Candidature', subtitle: 'Pourquoi nous rejoindre', icon: Send },
 ]
 
 // ─── Form interface ───────────────────────────────────────────────────────────
@@ -72,21 +72,50 @@ const EMPTY_FORM: FormData = {
     why_partner: '', logo_url: '', cover_image_url: '',
 }
 
-// ─── 3D Icon bubble ───────────────────────────────────────────────────────────
+// ─── Ultra-Realistic 3D Icon ──────────────────────────────────────────────────
 
 function Icon3D({
     icon: Icon, from, to, size = 22, containerSize = 48,
 }: { icon: React.ComponentType<{ size?: number; className?: string }>; from: string; to: string; size?: number; containerSize?: number }) {
+    const r = Math.round(containerSize * 0.29)
     return (
-        <div
-            className="flex-shrink-0 flex items-center justify-center rounded-[14px]"
-            style={{
-                width: containerSize, height: containerSize,
-                background: `linear-gradient(145deg, ${from}, ${to})`,
-                boxShadow: `0 2px 0 rgba(255,255,255,0.18) inset, 0 -1px 0 rgba(0,0,0,0.3) inset, 0 8px 24px ${from}55, 0 2px 6px rgba(0,0,0,0.4)`,
-            }}
-        >
-            <Icon size={size} className="text-white drop-shadow-sm" />
+        <div className="relative flex-shrink-0" style={{ width: containerSize, height: containerSize, perspective: '200px' }}>
+            {/* Volumetric glow underneath */}
+            <div className="absolute inset-x-[15%] bottom-[-20%] h-[40%] rounded-full blur-lg opacity-60"
+                style={{ background: `radial-gradient(ellipse, ${from}90, transparent 70%)` }} />
+            {/* Main 3D body */}
+            <div
+                className="relative w-full h-full flex items-center justify-center overflow-hidden"
+                style={{
+                    borderRadius: r,
+                    background: `linear-gradient(160deg, ${from}, ${to} 60%, ${from}cc 100%)`,
+                    transform: 'rotateX(4deg) rotateY(-3deg)',
+                    boxShadow: [
+                        `0 1px 0 rgba(255,255,255,0.35) inset`,
+                        `0 -1px 0 rgba(0,0,0,0.45) inset`,
+                        `1px 0 0 rgba(255,255,255,0.08) inset`,
+                        `-1px 0 0 rgba(0,0,0,0.15) inset`,
+                        `0 ${containerSize * 0.35}px ${containerSize * 0.7}px ${from}50`,
+                        `0 ${containerSize * 0.1}px ${containerSize * 0.15}px rgba(0,0,0,0.5)`,
+                        `0 0 ${containerSize * 0.5}px ${from}20`,
+                    ].join(', '),
+                }}
+            >
+                {/* Glass shine reflection */}
+                <div className="absolute inset-0 pointer-events-none"
+                    style={{
+                        borderRadius: r,
+                        background: 'linear-gradient(135deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.08) 40%, transparent 60%)',
+                    }} />
+                {/* Inner depth ring */}
+                <div className="absolute inset-[2px] pointer-events-none"
+                    style={{
+                        borderRadius: r - 2,
+                        boxShadow: '0 1px 3px rgba(255,255,255,0.12) inset, 0 -1px 2px rgba(0,0,0,0.25) inset',
+                    }} />
+                {/* Icon */}
+                <Icon size={size} className="relative z-10 text-white" style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.4))' }} />
+            </div>
         </div>
     )
 }
@@ -213,9 +242,9 @@ export default function DevenirPartenairePage() {
                 {/* Background blobs */}
                 <div className="fixed inset-0 pointer-events-none overflow-hidden">
                     <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] rounded-full opacity-[0.06]"
-                        style={{ background: 'radial-gradient(circle, #008751, transparent 70%)' }}/>
+                        style={{ background: 'radial-gradient(circle, #008751, transparent 70%)' }} />
                     <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full opacity-[0.05]"
-                        style={{ background: 'radial-gradient(circle, #FCD116, transparent 70%)' }}/>
+                        style={{ background: 'radial-gradient(circle, #FCD116, transparent 70%)' }} />
                 </div>
 
                 <motion.div
@@ -228,7 +257,7 @@ export default function DevenirPartenairePage() {
                         style={{ background: 'linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))' }}>
 
                         {/* Top gradient bar */}
-                        <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg, #008751, #FCD116, #008751)' }}/>
+                        <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg, #008751, #FCD116, #008751)' }} />
 
                         <div className="p-8 space-y-7 text-center">
                             {/* Animated icon */}
@@ -238,21 +267,28 @@ export default function DevenirPartenairePage() {
                                 transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.2 }}
                                 className="flex justify-center"
                             >
-                                <div className="relative">
-                                    <div className="w-24 h-24 rounded-[28px] flex items-center justify-center"
+                                <div className="relative" style={{ perspective: '300px' }}>
+                                    {/* Volumetric glow */}
+                                    <div className="absolute inset-x-[10%] bottom-[-25%] h-[50%] rounded-full blur-xl opacity-70"
+                                        style={{ background: 'radial-gradient(ellipse, #00875190, transparent 70%)' }} />
+                                    <div className="w-24 h-24 rounded-[28px] flex items-center justify-center relative overflow-hidden"
                                         style={{
-                                            background: 'linear-gradient(145deg, #008751, #0d9488)',
-                                            boxShadow: '0 4px 0 rgba(255,255,255,0.15) inset, 0 -2px 0 rgba(0,0,0,0.3) inset, 0 20px 60px rgba(0,135,81,0.5), 0 4px 16px rgba(0,0,0,0.6)',
+                                            background: 'linear-gradient(160deg, #008751, #0d9488 60%, #008751cc)',
+                                            transform: 'rotateX(5deg) rotateY(-3deg)',
+                                            boxShadow: '0 2px 0 rgba(255,255,255,0.35) inset, 0 -2px 0 rgba(0,0,0,0.4) inset, 0 20px 60px rgba(0,135,81,0.5), 0 4px 16px rgba(0,0,0,0.6), 0 0 80px rgba(0,135,81,0.2)',
                                         }}>
-                                        <CheckCircle2 size={44} className="text-white drop-shadow-lg"/>
+                                        {/* Glass shine */}
+                                        <div className="absolute inset-0 rounded-[28px] pointer-events-none"
+                                            style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.08) 40%, transparent 60%)' }} />
+                                        <CheckCircle2 size={44} className="relative z-10 text-white" style={{ filter: 'drop-shadow(0 3px 4px rgba(0,0,0,0.4))' }} />
                                     </div>
                                     {/* Orbit dot */}
                                     <motion.div
                                         animate={{ rotate: 360 }}
                                         transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
                                         className="absolute -top-2 -right-2 w-6 h-6 rounded-full border-2 border-[#030a15] flex items-center justify-center"
-                                        style={{ background: 'linear-gradient(135deg, #FCD116, #f59e0b)' }}>
-                                        <Star size={10} fill="white" className="text-white"/>
+                                        style={{ background: 'linear-gradient(135deg, #FCD116, #f59e0b)', boxShadow: '0 0 12px rgba(252,209,22,0.5)' }}>
+                                        <Star size={10} fill="white" className="text-white" />
                                     </motion.div>
                                 </div>
                             </motion.div>
@@ -287,12 +323,12 @@ export default function DevenirPartenairePage() {
                             <div className="flex flex-col sm:flex-row gap-3 justify-center">
                                 <Link href="/partenaires"
                                     className="flex items-center justify-center gap-2 text-sm font-bold text-gray-400 hover:text-white border border-white/10 hover:border-white/20 px-6 py-3 rounded-2xl transition-all">
-                                    <ArrowLeft size={14}/> Voir nos partenaires
+                                    <ArrowLeft size={14} /> Voir nos partenaires
                                 </Link>
                                 <Link href="/"
                                     className="flex items-center justify-center gap-2 text-sm font-black text-[#030a15] px-6 py-3 rounded-2xl transition-all"
                                     style={{ background: 'linear-gradient(135deg, #FCD116, #f59e0b)' }}>
-                                    Retour à l&apos;accueil <ChevronRight size={14}/>
+                                    Retour à l&apos;accueil <ChevronRight size={14} />
                                 </Link>
                             </div>
                         </div>
@@ -310,19 +346,19 @@ export default function DevenirPartenairePage() {
             {/* ── Ambient background ── */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
                 <div className="absolute top-0 right-0 w-[800px] h-[800px] rounded-full opacity-[0.06]"
-                    style={{ background: 'radial-gradient(circle at 70% 20%, #008751, transparent 60%)' }}/>
+                    style={{ background: 'radial-gradient(circle at 70% 20%, #008751, transparent 60%)' }} />
                 <div className="absolute bottom-0 left-0 w-[600px] h-[600px] rounded-full opacity-[0.04]"
-                    style={{ background: 'radial-gradient(circle at 30% 80%, #FCD116, transparent 60%)' }}/>
+                    style={{ background: 'radial-gradient(circle at 30% 80%, #FCD116, transparent 60%)' }} />
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] rounded-full opacity-[0.025]"
-                    style={{ background: 'radial-gradient(circle, #4f46e5, transparent 60%)' }}/>
+                    style={{ background: 'radial-gradient(circle, #4f46e5, transparent 60%)' }} />
                 {/* Grid overlay */}
                 <svg className="absolute inset-0 w-full h-full opacity-[0.025]">
                     <defs>
                         <pattern id="g" width="48" height="48" patternUnits="userSpaceOnUse">
-                            <path d="M 48 0 L 0 0 0 48" fill="none" stroke="white" strokeWidth="0.5"/>
+                            <path d="M 48 0 L 0 0 0 48" fill="none" stroke="white" strokeWidth="0.5" />
                         </pattern>
                     </defs>
-                    <rect width="100%" height="100%" fill="url(#g)"/>
+                    <rect width="100%" height="100%" fill="url(#g)" />
                 </svg>
             </div>
 
@@ -331,13 +367,13 @@ export default function DevenirPartenairePage() {
                 <div className="max-w-3xl mx-auto text-center space-y-6">
                     <Link href="/partenaires"
                         className="inline-flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-gray-300 transition-colors mb-2">
-                        <ArrowLeft size={13}/> Retour aux partenaires
+                        <ArrowLeft size={13} /> Retour aux partenaires
                     </Link>
 
                     {/* Badge */}
                     <div className="flex justify-center">
                         <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-[#FCD116]/20 bg-[#FCD116]/5 text-[#FCD116] text-[11px] font-black uppercase tracking-[0.3em]">
-                            <Handshake size={13}/>
+                            <Handshake size={13} />
                             Réseau Retour Gagnant
                         </div>
                     </div>
@@ -357,14 +393,14 @@ export default function DevenirPartenairePage() {
                     {/* Benefits — real 3D icons */}
                     <div className="flex flex-wrap justify-center gap-3 pt-2">
                         {[
-                            { icon: Network,  label: 'Visibilité diaspora',   from: '#2563eb', to: '#4f46e5' },
-                            { icon: Star,     label: 'Statut Premium',        from: '#d97706', to: '#ca8a04' },
-                            { icon: Shield,   label: 'Réseau de confiance',   from: '#059669', to: '#0d9488' },
-                            { icon: Zap,      label: 'Croissance partagée',   from: '#7c3aed', to: '#9333ea' },
+                            { icon: Network, label: 'Visibilité diaspora', from: '#2563eb', to: '#4f46e5' },
+                            { icon: Star, label: 'Statut Premium', from: '#d97706', to: '#ca8a04' },
+                            { icon: Shield, label: 'Réseau de confiance', from: '#059669', to: '#0d9488' },
+                            { icon: Zap, label: 'Croissance partagée', from: '#7c3aed', to: '#9333ea' },
                         ].map(b => (
                             <div key={b.label}
                                 className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border border-white/[0.07] bg-white/[0.03] backdrop-blur-sm">
-                                <Icon3D icon={b.icon} from={b.from} to={b.to} size={14} containerSize={28}/>
+                                <Icon3D icon={b.icon} from={b.from} to={b.to} size={14} containerSize={28} />
                                 <span className="text-xs font-bold text-gray-300">{b.label}</span>
                             </div>
                         ))}
@@ -380,7 +416,7 @@ export default function DevenirPartenairePage() {
                     {STEPS.map((s, i) => {
                         const StepIcon = s.icon
                         const isActive = i === step
-                        const isDone   = i < step
+                        const isDone = i < step
                         return (
                             <div key={i} className="flex items-center flex-1 min-w-0">
                                 <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
@@ -402,8 +438,8 @@ export default function DevenirPartenairePage() {
                                             }}
                                         >
                                             {isDone
-                                                ? <CheckCircle2 size={20} className="text-white drop-shadow-sm"/>
-                                                : <StepIcon size={18} className={isActive ? 'text-[#030a15] drop-shadow-sm' : 'text-gray-600'}/>
+                                                ? <CheckCircle2 size={20} className="text-white drop-shadow-sm" />
+                                                : <StepIcon size={18} className={isActive ? 'text-[#030a15] drop-shadow-sm' : 'text-gray-600'} />
                                             }
                                         </div>
                                     </motion.div>
@@ -414,7 +450,7 @@ export default function DevenirPartenairePage() {
                                 </div>
                                 {i < STEPS.length - 1 && (
                                     <div className="relative flex-1 mx-2.5 h-px">
-                                        <div className="absolute inset-0 bg-white/[0.07] rounded-full"/>
+                                        <div className="absolute inset-0 bg-white/[0.07] rounded-full" />
                                         <motion.div
                                             className="absolute inset-0 rounded-full"
                                             style={{ background: 'linear-gradient(90deg, #008751, #0d9488)' }}
@@ -468,10 +504,10 @@ export default function DevenirPartenairePage() {
                                     <div className="space-y-6">
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <Field label="Nom de la structure" required>
-                                                <TextInput icon={Building2} value={form.company_name} onChange={v => set('company_name', v)} placeholder="Ex : Immo Bénin Prestige"/>
+                                                <TextInput icon={Building2} value={form.company_name} onChange={v => set('company_name', v)} placeholder="Ex : Immo Bénin Prestige" />
                                             </Field>
                                             <Field label="Votre nom complet" required>
-                                                <TextInput icon={Users} value={form.contact_name} onChange={v => set('contact_name', v)} placeholder="Prénom et nom"/>
+                                                <TextInput icon={Users} value={form.contact_name} onChange={v => set('contact_name', v)} placeholder="Prénom et nom" />
                                             </Field>
                                         </div>
 
@@ -498,7 +534,7 @@ export default function DevenirPartenairePage() {
                                                                 boxShadow: `0 0 0 1px ${cat.from}60, 0 4px 20px ${cat.from}30`
                                                             } : {}}
                                                         >
-                                                            <Icon3D icon={CatIcon} from={cat.from} to={cat.to} size={14} containerSize={32}/>
+                                                            <Icon3D icon={CatIcon} from={cat.from} to={cat.to} size={14} containerSize={32} />
                                                             <span className={cn(
                                                                 'text-[11px] font-bold leading-tight truncate',
                                                                 isSelected ? 'text-white' : 'text-gray-400'
@@ -511,7 +547,7 @@ export default function DevenirPartenairePage() {
                                                                     animate={{ scale: 1 }}
                                                                     className="ml-auto flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center"
                                                                     style={{ background: `linear-gradient(135deg, ${cat.from}, ${cat.to})` }}>
-                                                                    <CheckCircle2 size={10} className="text-white"/>
+                                                                    <CheckCircle2 size={10} className="text-white" />
                                                                 </motion.div>
                                                             )}
                                                         </motion.button>
@@ -521,18 +557,18 @@ export default function DevenirPartenairePage() {
                                         </Field>
 
                                         <Field label="Localisation" required hint="Ville et pays où vous exercez votre activité">
-                                            <TextInput icon={MapPin} value={form.location} onChange={v => set('location', v)} placeholder="Ex : Cotonou, Bénin"/>
+                                            <TextInput icon={MapPin} value={form.location} onChange={v => set('location', v)} placeholder="Ex : Cotonou, Bénin" />
                                         </Field>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <Field label="Années d'existence">
                                                 <div className="flex flex-wrap gap-1.5">
-                                                    {YEARS_OPTIONS.map(y => <Pill key={y} label={y} selected={form.years_in_business === y} onClick={() => set('years_in_business', y)}/>)}
+                                                    {YEARS_OPTIONS.map(y => <Pill key={y} label={y} selected={form.years_in_business === y} onClick={() => set('years_in_business', y)} />)}
                                                 </div>
                                             </Field>
                                             <Field label="Taille de l'équipe">
                                                 <div className="flex flex-wrap gap-1.5">
-                                                    {TEAM_OPTIONS.map(t => <Pill key={t} label={t} selected={form.team_size === t} onClick={() => set('team_size', t)}/>)}
+                                                    {TEAM_OPTIONS.map(t => <Pill key={t} label={t} selected={form.team_size === t} onClick={() => set('team_size', t)} />)}
                                                 </div>
                                             </Field>
                                         </div>
@@ -544,20 +580,20 @@ export default function DevenirPartenairePage() {
                                     <div className="space-y-6">
                                         <Field label="Décrivez votre activité principale" required hint="Soyez précis : produits, services, zone géographique couverte">
                                             <TextArea value={form.activity_description} onChange={v => set('activity_description', v)} rows={5}
-                                                placeholder="Notre entreprise est spécialisée dans... Nous proposons... Notre zone d'intervention est..."/>
+                                                placeholder="Notre entreprise est spécialisée dans... Nous proposons... Notre zone d'intervention est..." />
                                         </Field>
 
                                         <Field label="Votre public cible" hint="Qui sont vos clients, bénéficiaires ou partenaires ?">
-                                            <TextInput icon={Users} value={form.target_audience} onChange={v => set('target_audience', v)} placeholder="Ex : Diaspora béninoise, entrepreneurs locaux, familles..."/>
+                                            <TextInput icon={Users} value={form.target_audience} onChange={v => set('target_audience', v)} placeholder="Ex : Diaspora béninoise, entrepreneurs locaux, familles..." />
                                         </Field>
 
                                         <Field label="Ce que vous apportez au réseau" hint="Produits, services ou ressources que vous pouvez partager avec la communauté">
-                                            <TextArea value={form.what_offer} onChange={v => set('what_offer', v)} rows={3} placeholder="Je peux apporter à la communauté..."/>
+                                            <TextArea value={form.what_offer} onChange={v => set('what_offer', v)} rows={3} placeholder="Je peux apporter à la communauté..." />
                                         </Field>
 
                                         <Field label="Chiffre d'affaires annuel estimé">
                                             <div className="flex flex-wrap gap-1.5">
-                                                {REVENUE_OPTIONS.map(r => <Pill key={r} label={r} selected={form.revenue_range === r} onClick={() => set('revenue_range', r)}/>)}
+                                                {REVENUE_OPTIONS.map(r => <Pill key={r} label={r} selected={form.revenue_range === r} onClick={() => set('revenue_range', r)} />)}
                                             </div>
                                         </Field>
 
@@ -582,7 +618,7 @@ export default function DevenirPartenairePage() {
                                                             )}
                                                             style={isSelected ? { boxShadow: `0 0 0 1px ${pt.from}50, 0 4px 20px ${pt.from}25` } : {}}
                                                         >
-                                                            <Icon3D icon={PtIcon} from={pt.from} to={pt.to} size={16} containerSize={36}/>
+                                                            <Icon3D icon={PtIcon} from={pt.from} to={pt.to} size={16} containerSize={36} />
                                                             <div className="flex-1 min-w-0">
                                                                 <p className={cn('text-[12px] font-bold leading-tight', isSelected ? 'text-white' : 'text-gray-300')}>{pt.label}</p>
                                                                 <p className="text-[10px] text-gray-600 mt-0.5 leading-tight">{pt.sub}</p>
@@ -591,7 +627,7 @@ export default function DevenirPartenairePage() {
                                                                 'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all',
                                                                 isSelected ? 'border-transparent' : 'border-white/15'
                                                             )} style={isSelected ? { background: `linear-gradient(135deg, ${pt.from}, ${pt.to})` } : {}}>
-                                                                {isSelected && <CheckCircle2 size={11} className="text-white"/>}
+                                                                {isSelected && <CheckCircle2 size={11} className="text-white" />}
                                                             </div>
                                                         </motion.button>
                                                     )
@@ -606,36 +642,36 @@ export default function DevenirPartenairePage() {
                                     <div className="space-y-5">
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <Field label="Email professionnel" required>
-                                                <TextInput icon={Mail} type="email" value={form.email} onChange={v => set('email', v)} placeholder="contact@votre-entreprise.com"/>
+                                                <TextInput icon={Mail} type="email" value={form.email} onChange={v => set('email', v)} placeholder="contact@votre-entreprise.com" />
                                             </Field>
                                             <Field label="Téléphone">
-                                                <TextInput icon={Phone} type="tel" value={form.phone} onChange={v => set('phone', v)} placeholder="+229 01 23 45 67"/>
+                                                <TextInput icon={Phone} type="tel" value={form.phone} onChange={v => set('phone', v)} placeholder="+229 01 23 45 67" />
                                             </Field>
                                         </div>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <Field label="WhatsApp" hint="Numéro avec indicatif pays">
-                                                <TextInput icon={Phone} type="tel" value={form.whatsapp} onChange={v => set('whatsapp', v)} placeholder="+22901234567"/>
+                                                <TextInput icon={Phone} type="tel" value={form.whatsapp} onChange={v => set('whatsapp', v)} placeholder="+22901234567" />
                                             </Field>
                                             <Field label="Site web">
-                                                <TextInput icon={Globe} type="url" value={form.website} onChange={v => set('website', v)} placeholder="https://votre-site.com"/>
+                                                <TextInput icon={Globe} type="url" value={form.website} onChange={v => set('website', v)} placeholder="https://votre-site.com" />
                                             </Field>
                                         </div>
 
                                         {/* Social links */}
                                         <div className="pt-2 border-t border-white/[0.06]">
                                             <div className="flex items-center gap-3 mb-4">
-                                                <Icon3D icon={Network} from="#2563eb" to="#4f46e5" size={13} containerSize={28}/>
+                                                <Icon3D icon={Network} from="#2563eb" to="#4f46e5" size={13} containerSize={28} />
                                                 <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Réseaux sociaux (optionnel)</span>
                                             </div>
                                             <div className="space-y-3">
                                                 {[
-                                                    { key: 'facebook_url'  as const, icon: Facebook,  placeholder: 'https://facebook.com/votre-page',       label: 'Facebook',  from: '#2563eb', to: '#1d4ed8' },
-                                                    { key: 'instagram_url' as const, icon: Instagram, placeholder: 'https://instagram.com/votre-compte',     label: 'Instagram', from: '#db2777', to: '#e11d48' },
-                                                    { key: 'linkedin_url'  as const, icon: Linkedin,  placeholder: 'https://linkedin.com/company/...',       label: 'LinkedIn',  from: '#0891b2', to: '#0284c7' },
+                                                    { key: 'facebook_url' as const, icon: Facebook, placeholder: 'https://facebook.com/votre-page', label: 'Facebook', from: '#2563eb', to: '#1d4ed8' },
+                                                    { key: 'instagram_url' as const, icon: Instagram, placeholder: 'https://instagram.com/votre-compte', label: 'Instagram', from: '#db2777', to: '#e11d48' },
+                                                    { key: 'linkedin_url' as const, icon: Linkedin, placeholder: 'https://linkedin.com/company/...', label: 'LinkedIn', from: '#0891b2', to: '#0284c7' },
                                                 ].map(({ key, icon: SocIcon, placeholder, label, from, to }) => (
                                                     <div key={key} className="flex items-center gap-3">
-                                                        <Icon3D icon={SocIcon} from={from} to={to} size={14} containerSize={36}/>
+                                                        <Icon3D icon={SocIcon} from={from} to={to} size={14} containerSize={36} />
                                                         <div className="flex-1">
                                                             <input
                                                                 type="url" value={form[key]} onChange={e => set(key, e.target.value)}
@@ -655,13 +691,13 @@ export default function DevenirPartenairePage() {
                                     <div className="space-y-6">
                                         <Field label="Pourquoi souhaitez-vous rejoindre notre réseau ?" required hint="Exprimez votre motivation, vos valeurs communes avec Retour Gagnant Bénin">
                                             <TextArea value={form.why_partner} onChange={v => set('why_partner', v)} rows={6}
-                                                placeholder="Je souhaite rejoindre Retour Gagnant car notre vision est alignée... Je peux contribuer à la diaspora en... Ensemble, nous pouvons..."/>
+                                                placeholder="Je souhaite rejoindre Retour Gagnant car notre vision est alignée... Je peux contribuer à la diaspora en... Ensemble, nous pouvons..." />
                                         </Field>
 
                                         {/* Visuals upload */}
                                         <div className="pt-2 border-t border-white/[0.06]">
                                             <div className="flex items-center gap-3 mb-5">
-                                                <Icon3D icon={Camera} from="#7c3aed" to="#9333ea" size={13} containerSize={28}/>
+                                                <Icon3D icon={Camera} from="#7c3aed" to="#9333ea" size={13} containerSize={28} />
                                                 <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Visuels de votre marque (optionnel)</span>
                                             </div>
                                             <div className="space-y-4">
@@ -686,7 +722,7 @@ export default function DevenirPartenairePage() {
                                         {/* Recap */}
                                         <div className="rounded-2xl border border-[#008751]/20 bg-[#008751]/[0.06] p-5 space-y-3">
                                             <div className="flex items-center gap-2">
-                                                <Icon3D icon={CheckCircle2} from="#008751" to="#0d9488" size={12} containerSize={24}/>
+                                                <Icon3D icon={CheckCircle2} from="#008751" to="#0d9488" size={12} containerSize={24} />
                                                 <span className="text-[10px] font-black text-[#008751] uppercase tracking-[0.2em]">Récapitulatif de votre candidature</span>
                                             </div>
                                             <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
@@ -714,7 +750,7 @@ export default function DevenirPartenairePage() {
                                         initial={{ opacity: 0, y: -4 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
-                                        <Shield size={14}/> {error}
+                                        <Shield size={14} /> {error}
                                     </motion.div>
                                 )}
 
@@ -722,7 +758,7 @@ export default function DevenirPartenairePage() {
                                 <div className="flex items-center justify-between pt-5 border-t border-white/[0.06]">
                                     <button type="button" onClick={() => setStep(s => s - 1)} disabled={step === 0}
                                         className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-white transition-colors disabled:opacity-25 disabled:cursor-not-allowed">
-                                        <ArrowLeft size={15}/> Précédent
+                                        <ArrowLeft size={15} /> Précédent
                                     </button>
 
                                     {step < STEPS.length - 1 ? (
@@ -741,7 +777,7 @@ export default function DevenirPartenairePage() {
                                                 boxShadow: validateStep() ? '0 2px 0 rgba(255,255,255,0.15) inset, 0 8px 24px rgba(0,135,81,0.4)' : 'none',
                                             }}
                                         >
-                                            Continuer <ArrowRight size={15}/>
+                                            Continuer <ArrowRight size={15} />
                                         </motion.button>
                                     ) : (
                                         <motion.button
@@ -756,9 +792,9 @@ export default function DevenirPartenairePage() {
                                                 boxShadow: '0 2px 0 rgba(255,255,255,0.3) inset, 0 8px 30px rgba(252,209,22,0.4)',
                                             }}
                                         >
-                                            {submitting ? <Loader2 size={16} className="animate-spin"/> : <Handshake size={16}/>}
+                                            {submitting ? <Loader2 size={16} className="animate-spin" /> : <Handshake size={16} />}
                                             {submitting ? 'Envoi en cours...' : 'Soumettre ma candidature'}
-                                            {!submitting && <ChevronRight size={14}/>}
+                                            {!submitting && <ChevronRight size={14} />}
                                         </motion.button>
                                     )}
                                 </div>
@@ -784,12 +820,12 @@ export default function DevenirPartenairePage() {
                 <div className="max-w-2xl mx-auto px-4">
                     <div className="grid grid-cols-3 gap-6 text-center">
                         {[
-                            { icon: Users,   value: '200+', label: 'Membres diaspora', from: '#2563eb', to: '#4f46e5' },
-                            { icon: Globe,   value: '4',    label: 'Pays couverts',    from: '#059669', to: '#0d9488' },
-                            { icon: Shield,  value: '100%', label: 'Réseau certifié',  from: '#d97706', to: '#ca8a04' },
+                            { icon: Users, value: '200+', label: 'Membres diaspora', from: '#2563eb', to: '#4f46e5' },
+                            { icon: Globe, value: '4', label: 'Pays couverts', from: '#059669', to: '#0d9488' },
+                            { icon: Shield, value: '100%', label: 'Réseau certifié', from: '#d97706', to: '#ca8a04' },
                         ].map(s => (
                             <div key={s.label} className="flex flex-col items-center gap-3">
-                                <Icon3D icon={s.icon} from={s.from} to={s.to} size={18} containerSize={44}/>
+                                <Icon3D icon={s.icon} from={s.from} to={s.to} size={18} containerSize={44} />
                                 <div>
                                     <p className="text-2xl font-black text-[#FCD116]">{s.value}</p>
                                     <p className="text-[11px] text-gray-600 mt-0.5 font-bold">{s.label}</p>
