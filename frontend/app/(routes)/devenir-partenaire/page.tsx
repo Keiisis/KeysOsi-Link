@@ -4,67 +4,62 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import {
-    ArrowLeft, ArrowRight, CheckCircle2, Loader2,
-    Building2, MapPin, Users, Briefcase,
-    Mail, Phone, Globe, Instagram, Facebook, Linkedin,
-    Sparkles, Heart, Target, Image as ImageIcon,
-    ChevronRight, Star, Handshake
+    ArrowLeft, ArrowRight, CheckCircle2, Loader2, Building2, MapPin,
+    Mail, Phone, Globe, Instagram, Facebook, Linkedin, Handshake,
+    Home, Leaf, Palette, Cpu, Gem, Plane, HeartPulse, TrendingUp,
+    GraduationCap, ShoppingBag, LayoutGrid, Package, Wrench,
+    Megaphone, PiggyBank, Users, BarChart3, Camera, Send, Star,
+    Shield, Zap, Network, ChevronRight, Image as ImageIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import FileUpload from '@/components/ui/FileUpload'
 
+// ─── Category definitions with real icons ────────────────────────────────────
+
 const CATEGORIES = [
-    { value: 'Immobilier', label: 'Immobilier', emoji: '🏘️' },
-    { value: 'Agro-Business', label: 'Agro-Business', emoji: '🌿' },
-    { value: 'Art & Culture', label: 'Art & Culture', emoji: '🎨' },
-    { value: 'Services & Tech', label: 'Services & Tech', emoji: '💡' },
-    { value: 'Mode & Beauté', label: 'Mode & Beauté', emoji: '✨' },
-    { value: 'Tourisme & Hôtellerie', label: 'Tourisme & Hôtellerie', emoji: '🏖️' },
-    { value: 'Santé & Bien-être', label: 'Santé & Bien-être', emoji: '🌱' },
-    { value: 'Finance & Investissement', label: 'Finance & Investissement', emoji: '📈' },
-    { value: 'Éducation & Formation', label: 'Éducation & Formation', emoji: '🎓' },
-    { value: 'Commerce & Distribution', label: 'Commerce & Distribution', emoji: '🛒' },
-    { value: 'Autre', label: 'Autre', emoji: '🔹' },
+    { value: 'Immobilier',               label: 'Immobilier',               icon: Home,          from: '#059669', to: '#0d9488' },
+    { value: 'Agro-Business',            label: 'Agro-Business',            icon: Leaf,          from: '#65a30d', to: '#16a34a' },
+    { value: 'Art & Culture',            label: 'Art & Culture',            icon: Palette,       from: '#7c3aed', to: '#9333ea' },
+    { value: 'Services & Tech',          label: 'Services & Tech',          icon: Cpu,           from: '#2563eb', to: '#4f46e5' },
+    { value: 'Mode & Beauté',            label: 'Mode & Beauté',            icon: Gem,           from: '#db2777', to: '#e11d48' },
+    { value: 'Tourisme & Hôtellerie',    label: 'Tourisme & Hôtellerie',    icon: Plane,         from: '#ea580c', to: '#d97706' },
+    { value: 'Santé & Bien-être',        label: 'Santé & Bien-être',        icon: HeartPulse,    from: '#0d9488', to: '#0891b2' },
+    { value: 'Finance & Investissement', label: 'Finance & Investissement', icon: BarChart3,     from: '#d97706', to: '#ca8a04' },
+    { value: 'Éducation & Formation',    label: 'Éducation & Formation',    icon: GraduationCap, from: '#4f46e5', to: '#2563eb' },
+    { value: 'Commerce & Distribution',  label: 'Commerce & Distribution',  icon: ShoppingBag,   from: '#0891b2', to: '#0284c7' },
+    { value: 'Autre',                    label: 'Autre',                    icon: LayoutGrid,    from: '#6b7280', to: '#4b5563' },
 ]
 
-const YEARS_OPTIONS = ['Moins d\'1 an', '1–3 ans', '3–5 ans', '5–10 ans', 'Plus de 10 ans']
-const TEAM_OPTIONS = ['Seul(e)', '2–5 personnes', '6–20 personnes', '21–50 personnes', '+50 personnes']
-const REVENUE_OPTIONS = ['Démarrage', 'Moins de 5M FCFA/an', '5–20M FCFA/an', '20–100M FCFA/an', 'Plus de 100M FCFA/an']
 const PARTNERSHIP_TYPES = [
-    { value: 'produits', label: 'Vente de produits', icon: '📦' },
-    { value: 'services', label: 'Offre de services', icon: '🛠️' },
-    { value: 'visibilite', label: 'Visibilité & communication', icon: '📢' },
-    { value: 'distribution', label: 'Distribution diaspora', icon: '🌍' },
-    { value: 'investissement', label: 'Investissement conjoint', icon: '🤝' },
-    { value: 'formation', label: 'Formation & expertise', icon: '🎓' },
+    { value: 'produits',       label: 'Vente de produits',         sub: 'Proposez vos produits à la diaspora',     icon: Package,      from: '#ea580c', to: '#d97706' },
+    { value: 'services',       label: 'Offre de services',         sub: 'Services spécialisés pour nos membres',   icon: Wrench,       from: '#2563eb', to: '#4f46e5' },
+    { value: 'visibilite',     label: 'Visibilité & marketing',    sub: 'Boostez votre présence internationale',   icon: Megaphone,    from: '#FCD116', to: '#f59e0b' },
+    { value: 'distribution',   label: 'Distribution diaspora',     sub: 'Canal de distribution vers l\'étranger',  icon: Globe,        from: '#059669', to: '#0d9488' },
+    { value: 'investissement', label: 'Investissement conjoint',   sub: 'Co-investissement et croissance partagée',icon: PiggyBank,    from: '#d97706', to: '#ca8a04' },
+    { value: 'formation',      label: 'Formation & expertise',     sub: 'Transmettez votre savoir au réseau',      icon: GraduationCap,from: '#7c3aed', to: '#9333ea' },
 ]
+
+const YEARS_OPTIONS = ["Moins d'1 an", '1–3 ans', '3–5 ans', '5–10 ans', 'Plus de 10 ans']
+const TEAM_OPTIONS  = ['Seul(e)', '2–5 personnes', '6–20 personnes', '21–50 personnes', '+50 personnes']
+const REVENUE_OPTIONS = ['Démarrage', 'Moins de 5M FCFA/an', '5–20M FCFA/an', '20–100M FCFA/an', 'Plus de 100M FCFA/an']
+
+const STEPS = [
+    { title: 'Votre Structure',  subtitle: 'Identité & localisation',  icon: Building2  },
+    { title: 'Votre Activité',   subtitle: 'Ce que vous proposez',     icon: TrendingUp },
+    { title: 'Coordonnées',      subtitle: 'Comment vous joindre',     icon: Mail       },
+    { title: 'Votre Candidature',subtitle: 'Pourquoi nous rejoindre',  icon: Send       },
+]
+
+// ─── Form interface ───────────────────────────────────────────────────────────
 
 interface FormData {
-    // Step 1 – Identité
-    company_name: string
-    contact_name: string
-    category: string
-    location: string
-    years_in_business: string
-    team_size: string
-    // Step 2 – Activité
-    activity_description: string
-    target_audience: string
-    what_offer: string
-    revenue_range: string
-    partnership_types: string[]
-    // Step 3 – Coordonnées
-    email: string
-    phone: string
-    whatsapp: string
-    website: string
-    facebook_url: string
-    instagram_url: string
-    linkedin_url: string
-    // Step 4 – Candidature
-    why_partner: string
-    logo_url: string
-    cover_image_url: string
+    company_name: string; contact_name: string; category: string; location: string
+    years_in_business: string; team_size: string
+    activity_description: string; target_audience: string; what_offer: string
+    revenue_range: string; partnership_types: string[]
+    email: string; phone: string; whatsapp: string; website: string
+    facebook_url: string; instagram_url: string; linkedin_url: string
+    why_partner: string; logo_url: string; cover_image_url: string
 }
 
 const EMPTY_FORM: FormData = {
@@ -77,72 +72,96 @@ const EMPTY_FORM: FormData = {
     why_partner: '', logo_url: '', cover_image_url: '',
 }
 
-const STEPS = [
-    { title: 'Votre Structure', subtitle: 'Identité & localisation', icon: Building2 },
-    { title: 'Votre Activité', subtitle: 'Ce que vous faites', icon: Briefcase },
-    { title: 'Coordonnées', subtitle: 'Comment vous joindre', icon: Mail },
-    { title: 'Votre Candidature', subtitle: 'Pourquoi nous rejoindre', icon: Sparkles },
-]
+// ─── 3D Icon bubble ───────────────────────────────────────────────────────────
 
-function Field({ label, required, children, hint }: { label: string; required?: boolean; children: React.ReactNode; hint?: string }) {
+function Icon3D({
+    icon: Icon, from, to, size = 22, containerSize = 48,
+}: { icon: React.ComponentType<{ size?: number; className?: string }>; from: string; to: string; size?: number; containerSize?: number }) {
     return (
-        <div className="space-y-1.5">
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                {label}{required && <span className="text-[#E8112D] ml-1">*</span>}
-            </label>
-            {children}
-            {hint && <p className="text-[10px] text-gray-600">{hint}</p>}
+        <div
+            className="flex-shrink-0 flex items-center justify-center rounded-[14px]"
+            style={{
+                width: containerSize, height: containerSize,
+                background: `linear-gradient(145deg, ${from}, ${to})`,
+                boxShadow: `0 2px 0 rgba(255,255,255,0.18) inset, 0 -1px 0 rgba(0,0,0,0.3) inset, 0 8px 24px ${from}55, 0 2px 6px rgba(0,0,0,0.4)`,
+            }}
+        >
+            <Icon size={size} className="text-white drop-shadow-sm" />
         </div>
     )
 }
 
-function TextInput({ value, onChange, placeholder, type = 'text' }: { value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
+// ─── Shared field wrapper ─────────────────────────────────────────────────────
+
+function Field({ label, required, hint, children }: { label: string; required?: boolean; hint?: string; children: React.ReactNode }) {
     return (
-        <input
-            type={type}
-            value={value}
-            onChange={e => onChange(e.target.value)}
-            placeholder={placeholder}
-            title={placeholder}
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#008751]/50 transition-colors placeholder-gray-600"
-        />
+        <div className="space-y-2">
+            <label className="flex items-baseline gap-1.5 text-[11px] font-black text-gray-400 uppercase tracking-[0.18em]">
+                {label}
+                {required && <span className="text-[#E8112D] font-black">*</span>}
+            </label>
+            {children}
+            {hint && <p className="text-[10px] text-gray-600 leading-relaxed">{hint}</p>}
+        </div>
+    )
+}
+
+// ─── Input ────────────────────────────────────────────────────────────────────
+
+function TextInput({ value, onChange, placeholder, type = 'text', icon: InputIcon }: {
+    value: string; onChange: (v: string) => void; placeholder?: string; type?: string
+    icon?: React.ComponentType<{ size?: number; className?: string }>
+}) {
+    return (
+        <div className="relative">
+            {InputIcon && (
+                <InputIcon size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" />
+            )}
+            <input
+                type={type} value={value} onChange={e => onChange(e.target.value)}
+                placeholder={placeholder} title={placeholder}
+                className={cn(
+                    'w-full rounded-2xl bg-white/[0.04] border border-white/[0.08] text-white text-sm',
+                    'focus:outline-none focus:border-[#008751]/60 focus:bg-white/[0.06] transition-all',
+                    'placeholder-gray-700 py-3',
+                    InputIcon ? 'pl-10 pr-4' : 'px-4'
+                )}
+            />
+        </div>
     )
 }
 
 function TextArea({ value, onChange, placeholder, rows = 4 }: { value: string; onChange: (v: string) => void; placeholder?: string; rows?: number }) {
     return (
         <textarea
-            value={value}
-            onChange={e => onChange(e.target.value)}
-            placeholder={placeholder}
-            title={placeholder}
-            rows={rows}
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#008751]/50 transition-colors placeholder-gray-600 resize-none"
+            value={value} onChange={e => onChange(e.target.value)}
+            placeholder={placeholder} title={placeholder} rows={rows}
+            className="w-full rounded-2xl bg-white/[0.04] border border-white/[0.08] text-white text-sm px-4 py-3 focus:outline-none focus:border-[#008751]/60 focus:bg-white/[0.06] transition-all placeholder-gray-700 resize-none leading-relaxed"
         />
     )
 }
 
-function SelectPills({ options, value, onChange }: { options: { value: string; label: string }[]; value: string; onChange: (v: string) => void }) {
+// ─── Pill selector ────────────────────────────────────────────────────────────
+
+function Pill({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) {
     return (
-        <div className="flex flex-wrap gap-2">
-            {options.map(opt => (
-                <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => onChange(opt.value)}
-                    className={cn(
-                        'text-xs font-bold px-4 py-2 rounded-xl transition-all border',
-                        value === opt.value
-                            ? 'bg-[#008751]/20 text-[#008751] border-[#008751]/40'
-                            : 'bg-white/5 text-gray-400 border-white/10 hover:border-white/20'
-                    )}
-                >
-                    {opt.label}
-                </button>
-            ))}
-        </div>
+        <button
+            type="button" onClick={onClick}
+            className={cn(
+                'text-xs font-bold px-4 py-2 rounded-xl border transition-all',
+                selected
+                    ? 'bg-[#008751]/20 text-emerald-300 border-[#008751]/50 shadow-[0_0_12px_rgba(0,135,81,0.2)]'
+                    : 'bg-white/[0.04] text-gray-500 border-white/[0.08] hover:border-white/20 hover:text-gray-300'
+            )}
+        >
+            {label}
+        </button>
     )
 }
+
+// ─────────────────────────────────────────────
+// Main page
+// ─────────────────────────────────────────────
 
 export default function DevenirPartenairePage() {
     const [step, setStep] = useState(0)
@@ -154,24 +173,22 @@ export default function DevenirPartenairePage() {
     const set = (key: keyof FormData, value: string | string[]) =>
         setForm(prev => ({ ...prev, [key]: value }))
 
-    const togglePartnershipType = (val: string) => {
+    const togglePType = (val: string) =>
         set('partnership_types', form.partnership_types.includes(val)
             ? form.partnership_types.filter(v => v !== val)
             : [...form.partnership_types, val]
         )
-    }
 
     const validateStep = () => {
         if (step === 0) return !!(form.company_name && form.contact_name && form.category && form.location)
         if (step === 1) return !!(form.activity_description && form.partnership_types.length > 0)
-        if (step === 2) return !!(form.email)
-        if (step === 3) return !!(form.why_partner)
+        if (step === 2) return !!form.email
+        if (step === 3) return !!form.why_partner
         return true
     }
 
     const handleSubmit = async () => {
-        setSubmitting(true)
-        setError('')
+        setSubmitting(true); setError('')
         try {
             const res = await fetch('/api/admin/partner-applications', {
                 method: 'POST',
@@ -188,390 +205,564 @@ export default function DevenirPartenairePage() {
         }
     }
 
+    // ── SUCCESS STATE ────────────────────────────────────────────────────────
+
     if (submitted) {
         return (
-            <div className="min-h-screen bg-[#030a15] flex items-center justify-center px-4">
+            <div className="min-h-screen bg-[#030a15] flex items-center justify-center px-4 py-16">
+                {/* Background blobs */}
+                <div className="fixed inset-0 pointer-events-none overflow-hidden">
+                    <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] rounded-full opacity-[0.06]"
+                        style={{ background: 'radial-gradient(circle, #008751, transparent 70%)' }}/>
+                    <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full opacity-[0.05]"
+                        style={{ background: 'radial-gradient(circle, #FCD116, transparent 70%)' }}/>
+                </div>
+
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="max-w-lg w-full text-center space-y-8"
+                    initial={{ opacity: 0, scale: 0.88, y: 30 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 24 }}
+                    className="relative max-w-lg w-full"
                 >
-                    <div className="relative inline-flex">
-                        <div className="w-24 h-24 rounded-full bg-[#008751]/20 border-2 border-[#008751]/40 flex items-center justify-center mx-auto">
-                            <CheckCircle2 size={40} className="text-[#008751]" />
-                        </div>
-                        <div className="absolute -top-1 -right-1 w-6 h-6 bg-[#FCD116] rounded-full flex items-center justify-center">
-                            <span className="text-xs">🇧🇯</span>
+                    <div className="rounded-[32px] border border-white/[0.08] overflow-hidden"
+                        style={{ background: 'linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))' }}>
+
+                        {/* Top gradient bar */}
+                        <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg, #008751, #FCD116, #008751)' }}/>
+
+                        <div className="p-8 space-y-7 text-center">
+                            {/* Animated icon */}
+                            <motion.div
+                                initial={{ scale: 0, rotate: -20 }}
+                                animate={{ scale: 1, rotate: 0 }}
+                                transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.2 }}
+                                className="flex justify-center"
+                            >
+                                <div className="relative">
+                                    <div className="w-24 h-24 rounded-[28px] flex items-center justify-center"
+                                        style={{
+                                            background: 'linear-gradient(145deg, #008751, #0d9488)',
+                                            boxShadow: '0 4px 0 rgba(255,255,255,0.15) inset, 0 -2px 0 rgba(0,0,0,0.3) inset, 0 20px 60px rgba(0,135,81,0.5), 0 4px 16px rgba(0,0,0,0.6)',
+                                        }}>
+                                        <CheckCircle2 size={44} className="text-white drop-shadow-lg"/>
+                                    </div>
+                                    {/* Orbit dot */}
+                                    <motion.div
+                                        animate={{ rotate: 360 }}
+                                        transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+                                        className="absolute -top-2 -right-2 w-6 h-6 rounded-full border-2 border-[#030a15] flex items-center justify-center"
+                                        style={{ background: 'linear-gradient(135deg, #FCD116, #f59e0b)' }}>
+                                        <Star size={10} fill="white" className="text-white"/>
+                                    </motion.div>
+                                </div>
+                            </motion.div>
+
+                            <div className="space-y-3">
+                                <h1 className="text-3xl font-black text-white font-heading tracking-tighter">
+                                    Candidature envoyée !
+                                </h1>
+                                <p className="text-gray-400 leading-relaxed text-[15px]">
+                                    Merci <strong className="text-white">{form.contact_name}</strong> ! Notre équipe examine votre dossier sous 48–72h. Vous recevrez une réponse à <strong className="text-[#FCD116]">{form.email}</strong>.
+                                </p>
+                            </div>
+
+                            {/* Recap card */}
+                            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5 text-left space-y-3">
+                                <p className="text-[9px] font-black text-gray-500 uppercase tracking-[0.3em]">Récapitulatif</p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {[
+                                        ['Structure', form.company_name],
+                                        ['Catégorie', form.category],
+                                        ['Localisation', form.location],
+                                        ['Statut', 'En examen'],
+                                    ].map(([label, val]) => (
+                                        <div key={label}>
+                                            <p className="text-[9px] text-gray-600 uppercase tracking-wider">{label}</p>
+                                            <p className={cn('text-sm font-bold mt-0.5', label === 'Statut' ? 'text-[#FCD116]' : 'text-white')}>{val}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                                <Link href="/partenaires"
+                                    className="flex items-center justify-center gap-2 text-sm font-bold text-gray-400 hover:text-white border border-white/10 hover:border-white/20 px-6 py-3 rounded-2xl transition-all">
+                                    <ArrowLeft size={14}/> Voir nos partenaires
+                                </Link>
+                                <Link href="/"
+                                    className="flex items-center justify-center gap-2 text-sm font-black text-[#030a15] px-6 py-3 rounded-2xl transition-all"
+                                    style={{ background: 'linear-gradient(135deg, #FCD116, #f59e0b)' }}>
+                                    Retour à l&apos;accueil <ChevronRight size={14}/>
+                                </Link>
+                            </div>
                         </div>
                     </div>
-                    <div>
-                        <h1 className="text-3xl font-black text-white font-heading mb-3">
-                            Candidature envoyée !
-                        </h1>
-                        <p className="text-gray-400 leading-relaxed">
-                            Merci <strong className="text-white">{form.contact_name}</strong> ! Notre équipe examine votre dossier sous 48–72h. Nous vous contacterons à l&apos;adresse <strong className="text-[#FCD116]">{form.email}</strong>.
-                        </p>
-                    </div>
-                    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-left space-y-3">
-                        <p className="text-xs font-black text-gray-500 uppercase tracking-wider">Récapitulatif</p>
-                        <div className="grid grid-cols-2 gap-3 text-sm">
-                            <div><p className="text-gray-500 text-[10px]">Structure</p><p className="text-white font-bold">{form.company_name}</p></div>
-                            <div><p className="text-gray-500 text-[10px]">Catégorie</p><p className="text-white font-bold">{form.category}</p></div>
-                            <div><p className="text-gray-500 text-[10px]">Localisation</p><p className="text-white font-bold">{form.location}</p></div>
-                            <div><p className="text-gray-500 text-[10px]">Statut</p><p className="text-[#FCD116] font-bold">En examen ⏳</p></div>
-                        </div>
-                    </div>
-                    <Link href="/partenaires" className="inline-flex items-center gap-2 text-[#008751] text-sm font-bold hover:underline">
-                        <ArrowLeft size={14} /> Retour aux partenaires
-                    </Link>
                 </motion.div>
             </div>
         )
     }
 
+    // ── MAIN FORM ────────────────────────────────────────────────────────────
+
     return (
-        <div className="min-h-screen bg-[#030a15]">
-            {/* Header */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-[#003d22] via-[#0a1628] to-[#030a15] py-16 px-4">
-                <div className="absolute inset-0 bg-[url('/images/hero-bg.jpg')] bg-cover bg-center opacity-5" />
-                <div className="absolute top-0 right-0 w-96 h-96 bg-[#FCD116]/5 rounded-full blur-3xl" />
-                <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#008751]/10 rounded-full blur-3xl" />
-                <div className="relative z-10 max-w-3xl mx-auto text-center">
-                    <Link href="/partenaires" className="inline-flex items-center gap-2 text-gray-400 hover:text-white text-sm mb-8 transition-colors">
-                        <ArrowLeft size={14} /> Retour aux partenaires
+        <div className="min-h-screen bg-[#030a15] text-white">
+
+            {/* ── Ambient background ── */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                <div className="absolute top-0 right-0 w-[800px] h-[800px] rounded-full opacity-[0.06]"
+                    style={{ background: 'radial-gradient(circle at 70% 20%, #008751, transparent 60%)' }}/>
+                <div className="absolute bottom-0 left-0 w-[600px] h-[600px] rounded-full opacity-[0.04]"
+                    style={{ background: 'radial-gradient(circle at 30% 80%, #FCD116, transparent 60%)' }}/>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] rounded-full opacity-[0.025]"
+                    style={{ background: 'radial-gradient(circle, #4f46e5, transparent 60%)' }}/>
+                {/* Grid overlay */}
+                <svg className="absolute inset-0 w-full h-full opacity-[0.025]">
+                    <defs>
+                        <pattern id="g" width="48" height="48" patternUnits="userSpaceOnUse">
+                            <path d="M 48 0 L 0 0 0 48" fill="none" stroke="white" strokeWidth="0.5"/>
+                        </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#g)"/>
+                </svg>
+            </div>
+
+            {/* ── HERO HEADER ── */}
+            <div className="relative z-10 pt-10 pb-14 px-4">
+                <div className="max-w-3xl mx-auto text-center space-y-6">
+                    <Link href="/partenaires"
+                        className="inline-flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-gray-300 transition-colors mb-2">
+                        <ArrowLeft size={13}/> Retour aux partenaires
                     </Link>
-                    <div className="flex items-center justify-center gap-2 mb-4">
-                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#FCD116]">Réseau Retour Gagnant</span>
+
+                    {/* Badge */}
+                    <div className="flex justify-center">
+                        <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-[#FCD116]/20 bg-[#FCD116]/5 text-[#FCD116] text-[11px] font-black uppercase tracking-[0.3em]">
+                            <Handshake size={13}/>
+                            Réseau Retour Gagnant
+                        </div>
                     </div>
-                    <h1 className="text-4xl md:text-5xl font-black text-white font-heading tracking-tighter mb-4">
-                        Devenir <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#008751]">Partenaire</span>
+
+                    <h1 className="text-5xl md:text-6xl font-black font-heading tracking-tighter leading-none">
+                        Devenir{' '}
+                        <span className="text-transparent bg-clip-text"
+                            style={{ backgroundImage: 'linear-gradient(135deg, #FCD116 0%, #008751 100%)' }}>
+                            Partenaire
+                        </span>
                     </h1>
-                    <p className="text-gray-400 text-lg max-w-xl mx-auto">
-                        Rejoignez notre réseau d&apos;alliés et touchez la diaspora béninoise du monde entier.
+
+                    <p className="text-gray-400 text-lg max-w-xl mx-auto leading-relaxed">
+                        Rejoignez notre réseau d&apos;élite et touchez la diaspora béninoise du monde entier. Ensemble, construisons des ponts entre l&apos;Afrique et la diaspora.
                     </p>
 
-                    {/* Avantages */}
-                    <div className="flex flex-wrap justify-center gap-4 mt-8">
+                    {/* Benefits — real 3D icons */}
+                    <div className="flex flex-wrap justify-center gap-3 pt-2">
                         {[
-                            { icon: '🌍', text: 'Visibilité diaspora' },
-                            { icon: '⭐', text: 'Statut Premium possible' },
-                            { icon: '🤝', text: 'Réseau privilégié' },
-                            { icon: '📈', text: 'Croissance partagée' },
-                        ].map(a => (
-                            <div key={a.text} className="flex items-center gap-2 text-xs text-gray-300 bg-white/5 border border-white/10 px-4 py-2 rounded-full">
-                                <span>{a.icon}</span> {a.text}
+                            { icon: Network,  label: 'Visibilité diaspora',   from: '#2563eb', to: '#4f46e5' },
+                            { icon: Star,     label: 'Statut Premium',        from: '#d97706', to: '#ca8a04' },
+                            { icon: Shield,   label: 'Réseau de confiance',   from: '#059669', to: '#0d9488' },
+                            { icon: Zap,      label: 'Croissance partagée',   from: '#7c3aed', to: '#9333ea' },
+                        ].map(b => (
+                            <div key={b.label}
+                                className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border border-white/[0.07] bg-white/[0.03] backdrop-blur-sm">
+                                <Icon3D icon={b.icon} from={b.from} to={b.to} size={14} containerSize={28}/>
+                                <span className="text-xs font-bold text-gray-300">{b.label}</span>
                             </div>
                         ))}
                     </div>
                 </div>
             </div>
 
-            {/* Form */}
-            <div className="max-w-2xl mx-auto px-4 py-12">
-                {/* Stepper */}
-                <div className="flex items-center gap-0 mb-10 overflow-x-auto no-scrollbar">
+            {/* ── FORM CONTAINER ── */}
+            <div className="relative z-10 max-w-2xl mx-auto px-4 pb-20">
+
+                {/* ── STEPPER ── */}
+                <div className="flex items-center mb-10">
                     {STEPS.map((s, i) => {
-                        const Icon = s.icon
+                        const StepIcon = s.icon
                         const isActive = i === step
-                        const isDone = i < step
+                        const isDone   = i < step
                         return (
                             <div key={i} className="flex items-center flex-1 min-w-0">
-                                <div className="flex flex-col items-center gap-1 flex-shrink-0">
-                                    <div className={cn(
-                                        'w-10 h-10 rounded-xl flex items-center justify-center transition-all border',
-                                        isDone ? 'bg-[#008751] border-[#008751] text-white'
-                                            : isActive ? 'bg-[#FCD116]/20 border-[#FCD116]/50 text-[#FCD116]'
-                                                : 'bg-white/5 border-white/10 text-gray-600'
-                                    )}>
-                                        {isDone ? <CheckCircle2 size={18} /> : <Icon size={18} />}
-                                    </div>
-                                    <p className={cn('text-[9px] font-black uppercase tracking-wider hidden sm:block',
-                                        isActive ? 'text-[#FCD116]' : isDone ? 'text-[#008751]' : 'text-gray-600'
+                                <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+                                    <motion.div
+                                        animate={isActive ? { scale: [1, 1.08, 1] } : {}}
+                                        transition={{ duration: 1.5, repeat: Infinity, repeatType: 'reverse' }}
+                                    >
+                                        <div
+                                            className={cn('w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-300')}
+                                            style={isDone ? {
+                                                background: 'linear-gradient(145deg, #008751, #0d9488)',
+                                                boxShadow: '0 2px 0 rgba(255,255,255,0.18) inset, 0 6px 20px rgba(0,135,81,0.45)',
+                                            } : isActive ? {
+                                                background: 'linear-gradient(145deg, #FCD116, #f59e0b)',
+                                                boxShadow: '0 2px 0 rgba(255,255,255,0.25) inset, 0 6px 24px rgba(252,209,22,0.5)',
+                                            } : {
+                                                background: 'rgba(255,255,255,0.04)',
+                                                border: '1px solid rgba(255,255,255,0.08)',
+                                            }}
+                                        >
+                                            {isDone
+                                                ? <CheckCircle2 size={20} className="text-white drop-shadow-sm"/>
+                                                : <StepIcon size={18} className={isActive ? 'text-[#030a15] drop-shadow-sm' : 'text-gray-600'}/>
+                                            }
+                                        </div>
+                                    </motion.div>
+                                    <p className={cn(
+                                        'text-[9px] font-black uppercase tracking-widest hidden sm:block text-center whitespace-nowrap',
+                                        isDone ? 'text-emerald-500' : isActive ? 'text-[#FCD116]' : 'text-gray-700'
                                     )}>{s.title}</p>
                                 </div>
                                 {i < STEPS.length - 1 && (
-                                    <div className={cn('h-px flex-1 mx-2 transition-all', isDone ? 'bg-[#008751]' : 'bg-white/10')} />
+                                    <div className="relative flex-1 mx-2.5 h-px">
+                                        <div className="absolute inset-0 bg-white/[0.07] rounded-full"/>
+                                        <motion.div
+                                            className="absolute inset-0 rounded-full"
+                                            style={{ background: 'linear-gradient(90deg, #008751, #0d9488)' }}
+                                            initial={{ scaleX: 0, originX: 0 }}
+                                            animate={{ scaleX: isDone ? 1 : 0 }}
+                                            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                                        />
+                                    </div>
                                 )}
                             </div>
                         )
                     })}
                 </div>
 
-                {/* Step content */}
+                {/* ── STEP CARD ── */}
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={step}
-                        initial={{ opacity: 0, x: 20 }}
+                        initial={{ opacity: 0, x: 32 }}
                         animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                        className="bg-white/[0.03] border border-white/8 rounded-3xl p-8 space-y-6"
+                        exit={{ opacity: 0, x: -32 }}
+                        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                     >
-                        {/* Step header */}
-                        <div className="pb-4 border-b border-white/8">
-                            <div className="flex items-center gap-3">
-                                {(() => { const Icon = STEPS[step].icon; return <Icon size={20} className="text-[#FCD116]" /> })()}
-                                <div>
-                                    <p className="text-lg font-black text-white">{STEPS[step].title}</p>
-                                    <p className="text-xs text-gray-500">{STEPS[step].subtitle}</p>
-                                </div>
-                                <span className="ml-auto text-xs font-mono text-gray-600">{step + 1} / {STEPS.length}</span>
-                            </div>
-                        </div>
+                        <div className="rounded-[28px] border border-white/[0.08] overflow-hidden"
+                            style={{ background: 'linear-gradient(145deg, rgba(255,255,255,0.045), rgba(255,255,255,0.02))' }}>
 
-                        {/* ── STEP 1: Identité ── */}
-                        {step === 0 && (
-                            <div className="space-y-5">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <Field label="Nom de la structure" required>
-                                        <TextInput value={form.company_name} onChange={v => set('company_name', v)} placeholder="Ex: Immo Bénin Prestige" />
-                                    </Field>
-                                    <Field label="Votre nom complet" required>
-                                        <TextInput value={form.contact_name} onChange={v => set('contact_name', v)} placeholder="Prénom et nom" />
-                                    </Field>
-                                </div>
-
-                                <Field label="Secteur d'activité" required hint="Sélectionnez la catégorie qui correspond le mieux">
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-1">
-                                        {CATEGORIES.map(cat => (
-                                            <button
-                                                key={cat.value}
-                                                type="button"
-                                                onClick={() => set('category', cat.value)}
-                                                className={cn(
-                                                    'flex items-center gap-2 text-xs font-bold px-3 py-2.5 rounded-xl transition-all border text-left',
-                                                    form.category === cat.value
-                                                        ? 'bg-[#008751]/20 text-[#008751] border-[#008751]/40'
-                                                        : 'bg-white/5 text-gray-400 border-white/10 hover:border-white/20'
-                                                )}
-                                            >
-                                                <span className="text-base">{cat.emoji}</span>
-                                                <span className="truncate">{cat.label}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </Field>
-
-                                <Field label="Localisation" required hint="Ville et pays où vous opérez">
-                                    <TextInput value={form.location} onChange={v => set('location', v)} placeholder="Ex: Cotonou, Bénin" />
-                                </Field>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <Field label="Années d'existence">
-                                        <SelectPills
-                                            options={YEARS_OPTIONS.map(y => ({ value: y, label: y }))}
-                                            value={form.years_in_business}
-                                            onChange={v => set('years_in_business', v)}
+                            {/* Step header */}
+                            <div className="px-8 pt-7 pb-5 border-b border-white/[0.06] flex items-center gap-4">
+                                {(() => {
+                                    const S = STEPS[step]
+                                    return (
+                                        <Icon3D
+                                            icon={S.icon}
+                                            from={step === 0 ? '#059669' : step === 1 ? '#2563eb' : step === 2 ? '#db2777' : '#7c3aed'}
+                                            to={step === 0 ? '#0d9488' : step === 1 ? '#4f46e5' : step === 2 ? '#e11d48' : '#9333ea'}
+                                            size={20} containerSize={44}
                                         />
-                                    </Field>
-                                    <Field label="Taille de l'équipe">
-                                        <SelectPills
-                                            options={TEAM_OPTIONS.map(t => ({ value: t, label: t }))}
-                                            value={form.team_size}
-                                            onChange={v => set('team_size', v)}
-                                        />
-                                    </Field>
+                                    )
+                                })()}
+                                <div className="flex-1">
+                                    <h2 className="text-lg font-black text-white">{STEPS[step].title}</h2>
+                                    <p className="text-[11px] text-gray-500 mt-0.5">{STEPS[step].subtitle}</p>
                                 </div>
+                                <span className="text-[11px] font-mono text-gray-700 font-bold">{step + 1}/{STEPS.length}</span>
                             </div>
-                        )}
 
-                        {/* ── STEP 2: Activité ── */}
-                        {step === 1 && (
-                            <div className="space-y-5">
-                                <Field label="Décrivez votre activité principale" required hint="Soyez précis : produits, services, zone géographique">
-                                    <TextArea value={form.activity_description} onChange={v => set('activity_description', v)} placeholder="Notre entreprise propose... Nous sommes spécialisés dans..." rows={5} />
-                                </Field>
+                            <div className="px-8 py-7 space-y-6">
 
-                                <Field label="Votre public cible" hint="Qui sont vos clients ou bénéficiaires ?">
-                                    <TextInput value={form.target_audience} onChange={v => set('target_audience', v)} placeholder="Ex: Diaspora béninoise, entrepreneurs locaux, familles..." />
-                                </Field>
-
-                                <Field label="Ce que vous apportez au réseau" hint="Produits, services, ressources que vous pouvez partager">
-                                    <TextArea value={form.what_offer} onChange={v => set('what_offer', v)} placeholder="Je peux apporter..." rows={3} />
-                                </Field>
-
-                                <Field label="Chiffre d'affaires annuel estimé">
-                                    <SelectPills
-                                        options={REVENUE_OPTIONS.map(r => ({ value: r, label: r }))}
-                                        value={form.revenue_range}
-                                        onChange={v => set('revenue_range', v)}
-                                    />
-                                </Field>
-
-                                <Field label="Types de partenariat souhaités" required hint="Sélectionnez un ou plusieurs">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
-                                        {PARTNERSHIP_TYPES.map(pt => (
-                                            <button
-                                                key={pt.value}
-                                                type="button"
-                                                onClick={() => togglePartnershipType(pt.value)}
-                                                className={cn(
-                                                    'flex items-center gap-3 text-xs font-bold px-4 py-3 rounded-xl transition-all border text-left',
-                                                    form.partnership_types.includes(pt.value)
-                                                        ? 'bg-[#FCD116]/10 text-[#FCD116] border-[#FCD116]/30'
-                                                        : 'bg-white/5 text-gray-400 border-white/10 hover:border-white/20'
-                                                )}
-                                            >
-                                                <span className="text-lg flex-shrink-0">{pt.icon}</span>
-                                                {pt.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </Field>
-                            </div>
-                        )}
-
-                        {/* ── STEP 3: Coordonnées ── */}
-                        {step === 2 && (
-                            <div className="space-y-5">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <Field label="Email professionnel" required>
-                                        <div className="relative">
-                                            <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                                            <input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="contact@votre-entreprise.com" title="Email professionnel" className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:outline-none focus:border-[#008751]/50 transition-colors placeholder-gray-600" />
+                                {/* ════ STEP 1 — STRUCTURE ════ */}
+                                {step === 0 && (
+                                    <div className="space-y-6">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <Field label="Nom de la structure" required>
+                                                <TextInput icon={Building2} value={form.company_name} onChange={v => set('company_name', v)} placeholder="Ex : Immo Bénin Prestige"/>
+                                            </Field>
+                                            <Field label="Votre nom complet" required>
+                                                <TextInput icon={Users} value={form.contact_name} onChange={v => set('contact_name', v)} placeholder="Prénom et nom"/>
+                                            </Field>
                                         </div>
-                                    </Field>
-                                    <Field label="Téléphone">
-                                        <div className="relative">
-                                            <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                                            <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+229 01 23 45 67" title="Téléphone" className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:outline-none focus:border-[#008751]/50 transition-colors placeholder-gray-600" />
-                                        </div>
-                                    </Field>
-                                </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <Field label="WhatsApp" hint="Numéro avec indicatif pays">
-                                        <div className="relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">📱</span>
-                                            <input type="tel" value={form.whatsapp} onChange={e => set('whatsapp', e.target.value)} placeholder="+22901234567" title="WhatsApp" className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:outline-none focus:border-[#008751]/50 transition-colors placeholder-gray-600" />
-                                        </div>
-                                    </Field>
-                                    <Field label="Site web">
-                                        <div className="relative">
-                                            <Globe size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                                            <input type="url" value={form.website} onChange={e => set('website', e.target.value)} placeholder="https://votre-site.com" title="Site web" className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:outline-none focus:border-[#008751]/50 transition-colors placeholder-gray-600" />
-                                        </div>
-                                    </Field>
-                                </div>
-
-                                <div className="pt-2 border-t border-white/5">
-                                    <p className="text-xs font-black text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                        <Heart size={11} /> Réseaux sociaux (optionnel)
-                                    </p>
-                                    <div className="grid grid-cols-1 gap-3">
-                                        {[
-                                            { key: 'facebook_url' as const, icon: Facebook, placeholder: 'https://facebook.com/votre-page', label: 'Facebook' },
-                                            { key: 'instagram_url' as const, icon: Instagram, placeholder: 'https://instagram.com/votre-compte', label: 'Instagram' },
-                                            { key: 'linkedin_url' as const, icon: Linkedin, placeholder: 'https://linkedin.com/company/...', label: 'LinkedIn' },
-                                        ].map(({ key, icon: Icon, placeholder, label }) => (
-                                            <div key={key} className="relative">
-                                                <Icon size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                                                <input type="url" value={form[key]} onChange={e => set(key, e.target.value)} placeholder={placeholder} title={label} className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:outline-none focus:border-[#008751]/50 transition-colors placeholder-gray-600" />
+                                        {/* Category grid — 3D icon cards */}
+                                        <Field label="Secteur d'activité" required hint="Sélectionnez la catégorie qui correspond le mieux à votre activité">
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-1">
+                                                {CATEGORIES.map(cat => {
+                                                    const CatIcon = cat.icon
+                                                    const isSelected = form.category === cat.value
+                                                    return (
+                                                        <motion.button
+                                                            key={cat.value}
+                                                            type="button"
+                                                            onClick={() => set('category', cat.value)}
+                                                            whileHover={{ y: -2 }}
+                                                            whileTap={{ scale: 0.97 }}
+                                                            className={cn(
+                                                                'flex items-center gap-2.5 px-3 py-3 rounded-2xl border text-left transition-all duration-200',
+                                                                isSelected
+                                                                    ? 'border-white/20 bg-white/[0.08]'
+                                                                    : 'border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.1]'
+                                                            )}
+                                                            style={isSelected ? {
+                                                                boxShadow: `0 0 0 1px ${cat.from}60, 0 4px 20px ${cat.from}30`
+                                                            } : {}}
+                                                        >
+                                                            <Icon3D icon={CatIcon} from={cat.from} to={cat.to} size={14} containerSize={32}/>
+                                                            <span className={cn(
+                                                                'text-[11px] font-bold leading-tight truncate',
+                                                                isSelected ? 'text-white' : 'text-gray-400'
+                                                            )}>
+                                                                {cat.label}
+                                                            </span>
+                                                            {isSelected && (
+                                                                <motion.div
+                                                                    initial={{ scale: 0 }}
+                                                                    animate={{ scale: 1 }}
+                                                                    className="ml-auto flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center"
+                                                                    style={{ background: `linear-gradient(135deg, ${cat.from}, ${cat.to})` }}>
+                                                                    <CheckCircle2 size={10} className="text-white"/>
+                                                                </motion.div>
+                                                            )}
+                                                        </motion.button>
+                                                    )
+                                                })}
                                             </div>
-                                        ))}
+                                        </Field>
+
+                                        <Field label="Localisation" required hint="Ville et pays où vous exercez votre activité">
+                                            <TextInput icon={MapPin} value={form.location} onChange={v => set('location', v)} placeholder="Ex : Cotonou, Bénin"/>
+                                        </Field>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <Field label="Années d'existence">
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {YEARS_OPTIONS.map(y => <Pill key={y} label={y} selected={form.years_in_business === y} onClick={() => set('years_in_business', y)}/>)}
+                                                </div>
+                                            </Field>
+                                            <Field label="Taille de l'équipe">
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {TEAM_OPTIONS.map(t => <Pill key={t} label={t} selected={form.team_size === t} onClick={() => set('team_size', t)}/>)}
+                                                </div>
+                                            </Field>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                        )}
+                                )}
 
-                        {/* ── STEP 4: Candidature ── */}
-                        {step === 3 && (
-                            <div className="space-y-5">
-                                <Field label="Pourquoi souhaitez-vous rejoindre notre réseau ?" required hint="Exprimez votre motivation, vos valeurs communes avec Retour Gagnant">
-                                    <TextArea value={form.why_partner} onChange={v => set('why_partner', v)} placeholder="Je souhaite rejoindre Retour Gagnant car... Notre vision commune est... Je veux contribuer à la diaspora en..." rows={6} />
-                                </Field>
+                                {/* ════ STEP 2 — ACTIVITÉ ════ */}
+                                {step === 1 && (
+                                    <div className="space-y-6">
+                                        <Field label="Décrivez votre activité principale" required hint="Soyez précis : produits, services, zone géographique couverte">
+                                            <TextArea value={form.activity_description} onChange={v => set('activity_description', v)} rows={5}
+                                                placeholder="Notre entreprise est spécialisée dans... Nous proposons... Notre zone d'intervention est..."/>
+                                        </Field>
 
-                                <div className="pt-2 border-t border-white/5">
-                                    <p className="text-xs font-black text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                        <ImageIcon size={11} /> Visuels (optionnel)
-                                    </p>
-                                    <div className="space-y-4">
-                                        <div className="flex gap-5 items-start">
-                                            <FileUpload
-                                                type="logo"
-                                                label="Logo"
-                                                value={form.logo_url}
-                                                onChange={v => set('logo_url', v)}
-                                                hint="PNG, JPG, WebP — max 5MB"
-                                                className="w-[120px] flex-shrink-0"
-                                            />
-                                            <div className="flex-1 text-xs text-gray-500 leading-relaxed pt-7">
-                                                Votre logo apparaîtra sur votre profil partenaire visible par tous les clients de la diaspora. Idéalement carré (500×500px minimum).
+                                        <Field label="Votre public cible" hint="Qui sont vos clients, bénéficiaires ou partenaires ?">
+                                            <TextInput icon={Users} value={form.target_audience} onChange={v => set('target_audience', v)} placeholder="Ex : Diaspora béninoise, entrepreneurs locaux, familles..."/>
+                                        </Field>
+
+                                        <Field label="Ce que vous apportez au réseau" hint="Produits, services ou ressources que vous pouvez partager avec la communauté">
+                                            <TextArea value={form.what_offer} onChange={v => set('what_offer', v)} rows={3} placeholder="Je peux apporter à la communauté..."/>
+                                        </Field>
+
+                                        <Field label="Chiffre d'affaires annuel estimé">
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {REVENUE_OPTIONS.map(r => <Pill key={r} label={r} selected={form.revenue_range === r} onClick={() => set('revenue_range', r)}/>)}
+                                            </div>
+                                        </Field>
+
+                                        {/* Partnership types — 3D icon cards */}
+                                        <Field label="Types de partenariat souhaités" required hint="Sélectionnez un ou plusieurs types de collaboration">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-1">
+                                                {PARTNERSHIP_TYPES.map(pt => {
+                                                    const PtIcon = pt.icon
+                                                    const isSelected = form.partnership_types.includes(pt.value)
+                                                    return (
+                                                        <motion.button
+                                                            key={pt.value}
+                                                            type="button"
+                                                            onClick={() => togglePType(pt.value)}
+                                                            whileHover={{ y: -1 }}
+                                                            whileTap={{ scale: 0.98 }}
+                                                            className={cn(
+                                                                'flex items-center gap-3 px-4 py-3.5 rounded-2xl border text-left transition-all duration-200',
+                                                                isSelected
+                                                                    ? 'border-white/15 bg-white/[0.07]'
+                                                                    : 'border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/[0.1]'
+                                                            )}
+                                                            style={isSelected ? { boxShadow: `0 0 0 1px ${pt.from}50, 0 4px 20px ${pt.from}25` } : {}}
+                                                        >
+                                                            <Icon3D icon={PtIcon} from={pt.from} to={pt.to} size={16} containerSize={36}/>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className={cn('text-[12px] font-bold leading-tight', isSelected ? 'text-white' : 'text-gray-300')}>{pt.label}</p>
+                                                                <p className="text-[10px] text-gray-600 mt-0.5 leading-tight">{pt.sub}</p>
+                                                            </div>
+                                                            <div className={cn(
+                                                                'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all',
+                                                                isSelected ? 'border-transparent' : 'border-white/15'
+                                                            )} style={isSelected ? { background: `linear-gradient(135deg, ${pt.from}, ${pt.to})` } : {}}>
+                                                                {isSelected && <CheckCircle2 size={11} className="text-white"/>}
+                                                            </div>
+                                                        </motion.button>
+                                                    )
+                                                })}
+                                            </div>
+                                        </Field>
+                                    </div>
+                                )}
+
+                                {/* ════ STEP 3 — COORDONNÉES ════ */}
+                                {step === 2 && (
+                                    <div className="space-y-5">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <Field label="Email professionnel" required>
+                                                <TextInput icon={Mail} type="email" value={form.email} onChange={v => set('email', v)} placeholder="contact@votre-entreprise.com"/>
+                                            </Field>
+                                            <Field label="Téléphone">
+                                                <TextInput icon={Phone} type="tel" value={form.phone} onChange={v => set('phone', v)} placeholder="+229 01 23 45 67"/>
+                                            </Field>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <Field label="WhatsApp" hint="Numéro avec indicatif pays">
+                                                <TextInput icon={Phone} type="tel" value={form.whatsapp} onChange={v => set('whatsapp', v)} placeholder="+22901234567"/>
+                                            </Field>
+                                            <Field label="Site web">
+                                                <TextInput icon={Globe} type="url" value={form.website} onChange={v => set('website', v)} placeholder="https://votre-site.com"/>
+                                            </Field>
+                                        </div>
+
+                                        {/* Social links */}
+                                        <div className="pt-2 border-t border-white/[0.06]">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <Icon3D icon={Network} from="#2563eb" to="#4f46e5" size={13} containerSize={28}/>
+                                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Réseaux sociaux (optionnel)</span>
+                                            </div>
+                                            <div className="space-y-3">
+                                                {[
+                                                    { key: 'facebook_url'  as const, icon: Facebook,  placeholder: 'https://facebook.com/votre-page',       label: 'Facebook',  from: '#2563eb', to: '#1d4ed8' },
+                                                    { key: 'instagram_url' as const, icon: Instagram, placeholder: 'https://instagram.com/votre-compte',     label: 'Instagram', from: '#db2777', to: '#e11d48' },
+                                                    { key: 'linkedin_url'  as const, icon: Linkedin,  placeholder: 'https://linkedin.com/company/...',       label: 'LinkedIn',  from: '#0891b2', to: '#0284c7' },
+                                                ].map(({ key, icon: SocIcon, placeholder, label, from, to }) => (
+                                                    <div key={key} className="flex items-center gap-3">
+                                                        <Icon3D icon={SocIcon} from={from} to={to} size={14} containerSize={36}/>
+                                                        <div className="flex-1">
+                                                            <input
+                                                                type="url" value={form[key]} onChange={e => set(key, e.target.value)}
+                                                                placeholder={placeholder} title={label}
+                                                                className="w-full rounded-2xl bg-white/[0.04] border border-white/[0.08] text-white text-sm px-4 py-3 focus:outline-none focus:border-[#008751]/60 transition-all placeholder-gray-700"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
                                         </div>
-                                        <FileUpload
-                                            type="cover"
-                                            label="Photo de couverture"
-                                            value={form.cover_image_url}
-                                            onChange={v => set('cover_image_url', v)}
-                                            hint="Image panoramique de votre établissement, produits ou services — 1200×400px recommandé"
-                                        />
                                     </div>
-                                </div>
+                                )}
 
-                                {/* Preview résumé */}
-                                <div className="bg-[#008751]/10 border border-[#008751]/20 rounded-2xl p-5 space-y-3">
-                                    <p className="text-xs font-black text-[#008751] uppercase tracking-wider flex items-center gap-2">
-                                        <Star size={11} /> Récapitulatif de votre candidature
-                                    </p>
-                                    <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
-                                        {[
-                                            ['Structure', form.company_name],
-                                            ['Contact', form.contact_name],
-                                            ['Catégorie', form.category],
-                                            ['Localisation', form.location],
-                                            ['Email', form.email],
-                                            ['Partenariats', form.partnership_types.join(', ')],
-                                        ].map(([label, value]) => value ? (
-                                            <div key={label}>
-                                                <span className="text-gray-500">{label} : </span>
-                                                <span className="text-white font-bold">{value}</span>
+                                {/* ════ STEP 4 — CANDIDATURE ════ */}
+                                {step === 3 && (
+                                    <div className="space-y-6">
+                                        <Field label="Pourquoi souhaitez-vous rejoindre notre réseau ?" required hint="Exprimez votre motivation, vos valeurs communes avec Retour Gagnant Bénin">
+                                            <TextArea value={form.why_partner} onChange={v => set('why_partner', v)} rows={6}
+                                                placeholder="Je souhaite rejoindre Retour Gagnant car notre vision est alignée... Je peux contribuer à la diaspora en... Ensemble, nous pouvons..."/>
+                                        </Field>
+
+                                        {/* Visuals upload */}
+                                        <div className="pt-2 border-t border-white/[0.06]">
+                                            <div className="flex items-center gap-3 mb-5">
+                                                <Icon3D icon={Camera} from="#7c3aed" to="#9333ea" size={13} containerSize={28}/>
+                                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Visuels de votre marque (optionnel)</span>
                                             </div>
-                                        ) : null)}
+                                            <div className="space-y-4">
+                                                <div className="flex gap-5 items-start">
+                                                    <FileUpload
+                                                        type="logo" label="Logo"
+                                                        value={form.logo_url} onChange={v => set('logo_url', v)}
+                                                        hint="PNG, JPG — max 5MB" className="w-[120px] flex-shrink-0"
+                                                    />
+                                                    <div className="flex-1 pt-8 text-[12px] text-gray-500 leading-relaxed">
+                                                        Votre logo apparaîtra sur votre profil visible par toute la diaspora. Format carré recommandé (500×500px minimum).
+                                                    </div>
+                                                </div>
+                                                <FileUpload
+                                                    type="cover" label="Photo de couverture"
+                                                    value={form.cover_image_url} onChange={v => set('cover_image_url', v)}
+                                                    hint="Image panoramique de votre établissement, produits ou services — 1200×400px recommandé"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Recap */}
+                                        <div className="rounded-2xl border border-[#008751]/20 bg-[#008751]/[0.06] p-5 space-y-3">
+                                            <div className="flex items-center gap-2">
+                                                <Icon3D icon={CheckCircle2} from="#008751" to="#0d9488" size={12} containerSize={24}/>
+                                                <span className="text-[10px] font-black text-[#008751] uppercase tracking-[0.2em]">Récapitulatif de votre candidature</span>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
+                                                {[
+                                                    ['Structure', form.company_name],
+                                                    ['Contact', form.contact_name],
+                                                    ['Catégorie', form.category],
+                                                    ['Localisation', form.location],
+                                                    ['Email', form.email],
+                                                    ['Partenariats', form.partnership_types.join(', ')],
+                                                ].filter(([, v]) => v).map(([label, val]) => (
+                                                    <div key={label}>
+                                                        <span className="text-gray-500">{label} : </span>
+                                                        <span className="text-white font-bold">{val}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
                                     </div>
+                                )}
+
+                                {/* Error */}
+                                {error && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -4 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
+                                        <Shield size={14}/> {error}
+                                    </motion.div>
+                                )}
+
+                                {/* Navigation */}
+                                <div className="flex items-center justify-between pt-5 border-t border-white/[0.06]">
+                                    <button type="button" onClick={() => setStep(s => s - 1)} disabled={step === 0}
+                                        className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-white transition-colors disabled:opacity-25 disabled:cursor-not-allowed">
+                                        <ArrowLeft size={15}/> Précédent
+                                    </button>
+
+                                    {step < STEPS.length - 1 ? (
+                                        <motion.button
+                                            type="button"
+                                            onClick={() => { if (validateStep()) setStep(s => s + 1) }}
+                                            disabled={!validateStep()}
+                                            whileHover={validateStep() ? { scale: 1.02 } : {}}
+                                            whileTap={validateStep() ? { scale: 0.98 } : {}}
+                                            className="flex items-center gap-2.5 font-black text-sm px-7 py-3.5 rounded-2xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                                            style={{
+                                                background: validateStep()
+                                                    ? 'linear-gradient(135deg, #008751, #0d9488)'
+                                                    : 'rgba(255,255,255,0.05)',
+                                                color: 'white',
+                                                boxShadow: validateStep() ? '0 2px 0 rgba(255,255,255,0.15) inset, 0 8px 24px rgba(0,135,81,0.4)' : 'none',
+                                            }}
+                                        >
+                                            Continuer <ArrowRight size={15}/>
+                                        </motion.button>
+                                    ) : (
+                                        <motion.button
+                                            type="button"
+                                            onClick={handleSubmit}
+                                            disabled={submitting || !validateStep()}
+                                            whileHover={!submitting && validateStep() ? { scale: 1.02 } : {}}
+                                            whileTap={!submitting && validateStep() ? { scale: 0.98 } : {}}
+                                            className="flex items-center gap-2.5 font-black text-sm px-8 py-3.5 rounded-2xl text-[#030a15] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                            style={{
+                                                background: 'linear-gradient(135deg, #FCD116, #f59e0b)',
+                                                boxShadow: '0 2px 0 rgba(255,255,255,0.3) inset, 0 8px 30px rgba(252,209,22,0.4)',
+                                            }}
+                                        >
+                                            {submitting ? <Loader2 size={16} className="animate-spin"/> : <Handshake size={16}/>}
+                                            {submitting ? 'Envoi en cours...' : 'Soumettre ma candidature'}
+                                            {!submitting && <ChevronRight size={14}/>}
+                                        </motion.button>
+                                    )}
                                 </div>
                             </div>
-                        )}
-
-                        {/* Error */}
-                        {error && (
-                            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                                {error}
-                            </div>
-                        )}
-
-                        {/* Navigation */}
-                        <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                            <button
-                                type="button"
-                                onClick={() => setStep(s => s - 1)}
-                                disabled={step === 0}
-                                className="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                            >
-                                <ArrowLeft size={16} /> Précédent
-                            </button>
-
-                            {step < STEPS.length - 1 ? (
-                                <button
-                                    type="button"
-                                    onClick={() => { if (validateStep()) setStep(s => s + 1) }}
-                                    disabled={!validateStep()}
-                                    className="flex items-center gap-2 bg-[#008751] hover:bg-[#009960] text-white font-black text-sm px-6 py-3 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-[#008751]/20"
-                                >
-                                    Continuer <ArrowRight size={16} />
-                                </button>
-                            ) : (
-                                <button
-                                    type="button"
-                                    onClick={handleSubmit}
-                                    disabled={submitting || !validateStep()}
-                                    className="flex items-center gap-2 bg-gradient-to-r from-[#008751] to-[#FCD116] text-white font-black text-sm px-8 py-3 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg"
-                                >
-                                    {submitting ? <Loader2 size={16} className="animate-spin" /> : <Handshake size={16} />}
-                                    Soumettre ma candidature
-                                    <ChevronRight size={14} />
-                                </button>
-                            )}
                         </div>
                     </motion.div>
                 </AnimatePresence>
@@ -579,29 +770,30 @@ export default function DevenirPartenairePage() {
                 {/* Progress dots */}
                 <div className="flex justify-center gap-2 mt-6">
                     {STEPS.map((_, i) => (
-                        <div
+                        <motion.div
                             key={i}
-                            className={cn(
-                                'rounded-full transition-all',
-                                i === step ? 'w-6 h-2 bg-[#FCD116]' : i < step ? 'w-2 h-2 bg-[#008751]' : 'w-2 h-2 bg-white/15'
-                            )}
+                            animate={{ width: i === step ? 28 : 8 }}
+                            className={cn('h-2 rounded-full transition-colors', i < step ? 'bg-[#008751]' : i === step ? 'bg-[#FCD116]' : 'bg-white/10')}
                         />
                     ))}
                 </div>
             </div>
 
-            {/* Bottom CTA stats */}
-            <div className="border-t border-white/5 bg-white/[0.02] py-10 mt-8">
+            {/* ── BOTTOM STATS ── */}
+            <div className="relative z-10 border-t border-white/[0.05] bg-white/[0.015] py-12">
                 <div className="max-w-2xl mx-auto px-4">
-                    <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="grid grid-cols-3 gap-6 text-center">
                         {[
-                            { value: '200+', label: 'Membres diaspora' },
-                            { value: '4', label: 'Pays couverts' },
-                            { value: '100%', label: 'Réseau de confiance' },
-                        ].map(stat => (
-                            <div key={stat.label}>
-                                <p className="text-2xl font-black text-[#FCD116]">{stat.value}</p>
-                                <p className="text-xs text-gray-500 mt-1">{stat.label}</p>
+                            { icon: Users,   value: '200+', label: 'Membres diaspora', from: '#2563eb', to: '#4f46e5' },
+                            { icon: Globe,   value: '4',    label: 'Pays couverts',    from: '#059669', to: '#0d9488' },
+                            { icon: Shield,  value: '100%', label: 'Réseau certifié',  from: '#d97706', to: '#ca8a04' },
+                        ].map(s => (
+                            <div key={s.label} className="flex flex-col items-center gap-3">
+                                <Icon3D icon={s.icon} from={s.from} to={s.to} size={18} containerSize={44}/>
+                                <div>
+                                    <p className="text-2xl font-black text-[#FCD116]">{s.value}</p>
+                                    <p className="text-[11px] text-gray-600 mt-0.5 font-bold">{s.label}</p>
+                                </div>
                             </div>
                         ))}
                     </div>
