@@ -343,6 +343,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
             label: 'ORGANISATION',
             items: [
                 { title: 'Agenda', icon: CalendarDays, href: '/agent/agenda' },
+                { title: 'Événements', icon: CalendarDays, href: '/agent/evenements' },
                 { title: 'Documents', icon: FolderOpen, href: '/agent/documents' },
                 { title: 'Clients', icon: UsersIcon, href: '/agent/clients' },
                 { title: 'Partenaires', icon: Handshake, href: '/agent/partenaires', badge: unreadPartenaires },

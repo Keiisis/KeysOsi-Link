@@ -18,6 +18,7 @@ export default function Header() {
         { label: "Blog", href: "/blog" },
         { label: "Contact", href: "/contact" },
         { label: "Notre Histoire", href: "/notre-histoire" },
+        { label: "Événements", href: "/evenements" },
         { label: "Boutique", href: "/boutique" },
     ];
     const [isScrolled, setIsScrolled] = useState(false);
