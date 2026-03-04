@@ -290,9 +290,9 @@ export default function AgentPartenairesPage() {
             {/* ── Tabs ── */}
             <div className="flex gap-1 bg-white/5 rounded-2xl p-1 w-fit">
                 {([
-                    { key: 'partners', label: 'Partenaires Actifs', count: partners.length },
-                    { key: 'candidatures', label: 'Candidatures', count: applications.length, badge: unread },
-                ] as const).map(tab => (
+                    { key: 'partners' as const, label: 'Partenaires Actifs', count: partners.length, badge: 0 },
+                    { key: 'candidatures' as const, label: 'Candidatures', count: applications.length, badge: unread },
+                ]).map(tab => (
                     <button key={tab.key} type="button" onClick={() => setActiveTab(tab.key)}
                         className={cn('flex items-center gap-2 text-sm font-bold px-5 py-2.5 rounded-xl transition-all',
                             activeTab === tab.key
@@ -305,9 +305,9 @@ export default function AgentPartenairesPage() {
                         )}>
                             {tab.count}
                         </span>
-                        {tab.badge && tab.badge > 0 ? (
+                        {tab.badge > 0 && (
                             <span className="w-2 h-2 rounded-full bg-[#E8112D]"/>
-                        ) : null}
+                        )}
                     </button>
                 ))}
             </div>
