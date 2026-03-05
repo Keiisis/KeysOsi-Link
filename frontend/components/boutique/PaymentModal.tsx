@@ -408,12 +408,25 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
             return
         }
 
+        // Attendre que le SDK FedaPay soit chargé (max 6s, toutes les 200ms)
+        let waited = 0
+        while (!window.FedaPay && waited < 6000) {
+            await new Promise(r => setTimeout(r, 200))
+            waited += 200
+        }
+
+        if (!window.FedaPay) {
+            setErrorMessage("Le SDK FedaPay ne s'est pas chargé. Vérifiez votre connexion et rechargez la page.")
+            setStep('error')
+            return
+        }
+
         try {
             window.FedaPay.init('#fedapay-button', {
                 public_key: publicKey,
                 environment: sandbox ? 'sandbox' : 'live',
                 transaction: {
-                    amount: totalAmount,
+                    amount: Math.round(totalAmount), // FedaPay exige un entier
                     description: `Achat: ${product.title} (x${quantity})`,
                 },
                 customer: {
@@ -431,8 +444,9 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                     }
                 },
             })
-        } catch {
-            setErrorMessage("Impossible d'initialiser FedaPay")
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : 'Erreur inconnue'
+            setErrorMessage(`Impossible d'initialiser FedaPay: ${msg}`)
             setStep('error')
         }
     }

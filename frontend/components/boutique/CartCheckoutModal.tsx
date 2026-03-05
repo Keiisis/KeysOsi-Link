@@ -417,11 +417,24 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
         const publicKey = settings.fedapay_public_key
         const sandbox = settings.fedapay_sandbox === 'true'
         if (!publicKey) { setErrorMessage('FedaPay non configurée.'); setStep('error'); return }
+
+        // Attendre que le SDK FedaPay soit chargé (max 6s)
+        let waited = 0
+        while (!window.FedaPay && waited < 6000) {
+            await new Promise(r => setTimeout(r, 200))
+            waited += 200
+        }
+        if (!window.FedaPay) {
+            setErrorMessage("Le SDK FedaPay ne s'est pas chargé. Rechargez la page et réessayez.")
+            setStep('error')
+            return
+        }
+
         try {
             window.FedaPay.init('#cart-fedapay-btn', {
                 public_key: publicKey,
                 environment: sandbox ? 'sandbox' : 'live',
-                transaction: { amount: finalTotal, description: `Panier (${items.length} article${items.length > 1 ? 's' : ''})` },
+                transaction: { amount: Math.round(finalTotal), description: `Panier (${items.length} article${items.length > 1 ? 's' : ''})` },
                 customer: { email: customerEmail || undefined, phone_number: { number: customerPhone } },
                 onComplete: async (resp: Record<string, unknown>) => {
                     const tx = resp.transaction as Record<string, unknown> | undefined
@@ -432,8 +445,10 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                     }
                 },
             })
-        } catch {
-            setErrorMessage("Impossible d'initialiser FedaPay"); setStep('error')
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : 'Erreur inconnue'
+            setErrorMessage(`Impossible d'initialiser FedaPay: ${msg}`)
+            setStep('error')
         }
     }
 

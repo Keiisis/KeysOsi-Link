@@ -12,22 +12,22 @@ export default function BoutiqueLayout({
 }) {
     return (
         <>
-            {/* Kkiapay Widget SDK */}
+            {/* Kkiapay Widget SDK — afterInteractive pour être dispo avant le premier clic */}
             <Script
                 src="https://cdn.kkiapay.me/k.js"
-                strategy="lazyOnload"
+                strategy="afterInteractive"
             />
 
-            {/* FedaPay Checkout.js SDK */}
+            {/* FedaPay Checkout.js SDK — afterInteractive (lazyOnload trop tardif → init échoue) */}
             <Script
                 src="https://cdn.fedapay.com/checkout.js?v=1.1.7"
-                strategy="lazyOnload"
+                strategy="afterInteractive"
             />
 
-            {/* Stripe.js SDK — chargé globalement pour PaymentModal et CartCheckoutModal */}
+            {/* Stripe.js SDK — afterInteractive pour PaymentModal et CartCheckoutModal */}
             <Script
                 src="https://js.stripe.com/v3/"
-                strategy="lazyOnload"
+                strategy="afterInteractive"
             />
 
             <MaintenanceGuard>
