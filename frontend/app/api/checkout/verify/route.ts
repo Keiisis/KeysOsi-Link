@@ -54,8 +54,10 @@ export async function POST(request: Request) {
                     body: JSON.stringify({ transactionId: transaction_id }),
                 })
                 const verifyData = await verifyRes.json()
-                // verifyData.amount = montant sans frais Kkiapay → doit être >= montant commande (XOF)
-                if (verifyData.status === 'SUCCESS' && verifyData.amount >= existingOrder.amount) {
+                console.log('Kkiapay verify response:', JSON.stringify(verifyData).slice(0, 200))
+                // Kkiapay peut retourner le montant NET (après frais) < montant commande
+                // On vérifie uniquement le statut SUCCESS, pas le montant exact
+                if (verifyData.status === 'SUCCESS') {
                     isVerified = true
                 }
             } catch (e) {

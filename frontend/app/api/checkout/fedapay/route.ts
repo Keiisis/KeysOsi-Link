@@ -91,8 +91,8 @@ export async function POST(request: Request) {
         const rawJson = JSON.stringify(data)
         console.log('FedaPay create response (HTTP', res.status, '):', rawJson.slice(0, 500))
 
-        // FedaPay peut retourner { v1: { transaction: {...} } } ou { transaction: {...} } ou {...} directement
-        const transaction = data?.v1?.transaction || data?.transaction || (data?.id ? data : null)
+        // FedaPay retourne { "v1/transaction": {...} } — la clé contient un slash littéral
+        const transaction = data?.['v1/transaction'] || data?.v1?.transaction || data?.transaction || (data?.id ? data : null)
 
         if (!transaction?.id) {
             return NextResponse.json(
