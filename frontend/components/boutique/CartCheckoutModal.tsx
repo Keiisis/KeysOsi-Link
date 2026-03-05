@@ -144,6 +144,9 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
     const [errorMessage, setErrorMessage] = useState('')
     const [orderId, setOrderId] = useState<string | null>(null)
     const [settings, setSettings] = useState<Record<string, string>>({})
+    // Snapshot du panier avant clearCart() pour afficher les infos sur l'écran de succès
+    const [snapshotCount, setSnapshotCount] = useState(0)
+    const [snapshotTotal, setSnapshotTotal] = useState(0)
 
     // Coupon
     const [couponCode, setCouponCode] = useState('')
@@ -330,6 +333,8 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                         const result = await res.json()
                         if (result.success) {
                             setOrderId(oid)
+                            setSnapshotCount(items.length)
+                            setSnapshotTotal(finalTotal)
                             clearCart()
                             setStep('success')
                         } else {
@@ -457,6 +462,8 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
             })
             const data = await res.json()
             if (data.success) {
+                setSnapshotCount(items.length)
+                setSnapshotTotal(finalTotal)
                 clearCart()
                 setStep('success')
             } else {
@@ -768,7 +775,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                             <div>
                                 <h3 className="text-base font-black text-white font-heading">Checkout Panier</h3>
                                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-                                    {items.length} article{items.length > 1 ? 's' : ''}
+                                    {step === 'success' ? snapshotCount : items.length} article{(step === 'success' ? snapshotCount : items.length) > 1 ? 's' : ''}
                                 </p>
                             </div>
                         </div>
@@ -782,8 +789,8 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                         </button>
                     </div>
 
-                    {/* Résumé panier */}
-                    <div className="px-6 py-4 bg-white/[0.02] border-b border-white/5">
+                    {/* Résumé panier — masqué sur l'écran de succès (panier déjà vidé) */}
+                    {step !== 'success' && <div className="px-6 py-4 bg-white/[0.02] border-b border-white/5">
                         <div className="space-y-2 max-h-32 overflow-y-auto">
                             {items.map(item => (
                                 <div key={item.id} className="flex justify-between text-xs">
@@ -816,7 +823,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                 <Price amount={finalTotal} currency="XOF" noConvert />
                             </span>
                         </div>
-                    </div>
+                    </div>}
 
                     {/* Steps */}
                     <div className="p-6 min-h-[240px]">
