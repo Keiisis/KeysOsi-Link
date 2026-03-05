@@ -51,14 +51,15 @@ export async function POST(request: Request) {
         }
 
         // Construire le payload de la transaction
+        // Note FedaPay API : currency doit être au niveau RACINE du payload, pas dans transaction
         const payload: Record<string, unknown> = {
             transaction: {
                 amount: Math.round(amount),
                 description: description || `Commande ${order_id}`,
-                currency: { iso: 'XOF' },
                 // Inclure l'order_id dans le callback_url pour le webhook
                 callback_url: `${process.env.NEXT_PUBLIC_SITE_URL || ''}/api/webhooks/fedapay?order_id=${order_id}`,
             },
+            currency: { iso: 'XOF' },
         }
 
         // Ajouter les informations client si disponibles
