@@ -104,7 +104,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
     const paypalRenderedRef = useRef(false)
     const paypalOrderIdRef = useRef<string | null>(null)
 
-    const currency = items[0]?.currency || 'XOF'
+    const currency = 'XOF' // Devise fixe — toutes les passerelles travaillent en XOF
 
     // Shipping
     const [shippingZone, setShippingZone] = useState<ShippingZoneId>('digital')
@@ -122,6 +122,14 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
 
     useEffect(() => {
         if (!isOpen) {
+            // Libérer le stock si une commande est en attente (paiement non finalisé)
+            if (orderId && step !== 'success') {
+                fetch('/api/checkout/cancel', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ order_id: orderId }),
+                }).catch(() => {})
+            }
             setStep('info')
             setProvider(null)
             setCustomerName('')
@@ -143,6 +151,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                 cardElementRef.current = null
             }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen])
 
     // ─── Stripe Elements ───────────────────────────────────────────────────────
@@ -260,11 +269,14 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                             clearCart()
                             setStep('success')
                         } else {
+                            cancelOrder(oid)
                             setErrorMessage(result.error || 'Capture PayPal échouée')
                             setStep('error')
                         }
                     },
                     onError: () => {
+                        const pOid = paypalOrderIdRef.current
+                        if (pOid) cancelOrder(pOid)
                         setErrorMessage('Une erreur PayPal est survenue.')
                         setStep('error')
                     },
@@ -354,6 +366,16 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
         }
     }, [items, currency, customerName, customerEmail, customerPhone, appliedCoupon, finalTotal])
 
+    const cancelOrder = useCallback(async (oid: string) => {
+        try {
+            await fetch('/api/checkout/cancel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order_id: oid }),
+            })
+        } catch { /* fire and forget */ }
+    }, [])
+
     const verifyPayment = async (oid: string, transactionId: string) => {
         try {
             const res = await fetch('/api/checkout/verify', {
@@ -388,7 +410,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
         if (!oid) return
         const publicKey = settings.kkiapay_public_key
         const sandbox = settings.kkiapay_sandbox === 'true'
-        if (!publicKey) { setErrorMessage('Kkiapay non configurée.'); setStep('error'); return }
+        if (!publicKey) { cancelOrder(oid); setErrorMessage('Kkiapay non configurée.'); setStep('error'); return }
         try {
             window.openKkiapayWidget({
                 amount: finalTotal,
@@ -402,10 +424,10 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                 await verifyPayment(oid, r.transactionId as string)
             })
             window.addKkiapayListener('failed', () => {
-                setErrorMessage('Paiement échoué.'); setStep('error')
+                cancelOrder(oid); setErrorMessage('Paiement échoué.'); setStep('error')
             })
         } catch {
-            setErrorMessage("Impossible d'ouvrir Kkiapay"); setStep('error')
+            cancelOrder(oid); setErrorMessage("Impossible d'ouvrir Kkiapay"); setStep('error')
         }
     }
 
@@ -416,16 +438,33 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
         if (!oid) return
         const publicKey = settings.fedapay_public_key
         const sandbox = settings.fedapay_sandbox === 'true'
-        if (!publicKey) { setErrorMessage('FedaPay non configurée.'); setStep('error'); return }
+        if (!publicKey) { cancelOrder(oid); setErrorMessage('FedaPay non configurée.'); setStep('error'); return }
 
-        // Attendre que le SDK FedaPay soit chargé (max 6s)
-        let waited = 0
-        while (!window.FedaPay && waited < 6000) {
-            await new Promise(r => setTimeout(r, 200))
-            waited += 200
-        }
-        if (!window.FedaPay) {
-            setErrorMessage("Le SDK FedaPay ne s'est pas chargé. Rechargez la page et réessayez.")
+        // Charger le SDK FedaPay dynamiquement si nécessaire
+        const ensureFedaPay = (): Promise<void> => new Promise((resolve, reject) => {
+            if (window.FedaPay) { resolve(); return }
+            const poll = (ms: number) => {
+                let elapsed = 0
+                const t = setInterval(() => {
+                    if (window.FedaPay) { clearInterval(t); resolve() }
+                    else if (elapsed >= ms) { clearInterval(t); reject(new Error("SDK FedaPay indisponible après chargement")) }
+                    elapsed += 200
+                }, 200)
+            }
+            const existing = document.querySelector('script[src*="fedapay.com/checkout.js"]')
+            if (existing) { poll(8000); return }
+            const s = document.createElement('script')
+            s.src = 'https://cdn.fedapay.com/checkout.js?v=1.1.7'
+            s.onload = () => poll(4000)
+            s.onerror = () => reject(new Error("Impossible de charger le SDK FedaPay. Vérifiez votre connexion."))
+            document.head.appendChild(s)
+        })
+
+        try {
+            await ensureFedaPay()
+        } catch (err) {
+            cancelOrder(oid)
+            setErrorMessage(err instanceof Error ? err.message : "SDK FedaPay non disponible")
             setStep('error')
             return
         }
@@ -441,12 +480,15 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                     if (resp.reason === 'APPROVED' || (tx && tx.status === 'approved')) {
                         await verifyPayment(oid, String(tx?.id || resp.id || ''))
                     } else {
-                        setErrorMessage('Paiement non approuvé.'); setStep('error')
+                        cancelOrder(oid); setErrorMessage('Paiement non approuvé.'); setStep('error')
                     }
                 },
             })
+            // Déclencher l'ouverture du modal FedaPay
+            setTimeout(() => { document.getElementById('cart-fedapay-btn')?.click() }, 100)
         } catch (err) {
             const msg = err instanceof Error ? err.message : 'Erreur inconnue'
+            cancelOrder(oid)
             setErrorMessage(`Impossible d'initialiser FedaPay: ${msg}`)
             setStep('error')
         }
@@ -480,7 +522,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
         if (!oid) return
 
         const publicKey = settings.stripe_public_key
-        if (!publicKey) { setErrorMessage("Stripe n'est pas configuré."); setStep('error'); return }
+        if (!publicKey) { cancelOrder(oid); setErrorMessage("Stripe n'est pas configuré."); setStep('error'); return }
 
         try {
             const res = await fetch('/api/checkout/stripe/intent', {
@@ -490,6 +532,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
             })
             const data = await res.json()
             if (!data.client_secret) {
+                cancelOrder(oid)
                 setErrorMessage(data.error || 'Erreur Stripe')
                 setStep('error')
                 return
@@ -497,6 +540,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
             setStripeClientSecret(data.client_secret)
             setStep('stripe-form')
         } catch {
+            cancelOrder(oid)
             setErrorMessage('Impossible de contacter Stripe')
             setStep('error')
         }

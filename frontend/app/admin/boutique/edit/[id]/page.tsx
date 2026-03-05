@@ -82,6 +82,7 @@ export default function EditProductPage() {
                     stock: parseInt(stock) || 0,
                     images,
                     is_active: isActive,
+                    currency: 'XOF',
                 },
             },
             {
