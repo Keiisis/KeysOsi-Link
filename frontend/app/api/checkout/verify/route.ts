@@ -82,6 +82,10 @@ export async function POST(request: Request) {
 
                 if (!secretKey) {
                     console.error('FedaPay: fedapay_secret_key manquante dans les settings Supabase')
+                    return NextResponse.json(
+                        { success: false, error: 'Configuration FedaPay incomplète (clé secrète absente)' },
+                        { status: 503 }
+                    )
                 } else {
                     const verifyRes = await fetch(`${apiBase}/v1/transactions/${transaction_id}`, {
                         headers: {
@@ -89,13 +93,27 @@ export async function POST(request: Request) {
                             'Content-Type': 'application/json',
                         },
                     })
+
+                    if (!verifyRes.ok) {
+                        const errBody = await verifyRes.text()
+                        console.error(`FedaPay API HTTP ${verifyRes.status}:`, errBody.slice(0, 300))
+                        return NextResponse.json(
+                            { success: false, error: `FedaPay API erreur ${verifyRes.status} — vérifiez la clé secrète et le mode sandbox` },
+                            { status: 502 }
+                        )
+                    }
+
                     const verifyData = await verifyRes.json()
                     const verifiedStatus =
                         verifyData?.v1?.transaction?.status
                         || verifyData?.transaction?.status
                         || verifyData?.status
-                    console.log('FedaPay verify response status:', verifiedStatus, JSON.stringify(verifyData).slice(0, 200))
-                    if (verifiedStatus === 'approved') isVerified = true
+                    // FedaPay: 'approved' = paiement confirmé, 'transferred' = fonds transférés (aussi valide)
+                    console.log('FedaPay verify OK — statut:', verifiedStatus, '| id:', transaction_id)
+                    if (verifiedStatus === 'approved' || verifiedStatus === 'transferred') isVerified = true
+                    else {
+                        console.warn('FedaPay statut inattendu:', verifiedStatus, JSON.stringify(verifyData).slice(0, 400))
+                    }
                 }
             } catch (e) {
                 console.error('Fedapay verification error', e)
