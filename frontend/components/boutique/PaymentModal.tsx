@@ -558,26 +558,45 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
             return
         }
 
+        // Créer la transaction FedaPay côté serveur pour obtenir un ID fiable
+        let fedapayTxId: number | null = null
+        try {
+            const createRes = await fetch('/api/checkout/fedapay', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    order_id: oid,
+                    amount: Math.round(totalAmount),
+                    description: `Achat: ${product.title} (x${quantity})`,
+                    customer_email: customerEmail || undefined,
+                    customer_phone: customerPhone,
+                }),
+            })
+            const createData = await createRes.json()
+            if (!createRes.ok || !createData.fedapay_transaction_id) {
+                cancelOrder(oid)
+                setErrorMessage(createData.error || 'Impossible de créer la transaction FedaPay')
+                setStep('error')
+                return
+            }
+            fedapayTxId = createData.fedapay_transaction_id
+        } catch {
+            cancelOrder(oid)
+            setErrorMessage('Erreur de connexion à FedaPay')
+            setStep('error')
+            return
+        }
+
         try {
             window.FedaPay.init('#fedapay-button', {
                 public_key: publicKey,
                 environment: sandbox ? 'sandbox' : 'live',
-                transaction: {
-                    amount: Math.round(totalAmount), // FedaPay exige un entier
-                    description: `Achat: ${product.title} (x${quantity})`,
-                    currency: { iso: 'XOF' },
-                },
-                customer: {
-                    email: customerEmail || undefined,
-                    phone_number: { number: customerPhone },
-                },
+                transaction: { id: fedapayTxId },
                 onComplete: async (resp: Record<string, unknown>) => {
                     const transaction = resp.transaction as Record<string, unknown> | undefined
-                    if (resp.reason === 'APPROVED' || (transaction && transaction.status === 'approved')) {
-                        const txId = (transaction?.id || resp.id || '') as string
-                        // Attendre 3s pour que FedaPay finalise la transaction côté serveur
-                        await new Promise(resolve => setTimeout(resolve, 3000))
-                        await verifyPayment(oid, String(txId))
+                    if (resp.reason === 'APPROVED' || (transaction && (transaction.status === 'approved' || transaction.status === 'transferred'))) {
+                        // L'ID serveur est fiable — plus besoin d'extraire du callback
+                        await verifyPayment(oid, String(fedapayTxId))
                     } else {
                         cancelOrder(oid)
                         setErrorMessage("Le paiement n'a pas été approuvé.")

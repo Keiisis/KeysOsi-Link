@@ -4,6 +4,10 @@ import { supabase } from '@/lib/supabase'
 // FedaPay sends webhook notifications via POST
 export async function POST(request: Request) {
     try {
+        // Lire order_id depuis query params (passé via callback_url) ou depuis le body
+        const { searchParams } = new URL(request.url)
+        const orderIdFromUrl = searchParams.get('order_id')
+
         const body = await request.json()
 
         // FedaPay webhook structure
@@ -17,11 +21,12 @@ export async function POST(request: Request) {
 
         const transactionId = String(eventData?.id || '')
         const status = eventData?.status // 'approved', 'declined', 'canceled', 'refunded'
-        const amount = eventData?.amount
         const meta = eventData?.meta || eventData?.custom_metadata || {}
-        const orderId = meta?.order_id
+        // Priorité : query param > custom_metadata > meta
+        const orderId = orderIdFromUrl || meta?.order_id || meta?.orderId
 
         if (!transactionId || !orderId) {
+            console.warn('FedaPay webhook: transactionId ou orderId manquant', { transactionId, orderId, orderIdFromUrl })
             return NextResponse.json({ error: 'Missing transaction ID or order_id' }, { status: 400 })
         }
 
