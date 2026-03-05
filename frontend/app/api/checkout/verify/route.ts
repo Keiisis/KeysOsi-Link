@@ -80,7 +80,9 @@ export async function POST(request: Request) {
                     ? 'https://sandbox-api.fedapay.com'
                     : 'https://api.fedapay.com'
 
-                if (secretKey) {
+                if (!secretKey) {
+                    console.error('FedaPay: fedapay_secret_key manquante dans les settings Supabase')
+                } else {
                     const verifyRes = await fetch(`${apiBase}/v1/transactions/${transaction_id}`, {
                         headers: {
                             Authorization: `Bearer ${secretKey}`,
@@ -89,7 +91,10 @@ export async function POST(request: Request) {
                     })
                     const verifyData = await verifyRes.json()
                     const verifiedStatus =
-                        verifyData?.v1?.transaction?.status || verifyData?.status
+                        verifyData?.v1?.transaction?.status
+                        || verifyData?.transaction?.status
+                        || verifyData?.status
+                    console.log('FedaPay verify response status:', verifiedStatus, JSON.stringify(verifyData).slice(0, 200))
                     if (verifiedStatus === 'approved') isVerified = true
                 }
             } catch (e) {

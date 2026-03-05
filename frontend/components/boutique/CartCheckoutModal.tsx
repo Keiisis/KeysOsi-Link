@@ -541,7 +541,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
             window.FedaPay.init('#cart-fedapay-btn', {
                 public_key: publicKey,
                 environment: sandbox ? 'sandbox' : 'live',
-                transaction: { amount: Math.round(finalTotal), description: `Panier (${items.length} article${items.length > 1 ? 's' : ''})` },
+                transaction: { amount: Math.round(finalTotal), description: `Panier (${items.length} article${items.length > 1 ? 's' : ''})`, currency: { iso: 'XOF' } },
                 customer: { email: customerEmail || undefined, phone_number: { number: customerPhone } },
                 onComplete: async (resp: Record<string, unknown>) => {
                     const tx = resp.transaction as Record<string, unknown> | undefined

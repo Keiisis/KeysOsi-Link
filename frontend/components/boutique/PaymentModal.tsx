@@ -563,6 +563,7 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                 transaction: {
                     amount: Math.round(totalAmount), // FedaPay exige un entier
                     description: `Achat: ${product.title} (x${quantity})`,
+                    currency: { iso: 'XOF' },
                 },
                 customer: {
                     email: customerEmail || undefined,
