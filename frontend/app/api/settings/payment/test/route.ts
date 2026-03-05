@@ -74,14 +74,19 @@ export async function POST(request: Request) {
                         : 'https://api.fedapay.com'
                     const env = isSandbox ? 'Sandbox' : 'Production'
 
-                    const response = await axios.get(`${apiUrl}/v1/transactions?per_page=1`, {
-                        headers: {
-                            Authorization: `Bearer ${secretKey}`,
-                            'Content-Type': 'application/json',
-                        },
-                        validateStatus: () => true,
-                        timeout: 10000,
-                    })
+                    // POST /v1/transactions/search — endpoint actuel (GET /v1/transactions est déprécié → 400)
+                    const response = await axios.post(
+                        `${apiUrl}/v1/transactions/search`,
+                        {},
+                        {
+                            headers: {
+                                Authorization: `Bearer ${secretKey}`,
+                                'Content-Type': 'application/json',
+                            },
+                            validateStatus: () => true,
+                            timeout: 10000,
+                        }
+                    )
 
                     if (response.status === 200) {
                         return NextResponse.json({ success: true, message: `FedaPay ${env} connectée` })
