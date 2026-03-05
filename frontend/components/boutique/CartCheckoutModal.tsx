@@ -64,15 +64,75 @@ interface CartCheckoutModalProps {
 type PaymentProvider = 'kkiapay' | 'fedapay' | 'zeyow' | 'stripe' | 'paypal'
 type Step = 'info' | 'payment' | 'stripe-form' | 'paypal-form' | 'processing' | 'success' | 'error'
 
-const SHIPPING_ZONES = [
-    { id: 'benin', label: 'Bénin (Livraison gratuite)', flag: '🇧🇯', fee: 0 },
-    { id: 'afrique-ouest', label: 'Afrique de l\'Ouest', flag: '🌍', fee: 5000 },
-    { id: 'europe', label: 'Europe', flag: '🇪🇺', fee: 15000 },
-    { id: 'international', label: 'International', flag: '🌐', fee: 25000 },
-    { id: 'digital', label: 'Service digital (pas de livraison)', flag: '💻', fee: 0 },
-] as const
+const COUNTRY_TO_ZONE: Record<string, string> = {
+    'Bénin': 'benin',
+    'Nigeria': 'afrique-ouest', 'Togo': 'afrique-ouest', 'Ghana': 'afrique-ouest',
+    "Côte d'Ivoire": 'afrique-ouest', 'Sénégal': 'afrique-ouest', 'Mali': 'afrique-ouest',
+    'Burkina Faso': 'afrique-ouest', 'Niger': 'afrique-ouest', 'Guinée': 'afrique-ouest',
+    'Sierra Leone': 'afrique-ouest', 'Liberia': 'afrique-ouest', 'Gambie': 'afrique-ouest',
+    'Cap-Vert': 'afrique-ouest', 'Guinée-Bissau': 'afrique-ouest', 'Mauritanie': 'afrique-ouest',
+    'France': 'europe', 'Belgique': 'europe', 'Suisse': 'europe', 'Allemagne': 'europe',
+    'Italie': 'europe', 'Espagne': 'europe', 'Portugal': 'europe', 'Pays-Bas': 'europe',
+    'Royaume-Uni': 'europe', 'Suède': 'europe', 'Norvège': 'europe', 'Danemark': 'europe',
+    'Finlande': 'europe', 'Autriche': 'europe', 'Pologne': 'europe', 'Irlande': 'europe',
+    'Grèce': 'europe', 'Roumanie': 'europe', 'Hongrie': 'europe', 'Tchéquie': 'europe',
+    'Slovaquie': 'europe', 'Croatie': 'europe', 'Bulgarie': 'europe', 'Slovénie': 'europe',
+    'Luxembourg': 'europe', 'Malte': 'europe', 'Chypre': 'europe',
+    'Turquie': 'europe', 'Russie': 'europe', 'Ukraine': 'europe',
+}
 
-type ShippingZoneId = typeof SHIPPING_ZONES[number]['id']
+const ZONE_FEES: Record<string, number> = {
+    benin: 0,
+    'afrique-ouest': 5000,
+    europe: 15000,
+    international: 25000,
+    digital: 0,
+}
+
+const ZONE_LABELS: Record<string, string> = {
+    benin: '🇧🇯 Bénin — Livraison gratuite',
+    'afrique-ouest': "🌍 Afrique de l'Ouest — +5 000 FCFA",
+    europe: '🇪🇺 Europe — +15 000 FCFA',
+    international: '🌐 International — +25 000 FCFA',
+    digital: '💻 Service digital — Gratuit',
+}
+
+const ALL_COUNTRIES = [
+    'Algérie', 'Angola', 'Bénin', 'Botswana', 'Burkina Faso', 'Burundi', 'Cameroun',
+    'Cap-Vert', 'Centrafrique', 'Comores', 'Congo', "Côte d'Ivoire", 'Djibouti',
+    'Égypte', 'Érythrée', 'Éthiopie', 'Eswatini', 'Gabon', 'Gambie', 'Ghana',
+    'Guinée', 'Guinée équatoriale', 'Guinée-Bissau', 'Kenya', 'Lesotho', 'Liberia',
+    'Libye', 'Madagascar', 'Malawi', 'Mali', 'Maroc', 'Maurice', 'Mauritanie',
+    'Mozambique', 'Namibie', 'Niger', 'Nigeria', 'Ouganda', 'RDC', 'Rwanda',
+    'Sao Tomé-et-Príncipe', 'Sénégal', 'Seychelles', 'Sierra Leone', 'Somalie',
+    'Soudan', 'Soudan du Sud', 'Tanzanie', 'Tchad', 'Togo', 'Tunisie', 'Zambie',
+    'Zimbabwe', 'Afrique du Sud',
+    'Allemagne', 'Andorre', 'Autriche', 'Belgique', 'Biélorussie', 'Bosnie',
+    'Bulgarie', 'Chypre', 'Croatie', 'Danemark', 'Espagne', 'Estonie', 'Finlande',
+    'France', 'Grèce', 'Hongrie', 'Irlande', 'Islande', 'Italie', 'Kosovo',
+    'Lettonie', 'Liechtenstein', 'Lituanie', 'Luxembourg', 'Malte', 'Moldavie',
+    'Monaco', 'Monténégro', 'Macédoine', 'Norvège', 'Pays-Bas', 'Pologne',
+    'Portugal', 'Roumanie', 'Royaume-Uni', 'Russie', 'Saint-Marin', 'Serbie',
+    'Slovaquie', 'Slovénie', 'Suède', 'Suisse', 'Tchéquie', 'Turquie', 'Ukraine', 'Vatican',
+    'Antigua-et-Barbuda', 'Argentine', 'Bahamas', 'Barbade', 'Belize', 'Bolivie',
+    'Brésil', 'Canada', 'Chili', 'Colombie', 'Costa Rica', 'Cuba', 'Dominique',
+    'Équateur', 'États-Unis', 'Grenade', 'Guatemala', 'Guyana', 'Haïti',
+    'Honduras', 'Jamaïque', 'Mexique', 'Nicaragua', 'Panama', 'Paraguay', 'Pérou',
+    'République Dominicaine', 'Saint-Kitts-et-Nevis', 'Sainte-Lucie',
+    'Saint-Vincent-et-les-Grenadines', 'Salvador', 'Suriname', 'Trinité-et-Tobago',
+    'Uruguay', 'Venezuela',
+    'Afghanistan', 'Arabie Saoudite', 'Arménie', 'Azerbaïdjan', 'Bahreïn',
+    'Bangladesh', 'Bhoutan', 'Cambodge', 'Chine', 'Corée du Nord', 'Corée du Sud',
+    'Émirats Arabes Unis', 'Géorgie', 'Inde', 'Indonésie', 'Irak', 'Iran',
+    'Israël', 'Japon', 'Jordanie', 'Kazakhstan', 'Kirghizistan', 'Koweït', 'Laos',
+    'Liban', 'Malaisie', 'Maldives', 'Mongolie', 'Myanmar', 'Népal', 'Oman',
+    'Ouzbékistan', 'Pakistan', 'Palestine', 'Philippines', 'Qatar', 'Singapour',
+    'Sri Lanka', 'Syrie', 'Tadjikistan', 'Taïwan', 'Thaïlande', 'Timor oriental',
+    'Turkménistan', 'Vietnam', 'Yémen',
+    'Australie', 'Fidji', 'Kiribati', 'Marshall', 'Micronésie', 'Nauru',
+    'Nouvelle-Zélande', 'Palaos', 'Papouasie-Nouvelle-Guinée', 'Samoa', 'Salomon',
+    'Tonga', 'Tuvalu', 'Vanuatu',
+].sort()
 
 export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
     const { items, totalAmount, clearCart } = useCart()
@@ -107,8 +167,10 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
     const currency = 'XOF' // Devise fixe — toutes les passerelles travaillent en XOF
 
     // Shipping
-    const [shippingZone, setShippingZone] = useState<ShippingZoneId>('digital')
-    const shippingFee = SHIPPING_ZONES.find(z => z.id === shippingZone)?.fee || 0
+    const [shippingCountry, setShippingCountry] = useState('')
+    const [shippingZone, setShippingZone] = useState('digital')
+    const [shippingAddress, setShippingAddress] = useState('')
+    const shippingFee = ZONE_FEES[shippingZone] ?? 0
 
     const finalTotal = Math.max(0, totalAmount - (appliedCoupon?.discount_amount || 0) + shippingFee)
 
@@ -142,7 +204,9 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
             setCouponError('')
             setStripeClientSecret(null)
             setStripeReady(false)
+            setShippingCountry('')
             setShippingZone('digital')
+            setShippingAddress('')
             cardMountedRef.current = false
             paypalRenderedRef.current = false
             paypalOrderIdRef.current = null
@@ -315,6 +379,8 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
     const validateInfo = () => {
         if (!customerName.trim()) return 'Veuillez saisir votre nom'
         if (!customerPhone.trim()) return 'Veuillez saisir votre numéro de téléphone'
+        if (!shippingCountry) return 'Veuillez sélectionner votre pays de livraison'
+        if (shippingZone !== 'digital' && !shippingAddress.trim()) return 'Veuillez saisir votre adresse de livraison'
         return null
     }
 
@@ -348,6 +414,8 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                     payment_method: paymentMethod,
                     cart_items: orderItems,
                     coupon_id: appliedCoupon?.id || null,
+                    shipping_country: shippingCountry,
+                    shipping_address: shippingZone !== 'digital' ? shippingAddress : null,
                     shipping_zone: shippingZone,
                     shipping_fee: shippingFee,
                     amount: finalTotal,
@@ -364,7 +432,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
             setStep('error')
             return null
         }
-    }, [items, currency, customerName, customerEmail, customerPhone, appliedCoupon, finalTotal])
+    }, [items, currency, customerName, customerEmail, customerPhone, appliedCoupon, shippingCountry, shippingAddress, shippingZone, shippingFee, finalTotal])
 
     const cancelOrder = useCallback(async (oid: string) => {
         try {
@@ -525,7 +593,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
         if (!publicKey) { cancelOrder(oid); setErrorMessage("Stripe n'est pas configuré."); setStep('error'); return }
 
         try {
-            const res = await fetch('/api/checkout/stripe/intent', {
+            const res = await fetch('/api/checkout/stripe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ order_id: oid }),
@@ -706,7 +774,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                         {shippingFee > 0 && (
                             <div className="flex justify-between items-center mt-2 text-xs text-gray-400">
                                 <span className="flex items-center gap-1 font-bold">
-                                    <MapPin size={12} /> Livraison ({SHIPPING_ZONES.find(z => z.id === shippingZone)?.label})
+                                    <MapPin size={12} /> Livraison ({shippingCountry || shippingZone})
                                 </span>
                                 <span className="font-bold text-white">+<Price amount={shippingFee} currency={currency as any} /></span>
                             </div>
@@ -747,34 +815,51 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                     </div>
                                 </div>
 
-                                {/* Shipping Zone Selector */}
+                                {/* Livraison — pays + adresse */}
                                 <div>
                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block flex items-center gap-1">
-                                        <MapPin size={12} /> Zone de livraison
+                                        <MapPin size={12} /> Pays de livraison *
                                     </label>
-                                    <div className="grid grid-cols-1 gap-2">
-                                        {SHIPPING_ZONES.map(zone => (
-                                            <button
-                                                key={zone.id}
-                                                type="button"
-                                                onClick={() => setShippingZone(zone.id)}
-                                                className={`flex items-center justify-between px-4 py-3 rounded-xl border text-left transition-all text-xs ${shippingZone === zone.id
-                                                    ? 'bg-[#FCD116]/10 border-[#FCD116]/30 text-white'
-                                                    : 'bg-white/[0.02] border-white/5 text-gray-400 hover:border-white/10 hover:text-white'
-                                                    }`}
-                                            >
-                                                <span className="flex items-center gap-2">
-                                                    <span>{zone.flag}</span>
-                                                    <span className="font-bold">{zone.label}</span>
-                                                </span>
-                                                <span className={`font-black ${zone.fee === 0 ? 'text-[#008751]' : 'text-white'
-                                                    }`}>
-                                                    {zone.fee === 0 ? 'Gratuit' : <span className="flex items-center gap-1">+<Price amount={zone.fee} currency={currency as any} /></span>}
-                                                </span>
-                                            </button>
-                                        ))}
-                                    </div>
+                                    <select
+                                        title="Pays de livraison"
+                                        value={shippingCountry}
+                                        onChange={e => {
+                                            const country = e.target.value
+                                            setShippingCountry(country)
+                                            const zone = country === 'digital' ? 'digital' : (COUNTRY_TO_ZONE[country] || 'international')
+                                            setShippingZone(zone)
+                                        }}
+                                        className="w-full bg-white/5 border border-white/5 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 transition-colors"
+                                    >
+                                        <option value="">Sélectionnez votre pays</option>
+                                        <option value="digital">Service digital (pas de livraison physique)</option>
+                                        <optgroup label="──────────">
+                                            {ALL_COUNTRIES.map(c => (
+                                                <option key={c} value={c} className="bg-[#0a0f18]">{c}</option>
+                                            ))}
+                                        </optgroup>
+                                    </select>
+                                    {shippingCountry && (
+                                        <p className={`text-[10px] mt-1 font-bold ${shippingFee === 0 ? 'text-[#008751]' : 'text-[#FCD116]'}`}>
+                                            {ZONE_LABELS[shippingZone]}
+                                        </p>
+                                    )}
                                 </div>
+                                {shippingCountry && shippingZone !== 'digital' && (
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Adresse de livraison *</label>
+                                        <div className="relative">
+                                            <MapPin size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" />
+                                            <input
+                                                type="text"
+                                                value={shippingAddress}
+                                                onChange={e => setShippingAddress(e.target.value)}
+                                                placeholder="Quartier, rue, numéro..."
+                                                className="w-full bg-white/5 border border-white/5 rounded-xl py-3 pl-11 pr-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 transition-colors"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
 
                                 {!appliedCoupon && (
                                     <div className="pt-2">

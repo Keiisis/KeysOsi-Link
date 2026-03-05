@@ -27,7 +27,7 @@ export default function PricingCalculator3D({ options, baseColor, serviceName }:
         const message = encodeURIComponent(
             `Bonjour Retour Gagnant 🇧🇯,\n\nJe suis intéressé par le service *${serviceName}*.\nOption sélectionnée : *${selectedOption.label}* (${selectedOption.price}).\n\nJ'aimerais discuter des détails et négocier cette offre.`
         );
-        window.open(`https://wa.me/22901908070?text=${message}`, '_blank');
+        window.open(`https://wa.me/2290160322121?text=${message}`, '_blank');
     };
 
     return (

@@ -38,12 +38,23 @@ export async function POST(request: Request) {
         // ─── KKIAPAY ─────────────────────────────────────────────────────────
         if (method === 'kkiapay') {
             try {
-                const verifyRes = await fetch('https://api.kkiapay.me/api/v1/transactions/status', {
+                // Lire le mode sandbox pour utiliser le bon endpoint
+                const { data: kkSettings } = await supabase
+                    .from('settings')
+                    .select('key, value')
+                    .eq('key', 'kkiapay_sandbox')
+                const isSandbox = kkSettings?.find(s => s.key === 'kkiapay_sandbox')?.value === 'true'
+                const kkiapayBase = isSandbox
+                    ? 'https://api-sandbox.kkiapay.me'
+                    : 'https://api.kkiapay.me'
+
+                const verifyRes = await fetch(`${kkiapayBase}/api/v1/transactions/status`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ transactionId: transaction_id }),
                 })
                 const verifyData = await verifyRes.json()
+                // verifyData.amount = montant sans frais Kkiapay → doit être >= montant commande (XOF)
                 if (verifyData.status === 'SUCCESS' && verifyData.amount >= existingOrder.amount) {
                     isVerified = true
                 }

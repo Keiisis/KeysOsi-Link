@@ -28,6 +28,8 @@ export async function POST(request: Request) {
             payment_method,
             cart_items,
             coupon_id,
+            shipping_country,
+            shipping_address,
             shipping_zone,
             shipping_fee,
         } = body
@@ -89,6 +91,8 @@ export async function POST(request: Request) {
                 payment_status: 'pending',
                 cart_items: cart_items || [],
                 coupon_id: coupon_id || null,
+                shipping_country: shipping_country || null,
+                shipping_address: shipping_address || null,
                 shipping_zone: shipping_zone || null,
                 shipping_fee: shipping_fee || 0,
             })

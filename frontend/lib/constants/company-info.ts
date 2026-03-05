@@ -2,10 +2,13 @@ import { supabase } from '@/lib/supabase'
 
 // Default fallback values
 const DEFAULT_COMPANY_INFO = {
-    email: 'retourgagnant2bj@gmail.com',
+    email: 'contact@retourgagnantbenin.bj',
     phoneDisplay: '+229 01 60 32 21 21',
     phoneDial: '+2290160322121',
-    whatsappLink: 'https://wa.me/22960322121',
+    phone2Display: '+229 01 94 35 50 50',
+    phone2Dial: '+2290194355050',
+    whatsappLink: 'https://wa.me/2290160322121',
+    whatsapp2Link: 'https://wa.me/2290194355050',
     address: 'Haie-Vive Cocotiers, Carré n°1158',
     addressShort: 'Haie-Vive, Cotonou',
     hours: 'Lun - Ven : 8h - 18h',

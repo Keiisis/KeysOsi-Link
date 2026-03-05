@@ -3,9 +3,10 @@
 import { useOne, useUpdate, useNavigation } from '@refinedev/core'
 import { useParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { ArrowLeft, Save, ShoppingBag, Plus, X, Loader2 } from 'lucide-react'
+import { ArrowLeft, Save, ShoppingBag, Plus, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ImageUpload } from '@/components/admin/ImageUpload'
 
 const categories = ['Mode', 'Artisanat', 'Alimentaire', 'Culturel', 'Accessoires', 'Autre']
 
@@ -37,7 +38,6 @@ export default function EditProductPage() {
     const [category, setCategory] = useState('Artisanat')
     const [stock, setStock] = useState('0')
     const [images, setImages] = useState<string[]>([])
-    const [newImageUrl, setNewImageUrl] = useState('')
     const [isActive, setIsActive] = useState(true)
 
     useEffect(() => {
@@ -53,17 +53,6 @@ export default function EditProductPage() {
             setIsActive(typeof product.is_active === 'boolean' ? product.is_active : true)
         }
     }, [product])
-
-    const addImage = () => {
-        if (newImageUrl.trim()) {
-            setImages(prev => [...prev, newImageUrl.trim()])
-            setNewImageUrl('')
-        }
-    }
-
-    const removeImage = (index: number) => {
-        setImages(prev => prev.filter((_, i) => i !== index))
-    }
 
     const handleSubmit = () => {
         if (!title.trim() || !price) return
@@ -170,23 +159,33 @@ export default function EditProductPage() {
 
                     <Card className="bg-[#0a0f18] border-white/5 rounded-[2rem] overflow-hidden">
                         <CardHeader className="p-8 border-b border-white/5">
-                            <CardTitle className="text-lg font-black text-white">Images</CardTitle>
+                            <CardTitle className="text-lg font-black text-white">Images du produit</CardTitle>
                         </CardHeader>
                         <CardContent className="p-8 space-y-4">
-                            <div className="flex gap-3">
-                                <input type="text" value={newImageUrl} onChange={e => setNewImageUrl(e.target.value)} placeholder="URL de l'image" title="URL de l'image" className="flex-1 bg-white/5 border border-white/5 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30" onKeyDown={e => e.key === 'Enter' && addImage()} />
-                                <Button onClick={addImage} title="Ajouter une image" className="h-12 px-5 rounded-xl bg-white/10 text-white hover:bg-white/20"><Plus size={18} /></Button>
-                            </div>
-                            {images.length > 0 && (
-                                <div className="flex flex-wrap gap-3">
-                                    {images.map((img, i) => (
-                                        <div key={i} className="relative w-24 h-24 rounded-xl overflow-hidden border border-white/10">
-                                            <img src={img} alt="" className="w-full h-full object-cover" />
-                                            <button onClick={() => removeImage(i)} title="Supprimer l'image" className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white hover:bg-red-500 transition-colors"><X size={12} /></button>
-                                        </div>
-                                    ))}
+                            {images.map((img, i) => (
+                                <div key={i} className="relative">
+                                    <ImageUpload
+                                        value={img}
+                                        onChange={url => {
+                                            const next = [...images]
+                                            if (url) { next[i] = url } else { next.splice(i, 1) }
+                                            setImages(next)
+                                        }}
+                                        bucket="products"
+                                        folder="images"
+                                    />
                                 </div>
-                            )}
+                            ))}
+                            <Button
+                                type="button"
+                                onClick={() => setImages(prev => [...prev, ''])}
+                                className="w-full h-12 rounded-xl bg-white/5 border border-dashed border-white/10 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all gap-2"
+                            >
+                                <Plus size={16} /> Ajouter une image
+                            </Button>
+                            <p className="text-[10px] text-gray-600">
+                                Glissez une image ou collez une URL directe. Formats : JPG, PNG, WebP — max 5 Mo.
+                            </p>
                         </CardContent>
                     </Card>
                 </div>

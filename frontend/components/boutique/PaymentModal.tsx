@@ -69,6 +69,82 @@ interface PaymentModalProps {
 type PaymentProvider = 'kkiapay' | 'fedapay' | 'zeyow' | 'stripe' | 'paypal'
 type Step = 'info' | 'payment' | 'stripe-form' | 'paypal-form' | 'processing' | 'success' | 'error'
 
+// ─── Livraison — pays du monde + zones ─────────────────────────────────────────
+const COUNTRY_TO_ZONE: Record<string, string> = {
+    'Bénin': 'benin',
+    // CEDEAO / Afrique de l'Ouest
+    'Nigeria': 'afrique-ouest', 'Togo': 'afrique-ouest', 'Ghana': 'afrique-ouest',
+    "Côte d'Ivoire": 'afrique-ouest', 'Sénégal': 'afrique-ouest', 'Mali': 'afrique-ouest',
+    'Burkina Faso': 'afrique-ouest', 'Niger': 'afrique-ouest', 'Guinée': 'afrique-ouest',
+    'Sierra Leone': 'afrique-ouest', 'Liberia': 'afrique-ouest', 'Gambie': 'afrique-ouest',
+    'Cap-Vert': 'afrique-ouest', 'Guinée-Bissau': 'afrique-ouest', 'Mauritanie': 'afrique-ouest',
+    // Europe
+    'France': 'europe', 'Belgique': 'europe', 'Suisse': 'europe', 'Allemagne': 'europe',
+    'Italie': 'europe', 'Espagne': 'europe', 'Portugal': 'europe', 'Pays-Bas': 'europe',
+    'Royaume-Uni': 'europe', 'Suède': 'europe', 'Norvège': 'europe', 'Danemark': 'europe',
+    'Finlande': 'europe', 'Autriche': 'europe', 'Pologne': 'europe', 'Irlande': 'europe',
+    'Grèce': 'europe', 'Roumanie': 'europe', 'Hongrie': 'europe', 'Tchéquie': 'europe',
+    'Slovaquie': 'europe', 'Croatie': 'europe', 'Bulgarie': 'europe', 'Slovénie': 'europe',
+    'Luxembourg': 'europe', 'Malte': 'europe', 'Chypre': 'europe', 'Estonie': 'europe',
+    'Lettonie': 'europe', 'Lituanie': 'europe', 'Turquie': 'europe', 'Russie': 'europe',
+    'Ukraine': 'europe', 'Biélorussie': 'europe', 'Serbie': 'europe', 'Bosnie': 'europe',
+    'Monténégro': 'europe', 'Macédoine': 'europe', 'Kosovo': 'europe', 'Albanie': 'europe',
+    'Moldavie': 'europe', 'Andorre': 'europe', 'Monaco': 'europe', 'Islande': 'europe',
+    'Liechtenstein': 'europe', 'Saint-Marin': 'europe', 'Vatican': 'europe',
+}
+
+const ZONE_FEES: Record<string, number> = {
+    'benin': 0,
+    'afrique-ouest': 5000,
+    'europe': 15000,
+    'international': 25000,
+    'digital': 0,
+}
+
+const ZONE_LABELS: Record<string, string> = {
+    'benin': 'Bénin — Livraison gratuite',
+    'afrique-ouest': 'Afrique de l\'Ouest — 5 000 FCFA',
+    'europe': 'Europe — 15 000 FCFA',
+    'international': 'International — 25 000 FCFA',
+    'digital': 'Service digital (aucune livraison)',
+}
+
+const ALL_COUNTRIES = [
+    'Afrique du Sud', 'Algérie', 'Angola', 'Antigua-et-Barbuda', 'Arabie Saoudite',
+    'Argentine', 'Arménie', 'Australie', 'Autriche', 'Azerbaïdjan',
+    'Bahamas', 'Bahreïn', 'Bangladesh', 'Barbade', 'Belgique', 'Belize', 'Bénin',
+    'Bhoutan', 'Biélorussie', 'Bolivie', 'Bosnie', 'Botswana', 'Brésil', 'Bulgarie',
+    'Burkina Faso', 'Burundi', 'Cambodge', 'Cameroun', 'Canada', 'Cap-Vert',
+    'Centrafrique', 'Chili', 'Chine', 'Chypre', 'Colombie', 'Comores', 'Congo',
+    'Corée du Nord', 'Corée du Sud', 'Costa Rica', 'Croatie', 'Cuba',
+    "Côte d'Ivoire", 'Danemark', 'Djibouti', 'Dominique',
+    'Égypte', 'Émirats Arabes Unis', 'Équateur', 'Érythrée', 'Espagne', 'Estonie',
+    'Eswatini', 'États-Unis', 'Éthiopie', 'Fidji', 'Finlande', 'France', 'Gabon',
+    'Gambie', 'Géorgie', 'Ghana', 'Grèce', 'Grenade', 'Guatemala', 'Guinée',
+    'Guinée équatoriale', 'Guinée-Bissau', 'Guyana', 'Haïti', 'Honduras',
+    'Hongrie', 'Inde', 'Indonésie', 'Irak', 'Iran', 'Irlande', 'Islande',
+    'Israël', 'Italie', 'Jamaïque', 'Japon', 'Jordanie', 'Kazakhstan',
+    'Kenya', 'Kirghizistan', 'Kosovo', 'Koweït', 'Laos', 'Lettonie', 'Liban',
+    'Liberia', 'Libye', 'Liechtenstein', 'Lituanie', 'Luxembourg', 'Macédoine',
+    'Madagascar', 'Malaisie', 'Malawi', 'Maldives', 'Mali', 'Malte', 'Maroc',
+    'Marshall', 'Maurice', 'Mauritanie', 'Mexique', 'Micronésie', 'Moldavie',
+    'Monaco', 'Mongolie', 'Monténégro', 'Mozambique', 'Myanmar', 'Namibie',
+    'Nauru', 'Népal', 'Nicaragua', 'Niger', 'Nigeria', 'Norvège',
+    'Nouvelle-Zélande', 'Oman', 'Ouganda', 'Ouzbékistan', 'Pakistan', 'Palaos',
+    'Palestine', 'Panama', 'Papouasie-Nouvelle-Guinée', 'Paraguay', 'Pays-Bas',
+    'Pérou', 'Philippines', 'Pologne', 'Portugal', 'Qatar', 'RDC',
+    'République Dominicaine', 'Roumanie', 'Royaume-Uni', 'Russie', 'Rwanda',
+    'Saint-Kitts-et-Nevis', 'Saint-Marin', 'Sainte-Lucie',
+    'Saint-Vincent-et-les-Grenadines', 'Salvador', 'Samoa', 'Sao Tomé-et-Príncipe',
+    'Sénégal', 'Serbie', 'Seychelles', 'Sierra Leone', 'Singapour', 'Slovaquie',
+    'Slovénie', 'Somalie', 'Soudan', 'Soudan du Sud', 'Sri Lanka', 'Suède',
+    'Suisse', 'Suriname', 'Syrie', 'Îles Salomon', 'Tadjikistan', 'Taïwan',
+    'Tanzanie', 'Tchad', 'Tchéquie', 'Thaïlande', 'Timor oriental', 'Togo',
+    'Tonga', 'Trinité-et-Tobago', 'Tunisie', 'Turkménistan', 'Turquie', 'Tuvalu',
+    'Ukraine', 'Uruguay', 'Vanuatu', 'Vatican', 'Venezuela', 'Vietnam',
+    'Yémen', 'Zambie', 'Zimbabwe',
+]
+
 export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModalProps) {
     const [step, setStep] = useState<Step>('info')
     const [provider, setProvider] = useState<PaymentProvider | null>(null)
@@ -78,6 +154,12 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
     const [errorMessage, setErrorMessage] = useState('')
     const [orderId, setOrderId] = useState<string | null>(null)
     const [settings, setSettings] = useState<Record<string, string>>({})
+
+    // Livraison
+    const [shippingCountry, setShippingCountry] = useState('')
+    const [shippingZone, setShippingZone] = useState('international')
+    const [shippingAddress, setShippingAddress] = useState('')
+    const [shippingFee, setShippingFee] = useState(0)
 
     // Stripe
     const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null)
@@ -90,9 +172,10 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
     const paypalRenderedRef = useRef(false)
     const paypalOrderIdRef = useRef<string | null>(null)
 
-    const totalAmount = (product.sale_price && product.sale_price < product.price)
+    const baseAmount = (product.sale_price && product.sale_price < product.price)
         ? product.sale_price * quantity
         : product.price * quantity
+    const totalAmount = baseAmount + shippingFee
 
     // Charger les settings de paiement
     useEffect(() => {
@@ -121,6 +204,10 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
             setCustomerPhone('')
             setErrorMessage('')
             setOrderId(null)
+            setShippingCountry('')
+            setShippingZone('international')
+            setShippingAddress('')
+            setShippingFee(0)
             setStripeClientSecret(null)
             setStripeReady(false)
             cardMountedRef.current = false
@@ -301,6 +388,8 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
     const validateInfo = () => {
         if (!customerName.trim()) return 'Veuillez saisir votre nom'
         if (!customerPhone.trim()) return 'Veuillez saisir votre numéro de téléphone'
+        if (!shippingCountry) return 'Veuillez sélectionner votre pays de livraison'
+        if (shippingZone !== 'digital' && !shippingAddress.trim()) return 'Veuillez saisir votre adresse de livraison'
         return null
     }
 
@@ -321,11 +410,15 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                     product_title: product.title,
                     quantity,
                     amount: totalAmount,
-                    currency: 'XOF', // Devise fixe — FedaPay et les autres passerelles travaillent en XOF
+                    currency: 'XOF',
                     customer_name: customerName,
                     customer_email: customerEmail,
                     customer_phone: customerPhone,
                     payment_method: paymentMethod,
+                    shipping_country: shippingCountry || null,
+                    shipping_address: shippingZone !== 'digital' ? (shippingAddress || null) : null,
+                    shipping_zone: shippingZone || null,
+                    shipping_fee: shippingFee,
                 }),
             })
             const data = await res.json()
@@ -339,7 +432,7 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
             setStep('error')
             return null
         }
-    }, [product, quantity, totalAmount, customerName, customerEmail, customerPhone])
+    }, [product, quantity, totalAmount, customerName, customerEmail, customerPhone, shippingCountry, shippingZone, shippingAddress, shippingFee])
 
     const cancelOrder = useCallback(async (oid: string) => {
         try {
@@ -539,7 +632,7 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
 
         // Obtenir le client_secret pour le PaymentIntent
         try {
-            const res = await fetch('/api/checkout/stripe/intent', {
+            const res = await fetch('/api/checkout/stripe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ order_id: oid }),
@@ -687,7 +780,7 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                                 <p className="text-[10px] text-gray-500 uppercase tracking-widest">Quantité: {quantity}</p>
                             </div>
                             <p className="text-xl font-black text-[#FCD116] font-heading">
-                                <Price amount={totalAmount} currency={product.currency as any} />
+                                <Price amount={totalAmount} currency="XOF" />
                             </p>
                         </div>
                     </div>
@@ -737,6 +830,50 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                                         />
                                     </div>
                                 </div>
+
+                                {/* ─── Pays & adresse de livraison ─────── */}
+                                <div>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Pays de livraison *</label>
+                                    <select
+                                        title="Pays de livraison"
+                                        value={shippingCountry}
+                                        onChange={e => {
+                                            const country = e.target.value
+                                            setShippingCountry(country)
+                                            const zone = country === 'digital' ? 'digital' : (COUNTRY_TO_ZONE[country] || 'international')
+                                            setShippingZone(zone)
+                                            setShippingFee(ZONE_FEES[zone] ?? 0)
+                                        }}
+                                        className="w-full bg-white/5 border border-white/5 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 transition-colors appearance-none"
+                                    >
+                                        <option value="" className="bg-[#0a0f18]">Sélectionnez votre pays</option>
+                                        <option value="digital" className="bg-[#0a0f18]">Service digital (pas de livraison physique)</option>
+                                        <optgroup label="──────────" className="bg-[#0a0f18]">
+                                        {ALL_COUNTRIES.map(c => (
+                                            <option key={c} value={c} className="bg-[#0a0f18]">{c}</option>
+                                        ))}
+                                        </optgroup>
+                                    </select>
+                                    {shippingCountry && (
+                                        <p className={`text-[10px] mt-1 font-bold ${shippingFee === 0 ? 'text-[#008751]' : 'text-[#FCD116]'}`}>
+                                            {ZONE_LABELS[shippingZone]} {shippingFee > 0 ? `(+${shippingFee.toLocaleString('fr-FR')} FCFA)` : ''}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {shippingCountry && shippingCountry !== 'digital' && (
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Adresse de livraison *</label>
+                                        <input
+                                            type="text"
+                                            value={shippingAddress}
+                                            onChange={e => setShippingAddress(e.target.value)}
+                                            placeholder="Quartier, rue, numéro, ville..."
+                                            className="w-full bg-white/5 border border-white/5 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 transition-colors"
+                                        />
+                                    </div>
+                                )}
+
                                 {errorMessage && (
                                     <p className="text-xs text-[#E8112D] font-bold flex items-center gap-2">
                                         <AlertCircle size={14} /> {errorMessage}
@@ -837,7 +974,7 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                                     className="w-full h-14 rounded-xl bg-[#635BFF] text-white font-black text-sm hover:bg-[#635BFF]/80 transition-all disabled:opacity-50"
                                 >
                                     {stripeReady ? (
-                                        <span className="flex justify-center items-center gap-1">Payer <Price amount={totalAmount} currency={product.currency as any} /> <Lock size={14} className="ml-2" /></span>
+                                        <span className="flex justify-center items-center gap-1">Payer <Price amount={totalAmount} currency="XOF" /> <Lock size={14} className="ml-2" /></span>
                                     ) : (
                                         <><Loader2 size={16} className="animate-spin mr-2" /> Chargement...</>
                                     )}
@@ -873,7 +1010,7 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                                 </div>
 
                                 <p className="text-[10px] text-gray-600 text-center">
-                                    Montant: <span className="text-white font-bold"><Price amount={totalAmount} currency={product.currency as any} /></span>
+                                    Montant: <span className="text-white font-bold"><Price amount={totalAmount} currency="XOF" /></span>
                                 </p>
 
                                 <button
