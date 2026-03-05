@@ -52,12 +52,11 @@ export async function POST(request: Request) {
 
         // Construire le payload de la transaction
         // FedaPay API : structure PLATE (pas de wrapper "transaction")
-        // Tous les champs sont à la racine du body
+        // callback_url omis — vérification faite via DB (transaction_id stocké dans la commande)
         const payload: Record<string, unknown> = {
             amount: Math.round(amount),
             description: description || `Commande ${order_id}`,
             currency: { iso: 'XOF' },
-            callback_url: `${process.env.NEXT_PUBLIC_SITE_URL || ''}/api/webhooks/fedapay?order_id=${order_id}`,
         }
 
         // Ajouter les informations client si disponibles
