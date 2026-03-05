@@ -789,7 +789,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                 <div key={item.id} className="flex justify-between text-xs">
                                     <span className="text-gray-400 truncate flex-1">{item.title} x{item.quantity}</span>
                                     <span className="text-white font-bold ml-4">
-                                        <Price amount={((item.sale_price && item.sale_price < item.price) ? item.sale_price : item.price) * item.quantity} currency={currency as any} />
+                                        <Price amount={((item.sale_price && item.sale_price < item.price) ? item.sale_price : item.price) * item.quantity} currency="XOF" noConvert />
                                     </span>
                                 </div>
                             ))}
@@ -799,7 +799,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                 <span className="flex items-center gap-1 font-bold">
                                     <Tag size={12} /> Coupon ({appliedCoupon.code})
                                 </span>
-                                <span className="font-bold">-<Price amount={appliedCoupon.discount_amount} currency={currency as any} /></span>
+                                <span className="font-bold">-<Price amount={appliedCoupon.discount_amount} currency="XOF" noConvert /></span>
                             </div>
                         )}
                         {shippingFee > 0 && (
@@ -807,13 +807,13 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                 <span className="flex items-center gap-1 font-bold">
                                     <MapPin size={12} /> Livraison ({shippingCountry || shippingZone})
                                 </span>
-                                <span className="font-bold text-white">+<Price amount={shippingFee} currency={currency as any} /></span>
+                                <span className="font-bold text-white">+<Price amount={shippingFee} currency="XOF" noConvert /></span>
                             </div>
                         )}
                         <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/5">
                             <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Total</span>
                             <span className="text-xl font-black text-[#FCD116] font-heading">
-                                <Price amount={finalTotal} currency={currency as any} />
+                                <Price amount={finalTotal} currency="XOF" noConvert />
                             </span>
                         </div>
                     </div>
@@ -1011,7 +1011,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                     className="w-full h-14 rounded-xl bg-[#635BFF] text-white font-black text-sm hover:bg-[#635BFF]/80 transition-all disabled:opacity-50"
                                 >
                                     {stripeReady ? (
-                                        <span className="flex items-center gap-1 justify-center">Payer <Price amount={finalTotal} currency={currency as any} /> <Lock size={14} className="ml-2" /></span>
+                                        <span className="flex items-center gap-1 justify-center">Payer <Price amount={finalTotal} currency="XOF" noConvert /> <Lock size={14} className="ml-2" /></span>
                                     ) : (
                                         <><Loader2 size={16} className="animate-spin mr-2" /> Chargement...</>
                                     )}
@@ -1044,7 +1044,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                     </div>
                                 </div>
                                 <p className="text-[10px] text-gray-600 text-center">
-                                    Montant: <span className="text-white font-bold"><Price amount={finalTotal} currency={currency as any} /></span>
+                                    Montant: <span className="text-white font-bold"><Price amount={finalTotal} currency="XOF" noConvert /></span>
                                 </p>
                                 <button
                                     type="button"

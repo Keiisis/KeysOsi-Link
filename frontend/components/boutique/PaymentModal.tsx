@@ -804,7 +804,7 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                                 <p className="text-[10px] text-gray-500 uppercase tracking-widest">Quantité: {quantity}</p>
                             </div>
                             <p className="text-xl font-black text-[#FCD116] font-heading">
-                                <Price amount={totalAmount} currency="XOF" />
+                                <Price amount={totalAmount} currency="XOF" noConvert />
                             </p>
                         </div>
                     </div>
@@ -998,7 +998,7 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                                     className="w-full h-14 rounded-xl bg-[#635BFF] text-white font-black text-sm hover:bg-[#635BFF]/80 transition-all disabled:opacity-50"
                                 >
                                     {stripeReady ? (
-                                        <span className="flex justify-center items-center gap-1">Payer <Price amount={totalAmount} currency="XOF" /> <Lock size={14} className="ml-2" /></span>
+                                        <span className="flex justify-center items-center gap-1">Payer <Price amount={totalAmount} currency="XOF" noConvert /> <Lock size={14} className="ml-2" /></span>
                                     ) : (
                                         <><Loader2 size={16} className="animate-spin mr-2" /> Chargement...</>
                                     )}
@@ -1034,7 +1034,7 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                                 </div>
 
                                 <p className="text-[10px] text-gray-600 text-center">
-                                    Montant: <span className="text-white font-bold"><Price amount={totalAmount} currency="XOF" /></span>
+                                    Montant: <span className="text-white font-bold"><Price amount={totalAmount} currency="XOF" noConvert /></span>
                                 </p>
 
                                 <button

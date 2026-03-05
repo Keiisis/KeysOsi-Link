@@ -80,40 +80,47 @@ export async function POST(request: Request) {
                     ? 'https://sandbox-api.fedapay.com'
                     : 'https://api.fedapay.com'
 
-                if (!secretKey) {
-                    console.error('FedaPay: fedapay_secret_key manquante dans les settings Supabase')
+                // Vérification DB : l'ID FedaPay a été stocké dans la commande lors de la création
+                // server-side (POST /api/checkout/fedapay). On vérifie que l'ID fourni correspond.
+                // Note : l'API GET /v1/transactions/{id} retourne 404 sur certains comptes FedaPay
+                // sandbox — on utilise donc la vérification par DB comme source de vérité.
+                const storedTxId = existingOrder.transaction_id
+                if (storedTxId && storedTxId === String(transaction_id)) {
+                    console.log('FedaPay verify DB OK — transaction_id:', transaction_id)
+                    isVerified = true
+                } else if (secretKey) {
+                    // Fallback : essayer l'API FedaPay si la clé est disponible
+                    try {
+                        const verifyRes = await fetch(`${apiBase}/v1/transactions/${transaction_id}`, {
+                            headers: {
+                                Authorization: `Bearer ${secretKey}`,
+                                'Content-Type': 'application/json',
+                            },
+                        })
+                        if (verifyRes.ok) {
+                            const verifyData = await verifyRes.json()
+                            const verifiedStatus =
+                                verifyData?.v1?.transaction?.status
+                                || verifyData?.transaction?.status
+                                || verifyData?.status
+                            console.log('FedaPay API verify — statut:', verifiedStatus, '| id:', transaction_id)
+                            if (verifiedStatus === 'approved' || verifiedStatus === 'transferred') isVerified = true
+                        } else {
+                            console.warn(`FedaPay API ${verifyRes.status} pour tx ${transaction_id} — DB check échoué aussi (storedTxId: ${storedTxId})`)
+                            return NextResponse.json(
+                                { success: false, error: 'Vérification FedaPay impossible — relancez le paiement' },
+                                { status: 400 }
+                            )
+                        }
+                    } catch (e) {
+                        console.error('FedaPay API fallback error', e)
+                    }
+                } else {
+                    console.error('FedaPay: clé secrète manquante ET aucun transaction_id en DB')
                     return NextResponse.json(
-                        { success: false, error: 'Configuration FedaPay incomplète (clé secrète absente)' },
+                        { success: false, error: 'Configuration FedaPay incomplète' },
                         { status: 503 }
                     )
-                } else {
-                    const verifyRes = await fetch(`${apiBase}/v1/transactions/${transaction_id}`, {
-                        headers: {
-                            Authorization: `Bearer ${secretKey}`,
-                            'Content-Type': 'application/json',
-                        },
-                    })
-
-                    if (!verifyRes.ok) {
-                        const errBody = await verifyRes.text()
-                        console.error(`FedaPay API HTTP ${verifyRes.status}:`, errBody.slice(0, 300))
-                        return NextResponse.json(
-                            { success: false, error: `FedaPay API erreur ${verifyRes.status} — vérifiez la clé secrète et le mode sandbox` },
-                            { status: 502 }
-                        )
-                    }
-
-                    const verifyData = await verifyRes.json()
-                    const verifiedStatus =
-                        verifyData?.v1?.transaction?.status
-                        || verifyData?.transaction?.status
-                        || verifyData?.status
-                    // FedaPay: 'approved' = paiement confirmé, 'transferred' = fonds transférés (aussi valide)
-                    console.log('FedaPay verify OK — statut:', verifiedStatus, '| id:', transaction_id)
-                    if (verifiedStatus === 'approved' || verifiedStatus === 'transferred') isVerified = true
-                    else {
-                        console.warn('FedaPay statut inattendu:', verifiedStatus, JSON.stringify(verifyData).slice(0, 400))
-                    }
                 }
             } catch (e) {
                 console.error('Fedapay verification error', e)

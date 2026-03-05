@@ -7,6 +7,10 @@
  */
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 export async function POST(request: Request) {
     try {
@@ -94,6 +98,17 @@ export async function POST(request: Request) {
                 { error: 'Réponse FedaPay invalide — transaction ID manquant' },
                 { status: 502 }
             )
+        }
+
+        // Stocker l'ID de transaction FedaPay dans la commande pour vérification sécurisée
+        // (l'API GET /v1/transactions/{id} retourne 404 dans certains comptes sandbox)
+        if (supabaseUrl && supabaseServiceKey) {
+            const supabaseService = createClient(supabaseUrl, supabaseServiceKey)
+            await supabaseService
+                .from('orders')
+                .update({ transaction_id: String(transaction.id) })
+                .eq('id', order_id)
+                .eq('payment_status', 'pending')
         }
 
         return NextResponse.json({

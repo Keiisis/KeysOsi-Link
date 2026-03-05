@@ -12,6 +12,8 @@ interface PriceProps {
     className?: string
     showOriginal?: boolean
     showSelector?: boolean
+    /** Si true, affiche toujours dans la devise passée sans auto-conversion (utile pour le checkout) */
+    noConvert?: boolean
 }
 
 export function Price({
@@ -20,11 +22,13 @@ export function Price({
     className = '',
     showOriginal = false,
     showSelector = false,
+    noConvert = false,
 }: PriceProps) {
     const [displayCurrency, setDisplayCurrency] = useState<CurrencyCode>(currency)
-    const [ready, setReady] = useState(false)
+    const [ready, setReady] = useState(noConvert)
 
     useEffect(() => {
+        if (noConvert) return
         const init = async () => {
             await refreshRates()
             const detected = detectUserCurrency()
@@ -32,7 +36,7 @@ export function Price({
             setReady(true)
         }
         init()
-    }, [])
+    }, [noConvert])
 
     if (!ready) return <span className={className}>{formatPrice(amount, currency)}</span>
 
