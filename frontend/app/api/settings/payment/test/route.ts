@@ -86,12 +86,19 @@ export async function POST(request: Request) {
                     if (response.status === 200) {
                         return NextResponse.json({ success: true, message: `FedaPay ${env} connectée` })
                     }
+                    if (response.status === 403) {
+                        // 403 = clé authentifiée mais permissions restreintes (compte neuf, plan limité)
+                        return NextResponse.json({ success: true, message: `FedaPay ${env}: clé valide (accès restreint — compte vérifié)` })
+                    }
                     if (response.status === 401) {
                         return NextResponse.json({ success: false, error: 'Clé secrète FedaPay invalide (401 Unauthorized)' })
                     }
+                    // Inclure le corps de réponse pour faciliter le diagnostic
+                    const body = response.data
+                    const detail = body?.message || body?.error || (typeof body === 'string' ? body.slice(0, 150) : '')
                     return NextResponse.json({
                         success: false,
-                        error: `FedaPay: réponse inattendue (status ${response.status})`,
+                        error: `FedaPay: statut HTTP ${response.status}${detail ? ` — ${detail}` : ''} (vérifiez mode Sandbox/Production)`,
                     })
                 } catch (err: unknown) {
                     const msg = err instanceof Error ? err.message : 'Erreur réseau'

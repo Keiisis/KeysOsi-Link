@@ -107,7 +107,10 @@ export default function PaymentSettingsPage() {
     const [saved, setSaved] = useState(false)
     const [error, setError] = useState('')
     const [visibleSecrets, setVisibleSecrets] = useState<Record<string, boolean>>({})
-    const [testResults, setTestResults] = useState<Record<string, 'idle' | 'testing' | 'success' | 'error'>>({})
+    const [testResults, setTestResults] = useState<Record<string, {
+        status: 'idle' | 'testing' | 'success' | 'error'
+        message?: string
+    }>>({})
 
     // Load all payment settings from Supabase
     const loadSettings = useCallback(async () => {
@@ -165,7 +168,7 @@ export default function PaymentSettingsPage() {
 
     // Test connectivity for a gateway
     const testGateway = async (gatewayId: string) => {
-        setTestResults(prev => ({ ...prev, [gatewayId]: 'testing' }))
+        setTestResults(prev => ({ ...prev, [gatewayId]: { status: 'testing' } }))
 
         try {
             const res = await fetch('/api/settings/payment/test', {
@@ -174,15 +177,24 @@ export default function PaymentSettingsPage() {
                 body: JSON.stringify({ gateway: gatewayId, settings }),
             })
             const data = await res.json()
-            setTestResults(prev => ({ ...prev, [gatewayId]: data.success ? 'success' : 'error' }))
-        } catch {
-            setTestResults(prev => ({ ...prev, [gatewayId]: 'error' }))
+            setTestResults(prev => ({
+                ...prev,
+                [gatewayId]: {
+                    status: data.success ? 'success' : 'error',
+                    message: data.success ? data.message : data.error,
+                },
+            }))
+        } catch (err) {
+            setTestResults(prev => ({
+                ...prev,
+                [gatewayId]: { status: 'error', message: err instanceof Error ? err.message : 'Erreur réseau' },
+            }))
         }
 
-        // Reset after 5s
+        // Reset after 8s
         setTimeout(() => {
-            setTestResults(prev => ({ ...prev, [gatewayId]: 'idle' }))
-        }, 5000)
+            setTestResults(prev => ({ ...prev, [gatewayId]: { status: 'idle' } }))
+        }, 8000)
     }
 
     // Save all settings to Supabase
@@ -282,7 +294,8 @@ export default function PaymentSettingsPage() {
                     const enabled = isGatewayEnabled(gateway.id)
                     const sandbox = isSandbox(gateway.id)
                     const configuréed = isGatewayConfigured(gateway)
-                    const testResult = testResults[gateway.id] || 'idle'
+                    const testResult = testResults[gateway.id] || { status: 'idle' }
+                    const testStatus = testResult.status
 
                     return (
                         <motion.div
@@ -333,27 +346,28 @@ export default function PaymentSettingsPage() {
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-4">
+                                        <div className="flex flex-col items-end gap-2">
+                                            <div className="flex items-center gap-4">
                                             {/* Test button */}
                                             {enabled && configuréed && (
                                                 <Button
                                                     onClick={() => testGateway(gateway.id)}
-                                                    disabled={testResult === 'testing'}
+                                                    disabled={testStatus === 'testing'}
                                                     variant="outline"
                                                     className={cn(
                                                         'h-11 px-5 rounded-xl text-[10px] font-black uppercase tracking-widest border gap-2 transition-all',
-                                                        testResult === 'success' ? 'border-[#008751]/30 text-[#008751]' :
-                                                            testResult === 'error' ? 'border-[#E8112D]/30 text-[#E8112D]' :
+                                                        testStatus === 'success' ? 'border-[#008751]/30 text-[#008751]' :
+                                                            testStatus === 'error' ? 'border-[#E8112D]/30 text-[#E8112D]' :
                                                                 'border-white/10 text-gray-400'
                                                     )}
                                                 >
-                                                    {testResult === 'testing' ? <Loader2 size={14} className="animate-spin" /> :
-                                                        testResult === 'success' ? <CheckCircle2 size={14} /> :
-                                                            testResult === 'error' ? <AlertCircle size={14} /> :
+                                                    {testStatus === 'testing' ? <Loader2 size={14} className="animate-spin" /> :
+                                                        testStatus === 'success' ? <CheckCircle2 size={14} /> :
+                                                            testStatus === 'error' ? <AlertCircle size={14} /> :
                                                                 <Zap size={14} />}
-                                                    {testResult === 'testing' ? 'Test...' :
-                                                        testResult === 'success' ? 'Connecte' :
-                                                            testResult === 'error' ? 'Echec' :
+                                                    {testStatus === 'testing' ? 'Test...' :
+                                                        testStatus === 'success' ? 'Connecte' :
+                                                            testStatus === 'error' ? 'Echec' :
                                                                 'Tester'}
                                                 </Button>
                                             )}
@@ -377,7 +391,18 @@ export default function PaymentSettingsPage() {
                                                     {enabled ? 'Active' : 'Inactive'}
                                                 </span>
                                             </button>
-                                        </div>
+                                            </div>{/* end flex items-center gap-4 */}
+
+                                            {/* Message résultat du test */}
+                                            {testResult.message && testStatus !== 'idle' && testStatus !== 'testing' && (
+                                                <p className={cn(
+                                                    'text-[10px] font-medium max-w-[280px] text-right leading-snug',
+                                                    testStatus === 'success' ? 'text-[#008751]' : 'text-[#E8112D]'
+                                                )}>
+                                                    {testResult.message}
+                                                </p>
+                                            )}
+                                        </div>{/* end flex flex-col items-end gap-2 */}
                                     </div>
                                 </CardHeader>
 

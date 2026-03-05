@@ -6,6 +6,13 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 export async function POST(request: Request) {
     try {
+        if (!supabaseUrl || !supabaseServiceKey) {
+            return NextResponse.json(
+                { error: 'Configuration serveur manquante (SUPABASE_SERVICE_ROLE_KEY non définie sur Vercel)' },
+                { status: 503 }
+            )
+        }
+
         const supabase = createClient(supabaseUrl, supabaseServiceKey)
         const body = await request.json()
 
@@ -98,7 +105,7 @@ export async function POST(request: Request) {
             }
             console.error('Order creation error:', error)
             return NextResponse.json(
-                { error: 'Erreur lors de la création de la commande' },
+                { error: `Erreur DB: ${error.message}` },
                 { status: 500 }
             )
         }

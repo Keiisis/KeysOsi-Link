@@ -321,9 +321,9 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                 setOrderId(data.order_id)
                 return data.order_id
             }
-            throw new Error(data.error || 'Failed to create order')
-        } catch {
-            setErrorMessage('Erreur lors de la création de la commande')
+            throw new Error(data.error || 'Erreur lors de la création de la commande')
+        } catch (err) {
+            setErrorMessage(err instanceof Error ? err.message : 'Erreur lors de la création de la commande')
             setStep('error')
             return null
         }
