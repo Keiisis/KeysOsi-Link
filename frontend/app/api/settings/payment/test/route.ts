@@ -43,11 +43,11 @@ export async function POST(request: Request) {
             }
 
             case 'fedapay': {
-                const publicKey = settings?.fedapay_public_key
+                // NB: seule fedapay_secret_key est nécessaire pour tester l'API
                 const secretKey = settings?.fedapay_secret_key
 
-                if (!publicKey || !secretKey) {
-                    return NextResponse.json({ success: false, error: 'Missing FedaPay keys' })
+                if (!secretKey) {
+                    return NextResponse.json({ success: false, error: 'Clé secrète FedaPay manquante' })
                 }
 
                 try {
@@ -56,19 +56,31 @@ export async function POST(request: Request) {
                         ? 'https://sandbox-api.fedapay.com'
                         : 'https://api.fedapay.com'
 
-                    const response = await axios.get(`${apiUrl}/v1/accounts`, {
-                        headers: { Authorization: `Bearer ${secretKey}` },
+                    // /v1/accounts n'existe pas — le bon endpoint est /v1/transactions
+                    const response = await axios.get(`${apiUrl}/v1/transactions?per_page=1`, {
+                        headers: {
+                            Authorization: `Bearer ${secretKey}`,
+                            'Content-Type': 'application/json',
+                        },
                         validateStatus: () => true,
+                        timeout: 10000,
                     })
 
-                    if (response.status === 200 || response.status === 201) {
-                        return NextResponse.json({ success: true, message: 'FedaPay valide' })
+                    if (response.status === 200) {
+                        const env = isSandbox ? 'Sandbox' : 'Production'
+                        return NextResponse.json({ success: true, message: `FedaPay ${env} connectée` })
                     }
-                    return NextResponse.json({ success: false, error: 'Clé secrète FedaPay invalide' })
+                    if (response.status === 401) {
+                        return NextResponse.json({ success: false, error: 'Clé secrète FedaPay invalide (401 Unauthorized)' })
+                    }
+                    return NextResponse.json({
+                        success: false,
+                        error: `FedaPay: réponse inattendue (status ${response.status})`,
+                    })
                 } catch (err: unknown) {
-                    const msg = err instanceof Error ? err.message : 'Erreur'
+                    const msg = err instanceof Error ? err.message : 'Erreur réseau'
                     console.error('FedaPay test err:', msg)
-                    return NextResponse.json({ success: false, error: 'Vérification FedaPay échouée' })
+                    return NextResponse.json({ success: false, error: `FedaPay inaccessible: ${msg}` })
                 }
             }
 

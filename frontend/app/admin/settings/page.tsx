@@ -11,7 +11,6 @@ import Link from 'next/link'
 import { cn } from '@/lib/utils'
 
 interface Setting {
-    id: string
     key: string
     value: string
     category: string
@@ -90,8 +89,8 @@ export default function AdminSettingsPage() {
         setError('')
         try {
             const res = await fetch('/api/admin/settings')
-            if (!res.ok) throw new Error('Erreur chargement paramètres')
             const data = await res.json()
+            if (!res.ok) throw new Error(data.error || 'Erreur chargement paramètres')
             setSettings(data.settings || [])
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Erreur inconnue')

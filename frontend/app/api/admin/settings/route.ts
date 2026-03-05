@@ -34,7 +34,7 @@ export async function GET() {
         // Récupérer tous les settings
         const { data, error } = await supabase
             .from('settings')
-            .select('id, key, value, category')
+            .select('key, value, category')
             .order('key', { ascending: true })
 
         if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -57,7 +57,7 @@ export async function GET() {
                 // Re-fetch après insertion
                 const { data: refreshed } = await supabase
                     .from('settings')
-                    .select('id, key, value, category')
+                    .select('key, value, category')
                     .order('key', { ascending: true })
                 return NextResponse.json({ settings: refreshed || [] })
             }
