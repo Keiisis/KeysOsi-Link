@@ -459,10 +459,12 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
             if (data.success) {
                 setStep('success')
             } else {
-                setErrorMessage('La vérification du paiement a échoué.')
+                await cancelOrder(oid)
+                setErrorMessage(data.error || 'La vérification du paiement a échoué.')
                 setStep('error')
             }
         } catch {
+            await cancelOrder(oid)
             setErrorMessage('Erreur de vérification')
             setStep('error')
         }
@@ -573,6 +575,8 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                     const transaction = resp.transaction as Record<string, unknown> | undefined
                     if (resp.reason === 'APPROVED' || (transaction && transaction.status === 'approved')) {
                         const txId = (transaction?.id || resp.id || '') as string
+                        // Attendre 3s pour que FedaPay finalise la transaction côté serveur
+                        await new Promise(resolve => setTimeout(resolve, 3000))
                         await verifyPayment(oid, String(txId))
                     } else {
                         cancelOrder(oid)

@@ -460,10 +460,12 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                 clearCart()
                 setStep('success')
             } else {
-                setErrorMessage('La vérification du paiement a échoué.')
+                await cancelOrder(oid)
+                setErrorMessage(data.error || 'La vérification du paiement a échoué.')
                 setStep('error')
             }
         } catch {
+            await cancelOrder(oid)
             setErrorMessage('Erreur de vérification')
             setStep('error')
         }
@@ -546,6 +548,8 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                 onComplete: async (resp: Record<string, unknown>) => {
                     const tx = resp.transaction as Record<string, unknown> | undefined
                     if (resp.reason === 'APPROVED' || (tx && tx.status === 'approved')) {
+                        // Attendre 3s pour que FedaPay finalise la transaction côté serveur
+                        await new Promise(resolve => setTimeout(resolve, 3000))
                         await verifyPayment(oid, String(tx?.id || resp.id || ''))
                     } else {
                         cancelOrder(oid); setErrorMessage('Paiement non approuvé.'); setStep('error')
