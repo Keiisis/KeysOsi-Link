@@ -1,6 +1,22 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
+// Taux de conversion XOF → devises PayPal (même table que create/route.ts)
+const XOF_TO: Record<string, number> = {
+    EUR: 655.957,
+    USD: 600,
+    GBP: 760,
+    CAD: 440,
+    CHF: 720,
+}
+
+function convertFromXOF(amountXof: number, targetCurrency: string): number {
+    if (targetCurrency === 'XOF') return Math.round(amountXof)
+    const rate = XOF_TO[targetCurrency]
+    if (!rate) return amountXof // fallback sans conversion
+    return Math.round((amountXof / rate) * 100) / 100
+}
+
 async function getPayPalAccessToken(
     clientId: string,
     clientSecret: string,
@@ -53,11 +69,11 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: true, message: 'Déjà traité' })
         }
 
-        // Récupérer les credentials PayPal
+        // Récupérer les credentials et la devise PayPal configurée
         const { data: settingsData } = await supabase
             .from('settings')
             .select('key, value')
-            .in('key', ['paypal_client_id', 'paypal_client_secret', 'paypal_sandbox'])
+            .in('key', ['paypal_client_id', 'paypal_client_secret', 'paypal_sandbox', 'paypal_currency'])
 
         const sm: Record<string, string> = {}
         for (const s of settingsData || []) sm[s.key] = s.value
@@ -65,6 +81,7 @@ export async function POST(request: Request) {
         const clientId = sm.paypal_client_id
         const clientSecret = sm.paypal_client_secret
         const sandbox = sm.paypal_sandbox === 'true'
+        const paypalCurrency = (sm.paypal_currency || 'EUR').toUpperCase()
 
         if (!clientId || !clientSecret) {
             return NextResponse.json(
@@ -109,9 +126,16 @@ export async function POST(request: Request) {
         const captureId = captureUnit?.id
         const capturedAmount = parseFloat(captureUnit?.amount?.value || '0')
 
-        // Vérification de montant (tolérance 1% pour les arrondis)
-        if (capturedAmount > 0 && capturedAmount < existingOrder.amount * 0.99) {
-            console.error('PayPal amount mismatch:', { capturedAmount, expected: existingOrder.amount })
+        // Vérification de montant — convertir le montant XOF de la DB dans la devise PayPal pour comparer
+        // (ex: 15000 XOF → 22.87 EUR, capturedAmount = 22.87 EUR → OK)
+        const expectedPaypalAmount = convertFromXOF(existingOrder.amount, paypalCurrency)
+        if (capturedAmount > 0 && capturedAmount < expectedPaypalAmount * 0.99) {
+            console.error('PayPal amount mismatch:', {
+                capturedAmount,
+                expectedPaypalAmount,
+                orderAmountXof: existingOrder.amount,
+                paypalCurrency,
+            })
             return NextResponse.json(
                 { success: false, error: 'Montant capturé incorrect' },
                 { status: 400 }

@@ -94,7 +94,7 @@ const GATEWAYS: GatewayConfig[] = [
         fields: [
             { key: 'paypal_client_id', label: 'Client ID', placeholder: 'AXxx...', type: 'text', required: true, isSecret: false, helpText: 'Client ID de votre application PayPal (sandbox ou live)' },
             { key: 'paypal_client_secret', label: 'Client Secret', placeholder: 'EXxx...', type: 'password', required: true, isSecret: true, helpText: 'Client Secret de votre application PayPal. Ne jamais exposer.' },
-            { key: 'paypal_currency', label: 'Devise PayPal', placeholder: 'XOF', type: 'text', required: false, isSecret: false, helpText: 'Devise pour les transactions PayPal (XOF, EUR, USD...). XOF par defaut.' },
+            { key: 'paypal_currency', label: 'Devise PayPal', placeholder: 'EUR', type: 'text', required: false, isSecret: false, helpText: 'EUR ou USD recommande — PayPal ne supporte pas XOF. Les prix XOF sont convertis automatiquement (taux fixe BCEAO: 1 EUR = 655,957 XOF).' },
             { key: 'paypal_webhook_id', label: 'Webhook ID (optionnel)', placeholder: 'WH-xxx...', type: 'password', required: false, isSecret: true, helpText: 'ID du webhook PayPal pour verification de signature. Configurer /api/webhooks/paypal dans le Developer Dashboard.' },
         ],
     },

@@ -1,6 +1,23 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
+// Taux de conversion XOF → devises PayPal supportées
+// Le franc CFA (XOF) est arrimé à l'EUR à taux fixe officiel BCEAO depuis 1999
+const XOF_TO: Record<string, number> = {
+    EUR: 655.957, // Parité fixe inchangeable
+    USD: 600,     // Taux approximatif (Mars 2026)
+    GBP: 760,     // Taux approximatif
+    CAD: 440,     // Taux approximatif
+    CHF: 720,     // Taux approximatif
+}
+
+function convertFromXOF(amountXof: number, targetCurrency: string): number {
+    if (targetCurrency === 'XOF') return Math.round(amountXof)
+    const rate = XOF_TO[targetCurrency]
+    if (!rate) throw new Error(`Devise PayPal non supportée pour la conversion: ${targetCurrency}. Configurez EUR ou USD dans les paramètres PayPal.`)
+    return Math.round((amountXof / rate) * 100) / 100
+}
+
 // Devises sans décimales pour PayPal
 const ZERO_DECIMAL = new Set([
     'JPY', 'KRW', 'VND', 'XOF', 'XAF', 'GNF', 'BIF', 'RWF', 'UGX', 'MGA', 'KMF',
@@ -51,13 +68,15 @@ export async function POST(request: Request) {
         const clientId = sm.paypal_client_id
         const clientSecret = sm.paypal_client_secret
         const sandbox = sm.paypal_sandbox === 'true'
-        const configCurrency = sm.paypal_currency || 'XOF'
+
+        // PayPal ne supporte pas XOF — utiliser EUR par défaut (parité fixe avec le CFA)
+        const currency = (sm.paypal_currency || 'EUR').toUpperCase()
 
         if (!clientId || !clientSecret) {
             return NextResponse.json({ error: 'PayPal non configuré' }, { status: 503 })
         }
 
-        // Récupérer la commande
+        // Récupérer la commande — le montant est TOUJOURS stocké en XOF dans la DB
         const { data: order, error: orderError } = await supabase
             .from('orders')
             .select('amount, currency, customer_name, customer_email')
@@ -68,10 +87,11 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Commande introuvable' }, { status: 404 })
         }
 
-        const currency = configCurrency.toUpperCase()
+        // Convertir XOF → devise PayPal configurée (ex: 15000 XOF → 22.87 EUR)
+        const convertedAmount = convertFromXOF(order.amount, currency)
         const amountStr = ZERO_DECIMAL.has(currency)
-            ? String(Math.round(order.amount))
-            : order.amount.toFixed(2)
+            ? String(Math.round(convertedAmount))
+            : convertedAmount.toFixed(2)
 
         const base = sandbox
             ? 'https://api-m.sandbox.paypal.com'
@@ -84,7 +104,7 @@ export async function POST(request: Request) {
             headers: {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${accessToken}`,
-                'PayPal-Request-Id': order_id, // Clé d'idempotence
+                'PayPal-Request-Id': order_id,
             },
             body: JSON.stringify({
                 intent: 'CAPTURE',
