@@ -88,12 +88,15 @@ export async function POST(request: Request) {
         }
 
         const data = await res.json()
-        const transaction = data?.v1?.transaction || data?.transaction || data
+        const rawJson = JSON.stringify(data)
+        console.log('FedaPay create response (HTTP', res.status, '):', rawJson.slice(0, 500))
+
+        // FedaPay peut retourner { v1: { transaction: {...} } } ou { transaction: {...} } ou {...} directement
+        const transaction = data?.v1?.transaction || data?.transaction || (data?.id ? data : null)
 
         if (!transaction?.id) {
-            console.error('FedaPay: réponse inattendue:', JSON.stringify(data).slice(0, 300))
             return NextResponse.json(
-                { error: 'Réponse FedaPay invalide — transaction ID manquant' },
+                { error: `FedaPay: ID introuvable dans la réponse — ${rawJson.slice(0, 200)}` },
                 { status: 502 }
             )
         }
