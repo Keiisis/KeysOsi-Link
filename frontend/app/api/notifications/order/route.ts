@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 import nodemailer from 'nodemailer'
 import crypto from 'crypto'
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 const TICKET_SECRET = process.env.TICKET_HMAC_SECRET || 'rgb-ticket-secret-2026'
 
 // Notification API — sends email notifications for order events using SMTP
@@ -14,6 +16,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing order_id' }, { status: 400 })
     }
 
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Notification: SUPABASE_SERVICE_ROLE_KEY manquante')
+      return NextResponse.json({ error: 'Configuration serveur manquante' }, { status: 503 })
+    }
+
+    // Utiliser service role pour lire la commande (bypass RLS)
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
     // Fetch order details
     const { data: order, error: orderErr } = await supabase
       .from('orders')
@@ -22,6 +32,7 @@ export async function POST(request: Request) {
       .single()
 
     if (orderErr || !order) {
+      console.error('Notification: commande introuvable:', orderErr?.message, '| order_id:', order_id)
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 

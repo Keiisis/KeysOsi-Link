@@ -850,7 +850,9 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Email (optionnel)</label>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">
+                                        Email <span className="text-[#FCD116] normal-case font-normal tracking-normal">— pour recevoir votre facture</span>
+                                    </label>
                                     <div className="relative">
                                         <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" />
                                         <input

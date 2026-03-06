@@ -270,15 +270,17 @@ export async function POST(request: Request) {
             })
         }
 
-        // Notification email
+        // Notification email — utiliser l'origine de la requête pour avoir une URL absolue
+        // (NEXT_PUBLIC_SITE_URL peut être vide sur Vercel → URL relative → fetch échoue)
         try {
-            await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || ''}/api/notifications/order`, {
+            const origin = new URL(request.url).origin
+            await fetch(`${origin}/api/notifications/order`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ order_id, type: 'payment_success' }),
             })
-        } catch {
-            // Silent
+        } catch (notifErr) {
+            console.error('Notification email error:', notifErr)
         }
 
         return NextResponse.json({ success: true })
