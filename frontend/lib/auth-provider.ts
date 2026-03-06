@@ -19,16 +19,6 @@ export const authProvider: AuthProvider = {
         }
 
         if (data.user) {
-            // Force la session à être lue et les cookies écrits
-            // AVANT que Refine ne fasse la redirection
-            await supabase.auth.getSession();
-
-            // Hard redirect au lieu de redirectTo pour garantir
-            // que les cookies sont envoyés avec la nouvelle requête
-            if (typeof window !== 'undefined') {
-                window.location.href = '/admin';
-            }
-
             return {
                 success: true,
                 redirectTo: "/admin",
@@ -59,13 +49,19 @@ export const authProvider: AuthProvider = {
         };
     },
     check: async () => {
-        const { data } = await supabase.auth.getSession();
-        const { session } = data;
-
-        if (session) {
-            return {
-                authenticated: true,
-            };
+        // Use getUser() instead of getSession() — it validates the token
+        // server-side and works even if cookies were recently refreshed.
+        // getSession() only reads local cookies which can fail on Vercel
+        // if old httpOnly cookies are stuck in the browser.
+        try {
+            const { data, error } = await supabase.auth.getUser();
+            if (data.user && !error) {
+                return {
+                    authenticated: true,
+                };
+            }
+        } catch {
+            // Network error — treat as not authenticated
         }
 
         return {

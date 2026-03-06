@@ -141,6 +141,26 @@ export async function middleware(request: NextRequest) {
             return redirectTo(new URL(loginUrl, request.url))
         }
 
+        // ════════════════════════════════════════════════════════════
+        // 🔑 CRITICAL FIX for Vercel production:
+        // Force ALL sb-* auth cookies to be browser-readable (httpOnly: false).
+        // Old deployments set these as httpOnly: true, making them invisible
+        // to the client-side JS (createBrowserClient / getSession()).
+        // By re-setting them in the response with httpOnly: false,
+        // we overwrite the stuck httpOnly cookies in the browser.
+        // ════════════════════════════════════════════════════════════
+        request.cookies.getAll()
+            .filter(c => c.name.startsWith('sb-'))
+            .forEach(cookie => {
+                supabaseResponse.cookies.set(cookie.name, cookie.value, {
+                    path: '/',
+                    httpOnly: false,
+                    secure: true,
+                    sameSite: 'lax' as const,
+                    maxAge: 60 * 60 * 24 * 365, // 1 year
+                })
+            })
+
         const userId = user.id
 
         // Vérifier le rôle avec la Service Key (contourne les RLS)
