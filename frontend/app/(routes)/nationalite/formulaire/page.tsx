@@ -41,8 +41,8 @@ const STEPS = [
     { num: 2, label: 'Infos personnelles' },
     { num: 3, label: 'Document & Parents' },
     { num: 4, label: 'Pièces jointes' },
-    { num: 5, label: 'Paiement' },
-    { num: 6, label: 'Récapitulatif' },
+    { num: 5, label: 'Récapitulatif' },
+    { num: 6, label: 'Paiement & Soumission' },
 ]
 
 const COUNTRIES = ['Bénin', 'France', 'États-Unis', 'Brésil', 'Haïti', 'Canada', 'Royaume-Uni', 'Jamaïque', 'Trinidad et Tobago', 'Colombie', 'Cuba', 'Guadeloupe', 'Martinique', 'Guyane française', 'Suriname', 'Barbade', 'Bahamas', 'République Dominicaine', 'Porto Rico', 'Antigua-et-Barbuda', 'Allemagne', 'Belgique', 'Suisse', 'Pays-Bas', 'Italie', 'Espagne', 'Portugal', 'Ghana', 'Togo', 'Nigeria', 'Sénégal', 'Côte d\'Ivoire', 'Cameroun', 'Congo', 'Gabon', 'Mali', 'Burkina Faso', 'Guinée', 'Niger', 'Tchad', 'Autre']
@@ -233,7 +233,7 @@ export default function NationaliteFormPage() {
             const uploaded = rawDocs.map(d => d.label)
             req.forEach(l => { if (!uploaded.includes(l)) e.push(`Document manquant : ${l}`) })
         }
-        if (step === 5 && !paymentDone) e.push('Veuillez effectuer le paiement avant de continuer')
+        // Step 5 = Récapitulatif (pas de validation, juste relecture)
         return e
     }
 
@@ -241,46 +241,72 @@ export default function NationaliteFormPage() {
     const prev = () => { setErrors([]); setStep(s => Math.max(s - 1, 1)) }
 
     const submit = async () => {
+        if (!paymentDone) {
+            setErrors(['Veuillez effectuer le paiement avant de soumettre.'])
+            return
+        }
         setSubmitting(true)
+        setErrors([])
         setUploadProgress(10)
-        const ref = `RG-NAT-${new Date().getFullYear()}-${String(Math.floor(1000 + Math.random() * 9000))}`
 
         const finalUploadedUrls: string[] = []
 
-        // Upload documents
+        // Upload documents to Supabase Storage
         for (let i = 0; i < rawDocs.length; i++) {
             const doc = rawDocs[i]
             const ext = doc.file.name.split('.').pop()
-            const filename = `${ref}/${doc.label.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.${ext}`
-            const { data, error } = await supabase.storage.from('nationality_documents').upload(filename, doc.file)
-            if (data && !error) {
-                finalUploadedUrls.push(`${doc.label}: ${filename}`)
-            } else {
-                finalUploadedUrls.push(`${doc.label}: [Erreur upload] ${doc.name}`)
+            const folder = `upload-${Date.now()}`
+            const filename = `${folder}/${doc.label.replace(/[^a-zA-Z0-9]/g, '_')}_${i}.${ext}`
+            try {
+                const { data, error } = await supabase.storage.from('nationality_documents').upload(filename, doc.file)
+                if (data && !error) {
+                    finalUploadedUrls.push(`${doc.label}: ${filename}`)
+                } else {
+                    finalUploadedUrls.push(`${doc.label}: ${doc.name} (upload échoué)`)
+                }
+            } catch {
+                finalUploadedUrls.push(`${doc.label}: ${doc.name} (upload échoué)`)
             }
-            setUploadProgress(10 + Math.floor((i + 1) / rawDocs.length * 40))
+            setUploadProgress(10 + Math.floor((i + 1) / rawDocs.length * 50))
         }
 
-        const { error } = await supabase.from('nationality_applications').insert({
-            ...form, documents_uploaded: finalUploadedUrls, application_ref: ref, status: 'soumis', submitted_at: new Date().toISOString(),
-            last_step_completed: 6, payment_method: paymentProvider || 'none',
-            payment_ref: paymentTxId, payment_status: paymentDone ? 'en_attente' : 'non_paye',
-            amount: formAmount, currency: formCurrency,
-        })
-        setUploadProgress(100)
-        if (!error) {
-            setAppRef(ref)
-            try {
-                await fetch('/api/email/send', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        to: form.email, subject: `Retour Gagnant Bénin — Demande ${ref} reçue`,
-                        message: `Bonjour ${form.prenom} ${form.nom},\n\nVotre demande de reconnaissance de nationalité béninoise a été enregistrée sous la référence :\n\n${ref}\n\nNotre équipe va examiner votre dossier et vérifier votre paiement.\n\nBienvenue chez vous.\n\nL'équipe Retour Gagnant Bénin`,
-                        clientName: `${form.prenom} ${form.nom}`, context: 'nationality_application', relatedId: ref
-                    })
+        setUploadProgress(70)
+
+        // Clean empty date strings to null for PostgreSQL
+        const cleanedForm: Record<string, unknown> = { ...form }
+        const dateFields = ['date_naissance', 'ancestor1_date_naissance', 'ancestor2_date_naissance', 'pere_date_naissance', 'mere_date_naissance', 'date_expiration_document']
+        dateFields.forEach(key => { if (!cleanedForm[key]) cleanedForm[key] = null })
+
+        // Submit via secure API route (Service Role Key, bypasses RLS)
+        try {
+            const res = await fetch('/api/nationality', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...cleanedForm,
+                    documents: finalUploadedUrls,
+                    documents_uploaded: finalUploadedUrls,
+                    payment_method: paymentProvider || 'none',
+                    payment_ref: paymentTxId,
+                    payment_status: paymentDone ? 'payé' : 'non_payé',
+                    amount: formAmount,
+                    currency: formCurrency,
+                    last_step_completed: 6,
                 })
-            } catch { }
-            setShowWelcome(true)
+            })
+
+            setUploadProgress(90)
+            const result = await res.json()
+
+            if (res.ok && result.success) {
+                setAppRef(result.reference)
+                setUploadProgress(100)
+                setShowWelcome(true)
+            } else {
+                setErrors([result.error || 'Erreur lors de la soumission. Veuillez réessayer.'])
+            }
+        } catch {
+            setErrors(['Erreur réseau. Vérifiez votre connexion et réessayez.'])
         }
         setSubmitting(false)
     }
@@ -481,10 +507,29 @@ export default function NationaliteFormPage() {
                                         </label>
                                     </div>
                                 ))}
-                                {rawDocs.length > 0 && <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-4 space-y-1.5">{rawDocs.map((d, i) => <div key={i} className="text-xs text-emerald-400 flex items-center justify-between"><span className="flex items-center gap-2"><CheckCircle2 size={12} /> {d.label}: {d.name}</span><button title="Supprimer ce document" onClick={() => setRawDocs(p => p.filter((_, idx) => idx !== i))} className="text-red-500 hover:text-red-400 p-1"><X size={12} /></button></div>)}</div>}
+                                {rawDocs.length > 0 && <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-4 space-y-3">
+                                    <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Fichiers ajoutés ({rawDocs.length})</p>
+                                    {rawDocs.map((d, i) => {
+                                        const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(d.name)
+                                        return (
+                                            <div key={i} className="flex items-center gap-3 bg-white/[0.02] rounded-lg p-2">
+                                                {isImage ? (
+                                                    <img src={URL.createObjectURL(d.file)} alt={d.label} className="w-14 h-14 object-cover rounded-lg border border-white/10" />
+                                                ) : (
+                                                    <div className="w-14 h-14 flex items-center justify-center bg-white/5 rounded-lg border border-white/10"><FileText size={20} className="text-gray-500" /></div>
+                                                )}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-xs text-white font-bold truncate">{d.label}</p>
+                                                    <p className="text-[10px] text-gray-500 truncate">{d.name} — {(d.file.size / 1024).toFixed(0)} Ko</p>
+                                                </div>
+                                                <button title="Supprimer" onClick={() => setRawDocs(p => p.filter((_, idx) => idx !== i))} className="p-1.5 text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"><X size={14} /></button>
+                                            </div>
+                                        )
+                                    })}
+                                </div>}
                             </div>}
 
-                            {step === 5 && <div className="space-y-5">
+                            {step === 6 && <div className="space-y-5">
                                 <h2 className="text-lg font-black text-white">Paiement des frais de traitement</h2>
                                 <div className="bg-gradient-to-r from-emerald-900/20 to-yellow-900/10 border border-emerald-500/10 rounded-2xl p-6 text-center">
                                     <p className="text-3xl font-black text-[#FCD116]"><Price amount={formAmount} currency={formCurrency} showOriginal /></p>
@@ -517,20 +562,45 @@ export default function NationaliteFormPage() {
                                 )}
                             </div>}
 
-                            {step === 6 && <div className="space-y-5">
+                            {step === 5 && <div className="space-y-5">
                                 <h2 className="text-lg font-black text-white">Récapitulatif de votre demande</h2>
+                                <p className="text-xs text-gray-400">Vérifiez attentivement vos informations avant de procéder au paiement.</p>
                                 {[
-                                    { title: 'Identité', items: [['Nom complet', `${form.prenom} ${form.nom}`], ['Genre', form.genre], ['Né(e) le', form.date_naissance], ['Nationalité', form.nationalite], ['Résidence', form.pays_residence], ['Email', form.email], ['Profession', form.profession]] },
-                                    { title: 'Afro-descendance', items: [['Description', form.afro_descendant_description], ['Ancêtre 1', `${form.ancestor1_prenom} ${form.ancestor1_nom} — ${form.ancestor1_lien_parente}`]] },
-                                    { title: 'Document', items: [['Type', form.type_document_identite], ['Numéro', form.numero_document]] },
+                                    { title: 'Identité', items: [['Nom complet', `${form.prenom} ${form.nom}`], ['Genre', form.genre], ['Né(e) le', form.date_naissance], ['Nationalité', form.nationalite], ['Résidence', `${form.adresse_residence ? form.adresse_residence + ', ' : ''}${form.pays_residence}`], ['Email', form.email], ['Téléphone', form.telephone], ['Profession', form.profession]] },
+                                    { title: 'Afro-descendance', items: [['Description', form.afro_descendant_description], ['Ancêtre 1', `${form.ancestor1_prenom} ${form.ancestor1_nom} — ${form.ancestor1_lien_parente}`], ...(form.ancestor2_nom ? [['Ancêtre 2', `${form.ancestor2_prenom} ${form.ancestor2_nom} — ${form.ancestor2_lien_parente}`]] : [])] },
+                                    { title: "Document d'identité", items: [['Type', form.type_document_identite], ['Numéro', form.numero_document], ['Pays délivrance', form.pays_delivrance], ['Expiration', form.date_expiration_document]] },
                                     { title: 'Parents', items: [['Père', `${form.pere_prenom} ${form.pere_nom}`], ['Mère', `${form.mere_prenom} ${form.mere_nom}`]] },
-                                    { title: 'Paiement', items: [['Montant', formatUserPrice(formAmount, formCurrency)], ['Passerelle', paymentProvider || 'N/A'], ['Transaction', paymentTxId || 'N/A']] },
                                 ].map((sec, si) => (
                                     <div key={si} className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
                                         <h3 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-2">{sec.title}</h3>
                                         {sec.items.filter(([, v]) => v).map(([k, v], i) => <div key={i} className="flex justify-between py-1 border-b border-white/[0.03] last:border-0"><span className="text-xs text-gray-500">{k}</span><span className="text-xs text-white font-bold text-right max-w-[60%]">{v}</span></div>)}
                                     </div>
                                 ))}
+                                {/* Pièces jointes avec aperçu */}
+                                <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
+                                    <h3 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-3">Pièces jointes ({rawDocs.length})</h3>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                        {rawDocs.map((d, i) => {
+                                            const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(d.name)
+                                            return (
+                                                <div key={i} className="bg-white/[0.02] rounded-lg p-2 text-center">
+                                                    {isImage ? (
+                                                        <img src={URL.createObjectURL(d.file)} alt={d.label} className="w-full h-20 object-cover rounded-lg mb-1.5" />
+                                                    ) : (
+                                                        <div className="w-full h-20 flex items-center justify-center bg-white/5 rounded-lg mb-1.5"><FileText size={24} className="text-gray-500" /></div>
+                                                    )}
+                                                    <p className="text-[10px] text-white font-bold truncate">{d.label}</p>
+                                                    <p className="text-[8px] text-gray-600 truncate">{d.name}</p>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                                {/* Montant à régler */}
+                                <div className="bg-gradient-to-r from-emerald-900/20 to-yellow-900/10 border border-emerald-500/10 rounded-2xl p-5 text-center">
+                                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold mb-1">Montant à régler à l&apos;étape suivante</p>
+                                    <p className="text-2xl font-black text-[#FCD116]"><Price amount={formAmount} currency={formCurrency} showOriginal /></p>
+                                </div>
                             </div>}
                         </div>
                     </motion.div>
@@ -541,8 +611,8 @@ export default function NationaliteFormPage() {
                     {step < 6 ? (
                         <button onClick={next} className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-sm px-6 py-3 rounded-xl transition-all flex items-center gap-2 shadow-[0_0_30px_rgba(16,185,129,0.2)]">Suivant <ArrowRight size={16} /></button>
                     ) : (
-                        <button onClick={submit} disabled={submitting} className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-black text-sm px-8 py-3 rounded-xl transition-all flex items-center gap-2 disabled:opacity-50 shadow-[0_0_30px_rgba(16,185,129,0.2)]">
-                            {submitting ? <><Loader2 size={16} className="animate-spin" /> Envoi...</> : <><Send size={16} /> Confirmer et Soumettre</>}
+                        <button onClick={submit} disabled={submitting || !paymentDone} className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-black text-sm px-8 py-3 rounded-xl transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_30px_rgba(16,185,129,0.2)]">
+                            {submitting ? <><Loader2 size={16} className="animate-spin" /> Envoi...</> : !paymentDone ? <><CreditCard size={16} /> Payez d&apos;abord</> : <><Send size={16} /> Confirmer et Soumettre</>}
                         </button>
                     )}
                 </div>
