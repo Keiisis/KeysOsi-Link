@@ -72,7 +72,7 @@ const sendConfirmationEmail = async (data: {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
-        const { nom, prenom, email, nationalite, motivation, afro_descendant_description, payment_ref, payment_method, documents } = body
+        const { nom, prenom, email } = body
 
         if (!nom || !prenom || !email) {
             return NextResponse.json(
@@ -83,43 +83,97 @@ export async function POST(request: NextRequest) {
 
         const ref = `RG-NAT-${new Date().getFullYear()}-${String(Math.floor(1000 + Math.random() * 9000))}`
 
-        // 1. Insert nationality application into DB (Centralized table)
+        // ══════════════════════════════════════════════════════════════
+        // WHITELIST: Only insert columns that exist in the DB table.
+        // Using ...body caused PostgreSQL errors because the client
+        // sends extra fields (documents, last_step_completed, etc.)
+        // that don't exist as columns in nationality_applications.
+        // ══════════════════════════════════════════════════════════════
+        const insertData: Record<string, unknown> = {
+            application_ref: ref,
+            status: 'soumis',
+            submitted_at: new Date().toISOString(),
+            // Identity
+            nom,
+            prenom,
+            email,
+            genre: body.genre || null,
+            date_naissance: body.date_naissance || null,
+            pays_naissance: body.pays_naissance || null,
+            ville_naissance: body.ville_naissance || null,
+            nationalite: body.nationalite || 'Non spécifiée',
+            pays_residence: body.pays_residence || null,
+            adresse_residence: body.adresse_residence || null,
+            telephone: body.telephone || null,
+            profession: body.profession || null,
+            demande_depuis_benin: body.demande_depuis_benin ?? false,
+            // Law
+            knows_about_law: body.knows_about_law ?? false,
+            is_afro_descendant: body.is_afro_descendant ?? null,
+            afro_descendant_description: body.afro_descendant_description || body.motivation || '',
+            // Ancestor 1
+            ancestor1_nom: body.ancestor1_nom || null,
+            ancestor1_prenom: body.ancestor1_prenom || null,
+            ancestor1_date_naissance: body.ancestor1_date_naissance || null,
+            ancestor1_lien_parente: body.ancestor1_lien_parente || null,
+            ancestor1_vivant: body.ancestor1_vivant ?? null,
+            ancestor1_nationalite: body.ancestor1_nationalite || null,
+            ancestor1_pays_residence: body.ancestor1_pays_residence || null,
+            ancestor1_autres_infos: body.ancestor1_autres_infos || null,
+            // Ancestor 2
+            ancestor2_nom: body.ancestor2_nom || null,
+            ancestor2_prenom: body.ancestor2_prenom || null,
+            ancestor2_date_naissance: body.ancestor2_date_naissance || null,
+            ancestor2_lien_parente: body.ancestor2_lien_parente || null,
+            ancestor2_vivant: body.ancestor2_vivant ?? null,
+            ancestor2_nationalite: body.ancestor2_nationalite || null,
+            ancestor2_pays_residence: body.ancestor2_pays_residence || null,
+            ancestor2_autres_infos: body.ancestor2_autres_infos || null,
+            // Document
+            type_document_identite: body.type_document_identite || null,
+            numero_document: body.numero_document || null,
+            date_expiration_document: body.date_expiration_document || null,
+            pays_delivrance: body.pays_delivrance || null,
+            lieu_delivrance: body.lieu_delivrance || null,
+            autorite_delivrance: body.autorite_delivrance || null,
+            // Parents
+            pere_nom: body.pere_nom || null,
+            pere_prenom: body.pere_prenom || null,
+            pere_date_naissance: body.pere_date_naissance || null,
+            mere_nom: body.mere_nom || null,
+            mere_prenom: body.mere_prenom || null,
+            mere_date_naissance: body.mere_date_naissance || null,
+            // Documents & Payment
+            documents_uploaded: body.documents_uploaded || body.documents || [],
+            amount: body.amount ?? 250,
+            currency: body.currency || 'USD',
+            payment_status: body.payment_ref ? 'payé' : 'en_attente',
+            payment_ref: body.payment_ref || null,
+            payment_method: body.payment_method || null,
+            last_step_completed: body.last_step_completed ?? 6,
+        }
+
         const { error: insertError } = await supabase
             .from('nationality_applications')
-            .insert([{
-                ...body, // On spread tout pour avoir les champs dynamiques (assurant qu'ils matchent les colonnes)
-                application_ref: ref,
-                status: 'soumis',
-                submitted_at: new Date().toISOString(),
-                // On s'assure que les champs calculés ou re-mappés sont corrects
-                nom,
-                prenom,
-                email,
-                nationalite: nationalite || 'Non spécifiée',
-                afro_descendant_description: afro_descendant_description || motivation || '',
-                documents_uploaded: documents || [],
-                payment_status: payment_ref ? 'payé' : 'en_attente',
-                payment_ref,
-                payment_method
-            }])
+            .insert([insertData])
 
         if (insertError) {
-            console.error('Insert error:', insertError)
+            console.error('Insert error:', JSON.stringify(insertError))
             return NextResponse.json(
-                { error: 'Erreur lors de l\'enregistrement dans la base de données' },
+                { error: `Erreur DB: ${insertError.message}` },
                 { status: 500 }
             )
         }
 
-        // 2. Create message for admin/agents
+        // 2. Create message for admin/agents (only valid columns)
         await supabase.from('messages').insert([{
             nom: `${prenom} ${nom}`,
             email,
+            telephone: body.telephone || null,
             sujet: `Demande de nationalité #${ref}`,
-            message: `Nouvelle demande de nationalité béninoise.\n\nNom: ${prenom} ${nom}\nEmail: ${email}\nRéférence: ${ref}\n\nMotivation: ${afro_descendant_description || motivation || 'Non précisée'}\n\nStatut Paiement: ${payment_ref ? 'Payé' : 'Non payé'}`,
+            message: `Nouvelle demande de nationalité béninoise.\n\nNom: ${prenom} ${nom}\nEmail: ${email}\nTéléphone: ${body.telephone || 'N/A'}\nRéférence: ${ref}\nMontant: ${body.amount || 250} ${body.currency || 'USD'}\n\nAfro-descendance: ${body.afro_descendant_description || 'Non précisée'}\n\nStatut Paiement: ${body.payment_ref ? 'Payé' : 'En attente'}`,
             type: 'nationality',
             lu: false,
-            payload: body
         }])
 
         // 3. Send auto email to client
@@ -127,7 +181,7 @@ export async function POST(request: NextRequest) {
             nom,
             prenom,
             email,
-            nationalite: nationalite || 'Non spécifiée',
+            nationalite: body.nationalite || 'Non spécifiée',
             refId: ref,
         })
 
