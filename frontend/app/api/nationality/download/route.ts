@@ -115,24 +115,40 @@ Généré par Retour Gagnant Bénin le ${new Date().toLocaleString('fr-FR')}
 
         zip.file(`Dossier_${app.application_ref}.txt`, summary);
 
-        zip.file(`data_${app.application_ref}.json`, JSON.stringify(app, null, 2));
-
-        // 3. Add actual documents from Storage
-        if (Array.isArray(app.documents_uploaded)) {
+        // 3. Add actual document files from Supabase Storage (no JSON export)
+        const docsFolder = zip.folder('documents');
+        let docsIncluded = 0;
+        if (Array.isArray(app.documents_uploaded) && docsFolder) {
             for (const docLine of app.documents_uploaded) {
-                const parts = docLine.split(': ');
-                if (parts.length > 1) {
-                    const storagePath = parts[1].trim();
-                    if (!storagePath.startsWith('[Erreur')) {
-                        const { data, error: dlError } = await supabase.storage.from('nationality_documents').download(storagePath);
-                        if (data && !dlError) {
-                            const buffer = await data.arrayBuffer();
-                            const filename = storagePath.split('/').pop() || storagePath;
-                            zip.file(`documents/${filename}`, buffer);
-                        }
+                // Format: "Label du document: chemin/dans/storage.pdf"
+                const colonIdx = docLine.indexOf(': ');
+                if (colonIdx === -1) continue;
+                const label = docLine.substring(0, colonIdx).trim();
+                const storagePath = docLine.substring(colonIdx + 2).trim();
+                if (!storagePath || storagePath.startsWith('[Erreur') || storagePath.includes('upload échoué')) continue;
+
+                try {
+                    const { data, error: dlError } = await supabase.storage.from('nationality_documents').download(storagePath);
+                    if (data && !dlError) {
+                        const buffer = await data.arrayBuffer();
+                        // Use label as filename prefix for clarity
+                        const ext = storagePath.split('.').pop() || 'pdf';
+                        const safeLabel = label.replace(/[^a-zA-Z0-9àâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ ]/g, '_').substring(0, 60);
+                        docsFolder.file(`${safeLabel}.${ext}`, buffer);
+                        docsIncluded++;
                     }
+                } catch {
+                    // Skip failed downloads silently
                 }
             }
+        }
+
+        // Add a note about documents in the summary if none were downloaded
+        if (docsIncluded === 0 && Array.isArray(app.documents_uploaded) && app.documents_uploaded.length > 0) {
+            zip.file('NOTE_DOCUMENTS.txt',
+                'Les fichiers joints n\'ont pas pu être téléchargés depuis le stockage.\n' +
+                'Chemins enregistrés:\n' + app.documents_uploaded.join('\n')
+            );
         }
 
         const zipBlob = await zip.generateAsync({ type: 'arraybuffer' });

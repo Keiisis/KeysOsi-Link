@@ -335,12 +335,13 @@ export default function NationaliteFormPage() {
                         <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Référence</p>
                         <p className="text-xl font-mono font-black text-[#FCD116]">{appRef}</p>
                     </motion.div>
-                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.3 }} className="text-xs text-gray-500 mb-8">Confirmation envoyée à <span className="text-emerald-400">{form.email}</span></motion.p>
+                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.3 }} className="text-xs text-gray-500 mb-4">Conservez votre référence <span className="text-[#FCD116] font-bold">{appRef}</span> pour suivre votre dossier</motion.p>
                     <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 1.5 }} className="space-y-3">
                         <p className="text-xs text-gray-600 italic max-w-sm mx-auto">&quot;La terre de vos ancêtres vous attend les bras ouverts. Ce n&apos;est pas un retour, c&apos;est une renaissance.&quot;</p>
                         <div className="flex items-center justify-center gap-1 text-[10px] text-gray-600"><Heart size={10} className="text-[#E8112D]" /> Retour Gagnant Bénin</div>
                     </motion.div>
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2 }} className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+                        <Link href="/suivi-dossier" className="bg-gradient-to-r from-[#008751] to-[#00b06a] hover:shadow-[0_8px_30px_rgba(0,135,81,0.4)] text-white font-black text-sm px-6 py-3 rounded-xl transition-all uppercase tracking-widest text-[11px]">📍 Suivre mon dossier</Link>
                         <Link href="/nationalite" className="bg-white/10 hover:bg-white/15 text-white font-bold text-sm px-6 py-3 rounded-xl transition-all">Retour à la page</Link>
                         <Link href="/" className="text-xs text-gray-500 hover:text-white transition-colors">Accueil</Link>
                     </motion.div>
