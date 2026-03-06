@@ -16,6 +16,7 @@ const sendConfirmationEmail = async (data: {
     email: string
     nationalite: string
     refId: string
+    baseUrl: string
 }) => {
     try {
         let emailContent = ''
@@ -60,23 +61,7 @@ RÈGLES ABSOLUES :
             `
         }
 
-        // Superbe Layout HTML Professionnel
-        const htmlBody = `
-        <div style="font-family: 'Times New Roman', Times, serif; max-width: 650px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; padding: 40px;">
-            <div style="text-align: center; border-bottom: 2px solid #008751; padding-bottom: 20px; margin-bottom: 30px;">
-                <h1 style="color: #008751; font-size: 24px; font-weight: normal; margin: 0; text-transform: uppercase; letter-spacing: 2px;">Secrétariat à la Reconnaissance</h1>
-                <h2 style="color: #333333; font-size: 14px; font-weight: normal; margin: 5px 0 0 0; letter-spacing: 1px;">REPUBLIQUE DU BENIN</h2>
-            </div>
-            <div style="color: #1a1a1a; font-size: 16px; line-height: 1.8; text-align: justify;">
-                ${emailContent}
-            </div>
-            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eeeeee; text-align: center; color: #777777; font-size: 11px; font-family: Arial, sans-serif;">
-                <p>Ceci est un document généré automatiquement. Conservez précieusement votre référence : <strong>${data.refId}</strong></p>
-                <p>&copy; ${new Date().getFullYear()} Retour Gagnant Bénin. Tous droits réservés.</p>
-            </div>
-        </div>`
-
-        // 2. Fetch SMTP settings from DB
+        // 2. Fetch SMTP settings from DB (we do it here specifically to get the siteName earlier for the header)
         const { data: settingsData } = await supabase
             .from('settings')
             .select('key, value')
@@ -86,6 +71,28 @@ RÈGLES ABSOLUES :
         for (const s of settingsData || []) {
             settings[s.key] = s.value
         }
+
+        const siteName = settings.hero_title || 'Retour Gagnant Bénin'
+        const logoUrl = `${data.baseUrl}/logo.jpg`
+
+        // Superbe Layout HTML Professionnel avec Logo
+        const htmlBody = `
+        <div style="font-family: 'Times New Roman', Times, serif; max-width: 650px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; padding: 40px;">
+            <div style="text-align: center; border-bottom: 2px solid #008751; padding-bottom: 20px; margin-bottom: 30px;">
+                <img src="${logoUrl}" alt="${siteName}" width="60" height="60" style="border-radius: 12px; object-fit: cover; border: 2px solid #008751; margin-bottom: 16px;" />
+                <h1 style="color: #008751; font-size: 24px; font-weight: normal; margin: 0; text-transform: uppercase; letter-spacing: 2px;">Secrétariat à la Reconnaissance</h1>
+                <h2 style="color: #333333; font-size: 14px; font-weight: normal; margin: 5px 0 0 0; letter-spacing: 1px;">REPUBLIQUE DU BENIN</h2>
+            </div>
+            <div style="color: #1a1a1a; font-size: 16px; line-height: 1.8; text-align: justify;">
+                ${emailContent}
+            </div>
+            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eeeeee; text-align: center; color: #777777; font-size: 11px; font-family: Arial, sans-serif;">
+                <p>Ceci est un document généré automatiquement. Conservez précieusement votre référence : <strong>${data.refId}</strong></p>
+                <p>&copy; ${new Date().getFullYear()} ${siteName}. Tous droits réservés.</p>
+            </div>
+        </div>`
+
+        // Already fetched above, omitting re-fetch
 
         if (settings.smtp_host && settings.smtp_user && settings.smtp_pass) {
             const transporter = nodemailer.createTransport({
@@ -98,7 +105,6 @@ RÈGLES ABSOLUES :
                 }
             })
 
-            const siteName = settings.hero_title || 'Retour Gagnant Bénin'
             const fromString = `"${siteName} - Service Juridique" <${settings.smtp_from_email || settings.smtp_user}>`
 
             await transporter.sendMail({
@@ -122,6 +128,7 @@ RÈGLES ABSOLUES :
 
 export async function POST(request: NextRequest) {
     try {
+        const baseUrl = request.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'https://retourgagnant.bj'
         const body = await request.json()
         const { nom, prenom, email } = body
 
@@ -234,6 +241,7 @@ export async function POST(request: NextRequest) {
             email,
             nationalite: body.nationalite || 'Non spécifiée',
             refId: ref,
+            baseUrl,
         })
 
         return NextResponse.json({
