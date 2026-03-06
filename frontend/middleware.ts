@@ -104,12 +104,7 @@ export async function middleware(request: NextRequest) {
                         supabaseResponse.headers.set('Permissions-Policy', 'camera=(), microphone=(self), geolocation=()')
 
                         cookiesToSet.forEach(({ name, value, options }) => {
-                            supabaseResponse.cookies.set(name, value, {
-                                ...options,
-                                httpOnly: true,
-                                secure: process.env.NODE_ENV === 'production',
-                                sameSite: 'lax',
-                            })
+                            supabaseResponse.cookies.set(name, value, options)
                         })
                     },
                 },
@@ -122,6 +117,17 @@ export async function middleware(request: NextRequest) {
         // Helper function to redirect keeping possible refreshed cookies
         const redirectTo = (url: URL) => {
             const redirectRes = NextResponse.redirect(url)
+
+            // 🧹 SECURITY/BUGFIX: If we redirect to login, clear all supabase cookies 
+            // to ensure no stuck 'HttpOnly' cookies from previous bug remain on browser.
+            if (url.pathname.includes('/login')) {
+                request.cookies.getAll()
+                    .filter(c => c.name.startsWith('sb-'))
+                    .forEach(cookie => {
+                        redirectRes.cookies.delete(cookie.name)
+                    })
+            }
+
             // Transférer les cookies nouvellement définis par Supabase
             supabaseResponse.cookies.getAll().forEach(cookie => {
                 redirectRes.cookies.set(cookie.name, cookie.value, cookie)
