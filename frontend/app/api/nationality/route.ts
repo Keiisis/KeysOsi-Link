@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import nodemailer from 'nodemailer'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 // On préfère la clé Service Role côté serveur pour contourner les restrictions RLS (sécurité maximale)
@@ -33,38 +34,46 @@ const sendConfirmationEmail = async (data: {
         htmlBody = htmlBody.replace(/\{\{nationalite\}\}/g, data.nationalite)
         htmlBody = htmlBody.replace(/\{\{ref\}\}/g, data.refId)
 
-        const resendKey = process.env.RESEND_API_KEY
+        // 2. Fetch SMTP settings from DB
+        const { data: settingsData } = await supabase
+            .from('settings')
+            .select('key, value')
+            .in('key', ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_from_email', 'hero_title'])
 
-        if (resendKey) {
-            // Optionnel : permettre à l'admin de définir l'email d'envoi dans .env (ou via la table settings)
-            const fromEmail = process.env.RESEND_FROM_EMAIL || 'Retour Gagnant <contact@retourgagnant.bj>'
+        const settings: Record<string, string> = {}
+        for (const s of settingsData || []) {
+            settings[s.key] = s.value
+        }
 
-            const response = await fetch('https://api.resend.com/emails', {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${resendKey}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    from: fromEmail,
-                    to: [data.email],
-                    subject: template.subject,
-                    html: htmlBody,
-                }),
+        if (settings.smtp_host && settings.smtp_user && settings.smtp_pass) {
+            const transporter = nodemailer.createTransport({
+                host: settings.smtp_host,
+                port: Number(settings.smtp_port) || 465,
+                secure: Number(settings.smtp_port) === 465,
+                auth: {
+                    user: settings.smtp_user,
+                    pass: settings.smtp_pass
+                }
             })
 
-            if (!response.ok) {
-                const errData = await response.json()
-                console.error('[EMAIL] Erreur Resend (Domaine non vérifié ?):', errData)
-                return false
-            }
+            const siteName = settings.hero_title || 'Retour Gagnant'
+            const fromString = `"${siteName}" <${settings.smtp_from_email || settings.smtp_user}>`
+
+            await transporter.sendMail({
+                from: fromString,
+                to: data.email,
+                replyTo: settings.smtp_from_email || settings.smtp_user,
+                subject: template.subject,
+                html: htmlBody,
+            })
+
             return true
         }
 
-        console.log('[EMAIL] Mode simulation (RESEND_API_KEY manquant) -> Envoi à :', data.email)
-        return false // On retourne false pour ne pas marquer "envoyé" s'il n'y a pas de clé vraie
+        console.log('[EMAIL] Mode simulation (SMTP non configuré) -> Envoi bloqué vers :', data.email)
+        return false // On retourne false pour ne pas marquer "envoyé" s'il n'y a pas de vraie config SMTP
     } catch (error) {
-        console.error('[EMAIL] Erreur fatale lors de l\'envoi:', error)
+        console.error('[EMAIL] Erreur fatale lors de l\'envoi via SMTP:', error)
         return false
     }
 }
