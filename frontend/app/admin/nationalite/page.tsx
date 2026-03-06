@@ -74,9 +74,14 @@ export default function AdminNationalitePage() {
                         <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.3em]">Gestion</span>
                         <h1 className="text-2xl font-black text-white flex items-center gap-2"><Globe2 size={22} className="text-emerald-400" /> Demandes de Nationalité</h1>
                     </div>
-                    <Link href="/admin/settings/payment" className="text-xs font-bold text-amber-400 bg-amber-500/10 px-4 py-2 rounded-xl border border-amber-500/20 flex items-center gap-2 hover:bg-amber-500/20 transition-all">
-                        <CreditCard size={14} /> Configurer Kkiapay / FedaPay / Zeyow <ExternalLink size={12} />
-                    </Link>
+                    <div className="flex gap-2 flex-wrap">
+                        <Link href="/admin/nationalite/settings" className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-4 py-2 rounded-xl border border-emerald-500/20 flex items-center gap-2 hover:bg-emerald-500/20 transition-all">
+                            <Globe2 size={14} /> Paramètres formulaire <ExternalLink size={12} />
+                        </Link>
+                        <Link href="/admin/settings/payment" className="text-xs font-bold text-amber-400 bg-amber-500/10 px-4 py-2 rounded-xl border border-amber-500/20 flex items-center gap-2 hover:bg-amber-500/20 transition-all">
+                            <CreditCard size={14} /> Passerelles paiement <ExternalLink size={12} />
+                        </Link>
+                    </div>
                 </div>
 
                 {/* Filters */}
