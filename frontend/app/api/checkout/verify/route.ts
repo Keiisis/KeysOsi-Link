@@ -1,9 +1,22 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 export async function POST(request: Request) {
     try {
+        if (!supabaseUrl || !supabaseServiceKey) {
+            return NextResponse.json(
+                { success: false, error: 'Configuration serveur manquante (SUPABASE_SERVICE_ROLE_KEY)' },
+                { status: 503 }
+            )
+        }
+
+        // Utiliser le service role pour contourner RLS
+        const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
         const body = await request.json()
         const { order_id, transaction_id, payment_method } = body
 
@@ -15,13 +28,14 @@ export async function POST(request: Request) {
         }
 
         // Idempotence — empêcher le double traitement
-        const { data: existingOrder } = await supabase
+        const { data: existingOrder, error: fetchError } = await supabase
             .from('orders')
             .select('payment_status, transaction_id, amount, payment_method, product_id, quantity')
             .eq('id', order_id)
             .single()
 
-        if (!existingOrder) {
+        if (fetchError || !existingOrder) {
+            console.error('Order fetch error:', fetchError?.message, '| order_id:', order_id)
             return NextResponse.json({ success: false, error: 'Order not found' }, { status: 404 })
         }
 
@@ -35,47 +49,61 @@ export async function POST(request: Request) {
         let isVerified = false
         const method = payment_method || existingOrder.payment_method
 
+        // Lire tous les settings nécessaires en une seule requête
+        const { data: settingsData } = await supabase
+            .from('settings')
+            .select('key, value')
+            .in('key', [
+                'kkiapay_sandbox', 'kkiapay_private_key',
+                'fedapay_secret_key', 'fedapay_sandbox',
+                'stripe_secret_key',
+                'paypal_client_id', 'paypal_client_secret', 'paypal_sandbox',
+            ])
+
+        const sm: Record<string, string> = {}
+        for (const s of settingsData || []) sm[s.key] = s.value
+
         // ─── KKIAPAY ─────────────────────────────────────────────────────────
         if (method === 'kkiapay') {
             try {
-                // Lire le mode sandbox pour utiliser le bon endpoint
-                const { data: kkSettings } = await supabase
-                    .from('settings')
-                    .select('key, value')
-                    .eq('key', 'kkiapay_sandbox')
-                const isSandbox = kkSettings?.find(s => s.key === 'kkiapay_sandbox')?.value === 'true'
+                const isSandbox = sm.kkiapay_sandbox === 'true'
+                const privateKey = sm.kkiapay_private_key || ''
                 const kkiapayBase = isSandbox
                     ? 'https://api-sandbox.kkiapay.me'
                     : 'https://api.kkiapay.me'
 
                 const verifyRes = await fetch(`${kkiapayBase}/api/v1/transactions/status`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-private-key': privateKey,
+                    },
                     body: JSON.stringify({ transactionId: transaction_id }),
                 })
                 const verifyData = await verifyRes.json()
-                console.log('Kkiapay verify response:', JSON.stringify(verifyData).slice(0, 200))
-                // Kkiapay peut retourner le montant NET (après frais) < montant commande
-                // On vérifie uniquement le statut SUCCESS, pas le montant exact
+                console.log('Kkiapay verify response (HTTP', verifyRes.status, '):', JSON.stringify(verifyData).slice(0, 300))
+
                 if (verifyData.status === 'SUCCESS') {
                     isVerified = true
+                } else {
+                    console.warn('Kkiapay status non-SUCCESS:', verifyData.status, '| message:', verifyData.message)
+                    return NextResponse.json(
+                        { success: false, error: `Kkiapay: ${verifyData.message || verifyData.status || 'vérification échouée'}` },
+                        { status: 400 }
+                    )
                 }
             } catch (e) {
                 console.error('Kkiapay verification error', e)
+                return NextResponse.json(
+                    { success: false, error: 'Erreur de connexion à Kkiapay' },
+                    { status: 502 }
+                )
             }
         }
 
         // ─── FEDAPAY ─────────────────────────────────────────────────────────
         else if (method === 'fedapay') {
             try {
-                const { data: settingsData } = await supabase
-                    .from('settings')
-                    .select('key, value')
-                    .in('key', ['fedapay_secret_key', 'fedapay_sandbox'])
-
-                const sm: Record<string, string> = {}
-                for (const s of settingsData || []) sm[s.key] = s.value
-
                 const secretKey = sm.fedapay_secret_key
                 const isSandbox = sm.fedapay_sandbox === 'true'
                 const apiBase = isSandbox
@@ -84,14 +112,15 @@ export async function POST(request: Request) {
 
                 // Vérification DB : l'ID FedaPay a été stocké dans la commande lors de la création
                 // server-side (POST /api/checkout/fedapay). On vérifie que l'ID fourni correspond.
-                // Note : l'API GET /v1/transactions/{id} retourne 404 sur certains comptes FedaPay
-                // sandbox — on utilise donc la vérification par DB comme source de vérité.
                 const storedTxId = existingOrder.transaction_id
+                console.log('FedaPay verify — storedTxId:', storedTxId, '| received:', transaction_id)
+
                 if (storedTxId && storedTxId === String(transaction_id)) {
                     console.log('FedaPay verify DB OK — transaction_id:', transaction_id)
                     isVerified = true
                 } else if (secretKey) {
                     // Fallback : essayer l'API FedaPay si la clé est disponible
+                    console.log('FedaPay DB check failed, trying API fallback...')
                     try {
                         const verifyRes = await fetch(`${apiBase}/v1/transactions/${transaction_id}`, {
                             headers: {
@@ -102,20 +131,35 @@ export async function POST(request: Request) {
                         if (verifyRes.ok) {
                             const verifyData = await verifyRes.json()
                             const verifiedStatus =
-                                verifyData?.v1?.transaction?.status
+                                verifyData?.['v1/transaction']?.status
+                                || verifyData?.v1?.transaction?.status
                                 || verifyData?.transaction?.status
                                 || verifyData?.status
                             console.log('FedaPay API verify — statut:', verifiedStatus, '| id:', transaction_id)
                             if (verifiedStatus === 'approved' || verifiedStatus === 'transferred') isVerified = true
+                            else {
+                                return NextResponse.json(
+                                    { success: false, error: `FedaPay statut: ${verifiedStatus || 'inconnu'}` },
+                                    { status: 400 }
+                                )
+                            }
                         } else {
-                            console.warn(`FedaPay API ${verifyRes.status} pour tx ${transaction_id} — DB check échoué aussi (storedTxId: ${storedTxId})`)
+                            // API 404 — sandbox limitation connue
+                            const errBody = await verifyRes.text()
+                            console.warn(`FedaPay API ${verifyRes.status}: ${errBody.slice(0, 100)} | storedTxId was: ${storedTxId}`)
+                            // Si la transaction a été créée server-side mais transaction_id non stocké en DB,
+                            // on ne peut pas vérifier — renvoyer une erreur claire
                             return NextResponse.json(
-                                { success: false, error: 'Vérification FedaPay impossible — relancez le paiement' },
+                                { success: false, error: 'FedaPay: impossible de vérifier — réessayez ou contactez le support' },
                                 { status: 400 }
                             )
                         }
                     } catch (e) {
                         console.error('FedaPay API fallback error', e)
+                        return NextResponse.json(
+                            { success: false, error: 'Erreur de connexion à FedaPay' },
+                            { status: 502 }
+                        )
                     }
                 } else {
                     console.error('FedaPay: clé secrète manquante ET aucun transaction_id en DB')
@@ -126,19 +170,17 @@ export async function POST(request: Request) {
                 }
             } catch (e) {
                 console.error('Fedapay verification error', e)
+                return NextResponse.json(
+                    { success: false, error: 'Erreur vérification FedaPay' },
+                    { status: 500 }
+                )
             }
         }
 
         // ─── STRIPE ──────────────────────────────────────────────────────────
         else if (method === 'stripe') {
             try {
-                const { data: settingsData } = await supabase
-                    .from('settings')
-                    .select('key, value')
-                    .in('key', ['stripe_secret_key'])
-
-                const secretKey = settingsData?.find(s => s.key === 'stripe_secret_key')?.value
-
+                const secretKey = sm.stripe_secret_key
                 if (secretKey) {
                     const stripe = new Stripe(secretKey)
                     const pi = await stripe.paymentIntents.retrieve(transaction_id)
@@ -153,8 +195,6 @@ export async function POST(request: Request) {
 
         // ─── PAYPAL ──────────────────────────────────────────────────────────
         else if (method === 'paypal') {
-            // PayPal est vérifié lors de la capture (/api/checkout/paypal/capture).
-            // Si on arrive ici, soit la commande est déjà complétée, soit on vérifie la capture.
             if (
                 existingOrder.payment_status === 'completed' ||
                 existingOrder.transaction_id === transaction_id
@@ -162,14 +202,6 @@ export async function POST(request: Request) {
                 isVerified = true
             } else {
                 try {
-                    const { data: settingsData } = await supabase
-                        .from('settings')
-                        .select('key, value')
-                        .in('key', ['paypal_client_id', 'paypal_client_secret', 'paypal_sandbox'])
-
-                    const sm: Record<string, string> = {}
-                    for (const s of settingsData || []) sm[s.key] = s.value
-
                     if (sm.paypal_client_id && sm.paypal_client_secret) {
                         const base = sm.paypal_sandbox === 'true'
                             ? 'https://api-m.sandbox.paypal.com'
@@ -206,7 +238,6 @@ export async function POST(request: Request) {
 
         // ─── ZEYOW ───────────────────────────────────────────────────────────
         else if (method === 'zeyow') {
-            // Zeyow confirme via page de retour — on accepte si le statut retour est success
             isVerified = true
         }
 
@@ -224,6 +255,7 @@ export async function POST(request: Request) {
             .eq('id', order_id)
 
         if (error) {
+            console.error('Order update error:', error.message)
             return NextResponse.json(
                 { success: false, error: 'Database update failed' },
                 { status: 500 }

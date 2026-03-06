@@ -103,14 +103,30 @@ export async function POST(request: Request) {
 
         // Stocker l'ID de transaction FedaPay dans la commande pour vérification sécurisée
         // (l'API GET /v1/transactions/{id} retourne 404 dans certains comptes sandbox)
-        if (supabaseUrl && supabaseServiceKey) {
-            const supabaseService = createClient(supabaseUrl, supabaseServiceKey)
-            await supabaseService
-                .from('orders')
-                .update({ transaction_id: String(transaction.id) })
-                .eq('id', order_id)
-                .eq('payment_status', 'pending')
+        if (!supabaseUrl || !supabaseServiceKey) {
+            console.error('SUPABASE_SERVICE_ROLE_KEY manquante — impossible de stocker transaction_id')
+            return NextResponse.json(
+                { error: 'Configuration serveur manquante (SUPABASE_SERVICE_ROLE_KEY)' },
+                { status: 503 }
+            )
         }
+
+        const supabaseService = createClient(supabaseUrl, supabaseServiceKey)
+        const { error: updateError } = await supabaseService
+            .from('orders')
+            .update({ transaction_id: String(transaction.id) })
+            .eq('id', order_id)
+            .eq('payment_status', 'pending')
+
+        if (updateError) {
+            console.error('FedaPay: échec mise à jour transaction_id en DB:', updateError.message)
+            return NextResponse.json(
+                { error: `Erreur DB lors du stockage transaction_id: ${updateError.message}` },
+                { status: 500 }
+            )
+        }
+
+        console.log(`FedaPay: transaction_id ${transaction.id} stocké pour commande ${order_id}`)
 
         return NextResponse.json({
             fedapay_transaction_id: transaction.id,
