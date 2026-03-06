@@ -79,6 +79,8 @@ export async function middleware(request: NextRequest) {
     }
 
     // ─── Auth Check ───
+    let supabaseResponse = response
+
     try {
         const supabase = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -87,8 +89,22 @@ export async function middleware(request: NextRequest) {
                 cookies: {
                     getAll: () => request.cookies.getAll(),
                     setAll: (cookiesToSet) => {
+                        // Mettre à jour la req courante
+                        cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+
+                        // Mettre à jour la réponse
+                        supabaseResponse = NextResponse.next({
+                            request,
+                        })
+                        // Restaurer les security headers !
+                        supabaseResponse.headers.set('X-Content-Type-Options', 'nosniff')
+                        supabaseResponse.headers.set('X-Frame-Options', 'DENY')
+                        supabaseResponse.headers.set('X-XSS-Protection', '1; mode=block')
+                        supabaseResponse.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+                        supabaseResponse.headers.set('Permissions-Policy', 'camera=(), microphone=(self), geolocation=()')
+
                         cookiesToSet.forEach(({ name, value, options }) => {
-                            response.cookies.set(name, value, {
+                            supabaseResponse.cookies.set(name, value, {
                                 ...options,
                                 httpOnly: true,
                                 secure: process.env.NODE_ENV === 'production',
@@ -100,30 +116,33 @@ export async function middleware(request: NextRequest) {
             }
         )
 
-        // ═══════════════════════════════════════════════════════
-        // FIX DEFINITIF :
-        // 1) D'abord getSession() — lit les cookies locaux, ne fait PAS d'appel réseau
-        //    C'est rapide et fiable juste après un login
-        // 2) Si la session existe, on utilise le user dedans
-        // 3) On vérifie ensuite le rôle via la table user_profiles avec la Service Key
-        // ═══════════════════════════════════════════════════════
+        // Supabase SSR recommande d'utiliser getUser() plutôt que getSession()
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
 
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-
-        if (sessionError || !session || !session.user) {
-            // Pas de session → rediriger vers login
-            const loginUrl = isAdminRoute ? '/admin/login' : '/agent/login'
-            return NextResponse.redirect(new URL(loginUrl, request.url))
+        // Helper function to redirect keeping possible refreshed cookies
+        const redirectTo = (url: URL) => {
+            const redirectRes = NextResponse.redirect(url)
+            // Transférer les cookies nouvellement définis par Supabase
+            supabaseResponse.cookies.getAll().forEach(cookie => {
+                redirectRes.cookies.set(cookie.name, cookie.value, cookie)
+            })
+            return redirectRes
         }
 
-        const userId = session.user.id
+        if (userError || !user) {
+            // Pas d'utilisateur authentifié → rediriger vers login
+            const loginUrl = isAdminRoute ? '/admin/login' : '/agent/login'
+            return redirectTo(new URL(loginUrl, request.url))
+        }
+
+        const userId = user.id
 
         // Vérifier le rôle avec la Service Key (contourne les RLS)
         const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
         if (!serviceKey) {
             // Pas de service key → on laisse passer (le layout côté client vérifiera)
             console.warn('Middleware: SUPABASE_SERVICE_ROLE_KEY manquante, vérification de rôle ignorée')
-            return response
+            return supabaseResponse
         }
 
         const adminSupabase = createClient(
@@ -139,21 +158,20 @@ export async function middleware(request: NextRequest) {
 
         if (profileError || !profile) {
             // Profil introuvable — laisser passer, le layout côté client gèrera
-            // (peut arriver si le profil n'est pas encore créé)
             console.warn('Middleware: Profil non trouvé pour', userId, '— passage autorisé')
-            return response
+            return supabaseResponse
         }
 
         // STRICT ROLE CHECK : Agent ≠ Admin
         if (isAgentRoute && profile.role !== 'agent' && profile.role !== 'admin') {
-            return NextResponse.redirect(new URL('/agent/login?error=unauthorized', request.url))
+            return redirectTo(new URL('/agent/login?error=unauthorized', request.url))
         }
 
         if (isAdminRoute && profile.role !== 'admin') {
-            return NextResponse.redirect(new URL('/admin/login?error=unauthorized', request.url))
+            return redirectTo(new URL('/admin/login?error=unauthorized', request.url))
         }
 
-        return response
+        return supabaseResponse
     } catch (err: unknown) {
         // En caso d'erreur réseau/timeout, NE PAS bloquer l'accès
         // Le layout côté client fera sa propre vérification
