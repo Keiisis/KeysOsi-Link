@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 // XOF et autres devises sans centimes — Stripe n'applique pas *100
 const ZERO_DECIMAL = new Set([
@@ -10,13 +13,18 @@ const ZERO_DECIMAL = new Set([
 
 export async function POST(request: Request) {
     try {
+        if (!supabaseUrl || !supabaseServiceKey) {
+            return NextResponse.json({ error: 'Configuration serveur manquante' }, { status: 503 })
+        }
+
+        const supabase = createClient(supabaseUrl, supabaseServiceKey)
         const { order_id } = await request.json()
 
         if (!order_id) {
             return NextResponse.json({ error: 'order_id requis' }, { status: 400 })
         }
 
-        // Récupérer la clé secrète depuis les settings Supabase
+        // Récupérer la clé secrète depuis les settings Supabase (service role)
         const { data: settingsData } = await supabase
             .from('settings')
             .select('key, value')
@@ -24,7 +32,7 @@ export async function POST(request: Request) {
 
         const secretKey = settingsData?.find(s => s.key === 'stripe_secret_key')?.value
         if (!secretKey) {
-            return NextResponse.json({ error: 'Stripe non configuré' }, { status: 503 })
+            return NextResponse.json({ error: 'Stripe non configuré (clé secrète manquante)' }, { status: 503 })
         }
 
         // Récupérer les détails de la commande
@@ -59,10 +67,14 @@ export async function POST(request: Request) {
         })
 
         // Stocker l'ID du PaymentIntent pour la vérification ultérieure
-        await supabase
+        const { error: updateError } = await supabase
             .from('orders')
             .update({ transaction_id: paymentIntent.id })
             .eq('id', order_id)
+
+        if (updateError) {
+            console.error('Stripe: échec mise à jour transaction_id:', updateError.message)
+        }
 
         return NextResponse.json({ client_secret: paymentIntent.client_secret })
     } catch (error: unknown) {

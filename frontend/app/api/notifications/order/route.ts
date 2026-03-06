@@ -143,8 +143,8 @@ export async function POST(request: Request) {
             from: fromString,
             to: order.customer_email,
             replyTo: settings.smtp_from_email,
-            subject: `Confirmation de paiement & Facture - ${siteName}`,
-            html: generateCustomerEmailHTML(order, siteName, baseUrl, eventTicket),
+            subject: `✅ Facture & Confirmation de commande — ${siteName}`,
+            html: generateCustomerEmailHTML(order, siteName, baseUrl, eventTicket, settings),
           })
         } catch (emailErr) {
           console.error('Customer email error:', emailErr)
@@ -162,76 +162,181 @@ export async function POST(request: Request) {
 }
 
 function generateOrderEmailHTML(order: Record<string, unknown>, siteName: string, type: string, baseUrl: string): string {
-  const formatPrice = (n: number) => new Intl.NumberFormat('fr-FR').format(n)
-  return `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #0a0f18; color: white; border-radius: 16px; overflow: hidden;">
-      <div style="background: linear-gradient(135deg, #FCD116, #008751); padding: 32px; text-align: center;">
-        <h1 style="margin: 0; font-size: 24px; font-weight: 900; color: #0a0f18;">${siteName}</h1>
-        <p style="margin: 8px 0 0; font-size: 12px; color: #0a0f18; text-transform: uppercase; letter-spacing: 3px;">
-          ${type === 'payment_success' ? 'Nouvelle Commande Receuillie' : 'Mise a jour'}
-        </p>
-      </div>
-      <div style="padding: 32px;">
-        <table style="width: 100%; border-collapse: collapse;">
-          <tr><td style="padding: 8px 0; color: #888; font-size: 12px;">Client</td><td style="padding: 8px 0; text-align: right; font-weight: bold;">${order.customer_name}</td></tr>
-          <tr><td style="padding: 8px 0; color: #888; font-size: 12px;">Telephone</td><td style="padding: 8px 0; text-align: right;">${order.customer_phone}</td></tr>
-          <tr><td style="padding: 8px 0; color: #888; font-size: 12px;">Produit</td><td style="padding: 8px 0; text-align: right; font-weight: bold;">${order.product_title}</td></tr>
-          <tr><td style="padding: 8px 0; color: #888; font-size: 12px;">Quantitée</td><td style="padding: 8px 0; text-align: right;">${order.quantity || 1}</td></tr>
-          <tr style="border-top: 1px solid #333;"><td style="padding: 16px 0 8px; color: #FCD116; font-weight: bold;">TOTAL</td><td style="padding: 16px 0 8px; text-align: right; font-size: 20px; font-weight: 900; color: #FCD116;">${formatPrice(order.amount as number)} ${order.currency || 'XOF'}</td></tr>
-          <tr><td style="padding: 4px 0; color: #888; font-size: 12px;">Methode</td><td style="padding: 4px 0; text-align: right; text-transform: uppercase;">${order.payment_method}</td></tr>
-          <tr><td style="padding: 4px 0; color: #888; font-size: 12px;">Ref</td><td style="padding: 4px 0; text-align: right; font-family: monospace; font-size: 11px;">${(order.id as string).slice(0, 8).toUpperCase()}</td></tr>
-        </table>
+  const f = (n: number) => new Intl.NumberFormat('fr-FR').format(n)
+  const logoUrl = `${baseUrl}/logo.jpg`
+  const ref = `RG-${(order.id as string).slice(0, 8).toUpperCase()}`
+  const payMethodLabel: Record<string, string> = {
+    kkiapay: 'Mobile Money — Kkiapay', fedapay: 'Mobile Money — FedaPay',
+    stripe: 'Carte bancaire — Stripe', paypal: 'PayPal Business', zeyow: 'Zeyow',
+  }
+  const payLabel = payMethodLabel[order.payment_method as string] || String(order.payment_method || '').toUpperCase()
 
-        <div style="margin-top: 30px; text-align: center;">
-          <a href="${baseUrl}/admin/orders" style="display: inline-block; background: #008751; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; font-size: 14px;">GÉRER SUR LE DASHBOARD</a>
-        </div>
+  return `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#0d1117;border-radius:16px;overflow:hidden;border:1px solid #1e2a3a;">
+    <div style="background:linear-gradient(135deg,#006b40,#008751);padding:32px 40px;display:flex;align-items:center;gap:16px;">
+      <img src="${logoUrl}" alt="${siteName}" width="52" height="52" style="border-radius:10px;object-fit:cover;border:2px solid rgba(255,255,255,.3);" />
+      <div>
+        <div style="font-size:20px;font-weight:900;color:#fff;">${siteName}</div>
+        <div style="font-size:10px;color:#FCD116;text-transform:uppercase;letter-spacing:3px;margin-top:3px;">${type === 'payment_success' ? '🛒 Nouvelle commande reçue' : 'Mise à jour commande'}</div>
       </div>
     </div>
-  `
+    <div style="padding:32px 40px;">
+      <table style="width:100%;border-collapse:collapse;">
+        <tr><td style="padding:10px 0;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:1px;">Client</td><td style="padding:10px 0;text-align:right;font-weight:800;color:#fff;font-size:14px;">${order.customer_name}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;font-size:12px;">Téléphone</td><td style="padding:6px 0;text-align:right;color:#d1d5db;font-size:13px;">${order.customer_phone}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;font-size:12px;">Produit</td><td style="padding:6px 0;text-align:right;font-weight:700;color:#fff;font-size:13px;">${order.product_title}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;font-size:12px;">Quantité</td><td style="padding:6px 0;text-align:right;color:#d1d5db;font-size:13px;">${order.quantity || 1}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;font-size:12px;">Méthode</td><td style="padding:6px 0;text-align:right;color:#d1d5db;font-size:13px;">${payLabel}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;font-size:12px;">Référence</td><td style="padding:6px 0;text-align:right;font-family:monospace;color:#FCD116;font-size:12px;">${ref}</td></tr>
+        <tr style="border-top:1px solid #1e2a3a;">
+          <td style="padding:18px 0 8px;color:#FCD116;font-weight:900;font-size:13px;text-transform:uppercase;">TOTAL REÇU</td>
+          <td style="padding:18px 0 8px;text-align:right;font-size:22px;font-weight:900;color:#FCD116;">${f(order.amount as number)} ${order.currency || 'FCFA'}</td>
+        </tr>
+      </table>
+      <div style="margin-top:24px;text-align:center;">
+        <a href="${baseUrl}/admin/orders" style="display:inline-block;background:#008751;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:800;font-size:13px;letter-spacing:.5px;">Gérer sur le dashboard →</a>
+      </div>
+    </div>
+    <div style="padding:16px 40px;background:#080d14;text-align:center;border-top:1px solid #1e2a3a;">
+      <p style="margin:0;color:#4b5563;font-size:11px;">${siteName} — Notification automatique · Ne pas répondre</p>
+    </div>
+  </div>`
 }
 
-function generateCustomerEmailHTML(order: Record<string, unknown>, siteName: string, baseUrl: string, eventTicket: Record<string, any> | null = null): string {
-  const formatPrice = (n: number) => new Intl.NumberFormat('fr-FR').format(n)
+function generateCustomerEmailHTML(
+  order: Record<string, unknown>,
+  siteName: string,
+  baseUrl: string,
+  eventTicket: Record<string, string> | null = null,
+  settings: Record<string, string> = {}
+): string {
+  const f = (n: number) => new Intl.NumberFormat('fr-FR').format(n)
   const invoiceUrl = `${baseUrl}/api/invoices/${order.id}`
+  const logoUrl = `${baseUrl}/logo.jpg`
+  const ref = `RG-${(order.id as string).slice(0, 8).toUpperCase()}`
+  const date = new Date().toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })
+  const siteEmail = settings.contact_email || 'contact@retourgagnant.bj'
+  const sitePhone = settings.contact_phone || ''
+  const payMethodLabel: Record<string, string> = {
+    kkiapay: 'Mobile Money — Kkiapay', fedapay: 'Mobile Money — FedaPay',
+    stripe: 'Carte bancaire — Stripe', paypal: 'PayPal Business', zeyow: 'Zeyow',
+  }
+  const payLabel = payMethodLabel[order.payment_method as string] || String(order.payment_method || '').toUpperCase()
 
-  // Inclusion conditionnelle du ticket d'événement
+  // Lignes des produits (panier ou produit unique)
+  type CartItem = { title?: string; name?: string; price?: number; sale_price?: number; quantity?: number }
+  const cartItems: CartItem[] = (
+    Array.isArray(order.cart_items) && (order.cart_items as CartItem[]).length > 0
+  )
+    ? order.cart_items as CartItem[]
+    : [{ title: order.product_title as string, price: (order.amount as number) / ((order.quantity as number) || 1), quantity: (order.quantity as number) || 1 }]
+
+  const productRows = cartItems.map((item: CartItem) => {
+    const price = item.sale_price && item.sale_price < (item.price || 0) ? item.sale_price : (item.price || 0)
+    const total = price * (item.quantity || 1)
+    return `<tr>
+      <td style="padding:12px 16px;font-size:13px;color:#1a1a1a;border-bottom:1px solid #f3f4f6;">${item.title || item.name || order.product_title}</td>
+      <td style="padding:12px 16px;font-size:13px;color:#6b7280;text-align:center;border-bottom:1px solid #f3f4f6;">${item.quantity || 1}</td>
+      <td style="padding:12px 16px;font-size:13px;color:#6b7280;text-align:right;border-bottom:1px solid #f3f4f6;">${f(price)} FCFA</td>
+      <td style="padding:12px 16px;font-size:13px;font-weight:700;color:#1a1a1a;text-align:right;border-bottom:1px solid #f3f4f6;">${f(total)} FCFA</td>
+    </tr>`
+  }).join('')
+
+  const shippingFee = (order.shipping_fee as number) || 0
+  const shippingRow = shippingFee > 0 ? `<tr>
+    <td colspan="3" style="padding:10px 16px;font-size:12px;color:#6b7280;text-align:right;">Frais de livraison${order.shipping_zone ? ` (${order.shipping_zone})` : ''}</td>
+    <td style="padding:10px 16px;font-size:12px;color:#1a1a1a;font-weight:600;text-align:right;">+ ${f(shippingFee)} FCFA</td>
+  </tr>` : ''
+
   const ticketHtml = eventTicket ? `
-      <div style="background: #1a1a1a; color: white; border-radius: 12px; padding: 24px; margin: 30px 0; text-align: center; border: 2px solid #FCD116;">
-        <p style="margin: 0; font-size: 10px; color: #FCD116; text-transform: uppercase; letter-spacing: 2px; font-weight: bold;">VOTRE TICKET D'ACCÈS EXCLUSIF</p>
-        <h2 style="margin: 8px 0; font-size: 18px; color: white;">${eventTicket.event_title || order.product_title}</h2>
-        <div style="background: white; padding: 16px; border-radius: 8px; display: inline-block; margin: 16px 0;">
-           <!-- Remplacer ceci par une librairie QR Code Backend ou API externe pour image -->
-           <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(eventTicket.qr_data || eventTicket.ticket_code)}" width="150" height="150" alt="QR Code" />
-        </div>
-        <p style="margin: 0; font-size: 24px; font-family: monospace; font-weight: 900; letter-spacing: 4px;">${eventTicket.ticket_code}</p>
-        <p style="margin: 8px 0 0; font-size: 12px; color: #888;">Type: <strong style="color: #008751; text-transform: uppercase;">${eventTicket.ticket_type}</strong></p>
-        <p style="margin: 16px 0 0; font-size: 11px; color: #aaa;">Veuillez présenter ce QR Code ou ce code textuel à l'entrée de l'événement.</p>
-      </div>
-  ` : ''
+  <div style="background:#1a1a1a;border-radius:12px;padding:24px;margin:24px 0;text-align:center;border:2px solid #FCD116;">
+    <p style="margin:0 0 6px;font-size:9px;color:#FCD116;text-transform:uppercase;letter-spacing:2px;font-weight:800;">Votre ticket d'accès</p>
+    <h3 style="margin:0 0 16px;font-size:16px;color:#fff;">${eventTicket.event_title || order.product_title}</h3>
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(eventTicket.qr_data || eventTicket.ticket_code)}" width="140" height="140" alt="QR" style="border-radius:8px;background:#fff;padding:8px;" />
+    <p style="margin:12px 0 0;font-size:20px;font-family:monospace;font-weight:900;color:#FCD116;letter-spacing:4px;">${eventTicket.ticket_code}</p>
+  </div>` : ''
 
-  return `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb;">
-      <div style="background: #008751; padding: 40px; text-align: center;">
-        <h1 style="margin: 0; font-size: 28px; font-weight: 900; color: white;">${siteName}</h1>
-        <p style="margin: 8px 0 0; color: rgba(255,255,255,0.8); font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">Facture & Confirmation</p>
-      </div>
-      <div style="padding: 40px;">
-        <p style="color: #333; font-size: 16px; line-height: 1.6; margin-top: 0;">Bonjour <strong>${order.customer_name}</strong>,</p>
-        <p style="color: #666; font-size: 15px; line-height: 1.6;">Nous accusons bonne réception de votre paiement de <strong style="color: #008751;">${formatPrice(order.amount as number)} ${order.currency || 'XOF'}</strong> pour le produit <strong>"${order.product_title}"</strong>.</p>
-        
-        ${ticketHtml}
+  return `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;max-width:620px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
 
-        <div style="background: #f8f9fa; border-radius: 16px; padding: 24px; ${eventTicket ? '' : 'margin: 30px 0;'} text-align: center; border: 1px dashed #ced4da;">
-          <p style="margin: 0 0 16px; font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 2px; font-weight: bold;">Réf: ${(order.id as string).slice(0, 8).toUpperCase()}</p>
-          <a href="${invoiceUrl}" style="display: inline-block; background: #1a1a1a; color: white; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Consulter ma Facture</a>
-          <p style="margin: 16px 0 0; font-size: 11px; color: #888;">(PDF téléchargeable depuis la page)</p>
+  <!-- EN-TÊTE FACTURE -->
+  <div style="background:linear-gradient(135deg,#006b40,#008751);padding:0;">
+    <div style="padding:32px 40px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <img src="${logoUrl}" alt="${siteName}" width="56" height="56" style="border-radius:12px;object-fit:cover;border:3px solid rgba(255,255,255,.3);" />
+        <div>
+          <div style="font-size:20px;font-weight:900;color:#fff;line-height:1.2;">${siteName}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:2px;margin-top:2px;">Cotonou, République du Bénin</div>
         </div>
-        
-        <p style="color: #888; font-size: 13px; line-height: 1.6; margin-top: 30px;">Notre équipe se tient à votre disposition pour toute information complémentaire.</p>
       </div>
-      <div style="padding: 24px 40px; background: #f9fafb; text-align: center; border-top: 1px solid #eee;">
-        <p style="margin: 0; color: #aaa; font-size: 11px; line-height: 1.6;">${siteName} — Agence de Confiance<br>Cotonou, République du Bénin</p>
+      <div style="text-align:right;">
+        <div style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:2px;">FACTURE</div>
+        <div style="font-size:22px;font-weight:900;color:#FCD116;letter-spacing:2px;">${ref}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:4px;">${date}</div>
+        <div style="margin-top:6px;display:inline-block;background:#FCD116;color:#006b40;padding:4px 12px;border-radius:20px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;">✓ Payée</div>
       </div>
     </div>
-  `
+  </div>
+
+  <div style="padding:36px 40px;">
+
+    <!-- SALUTATION -->
+    <p style="margin:0 0 6px;font-size:16px;color:#1a1a1a;">Bonjour <strong>${order.customer_name}</strong>,</p>
+    <p style="margin:0 0 28px;font-size:14px;color:#6b7280;line-height:1.7;">
+      Nous vous confirmons la bonne réception de votre paiement. Voici votre facture officielle.
+    </p>
+
+    ${ticketHtml}
+
+    <!-- TABLEAU PRODUITS -->
+    <table style="width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;margin-bottom:4px;">
+      <thead>
+        <tr style="background:#008751;">
+          <th style="padding:11px 16px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#fff;text-align:left;">Article</th>
+          <th style="padding:11px 16px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#fff;text-align:center;">Qté</th>
+          <th style="padding:11px 16px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#fff;text-align:right;">Prix unit.</th>
+          <th style="padding:11px 16px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#fff;text-align:right;">Total</th>
+        </tr>
+      </thead>
+      <tbody>${productRows}${shippingRow}</tbody>
+    </table>
+
+    <!-- TOTAL -->
+    <div style="margin:0 0 28px;display:flex;justify-content:flex-end;">
+      <div style="background:#f0fdf6;border:2px solid #008751;border-radius:12px;padding:20px 24px;min-width:220px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#008751;">Total TTC</span>
+          <span style="font-size:22px;font-weight:900;color:#008751;">${f(order.amount as number)} FCFA</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- INFO PAIEMENT -->
+    <div style="background:#f9fafb;border-radius:10px;padding:14px 18px;margin-bottom:28px;font-size:12px;color:#6b7280;">
+      💳 <strong style="color:#1a1a1a;">${payLabel}</strong>
+      ${order.transaction_id ? ` &nbsp;·&nbsp; Réf. transaction : <code style="color:#008751;font-size:11px;">${order.transaction_id}</code>` : ''}
+    </div>
+
+    <!-- BOUTON FACTURE -->
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${invoiceUrl}" style="display:inline-block;background:#008751;color:#fff;text-decoration:none;padding:16px 40px;border-radius:12px;font-weight:800;font-size:14px;letter-spacing:.5px;">
+        📄 Voir &amp; télécharger la facture complète
+      </a>
+      <p style="margin:10px 0 0;font-size:11px;color:#9ca3af;">Accès direct à votre facture — imprimable en PDF depuis votre navigateur</p>
+    </div>
+
+    <!-- MESSAGE CONTACT -->
+    <p style="font-size:13px;color:#6b7280;line-height:1.7;margin:0;">
+      Pour toute question, contactez-nous :<br>
+      📧 <a href="mailto:${siteEmail}" style="color:#008751;text-decoration:none;">${siteEmail}</a>
+      ${sitePhone ? ` &nbsp;·&nbsp; 📞 ${sitePhone}` : ''}
+    </p>
+  </div>
+
+  <!-- PIED -->
+  <div style="padding:20px 40px;background:#f9fafb;text-align:center;border-top:1px solid #e5e7eb;">
+    <p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.8;">
+      ${siteName} · Haie Vive, Cotonou, République du Bénin<br>
+      <a href="${baseUrl}" style="color:#008751;text-decoration:none;">www.retourgagnant.bj</a>
+    </p>
+  </div>
+</div>`
 }

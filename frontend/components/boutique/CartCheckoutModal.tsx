@@ -655,18 +655,26 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
     const confirmStripePayment = async () => {
         if (!stripeInstanceRef.current || !cardElementRef.current || !stripeClientSecret || !orderId) return
         setStep('processing')
-
-        const result = await stripeInstanceRef.current.confirmCardPayment(stripeClientSecret, {
-            payment_method: {
-                card: cardElementRef.current as unknown as Record<string, unknown>,
-            },
-        })
-
-        if (result.error) {
-            setErrorMessage(result.error.message || 'Paiement refusé')
-            setStep('stripe-form')
-        } else if (result.paymentIntent?.status === 'succeeded') {
-            await verifyPayment(orderId, result.paymentIntent.id)
+        try {
+            const result = await stripeInstanceRef.current.confirmCardPayment(stripeClientSecret, {
+                payment_method: {
+                    card: cardElementRef.current as unknown as Record<string, unknown>,
+                },
+            })
+            if (result.error) {
+                setErrorMessage(result.error.message || 'Paiement refusé')
+                setStep('stripe-form')
+            } else if (result.paymentIntent?.status === 'succeeded') {
+                await verifyPayment(orderId, result.paymentIntent.id)
+            } else {
+                setErrorMessage('Paiement incomplet. Veuillez réessayer ou contacter votre banque.')
+                setStep('stripe-form')
+            }
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : 'Erreur de paiement Stripe'
+            await cancelOrder(orderId)
+            setErrorMessage(msg)
+            setStep('error')
         }
     }
 
