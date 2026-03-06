@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import nodemailer from 'nodemailer'
+import Groq from 'groq-sdk'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 // On préfère la clé Service Role côté serveur pour contourner les restrictions RLS (sécurité maximale)
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 const supabase = createClient(supabaseUrl, supabaseKey)
+
+const groq = process.env.GROQ_API_KEY ? new Groq({ apiKey: process.env.GROQ_API_KEY }) : null
 
 const sendConfirmationEmail = async (data: {
     nom: string
@@ -15,24 +18,63 @@ const sendConfirmationEmail = async (data: {
     refId: string
 }) => {
     try {
-        // 1. Récupération du template dynamique
-        const { data: template } = await supabase
-            .from('email_templates')
-            .select('*')
-            .eq('slug', 'nationality_confirmation')
-            .eq('is_active', true)
-            .single()
+        let emailContent = ''
 
-        if (!template) {
-            console.warn('[EMAIL] Aucun template actif trouvé pour "nationality_confirmation".')
-            return false
+        if (groq) {
+            try {
+                const completion = await groq.chat.completions.create({
+                    messages: [
+                        {
+                            role: 'system',
+                            content: `Tu es le rédacteur institutionnel de "Retour Gagnant Bénin", la plateforme officielle de reconnaissance de la nationalité béninoise pour les afro-descendants. Ton rôle est de rédiger un email de confirmation de réception de dossier extrêmement formel, prestigieux, élégant et chaleureux. 
+RÈGLES ABSOLUES :
+1. AUCUN EMOJI. C'est strictement interdit.
+2. Ton retour doit être au format HTML, uniquement la partie "corps du texte" (utilise des balises <p>, <strong>, <ul>... mais pas de <html> ni de <body>).
+3. Adapte le discours à la personne (Nom, Nationalité d'origine).
+4. Précise que le dossier est en cours de traitement par le service juridique et qu'ils peuvent suivre l'évolution via leur numéro de référence.
+5. Sois solennel. C'est une démarche symbolique forte (le retour aux sources, la terre des ancêtres).`
+                        },
+                        {
+                            role: 'user',
+                            content: `Voici les informations du demandeur :\n- Nom complet : M/Mme ${data.prenom} ${data.nom}\n- Nationalité d'origine : ${data.nationalite}\n- Numéro de Référence : ${data.refId}\nRédige le corps de l'email de confirmation.`
+                        }
+                    ],
+                    model: 'mixtral-8x7b-32768',
+                    temperature: 0.3,
+                })
+                emailContent = completion.choices[0]?.message?.content || ''
+            } catch (err) {
+                console.error('[EMAIL] Erreur lors de la génération Groq, repli sur le texte par défaut.', err)
+            }
         }
 
-        let htmlBody = template.html_body
-        htmlBody = htmlBody.replace(/\{\{nom\}\}/g, data.nom)
-        htmlBody = htmlBody.replace(/\{\{prenom\}\}/g, data.prenom)
-        htmlBody = htmlBody.replace(/\{\{nationalite\}\}/g, data.nationalite)
-        htmlBody = htmlBody.replace(/\{\{ref\}\}/g, data.refId)
+        // Fallback or Wrap inside a prestigious HTML container
+        if (!emailContent) {
+            emailContent = `
+                <p>Cher(e) ${data.prenom} ${data.nom},</p>
+                <p>Nous vous confirmons la bonne réception de votre demande de reconnaissance de la nationalité béninoise.</p>
+                <p>Votre dossier porte la référence officielle : <strong>${data.refId}</strong>.</p>
+                <p>Notre service juridique a d’ores et déjà entamé l’examen de vos pièces. Nous vous tiendrons informé(e) des prochaines étapes.</p>
+                <p>La terre de vos ancêtres vous attend. Soyez le ou la bienvenu(e) au Bénin.</p>
+                <p>Très respectueusement,<br>L'équipe Retour Gagnant</p>
+            `
+        }
+
+        // Superbe Layout HTML Professionnel
+        const htmlBody = `
+        <div style="font-family: 'Times New Roman', Times, serif; max-width: 650px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; padding: 40px;">
+            <div style="text-align: center; border-bottom: 2px solid #008751; padding-bottom: 20px; margin-bottom: 30px;">
+                <h1 style="color: #008751; font-size: 24px; font-weight: normal; margin: 0; text-transform: uppercase; letter-spacing: 2px;">Secrétariat à la Reconnaissance</h1>
+                <h2 style="color: #333333; font-size: 14px; font-weight: normal; margin: 5px 0 0 0; letter-spacing: 1px;">REPUBLIQUE DU BENIN</h2>
+            </div>
+            <div style="color: #1a1a1a; font-size: 16px; line-height: 1.8; text-align: justify;">
+                ${emailContent}
+            </div>
+            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eeeeee; text-align: center; color: #777777; font-size: 11px; font-family: Arial, sans-serif;">
+                <p>Ceci est un document généré automatiquement. Conservez précieusement votre référence : <strong>${data.refId}</strong></p>
+                <p>&copy; ${new Date().getFullYear()} Retour Gagnant Bénin. Tous droits réservés.</p>
+            </div>
+        </div>`
 
         // 2. Fetch SMTP settings from DB
         const { data: settingsData } = await supabase
@@ -56,14 +98,14 @@ const sendConfirmationEmail = async (data: {
                 }
             })
 
-            const siteName = settings.hero_title || 'Retour Gagnant'
-            const fromString = `"${siteName}" <${settings.smtp_from_email || settings.smtp_user}>`
+            const siteName = settings.hero_title || 'Retour Gagnant Bénin'
+            const fromString = `"${siteName} - Service Juridique" <${settings.smtp_from_email || settings.smtp_user}>`
 
             await transporter.sendMail({
                 from: fromString,
                 to: data.email,
                 replyTo: settings.smtp_from_email || settings.smtp_user,
-                subject: template.subject,
+                subject: `Confirmation de réception - Dossier N° ${data.refId}`,
                 html: htmlBody,
             })
 
@@ -73,7 +115,7 @@ const sendConfirmationEmail = async (data: {
         console.log('[EMAIL] Mode simulation (SMTP non configuré) -> Envoi bloqué vers :', data.email)
         return false // On retourne false pour ne pas marquer "envoyé" s'il n'y a pas de vraie config SMTP
     } catch (error) {
-        console.error('[EMAIL] Erreur fatale lors de l\'envoi via SMTP:', error)
+        console.error('[EMAIL] Erreur fatale lors de l\'envoi via SMTP/Groq:', error)
         return false
     }
 }
