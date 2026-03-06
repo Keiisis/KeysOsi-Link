@@ -13,8 +13,18 @@ import Link from 'next/link'
 interface Application {
     id: string; application_ref: string; status: string
     nom: string; prenom: string; email: string; telephone: string
-    pays_residence: string; nationalite: string; profession: string
-    afro_descendant_description: string; ancestor1_nom: string; ancestor1_lien_parente: string
+    genre: string; date_naissance: string; pays_naissance: string; ville_naissance: string
+    pays_residence: string; nationalite: string; adresse_residence: string; profession: string
+    demande_depuis_benin: boolean
+    type_document_identite: string; numero_document: string; date_expiration_document: string
+    pays_delivrance: string; lieu_delivrance: string; autorite_delivrance: string
+    pere_nom: string; pere_prenom: string; pere_date_naissance: string
+    mere_nom: string; mere_prenom: string; mere_date_naissance: string
+    afro_descendant_description: string
+    ancestor1_nom: string; ancestor1_prenom: string; ancestor1_lien_parente: string
+    ancestor1_nationalite: string; ancestor1_pays_residence: string; ancestor1_vivant: boolean
+    ancestor2_nom: string; ancestor2_prenom: string; ancestor2_lien_parente: string; ancestor2_nationalite: string
+    documents_uploaded: string[]
     created_at: string; submitted_at: string; assigned_agent: string; agent_notes: string
     amount: number; currency: string; payment_status: string; payment_method: string; payment_ref: string
 }
@@ -122,14 +132,68 @@ export default function AdminNationalitePage() {
                                     </div>
                                 </div>
                                 {isOpen && (
-                                    <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} className="border-t border-white/5 p-5 space-y-4">
-                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
-                                            {[['Nationalité', a.nationalite], ['Profession', a.profession], ['Téléphone', a.telephone], ['Ancêtre', `${a.ancestor1_nom} (${a.ancestor1_lien_parente})`], ['Paiement', `${a.amount} ${a.currency} — ${a.payment_status}`], ['Passerelle', a.payment_method], ['TX Ref', a.payment_ref]].map(([k, v], j) => v && (
-                                                <div key={j}><span className="text-gray-600 block">{k}</span><span className="text-white font-bold">{v}</span></div>
-                                            ))}
+                                    <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} className="border-t border-white/5 p-5 space-y-5">
+                                        {/* Identité */}
+                                        <div>
+                                            <h4 className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-2">Identité</h4>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                                                {[['Genre', a.genre], ['Date de naissance', a.date_naissance], ['Pays naissance', a.pays_naissance], ['Ville naissance', a.ville_naissance], ['Nationalité', a.nationalite], ['Pays résidence', a.pays_residence], ['Adresse', a.adresse_residence], ['Téléphone', a.telephone], ['Profession', a.profession], ['Depuis le Bénin', a.demande_depuis_benin ? 'Oui' : 'Non']].map(([k, v], j) => v && (
+                                                    <div key={j}><span className="text-gray-600 block text-[10px]">{k}</span><span className="text-white font-bold">{v}</span></div>
+                                                ))}
+                                            </div>
                                         </div>
-                                        {a.afro_descendant_description && <div><span className="text-[10px] text-gray-600 block mb-1">Description afro-descendance</span><p className="text-xs text-gray-400 bg-white/[0.02] rounded-lg p-3">{a.afro_descendant_description}</p></div>}
+                                        {/* Document d'identité */}
+                                        <div>
+                                            <h4 className="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em] mb-2">Document d&apos;identité</h4>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                                                {[['Type', a.type_document_identite], ['Numéro', a.numero_document], ['Expiration', a.date_expiration_document], ['Pays délivrance', a.pays_delivrance], ['Lieu délivrance', a.lieu_delivrance], ['Autorité', a.autorite_delivrance]].map(([k, v], j) => v && (
+                                                    <div key={j}><span className="text-gray-600 block text-[10px]">{k}</span><span className="text-white font-bold">{v}</span></div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        {/* Parents */}
+                                        <div>
+                                            <h4 className="text-[9px] font-black text-purple-400 uppercase tracking-[0.2em] mb-2">Parents</h4>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                                                {[['Père — Nom', a.pere_nom], ['Père — Prénom', a.pere_prenom], ['Père — Naissance', a.pere_date_naissance], ['Mère — Nom', a.mere_nom], ['Mère — Prénom', a.mere_prenom], ['Mère — Naissance', a.mere_date_naissance]].map(([k, v], j) => v && (
+                                                    <div key={j}><span className="text-gray-600 block text-[10px]">{k}</span><span className="text-white font-bold">{v}</span></div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        {/* Ancêtres */}
+                                        <div>
+                                            <h4 className="text-[9px] font-black text-amber-400 uppercase tracking-[0.2em] mb-2">Ancêtres</h4>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                                                {[['Ancêtre 1 — Nom', a.ancestor1_nom], ['Ancêtre 1 — Prénom', a.ancestor1_prenom], ['Ancêtre 1 — Lien', a.ancestor1_lien_parente], ['Ancêtre 1 — Nationalité', a.ancestor1_nationalite], ['Ancêtre 1 — Pays résidence', a.ancestor1_pays_residence], ['Ancêtre 1 — Vivant', a.ancestor1_vivant === true ? 'Oui' : a.ancestor1_vivant === false ? 'Non' : null], ['Ancêtre 2 — Nom', a.ancestor2_nom], ['Ancêtre 2 — Prénom', a.ancestor2_prenom], ['Ancêtre 2 — Lien', a.ancestor2_lien_parente], ['Ancêtre 2 — Nationalité', a.ancestor2_nationalite]].map(([k, v], j) => v && (
+                                                    <div key={j}><span className="text-gray-600 block text-[10px]">{k}</span><span className="text-white font-bold">{v}</span></div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        {/* Afro-descendance */}
+                                        {a.afro_descendant_description && <div><span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.2em] block mb-1">Description afro-descendance</span><p className="text-xs text-gray-400 bg-white/[0.02] rounded-lg p-3">{a.afro_descendant_description}</p></div>}
+                                        {/* Paiement */}
+                                        <div>
+                                            <h4 className="text-[9px] font-black text-[#FCD116] uppercase tracking-[0.2em] mb-2">Paiement</h4>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                                                {[['Montant', `${a.amount || 0} ${a.currency || 'USD'}`], ['Statut paiement', a.payment_status], ['Passerelle', a.payment_method], ['Réf. transaction', a.payment_ref]].map(([k, v], j) => v && (
+                                                    <div key={j}><span className="text-gray-600 block text-[10px]">{k}</span><span className="text-white font-bold">{v}</span></div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        {/* Pièces jointes */}
+                                        {a.documents_uploaded && (a.documents_uploaded as string[]).length > 0 && (
+                                            <div>
+                                                <h4 className="text-[9px] font-black text-cyan-400 uppercase tracking-[0.2em] mb-2">Pièces jointes ({(a.documents_uploaded as string[]).length})</h4>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {(a.documents_uploaded as string[]).map((doc, j) => (
+                                                        <span key={j} className="text-[10px] bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg text-gray-400">{typeof doc === 'string' ? doc : JSON.stringify(doc)}</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {/* Notes agent */}
                                         <div><span className="text-[10px] text-gray-600 block mb-1">Notes agent</span><textarea defaultValue={a.agent_notes || ''} onBlur={e => updateNotes(a.id, e.target.value)} className="w-full bg-white/[0.03] border border-white/5 rounded-lg p-3 text-xs text-white focus:outline-none resize-none" rows={2} placeholder="Notes..." /></div>
+                                        {/* Actions */}
                                         <div className="flex gap-2 flex-wrap">
                                             <button onClick={() => downloadZip(a.id, a.application_ref)} className="bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 font-bold text-[10px] px-3 py-1.5 rounded-lg flex items-center gap-1"><Download size={12} /> Télécharger ZIP</button>
                                             {['soumis', 'en_traitement', 'verification', 'approuve', 'rejete'].filter(s => s !== a.status).map(s => (

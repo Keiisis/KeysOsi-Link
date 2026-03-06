@@ -6,35 +6,61 @@ import { supabase } from '@/lib/supabase'
 import { Globe, Search, Filter, Download, Clock, X, Eye, Loader2, FileDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-interface FamilyDetail {
-    nom?: string
-    lieu_naissance?: string
-    lien?: string
-}
-
 interface NationalityApplication {
     id: string
     application_ref: string
     nom: string
     prenom: string
     email: string
-    phone?: string
-    dob?: string
-    pob?: string
-    address?: string
-    passport_number?: string
+    telephone?: string
+    genre?: string
+    date_naissance?: string
+    pays_naissance?: string
+    ville_naissance?: string
     nationalite?: string
+    pays_residence?: string
+    adresse_residence?: string
+    profession?: string
+    demande_depuis_benin?: boolean
+    // Document
+    type_document_identite?: string
+    numero_document?: string
+    date_expiration_document?: string
+    pays_delivrance?: string
+    lieu_delivrance?: string
+    autorite_delivrance?: string
+    // Parents
+    pere_nom?: string
+    pere_prenom?: string
+    pere_date_naissance?: string
+    mere_nom?: string
+    mere_prenom?: string
+    mere_date_naissance?: string
+    // Afro-descendance
+    afro_descendant_description?: string
+    knows_about_law?: boolean
+    is_afro_descendant?: boolean
+    // Ancestors
+    ancestor1_nom?: string
+    ancestor1_prenom?: string
+    ancestor1_lien_parente?: string
+    ancestor1_nationalite?: string
+    ancestor1_pays_residence?: string
+    ancestor1_vivant?: boolean
+    ancestor2_nom?: string
+    ancestor2_prenom?: string
+    ancestor2_lien_parente?: string
+    ancestor2_nationalite?: string
+    // Status & Payment
     status: string
     payment_status: string
+    payment_method?: string
+    payment_ref?: string
     amount: number
     currency: string
-    documents_uploaded: { label: string; url: string }[] | string[]
-    afro_descendant_description?: string
-    has_parents_citizenship?: boolean
-    parent_details?: FamilyDetail
-    has_ancestors_citizenship?: boolean
-    ancestor_details?: FamilyDetail
+    documents_uploaded: string[]
     submitted_at: string
+    agent_notes?: string
 }
 
 export default function AgentNationalitePage() {
@@ -267,118 +293,117 @@ export default function AgentNationalitePage() {
                                 </div>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    {/* Infos Personnelles */}
-                                    <div className="md:col-span-1 space-y-4">
-                                        <h3 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em]">Demandeur</h3>
-                                        <div className="space-y-4 bg-white/[0.02] border border-white/5 rounded-2xl p-5">
-                                            <div>
-                                                <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Nom Complet</p>
-                                                <p className="text-sm font-bold text-white">{showDetail.prenom} {showDetail.nom}</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Email & Téléphone</p>
-                                                <p className="text-xs text-gray-300">{showDetail.email}</p>
-                                                <p className="text-xs text-gray-300 mt-1">{showDetail.phone || 'Non renseigné'}</p>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <div>
-                                                    <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Naissance</p>
-                                                    <p className="text-[11px] text-gray-300">{showDetail.dob || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Lieu</p>
-                                                    <p className="text-[11px] text-gray-300 truncate">{showDetail.pob || '-'}</p>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Passeport</p>
-                                                <p className="text-xs font-mono text-emerald-300">{showDetail.passport_number || 'N/A'}</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Nationalité Actuelle</p>
-                                                <p className="text-sm font-bold text-white uppercase">{showDetail.nationalite || '-'}</p>
-                                            </div>
+                            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                                {/* Identité */}
+                                <div>
+                                    <h3 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em] mb-3">Identité du demandeur</h3>
+                                    <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5">
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            {[['Nom complet', `${showDetail.prenom} ${showDetail.nom}`], ['Genre', showDetail.genre], ['Email', showDetail.email], ['Téléphone', showDetail.telephone], ['Date de naissance', showDetail.date_naissance], ['Pays de naissance', showDetail.pays_naissance], ['Ville de naissance', showDetail.ville_naissance], ['Nationalité', showDetail.nationalite], ['Pays de résidence', showDetail.pays_residence], ['Adresse', showDetail.adresse_residence], ['Profession', showDetail.profession], ['Depuis le Bénin', showDetail.demande_depuis_benin ? 'Oui' : 'Non']].map(([k, v], i) => v && (
+                                                <div key={i}><p className="text-[9px] text-gray-500 uppercase font-black mb-1">{k}</p><p className="text-xs text-white font-bold">{v}</p></div>
+                                            ))}
                                         </div>
                                     </div>
+                                </div>
 
-                                    {/* Généalogie & Histoire */}
-                                    <div className="md:col-span-2 space-y-4">
-                                        <h3 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em]">Contexte & Généalogie</h3>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            {/* Afro-descendant */}
-                                            <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5">
-                                                <p className="text-[9px] text-emerald-500/70 uppercase font-black mb-2">Histoire Familiale</p>
-                                                <p className="text-xs text-gray-400 leading-relaxed italic">
-                                                    {showDetail.afro_descendant_description || "Aucune description d'afro-descendance fournie."}
-                                                </p>
-                                            </div>
+                                {/* Document d'identité */}
+                                <div>
+                                    <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] mb-3">Document d&apos;identité</h3>
+                                    <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5">
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                            {[['Type', showDetail.type_document_identite], ['Numéro', showDetail.numero_document], ['Expiration', showDetail.date_expiration_document], ['Pays délivrance', showDetail.pays_delivrance], ['Lieu délivrance', showDetail.lieu_delivrance], ['Autorité', showDetail.autorite_delivrance]].map(([k, v], i) => v && (
+                                                <div key={i}><p className="text-[9px] text-gray-500 uppercase font-black mb-1">{k}</p><p className="text-xs text-white font-bold font-mono">{v}</p></div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
 
-                                            {/* Parents/Ancêtres */}
-                                            <div className="space-y-4">
-                                                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4">
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <p className="text-[9px] text-blue-400 uppercase font-black">Parent Citoyen</p>
-                                                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full ${showDetail.has_parents_citizenship ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-500/20 text-gray-500'}`}>
-                                                            {showDetail.has_parents_citizenship ? 'OUI' : 'NON'}
-                                                        </span>
-                                                    </div>
-                                                    {showDetail.has_parents_citizenship && showDetail.parent_details && (
-                                                        <div className="text-[10px] text-gray-400">
-                                                            <p><span className="text-gray-600 font-bold">Nom:</span> {showDetail.parent_details.nom || '-'}</p>
-                                                            <p><span className="text-gray-600 font-bold">Lieu:</span> {showDetail.parent_details.lieu_naissance || '-'}</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4">
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <p className="text-[9px] text-purple-400 uppercase font-black">Ancêtre Citoyen</p>
-                                                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full ${showDetail.has_ancestors_citizenship ? 'bg-purple-500/20 text-purple-400' : 'bg-gray-500/20 text-gray-500'}`}>
-                                                            {showDetail.has_ancestors_citizenship ? 'OUI' : 'NON'}
-                                                        </span>
-                                                    </div>
-                                                    {showDetail.has_ancestors_citizenship && showDetail.ancestor_details && (
-                                                        <div className="text-[10px] text-gray-400">
-                                                            <p><span className="text-gray-600 font-bold">Nom:</span> {showDetail.ancestor_details.nom || '-'}</p>
-                                                            <p><span className="text-gray-600 font-bold">Lien:</span> {showDetail.ancestor_details.lien || '-'}</p>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                {/* Parents */}
+                                <div>
+                                    <h3 className="text-[10px] font-black text-purple-400 uppercase tracking-[0.3em] mb-3">Parents</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4">
+                                            <p className="text-[9px] text-purple-400 uppercase font-black mb-2">Père</p>
+                                            <div className="space-y-1 text-xs">
+                                                <p className="text-white font-bold">{showDetail.pere_prenom} {showDetail.pere_nom}</p>
+                                                {showDetail.pere_date_naissance && <p className="text-gray-500">Né le {showDetail.pere_date_naissance}</p>}
                                             </div>
                                         </div>
-
-                                        {/* Documents Grid */}
-                                        <div className="space-y-3">
-                                            <p className="text-[9px] text-gray-500 uppercase font-black">Documents Justificatifs</p>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                {showDetail.documents_uploaded && (showDetail.documents_uploaded as unknown[]).map((doc, idx) => {
-                                                    const isObject = typeof doc === 'object' && doc !== null && 'label' in doc && 'url' in doc;
-                                                    const typedDoc = isObject ? (doc as { label: string; url: string }) : null;
-                                                    const label = typedDoc ? typedDoc.label : (typeof doc === 'string' ? doc.split(': ')[0] : `Doc #${idx + 1}`);
-                                                    const url = typedDoc ? typedDoc.url : (typeof doc === 'string' && doc.includes('?url=') ? doc.split('?url=')[1] : '#');
-
-                                                    return (
-                                                        <a
-                                                            key={idx}
-                                                            href={url}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-all group"
-                                                        >
-                                                            <div className="flex flex-col">
-                                                                <span className="text-[10px] font-black text-white/90 group-hover:text-emerald-400 transition-colors uppercase tracking-widest">{label}</span>
-                                                                <span className="text-[8px] text-gray-600 font-mono mt-0.5">TYPE: {label.toUpperCase().split(' ')[0]}</span>
-                                                            </div>
-                                                            <FileDown size={14} className="text-gray-500 group-hover:text-emerald-400 transition-colors" />
-                                                        </a>
-                                                    );
-                                                })}
+                                        <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4">
+                                            <p className="text-[9px] text-purple-400 uppercase font-black mb-2">Mère</p>
+                                            <div className="space-y-1 text-xs">
+                                                <p className="text-white font-bold">{showDetail.mere_prenom} {showDetail.mere_nom}</p>
+                                                {showDetail.mere_date_naissance && <p className="text-gray-500">Née le {showDetail.mere_date_naissance}</p>}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Afro-descendance & Ancêtres */}
+                                <div>
+                                    <h3 className="text-[10px] font-black text-amber-400 uppercase tracking-[0.3em] mb-3">Afro-descendance & Ancêtres</h3>
+                                    {showDetail.afro_descendant_description && (
+                                        <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 mb-4">
+                                            <p className="text-[9px] text-emerald-500/70 uppercase font-black mb-2">Histoire familiale</p>
+                                            <p className="text-xs text-gray-400 leading-relaxed italic">{showDetail.afro_descendant_description}</p>
+                                        </div>
+                                    )}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {showDetail.ancestor1_nom && (
+                                            <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4">
+                                                <p className="text-[9px] text-amber-400 uppercase font-black mb-2">Ancêtre 1</p>
+                                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                                    {[['Nom', `${showDetail.ancestor1_prenom} ${showDetail.ancestor1_nom}`], ['Lien', showDetail.ancestor1_lien_parente], ['Nationalité', showDetail.ancestor1_nationalite], ['Résidence', showDetail.ancestor1_pays_residence], ['Vivant', showDetail.ancestor1_vivant === true ? 'Oui' : showDetail.ancestor1_vivant === false ? 'Non' : null]].map(([k, v], i) => v && (
+                                                        <div key={i}><span className="text-gray-600 text-[10px]">{k}</span><p className="text-white font-bold">{v}</p></div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {showDetail.ancestor2_nom && (
+                                            <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4">
+                                                <p className="text-[9px] text-amber-400 uppercase font-black mb-2">Ancêtre 2</p>
+                                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                                    {[['Nom', `${showDetail.ancestor2_prenom} ${showDetail.ancestor2_nom}`], ['Lien', showDetail.ancestor2_lien_parente], ['Nationalité', showDetail.ancestor2_nationalite]].map(([k, v], i) => v && (
+                                                        <div key={i}><span className="text-gray-600 text-[10px]">{k}</span><p className="text-white font-bold">{v}</p></div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Paiement */}
+                                <div>
+                                    <h3 className="text-[10px] font-black text-[#FCD116] uppercase tracking-[0.3em] mb-3">Paiement</h3>
+                                    <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5">
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            {[['Montant', `${showDetail.amount || 0} ${showDetail.currency || 'USD'}`], ['Statut', showDetail.payment_status], ['Passerelle', showDetail.payment_method], ['Réf. TX', showDetail.payment_ref]].map(([k, v], i) => v && (
+                                                <div key={i}><p className="text-[9px] text-gray-500 uppercase font-black mb-1">{k}</p><p className="text-xs text-white font-bold">{v}</p></div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Documents */}
+                                {showDetail.documents_uploaded && showDetail.documents_uploaded.length > 0 && (
+                                    <div>
+                                        <h3 className="text-[10px] font-black text-cyan-400 uppercase tracking-[0.3em] mb-3">Pièces jointes ({showDetail.documents_uploaded.length})</h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {showDetail.documents_uploaded.map((doc, idx) => {
+                                                const label = typeof doc === 'string' ? doc.split(': ')[0] : `Doc #${idx + 1}`
+                                                return (
+                                                    <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[10px] font-black text-white/90 uppercase tracking-widest">{label}</span>
+                                                            <span className="text-[8px] text-gray-600 font-mono mt-0.5">{typeof doc === 'string' ? doc : JSON.stringify(doc)}</span>
+                                                        </div>
+                                                        <FileDown size={14} className="text-gray-500" />
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Bottom Management Bar */}
                                 <div className="p-6 bg-black/20 border border-white/5 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-6">
