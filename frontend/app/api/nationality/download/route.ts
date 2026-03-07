@@ -89,6 +89,19 @@ Père : ${app.pere_prenom || ''} ${app.pere_nom || 'N/A'} — Né le ${app.pere_
 Mère : ${app.mere_prenom || ''} ${app.mere_nom || 'N/A'} — Née le ${app.mere_date_naissance || 'N/A'}
 
 ───────────────────────────────────────────────────────────
+SITUATION FAMILIALE
+───────────────────────────────────────────────────────────
+Situation matrimoniale : ${app.situation_matrimoniale || 'N/A'}
+Nombre d'enfants : ${app.nombre_enfants ?? 'N/A'}
+
+───────────────────────────────────────────────────────────
+MOTIVATION
+───────────────────────────────────────────────────────────
+${app.motivation_lettre || 'Aucune motivation rédigée.'}
+
+Consentement RGPD : ${app.consentement_rgpd ? 'Oui' : 'Non'}
+
+───────────────────────────────────────────────────────────
 PAIEMENT
 ───────────────────────────────────────────────────────────
 Montant : ${app.amount} ${app.currency}

@@ -259,6 +259,11 @@ export async function POST(request: NextRequest) {
             payment_ref: body.payment_ref || null,
             payment_method: body.payment_method || null,
             last_step_completed: body.last_step_completed ?? 6,
+            // New fields
+            situation_matrimoniale: body.situation_matrimoniale || null,
+            nombre_enfants: body.nombre_enfants ?? 0,
+            motivation_lettre: body.motivation_lettre || null,
+            consentement_rgpd: body.consentement_rgpd ?? false,
         }
 
         const { error: insertError } = await supabase

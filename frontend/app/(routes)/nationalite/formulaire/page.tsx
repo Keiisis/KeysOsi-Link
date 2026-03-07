@@ -23,6 +23,7 @@ interface NationaliteForm {
     ancestor2_nom: string; ancestor2_prenom: string; ancestor2_date_naissance: string; ancestor2_lien_parente: string; ancestor2_vivant: boolean | null; ancestor2_nationalite: string; ancestor2_pays_residence: string; ancestor2_autres_infos: string
     nom: string; prenom: string; genre: string; date_naissance: string; pays_naissance: string; ville_naissance: string; nationalite: string; pays_residence: string; adresse_residence: string; telephone: string; email: string; profession: string
     demande_depuis_benin: boolean
+    situation_matrimoniale: string; nombre_enfants: number; motivation_lettre: string; consentement_rgpd: boolean
     type_document_identite: string; autorite_delivrance: string; numero_document: string; pays_delivrance: string; date_expiration_document: string; lieu_delivrance: string
     pere_nom: string; pere_prenom: string; pere_date_naissance: string
     mere_nom: string; mere_prenom: string; mere_date_naissance: string
@@ -115,6 +116,7 @@ export default function NationaliteFormPage() {
         nom: '', prenom: '', genre: '', date_naissance: '', pays_naissance: '', ville_naissance: '',
         nationalite: '', pays_residence: '', adresse_residence: '', telephone: '', email: '', profession: '',
         demande_depuis_benin: false,
+        situation_matrimoniale: '', nombre_enfants: 0, motivation_lettre: '', consentement_rgpd: false,
         type_document_identite: '', numero_document: '', date_expiration_document: '',
         pays_delivrance: '', lieu_delivrance: '', autorite_delivrance: '',
         pere_nom: '', pere_prenom: '', pere_date_naissance: '',
@@ -486,6 +488,15 @@ export default function NationaliteFormPage() {
                                     <div><label className={LC}>Email<span className={RQ}>*</span></label><input title="Email" type="email" value={form.email} onChange={e => u('email', e.target.value)} className={IC} placeholder="email@exemple.com" /></div>
                                     <div><label className={LC}>Profession</label><select title="Profession" value={form.profession} onChange={e => u('profession', e.target.value)} className={IC}><option value="">Choisir</option>{PROFESSIONS.map(p => <option key={p} value={p}>{p}</option>)}</select></div>
                                 </div>
+
+                                <div className="border-t border-white/5 pt-5 space-y-4">
+                                    <h3 className="text-sm font-black text-white">Situation familiale</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div><label className={LC}>Situation matrimoniale</label><select title="Situation matrimoniale" value={form.situation_matrimoniale} onChange={e => u('situation_matrimoniale', e.target.value)} className={IC}><option value="">Choisir</option><option value="celibataire">Célibataire</option><option value="marie">Marié(e)</option><option value="divorce">Divorcé(e)</option><option value="veuf">Veuf/Veuve</option><option value="union_libre">Union libre</option></select></div>
+                                        <div><label className={LC}>Nombre d&apos;enfants</label><input title="Nombre d'enfants" type="number" min={0} value={form.nombre_enfants} onChange={e => u('nombre_enfants', Number(e.target.value))} className={IC} placeholder="0" /></div>
+                                    </div>
+                                </div>
+
                                 <div className="flex items-center gap-3 bg-white/[0.03] border border-white/5 rounded-xl p-4">
                                     <button title="Demande depuis le Bénin ?" onClick={() => u('demande_depuis_benin', !form.demande_depuis_benin)} className={`w-12 h-6 rounded-full transition-all relative ${form.demande_depuis_benin ? 'bg-emerald-500' : 'bg-white/10'}`}><div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all shadow ${form.demande_depuis_benin ? 'left-6' : 'left-0.5'}`} /></button>
                                     <span className="text-sm text-gray-400">Demande depuis le Bénin ?</span>
@@ -502,6 +513,20 @@ export default function NationaliteFormPage() {
                                     <div><label className={LC}>Date d&apos;expiration</label><input title="Date d&apos;expiration" type="date" value={form.date_expiration_document} onChange={e => u('date_expiration_document', e.target.value)} className={IC} /></div>
                                     <div><label className={LC}>Lieu de délivrance</label><input title="Lieu de délivrance" value={form.lieu_delivrance} onChange={e => u('lieu_delivrance', e.target.value)} className={IC} /></div>
                                 </div>
+
+                                {/* Upload du document d'identité */}
+                                <div className="border-t border-white/5 pt-5">
+                                    <h3 className="text-sm font-black text-white mb-3">Scan / Photo du document</h3>
+                                    <p className="text-[11px] text-gray-500 mb-3">Joignez une photo ou un scan lisible de votre {form.type_document_identite === 'passeport' ? 'passeport' : form.type_document_identite === 'cni' ? 'carte d\'identité' : 'document'}.</p>
+                                    <label className="cursor-pointer block bg-white/[0.03] border border-dashed border-emerald-500/30 rounded-xl p-5 text-center hover:border-emerald-500/60 transition-all">
+                                        <FileText size={24} className="mx-auto text-emerald-400/50 mb-2" />
+                                        <p className="text-xs font-bold text-emerald-400">Cliquer ou glisser-déposer</p>
+                                        <p className="text-[10px] text-gray-600 mt-1">PNG, JPG, PDF — Max 5 Mo</p>
+                                        {rawDocs.find(d => d.label === 'Document d\'identité (scan)') && <p className="text-[10px] text-emerald-400 mt-2 font-bold">Fichier sélectionné : {rawDocs.find(d => d.label === 'Document d\'identité (scan)')?.name}</p>}
+                                        <input title="Scan du document d'identité" type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={e => { const f = e.target.files; if (f && f[0]) { setRawDocs(p => [...p.filter(d => d.label !== 'Document d\'identité (scan)'), { label: 'Document d\'identité (scan)', name: f[0].name, file: f[0] }]) } }} />
+                                    </label>
+                                </div>
+
                                 <div className="border-t border-white/5 pt-5"><h3 className="text-sm font-black text-white mb-4">Informations sur vos parents</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{['Père', 'Mère'].map(p => {
                                         const k = p === 'Père' ? 'pere' : 'mere';
@@ -515,6 +540,18 @@ export default function NationaliteFormPage() {
                                             </div>
                                         )
                                     })}</div></div>
+
+                                {/* Motivation et RGPD */}
+                                <div className="border-t border-white/5 pt-5 space-y-4">
+                                    <h3 className="text-sm font-black text-white">Lettre de motivation</h3>
+                                    <p className="text-[11px] text-gray-500">Expliquez pourquoi cette démarche est importante pour vous. Ce texte sera joint a votre dossier.</p>
+                                    <textarea title="Votre motivation" rows={5} value={form.motivation_lettre} onChange={e => u('motivation_lettre', e.target.value)} placeholder="Rédigez ici votre motivation pour obtenir la nationalité béninoise..." className={IC + ' resize-none'} />
+                                </div>
+
+                                <div className="flex items-center gap-3 bg-white/[0.03] border border-white/5 rounded-xl p-4">
+                                    <button title="Consentement RGPD" onClick={() => u('consentement_rgpd', !form.consentement_rgpd)} className={`w-12 h-6 rounded-full transition-all relative shrink-0 ${form.consentement_rgpd ? 'bg-emerald-500' : 'bg-white/10'}`}><div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all shadow ${form.consentement_rgpd ? 'left-6' : 'left-0.5'}`} /></button>
+                                    <span className="text-[11px] text-gray-400">J&apos;accepte que mes données personnelles soient traitées dans le cadre de cette demande de nationalité, conformément à la politique de confidentialité de Retour Gagnant Benin.</span>
+                                </div>
                             </div>}
 
                             {step === 4 && <div className="space-y-4">
