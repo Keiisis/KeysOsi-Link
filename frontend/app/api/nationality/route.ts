@@ -278,7 +278,36 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // 2. Create message for admin/agents (only valid columns)
+        // 2. Auto-create Nexus Tracker entry for this nationality dossier
+        const nationalitySteps = [
+            { id: 1, label: 'Réception du dossier', status: 'completed', date: new Date().toISOString().split('T')[0], note: 'Soumission en ligne' },
+            { id: 2, label: 'Vérification des pièces justificatives', status: 'pending', date: null, note: '' },
+            { id: 3, label: 'Contrôle de conformité juridique', status: 'pending', date: null, note: '' },
+            { id: 4, label: 'Instruction du dossier (Ministère)', status: 'pending', date: null, note: '' },
+            { id: 5, label: 'Commission de validation', status: 'pending', date: null, note: '' },
+            { id: 6, label: 'Décision et notification', status: 'pending', date: null, note: '' },
+            { id: 7, label: 'Délivrance du certificat', status: 'pending', date: null, note: '' },
+        ]
+
+        await supabase.from('dossier_tracking').insert({
+            num_dossier: ref,
+            client_nom: nom,
+            client_prenom: prenom,
+            client_email: email.toLowerCase(),
+            client_whatsapp: body.telephone || '',
+            client_phone: body.telephone || '',
+            service_type: 'Reconnaissance de Nationalité',
+            service: 'nationalite',
+            statut: 'reception',
+            etapes: nationalitySteps,
+            progression: Math.round((1 / nationalitySteps.length) * 100),
+            notes_internes: `Dossier créé automatiquement depuis le formulaire en ligne.\nMontant: ${body.amount || 250} ${body.currency || 'USD'}\nPaiement: ${body.payment_ref ? 'Payé (' + body.payment_ref + ')' : 'En attente'}`,
+        }).then(({ error: trackError }) => {
+            if (trackError) console.error('[TRACKER] Erreur création dossier_tracking:', trackError.message)
+            else console.log(`[TRACKER] Dossier ${ref} créé dans le Nexus Tracker`)
+        })
+
+        // 3. Create message for admin/agents (only valid columns)
         await supabase.from('messages').insert([{
             nom: `${prenom} ${nom}`,
             email,

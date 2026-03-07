@@ -104,6 +104,27 @@ export async function POST(req: NextRequest) {
             }
         })();
 
+        // 3. Auto-create Nexus Tracker entry for contact tracking
+        const contactRef = `RG-MSG-${new Date().getFullYear()}-${String(Math.floor(1000 + Math.random() * 9000))}`
+        supabase.from('dossier_tracking').insert({
+            num_dossier: contactRef,
+            client_nom: nom,
+            client_prenom: prenom || '',
+            client_email: email.toLowerCase(),
+            service_type: 'Contact / Demande',
+            service: 'contact',
+            statut: 'reception',
+            etapes: [
+                { id: 1, label: 'Message reçu', status: 'completed', date: new Date().toISOString().split('T')[0], note: sujet || 'Contact' },
+                { id: 2, label: 'Prise en charge par un agent', status: 'pending', date: null, note: '' },
+                { id: 3, label: 'Réponse envoyée au client', status: 'pending', date: null, note: '' },
+            ],
+            progression: 33,
+            notes_internes: `Sujet: ${sujet || 'Contact général'}\nMessage: ${message.substring(0, 200)}`,
+        }).then(({ error: trackErr }) => {
+            if (trackErr) console.error('[TRACKER] Contact track error:', trackErr.message)
+        })
+
         return NextResponse.json({ success: true, message: 'Message envoyé avec succès !' });
     } catch (error) {
         return NextResponse.json(

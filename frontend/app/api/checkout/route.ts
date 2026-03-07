@@ -119,6 +119,33 @@ export async function POST(request: Request) {
             await supabase.rpc('increment_coupon_use', { c_id: coupon_id })
         }
 
+        // Auto-create Nexus Tracker entry for order tracking
+        const orderRef = `RG-CMD-${data.id.substring(0, 8).toUpperCase()}`
+        const orderSteps = [
+            { id: 1, label: 'Commande reçue', status: 'completed', date: new Date().toISOString().split('T')[0], note: 'Commande en ligne' },
+            { id: 2, label: 'Confirmation de paiement', status: payment_method === 'kkiapay' || payment_method === 'fedapay' ? 'pending' : 'pending', date: null, note: '' },
+            { id: 3, label: 'Préparation de la commande', status: 'pending', date: null, note: '' },
+            { id: 4, label: 'Expédition / Livraison', status: 'pending', date: null, note: '' },
+            { id: 5, label: 'Livré / Terminé', status: 'pending', date: null, note: '' },
+        ]
+
+        supabase.from('dossier_tracking').insert({
+            num_dossier: orderRef,
+            client_nom: customer_name,
+            client_prenom: '',
+            client_email: (customer_email || '').toLowerCase(),
+            client_whatsapp: customer_phone || '',
+            client_phone: customer_phone || '',
+            service_type: 'Commande Boutique',
+            service: 'boutique',
+            statut: 'reception',
+            etapes: orderSteps,
+            progression: Math.round((1 / orderSteps.length) * 100),
+            notes_internes: `Commande automatique.\nProduit: ${product_title || 'Panier'}\nMontant: ${amount} ${currency || 'XOF'}\nMéthode: ${payment_method}`,
+        }).then(({ error: trackErr }) => {
+            if (trackErr) console.error('[TRACKER] Boutique track error:', trackErr.message)
+        })
+
         return NextResponse.json({ order_id: data.id })
     } catch {
         return NextResponse.json(
