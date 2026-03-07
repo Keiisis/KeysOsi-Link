@@ -250,24 +250,42 @@ export default function NationaliteFormPage() {
         setUploadProgress(10)
 
         const finalUploadedUrls: string[] = []
+        let uploadFailCount = 0
 
-        // Upload documents to Supabase Storage
+        // Upload documents to Supabase Storage (with 1 retry)
         for (let i = 0; i < rawDocs.length; i++) {
             const doc = rawDocs[i]
             const ext = doc.file.name.split('.').pop()
-            const folder = `upload-${Date.now()}`
+            const folder = `nat-${Date.now()}`
             const filename = `${folder}/${doc.label.replace(/[^a-zA-Z0-9]/g, '_')}_${i}.${ext}`
-            try {
-                const { data, error } = await supabase.storage.from('nationality_documents').upload(filename, doc.file)
-                if (data && !error) {
-                    finalUploadedUrls.push(`${doc.label}: ${filename}`)
-                } else {
-                    finalUploadedUrls.push(`${doc.label}: ${doc.name} (upload échoué)`)
+
+            let uploaded = false
+            for (let attempt = 0; attempt < 2; attempt++) {
+                try {
+                    const { data, error } = await supabase.storage.from('nationality_documents').upload(filename, doc.file, {
+                        cacheControl: '3600',
+                        upsert: attempt > 0,
+                    })
+                    if (data && !error) {
+                        finalUploadedUrls.push(`${doc.label}: ${filename}`)
+                        uploaded = true
+                        break
+                    } else {
+                        console.error(`[UPLOAD] Echec tentative ${attempt + 1} pour "${doc.label}":`, error?.message)
+                    }
+                } catch (err) {
+                    console.error(`[UPLOAD] Erreur tentative ${attempt + 1} pour "${doc.label}":`, err)
                 }
-            } catch {
+            }
+            if (!uploaded) {
                 finalUploadedUrls.push(`${doc.label}: ${doc.name} (upload échoué)`)
+                uploadFailCount++
             }
             setUploadProgress(10 + Math.floor((i + 1) / rawDocs.length * 50))
+        }
+
+        if (uploadFailCount > 0) {
+            console.warn(`[UPLOAD] ${uploadFailCount}/${rawDocs.length} fichier(s) n'ont pas pu être envoyés.`)
         }
 
         setUploadProgress(70)
