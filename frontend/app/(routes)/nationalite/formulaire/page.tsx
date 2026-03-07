@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { Price, useCurrency } from '@/components/ui/Price'
-import { CurrencyCode } from '@/lib/currency'
+import { CurrencyCode, convertCurrency } from '@/lib/currency'
 
 type PaymentProvider = 'kkiapay' | 'fedapay' | 'zeyow'
 
@@ -163,13 +163,12 @@ export default function NationaliteFormPage() {
     ].filter(p => p.isReady)
 
     const handleKkiapay = () => {
-        if (!process.env.NEXT_PUBLIC_SITE_URL && window.location.hostname === 'localhost') {
-            // Bypass logic for local dev without exact webhooks if needed (but user asked for no sim, so we keep real)
-        }
         setPaymentProcessing(true); setPaymentError(''); setPaymentProvider('kkiapay')
+        // Convertir le montant en FCFA pour les passerelles africaines
+        const amountXOF = formCurrency === 'XOF' ? formAmount : convertCurrency(formAmount, formCurrency, 'XOF')
         try {
             window.openKkiapayWidget({
-                amount: formAmount, position: 'center', key: paymentSettings.kkiapay_public_key,
+                amount: amountXOF, position: 'center', key: paymentSettings.kkiapay_public_key,
                 sandbox: paymentSettings.kkiapay_sandbox === 'true', phone: form.telephone,
                 data: { context: 'nationality', email: form.email },
             })
@@ -179,17 +178,18 @@ export default function NationaliteFormPage() {
             window.addKkiapayListener('failed', () => {
                 setPaymentError('Le paiement Kkiapay a échoué.'); setPaymentProcessing(false)
             })
-            // handle widget close manually if needed
         } catch { setPaymentError('Impossible d\'ouvrir Kkiapay'); setPaymentProcessing(false) }
     }
 
     const handleFedapay = () => {
         setPaymentProcessing(true); setPaymentError(''); setPaymentProvider('fedapay')
+        // Convertir le montant en FCFA pour FedaPay
+        const amountXOF = formCurrency === 'XOF' ? formAmount : convertCurrency(formAmount, formCurrency, 'XOF')
         try {
             window.FedaPay.init('#fedapay-nat-btn', {
                 public_key: paymentSettings.fedapay_public_key,
                 environment: paymentSettings.fedapay_sandbox === 'true' ? 'sandbox' : 'live',
-                transaction: { amount: formAmount, description: `Reconnaissance Nationalité — ${form.prenom} ${form.nom}` },
+                transaction: { amount: amountXOF, description: `Reconnaissance Nationalité — ${form.prenom} ${form.nom}` },
                 customer: { email: form.email || undefined, phone_number: { number: form.telephone } },
                 onComplete: (resp: Record<string, unknown>) => {
                     const tx = resp.transaction as Record<string, unknown> | undefined
@@ -206,7 +206,9 @@ export default function NationaliteFormPage() {
         setPaymentProvider('zeyow')
         const redirectUrl = paymentSettings.zeyow_redirect_url
         if (!redirectUrl) { setPaymentError('Zeyow non configuré.'); return }
-        window.location.href = `${redirectUrl}?amount=${formAmount}&phone=${form.telephone}&email=${form.email}&context=nationality`
+        // Convertir le montant en FCFA pour Zeyow
+        const amountXOF = formCurrency === 'XOF' ? formAmount : convertCurrency(formAmount, formCurrency, 'XOF')
+        window.location.href = `${redirectUrl}?amount=${amountXOF}&phone=${form.telephone}&email=${form.email}&context=nationality`
     }
 
     const payHandlers: Record<PaymentProvider, () => void> = { kkiapay: handleKkiapay, fedapay: handleFedapay, zeyow: handleZeyow }

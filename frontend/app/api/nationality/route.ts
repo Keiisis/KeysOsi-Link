@@ -61,34 +61,84 @@ RÈGLES ABSOLUES :
             `
         }
 
-        // 2. Fetch SMTP settings from DB (we do it here specifically to get the siteName earlier for the header)
+        // 2. Fetch SMTP settings + agency info from DB
         const { data: settingsData } = await supabase
             .from('settings')
             .select('key, value')
-            .in('key', ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_from_email', 'hero_title'])
+            .in('key', [
+                'smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass',
+                'smtp_from_email', 'smtp_from_name', 'hero_title',
+                'contact_email', 'contact_phone', 'contact_address'
+            ])
 
         const settings: Record<string, string> = {}
         for (const s of settingsData || []) {
             settings[s.key] = s.value
         }
 
+        const senderName = settings.smtp_from_name || 'Retour Gagnant Bénin'
         const siteName = settings.hero_title || 'Retour Gagnant Bénin'
         const logoUrl = `${data.baseUrl}/logo.jpg`
+        const agencyEmail = settings.contact_email || settings.smtp_from_email || 'contact@retourgagnantbenin.bj'
+        const agencyPhone = settings.contact_phone || ''
+        const agencyAddress = settings.contact_address || 'Haie Vive, Cotonou, République du Bénin'
+        const trackingUrl = `${data.baseUrl}/suivi-dossier`
 
-        // Superbe Layout HTML Professionnel avec Logo
+        // Email HTML professionnel avec infos agence complètes
         const htmlBody = `
-        <div style="font-family: 'Times New Roman', Times, serif; max-width: 650px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; padding: 40px;">
-            <div style="text-align: center; border-bottom: 2px solid #008751; padding-bottom: 20px; margin-bottom: 30px;">
-                <img src="${logoUrl}" alt="${siteName}" width="60" height="60" style="border-radius: 12px; object-fit: cover; border: 2px solid #008751; margin-bottom: 16px;" />
-                <h1 style="color: #008751; font-size: 24px; font-weight: normal; margin: 0; text-transform: uppercase; letter-spacing: 2px;">Secrétariat à la Reconnaissance</h1>
-                <h2 style="color: #333333; font-size: 14px; font-weight: normal; margin: 5px 0 0 0; letter-spacing: 1px;">REPUBLIQUE DU BENIN</h2>
+        <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; max-width: 650px; margin: 0 auto; background-color: #ffffff; border: 1px solid #d4d4d4;">
+
+            <!-- EN-TETE AVEC LOGO ET NOM -->
+            <div style="background: linear-gradient(135deg, #006b40, #008751); padding: 28px 40px; text-align: center;">
+                <img src="${logoUrl}" alt="${siteName}" width="64" height="64" style="border-radius: 14px; object-fit: cover; border: 3px solid rgba(255,255,255,0.4); margin-bottom: 12px;" />
+                <h1 style="color: #ffffff; font-size: 22px; font-weight: 700; margin: 0; letter-spacing: 1px;">${siteName}</h1>
+                <p style="color: #FCD116; font-size: 11px; text-transform: uppercase; letter-spacing: 3px; margin: 6px 0 0 0; font-weight: 600;">Service de Reconnaissance de la Nationalite Beninoise</p>
             </div>
-            <div style="color: #1a1a1a; font-size: 16px; line-height: 1.8; text-align: justify;">
+
+            <!-- REFERENCE DOSSIER -->
+            <div style="background: #f0fdf6; padding: 16px 40px; border-bottom: 1px solid #e5e7eb; text-align: center;">
+                <p style="margin: 0; font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px;">Dossier N&deg;</p>
+                <p style="margin: 4px 0 0; font-size: 22px; font-weight: 800; color: #008751; font-family: monospace; letter-spacing: 3px;">${data.refId}</p>
+            </div>
+
+            <!-- CORPS DU MESSAGE (Groq AI ou Fallback) -->
+            <div style="padding: 36px 40px; color: #1a1a1a; font-size: 15px; line-height: 1.85; text-align: justify;">
                 ${emailContent}
             </div>
-            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eeeeee; text-align: center; color: #777777; font-size: 11px; font-family: Arial, sans-serif;">
-                <p>Ceci est un document généré automatiquement. Conservez précieusement votre référence : <strong>${data.refId}</strong></p>
-                <p>&copy; ${new Date().getFullYear()} ${siteName}. Tous droits réservés.</p>
+
+            <!-- BOUTON SUIVI -->
+            <div style="padding: 0 40px 32px; text-align: center;">
+                <a href="${trackingUrl}" style="display: inline-block; background: #008751; color: #ffffff; text-decoration: none; padding: 14px 36px; border-radius: 10px; font-weight: 700; font-size: 14px; letter-spacing: 0.5px;">
+                    Suivre l'avancement de mon dossier
+                </a>
+                <p style="margin: 10px 0 0; font-size: 11px; color: #9ca3af;">Utilisez votre reference ${data.refId} et votre email pour consulter l'etat de votre demande.</p>
+            </div>
+
+            <!-- INFORMATIONS DE L'AGENCE -->
+            <div style="background: #f9fafb; padding: 24px 40px; border-top: 1px solid #e5e7eb;">
+                <p style="margin: 0 0 8px; font-size: 13px; font-weight: 700; color: #1a1a1a;">Nous contacter</p>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px; color: #4b5563;">
+                    <tr>
+                        <td style="padding: 4px 0; vertical-align: top; width: 80px; font-weight: 600; color: #6b7280;">Email</td>
+                        <td style="padding: 4px 0;"><a href="mailto:${agencyEmail}" style="color: #008751; text-decoration: none;">${agencyEmail}</a></td>
+                    </tr>
+                    ${agencyPhone ? `<tr>
+                        <td style="padding: 4px 0; vertical-align: top; font-weight: 600; color: #6b7280;">Tel.</td>
+                        <td style="padding: 4px 0;">${agencyPhone}</td>
+                    </tr>` : ''}
+                    <tr>
+                        <td style="padding: 4px 0; vertical-align: top; font-weight: 600; color: #6b7280;">Adresse</td>
+                        <td style="padding: 4px 0;">${agencyAddress}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- PIED DE PAGE -->
+            <div style="padding: 16px 40px; background: #0d1117; text-align: center;">
+                <p style="margin: 0; color: #6b7280; font-size: 11px; line-height: 1.6;">
+                    &copy; ${new Date().getFullYear()} ${siteName}. Tous droits reserves.<br>
+                    <a href="${data.baseUrl}" style="color: #008751; text-decoration: none;">${data.baseUrl.replace('https://', '')}</a>
+                </p>
             </div>
         </div>`
 
@@ -105,13 +155,13 @@ RÈGLES ABSOLUES :
                 }
             })
 
-            const fromString = `"${siteName} - Service Juridique" <${settings.smtp_from_email || settings.smtp_user}>`
+            const fromString = `"${senderName}" <${settings.smtp_from_email || settings.smtp_user}>`
 
             await transporter.sendMail({
                 from: fromString,
                 to: data.email,
                 replyTo: settings.smtp_from_email || settings.smtp_user,
-                subject: `Confirmation de réception - Dossier N° ${data.refId}`,
+                subject: `Confirmation de reception - Dossier N\u00b0 ${data.refId}`,
                 html: htmlBody,
             })
 
