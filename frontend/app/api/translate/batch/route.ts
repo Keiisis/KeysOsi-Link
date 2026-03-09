@@ -97,7 +97,8 @@ async function collectStaticStrings(): Promise<Set<string>> {
 
 // ─── Paginated Supabase select ────────────────────────────────────────────────
 async function paginatedSelect(
-    supabase: ReturnType<typeof createClient>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    supabase: any,
     table: string,
     columns: string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

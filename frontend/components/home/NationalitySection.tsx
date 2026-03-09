@@ -230,7 +230,8 @@ function calculateScore(answers: Record<string, string | string[]>): OracleResul
     if (docs.includes('certificat_origine') || docs.includes('livret_famille')) { score += 8; }
     if (docs.includes('aucun')) { insights.push("Ne vous inquiétez pas, nous vous aidons à rassembler ou reconstituer les preuves nécessaires."); }
 
-    const hasOrigins = ['descendant_direct', 'afrodescendant', 'lien_familial'].includes(answers.lien_benin);
+    const lienBenin = Array.isArray(answers.lien_benin) ? (answers.lien_benin[0] || '') : (answers.lien_benin || '');
+    const hasOrigins = ['descendant_direct', 'afrodescendant', 'lien_familial'].includes(lienBenin);
     const finalScore = Math.min(score, 98);
 
     return {
