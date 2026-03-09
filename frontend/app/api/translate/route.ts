@@ -1,4 +1,4 @@
-import { fetchWithGroqRotation } from '@/lib/groq';
+import { fetchWithGroqRotation, GROQ_KEYS } from '@/lib/groq';
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { hashText } from '@/lib/translation/hash'
@@ -13,7 +13,7 @@ import { SUPPORTED_LANGUAGES, type LangCode } from '@/lib/translation'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-const groqApiKey = process.env.GROQ_API_KEY!
+
 
 export async function POST(req: Request) {
     try {
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
         }
 
         // 4. Translate missing texts with Groq
-        if (missingTexts.length > 0 && groqApiKey) {
+        if (missingTexts.length > 0 && GROQ_KEYS.length > 0) {
             const textsToTranslate = missingTexts.map(m => m.text)
 
             const prompt = `Translate the following JSON array of strings from French to ${langConfig.groqName}. 
@@ -94,14 +94,14 @@ French array:
 ${JSON.stringify(textsToTranslate)}`
 
             const aiRes = await fetchWithGroqRotation({
-                    model: 'llama-3.3-70b-versatile',
-                    messages: [
-                        { role: 'system', content: 'You are a translation API. You only output strict JSON arrays.' },
-                        { role: 'user', content: prompt }
-                    ],
-                    temperature: 0.1, // low temperature for consistency
-                    max_tokens: 4000
-                }, String(groqApiKey))
+                model: 'llama-3.3-70b-versatile',
+                messages: [
+                    { role: 'system', content: 'You are a translation API. You only output strict JSON arrays.' },
+                    { role: 'user', content: prompt }
+                ],
+                temperature: 0.1, // low temperature for consistency
+                max_tokens: 4000
+            })
 
             if (aiRes.ok) {
                 const aiData = await aiRes.json()

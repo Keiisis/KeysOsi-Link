@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { fetchWithGroqRotation } from '@/lib/groq'
+import { fetchWithGroqRotation, GROQ_KEYS } from '@/lib/groq'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
@@ -255,7 +255,7 @@ export async function POST(request: NextRequest) {
 
         if (!config || !config.apiKey) {
             // Fallback to env var
-            const envKey = process.env.GROQ_API_KEY
+            const envKey = GROQ_KEYS[0]
             if (!envKey) {
                 return NextResponse.json(
                     { reply: getChatError(lang, 'notConfigured') },

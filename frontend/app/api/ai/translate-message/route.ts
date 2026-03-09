@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchWithGroqRotation } from '@/lib/groq';
+import { fetchWithGroqRotation, GROQ_KEYS } from '@/lib/groq';
 const SYSTEM_PROMPT = `Tu es un traducteur expert pour Retour Gagnant Bénin.
 Ton seul rôle est de traduire du texte, ou de détecter la langue et de traduire.
 
@@ -16,9 +16,7 @@ NE RAJOUTE AUCUN TEXTE, SEULEMENT LE RÉSULTAT DEMANDÉ.`;
 export async function POST(request: NextRequest) {
     try {
         const { text, mode, targetLanguage } = await request.json();
-        const apiKey = process.env.GROQ_API_KEY;
-
-        if (!apiKey) {
+        if (GROQ_KEYS.length === 0) {
             return NextResponse.json(
                 { error: "La clé API Groq n'est pas configurée." },
                 { status: 500 }
@@ -49,7 +47,7 @@ Texte : ${text}`;
             ],
             temperature: 0.1, // Low temperature for more deterministic translation
             max_tokens: 1500,
-        }, apiKey);
+        });
 
         if (!response.ok) {
             const errorText = await response.text();

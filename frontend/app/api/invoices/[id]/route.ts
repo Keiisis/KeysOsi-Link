@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { escapeHtml } from '@/lib/security'
 import QRCode from 'qrcode'
-import { fetchWithGroqRotation } from '@/lib/groq'
+import { fetchWithGroqRotation, GROQ_KEYS } from '@/lib/groq'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -13,8 +13,7 @@ async function generateGroqMessage(
   productTitle: string,
   amount: number
 ): Promise<string> {
-  const apiKey = process.env.GROQ_API_KEY
-  if (!apiKey) return ''
+  if (GROQ_KEYS.length === 0) return ''
   try {
     const res = await fetchWithGroqRotation({
       model: 'llama-3.1-8b-instant',
@@ -32,7 +31,7 @@ Ne commence pas par "Voici" ou "Bien sûr". Sois direct, sincère et élégant.`
           content: `Client: ${customerName} | Produit: ${productTitle} | Montant: ${new Intl.NumberFormat('fr-FR').format(amount)} FCFA`,
         },
       ],
-    }, apiKey);
+    });
     const data = await res.json()
     return data.choices?.[0]?.message?.content?.trim() || ''
   } catch {

@@ -1,6 +1,6 @@
 import { readdir, readFile } from 'fs/promises'
 import { join } from 'path'
-import { fetchWithGroqRotation } from '@/lib/groq'
+import { fetchWithGroqRotation, GROQ_KEYS } from '@/lib/groq'
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { hashText } from '@/lib/translation/hash'
@@ -126,8 +126,7 @@ async function paginatedSelect(
 async function translateBatch(
     batch: string[],
     langName: string,
-    langCode: string,
-    groqApiKey: string
+    langCode: string
 ): Promise<string[] | null> {
     const prompt =
         `Translate the following JSON array of strings from French to ${langName}.\n` +
@@ -149,7 +148,7 @@ async function translateBatch(
             ],
             temperature: 0.1,
             max_tokens: 4096,
-        }, groqApiKey)
+        })
 
         if (!res.ok) {
             console.error(`[Batch/${langCode}] Groq HTTP ${res.status}`)
@@ -176,9 +175,8 @@ export async function POST(req: Request) {
             ? body.lang as LangCode
             : null
 
-        const groqApiKey = process.env.GROQ_API_KEY || ''
-        if (!groqApiKey) {
-            return NextResponse.json({ error: 'Clé GROQ_API_KEY manquante' }, { status: 503 })
+        if (GROQ_KEYS.length === 0) {
+            return NextResponse.json({ error: 'Clés GROQ_API_KEY (1,2,3) manquantes' }, { status: 503 })
         }
 
         const supabase = createClient(supabaseUrl, supabaseServiceKey)
@@ -303,7 +301,7 @@ export async function POST(req: Request) {
                 }
 
                 const chunk = missingTexts.slice(i, i + BATCH_SIZE)
-                const translated = await translateBatch(chunk, langConfig.groqName, lang, groqApiKey)
+                const translated = await translateBatch(chunk, langConfig.groqName, lang)
 
                 if (!translated) {
                     perLang[lang].errors += chunk.length

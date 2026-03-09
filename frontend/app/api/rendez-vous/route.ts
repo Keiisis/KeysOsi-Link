@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendEmail, getEmailTemplates, getEmailConfig } from '@/lib/email';
-import { fetchWithGroqRotation } from '@/lib/groq';
+import { fetchWithGroqRotation, GROQ_KEYS } from '@/lib/groq';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -11,8 +11,7 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PU
  */
 async function generateAutoReply(clientName: string, service: string): Promise<string> {
     try {
-        const groqKey = process.env.GROQ_API_KEY;
-        if (!groqKey) return 'Votre demande de rendez-vous est confirmée. Notre équipe la prépare.';
+        if (GROQ_KEYS.length === 0) return 'Votre demande de rendez-vous est confirmée. Notre équipe la prépare.';
 
         const res = await fetchWithGroqRotation({
             model: 'llama-3.1-8b-instant',
@@ -28,7 +27,7 @@ async function generateAutoReply(clientName: string, service: string): Promise<s
             ],
             temperature: 0.7,
             max_tokens: 150,
-        }, groqKey);
+        });
 
         const data = await res.json();
         return data.choices?.[0]?.message?.content || 'Votre demande de rendez-vous est confirmée.';
