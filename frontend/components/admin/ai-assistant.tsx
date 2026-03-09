@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,6 +8,7 @@ import { Sparkles, Send, Loader2, Bot, BrainCircuit, Terminal } from "lucide-rea
 import { motion, AnimatePresence } from "framer-motion";
 
 export const AIAssistant = () => {
+    const { t } = useTranslation();
     const [prompt, setPrompt] = useState("");
     const [response, setResponse] = useState("");
     const [loading, setLoading] = useState(false);
@@ -45,8 +47,8 @@ export const AIAssistant = () => {
                             <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-4 border-[#0a0f18] rounded-full animate-pulse" />
                         </div>
                         <div>
-                            <h3 className="text-white font-bold text-sm tracking-tight">KAGE COGNITIVE</h3>
-                            <p className="text-[10px] text-[#FCD116] font-black uppercase tracking-[0.2em]">Neural Node v3.3</p>
+                            <h3 className="text-white font-bold text-sm tracking-tight"><T>KAGE COGNITIVE</T></h3>
+                            <p className="text-[10px] text-[#FCD116] font-black uppercase tracking-[0.2em]"><T>Neural Node v3.3</T></p>
                         </div>
                     </div>
 
@@ -54,7 +56,7 @@ export const AIAssistant = () => {
                     <div className="flex-1 p-8 flex flex-col justify-center">
                         <div className="flex items-center gap-3 mb-6">
                             <Terminal size={14} className="text-gray-500" />
-                            <span className="text-[10px] text-gray-500 font-black uppercase tracking-[0.3em]">Module d'assistance stratégique</span>
+                            <span className="text-[10px] text-gray-500 font-black uppercase tracking-[0.3em]"><T>Module d'assistance stratégique</T></span>
                         </div>
 
                         <div className="flex gap-4 items-center">
@@ -63,12 +65,12 @@ export const AIAssistant = () => {
                                     type="text"
                                     value={prompt}
                                     onChange={(e) => setPrompt(e.target.value)}
-                                    placeholder="Demander une action stratégique ou rédactionnelle..."
+                                    placeholder={t("Demander une action stratégique ou rédactionnelle...")}
                                     className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 transition-all placeholder:text-gray-600 font-medium"
                                     onKeyDown={(e) => e.key === 'Enter' && handleAskAI()}
                                 />
                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                                    <span className="text-[10px] text-gray-600 font-mono hidden sm:block">RETURN to execute</span>
+                                    <span className="text-[10px] text-gray-600 font-mono hidden sm:block"><T>RETURN to execute</T></span>
                                 </div>
                             </div>
                             <Button
@@ -91,7 +93,7 @@ export const AIAssistant = () => {
                                     <div className="mt-8 p-6 rounded-2xl bg-[#FCD116]/5 border border-[#FCD116]/20 relative group/response">
                                         <Sparkles className="absolute top-4 right-4 text-[#FCD116]/20 group-hover/response:text-[#FCD116]/40 transition-colors" size={20} />
                                         <p className="text-sm text-gray-300 leading-relaxed font-medium">
-                                            <span className="text-[#FCD116] font-black mr-2">COG:</span>
+                                            <span className="text-[#FCD116] font-black mr-2"><T>COG:</T></span>
                                             {response}
                                         </p>
                                     </div>

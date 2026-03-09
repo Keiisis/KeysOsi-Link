@@ -6,8 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mail, MapPin, Phone, Send, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { COMPANY_INFO } from "@/lib/constants/company-info";
+import { useTranslation, T } from '@/lib/translation';
 
 export default function ContactPage() {
+    const { t } = useTranslation();
     const [form, setForm] = useState({ nom: '', prenom: '', email: '', sujet: '', message: '' });
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
@@ -40,11 +42,11 @@ export default function ContactPage() {
                 <div className="container mx-auto px-4 text-center">
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                         <span className="inline-block px-4 py-1.5 rounded-full bg-white/10 text-[#FCD116] text-sm font-semibold tracking-widest uppercase mb-4 md:mb-6 border border-white/10">
-                            Contact
+                            <T>Contact</T>
                         </span>
-                        <h1 className="text-3xl md:text-5xl font-bold font-heading mb-4">Contactez-nous</h1>
+                        <h1 className="text-3xl md:text-5xl font-bold font-heading mb-4"><T>Contactez-nous</T></h1>
                         <p className="text-white/60 text-base md:text-lg max-w-xl mx-auto">
-                            Une question ? Un projet ? Notre équipe est à votre écoute.
+                            <T>Une question ? Un projet ? Notre équipe est à votre écoute.</T>
                         </p>
                     </motion.div>
                 </div>
@@ -55,9 +57,9 @@ export default function ContactPage() {
                     {/* Contact Info */}
                     <div className="space-y-6">
                         {[
-                            { icon: MapPin, title: "Nos Bureaux", content: `${COMPANY_INFO.address}\nRépublique du Bénin`, color: "#008751" },
-                            { icon: Phone, title: "Téléphone / WhatsApp", content: `${COMPANY_INFO.phoneDisplay}\n${COMPANY_INFO.hours}`, color: "#FCD116", link: COMPANY_INFO.whatsappLink },
-                            { icon: Mail, title: "Email", content: COMPANY_INFO.email, color: "#E8112D", link: `mailto:${COMPANY_INFO.email}` },
+                            { icon: MapPin, title: t("Nos Bureaux"), content: `${COMPANY_INFO.address}\n${t('République du Bénin')}`, color: "#008751" },
+                            { icon: Phone, title: t("Téléphone / WhatsApp"), content: `${COMPANY_INFO.phoneDisplay}\n${t(COMPANY_INFO.hours)}`, color: "#FCD116", link: COMPANY_INFO.whatsappLink },
+                            { icon: Mail, title: t("Email"), content: COMPANY_INFO.email, color: "#E8112D", link: `mailto:${COMPANY_INFO.email}` },
                         ].map((item, i) => (
                             <motion.div
                                 key={i}
@@ -91,7 +93,7 @@ export default function ContactPage() {
                         <Card className="border-0 shadow-xl overflow-hidden">
                             <div className="h-1.5 bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D]" />
                             <CardHeader>
-                                <CardTitle className="text-xl">Envoyez-nous un message</CardTitle>
+                                <CardTitle className="text-xl"><T>Envoyez-nous un message</T></CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <AnimatePresence mode="wait">
@@ -103,64 +105,64 @@ export default function ContactPage() {
                                             className="text-center py-12 space-y-4"
                                         >
                                             <CheckCircle className="mx-auto text-[#008751]" size={48} />
-                                            <h3 className="text-xl font-bold text-[#1a2332]">Message envoyé !</h3>
-                                            <p className="text-gray-500">Nous vous répondrons sous 24h.</p>
+                                            <h3 className="text-xl font-bold text-[#1a2332]"><T>Message envoyé !</T></h3>
+                                            <p className="text-gray-500"><T>Nous vous répondrons sous 24h.</T></p>
                                             <Button onClick={() => setStatus('idle')} variant="outline" className="mt-4">
-                                                Envoyer un autre message
+                                                <T>Envoyer un autre message</T>
                                             </Button>
                                         </motion.div>
                                     ) : (
                                         <motion.form key="form" onSubmit={handleSubmit} className="space-y-4">
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="space-y-2">
-                                                    <label className="text-sm font-medium text-gray-700">Nom *</label>
+                                                    <label className="text-sm font-medium text-gray-700"><T>Nom</T> *</label>
                                                     <input
                                                         type="text" required
                                                         value={form.nom} onChange={e => setForm(p => ({ ...p, nom: e.target.value }))}
                                                         className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#008751] focus:border-transparent outline-none transition-all"
-                                                        placeholder="Votre nom"
+                                                        placeholder={t("Votre nom")}
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <label className="text-sm font-medium text-gray-700">Prénom</label>
+                                                    <label className="text-sm font-medium text-gray-700"><T>Prénom</T></label>
                                                     <input
                                                         type="text"
                                                         value={form.prenom} onChange={e => setForm(p => ({ ...p, prenom: e.target.value }))}
                                                         className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#008751] focus:border-transparent outline-none transition-all"
-                                                        placeholder="Votre prénom"
+                                                        placeholder={t("Votre prénom")}
                                                     />
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-sm font-medium text-gray-700">Email *</label>
+                                                <label className="text-sm font-medium text-gray-700"><T>Email</T> *</label>
                                                 <input
                                                     type="email" required
                                                     value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
                                                     className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#008751] focus:border-transparent outline-none transition-all"
-                                                    placeholder="email@exemple.com"
+                                                    placeholder={t("email@exemple.com")}
                                                 />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-sm font-medium text-gray-700">Sujet</label>
+                                                <label className="text-sm font-medium text-gray-700"><T>Sujet</T></label>
                                                 <input
                                                     type="text"
                                                     value={form.sujet} onChange={e => setForm(p => ({ ...p, sujet: e.target.value }))}
                                                     className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#008751] focus:border-transparent outline-none transition-all"
-                                                    placeholder="Sujet de votre message"
+                                                    placeholder={t("Sujet de votre message")}
                                                 />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-sm font-medium text-gray-700">Message *</label>
+                                                <label className="text-sm font-medium text-gray-700"><T>Message</T> *</label>
                                                 <textarea
                                                     required rows={5}
                                                     value={form.message} onChange={e => setForm(p => ({ ...p, message: e.target.value }))}
                                                     className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#008751] focus:border-transparent outline-none transition-all resize-none"
-                                                    placeholder="Votre message..."
+                                                    placeholder={t("Votre message...")}
                                                 />
                                             </div>
 
                                             {status === 'error' && (
-                                                <p className="text-[#E8112D] text-sm">Une erreçur est survenue. Réessayez.</p>
+                                                <p className="text-[#E8112D] text-sm"><T>Une erreur est survenue. Réessayez.</T></p>
                                             )}
 
                                             <Button
@@ -171,11 +173,11 @@ export default function ContactPage() {
                                                 {status === 'loading' ? (
                                                     <span className="flex items-center gap-2">
                                                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                        Envoi en cours...
+                                                        <T>Envoi en cours...</T>
                                                     </span>
                                                 ) : (
                                                     <span className="flex items-center gap-2">
-                                                        <Send size={18} /> Envoyer
+                                                        <Send size={18} /> <T>Envoyer</T>
                                                     </span>
                                                 )}
                                             </Button>

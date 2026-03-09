@@ -1,10 +1,12 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { motion, AnimatePresence } from 'framer-motion'
 import { ShoppingCart } from 'lucide-react'
 import { useCart } from '@/lib/store/cartStore'
 
 export function CartFloatingButton() {
+    const { t } = useTranslation();
     const { itemCount, toggleCart } = useCart()
 
     return (
@@ -16,7 +18,7 @@ export function CartFloatingButton() {
                     exit={{ scale: 0, opacity: 0 }}
                     onClick={toggleCart}
                     className="fixed bottom-8 right-8 z-[800] w-16 h-16 rounded-full bg-[#FCD116] text-[#0f141e] shadow-2xl shadow-[#FCD116]/30 flex items-center justify-center hover:bg-[#008751] hover:text-white transition-all group"
-                    title="Voir le panier"
+                    title={t("Voir le panier")}
                 >
                     <ShoppingCart size={24} />
                     <span className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[#E8112D] text-white text-[10px] font-black flex items-center justify-center border-2 border-[#0a0f18]">

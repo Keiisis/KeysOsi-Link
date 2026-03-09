@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -35,6 +36,7 @@ const EMPTY_FORM: SponsorForm = {
 const inputClass = 'w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white text-sm focus:outline-none focus:border-[#008751]/50 transition-all'
 
 export default function AdminSponsorsPage() {
+    const { t } = useTranslation();
     const [sponsors, setSponsors] = useState<Sponsor[]>([])
     const [loading, setLoading] = useState(true)
     const [editingId, setEditingId] = useState<string | null>(null)
@@ -173,7 +175,7 @@ export default function AdminSponsorsPage() {
                         <Type size={11} /> Nom de la structure *
                     </label>
                     <input type="text" value={form.name} onChange={e => set('name', e.target.value)}
-                        className={inputClass} placeholder="Ex: Gouvernement du Bénin" />
+                        className={inputClass} placeholder={t("Ex: Gouvernement du Bénin")} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -200,7 +202,7 @@ export default function AdminSponsorsPage() {
                 <label className="flex items-center gap-3 cursor-pointer">
                     <input type="checkbox" checked={form.is_active} onChange={e => set('is_active', e.target.checked)}
                         className="w-4 h-4 rounded accent-[#008751]" />
-                    <span className="text-xs font-bold text-gray-400">Afficher sur la page d&apos;accueil</span>
+                    <span className="text-xs font-bold text-gray-400"><T>Afficher sur la page d&apos;accueil</T></span>
                 </label>
 
                 <button onClick={handleSave} disabled={saving}
@@ -285,7 +287,7 @@ export default function AdminSponsorsPage() {
             ) : sponsors.length === 0 ? (
                 <div className="text-center py-16">
                     <Star size={40} className="mx-auto text-gray-700 mb-3" />
-                    <p className="text-gray-500 font-bold text-sm">Aucun sponsor</p>
+                    <p className="text-gray-500 font-bold text-sm"><T>Aucun sponsor</T></p>
                     <button onClick={() => setShowAddForm(true)}
                         className="mt-4 text-[#FCD116] text-xs font-bold hover:underline cursor-pointer">
                         + Ajouter le premier sponsor
@@ -297,12 +299,12 @@ export default function AdminSponsorsPage() {
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-white/[0.06]">
-                                <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-wider">Logo</th>
-                                <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-wider">Nom</th>
-                                <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-wider">Site</th>
-                                <th className="text-center px-5 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-wider">Ordre</th>
-                                <th className="text-center px-5 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-wider">Statut</th>
-                                <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-wider">Actions</th>
+                                <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-wider"><T>Logo</T></th>
+                                <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-wider"><T>Nom</T></th>
+                                <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-wider"><T>Site</T></th>
+                                <th className="text-center px-5 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-wider"><T>Ordre</T></th>
+                                <th className="text-center px-5 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-wider"><T>Statut</T></th>
+                                <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-wider"><T>Actions</T></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -337,12 +339,12 @@ export default function AdminSponsorsPage() {
                                     <td className="px-5 py-4 text-center">
                                         <div className="flex items-center justify-center gap-1">
                                             <button onClick={() => moveOrder(s, 'up')}
-                                                className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center text-gray-600 hover:text-white hover:bg-white/10 cursor-pointer transition-all" title="Monter">
+                                                className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center text-gray-600 hover:text-white hover:bg-white/10 cursor-pointer transition-all" title={t("Monter")}>
                                                 <ArrowUp size={11} />
                                             </button>
                                             <span className="text-xs font-mono text-gray-500 w-6 text-center">{s.sort_order}</span>
                                             <button onClick={() => moveOrder(s, 'down')}
-                                                className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center text-gray-600 hover:text-white hover:bg-white/10 cursor-pointer transition-all" title="Descendre">
+                                                className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center text-gray-600 hover:text-white hover:bg-white/10 cursor-pointer transition-all" title={t("Descendre")}>
                                                 <ArrowDown size={11} />
                                             </button>
                                         </div>
@@ -362,11 +364,11 @@ export default function AdminSponsorsPage() {
                                     <td className="px-5 py-4">
                                         <div className="flex items-center justify-end gap-1">
                                             <button onClick={() => openEdit(s)}
-                                                className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-[#FCD116] hover:bg-[#FCD116]/10 transition-colors cursor-pointer" title="Modifier">
+                                                className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-[#FCD116] hover:bg-[#FCD116]/10 transition-colors cursor-pointer" title={t("Modifier")}>
                                                 <Edit size={13} />
                                             </button>
                                             <button onClick={() => handleDelete(s.id, s.name)}
-                                                className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer" title="Supprimer">
+                                                className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer" title={t("Supprimer")}>
                                                 <Trash2 size={13} />
                                             </button>
                                         </div>

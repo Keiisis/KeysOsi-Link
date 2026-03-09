@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
+import { useTranslation, T } from '@/lib/translation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Shield, Mail, Lock, Loader2, ArrowRight, Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react'
 
 import { supabase } from '@/lib/supabase'
 
-const evaluatePasswordStrength = (password: string): { score: number; label: string; color: string } => {
+const evaluatePasswordStrength = (password: string): { score: number; key: string; color: string } => {
     let score = 0
     if (password.length >= 8) score++
     if (password.length >= 12) score++
@@ -14,10 +15,10 @@ const evaluatePasswordStrength = (password: string): { score: number; label: str
     if (/[0-9]/.test(password)) score++
     if (/[^A-Za-z0-9]/.test(password)) score++
 
-    if (score <= 1) return { score, label: 'Faible', color: 'bg-red-500' }
-    if (score <= 2) return { score, label: 'Moyen', color: 'bg-amber-500' }
-    if (score <= 3) return { score, label: 'Bon', color: 'bg-emerald-500' }
-    return { score, label: 'Excellent', color: 'bg-emerald-400' }
+    if (score <= 1) return { score, key: 'Faible', color: 'bg-red-500' }
+    if (score <= 2) return { score, key: 'Moyen', color: 'bg-amber-500' }
+    if (score <= 3) return { score, key: 'Bon', color: 'bg-emerald-500' }
+    return { score, key: 'Excellent', color: 'bg-emerald-400' }
 }
 
 // ═══════════════════════════════════════════
@@ -25,6 +26,7 @@ const evaluatePasswordStrength = (password: string): { score: number; label: str
 // ═══════════════════════════════════════════
 
 export default function AgentLoginPage() {
+    const { t } = useTranslation()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
@@ -38,12 +40,12 @@ export default function AgentLoginPage() {
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
             if (params.get('error') === 'unauthorized') {
-                setError('Accès refusé. Ce portail est réservé aux agents accrédités.');
+                setError(t('Accès refusé. Ce portail est réservé aux agents accrédités.'));
                 // Nettoyer l'URL
                 window.history.replaceState({}, '', '/agent/login');
             }
         }
-    }, [])
+    }, [t])
 
     const passwordStrength = evaluatePasswordStrength(password)
 
@@ -64,7 +66,7 @@ export default function AgentLoginPage() {
             })
 
             if (authError) {
-                throw new Error('Identifiants incorrects. Veuillez réessayer.')
+                throw new Error(t('Identifiants incorrects. Veuillez réessayer.'))
             }
 
             // Force la session à être lue et les cookies à être écrits
@@ -78,7 +80,7 @@ export default function AgentLoginPage() {
                 window.location.href = '/agent'
             }, 1000)
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : 'Une erreur est survenue. Veuillez réessayer.'
+            const message = err instanceof Error ? err.message : t('Une erreur est survenue. Veuillez réessayer.')
             setError(message)
             triggerShake()
         } finally {
@@ -92,29 +94,21 @@ export default function AgentLoginPage() {
             {/* ═══ Animated Background Orbs ═══ */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 {/* Orb 1 — Top Right */}
-                <div className="absolute top-[-15%] right-[-10%] w-[600px] h-[600px] rounded-full animate-orb-1 opacity-60"
-                    style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.12) 0%, transparent 70%)' }}
+                <div className="absolute top-[-15%] right-[-10%] w-[600px] h-[600px] rounded-full animate-orb-1 opacity-60 bg-[radial-gradient(circle,rgba(16,185,129,0.12)_0%,transparent_70%)]"
                 />
                 {/* Orb 2 — Bottom Left */}
-                <div className="absolute bottom-[-15%] left-[-10%] w-[500px] h-[500px] rounded-full animate-orb-2 opacity-50"
-                    style={{ background: 'radial-gradient(circle, rgba(20,184,166,0.1) 0%, transparent 70%)' }}
+                <div className="absolute bottom-[-15%] left-[-10%] w-[500px] h-[500px] rounded-full animate-orb-2 opacity-50 bg-[radial-gradient(circle,rgba(20,184,166,0.1)_0%,transparent_70%)]"
                 />
                 {/* Orb 3 — Center */}
-                <div className="absolute top-[35%] left-[45%] w-[400px] h-[400px] rounded-full animate-nexus-float opacity-30"
-                    style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 65%)' }}
+                <div className="absolute top-[35%] left-[45%] w-[400px] h-[400px] rounded-full animate-nexus-float opacity-30 bg-[radial-gradient(circle,rgba(16,185,129,0.08)_0%,transparent_65%)]"
                 />
 
                 {/* Grid lines */}
-                <div className="absolute inset-0 opacity-[0.02]"
-                    style={{
-                        backgroundImage: 'linear-gradient(rgba(16,185,129,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(16,185,129,0.4) 1px, transparent 1px)',
-                        backgroundSize: '80px 80px',
-                    }}
+                <div className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(rgba(16,185,129,0.4)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.4)_1px,transparent_1px)] bg-[length:80px_80px]"
                 />
 
                 {/* Vignette */}
-                <div className="absolute inset-0"
-                    style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(4,10,8,0.8) 100%)' }}
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(4,10,8,0.8)_100%)]"
                 />
             </div>
 
@@ -144,7 +138,7 @@ export default function AgentLoginPage() {
                         transition={{ delay: 0.3 }}
                         className="text-2xl font-black text-white font-heading tracking-tight"
                     >
-                        ESPACE <span className="text-emerald-400">AGENT</span>
+                        <T>ESPACE</T> <span className="text-emerald-400"><T>AGENT</T></span>
                     </motion.h1>
                     <motion.p
                         initial={{ opacity: 0 }}
@@ -152,7 +146,7 @@ export default function AgentLoginPage() {
                         transition={{ delay: 0.4 }}
                         className="text-nexus-text-muted mt-1.5 uppercase tracking-[0.3em] text-[9px] font-bold"
                     >
-                        Retour Gagnant Bénin — Bureau Opérationnel
+                        <T>Retour Gagnant Bénin — Bureau Opérationnel</T>
                     </motion.p>
                 </div>
 
@@ -197,8 +191,8 @@ export default function AgentLoginPage() {
                                     >
                                         <CheckCircle2 size={32} className="text-emerald-400" />
                                     </motion.div>
-                                    <p className="text-sm font-bold text-white">Connexion réussie</p>
-                                    <p className="text-[10px] text-nexus-text-muted uppercase tracking-widest">Redirection...</p>
+                                    <p className="text-sm font-bold text-white">{t('Connexion réussie')}</p>
+                                    <p className="text-[10px] text-nexus-text-muted uppercase tracking-widest">{t('Redirection...')}</p>
                                 </div>
                             </motion.div>
                         )}
@@ -208,7 +202,7 @@ export default function AgentLoginPage() {
                         {/* Email */}
                         <div className="space-y-1.5">
                             <label htmlFor="agent-email" className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-[0.15em] ml-0.5">
-                                Email Professionnel
+                                <T>Email Professionnel</T>
                             </label>
                             <div className="relative group">
                                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-nexus-text-muted group-focus-within:text-emerald-400 transition-colors duration-200" size={16} />
@@ -228,7 +222,7 @@ export default function AgentLoginPage() {
                         {/* Password */}
                         <div className="space-y-1.5">
                             <label htmlFor="agent-password" className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-[0.15em] ml-0.5">
-                                Mot de Passe
+                                <T>Mot de Passe</T>
                             </label>
                             <div className="relative group">
                                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-nexus-text-muted group-focus-within:text-emerald-400 transition-colors duration-200" size={16} />
@@ -268,7 +262,7 @@ export default function AgentLoginPage() {
                                             />
                                         </div>
                                         <span className="text-[9px] font-bold text-nexus-text-muted uppercase tracking-wider">
-                                            {passwordStrength.label}
+                                            {t(passwordStrength.key)}
                                         </span>
                                     </div>
                                 </motion.div>
@@ -290,7 +284,7 @@ export default function AgentLoginPage() {
                                 <Loader2 className="animate-spin" size={18} />
                             ) : (
                                 <>
-                                    <span className="tracking-[0.15em] text-[12px] relative z-10">ACCÉDER AU BUREAU</span>
+                                    <span className="tracking-[0.15em] text-[12px] relative z-10"><T>ACCÉDER AU BUREAU</T></span>
                                     <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform relative z-10" />
                                 </>
                             )}
@@ -308,7 +302,7 @@ export default function AgentLoginPage() {
                     <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.02] border border-nexus-border-subtle">
                         <Shield size={10} className="text-emerald-500" />
                         <span className="text-[9px] text-nexus-text-muted font-bold uppercase tracking-wider">
-                            Connexion Sécurisée
+                            <T>Connexion Sécurisée</T>
                         </span>
                     </div>
                 </motion.div>
@@ -316,7 +310,7 @@ export default function AgentLoginPage() {
                 {/* Footer */}
                 <p className="text-center mt-4 text-nexus-text-muted text-[10px]">
                     &copy; {new Date().getFullYear()} Retour Gagnant Bénin<br />
-                    Accès réservé aux agents accrédités
+                    <T>Accès réservé aux agents accrédités</T>
                 </p>
             </motion.div>
         </div>

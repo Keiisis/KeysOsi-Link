@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -18,6 +19,7 @@ const CATEGORIES = [
 ]
 
 export default function CreateEventPage() {
+    const { t } = useTranslation();
     const router = useRouter()
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
@@ -66,24 +68,24 @@ export default function CreateEventPage() {
                 <button onClick={() => router.push('/admin/evenements')} className="w-10 h-10 rounded-xl bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-white cursor-pointer">
                     <ArrowLeft size={16} />
                 </button>
-                <h1 className="text-xl font-black">Créer un événement</h1>
+                <h1 className="text-xl font-black"><T>Créer un événement</T></h1>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="rounded-2xl border border-white/[0.06] p-6 space-y-5"
                     style={{ background: 'linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))' }}>
-                    <h2 className="text-xs font-black text-gray-500 uppercase tracking-widest">Informations générales</h2>
+                    <h2 className="text-xs font-black text-gray-500 uppercase tracking-widest"><T>Informations générales</T></h2>
 
                     <Field label="Titre de l'événement *" icon={Type}>
-                        <input type="text" value={form.title} onChange={e => set('title', e.target.value)} className={inputClass} placeholder="Ex: Gala de la Diaspora 2026" />
+                        <input type="text" value={form.title} onChange={e => set('title', e.target.value)} className={inputClass} placeholder={t("Ex: Gala de la Diaspora 2026")} />
                     </Field>
 
                     <Field label="Description courte" icon={AlignLeft}>
-                        <input type="text" value={form.short_description} onChange={e => set('short_description', e.target.value)} className={inputClass} placeholder="Résumé en une ligne" />
+                        <input type="text" value={form.short_description} onChange={e => set('short_description', e.target.value)} className={inputClass} placeholder={t("Résumé en une ligne")} />
                     </Field>
 
                     <Field label="Description complète" icon={AlignLeft}>
-                        <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={5} className={inputClass} placeholder="Description détaillée de l'événement..." />
+                        <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={5} className={inputClass} placeholder={t("Description détaillée de l'événement...")} />
                     </Field>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -94,8 +96,8 @@ export default function CreateEventPage() {
                         </Field>
                         <Field label="Statut" icon={Calendar}>
                             <select value={form.status} onChange={e => set('status', e.target.value)} className={selectClass}>
-                                <option value="draft">Brouillon</option>
-                                <option value="published">Publié</option>
+                                <option value="draft"><T>Brouillon</T></option>
+                                <option value="published"><T>Publié</T></option>
                             </select>
                         </Field>
                     </div>
@@ -111,7 +113,7 @@ export default function CreateEventPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                         <Field label="Lieu" icon={MapPin}>
-                            <input type="text" value={form.location} onChange={e => set('location', e.target.value)} className={inputClass} placeholder="Ex: Cotonou, Bénin" />
+                            <input type="text" value={form.location} onChange={e => set('location', e.target.value)} className={inputClass} placeholder={t("Ex: Cotonou, Bénin")} />
                         </Field>
                         <Field label="Lien Google Maps" icon={Globe}>
                             <input type="url" value={form.location_map_url} onChange={e => set('location_map_url', e.target.value)} className={inputClass} placeholder="https://maps.google.com/..." />
@@ -121,7 +123,7 @@ export default function CreateEventPage() {
 
                 <div className="rounded-2xl border border-white/[0.06] p-6 space-y-5"
                     style={{ background: 'linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))' }}>
-                    <h2 className="text-xs font-black text-gray-500 uppercase tracking-widest">Tarification & Capacité</h2>
+                    <h2 className="text-xs font-black text-gray-500 uppercase tracking-widest"><T>Tarification & Capacité</T></h2>
 
                     <div className="grid grid-cols-3 gap-4">
                         <Field label="Prix Standard" icon={DollarSign}>
@@ -132,9 +134,9 @@ export default function CreateEventPage() {
                         </Field>
                         <Field label="Devise" icon={DollarSign}>
                             <select value={form.currency} onChange={e => set('currency', e.target.value)} className={selectClass}>
-                                <option value="XOF">XOF (FCFA)</option>
-                                <option value="EUR">EUR (€)</option>
-                                <option value="USD">USD ($)</option>
+                                <option value="XOF"><T>XOF (FCFA)</T></option>
+                                <option value="EUR"><T>EUR (€)</T></option>
+                                <option value="USD"><T>USD ($)</T></option>
                             </select>
                         </Field>
                     </div>
@@ -151,7 +153,7 @@ export default function CreateEventPage() {
 
                 <div className="rounded-2xl border border-white/[0.06] p-6 space-y-5"
                     style={{ background: 'linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))' }}>
-                    <h2 className="text-xs font-black text-gray-500 uppercase tracking-widest">Image & Options</h2>
+                    <h2 className="text-xs font-black text-gray-500 uppercase tracking-widest"><T>Image & Options</T></h2>
 
                     <EventImageUpload
                         label="Image de couverture"
@@ -164,7 +166,7 @@ export default function CreateEventPage() {
 
                     <label className="flex items-center gap-3 cursor-pointer">
                         <input type="checkbox" checked={form.is_featured} onChange={e => set('is_featured', e.target.checked)} className="w-4 h-4 rounded accent-[#FCD116]" />
-                        <span className="text-xs font-bold text-gray-400">Mettre cet événement à la une</span>
+                        <span className="text-xs font-bold text-gray-400"><T>Mettre cet événement à la une</T></span>
                     </label>
                 </div>
 

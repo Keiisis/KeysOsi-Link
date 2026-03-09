@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation, T } from '@/lib/translation';
 export default function PatrimonioShow() {
-    return <div>Détails du patrimoine</div>;
+    return <div><T>Détails du patrimoine</T></div>;
 }

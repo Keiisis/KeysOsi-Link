@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Star, Send, User, MessageSquare, Loader2, CheckCircle2 } from 'lucide-react'
@@ -19,6 +20,7 @@ interface ProductReviewsProps {
 }
 
 export function ProductReviews({ productId }: ProductReviewsProps) {
+    const { t } = useTranslation();
     const [reviews, setReviews] = useState<Review[]>([])
     const [loading, setLoading] = useState(true)
     const [showForm, setShowForm] = useState(false)
@@ -183,16 +185,16 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
                             {submitted ? (
                                 <div className="flex flex-col items-center justify-center py-10 space-y-3">
                                     <CheckCircle2 size={48} className="text-[#008751]" />
-                                    <p className="text-lg font-black text-white">Merci pour votre avis !</p>
-                                    <p className="text-xs text-gray-500">Votre retour nous aide à nous améliorer.</p>
+                                    <p className="text-lg font-black text-white"><T>Merci pour votre avis !</T></p>
+                                    <p className="text-xs text-gray-500"><T>Votre retour nous aide à nous améliorer.</T></p>
                                 </div>
                             ) : (
                                 <form onSubmit={handleSubmit} className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 md:p-8 space-y-6">
-                                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Partagez votre expérience</h3>
+                                    <h3 className="text-sm font-black text-white uppercase tracking-widest"><T>Partagez votre expérience</T></h3>
 
                                     {/* Star selector */}
                                     <div>
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Votre note *</label>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block"><T>Votre note *</T></label>
                                         <div className="flex items-center gap-1">
                                             {[1, 2, 3, 4, 5].map(i => (
                                                 <button
@@ -206,8 +208,8 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
                                                     <Star
                                                         size={28}
                                                         className={`transition-colors ${i <= (hoverRating || rating)
-                                                                ? 'text-[#FCD116] fill-[#FCD116]'
-                                                                : 'text-gray-700'
+                                                            ? 'text-[#FCD116] fill-[#FCD116]'
+                                                            : 'text-gray-700'
                                                             }`}
                                                     />
                                                 </button>
@@ -222,7 +224,7 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
 
                                     {/* Name */}
                                     <div>
-                                        <label htmlFor="review-name" className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Votre nom *</label>
+                                        <label htmlFor="review-name" className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block"><T>Votre nom *</T></label>
                                         <div className="relative">
                                             <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" />
                                             <input
@@ -230,7 +232,7 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
                                                 type="text"
                                                 value={name}
                                                 onChange={e => setName(e.target.value)}
-                                                placeholder="Votre nom"
+                                                placeholder={t("Votre nom")}
                                                 className="w-full bg-white/5 border border-white/5 rounded-xl py-3 pl-11 pr-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 transition-colors"
                                             />
                                         </div>
@@ -238,12 +240,12 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
 
                                     {/* Comment */}
                                     <div>
-                                        <label htmlFor="review-comment" className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Votre commentaire</label>
+                                        <label htmlFor="review-comment" className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block"><T>Votre commentaire</T></label>
                                         <textarea
                                             id="review-comment"
                                             value={comment}
                                             onChange={e => setComment(e.target.value)}
-                                            placeholder="Racontez-nous votre expérience..."
+                                            placeholder={t("Racontez-nous votre expérience...")}
                                             rows={4}
                                             className="w-full bg-white/5 border border-white/5 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 transition-colors resize-none"
                                         />
@@ -275,8 +277,8 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
                 ) : reviews.length === 0 ? (
                     <div className="text-center py-16 space-y-4">
                         <Star size={48} className="text-gray-700 mx-auto" />
-                        <p className="text-gray-500 text-sm">Aucun avis pour le moment.</p>
-                        <p className="text-gray-600 text-xs">Soyez le premier à partager votre expérience !</p>
+                        <p className="text-gray-500 text-sm"><T>Aucun avis pour le moment.</T></p>
+                        <p className="text-gray-600 text-xs"><T>Soyez le premier à partager votre expérience !</T></p>
                     </div>
                 ) : (
                     <div className="space-y-4">

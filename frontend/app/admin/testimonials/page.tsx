@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation, T } from '@/lib/translation';
 import { useList, useNavigation, useDelete, useUpdate } from "@refinedev/core";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -28,6 +29,7 @@ export interface Testimonial extends BaseRecord {
 }
 
 export default function TestimonialsList() {
+    const { t } = useTranslation();
     const { create, edit } = useNavigation();
     const queryResult = useList<Testimonial>({
         resource: "testimonials",
@@ -63,12 +65,12 @@ export default function TestimonialsList() {
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-[#3b82f6]">
                         <Quote size={18} />
-                        <span className="text-[10px] font-bold uppercase tracking-[0.4em]">Preçuve Sociale & Impact</span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.4em]"><T>Preçuve Sociale & Impact</T></span>
                     </div>
                     <h1 className="text-5xl font-black text-white font-heading tracking-tighter">
-                        LES <span className="text- benin-gradient">VOIX</span> DE LA DIASPORA
+                        LES <span className="text- benin-gradient"><T>VOIX</T></span> DE LA DIASPORA
                     </h1>
-                    <p className="text-gray-500 max-w-xl text-sm font-medium">Gérez les témoignages et la réputation de Retour Gagnant auprès de la communauté.</p>
+                    <p className="text-gray-500 max-w-xl text-sm font-medium"><T>Gérez les témoignages et la réputation de Retour Gagnant auprès de la communauté.</T></p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
@@ -76,7 +78,7 @@ export default function TestimonialsList() {
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
                         <input
                             type="text"
-                            placeholder="Rechercher par nom ou contenu..."
+                            placeholder={t("Rechercher par nom ou contenu...")}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full bg-[#0a0f18] border-2 border-white/5 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-[#3b82f6]/40 transition-all font-medium"
@@ -135,7 +137,7 @@ export default function TestimonialsList() {
             {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-40">
                     <Loader2 className="animate-spin text-[#3b82f6] opacity-50 mb-4" size={48} />
-                    <p className="text-gray-600 font-black uppercase tracking-[0.3em] text-[10px]">Collecte des avis...</p>
+                    <p className="text-gray-600 font-black uppercase tracking-[0.3em] text-[10px]"><T>Collecte des avis...</T></p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
@@ -205,7 +207,7 @@ export default function TestimonialsList() {
                                         <div className="flex gap-2">
                                             <button
                                                 onClick={() => edit("testimonials", item.id)}
-                                                title="Modifier"
+                                                title={t("Modifier")}
                                                 className="p-3 bg-white/5 text-gray-400 rounded-xl hover:bg-white/10 hover:text-white transition-all"
                                             >
                                                 <Edit2 size={16} />
@@ -214,7 +216,7 @@ export default function TestimonialsList() {
                                                 onClick={() => {
                                                     if (confirm("Confirmer la suppression ?")) deleteItem({ resource: "testimonials", id: item.id });
                                                 }}
-                                                title="Supprimer"
+                                                title={t("Supprimer")}
                                                 className="p-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all"
                                             >
                                                 <Trash2 size={16} />
@@ -245,7 +247,7 @@ export default function TestimonialsList() {
                     {filteredItems.length === 0 && !isLoading && (
                         <div className="col-span-full py-20 text-center bg-white/5 rounded-3xl border-2 border-dashed border-white/5">
                             <MessageSquareQuote size={48} className="mx-auto text-gray-800 mb-4" />
-                            <p className="text-gray-500 font-bold uppercase tracking-widest text-xs font-heading">Aucun témoignage ne correspond à l'archive.</p>
+                            <p className="text-gray-500 font-bold uppercase tracking-widest text-xs font-heading"><T>Aucun témoignage ne correspond à l'archive.</T></p>
                         </div>
                     )}
                 </div>

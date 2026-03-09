@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState } from 'react';
 import { useLogin, useForgotPassword } from '@refinedev/core';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,6 +9,7 @@ import { ShieldCheck, Mail, Lock, Loader2, ArrowRight, ArrowLeft, CheckCircle2 }
 type View = 'login' | 'forgot' | 'forgot-sent';
 
 export default function LoginPage() {
+    const { t } = useTranslation();
     const [view, setView] = useState<View>('login');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -47,8 +49,8 @@ export default function LoginPage() {
                             <ShieldCheck size={40} className="text-[#FCD116]" />
                         </div>
                     </div>
-                    <h1 className="text-3xl font-bold text-white font-heading">KAGE ADMIN</h1>
-                    <p className="text-gray-500 mt-2 uppercase tracking-[0.3em] text-[10px] font-bold">Système Sécurisé</p>
+                    <h1 className="text-3xl font-bold text-white font-heading"><T>KAGE ADMIN</T></h1>
+                    <p className="text-gray-500 mt-2 uppercase tracking-[0.3em] text-[10px] font-bold"><T>Système Sécurisé</T></p>
                 </div>
 
                 <AnimatePresence mode="wait">
@@ -63,7 +65,7 @@ export default function LoginPage() {
                         >
                             <form onSubmit={handleSubmit} className="space-y-6">
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Email Personnel</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1"><T>Email Personnel</T></label>
                                     <div className="relative group">
                                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-[#FCD116] transition-colors" size={18} />
                                         <input
@@ -71,7 +73,7 @@ export default function LoginPage() {
                                             required
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
-                                            placeholder="admin@retourgagnant.bj"
+                                            placeholder={t("admin@retourgagnant.bj")}
                                             className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:border-[#FCD116]/50 transition-all text-sm"
                                         />
                                     </div>
@@ -79,7 +81,7 @@ export default function LoginPage() {
 
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-center ml-1">
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Mot de Passe</label>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest"><T>Mot de Passe</T></label>
                                         <button
                                             type="button"
                                             onClick={() => { setForgotEmail(email); setView('forgot'); }}
@@ -110,7 +112,7 @@ export default function LoginPage() {
                                         <Loader2 className="animate-spin" size={20} />
                                     ) : (
                                         <>
-                                            <span>S&apos;AUTHENTIFIER</span>
+                                            <span><T>S&apos;AUTHENTIFIER</T></span>
                                             <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                                         </>
                                     )}
@@ -136,12 +138,12 @@ export default function LoginPage() {
                                 <ArrowLeft size={14} /> Retour
                             </button>
 
-                            <h2 className="text-xl font-black text-white mb-2">Réinitialisation</h2>
-                            <p className="text-gray-500 text-xs mb-6">Entrez votre adresse email pour recevoir un lien de réinitialisation.</p>
+                            <h2 className="text-xl font-black text-white mb-2"><T>Réinitialisation</T></h2>
+                            <p className="text-gray-500 text-xs mb-6"><T>Entrez votre adresse email pour recevoir un lien de réinitialisation.</T></p>
 
                             <form onSubmit={handleForgot} className="space-y-6">
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Email Personnel</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1"><T>Email Personnel</T></label>
                                     <div className="relative group">
                                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-[#FCD116] transition-colors" size={18} />
                                         <input
@@ -149,7 +151,7 @@ export default function LoginPage() {
                                             required
                                             value={forgotEmail}
                                             onChange={(e) => setForgotEmail(e.target.value)}
-                                            placeholder="admin@retourgagnant.bj"
+                                            placeholder={t("admin@retourgagnant.bj")}
                                             className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:border-[#FCD116]/50 transition-all text-sm"
                                         />
                                     </div>
@@ -178,7 +180,7 @@ export default function LoginPage() {
                             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#008751]/10 border border-[#008751]/20 mb-6">
                                 <CheckCircle2 size={32} className="text-[#008751]" />
                             </div>
-                            <h2 className="text-xl font-black text-white mb-2">Lien Envoyé !</h2>
+                            <h2 className="text-xl font-black text-white mb-2"><T>Lien Envoyé !</T></h2>
                             <p className="text-gray-500 text-sm mb-6">
                                 Un email de réinitialisation a été envoyé à <span className="text-white font-bold">{forgotEmail}</span>.
                                 Vérifiez votre boîte de réception (et les spams).

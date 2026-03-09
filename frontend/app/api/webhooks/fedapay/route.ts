@@ -41,6 +41,13 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Order not found' }, { status: 404 })
         }
 
+        // Vérifier que la commande est bien une commande FedaPay (non falsifiable — défini côté serveur)
+        // Empêche d'utiliser cet endpoint pour manipuler des commandes d'autres gateways
+        if (order.payment_method !== 'fedapay') {
+            console.warn(`[FedaPay Webhook] Tentative sur commande ${orderId} (méthode: ${order.payment_method})`)
+            return NextResponse.json({ error: 'Méthode de paiement incorrecte' }, { status: 400 })
+        }
+
         // Idempotency check
         if (order.payment_status === 'completed') {
             return NextResponse.json({ ok: true, message: 'Already processed' })
@@ -71,25 +78,81 @@ export async function POST(request: Request) {
                 })
 
                 const verifyData = await verifyRes.json()
-                const verifiedStatus = verifyData?.v1?.transaction?.status || verifyData?.status
+                const txObject = verifyData?.['v1/transaction'] || verifyData?.v1?.transaction || verifyData?.transaction || verifyData
+                const verifiedStatus = txObject?.status || verifyData?.status
 
-                if (verifiedStatus !== 'approved') {
+                if (verifiedStatus !== 'approved' && verifiedStatus !== 'transferred') {
                     await supabase
                         .from('orders')
                         .update({ payment_status: 'failed', transaction_id: transactionId })
                         .eq('id', orderId)
-                    return NextResponse.json({ ok: false, message: 'Server verification failed' })
+                        .eq('payment_status', 'pending')
+                    return NextResponse.json({ ok: false, message: 'Vérification FedaPay échouée' })
                 }
+
+                // Vérification du montant — FedaPay stocke en centimes (amount en XOF * 100)
+                const txAmount = txObject?.amount
+                if (txAmount !== undefined && txAmount !== null) {
+                    // FedaPay retourne le montant en centimes XOF (1 XOF = 100 centimes)
+                    const verifiedAmountXof = txAmount / 100
+                    if (verifiedAmountXof < order.amount * 0.99) {
+                        console.error('[FedaPay Webhook] Montant incorrect:', {
+                            verifiedAmountXof,
+                            expectedXof: order.amount,
+                        })
+                        await supabase
+                            .from('orders')
+                            .update({ payment_status: 'failed', transaction_id: transactionId })
+                            .eq('id', orderId)
+                            .eq('payment_status', 'pending')
+                        return NextResponse.json({ ok: false, message: 'Montant FedaPay incorrect' })
+                    }
+                }
+            } else {
+                // Pas de clé secrète → impossible de vérifier → refus par sécurité
+                console.error('[FedaPay Webhook] Clé secrète manquante — vérification impossible')
+                return NextResponse.json({ error: 'Configuration FedaPay manquante' }, { status: 503 })
             }
 
-            // Update order to completed
-            await supabase
+            // Anti-replay : vérifier que ce transactionId n'a pas déjà servi pour une autre commande complétée.
+            // Empêche un attaquant de rejouer une transaction FedaPay valide via un faux webhook.
+            const { data: existingTx } = await supabase
+                .from('orders')
+                .select('id')
+                .eq('transaction_id', transactionId)
+                .eq('payment_status', 'completed')
+                .neq('id', orderId)
+                .maybeSingle()
+
+            if (existingTx) {
+                console.error(`[FedaPay Webhook] Transaction ${transactionId} déjà utilisée — commande ${existingTx.id}`)
+                // Garde atomique : ne pas écraser une commande déjà complétée (race condition)
+                await supabase
+                    .from('orders')
+                    .update({ payment_status: 'failed', transaction_id: transactionId })
+                    .eq('id', orderId)
+                    .eq('payment_status', 'pending')
+                return NextResponse.json({ ok: false, message: 'Transaction déjà utilisée pour une autre commande' })
+            }
+
+            // Garde atomique + vérification du résultat pour éviter la double-décrémentation du stock.
+            // FedaPay peut re-livrer le même webhook. Deux livraisons simultanées peuvent toutes deux
+            // passer le check en mémoire (payment_status !== 'completed') avant que l'une n'écrive.
+            // Seule la livraison qui obtient 1 ligne mise à jour doit décrémenter le stock.
+            const { data: updatedOrder } = await supabase
                 .from('orders')
                 .update({
                     payment_status: 'completed',
                     transaction_id: transactionId,
                 })
                 .eq('id', orderId)
+                .eq('payment_status', 'pending')
+                .select('id')
+
+            // Aucune ligne mise à jour = déjà traité par une autre livraison → ne pas décrémenter
+            if (!updatedOrder || updatedOrder.length === 0) {
+                return NextResponse.json({ ok: true, message: 'Already processed (concurrent delivery)' })
+            }
 
             // Decrement stock
             if (order.product_id) {
@@ -114,14 +177,16 @@ export async function POST(request: Request) {
                 .from('orders')
                 .update({ payment_status: 'refunded', transaction_id: transactionId })
                 .eq('id', orderId)
+                .eq('payment_status', 'pending')
             return NextResponse.json({ ok: true, message: 'Refund recorded' })
         }
 
-        // declined / canceled
+        // declined / canceled — garde atomique : ne pas écraser une commande déjà complétée
         await supabase
             .from('orders')
             .update({ payment_status: 'failed', transaction_id: transactionId })
             .eq('id', orderId)
+            .eq('payment_status', 'pending')
 
         return NextResponse.json({ ok: true, message: 'Payment failed/canceled' })
     } catch {

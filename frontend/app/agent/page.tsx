@@ -10,6 +10,8 @@ import {
     Activity, Clock, Target, Sparkles, Globe
 } from 'lucide-react'
 import Link from 'next/link'
+import { useTranslation, T } from '@/lib/translation'
+import { AnyRecord } from '@/types'
 
 // ═══════════════════════════════════════════
 // Types
@@ -103,6 +105,7 @@ const Sparkline = ({ data, color }: { data: number[]; color: string }) => {
 // ═══════════════════════════════════════════
 
 export default function AgentDashboard() {
+    const { t, lang } = useTranslation()
     const [stats, setStats] = useState<DashboardStats>({
         totalDossiers: 0,
         dossiersEnCours: 0,
@@ -113,8 +116,8 @@ export default function AgentDashboard() {
         leadsNonContactes: 0,
         nationalityApps: 0,
     })
-    const [recentDossiers, setRecentDossiers] = useState<Record<string, unknown>[]>([])
-    const [recentMessages, setRecentMessages] = useState<Record<string, unknown>[]>([])
+    const [recentDossiers, setRecentDossiers] = useState<AnyRecord[]>([])
+    const [recentMessages, setRecentMessages] = useState<AnyRecord[]>([])
     const [loading, setLoading] = useState(true)
     const [agentName, setAgentName] = useState('Agent')
 
@@ -149,8 +152,8 @@ export default function AgentDashboard() {
                     supabase.from('nationality_applications').select('*', { count: 'exact', head: true }),
                 ])
 
-                const allDossiers = (dossiersRes.data as Record<string, unknown>[]) || []
-                const allLeads = (leadsRes.data as Record<string, unknown>[]) || []
+                const allDossiers = (dossiersRes.data as AnyRecord[]) || []
+                const allLeads = (leadsRes.data as AnyRecord[]) || []
 
                 setStats({
                     totalDossiers: dossiersRes.count || allDossiers.length,
@@ -164,7 +167,7 @@ export default function AgentDashboard() {
                 })
 
                 setRecentDossiers(allDossiers.slice(0, 5))
-                setRecentMessages((msgsRes.data as Record<string, unknown>[]) || [])
+                setRecentMessages((msgsRes.data as AnyRecord[]) || [])
             } catch (err) {
                 // Security: don't expose error details
                 if (process.env.NODE_ENV === 'development') {
@@ -180,7 +183,7 @@ export default function AgentDashboard() {
 
     const kpiCards = [
         {
-            label: 'Dossiers en cours',
+            label: t('Dossiers en cours'),
             value: stats.dossiersEnCours,
             icon: FileText,
             gradient: 'from-emerald-500 to-teal-600',
@@ -190,7 +193,7 @@ export default function AgentDashboard() {
             sparkColor: '#10B981',
         },
         {
-            label: 'Messages non lus',
+            label: t('Messages non lus'),
             value: stats.newMessages,
             icon: MessageSquare,
             gradient: 'from-blue-500 to-indigo-600',
@@ -200,7 +203,7 @@ export default function AgentDashboard() {
             sparkColor: '#3B82F6',
         },
         {
-            label: 'Vocaux non lus',
+            label: t('Vocaux non lus'),
             value: stats.newVocaux,
             icon: Headphones,
             gradient: 'from-purple-500 to-fuchsia-600',
@@ -210,7 +213,7 @@ export default function AgentDashboard() {
             sparkColor: '#A855F7',
         },
         {
-            label: 'Leads non contactés',
+            label: t('Leads non contactés'),
             value: stats.leadsNonContactes,
             icon: Compass,
             gradient: 'from-amber-500 to-orange-600',
@@ -220,7 +223,7 @@ export default function AgentDashboard() {
             sparkColor: '#F59E0B',
         },
         {
-            label: 'Demandes Nat.',
+            label: t('Demandes Nat.'),
             value: stats.nationalityApps,
             icon: Globe,
             gradient: 'from-blue-600 to-cyan-700',
@@ -232,10 +235,10 @@ export default function AgentDashboard() {
     ]
 
     const quickActions = [
-        { label: 'Nouveau Dossier', icon: FileText, href: '/agent/dossiers', accent: 'text-emerald-400 bg-emerald-500/8 border-emerald-500/15 hover:bg-emerald-500/15' },
-        { label: 'Voir les Messages', icon: Mail, href: '/agent/messages', accent: 'text-blue-400 bg-blue-500/8 border-blue-500/15 hover:bg-blue-500/15' },
-        { label: 'Consulter l\'Agenda', icon: Calendar, href: '/agent/agenda', accent: 'text-purple-400 bg-purple-500/8 border-purple-500/15 hover:bg-purple-500/15' },
-        { label: 'Fiche Client', icon: Users, href: '/agent/clients', accent: 'text-teal-400 bg-teal-500/8 border-teal-500/15 hover:bg-teal-500/15' },
+        { label: t('Nouveau Dossier'), icon: FileText, href: '/agent/dossiers', accent: 'text-emerald-400 bg-emerald-500/8 border-emerald-500/15 hover:bg-emerald-500/15' },
+        { label: t('Voir les Messages'), icon: Mail, href: '/agent/messages', accent: 'text-blue-400 bg-blue-500/8 border-blue-500/15 hover:bg-blue-500/15' },
+        { label: t('Consulter l\'Agenda'), icon: Calendar, href: '/agent/agenda', accent: 'text-purple-400 bg-purple-500/8 border-purple-500/15 hover:bg-purple-500/15' },
+        { label: t('Fiche Client'), icon: Users, href: '/agent/clients', accent: 'text-teal-400 bg-teal-500/8 border-teal-500/15 hover:bg-teal-500/15' },
     ]
 
     const statusColor = (status: string) => {
@@ -252,22 +255,22 @@ export default function AgentDashboard() {
 
     const statusLabel = (status: string) => {
         switch (status) {
-            case 'termine': return 'Terminé'
-            case 'traitement': return 'Traitement'
-            case 'validation': return 'Validation'
-            case 'verification': return 'Vérification'
-            case 'finalisation': return 'Finalisation'
-            case 'reception': return 'Réception'
-            default: return status
+            case 'termine': return t('Terminé')
+            case 'traitement': return t('Traitement')
+            case 'validation': return t('Validation')
+            case 'verification': return t('Vérification')
+            case 'finalisation': return t('Finalisation')
+            case 'reception': return t('Réception')
+            default: return t(status)
         }
     }
 
     // Greeting based on time of day
     const getGreeting = () => {
         const hour = new Date().getHours()
-        if (hour < 12) return 'Bonjour'
-        if (hour < 18) return 'Bon après-midi'
-        return 'Bonsoir'
+        if (hour < 12) return t('Bonjour')
+        if (hour < 18) return t('Bon après-midi')
+        return t('Bonsoir')
     }
 
     if (loading) {
@@ -296,7 +299,7 @@ export default function AgentDashboard() {
                         <div className="flex items-center gap-2 mb-1.5">
                             <Sparkles size={14} className="text-emerald-400" />
                             <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-[0.3em]">
-                                Bureau Opérationnel
+                                <T>Bureau Opérationnel</T>
                             </span>
                         </div>
                         <h1 className="text-2xl lg:text-3xl font-black text-white tracking-tight">
@@ -304,7 +307,7 @@ export default function AgentDashboard() {
                         </h1>
                         <p className="text-nexus-text-muted text-[12px] mt-1 flex items-center gap-1.5">
                             <Clock size={12} />
-                            {new Date().toLocaleDateString('fr-FR', {
+                            {new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', {
                                 weekday: 'long',
                                 day: 'numeric',
                                 month: 'long',
@@ -317,7 +320,7 @@ export default function AgentDashboard() {
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/8 border border-emerald-500/15">
                         <Activity size={12} className="text-emerald-400 animate-nexus-pulse" />
                         <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
-                            Système Actif
+                            <T>Système Actif</T>
                         </span>
                     </div>
                 </div>
@@ -360,7 +363,7 @@ export default function AgentDashboard() {
             <motion.div variants={staggerItem}>
                 <h2 className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-[0.2em] mb-2.5 flex items-center gap-1.5">
                     <Target size={12} className="text-emerald-400" />
-                    Actions Rapides
+                    <T>Actions Rapides</T>
                 </h2>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
                     {quickActions.map((action) => (
@@ -383,17 +386,17 @@ export default function AgentDashboard() {
                     <div className="flex items-center justify-between p-4 pb-3 border-b border-nexus-border-subtle">
                         <div className="flex items-center gap-2">
                             <FileText size={14} className="text-emerald-400" />
-                            <h3 className="font-bold text-white text-[13px]">Dossiers Récents</h3>
+                            <h3 className="font-bold text-white text-[13px]"><T>Dossiers Récents</T></h3>
                         </div>
                         <Link href="/agent/dossiers" className="text-[10px] text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-0.5 uppercase tracking-wider">
-                            Tout voir <ChevronRight size={12} />
+                            <T>Tout voir</T> <ChevronRight size={12} />
                         </Link>
                     </div>
                     <div className="divide-y divide-nexus-border-subtle">
                         {recentDossiers.length === 0 ? (
                             <div className="p-8 text-center">
                                 <FileText size={24} className="mx-auto text-nexus-text-muted mb-2 opacity-50" />
-                                <p className="text-nexus-text-muted text-[12px]">Aucun dossier pour le moment</p>
+                                <p className="text-nexus-text-muted text-[12px]"><T>Aucun dossier pour le moment</T></p>
                             </div>
                         ) : (
                             recentDossiers.map((d) => (
@@ -421,17 +424,17 @@ export default function AgentDashboard() {
                     <div className="flex items-center justify-between p-4 pb-3 border-b border-nexus-border-subtle">
                         <div className="flex items-center gap-2">
                             <MessageSquare size={14} className="text-blue-400" />
-                            <h3 className="font-bold text-white text-[13px]">Messages Récents</h3>
+                            <h3 className="font-bold text-white text-[13px]"><T>Messages Récents</T></h3>
                         </div>
                         <Link href="/agent/messages" className="text-[10px] text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-0.5 uppercase tracking-wider">
-                            Tout voir <ChevronRight size={12} />
+                            <T>Tout voir</T> <ChevronRight size={12} />
                         </Link>
                     </div>
                     <div className="divide-y divide-nexus-border-subtle">
                         {recentMessages.length === 0 ? (
                             <div className="p-8 text-center">
                                 <MessageSquare size={24} className="mx-auto text-nexus-text-muted mb-2 opacity-50" />
-                                <p className="text-nexus-text-muted text-[12px]">Aucun message</p>
+                                <p className="text-nexus-text-muted text-[12px]"><T>Aucun message</T></p>
                             </div>
                         ) : (
                             recentMessages.map((m) => (
@@ -455,7 +458,7 @@ export default function AgentDashboard() {
                                     </div>
                                     <div className="flex flex-col items-end gap-1">
                                         <span className="text-[9px] text-nexus-text-muted">
-                                            {new Date(m.created_at as string).toLocaleDateString('fr-FR')}
+                                            {new Date(m.created_at as string).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR')}
                                         </span>
                                         {!(m.lu as boolean) && (
                                             <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.5)]" />
@@ -478,9 +481,9 @@ export default function AgentDashboard() {
                         <BarChart3 size={18} className="text-emerald-400" />
                     </div>
                     <div>
-                        <p className="text-[13px] font-bold text-white">Résumé de Performance</p>
+                        <p className="text-[13px] font-bold text-white"><T>Résumé de Performance</T></p>
                         <p className="text-[11px] text-nexus-text-muted">
-                            <span className="text-emerald-400 font-bold">{stats.dossiersTermines}</span> dossier(s) finalisé(s) • <span className="font-bold">{stats.totalDossiers}</span> total • <span className="text-amber-400 font-bold">{stats.leadsOracle}</span> leads Oracle
+                            <span className="text-emerald-400 font-bold">{stats.dossiersTermines}</span> {t('dossier(s) finalisé(s)')} • <span className="font-bold">{stats.totalDossiers}</span> {t('total')} • <span className="text-amber-400 font-bold">{stats.leadsOracle}</span> {t('leads Oracle')}
                         </p>
                     </div>
                 </div>
@@ -489,7 +492,7 @@ export default function AgentDashboard() {
                     className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-500/8 border border-emerald-500/15 text-emerald-400 hover:bg-emerald-500/15 transition-all text-[11px] font-bold whitespace-nowrap"
                 >
                     <TrendingUp size={14} />
-                    Voir les détails
+                    {t('Voir les détails')}
                     <ChevronRight size={12} />
                 </Link>
             </motion.div>

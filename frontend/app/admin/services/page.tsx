@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -28,6 +29,7 @@ interface Service {
 }
 
 export default function AdminServicesPage() {
+    const { t } = useTranslation();
     const router = useRouter()
     const [services, setServices] = useState<Service[]>([])
     const [loading, setLoading] = useState(true)
@@ -82,10 +84,10 @@ export default function AdminServicesPage() {
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-[#008751]">
                         <Layers size={18} />
-                        <span className="text-[10px] font-bold uppercase tracking-[0.4em]">Gestion des Services</span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.4em]"><T>Gestion des Services</T></span>
                     </div>
                     <h1 className="text-4xl font-black text-white font-heading tracking-tighter">
-                        SERVICES <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] to-[#FCD116]">PREMIUM</span>
+                        SERVICES <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] to-[#FCD116]"><T>PREMIUM</T></span>
                     </h1>
                     <p className="text-sm text-gray-500">
                         {services.length} service(s) — {services.filter(s => s.is_active).length} actif(s)
@@ -96,7 +98,7 @@ export default function AdminServicesPage() {
                         type="button"
                         onClick={fetchServices}
                         className="p-3 rounded-xl bg-white/5 border border-white/5 text-gray-400 hover:text-white transition-colors"
-                        title="Rafraîchir"
+                        title={t("Rafraîchir")}
                     >
                         <RefreshCw size={16} />
                     </button>
@@ -104,7 +106,7 @@ export default function AdminServicesPage() {
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={15} />
                         <input
                             type="text"
-                            placeholder="Rechercher..."
+                            placeholder={t("Rechercher...")}
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                             className="bg-[#0a0f18] border border-white/5 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-[#008751]/30 text-sm w-56"
@@ -132,7 +134,7 @@ export default function AdminServicesPage() {
                 ) : filtered.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 space-y-3">
                         <Layers size={40} className="text-gray-700" />
-                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">Aucun service trouvé</p>
+                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest"><T>Aucun service trouvé</T></p>
                         <Link href="/admin/services/create" className="text-[#008751] text-xs font-bold hover:underline">
                             + Créer le premier service
                         </Link>
@@ -141,13 +143,13 @@ export default function AdminServicesPage() {
                     <div className="divide-y divide-white/5">
                         {/* Table header */}
                         <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-white/[0.02] text-[9px] font-black text-gray-600 uppercase tracking-widest">
-                            <div className="col-span-1">Ordre</div>
-                            <div className="col-span-3">Service</div>
-                            <div className="col-span-2">Slug</div>
-                            <div className="col-span-3">Prix</div>
-                            <div className="col-span-1">Options</div>
-                            <div className="col-span-1">Statut</div>
-                            <div className="col-span-1 text-right">Actions</div>
+                            <div className="col-span-1"><T>Ordre</T></div>
+                            <div className="col-span-3"><T>Service</T></div>
+                            <div className="col-span-2"><T>Slug</T></div>
+                            <div className="col-span-3"><T>Prix</T></div>
+                            <div className="col-span-1"><T>Options</T></div>
+                            <div className="col-span-1"><T>Statut</T></div>
+                            <div className="col-span-1 text-right"><T>Actions</T></div>
                         </div>
                         <AnimatePresence mode="popLayout">
                             {filtered.map(service => (
@@ -225,7 +227,7 @@ export default function AdminServicesPage() {
                                             type="button"
                                             onClick={() => router.push(`/admin/services/edit/${service.id}`)}
                                             className="p-2 rounded-xl bg-white/5 text-gray-400 border border-white/5 hover:bg-white/10 hover:text-white transition-all"
-                                            title="Modifier"
+                                            title={t("Modifier")}
                                         >
                                             <Edit2 size={13} />
                                         </button>
@@ -233,7 +235,7 @@ export default function AdminServicesPage() {
                                             type="button"
                                             onClick={() => deleteService(service)}
                                             className="p-2 rounded-xl bg-red-500/10 text-red-500 border border-red-500/10 hover:bg-red-500 hover:text-white transition-all"
-                                            title="Supprimer"
+                                            title={t("Supprimer")}
                                         >
                                             <Trash2 size={13} />
                                         </button>

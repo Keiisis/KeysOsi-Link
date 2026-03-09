@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation, T } from '@/lib/translation';
 import { useList, useNavigation, useDelete, useUpdate } from "@refinedev/core";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Trash2, Edit2, Maximize2, Filter, Grid, List as ListIcon, Image as ImageIcon, Loader2, Search, CheckCircle2 } from "lucide-react";
@@ -23,6 +24,7 @@ export interface GalleryItem {
 }
 
 export default function GalleryList() {
+    const { t } = useTranslation();
     const { create, edit } = useNavigation();
     const queryResult = useList<GalleryItem>({
         resource: "gallery",
@@ -57,10 +59,10 @@ export default function GalleryList() {
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-[#FCD116]">
                         <ImageIcon size={18} />
-                        <span className="text-[10px] font-bold uppercase tracking-[0.4em]">Média & Archives Visuelles</span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.4em]"><T>Média & Archives Visuelles</T></span>
                     </div>
                     <h1 className="text-5xl font-black text-white font-heading tracking-tighter">
-                        GALERIE <span className="text- benin-gradient">IMMERSIVE</span>
+                        GALERIE <span className="text- benin-gradient"><T>IMMERSIVE</T></span>
                     </h1>
                 </div>
 
@@ -69,7 +71,7 @@ export default function GalleryList() {
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
                         <input
                             type="text"
-                            placeholder="Rechercher un média..."
+                            placeholder={t("Rechercher un média...")}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full bg-[#0a0f18] border border-white/5 rounded-2xl py-3.5 pl-12 pr-4 text-white focus:outline-none focus:border-[#FCD116]/30 transition-all text-sm font-medium"
@@ -109,7 +111,7 @@ export default function GalleryList() {
                         <Loader2 className="animate-spin text-[#FCD116]" size={48} />
                         <div className="absolute inset-0 blur-xl bg-[#FCD116]/20 animate-pulse" />
                     </div>
-                    <p className="text-gray-500 font-mono text-xs uppercase tracking-[0.2em]">Synchronisation de la photothèque...</p>
+                    <p className="text-gray-500 font-mono text-xs uppercase tracking-[0.2em]"><T>Synchronisation de la photothèque...</T></p>
                 </div>
             ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
@@ -143,7 +145,7 @@ export default function GalleryList() {
                                                 <button
                                                     onClick={() => edit("gallery", item.id)}
                                                     className="p-2 bg-white/20 text-white rounded-xl hover:bg-[#FCD116] hover:text-black transition-all shadow-lg"
-                                                    title="Modifier cette image"
+                                                    title={t("Modifier cette image")}
                                                 >
                                                     <Edit2 size={16} />
                                                 </button>
@@ -176,7 +178,7 @@ export default function GalleryList() {
                                                     <button
                                                         onClick={() => updateItem({ resource: "gallery", id: item.id, values: { is_featured: true } })}
                                                         className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/10 text-white hover:bg-[#FCD116] hover:text-black transition-all"
-                                                        title="Mettre en avant"
+                                                        title={t("Mettre en avant")}
                                                     >
                                                         <Grid size={16} />
                                                     </button>
@@ -199,7 +201,7 @@ export default function GalleryList() {
                     {filteredItems.length === 0 && !isLoading && (
                         <div className="col-span-full py-32 flex flex-col items-center justify-center bg-white/5 rounded-[3rem] border border-dashed border-white/10">
                             <ImageIcon size={48} className="text-gray-700 mb-4" />
-                            <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Aucun média ne correspond à vos critères.</p>
+                            <p className="text-gray-500 font-bold uppercase tracking-widest text-xs"><T>Aucun média ne correspond à vos critères.</T></p>
                         </div>
                     )}
                 </div>

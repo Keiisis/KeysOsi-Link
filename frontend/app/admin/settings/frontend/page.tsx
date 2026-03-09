@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation, T } from '@/lib/translation';
 import { useList, useUpdate } from "@refinedev/core";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -19,6 +20,7 @@ interface SettingItem {
 }
 
 export default function FrontendSettingsPage() {
+    const { t } = useTranslation();
     const queryResult = useList<SettingItem>({
         resource: "settings",
         pagination: { mode: "off" }
@@ -134,7 +136,7 @@ export default function FrontendSettingsPage() {
         return (
             <div className="min-h-[50vh] flex flex-col items-center justify-center">
                 <Loader2 className="animate-spin text-purple-500 mb-4" size={40} />
-                <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.3em]">Chargement de l&apos;interface visuelle...</p>
+                <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.3em]"><T>Chargement de l&apos;interface visuelle...</T></p>
             </div>
         );
     }
@@ -148,8 +150,8 @@ export default function FrontendSettingsPage() {
                         <ArrowLeft size={24} />
                     </Link>
                     <div>
-                        <h1 className="text-3xl font-black font-heading text-white tracking-tight italic"><span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">VITRINE</span> PUBLIQUE</h1>
-                        <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.3em] mt-1">Personnalisation du FrontEnd</p>
+                        <h1 className="text-3xl font-black font-heading text-white tracking-tight italic"><span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500"><T>VITRINE</T></span> <T>PUBLIQUE</T></h1>
+                        <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.3em] mt-1"><T>Personnalisation du FrontEnd</T></p>
                     </div>
                 </div>
 
@@ -171,31 +173,31 @@ export default function FrontendSettingsPage() {
                                 <Type size={24} className="text-purple-500" />
                             </div>
                             <div>
-                                <h3 className="text-xl font-black text-white">Identité Visuelle</h3>
-                                <p className="text-xs text-gray-500">Textes d&apos;accroche et couleurs</p>
+                                <h3 className="text-xl font-black text-white"><T>Identité Visuelle</T></h3>
+                                <p className="text-xs text-gray-500"><T>Textes d&apos;accroche et couleurs</T></p>
                             </div>
                         </div>
 
                         <div className="space-y-6">
                             <div className="space-y-3">
-                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Grand Titre (Hero)</label>
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1"><T>Grand Titre (Hero)</T></label>
                                 <input
                                     name="frontend_hero_title"
                                     value={form.frontend_hero_title}
                                     onChange={handleChange}
-                                    placeholder="VOTRE VISION, NOTRE MISSION"
+                                    placeholder={t("VOTRE VISION, NOTRE MISSION")}
                                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white focus:outline-none focus:border-purple-500/50 transition-all font-bold text-sm"
                                 />
                             </div>
 
                             <div className="space-y-3">
-                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Sous-Titre Descriptif</label>
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1"><T>Sous-Titre Descriptif</T></label>
                                 <textarea
                                     name="frontend_hero_subtitle"
                                     value={form.frontend_hero_subtitle}
                                     onChange={handleChange}
                                     rows={4}
-                                    placeholder="Bâtissons l&apos;avenir..."
+                                    placeholder={t("Bâtissons l&apos;avenir...")}
                                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white focus:outline-none focus:border-purple-500/50 transition-all font-medium text-sm"
                                 />
                             </div>
@@ -232,40 +234,40 @@ export default function FrontendSettingsPage() {
                                 <Film size={24} className="text-blue-500" />
                             </div>
                             <div>
-                                <h3 className="text-xl font-black text-white">Création d'Ambiance</h3>
-                                <p className="text-xs text-gray-500">Multimédia d'arrière-plan interactif</p>
+                                <h3 className="text-xl font-black text-white"><T>Création d'Ambiance</T></h3>
+                                <p className="text-xs text-gray-500"><T>Multimédia d'arrière-plan interactif</T></p>
                             </div>
                         </div>
 
                         <div className="space-y-6">
                             <div className="space-y-3">
-                                <label className="text-[10px] font-black text-blue-500 uppercase tracking-widest ml-1">URL Vidéo d&apos;Arrière-plan (MP4 ou lien web)</label>
+                                <label className="text-[10px] font-black text-blue-500 uppercase tracking-widest ml-1"><T>URL Vidéo d&apos;Arrière-plan (MP4 ou lien web)</T></label>
                                 <input
                                     name="frontend_hero_video"
                                     value={form.frontend_hero_video}
                                     onChange={handleChange}
-                                    placeholder="/videos/hero-bg.mp4"
+                                    placeholder={t("/videos/hero-bg.mp4")}
                                     className="w-full bg-[#131b2c] border border-blue-500/30 rounded-2xl py-4 px-6 text-white focus:outline-none focus:border-blue-500 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] transition-all font-mono text-sm"
                                 />
                                 <p className="text-[10px] text-gray-500 font-bold ml-1">Utilisez un lien absolu (https://...) ou un fichier placé dans /public</p>
                             </div>
 
                             <div className="space-y-3">
-                                <label className="text-[10px] font-black text-blue-500 uppercase tracking-widest ml-1">URL Musique d&apos;Ambiance (MP3)</label>
+                                <label className="text-[10px] font-black text-blue-500 uppercase tracking-widest ml-1"><T>URL Musique d&apos;Ambiance (MP3)</T></label>
                                 <input
                                     name="frontend_hero_audio"
                                     value={form.frontend_hero_audio}
                                     onChange={handleChange}
-                                    placeholder="/audio/ambient.mp3"
+                                    placeholder={t("/audio/ambient.mp3")}
                                     className="w-full bg-[#131b2c] border border-blue-500/30 rounded-2xl py-4 px-6 text-white focus:outline-none focus:border-blue-500 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] transition-all font-mono text-sm"
                                 />
-                                <p className="text-[10px] text-gray-500 font-bold ml-1">Le son s&apos;activera au clic ou à l&apos;interaction de l&apos;utilisateur.</p>
+                                <p className="text-[10px] text-gray-500 font-bold ml-1"><T>Le son s&apos;activera au clic ou à l&apos;interaction de l&apos;utilisateur.</T></p>
                             </div>
 
                             {form.frontend_hero_video && (
                                 <div className="mt-6 aspect-video rounded-3xl overflow-hidden border border-white/10 relative group">
                                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <div className="text-white font-black tracking-widest text-xs py-2 px-4 bg-black/50 backdrop-blur-md rounded-xl">APERÇU VIDÉO</div>
+                                        <div className="text-white font-black tracking-widest text-xs py-2 px-4 bg-black/50 backdrop-blur-md rounded-xl"><T>APERÇU VIDÉO</T></div>
                                     </div>
                                     <video src={form.frontend_hero_video} autoPlay muted loop playsInline className="w-full h-full object-cover" />
                                 </div>
@@ -283,8 +285,8 @@ export default function FrontendSettingsPage() {
                                     <LinkIcon size={24} className="text-pink-500" />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-black text-white">Barre de Navigation</h3>
-                                    <p className="text-xs text-gray-500">Gérez les menus visibles par le public (En haut à droite du site)</p>
+                                    <h3 className="text-xl font-black text-white"><T>Barre de Navigation</T></h3>
+                                    <p className="text-xs text-gray-500"><T>Gérez les menus visibles par le public (En haut à droite du site)</T></p>
                                 </div>
                             </div>
                             <Button onClick={addLink} variant="outline" className="border-pink-500/30 text-pink-400 hover:bg-pink-500/10 h-10 px-4 rounded-xl gap-2 font-bold text-xs uppercase">
@@ -310,7 +312,7 @@ export default function FrontendSettingsPage() {
                                                 <input
                                                     value={link.label}
                                                     onChange={(e) => handleLinkChange(index, 'label', e.target.value)}
-                                                    placeholder="Titre du lien (ex: Accueil)"
+                                                    placeholder={t("Titre du lien (ex: Accueil)")}
                                                     className="w-full bg-transparent border-b border-white/10 py-2 px-1 text-white focus:outline-none focus:border-pink-500 transition-all font-bold text-sm"
                                                 />
                                             </div>
@@ -318,7 +320,7 @@ export default function FrontendSettingsPage() {
                                                 <input
                                                     value={link.href}
                                                     onChange={(e) => handleLinkChange(index, 'href', e.target.value)}
-                                                    placeholder="Destination (ex: /boutique)"
+                                                    placeholder={t("Destination (ex: /boutique)")}
                                                     className="w-full bg-transparent border-b border-white/10 py-2 px-1 text-gray-400 focus:outline-none focus:border-pink-500 transition-all font-mono text-sm"
                                                 />
                                             </div>
@@ -334,8 +336,8 @@ export default function FrontendSettingsPage() {
                             </AnimatePresence>
                             {navbarLinks.length === 0 && (
                                 <div className="text-center py-10 opacity-50">
-                                    <p className="text-sm font-bold text-white mb-2">Aucun lien défini.</p>
-                                    <p className="text-xs text-gray-500">Ajoutez des liens pour construire le menu principal.</p>
+                                    <p className="text-sm font-bold text-white mb-2"><T>Aucun lien défini.</T></p>
+                                    <p className="text-xs text-gray-500"><T>Ajoutez des liens pour construire le menu principal.</T></p>
                                 </div>
                             )}
                         </div>

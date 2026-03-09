@@ -4,10 +4,12 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 import { ShoppingBag, Search, Tag, Loader2, Sparkles, MoveRight } from 'lucide-react'
 import { ProductCard, type Product } from '@/components/boutique/ProductCard'
+import { useTranslation } from '@/lib/translation'
 
 const categories = ['Tous', 'Mode', 'Artisanat', 'Alimentaire', 'Culturel', 'Accessoires', 'Autre']
 
 export default function BoutiquePage() {
+    const { t } = useTranslation()
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
@@ -68,13 +70,13 @@ export default function BoutiquePage() {
                 >
                     <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-md shadow-2xl shadow-[#FCD116]/5">
                         <Sparkles size={14} className="text-[#FCD116]" />
-                        <span className="text-white text-[10px] sm:text-xs font-black tracking-[0.3em] uppercase">E-Commerce Exclusif</span>
+                        <span className="text-white text-[10px] sm:text-xs font-black tracking-[0.3em] uppercase">{t("E-Commerce Exclusif")}</span>
                     </div>
 
                     <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-black font-heading tracking-tighter leading-none">
-                        Notre{' '}
+                        {t("Notre")}{' '}
                         <span className="relative inline-block text-transparent bg-clip-text bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D]">
-                            Boutique
+                            {t("Boutique")}
                             <motion.div
                                 className="absolute -bottom-4 sm:-bottom-6 left-0 right-0 h-1 sm:h-2 bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D] rounded-full"
                                 initial={{ scaleX: 0, opacity: 0 }}
@@ -85,7 +87,7 @@ export default function BoutiquePage() {
                     </h1>
 
                     <p className="text-gray-400 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed font-light mt-8">
-                        L'héritage, le savoir-faire et l'élégance du Bénin réunis dans une collection soigneusement sélectionnée. Laissez-vous inspirer.
+                        {t("L'héritage, le savoir-faire et l'élégance du Bénin réunis dans une collection soigneusement sélectionnée. Laissez-vous inspirer.")}
                     </p>
                 </motion.div>
             </motion.section>
@@ -106,7 +108,7 @@ export default function BoutiquePage() {
                             </div>
                             <input
                                 type="text"
-                                placeholder="Que recherchez-vous aujourd'hui ?"
+                                placeholder={t("Que recherchez-vous aujourd'hui ?")}
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                                 className="w-full bg-white/5 hover:bg-white/10 border border-transparent focus:border-[#FCD116]/50 rounded-2xl py-3.5 pl-12 pr-4 text-white text-sm focus:outline-none transition-all placeholder:text-gray-600"
@@ -120,8 +122,8 @@ export default function BoutiquePage() {
                                     key={cat}
                                     onClick={() => setActiveCategory(cat)}
                                     className={`relative px-5 py-2.5 rounded-2xl text-[10px] sm:text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 overflow-hidden ${activeCategory === cat
-                                            ? 'text-black'
-                                            : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                        ? 'text-black'
+                                        : 'text-gray-400 hover:text-white hover:bg-white/5'
                                         }`}
                                 >
                                     {activeCategory === cat && (
@@ -131,7 +133,7 @@ export default function BoutiquePage() {
                                             transition={{ type: "spring", stiffness: 300, damping: 30 }}
                                         />
                                     )}
-                                    <span className="relative z-10">{cat}</span>
+                                    <span className="relative z-10">{t(cat)}</span>
                                 </button>
                             ))}
                         </div>
@@ -151,7 +153,7 @@ export default function BoutiquePage() {
                                 <div className="absolute inset-0 blur-2xl bg-[#FCD116]/30 animate-pulse" />
                             </div>
                             <p className="text-gray-400 text-xs sm:text-sm font-bold uppercase tracking-[0.2em] animate-pulse">
-                                Préparation de l'expérience...
+                                {t("Préparation de l'expérience...")}
                             </p>
                         </div>
                     ) : filtered.length > 0 ? (
@@ -176,18 +178,18 @@ export default function BoutiquePage() {
                                 <Tag size={48} className="text-gray-600 drop-shadow-lg" />
                             </div>
                             <div className="text-center max-w-md mx-auto space-y-3">
-                                <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Rien par ici</h3>
+                                <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">{t("Rien par ici")}</h3>
                                 <p className="text-sm font-light text-gray-400 leading-relaxed">
                                     {products.length === 0
-                                        ? "Notre collection est en cours de préparation. L'attente en vaut la peine."
-                                        : "Aucun trésor ne correspond à vos critères actuels. Explorez nos autres catégories."}
+                                        ? t("Notre collection est en cours de préparation. L'attente en vaut la peine.")
+                                        : t("Aucun trésor ne correspond à vos critères actuels. Explorez nos autres catégories.")}
                                 </p>
                                 {products.length > 0 && (
                                     <button
                                         onClick={() => { setSearchTerm(''); setActiveCategory('Tous'); }}
                                         className="mt-6 inline-flex items-center gap-2 text-[#FCD116] text-xs font-bold uppercase tracking-widest hover:text-white transition-colors"
                                     >
-                                        Réinitialiser les filtres <MoveRight size={14} />
+                                        {t("Réinitialiser les filtres")} <MoveRight size={14} />
                                     </button>
                                 )}
                             </div>

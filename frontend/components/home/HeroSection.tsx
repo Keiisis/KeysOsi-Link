@@ -3,9 +3,11 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
+import { useTranslation, T } from "@/lib/translation";
 import { supabase } from "@/lib/supabase";
 
 export default function HeroSection() {
+    const { t, lang } = useTranslation();
     const [isVideoLoaded, setIsVideoLoaded] = useState(false);
     const [content, setContent] = useState({
         title: "VOTRE RETOUR GAGNANT",
@@ -13,6 +15,16 @@ export default function HeroSection() {
         video: "/videos/hero.mp4"
     });
     const videoRef = useRef<HTMLVideoElement>(null);
+
+    // Fallback dictionary for the main slogan to ensure it's always translated accurately
+    const SLOGAN_VALS: Record<string, string> = {
+        en: "YOUR WINNING RETURN",
+        es: "SU REGRESO GANADOR",
+        pt: "SEU RETORNO VENCEDOR",
+        cr: "RETOU GAYAN ZÒT",
+        ht: "RETOU GAYAN OU",
+        fr: "VOTRE RETOUR GAGNANT"
+    };
 
     useEffect(() => {
         const fetchHeroContent = async () => {
@@ -23,13 +35,15 @@ export default function HeroSection() {
                     .or('key.eq.frontend_hero_title,key.eq.frontend_hero_subtitle,key.eq.frontend_hero_video');
 
                 if (data && !error) {
-                    const newContent = { ...content };
-                    data.forEach(item => {
-                        if (item.key === 'frontend_hero_title') newContent.title = item.value;
-                        if (item.key === 'frontend_hero_subtitle') newContent.subtitle = item.value;
-                        if (item.key === 'frontend_hero_video') newContent.video = item.value;
+                    setContent(prev => {
+                        const next = { ...prev };
+                        data.forEach(item => {
+                            if (item.key === 'frontend_hero_title') next.title = item.value;
+                            if (item.key === 'frontend_hero_subtitle') next.subtitle = item.value;
+                            if (item.key === 'frontend_hero_video') next.video = item.value;
+                        });
+                        return next;
                     });
-                    setContent(newContent);
                 }
             } catch (err) {
                 console.error("Error fetching hero content:", err);
@@ -38,7 +52,7 @@ export default function HeroSection() {
 
         fetchHeroContent();
 
-        // Subscription for real-time updates (optional but good for UX)
+        // Subscription for real-time updates
         const channel = supabase
             .channel('hero_settings_changes')
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'settings' }, fetchHeroContent)
@@ -74,16 +88,34 @@ export default function HeroSection() {
 
     // Helper to render the title with Benin colors if it matches the main one
     const renderTitle = (title: string) => {
-        if (title.toUpperCase().includes("VOTRE RETOUR GAGNANT")) {
+        let translated = t(title);
+
+        const isMainSlogan = title.toUpperCase().includes("VOTRE RETOUR GAGNANT") ||
+            translated.toUpperCase() === "VOTRE RETOUR GAGNANT";
+
+        if (isMainSlogan) {
+            // Priority: Local fallback for precision -> Dynamic translation -> Original
+            translated = SLOGAN_VALS[lang] || translated;
+            const words = translated.split(' ');
+
             return (
                 <>
-                    <span className="text-[#008751]">VOTRE</span>{" "}
-                    <span className="text-[#FCD116] drop-shadow-[0_0_30px_rgba(252,209,22,0.4)]">RETOUR</span>{" "}
-                    <span className="text-[#E8112D]">GAGNANT</span>
+                    {words.map((word, i) => {
+                        let className = "text-white/90";
+                        if (i === 0) className = "text-[#008751]";
+                        else if (i === 1) className = "text-[#FCD116] drop-shadow-[0_0_30px_rgba(252,209,22,0.4)]";
+                        else if (i === 2) className = "text-[#E8112D]";
+
+                        return (
+                            <span key={i} className={className}>
+                                {word}{i < words.length - 1 ? ' ' : ''}
+                            </span>
+                        );
+                    })}
                 </>
             );
         }
-        return title;
+        return <>{translated}</>;
     };
 
     return (
@@ -129,7 +161,7 @@ export default function HeroSection() {
             <div className="container relative z-10 px-4 text-center">
                 <div className="inline-block mb-6 px-5 py-2 rounded-full border border-white/20 bg-white/10 backdrop-blur-lg animate-in fade-in slide-in-from-top-10 duration-1000">
                     <span className="text-sm font-semibold text-[#FCD116] tracking-[0.25em] uppercase">
-                        Excellence & Tradition
+                        <T>Excellence & Tradition</T>
                     </span>
                 </div>
 
@@ -138,23 +170,23 @@ export default function HeroSection() {
                 </h1>
 
                 <p className="text-xl md:text-2xl text-white/85 font-medium max-w-2xl mx-auto mb-12 leading-relaxed animate-in fade-in slide-in-from-bottom-5 duration-1000 delay-500">
-                    {content.subtitle}
+                    {t(content.subtitle)}
                 </p>
 
                 <div className="flex flex-col md:flex-row gap-4 justify-center items-center animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-700 w-full max-w-4xl mx-auto flex-wrap">
                     <Link href="/nationalite">
                         <Button size="lg" className="bg-[#008751] text-white hover:bg-[#006e42] text-base md:text-lg px-8 h-14 md:h-16 rounded-full shadow-[0_8px_32px_rgba(0,135,81,0.4)] hover:shadow-lg hover:scale-105 transition-all duration-300 w-full md:w-auto">
-                            Obtenir la Nationalité
+                            <T>Obtenir la Nationalité</T>
                         </Button>
                     </Link>
                     <Link href="/services/investissement">
                         <Button size="lg" className="bg-[#FCD116] text-[#1a2332] hover:bg-[#e5bc14] text-base md:text-lg px-8 h-14 md:h-16 rounded-full shadow-[0_8px_32px_rgba(252,209,22,0.4)] hover:shadow-lg hover:scale-105 transition-all duration-300 font-bold w-full md:w-auto border border-yellow-400/50">
-                            Investir au Bénin
+                            <T>Investir au Bénin</T>
                         </Button>
                     </Link>
                     <Link href="/services/logement">
                         <Button size="lg" className="bg-[#E8112D] text-white hover:bg-[#c40e25] text-base md:text-lg px-8 h-14 md:h-16 rounded-full shadow-[0_8px_32px_rgba(232,17,45,0.4)] hover:shadow-lg hover:scale-105 transition-all duration-300 w-full md:w-auto">
-                            Visiter & S&apos;installer
+                            <T>Visiter & S&apos;installer</T>
                         </Button>
                     </Link>
                 </div>
@@ -162,7 +194,7 @@ export default function HeroSection() {
 
             {/* === Scroll Indicator === */}
             <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 animate-bounce">
-                <span className="text-white/50 text-xs uppercase tracking-widest">Défiler</span>
+                <span className="text-white/50 text-xs uppercase tracking-widest"><T>Défiler</T></span>
                 <div className="w-[1px] h-10 bg-gradient-to-b from-white/60 to-transparent" />
             </div>
 

@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import {
@@ -13,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
+import { RoleGuard } from '@/components/admin/RoleGuard'
 
 interface GatewayConfig {
     id: string
@@ -100,7 +102,8 @@ const GATEWAYS: GatewayConfig[] = [
     },
 ]
 
-export default function PaymentSettingsPage() {
+function PaymentSettingsContent() {
+    const { t } = useTranslation();
     const [settings, setSettings] = useState<Record<string, string>>({})
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -241,17 +244,17 @@ export default function PaymentSettingsPage() {
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
                 <div className="flex items-center gap-4">
                     <Link href="/admin/settings">
-                        <button type="button" className="p-3 rounded-xl bg-white/5 border border-white/5 text-gray-400 hover:text-white transition-colors" title="Retour aux reglages">
+                        <button type="button" className="p-3 rounded-xl bg-white/5 border border-white/5 text-gray-400 hover:text-white transition-colors" title={t("Retour aux reglages")}>
                             <ArrowLeft size={18} />
                         </button>
                     </Link>
                     <div>
                         <div className="flex items-center gap-2 text-[#FCD116]">
                             <CreditCard size={18} />
-                            <span className="text-[10px] font-bold uppercase tracking-[0.4em]">Passerelles de Paiement</span>
+                            <span className="text-[10px] font-bold uppercase tracking-[0.4em]"><T>Passerelles de Paiement</T></span>
                         </div>
                         <h1 className="text-4xl font-black text-white font-heading tracking-tighter">
-                            CONFIGURATION <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#008751]">PAIEMENT</span>
+                            CONFIGURATION <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#008751]"><T>PAIEMENT</T></span>
                         </h1>
                     </div>
                 </div>
@@ -491,12 +494,12 @@ export default function PaymentSettingsPage() {
                                                 {configuréed ? (
                                                     <>
                                                         <CheckCircle2 size={16} className="text-[#008751]" />
-                                                        <span className="text-xs font-bold text-[#008751]">Configuration complete</span>
+                                                        <span className="text-xs font-bold text-[#008751]"><T>Configuration complete</T></span>
                                                     </>
                                                 ) : (
                                                     <>
                                                         <AlertCircle size={16} className="text-[#E8112D]" />
-                                                        <span className="text-xs font-bold text-[#E8112D]">Champs obligatoires manquants</span>
+                                                        <span className="text-xs font-bold text-[#E8112D]"><T>Champs obligatoires manquants</T></span>
                                                     </>
                                                 )}
                                             </div>
@@ -521,15 +524,23 @@ export default function PaymentSettingsPage() {
             <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 flex items-start gap-4">
                 <Shield size={24} className="text-[#008751] flex-shrink-0 mt-0.5" />
                 <div>
-                    <p className="text-sm font-bold text-white mb-1">Securite des Cles API</p>
+                    <p className="text-sm font-bold text-white mb-1"><T>Securite des Cles API</T></p>
                     <ul className="text-xs text-gray-500 space-y-1 leading-relaxed">
-                        <li>Les cles privees et secretes ne sont jamais exposees au navigateur du client.</li>
-                        <li>Toutes les verifications de paiement sont effectuees cote serveur.</li>
-                        <li>Utilisez le mode Sandbox pour tester avant de passer en Production.</li>
-                        <li>Changez vos cles immediatement si vous suspectez une fuite.</li>
+                        <li><T>Les cles privees et secretes ne sont jamais exposees au navigateur du client.</T></li>
+                        <li><T>Toutes les verifications de paiement sont effectuees cote serveur.</T></li>
+                        <li><T>Utilisez le mode Sandbox pour tester avant de passer en Production.</T></li>
+                        <li><T>Changez vos cles immediatement si vous suspectez une fuite.</T></li>
                     </ul>
                 </div>
             </div>
         </div>
+    )
+}
+
+export default function PaymentSettingsPage() {
+    return (
+        <RoleGuard allowedRoles={['superadmin']}>
+            <PaymentSettingsContent />
+        </RoleGuard>
     )
 }

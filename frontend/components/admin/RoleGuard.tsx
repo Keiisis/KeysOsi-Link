@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Shield } from 'lucide-react'
@@ -49,8 +50,8 @@ export function RoleGuard({ allowedRoles, children, fallback }: RoleGuardProps) 
                     <Shield size={36} className="text-[#E8112D]" />
                 </div>
                 <div className="text-center">
-                    <h3 className="text-2xl font-black text-white font-heading mb-2">Acces Restreint</h3>
-                    <p className="text-sm text-gray-500">Vous n'avez pas les permissions necessaires pour acceder a cette section.</p>
+                    <h3 className="text-2xl font-black text-white font-heading mb-2"><T>Acces Restreint</T></h3>
+                    <p className="text-sm text-gray-500"><T>Vous n'avez pas les permissions necessaires pour acceder a cette section.</T></p>
                 </div>
             </div>
         )

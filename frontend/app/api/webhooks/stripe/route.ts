@@ -30,18 +30,27 @@ export async function POST(request: Request) {
 
         let event: Stripe.Event
 
-        // Vérification de la signature du webhook
-        if (webhookSecret && sig) {
-            try {
-                event = stripe.webhooks.constructEvent(body, sig, webhookSecret)
-            } catch (err: unknown) {
-                const msg = err instanceof Error ? err.message : 'Signature invalide'
-                console.error('Stripe webhook signature error:', msg)
-                return NextResponse.json({ error: `Signature invalide: ${msg}` }, { status: 400 })
-            }
-        } else {
-            // Sans secret configuré, parse sans vérification (à configurer en production)
-            event = JSON.parse(body) as Stripe.Event
+        // Vérification de la signature du webhook — OBLIGATOIRE
+        // Accepter un webhook non signé serait une porte ouverte à la fraude
+        if (!webhookSecret) {
+            console.error('[Stripe Webhook] stripe_webhook_secret non configuré — rejeté')
+            return NextResponse.json(
+                { error: 'Webhook Stripe non configuré — configurez stripe_webhook_secret dans les settings admin' },
+                { status: 403 }
+            )
+        }
+
+        if (!sig) {
+            console.error('[Stripe Webhook] En-tête stripe-signature manquant')
+            return NextResponse.json({ error: 'Signature manquante' }, { status: 400 })
+        }
+
+        try {
+            event = stripe.webhooks.constructEvent(body, sig, webhookSecret)
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Signature invalide'
+            console.error('[Stripe Webhook] Signature invalide:', msg)
+            return NextResponse.json({ error: `Signature invalide: ${msg}` }, { status: 400 })
         }
 
         switch (event.type) {
@@ -50,19 +59,36 @@ export async function POST(request: Request) {
                 const orderId = pi.metadata?.order_id
                 if (!orderId) break
 
-                // Idempotence
                 const { data: order } = await supabase
                     .from('orders')
-                    .select('payment_status, product_id, quantity')
+                    .select('payment_status, product_id, quantity, payment_method')
                     .eq('id', orderId)
                     .single()
 
-                if (!order || order.payment_status === 'completed') break
+                if (!order) break
 
-                await supabase
+                // Vérifier que c'est bien une commande Stripe (non falsifiable — défini côté serveur).
+                // Empêche un PaymentIntent créé avec un order_id arbitraire en metadata de compléter
+                // une commande d'un autre gateway.
+                if (order.payment_method !== 'stripe') {
+                    console.warn(`[Stripe Webhook] payment_intent.succeeded: commande ${orderId} n'est pas Stripe (méthode: ${order.payment_method})`)
+                    break
+                }
+
+                if (order.payment_status === 'completed') break
+
+                // Garde atomique + lecture du résultat pour éviter la double-décrémentation du stock.
+                // Stripe peut re-livrer le même webhook. Si deux livraisons arrivent simultanément,
+                // seule celle qui passe le filtre .eq('payment_status', 'pending') mettra à jour la DB.
+                const { data: updated } = await supabase
                     .from('orders')
                     .update({ payment_status: 'completed', transaction_id: pi.id })
                     .eq('id', orderId)
+                    .eq('payment_status', 'pending')
+                    .select('id')
+
+                // Aucune ligne mise à jour = déjà traité par une autre livraison du webhook → ne pas décrémenter
+                if (!updated || updated.length === 0) break
 
                 if (order.product_id) {
                     await supabase.rpc('decrement_stock', {
@@ -83,10 +109,21 @@ export async function POST(request: Request) {
                 const pi = event.data.object as Stripe.PaymentIntent
                 const orderId = pi.metadata?.order_id
                 if (orderId) {
+                    // Vérifier payment_method avant toute mise à jour
+                    const { data: failOrder } = await supabase
+                        .from('orders')
+                        .select('payment_method')
+                        .eq('id', orderId)
+                        .single()
+
+                    if (!failOrder || failOrder.payment_method !== 'stripe') break
+
+                    // Garde atomique : ne jamais écraser une commande déjà complétée
                     await supabase
                         .from('orders')
                         .update({ payment_status: 'failed', transaction_id: pi.id })
                         .eq('id', orderId)
+                        .eq('payment_status', 'pending')
                 }
                 break
             }
@@ -95,10 +132,13 @@ export async function POST(request: Request) {
                 const charge = event.data.object as Stripe.Charge
                 const pi = charge.payment_intent as string | null
                 if (pi) {
+                    // Garde : un remboursement ne peut s'appliquer qu'à une commande déjà complétée.
+                    // .eq('payment_status', 'completed') empêche d'écraser un statut 'pending' ou 'failed'.
                     await supabase
                         .from('orders')
                         .update({ payment_status: 'refunded' })
                         .eq('transaction_id', pi)
+                        .eq('payment_status', 'completed')
                 }
                 break
             }

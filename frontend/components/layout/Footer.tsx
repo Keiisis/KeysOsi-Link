@@ -2,8 +2,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { Facebook, Instagram, Linkedin, Twitter, Mail, Phone, MapPin } from "lucide-react";
 import { COMPANY_INFO } from "@/lib/constants/company-info";
+import { useTranslation, T } from "@/lib/translation";
 
 export default function Footer() {
+    const { t } = useTranslation();
     return (
         <footer className="bg-[#0f141e] text-white pt-20 pb-10 relative overflow-hidden">
             {/* Cultural Pattern Overlay */}
@@ -19,22 +21,22 @@ export default function Footer() {
                             <div className="relative w-16 h-16 overflow-hidden rounded-full border-2 border-[#FCD116] shadow-[0_0_20px_rgba(252,209,22,0.2)] bg-white">
                                 <Image
                                     src="/images/logo.jpg"
-                                    alt="Retour Gagnant Logo"
+                                    alt={t("Retour Gagnant Logo")}
                                     fill
                                     className="object-cover"
                                 />
                             </div>
                             <div className="flex flex-col">
-                                <span className="font-heading font-bold text-2xl text-[#008751]">
-                                    RETOUR <span className="text-[#E8112D]">GAGNANT</span>
+                                <span className="font-heading font-bold text-2xl group-hover:text-white transition-colors duration-500">
+                                    <span className="text-[#008751]">RETOUR</span> <span className="text-[#E8112D]">GAGNANT</span>
                                 </span>
                                 <span className="text-xs font-light tracking-[0.3em] text-gray-400 uppercase">
-                                    BENIN
+                                    <T>BENIN</T>
                                 </span>
                             </div>
                         </Link>
                         <p className="text-gray-400 leading-relaxed text-sm">
-                            Votre partenaire de confiance pour un retour réussi et des investissements sécurisés au Bénin. Tradition, Modernité, Et Excellence.
+                            <T>Votre partenaire de confiance pour un retour réussi et des investissements sécurisés au Bénin. Tradition, Modernité, Et Excellence.</T>
                         </p>
                         <div className="flex gap-4">
                             {[Facebook, Instagram, Linkedin, Twitter].map((Icon, i) => (
@@ -47,7 +49,7 @@ export default function Footer() {
 
                     {/* Quick Links */}
                     <div>
-                        <h4 className="text-lg font-bold font-heading mb-6 text-[#FCD116]">Navigation</h4>
+                        <h4 className="text-lg font-bold font-heading mb-6 text-[#FCD116]"><T>Navigation</T></h4>
                         <ul className="space-y-4 text-gray-300">
                             {[
                                 { name: 'Accueil', href: '/' },
@@ -57,10 +59,10 @@ export default function Footer() {
                                 { name: 'Contact', href: '/contact' },
                                 { name: 'Rendez-vous', href: '/rendez-vous' }
                             ].map((item) => (
-                                <li key={item.name}>
+                                <li key={t(item.name)}>
                                     <Link href={item.href} className="hover:text-[#FCD116] transition-colors flex items-center gap-2 group">
                                         <span className="w-1.5 h-1.5 rounded-full bg-[#FCD116] opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        {item.name}
+                                        {t(item.name)}
                                     </Link>
                                 </li>
                             ))}
@@ -69,7 +71,7 @@ export default function Footer() {
 
                     {/* Services */}
                     <div>
-                        <h4 className="text-lg font-bold font-heading mb-6 text-[#FCD116]">Services Clés</h4>
+                        <h4 className="text-lg font-bold font-heading mb-6 text-[#FCD116]"><T>Services Clés</T></h4>
                         <ul className="space-y-4 text-gray-300">
                             {[
                                 { name: 'Obtention Passeport', href: '/services/passeport' },
@@ -78,10 +80,10 @@ export default function Footer() {
                                 { name: 'Tourisme & Culture', href: '/services/culture' },
                                 { name: 'Suivi de Chantier', href: '/services/construction' }
                             ].map((item) => (
-                                <li key={item.name}>
+                                <li key={t(item.name)}>
                                     <Link href={item.href} className="hover:text-[#FCD116] transition-colors flex items-center gap-2 group">
                                         <span className="w-1.5 h-1.5 rounded-full bg-[#008751] opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        {item.name}
+                                        {t(item.name)}
                                     </Link>
                                 </li>
                             ))}
@@ -90,12 +92,12 @@ export default function Footer() {
 
                     {/* Contact */}
                     <div>
-                        <h4 className="text-lg font-bold font-heading mb-6 text-[#FCD116]">Contact</h4>
+                        <h4 className="text-lg font-bold font-heading mb-6 text-[#FCD116]"><T>Contact</T></h4>
 
                         <ul className="space-y-6 text-gray-300">
                             <li className="flex gap-4 items-start">
                                 <MapPin className="text-[#008751] mt-1 shrink-0" size={20} />
-                                <span>{COMPANY_INFO.address.split(',').map((line, i) => <span key={i}>{line}<br /></span>)} République du Bénin</span>
+                                <span>{COMPANY_INFO.address.split(',').map((line, i) => <span key={i}>{line}<br /></span>)} <T>République du Bénin</T></span>
                             </li>
                             <li className="flex gap-4 items-center">
                                 <Phone className="text-[#008751] shrink-0" size={20} />
@@ -114,10 +116,10 @@ export default function Footer() {
                 </div>
 
                 <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
-                    <p>© 2025 Retour Gagnant Bénin. Tous droits réservés.</p>
+                    <p><T>© 2025 Retour Gagnant Bénin. Tous droits réservés.</T></p>
                     <div className="flex gap-6 mt-4 md:mt-0">
-                        <Link href="/mentions-legales" className="hover:text-white transition-colors">Mentions Légales</Link>
-                        <Link href="/confidentialite" className="hover:text-white transition-colors">Confidentialité</Link>
+                        <Link href="/mentions-legales" className="hover:text-white transition-colors"><T>Mentions Légales</T></Link>
+                        <Link href="/confidentialite" className="hover:text-white transition-colors"><T>Confidentialité</T></Link>
                     </div>
                 </div>
             </div>

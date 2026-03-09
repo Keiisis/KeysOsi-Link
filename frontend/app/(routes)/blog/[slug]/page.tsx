@@ -7,6 +7,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, Clock, Eye, Share2, BookOpen } from 'lucide-react'
+import { useTranslation, T } from '@/lib/translation'
 
 interface BlogPost {
     id: string
@@ -23,6 +24,7 @@ interface BlogPost {
 }
 
 export default function BlogPostPage() {
+    const { t } = useTranslation()
     const params = useParams()
     const slug = params?.slug as string
     const [post, setPost] = useState<BlogPost | null>(null)
@@ -61,8 +63,8 @@ export default function BlogPostPage() {
             <div className="min-h-screen bg-[#0a0f14] flex items-center justify-center text-white text-center p-8">
                 <div>
                     <BookOpen className="mx-auto mb-4 text-gray-600" size={48} />
-                    <h1 className="text-2xl font-bold mb-2">Article introuvable</h1>
-                    <Link href="/blog" className="text-emerald-400 text-sm hover:underline">← Retour au blog</Link>
+                    <h1 className="text-2xl font-bold mb-2"><T>Article introuvable</T></h1>
+                    <Link href="/blog" className="text-emerald-400 text-sm hover:underline">← <T>Retour au blog</T></Link>
                 </div>
             </div>
         )
@@ -80,7 +82,7 @@ export default function BlogPostPage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f14] via-[#0a0f14]/60 to-transparent" />
                 <div className="absolute top-4 left-4">
                     <Link href="/blog" className="flex items-center gap-2 text-xs font-bold text-white/70 hover:text-white bg-black/40 backdrop-blur-md px-3 py-2 rounded-full border border-white/10 transition-all">
-                        <ArrowLeft size={14} /> Blog
+                        <ArrowLeft size={14} /> <T>Blog</T>
                     </Link>
                 </div>
             </div>
@@ -89,20 +91,20 @@ export default function BlogPostPage() {
             <article className="max-w-3xl mx-auto px-4 -mt-20 md:-mt-32 relative z-10 pb-20">
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                     <span className="text-[10px] font-bold uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
-                        {post.category}
+                        {t(post.category)}
                     </span>
 
-                    <h1 className="text-3xl md:text-4xl font-black text-white mt-4 mb-4 leading-tight">{post.title}</h1>
+                    <h1 className="text-3xl md:text-4xl font-black text-white mt-4 mb-4 leading-tight">{t(post.title)}</h1>
 
                     <div className="flex items-center gap-4 text-xs text-gray-500 mb-8 pb-6 border-b border-white/5">
                         <span className="flex items-center gap-1"><Clock size={12} /> {new Date(post.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-                        <span className="flex items-center gap-1"><Eye size={12} /> {post.views} vues</span>
-                        <span>Par {post.author}</span>
+                        <span className="flex items-center gap-1"><Eye size={12} /> {post.views} {t("vues")}</span>
+                        <span>{t("Par")} {post.author}</span>
                         <button
                             onClick={() => navigator.clipboard.writeText(window.location.href)}
                             className="ml-auto flex items-center gap-1 text-emerald-400 hover:text-emerald-300 transition-colors"
                         >
-                            <Share2 size={12} /> Partager
+                            <Share2 size={12} /> <T>Partager</T>
                         </button>
                     </div>
 
@@ -136,14 +138,14 @@ export default function BlogPostPage() {
 
                     {/* CTA */}
                     <div className="mt-12 p-6 bg-gradient-to-br from-emerald-900/20 to-yellow-900/20 border border-emerald-500/10 rounded-2xl text-center">
-                        <h3 className="text-lg font-bold text-white mb-2">Prêt à passer à l&apos;action ?</h3>
-                        <p className="text-sm text-gray-400 mb-4">Notre équipe vous accompagne dans chaque étape de votre projet.</p>
+                        <h3 className="text-lg font-bold text-white mb-2"><T>Prêt à passer à l&apos;action ?</T></h3>
+                        <p className="text-sm text-gray-400 mb-4"><T>Notre équipe vous accompagne dans chaque étape de votre projet.</T></p>
                         <div className="flex flex-wrap gap-3 justify-center">
                             <Link href="/rendez-vous" className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm px-6 py-3 rounded-xl transition-all">
-                                Prendre rendez-vous
+                                <T>Prendre rendez-vous</T>
                             </Link>
                             <Link href="/contact" className="bg-white/5 hover:bg-white/10 text-white font-bold text-sm px-6 py-3 rounded-xl border border-white/10 transition-all">
-                                Nous contacter
+                                <T>Nous contacter</T>
                             </Link>
                         </div>
                     </div>

@@ -17,6 +17,7 @@ import { ProductReviews } from '@/components/boutique/ProductReviews'
 import { useCart } from '@/lib/store/cartStore'
 import { Price } from '@/components/ui/Price'
 import { CurrencyCode } from '@/lib/currency'
+import { T, useTranslation } from '@/lib/translation'
 
 
 export default function ProductDetailPage() {
@@ -29,6 +30,7 @@ export default function ProductDetailPage() {
     const [quantity, setQuantitéy] = useState(1)
     const [isPaymentOpen, setIsPaymentOpen] = useState(false)
     const { addItem } = useCart()
+    const { t } = useTranslation()
 
     const handleAddToCart = () => {
         if (!product || product.stock <= 0) return
@@ -59,7 +61,7 @@ export default function ProductDetailPage() {
             <main className="bg-[#05080a] text-white min-h-screen flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <Loader2 size={48} className="animate-spin text-[#FCD116]" />
-                    <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">Chargement...</p>
+                    <p className="text-gray-500 text-xs font-bold uppercase tracking-widest"><T>Chargement...</T></p>
                 </div>
             </main>
         )
@@ -70,9 +72,9 @@ export default function ProductDetailPage() {
             <main className="bg-[#05080a] text-white min-h-screen flex items-center justify-center">
                 <div className="text-center space-y-4">
                     <ShoppingBag size={48} className="text-gray-600 mx-auto" />
-                    <h2 className="text-2xl font-black font-heading">Produit introuvable</h2>
+                    <h2 className="text-2xl font-black font-heading"><T>Produit introuvable</T></h2>
                     <Link href="/boutique" className="text-[#FCD116] text-sm font-bold underline">
-                        Retour  la boutique
+                        <T>Retour à la boutique</T>
                     </Link>
                 </div>
             </main>
@@ -90,7 +92,7 @@ export default function ProductDetailPage() {
             <div className="container mx-auto px-6 pt-28 pb-4">
                 <Link href="/boutique" className="inline-flex items-center gap-2 text-gray-400 hover:text-[#FCD116] transition-colors text-sm font-bold">
                     <ArrowLeft size={16} />
-                    Retour  la boutique
+                    <T>Retour à la boutique</T>
                 </Link>
             </div>
 
@@ -130,14 +132,14 @@ export default function ProductDetailPage() {
                                     <button
                                         onClick={() => setCurrentImage(i => (i > 0 ? i - 1 : images.length - 1))}
                                         className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white hover:bg-black/60 transition-all"
-                                        title="Image précédente"
+                                        title={t("Image précédente")}
                                     >
                                         <ChevronLeft size={20} />
                                     </button>
                                     <button
                                         onClick={() => setCurrentImage(i => (i < images.length - 1 ? i + 1 : 0))}
                                         className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white hover:bg-black/60 transition-all"
-                                        title="Image suivante"
+                                        title={t("Image suivante")}
                                     >
                                         <ChevronRight size={20} />
                                     </button>
@@ -147,10 +149,10 @@ export default function ProductDetailPage() {
                             {/* Badges */}
                             <div className="absolute top-6 left-6 flex flex-col gap-2">
                                 {hasDiscount && (
-                                    <span className="px-3 py-1 rounded-full bg-[#E8112D] text-white text-[9px] font-black uppercase tracking-widest">Promo</span>
+                                    <span className="px-3 py-1 rounded-full bg-[#E8112D] text-white text-[9px] font-black uppercase tracking-widest"><T>Promo</T></span>
                                 )}
                                 {product.is_featured && (
-                                    <span className="px-3 py-1 rounded-full bg-[#FCD116] text-[#0f141e] text-[9px] font-black uppercase tracking-widest">Vedette</span>
+                                    <span className="px-3 py-1 rounded-full bg-[#FCD116] text-[#0f141e] text-[9px] font-black uppercase tracking-widest"><T>Vedette</T></span>
                                 )}
                             </div>
                         </div>
@@ -164,7 +166,7 @@ export default function ProductDetailPage() {
                                         onClick={() => setCurrentImage(i)}
                                         className={`relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 border-2 transition-all ${currentImage === i ? 'border-[#FCD116] shadow-lg shadow-[#FCD116]/20' : 'border-white/5 opacity-60 hover:opacity-100'
                                             }`}
-                                        title={`Afficher image ${i + 1}`}
+                                        title={t(`Afficher image ${i + 1}`)}
                                     >
                                         <Image src={img} alt="" fill className="object-cover" />
                                     </button>
@@ -202,12 +204,12 @@ export default function ProductDetailPage() {
                         {/* Quantitéy + Add to cart */}
                         <div className="space-y-4 pt-4 border-t border-white/5">
                             <div className="flex items-center gap-4">
-                                <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Quantité</span>
+                                <span className="text-xs font-black text-gray-400 uppercase tracking-widest"><T>Quantité</T></span>
                                 <div className="flex items-center gap-0 border border-white/10 rounded-xl overflow-hidden bg-black/50">
                                     <button
                                         onClick={() => setQuantitéy(q => Math.max(1, q - 1))}
                                         className="w-12 h-12 flex items-center justify-center text-gray-400 hover:text-[#FCD116] hover:bg-white/5 transition-colors"
-                                        title="Diminuer la quantité"
+                                        title={t("Diminuer la quantité")}
                                     >
                                         <Minus size={16} />
                                     </button>
@@ -222,7 +224,7 @@ export default function ProductDetailPage() {
                                         <Plus size={16} />
                                     </button>
                                 </div>
-                                <span className="text-xs text-gray-500 font-medium">{product.stock} en stock</span>
+                                <span className="text-xs text-gray-500 font-medium">{product.stock} <T>en stock</T></span>
                             </div>
 
                             <div className="flex flex-col sm:flex-row gap-4 pt-4 relative z-20">
@@ -232,7 +234,7 @@ export default function ProductDetailPage() {
                                     className="flex-1 h-14 rounded-2xl text-sm font-black bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20 transition-all shadow-xl disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
                                     <ShoppingBag size={18} className="mr-2" />
-                                    Ajouter au panier
+                                    <T>Ajouter au panier</T>
                                 </Button>
 
                                 <Button
@@ -240,14 +242,14 @@ export default function ProductDetailPage() {
                                     onClick={() => setIsPaymentOpen(true)}
                                     className="flex-1 h-14 rounded-2xl text-sm font-black bg-gradient-to-r from-[#FCD116] to-[#E5BD14] text-[#0f141e] hover:shadow-[0_0_30px_rgba(252,209,22,0.3)] transition-all shadow-xl disabled:opacity-40 disabled:cursor-not-allowed border-none"
                                 >
-                                    {isOutOfStock ? 'Rupture de stock' : 'Acheter maintenant'}
+                                    {isOutOfStock ? t('Rupture de stock') : t('Acheter maintenant')}
                                 </Button>
                             </div>
 
                             {/* Total */}
                             {!isOutOfStock && quantity > 1 && (
                                 <p className="text-xs text-gray-500 text-center">
-                                    Total: <span className="text-white font-bold"><Price amount={displayPrice * quantity} currency={product.currency as CurrencyCode} /></span>
+                                    <T>Total :</T> <span className="text-white font-bold"><Price amount={displayPrice * quantity} currency={product.currency as CurrencyCode} /></span>
                                 </p>
                             )}
                         </div>
@@ -261,7 +263,7 @@ export default function ProductDetailPage() {
                             ].map(badge => (
                                 <div key={badge.label} className="text-center space-y-2">
                                     <badge.icon size={20} className="text-[#008751] mx-auto" />
-                                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{badge.label}</p>
+                                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{t(badge.label)}</p>
                                 </div>
                             ))}
                         </div>
@@ -324,7 +326,7 @@ function RelatedProducts({ currentProduct }: { currentProduct: Product }) {
                 <div className="flex items-center gap-3 mb-10">
                     <div className="h-[2px] w-8 bg-[#FCD116]" />
                     <h2 className="text-xs font-black uppercase tracking-[0.3em] text-gray-400">
-                        Vous aimerez aussi
+                        <T>Vous aimerez aussi</T>
                     </h2>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

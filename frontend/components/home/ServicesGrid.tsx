@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 import { LucideIcon } from "lucide-react";
+import { useTranslation, T } from "@/lib/translation";
 
 type GoldenIconType = "passport" | "tata" | "drum" | "cowrie" | "assin" | "tree" | "recade" | "standard";
 
@@ -97,6 +98,7 @@ const IMG_BY_SLUG: Record<string, string> = {
 }
 
 export default function ServicesGrid() {
+    const { t } = useTranslation();
     const [servicesList, setServicesList] = useState<ServiceItem[]>(FALLBACK_SERVICES);
 
     useEffect(() => {
@@ -147,7 +149,7 @@ export default function ServicesGrid() {
                             <div className="w-24 h-24 flex items-center justify-center relative">
                                 <Image
                                     src={service.imageUrl}
-                                    alt={service.title}
+                                    alt={t(service.title)}
                                     fill
                                     className="object-contain bg-transparent group-hover:scale-110 group-hover:-translate-y-2 group-hover:drop-shadow-[0_12px_25px_rgba(252,209,22,0.4)] drop-shadow-[0_8px_20px_rgba(0,0,0,0.15)] transition-all duration-500"
                                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -163,16 +165,16 @@ export default function ServicesGrid() {
                     </div>
 
                     <h3 className="text-xl font-bold font-heading text-[#1a2332] mb-3 group-hover:text-[#008751] transition-colors">
-                        {service.title}
+                        {t(service.title)}
                     </h3>
 
                     <p className="text-gray-600 font-medium mb-6 line-clamp-3">
-                        {service.description}
+                        {t(service.description)}
                     </p>
 
                     <Link href={`/services/${service.slug}`} className="block w-full">
                         <Button variant="outline" className="w-full border-[#008751]/20 text-[#008751] hover:bg-[#008751] hover:text-white transition-colors rounded-xl font-semibold">
-                            En savoir plus
+                            <T>En savoir plus</T>
                         </Button>
                     </Link>
                 </div>

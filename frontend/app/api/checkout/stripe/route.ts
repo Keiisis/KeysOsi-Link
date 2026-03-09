@@ -38,12 +38,18 @@ export async function POST(request: Request) {
         // Récupérer les détails de la commande
         const { data: order, error: orderError } = await supabase
             .from('orders')
-            .select('amount, currency, customer_name, customer_email, payment_status')
+            .select('amount, currency, customer_name, customer_email, payment_status, payment_method')
             .eq('id', order_id)
             .single()
 
         if (orderError || !order) {
             return NextResponse.json({ error: 'Commande introuvable' }, { status: 404 })
+        }
+
+        // Vérifier que la commande est bien associée à Stripe (défini côté serveur — non falsifiable)
+        if (order.payment_method !== 'stripe') {
+            console.warn(`[Stripe Intent] Tentative sur commande ${order_id} (méthode: ${order.payment_method})`)
+            return NextResponse.json({ error: 'Commande non associée à Stripe' }, { status: 400 })
         }
 
         if (order.payment_status === 'completed') {

@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { groq } from '@ai-sdk/groq';
-import { generateObject } from 'ai';
-import { z } from 'zod';
-import { sendEmail, EMAIL_TEMPLATES, getEmailConfig } from '@/lib/email';
+import { fetchWithGroqRotation } from '@/lib/groq';
+import { sendEmail, getEmailTemplates, getEmailConfig } from '@/lib/email';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
@@ -93,21 +91,68 @@ function calculateEligibilityScore(answers: OracleAnswers): number {
     return Math.max(15, Math.min(100, score))
 }
 
+// ─── Language map for Oracle ──────────────────────────────────────────────────
+const ORACLE_LANG_MAP: Record<string, string> = {
+    fr: 'French',
+    en: 'English',
+    es: 'Spanish',
+    pt: 'Portuguese (Brazilian)',
+    cr: 'Guadeloupean Creole (Antillean Creole)',
+    ht: 'Haitian Creole',
+}
+
+// Fallback insights in each language (used when Groq fails)
+const ORACLE_FALLBACK_INSIGHTS: Record<string, string[]> = {
+    fr: [
+        "Votre profil présente un excellent potentiel pour cette démarche.",
+        "Les éléments fournis constituent une base solide pour avancer.",
+        "Notre équipe est prête à vous accompagner à chaque étape.",
+    ],
+    en: [
+        "Your profile shows excellent potential for this process.",
+        "The elements you provided form a solid foundation to move forward.",
+        "Our team is ready to guide you every step of the way.",
+    ],
+    es: [
+        "Su perfil muestra un excelente potencial para este proceso.",
+        "Los elementos proporcionados constituyen una base sólida para avanzar.",
+        "Nuestro equipo está listo para acompañarle en cada etapa.",
+    ],
+    pt: [
+        "Seu perfil apresenta excelente potencial para este processo.",
+        "Os elementos fornecidos formam uma base sólida para avançar.",
+        "Nossa equipe está pronta para acompanhá-lo em cada etapa.",
+    ],
+    cr: [
+        "Pwofil ou montre yon potansyèl ekselan pou pwosesis sa a.",
+        "Eleman ou bay yo fòme yon baz solid pou avanse.",
+        "Ekip nou an prè pou gide ou nan chak etap.",
+    ],
+    ht: [
+        "Pwofil ou montre yon potansyèl ekselan pou pwosesis sa a.",
+        "Eleman ou bay yo fòme yon baz solid pou avanse.",
+        "Ekip nou an prè pou gide ou nan chak etap.",
+    ],
+}
+
 export async function POST(request: Request) {
     try {
         const body = await request.json()
-        const { nom, prenom, email, whatsapp, answers } = body as {
+        const { nom, prenom, email, whatsapp, answers, lang = 'fr' } = body as {
             nom: string
             prenom: string
             email: string
             whatsapp: string
             answers: OracleAnswers
+            lang?: string
         }
 
         if (!answers || !answers.objective) {
             return NextResponse.json({ error: 'Réponses incomplètes' }, { status: 400 })
         }
 
+        const safeLang = ORACLE_LANG_MAP[lang] ? lang : 'fr'
+        const targetLangName = ORACLE_LANG_MAP[safeLang] || 'French'
         const clientName = `${prenom || ''} ${nom || ''}`.trim()
 
         // Determine recommended service
@@ -117,36 +162,49 @@ export async function POST(request: Request) {
         // Calculate real multi-criteria score
         const finalScore = calculateEligibilityScore(answers)
 
-        // Generate dynamic insights
-        let dynamicInsights = [
-            "Vos origines offrent un excellent potentiel pour cette démarche.",
-            "L'analyse des documents mentionnés est très positive."
-        ];
+        // Fallback insights in user's language
+        let dynamicInsights = ORACLE_FALLBACK_INSIGHTS[safeLang] || ORACLE_FALLBACK_INSIGHTS.fr
 
         try {
-            if (process.env.GROQ_API_KEY) {
-                const { object } = await generateObject({
-                    model: groq('llama-3.3-70b-versatile'),
-                    schema: z.object({
-                        insights: z.array(z.string()).describe("3 points clés très pertinents, vendeurs et rassurants (max une phrase par point) concernant l'éligibilité de cette personne à la nationalité béninoise, ou son retour au Bénin. Parlez directement à la personne."),
-                    }),
-                    prompt: `Analysez ce profil d'une personne voulant obtenir la nationalité béninoise ou retourner au Bénin :
-Prenom: ${prenom}
-Pays de résidence: ${answers.pays_residence || 'Non défini'}
-Lien avec le Bénin: ${answers.lien_benin || 'Non défini'}
-Preuves d'origine: ${(answers.preuve_origine || []).join(', ')}
-Motivation principale: ${answers.motivation || 'Non défini'}
-Message libre: ${answers.message_libre || 'Aucun'}
-Score d'éligibilité calculé: ${finalScore}%
-Service recommandé: ${rec.service}
+            const langInstruction = safeLang !== 'fr'
+                ? ` CRITICAL: Write all 3 insights in ${targetLangName}. Do NOT write in French.`
+                : ''
 
-Générez 3 insights ou commentaires inspirants pertinents. Exprimez-vous de manière professionnelle, rassurante et très "premium".`,
-                });
+            const prompt = `Analyze this profile of a person wanting to obtain Beninese nationality or return to Benin:
+First name: ${prenom}
+Country of residence: ${answers.pays_residence || 'Not specified'}
+Connection to Benin: ${answers.lien_benin || 'Not specified'}
+Proof of origin: ${(answers.preuve_origine || []).join(', ')}
+Main motivation: ${answers.motivation || 'Not specified'}
+Free message: ${answers.message_libre || 'None'}
+Calculated eligibility score: ${finalScore}%
+Recommended service: ${rec.service}
 
-                dynamicInsights = object.insights;
+Return ONLY a JSON array of exactly 3 strings. Each string is one short insight (one sentence max), professional, reassuring and premium. Address the person directly.${langInstruction}
+Example format: ["Insight 1.", "Insight 2.", "Insight 3."]`
+
+            const res = await fetchWithGroqRotation({
+                model: 'llama-3.3-70b-versatile',
+                messages: [
+                    { role: 'system', content: 'You are a premium eligibility advisor. Output only strict JSON arrays of strings, no prose.' },
+                    { role: 'user', content: prompt },
+                ],
+                temperature: 0.5,
+                max_tokens: 512,
+            })
+
+            if (res.ok) {
+                const aiData = await res.json()
+                const raw: string = aiData?.choices?.[0]?.message?.content ?? ''
+                const clean = raw.trim().replace(/^```(?:json)?[\r\n]*/i, '').replace(/[\r\n]*```$/i, '').trim()
+                const parsed = JSON.parse(clean)
+                if (Array.isArray(parsed) && parsed.length === 3 && parsed.every((s: unknown) => typeof s === 'string')) {
+                    dynamicInsights = parsed
+                }
             }
         } catch (aiError) {
-            console.error("Erreur lors de la génération avec Groq:", aiError);
+            console.error("[Oracle] Groq insights error:", aiError);
+            // Keep the language-appropriate fallback already set above
         }
 
         const supabase = createClient(supabaseUrl, supabaseKey)
@@ -176,7 +234,7 @@ Générez 3 insights ou commentaires inspirants pertinents. Exprimez-vous de man
                     await sendEmail({
                         to: email,
                         subject: `Retour Gagnant — Les résultats de l'Oracle`,
-                        html: EMAIL_TEMPLATES.autoReply(clientName || 'Cher client', aiReply),
+                        html: (await getEmailTemplates('fr')).autoReply(clientName || 'Cher client', aiReply),
                         context: 'auto_reply',
                         relatedId: leadId,
                     });
@@ -187,7 +245,7 @@ Générez 3 insights ou commentaires inspirants pertinents. Exprimez-vous de man
                     await sendEmail({
                         to: config.adminEmail,
                         subject: `🔮 Nouveau Lead Oracle — ${clientName || email}`,
-                        html: EMAIL_TEMPLATES.newLeadNotification(clientName || 'Inconnu', email || 'Inconnu', finalScore, rec.service, 'L\'Oracle'),
+                        html: (await getEmailTemplates('fr')).newLeadNotification(clientName || 'Inconnu', email || 'Inconnu', finalScore, rec.service, 'L\'Oracle'),
                         context: 'lead_notification',
                         relatedId: leadId,
                     });

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState } from "react"
+import { useTranslation, T } from "@/lib/translation"
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronRight, ChevronLeft, Sparkles, Globe, Target, Calendar, Wallet, Award, Loader2, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
@@ -83,6 +84,7 @@ const contactStep = {
 }
 
 export default function SimulateurPage() {
+    const { t } = useTranslation();
     const [currentStep, setCurrentStep] = useState(0)
     const [answers, setAnswers] = useState<Record<string, string>>({})
     const [nom, setNom] = useState('')
@@ -148,10 +150,10 @@ export default function SimulateurPage() {
                 >
                     <div className="inline-flex items-center gap-2 mb-6 px-5 py-2 rounded-full bg-[#FCD116]/10 border border-[#FCD116]/20">
                         <Sparkles size={14} className="text-[#FCD116]" />
-                        <span className="text-[11px] uppercase tracking-[4px] font-bold text-[#FCD116]">L&apos;Oracle</span>
+                        <span className="text-[11px] uppercase tracking-[4px] font-bold text-[#FCD116]"><T>L&apos;Oracle</T></span>
                     </div>
                     <h1 className="text-3xl md:text-5xl font-black font-heading mb-4 tracking-tight">
-                        Trouvez votre <span className="bg-gradient-to-r from-[#FCD116] to-[#E8112D] bg-clip-text text-transparent">voie</span>
+                        Trouvez votre <span className="bg-gradient-to-r from-[#FCD116] to-[#E8112D] bg-clip-text text-transparent"><T>voie</T></span>
                     </h1>
                     <p className="text-gray-400 max-w-xl mx-auto">
                         En 5 questions, découvrez le service Retour Gagnant fait pour vous.
@@ -194,8 +196,8 @@ export default function SimulateurPage() {
                                             <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
                                                 <StepIcon size={28} className="text-[#FCD116]" />
                                             </div>
-                                            <h2 className="text-2xl font-black font-heading mb-2">{step.title}</h2>
-                                            <p className="text-gray-400 mb-8">{step.subtitle}</p>
+                                            <h2 className="text-2xl font-black font-heading mb-2">{t(step.title)}</h2>
+                                            <p className="text-gray-400 mb-8">{t(step.subtitle)}</p>
 
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 {step.options.map((opt) => (
@@ -208,7 +210,7 @@ export default function SimulateurPage() {
                                                             }`}
                                                     >
                                                         <span className="text-2xl mb-2 block">{opt.emoji}</span>
-                                                        <span className="text-sm font-bold">{opt.label}</span>
+                                                        <span className="text-sm font-bold">{t(opt.label)}</span>
                                                     </button>
                                                 ))}
                                             </div>
@@ -230,31 +232,31 @@ export default function SimulateurPage() {
                                     <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-[#FCD116]/10 border border-[#FCD116]/20 flex items-center justify-center">
                                         <contactStep.icon size={28} className="text-[#FCD116]" />
                                     </div>
-                                    <h2 className="text-2xl font-black font-heading mb-2">{contactStep.title}</h2>
-                                    <p className="text-gray-400">{contactStep.subtitle}</p>
+                                    <h2 className="text-2xl font-black font-heading mb-2">{t(contactStep.title)}</h2>
+                                    <p className="text-gray-400">{t(contactStep.subtitle)}</p>
                                 </div>
 
                                 <div className="max-w-md mx-auto space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 block">Nom</label>
-                                            <input type="text" required value={nom} onChange={e => setNom(e.target.value)} placeholder="Votre nom"
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 block"><T>Nom</T></label>
+                                            <input type="text" required value={nom} onChange={e => setNom(e.target.value)} placeholder={t("Votre nom")}
                                                 className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751]" />
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 block">Prénom</label>
-                                            <input type="text" value={prenom} onChange={e => setPrenom(e.target.value)} placeholder="Votre prénom"
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 block"><T>Prénom</T></label>
+                                            <input type="text" value={prenom} onChange={e => setPrenom(e.target.value)} placeholder={t("Votre prénom")}
                                                 className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751]" />
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 block">Email</label>
-                                        <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="votre@email.com"
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 block"><T>Email</T></label>
+                                        <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder={t("votre@email.com")}
                                             className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751]" />
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 block">WhatsApp (optionnel)</label>
-                                        <input type="tel" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="+229 XX XX XX XX"
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 block"><T>WhatsApp (optionnel)</T></label>
+                                        <input type="tel" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder={t("+229 XX XX XX XX")}
                                             className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751]" />
                                     </div>
 
@@ -305,7 +307,7 @@ export default function SimulateurPage() {
                                     </svg>
                                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                                         <span className="text-4xl font-black font-mono text-[#FCD116]">{result.score}</span>
-                                        <span className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">score</span>
+                                        <span className="text-[10px] uppercase tracking-widest text-gray-400 font-bold"><T>score</T></span>
                                     </div>
                                 </div>
 
@@ -316,11 +318,11 @@ export default function SimulateurPage() {
                                 {/* Recommendation Card */}
                                 <div className="bg-gradient-to-br from-[#008751]/20 to-[#008751]/5 border border-[#008751]/30 rounded-3xl p-8 mb-8 backdrop-blur-xl max-w-lg mx-auto">
                                     <Sparkles size={32} className="text-[#FCD116] mx-auto mb-4" />
-                                    <h3 className="text-2xl font-black font-heading text-[#FCD116] mb-2">{result.service}</h3>
+                                    <h3 className="text-2xl font-black font-heading text-[#FCD116] mb-2">{t(result.service)}</h3>
                                     <p className="text-gray-400 text-sm leading-relaxed">
                                         {result.hasOrigins
-                                            ? 'Vos origines béninoises renforcent votre éligibilité. Notre équipe est prête à vous accompagner dans cette démarche.'
-                                            : 'Votre profil montre un fort intérêt pour le Bénin. Nous sommes prêts à vous accompagner.'}
+                                            ? t('Vos origines béninoises renforcent votre éligibilité. Notre équipe est prête à vous accompagner dans cette démarche.')
+                                            : t('Votre profil montre un fort intérêt pour le Bénin. Nous sommes prêts à vous accompagner.')}
                                     </p>
                                 </div>
 
@@ -358,7 +360,7 @@ export default function SimulateurPage() {
                             className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors group"
                         >
                             <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                            <span className="text-sm font-bold uppercase tracking-widest">Précédent</span>
+                            <span className="text-sm font-bold uppercase tracking-widest"><T>Précédent</T></span>
                         </button>
                     </motion.div>
                 )}

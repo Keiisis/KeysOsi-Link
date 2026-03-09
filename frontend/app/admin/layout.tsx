@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { Authenticated, useLogout, useGetIdentity } from '@refinedev/core'
@@ -10,7 +11,8 @@ import {
     Menu, Globe, Sparkles, User, HelpCircle,
     ShoppingBag, Receipt, UserCog, Tag,
     Mail, FileText, Compass, X, PanelLeftClose, PanelLeft,
-    BarChart3, FileSignature, FolderOpen, Palette, Calendar, Star
+    BarChart3, FileSignature, FolderOpen, Palette, Calendar, Star,
+    Languages
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -26,6 +28,7 @@ function AdminLayoutContent({
     useRouter()
     const { mutate: logout } = useLogout()
     const { data: user } = useGetIdentity<{ email?: string }>()
+    const { t } = useTranslation()
     const [scrolled, setScrolled] = useState(false)
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -60,6 +63,7 @@ function AdminLayoutContent({
         { title: 'Commandes', icon: Receipt, href: '/admin/orders' },
         { title: 'Coupons', icon: Tag, href: '/admin/coupons' },
         { title: 'Messages', icon: MessageSquare, href: '/admin/messages' },
+        { title: 'Traductions', icon: Languages, href: '/admin/traductions' },
         { title: 'Utilisateurs', icon: UserCog, href: '/admin/users' },
         { title: 'Réglages', icon: Settings, href: '/admin/settings' },
     ]
@@ -86,11 +90,11 @@ function AdminLayoutContent({
                             className="overflow-hidden whitespace-nowrap"
                         >
                             <h1 className="text-lg font-black font-heading tracking-tighter text-white">
-                                KAGE <span className="text-[#FCD116]">ADMIN</span>
+                                KAGE <span className="text-[#FCD116]"><T>ADMIN</T></span>
                             </h1>
                             <div className="flex items-center gap-1.5 mt-0.5">
                                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                <span className="text-[9px] text-gray-500 font-bold uppercase tracking-[0.2em]">Secure Node</span>
+                                <span className="text-[9px] text-gray-500 font-bold uppercase tracking-[0.2em]"><T>Secure Node</T></span>
                             </div>
                         </motion.div>
                     )}
@@ -149,7 +153,7 @@ function AdminLayoutContent({
                             </div>
                             <div className="flex-1 overflow-hidden">
                                 <p className="text-xs font-bold text-white truncate">{user?.email?.split('@')[0] || 'Admin'}</p>
-                                <p className="text-[9px] text-gray-400 font-mono uppercase truncate">Super User</p>
+                                <p className="text-[9px] text-gray-400 font-mono uppercase truncate"><T>Super User</T></p>
                             </div>
                         </div>
                         <button
@@ -157,7 +161,7 @@ function AdminLayoutContent({
                             className="flex items-center gap-2.5 w-full px-3 py-2 text-red-400/70 hover:text-red-400 hover:bg-red-500/8 rounded-lg transition-all group text-[11px] font-bold"
                         >
                             <LogOut size={14} className="group-hover:-translate-x-0.5 transition-transform" />
-                            <span>DÉCONNEXION</span>
+                            <span><T>DÉCONNEXION</T></span>
                         </button>
                     </div>
                 ) : (
@@ -165,7 +169,7 @@ function AdminLayoutContent({
                         <div className="w-8 h-8 rounded-full bg-benin-gradient flex items-center justify-center text-white font-bold text-[10px]">
                             {user?.email?.charAt(0).toUpperCase() || 'A'}
                         </div>
-                        <button onClick={() => logout()} title="Déconnexion" className="p-2 text-red-400/70 hover:text-red-400 hover:bg-red-500/8 rounded-lg transition-all">
+                        <button onClick={() => logout()} title={t("Déconnexion")} className="p-2 text-red-400/70 hover:text-red-400 hover:bg-red-500/8 rounded-lg transition-all">
                             <LogOut size={16} />
                         </button>
                     </div>
@@ -211,7 +215,7 @@ function AdminLayoutContent({
                             >
                                 <button
                                     onClick={() => setMobileMenuOpen(false)}
-                                    title="Fermer le menu"
+                                    title={t("Fermer le menu")}
                                     className="absolute top-4 right-4 p-2 rounded-lg hover:bg-white/5 text-gray-400 z-10"
                                 >
                                     <X size={18} />
@@ -240,7 +244,7 @@ function AdminLayoutContent({
                             {/* Mobile hamburger */}
                             <button
                                 onClick={() => setMobileMenuOpen(true)}
-                                title="Ouvrir le menu"
+                                title={t("Ouvrir le menu")}
                                 className="p-2 rounded-lg hover:bg-white/5 transition-colors text-gray-400 lg:hidden"
                             >
                                 <Menu size={20} />
@@ -272,7 +276,7 @@ function AdminLayoutContent({
                             {/* KAGE IA Button */}
                             <button className="flex items-center gap-1.5 bg-[#FCD116]/10 hover:bg-[#FCD116]/20 text-[#FCD116] border border-[#FCD116]/20 px-3 py-1.5 rounded-xl transition-all text-[10px] font-black tracking-widest">
                                 <Sparkles size={14} className="animate-pulse" />
-                                <span className="hidden sm:inline">KAGE IA</span>
+                                <span className="hidden sm:inline"><T>KAGE IA</T></span>
                             </button>
 
                             {/* Avatar */}
@@ -329,6 +333,7 @@ export default function AdminLayout({
 }: {
     children: React.ReactNode
 }) {
+    const { t } = useTranslation();
     return (
         <Suspense fallback={null}>
             <RefineContext>

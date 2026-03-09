@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
@@ -34,6 +35,7 @@ interface RegistrationData {
 }
 
 export default function EventRegistrationsPage() {
+    const { t } = useTranslation();
     const params = useParams()
     const router = useRouter()
     const eventId = params?.id as string
@@ -122,13 +124,13 @@ export default function EventRegistrationsPage() {
                     <div className="max-w-md mx-auto space-y-5">
                         <div className="text-center">
                             <ShieldCheck size={32} className="mx-auto text-[#FCD116] mb-2" />
-                            <h2 className="text-base font-black text-white">Validation des tickets</h2>
-                            <p className="text-xs text-gray-400">Pour valider avec un pistolet laser, scannez le QR code ou utilisez la caméra de votre appareil.</p>
+                            <h2 className="text-base font-black text-white"><T>Validation des tickets</T></h2>
+                            <p className="text-xs text-gray-400"><T>Pour valider avec un pistolet laser, scannez le QR code ou utilisez la caméra de votre appareil.</T></p>
                         </div>
 
                         <div className="aspect-square bg-black rounded-xl border border-white/10 flex flex-col items-center justify-center text-gray-500 relative overflow-hidden">
                             <QrCode size={48} className="opacity-20 mb-4" />
-                            <p className="text-xs font-bold text-center px-4">Scanner caméra désactivé <br />(Simulé pour le test)</p>
+                            <p className="text-xs font-bold text-center px-4"><T>Scanner caméra désactivé</T> <br /><T>(Simulé pour le test)</T></p>
                             {/* Scanning laser effect */}
                             <div className="absolute top-0 left-0 w-full h-[2px] bg-[#FCD116] shadow-[0_0_10px_#FCD116] animate-[scan_2s_ease-in-out_infinite] opacity-50" />
                         </div>
@@ -136,11 +138,11 @@ export default function EventRegistrationsPage() {
                         <div className="flex gap-2">
                             <input
                                 type="text" value={manualCode} onChange={e => setManualCode(e.target.value.toUpperCase())}
-                                placeholder="Code manuel (ex: RGB-XXXX)"
+                                placeholder={t("Code manuel (ex: RGB-XXXX)")}
                                 className="flex-1 px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white font-mono text-sm focus:border-[#FCD116] outline-none"
                             />
                             <button onClick={() => validateTicket(manualCode)} disabled={!manualCode}
-                                className="px-5 rounded-xl bg-[#FCD116] text-black font-black text-xs disabled:opacity-50">Valider</button>
+                                className="px-5 rounded-xl bg-[#FCD116] text-black font-black text-xs disabled:opacity-50"><T>Valider</T></button>
                         </div>
 
                         {scanResult && (
@@ -169,20 +171,20 @@ export default function EventRegistrationsPage() {
             {/* DASHBOARD STATS */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
-                    <div className="text-[10px] font-bold text-gray-500 uppercase">Total Inscrits</div>
+                    <div className="text-[10px] font-bold text-gray-500 uppercase"><T>Total Inscrits</T></div>
                     <div className="text-2xl font-black mt-1">{regs.length}</div>
                 </div>
                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
-                    <div className="text-[10px] font-bold text-[#FCD116] uppercase">VIP</div>
+                    <div className="text-[10px] font-bold text-[#FCD116] uppercase"><T>VIP</T></div>
                     <div className="text-2xl font-black mt-1">{totalVIP}</div>
                 </div>
                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
-                    <div className="text-[10px] font-bold text-[#008751] uppercase">Standard</div>
+                    <div className="text-[10px] font-bold text-[#008751] uppercase"><T>Standard</T></div>
                     <div className="text-2xl font-black mt-1">{totalStandard}</div>
                 </div>
                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
-                    <div className="text-[10px] font-bold text-gray-500 uppercase">Revenu généré</div>
-                    <div className="text-2xl font-black mt-1">{totalRevenue > 0 ? formatPrice(totalRevenue) : '0'} <span className="text-xs text-gray-500">FCFA</span></div>
+                    <div className="text-[10px] font-bold text-gray-500 uppercase"><T>Revenu généré</T></div>
+                    <div className="text-2xl font-black mt-1">{totalRevenue > 0 ? formatPrice(totalRevenue) : '0'} <span className="text-xs text-gray-500"><T>FCFA</T></span></div>
                 </div>
             </div>
 
@@ -191,7 +193,7 @@ export default function EventRegistrationsPage() {
                 <div className="p-4 border-b border-white/[0.06]">
                     <div className="relative max-w-sm">
                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
-                        <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Chercher un nom, email ou code ticket..."
+                        <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder={t("Chercher un nom, email ou code ticket...")}
                             className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white focus:outline-none focus:border-[#008751]/50" />
                     </div>
                 </div>
@@ -200,11 +202,11 @@ export default function EventRegistrationsPage() {
                     <table className="w-full text-sm">
                         <thead className="bg-white/[0.02]">
                             <tr className="border-b border-white/[0.06]">
-                                <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Participant</th>
-                                <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Contact</th>
-                                <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Ticket</th>
-                                <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Statut Paiement</th>
-                                <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Action / Validation</th>
+                                <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider"><T>Participant</T></th>
+                                <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider"><T>Contact</T></th>
+                                <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider"><T>Ticket</T></th>
+                                <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider"><T>Statut Paiement</T></th>
+                                <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider"><T>Action / Validation</T></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -242,14 +244,14 @@ export default function EventRegistrationsPage() {
                                                     {ticket.ticket_code}
                                                 </div>
                                             ) : (
-                                                <span className="text-[10px] text-gray-500 italic">Génération en attente</span>
+                                                <span className="text-[10px] text-gray-500 italic"><T>Génération en attente</T></span>
                                             )}
                                         </td>
                                         <td className="px-5 py-4">
                                             {r.payment_status === 'completed' ? (
                                                 <span className="text-[10px] font-bold text-[#008751] bg-[#008751]/10 px-2 py-1 rounded-full border border-[#008751]/20">Payé ({r.amount_paid} {r.currency})</span>
                                             ) : (
-                                                <span className="text-[10px] font-bold text-gray-400 bg-gray-500/10 px-2 py-1 rounded-full border border-gray-500/20">En attente</span>
+                                                <span className="text-[10px] font-bold text-gray-400 bg-gray-500/10 px-2 py-1 rounded-full border border-gray-500/20"><T>En attente</T></span>
                                             )}
                                         </td>
                                         <td className="px-5 py-4 text-right">

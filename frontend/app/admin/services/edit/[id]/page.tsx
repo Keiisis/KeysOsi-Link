@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -27,6 +28,7 @@ const ICON_TYPES = [
 ]
 
 export default function ServiceEditPage({ params }: { params: Promise<{ id: string }> }) {
+    const { t } = useTranslation();
     const { id } = use(params)
     const router = useRouter()
     const [loadingService, setLoadingService] = useState(true)
@@ -163,8 +165,8 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
                 <div className="w-24 h-24 rounded-2xl bg-[#008751]/20 border-2 border-[#008751]/40 flex items-center justify-center">
                     <CheckCircle2 size={40} className="text-[#008751]" />
                 </div>
-                <h2 className="text-3xl font-black text-white font-heading tracking-tighter">Service Sauvegardé !</h2>
-                <p className="text-gray-400 text-sm">Redirection vers la liste...</p>
+                <h2 className="text-3xl font-black text-white font-heading tracking-tighter"><T>Service Sauvegardé !</T></h2>
+                <p className="text-gray-400 text-sm"><T>Redirection vers la liste...</T></p>
             </div>
         )
     }
@@ -178,14 +180,14 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
                         type="button"
                         onClick={() => router.push('/admin/services')}
                         className="p-3 rounded-xl bg-white/5 border border-white/5 text-gray-400 hover:text-white transition-colors"
-                        title="Retour"
+                        title={t("Retour")}
                     >
                         <ArrowLeft size={18} />
                     </button>
                     <div>
                         <div className="flex items-center gap-2 text-[#FCD116]">
                             <Layers size={16} />
-                            <span className="text-[10px] font-black uppercase tracking-[0.4em]">Modifier le Service</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.4em]"><T>Modifier le Service</T></span>
                         </div>
                         <h1 className="text-3xl font-black text-white font-heading tracking-tighter truncate max-w-xs">{title || 'Édition'}</h1>
                     </div>
@@ -215,39 +217,39 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
                         </p>
 
                         <div>
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Titre *</label>
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block"><T>Titre *</T></label>
                             <input
                                 type="text"
                                 value={title}
                                 onChange={e => setTitle(e.target.value)}
-                                placeholder="Ex: Passeport & Documents VIP"
+                                placeholder={t("Ex: Passeport & Documents VIP")}
                                 className="w-full bg-white/5 border border-white/5 rounded-xl py-3 px-4 text-white text-lg font-bold focus:outline-none focus:border-[#FCD116]/40 transition-colors"
                             />
                         </div>
 
                         <div>
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">
-                                Slug URL * <span className="text-gray-600 font-normal normal-case">(correspond à /services/[slug])</span>
+                                Slug URL * <span className="text-gray-600 font-normal normal-case"><T>(correspond à /services/[slug])</T></span>
                             </label>
                             <div className="flex items-center gap-2">
-                                <span className="text-gray-600 text-sm">/services/</span>
+                                <span className="text-gray-600 text-sm"><T>/services/</T></span>
                                 <input
                                     type="text"
                                     value={slug}
                                     onChange={e => setSlug(e.target.value)}
-                                    placeholder="passeport-documents"
+                                    placeholder={t("passeport-documents")}
                                     className="flex-1 bg-white/5 border border-white/5 rounded-xl py-3 px-4 text-white font-mono text-sm focus:outline-none focus:border-[#FCD116]/30 transition-colors"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Sous-titre</label>
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block"><T>Sous-titre</T></label>
                             <input
                                 type="text"
                                 value={subtitle}
                                 onChange={e => setSubtitle(e.target.value)}
-                                placeholder="Tagline courte et percutante"
+                                placeholder={t("Tagline courte et percutante")}
                                 className="w-full bg-white/5 border border-white/5 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-white/10 transition-colors"
                             />
                         </div>
@@ -271,7 +273,7 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
                                 value={description}
                                 onChange={e => setDescription(e.target.value)}
                                 rows={6}
-                                placeholder="Description complète et persuasive du service..."
+                                placeholder={t("Description complète et persuasive du service...")}
                                 className="w-full bg-white/5 border border-white/5 rounded-xl py-3 px-4 text-gray-300 text-sm focus:outline-none focus:border-white/10 transition-colors resize-none leading-relaxed"
                             />
                         </div>
@@ -307,7 +309,7 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
                                             type="button"
                                             onClick={() => removeFeature(i)}
                                             className="p-2 rounded-lg text-gray-600 hover:text-red-400 transition-colors"
-                                            title="Supprimer cette fonctionnalité"
+                                            title={t("Supprimer cette fonctionnalité")}
                                         >
                                             <Trash2 size={14} />
                                         </button>
@@ -340,7 +342,7 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
                                 type="text"
                                 value={priceDisplay}
                                 onChange={e => setPriceDisplay(e.target.value)}
-                                placeholder="À partir de 50.000 FCFA"
+                                placeholder={t("À partir de 50.000 FCFA")}
                                 className="w-full bg-white/5 border border-white/5 rounded-xl py-2.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 transition-colors"
                             />
                         </div>
@@ -353,14 +355,14 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
                                         type="text"
                                         value={opt.label}
                                         onChange={e => updatePricingOption(i, 'label', e.target.value)}
-                                        placeholder="Nom du pack..."
+                                        placeholder={t("Nom du pack...")}
                                         className="flex-1 bg-white/5 border border-white/5 rounded-xl py-2.5 px-4 text-white text-sm focus:outline-none focus:border-white/10 transition-colors"
                                     />
                                     <input
                                         type="text"
                                         value={opt.price}
                                         onChange={e => updatePricingOption(i, 'price', e.target.value)}
-                                        placeholder="Prix (ex: 85.000 FCFA)"
+                                        placeholder={t("Prix (ex: 85.000 FCFA)")}
                                         className="w-40 bg-white/5 border border-white/5 rounded-xl py-2.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 transition-colors"
                                     />
                                     {pricingOptions.length > 1 && (
@@ -368,7 +370,7 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
                                             type="button"
                                             onClick={() => removePricingOption(i)}
                                             className="p-2 rounded-lg text-gray-600 hover:text-red-400 transition-colors"
-                                            title="Supprimer cette option"
+                                            title={t("Supprimer cette option")}
                                         >
                                             <Trash2 size={14} />
                                         </button>
@@ -388,7 +390,7 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
                         </p>
 
                         <div>
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Couleur</label>
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 block"><T>Couleur</T></label>
                             <div className="flex items-center gap-2 flex-wrap">
                                 {COLORS.map(c => (
                                     <button
@@ -408,18 +410,18 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
                                     value={color}
                                     onChange={e => setColor(e.target.value)}
                                     className="w-8 h-8 bg-transparent border border-white/10 rounded-lg cursor-pointer"
-                                    title="Couleur personnalisée"
+                                    title={t("Couleur personnalisée")}
                                 />
                             </div>
                             <div className="mt-2 h-1 rounded-full" style={{ background: color }} />
                         </div>
 
                         <div>
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Type d&apos;icône</label>
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block"><T>Type d&apos;icône</T></label>
                             <select
                                 value={iconType}
                                 onChange={e => setIconType(e.target.value)}
-                                title="Type d'icône"
+                                title={t("Type d'icône")}
                                 className="w-full bg-white/5 border border-white/5 rounded-xl py-2.5 px-4 text-white text-sm focus:outline-none"
                             >
                                 {ICON_TYPES.map(t => (
@@ -436,7 +438,7 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
                                 type="text"
                                 value={imageUrl}
                                 onChange={e => setImageUrl(e.target.value)}
-                                placeholder="/assets/icones/icone_exemple.png"
+                                placeholder={t("/assets/icones/icone_exemple.png")}
                                 className="w-full bg-white/5 border border-white/5 rounded-xl py-2.5 px-4 text-white text-xs font-mono focus:outline-none focus:border-white/10 transition-colors"
                             />
                         </div>
@@ -457,7 +459,7 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
                                 value={orderIndex}
                                 onChange={e => setOrderIndex(Number(e.target.value))}
                                 min={0}
-                                title="Ordre d'affichage"
+                                title={t("Ordre d'affichage")}
                                 placeholder="0"
                                 className="w-full bg-white/5 border border-white/5 rounded-xl py-2.5 px-4 text-white text-sm focus:outline-none focus:border-white/10 transition-colors"
                             />
@@ -465,8 +467,8 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
 
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-xs font-bold text-white">Actif sur le site</p>
-                                <p className="text-[10px] text-gray-600">Visible par les visiteurs</p>
+                                <p className="text-xs font-bold text-white"><T>Actif sur le site</T></p>
+                                <p className="text-[10px] text-gray-600"><T>Visible par les visiteurs</T></p>
                             </div>
                             <button
                                 type="button"
@@ -490,7 +492,7 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
                         className="rounded-2xl p-5 border"
                         style={{ borderColor: color + '30', backgroundColor: color + '08' }}
                     >
-                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Aperçu</p>
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3"><T>Aperçu</T></p>
                         {imageUrl && (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={imageUrl} alt="" className="w-12 h-12 object-contain mb-3" />

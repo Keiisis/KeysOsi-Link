@@ -54,7 +54,7 @@ export async function POST(request: Request) {
         // Idempotence — vérifier si déjà traité
         const { data: existingOrder, error: fetchErr } = await supabase
             .from('orders')
-            .select('payment_status, amount, product_id, quantity')
+            .select('payment_status, amount, product_id, quantity, payment_method')
             .eq('id', order_id)
             .single()
 
@@ -62,6 +62,15 @@ export async function POST(request: Request) {
             return NextResponse.json(
                 { success: false, error: 'Commande introuvable' },
                 { status: 404 }
+            )
+        }
+
+        // Vérifier que la commande est bien associée à PayPal (défini côté serveur — non falsifiable)
+        if (existingOrder.payment_method !== 'paypal') {
+            console.warn(`[PayPal Capture] Tentative sur commande ${order_id} (méthode: ${existingOrder.payment_method})`)
+            return NextResponse.json(
+                { success: false, error: 'Méthode de paiement incorrecte pour cette commande' },
+                { status: 400 }
             )
         }
 
@@ -112,10 +121,14 @@ export async function POST(request: Request) {
 
         if (captureData.status !== 'COMPLETED') {
             console.error('PayPal capture failed:', JSON.stringify(captureData))
+            // Garde atomique : ne jamais écraser une commande déjà complétée.
+            // Scénario : deux appels simultanés, le premier capture et complete l'ordre,
+            // le second reçoit "ORDER_ALREADY_CAPTURED" de PayPal et ne doit pas écraser 'completed'.
             await supabase
                 .from('orders')
                 .update({ payment_status: 'failed', transaction_id: paypal_order_id })
                 .eq('id', order_id)
+                .eq('payment_status', 'pending')
             return NextResponse.json(
                 { success: false, error: captureData.message || 'Capture PayPal échouée' },
                 { status: 400 }
@@ -126,23 +139,25 @@ export async function POST(request: Request) {
         const captureId = captureUnit?.id
         const capturedAmount = parseFloat(captureUnit?.amount?.value || '0')
 
-        // Vérification de montant — convertir le montant XOF de la DB dans la devise PayPal pour comparer
-        // (ex: 15000 XOF → 22.87 EUR, capturedAmount = 22.87 EUR → OK)
+        // Vérification stricte du montant capturé (tolérance ±0.02 pour arrondi de conversion)
+        // Ex: 15000 XOF → 22.87 EUR → on accepte entre 22.85 et 22.89 EUR uniquement
         const expectedPaypalAmount = convertFromXOF(existingOrder.amount, paypalCurrency)
-        if (capturedAmount > 0 && capturedAmount < expectedPaypalAmount * 0.99) {
-            console.error('PayPal amount mismatch:', {
+        const ROUNDING_TOLERANCE = 0.02
+        if (capturedAmount <= 0 || Math.abs(capturedAmount - expectedPaypalAmount) > ROUNDING_TOLERANCE) {
+            console.error('[PayPal Capture] Montant incorrect:', {
                 capturedAmount,
                 expectedPaypalAmount,
                 orderAmountXof: existingOrder.amount,
                 paypalCurrency,
+                diff: Math.abs(capturedAmount - expectedPaypalAmount),
             })
             return NextResponse.json(
-                { success: false, error: 'Montant capturé incorrect' },
+                { success: false, error: 'Montant capturé incorrect — paiement rejeté' },
                 { status: 400 }
             )
         }
 
-        // Mettre à jour la commande en "completed"
+        // Mettre à jour la commande en "completed" — garde atomique anti-race condition
         await supabase
             .from('orders')
             .update({
@@ -150,6 +165,7 @@ export async function POST(request: Request) {
                 transaction_id: captureId || paypal_order_id,
             })
             .eq('id', order_id)
+            .eq('payment_status', 'pending')
 
         // Décrémenter le stock
         if (existingOrder.product_id) {

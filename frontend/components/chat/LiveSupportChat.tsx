@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
@@ -19,6 +20,7 @@ interface ChatMessage {
 }
 
 export default function LiveSupportChat({ email, clientName }: LiveSupportChatProps) {
+    const { t } = useTranslation();
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState("");
@@ -145,7 +147,7 @@ export default function LiveSupportChat({ email, clientName }: LiveSupportChatPr
         return (
             <div className="h-[600px] w-full rounded-3xl bg-white/[0.02] border border-white/5 flex flex-col items-center justify-center">
                 <Loader2 className="animate-spin text-emerald-500 mb-4" size={32} />
-                <p className="text-xs text-gray-500 font-bold tracking-widest uppercase">Connexion au canal sécurisé...</p>
+                <p className="text-xs text-gray-500 font-bold tracking-widest uppercase"><T>Connexion au canal sécurisé...</T></p>
             </div>
         );
     }
@@ -162,10 +164,10 @@ export default function LiveSupportChat({ email, clientName }: LiveSupportChatPr
                         <HeadphonesIcon className="text-emerald-400" size={24} />
                     </div>
                     <div className="flex flex-col">
-                        <h3 className="font-black text-white text-lg font-heading tracking-wide">Support Direct</h3>
+                        <h3 className="font-black text-white text-lg font-heading tracking-wide"><T>Support Direct</T></h3>
                         <div className="flex items-center gap-1.5 mt-0.5">
                             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-[0.2em] opacity-80">Connecté avec nos agents</span>
+                            <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-[0.2em] opacity-80"><T>Connecté avec nos agents</T></span>
                         </div>
                     </div>
                 </div>
@@ -178,7 +180,7 @@ export default function LiveSupportChat({ email, clientName }: LiveSupportChatPr
                         <div className="w-24 h-24 rounded-[2rem] bg-emerald-500/10 flex items-center justify-center mb-6 shadow-2xl">
                             <HeadphonesIcon size={48} className="text-emerald-500" />
                         </div>
-                        <h4 className="text-2xl font-black text-white mb-3 font-heading">Ligne Directe Ouverte</h4>
+                        <h4 className="text-2xl font-black text-white mb-3 font-heading"><T>Ligne Directe Ouverte</T></h4>
                         <p className="text-sm text-gray-500 max-w-sm leading-relaxed">
                             Ce canal vous met en relation instantanée avec nos conseillers experts hautement qualifiés.
                             Posez votre question pour initialiser la liaison.
@@ -215,7 +217,7 @@ export default function LiveSupportChat({ email, clientName }: LiveSupportChatPr
                     <div className="flex gap-3 justify-end items-end pb-2">
                         <div className="max-w-[80%] px-5 py-3.5 rounded-2xl bg-emerald-600/30 text-white rounded-tr-sm border border-emerald-500/20 flex items-center gap-3 shadow-md">
                             <Loader2 size={16} className="animate-spin text-emerald-400" />
-                            <span className="text-sm text-emerald-100 font-medium">Transmission...</span>
+                            <span className="text-sm text-emerald-100 font-medium"><T>Transmission...</T></span>
                         </div>
                         <div className="w-8 h-8 flex-shrink-0 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shadow-md">
                             <User size={14} className="text-emerald-400 opacity-50" />
@@ -232,7 +234,7 @@ export default function LiveSupportChat({ email, clientName }: LiveSupportChatPr
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder="Écrivez votre message ici..."
+                        placeholder={t("Écrivez votre message ici...")}
                         className="flex-1 bg-white/5 border border-white/10 rounded-2xl py-4 pl-6 pr-14 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 focus:bg-white/10 text-sm transition-all"
                         disabled={isSubmitting}
                     />

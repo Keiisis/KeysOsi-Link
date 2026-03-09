@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation, T } from '@/lib/translation';
 import { useList, useUpdate } from "@refinedev/core";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -18,6 +19,7 @@ interface SettingItem {
 }
 
 export default function EmailSettingsPage() {
+    const { t } = useTranslation();
     const queryResult = useList<SettingItem>({
         resource: "settings",
         pagination: { mode: "off" }
@@ -123,7 +125,7 @@ export default function EmailSettingsPage() {
         return (
             <div className="min-h-[50vh] flex flex-col items-center justify-center">
                 <Loader2 className="animate-spin text-[#3b82f6] mb-4" size={40} />
-                <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.3em]">Lecture des protocoles SMTP...</p>
+                <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.3em]"><T>Lecture des protocoles SMTP...</T></p>
             </div>
         );
     }
@@ -139,8 +141,8 @@ export default function EmailSettingsPage() {
                         <ArrowLeft size={24} />
                     </Link>
                     <div>
-                        <h1 className="text-3xl font-black font-heading text-white tracking-tight italic"><span className="text-[#3b82f6]">SERVEUR</span> D&apos;EMAILS</h1>
-                        <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.3em] mt-1">SMTP & Facturation Web</p>
+                        <h1 className="text-3xl font-black font-heading text-white tracking-tight italic"><span className="text-[#3b82f6]"><T>SERVEUR</T></span> <T>D&apos;EMAILS</T></h1>
+                        <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.3em] mt-1"><T>SMTP & Facturation Web</T></p>
                     </div>
                 </div>
 
@@ -161,29 +163,29 @@ export default function EmailSettingsPage() {
                                 <Server size={24} className="text-[#3b82f6]" />
                             </div>
                             <div>
-                                <h3 className="text-xl font-black text-white">Protocole de Transmission</h3>
-                                <p className="text-xs text-gray-500">Configurez la liaison sortante des emails (Gmail ou SMTP Privé)</p>
+                                <h3 className="text-xl font-black text-white"><T>Protocole de Transmission</T></h3>
+                                <p className="text-xs text-gray-500"><T>Configurez la liaison sortante des emails (Gmail ou SMTP Privé)</T></p>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className="space-y-3">
-                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Serveur Sortant (Hôte)</label>
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1"><T>Serveur Sortant (Hôte)</T></label>
                                 <input
                                     name="smtp_host"
                                     value={form.smtp_host}
                                     onChange={handleChange}
-                                    placeholder="smtp.gmail.com"
+                                    placeholder={t("smtp.gmail.com")}
                                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white focus:outline-none focus:border-[#3b82f6]/50 transition-all font-mono text-sm"
                                 />
                             </div>
                             <div className="space-y-3">
-                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Port</label>
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1"><T>Port</T></label>
                                 <input
                                     name="smtp_port"
                                     value={form.smtp_port}
                                     onChange={handleChange}
-                                    placeholder="465 ou 587"
+                                    placeholder={t("465 ou 587")}
                                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white focus:outline-none focus:border-[#3b82f6]/50 transition-all font-mono text-sm"
                                 />
                             </div>
@@ -197,7 +199,7 @@ export default function EmailSettingsPage() {
                                     type="email"
                                     value={form.smtp_user}
                                     onChange={handleChange}
-                                    placeholder="votre.adresse@gmail.com"
+                                    placeholder={t("votre.adresse@gmail.com")}
                                     className="w-full bg-[#131b2c] border border-[#3b82f6]/30 rounded-2xl py-4 px-6 text-white focus:outline-none focus:border-[#3b82f6] shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] transition-all font-mono text-sm"
                                 />
                             </div>
@@ -215,7 +217,7 @@ export default function EmailSettingsPage() {
                                 />
                                 {isGmail && (
                                     <p className="text-[9px] text-[#3b82f6]/70 mt-2 px-1">
-                                        Sur Gmail, n&apos;utilisez pas votre vrai mot de passe. Allez dans compte Google {">"} Sécurité {">"} Validation en 2 étapes {">"} <b>Mots de passe des applications</b>.
+                                        Sur Gmail, n&apos;utilisez pas votre vrai mot de passe. Allez dans compte Google {">"} Sécurité {">"} Validation en 2 étapes {">"} <b><T>Mots de passe des applications</T></b>.
                                     </p>
                                 )}
                             </div>
@@ -223,22 +225,22 @@ export default function EmailSettingsPage() {
 
                         <div className="pt-8 mt-8 border-t border-white/5 grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className="space-y-3">
-                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Nom visible par les clients</label>
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1"><T>Nom visible par les clients</T></label>
                                 <input
                                     name="smtp_from_name"
                                     value={form.smtp_from_name}
                                     onChange={handleChange}
-                                    placeholder="Retour Gagnant - Agence"
+                                    placeholder={t("Retour Gagnant - Agence")}
                                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white focus:outline-none focus:border-white/30 transition-all font-bold text-sm"
                                 />
                             </div>
                             <div className="space-y-3">
-                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Adresse affichée (Reply-To)</label>
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1"><T>Adresse affichée (Reply-To)</T></label>
                                 <input
                                     name="smtp_from_email"
                                     value={form.smtp_from_email}
                                     onChange={handleChange}
-                                    placeholder="contact@retourgagnant.bj"
+                                    placeholder={t("contact@retourgagnant.bj")}
                                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white focus:outline-none focus:border-white/30 transition-all font-mono text-sm"
                                 />
                             </div>
@@ -253,7 +255,7 @@ export default function EmailSettingsPage() {
                             <h3 className="text-xl font-black text-white flex items-center gap-3">
                                 <Send className="text-[#3b82f6]" size={24} /> Ping Diagnostique
                             </h3>
-                            <p className="text-xs text-gray-500 mt-2">Envoyez un e-mail de test via l&apos;API Nodemailer pour valider la configuration et les credentials.</p>
+                            <p className="text-xs text-gray-500 mt-2"><T>Envoyez un e-mail de test via l&apos;API Nodemailer pour valider la configuration et les credentials.</T></p>
                         </div>
                         <Button
                             onClick={handleTest}

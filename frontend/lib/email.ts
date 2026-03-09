@@ -137,7 +137,7 @@ export async function sendEmail(options: {
 // EMAIL TEMPLATES — Bénin-themed, premium design
 // ═══════════════════════════════════════════════════════
 
-const EMAIL_WRAPPER = (content: string) => `
+const EMAIL_WRAPPER = (content: string, t: (k: string) => string = (k) => k) => `
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -156,50 +156,56 @@ const EMAIL_WRAPPER = (content: string) => `
     </td></tr>
     <!-- Footer -->
     <tr><td style="padding:20px 30px;background:#0f141e;border-top:1px solid rgba(255,255,255,0.05);text-align:center;">
-      <p style="margin:0;font-size:11px;color:#555;">© 2025 Retour Gagnant Bénin — Tradition, Modernité, Excellence</p>
-      <p style="margin:6px 0 0;font-size:10px;color:#444;">Cet email a été envoyé automatiquement. Ne pas répondre directement.</p>
+      <p style="margin:0;font-size:11px;color:#555;">${t("© 2025 Retour Gagnant Bénin — Tradition, Modernité, Excellence")}</p>
+      <p style="margin:6px 0 0;font-size:10px;color:#444;">${t("Cet email a été envoyé automatiquement. Ne pas répondre directement.")}</p>
     </td></tr>
   </table>
 </body>
 </html>
 `;
 
-export const EMAIL_TEMPLATES = {
-    /** Auto-reply sent to a client after they submit a contact/rdv/oracle form */
-    autoReply: (clientName: string, aiMessage: string) => EMAIL_WRAPPER(`
-        <h2 style="margin:0 0 15px;font-size:18px;color:#FCD116;">Merci ${clientName} 🤝</h2>
+import { getServerTranslation } from './server-translation';
+
+export const getEmailTemplates = async (locale: string = 'fr') => {
+    const t = await getServerTranslation(locale);
+
+    return {
+        /** Auto-reply sent to a client after they submit a contact/rdv/oracle form */
+        autoReply: (clientName: string, aiMessage: string) => EMAIL_WRAPPER(`
+        <h2 style="margin:0 0 15px;font-size:18px;color:#FCD116;">${t("Merci")} ${clientName} 🤝</h2>
         <p style="color:#ccc;font-size:14px;line-height:1.7;margin:0 0 20px;">
-            Nous avons bien reçu votre demande et notre équipe l'examine avec attention.
+            ${t("Nous avons bien reçu votre demande et notre équipe l'examine avec attention.")}
         </p>
         <div style="background:rgba(0,135,81,0.1);border-left:3px solid #008751;padding:15px 20px;border-radius:0 8px 8px 0;margin:0 0 20px;">
             <p style="margin:0;font-size:13px;color:#aaa;font-style:italic;line-height:1.6;">${aiMessage}</p>
         </div>
         <p style="color:#888;font-size:13px;line-height:1.6;margin:0 0 20px;">
-            Un expert de notre équipe vous contactera dans les plus brefs délais pour un accompagnement personnalisé.
+            ${t("Un expert de notre équipe vous contactera dans les plus brefs délais pour un accompagnement personnalisé.")}
         </p>
-        <a href="https://retour-gagnant.vercel.app/rendez-vous" style="display:inline-block;background:#008751;color:white;text-decoration:none;padding:12px 30px;border-radius:8px;font-weight:bold;font-size:13px;">Réserver un rendez-vous gratuit</a>
-    `),
+        <a href="https://retour-gagnant.vercel.app/rendez-vous" style="display:inline-block;background:#008751;color:white;text-decoration:none;padding:12px 30px;border-radius:8px;font-weight:bold;font-size:13px;">${t("Réserver un rendez-vous gratuit")}</a>
+    `, t),
 
-    /** Notification sent to agents/admin when a new lead arrives */
-    newLeadNotification: (leadName: string, leadEmail: string, score: number, service: string, source: string) => EMAIL_WRAPPER(`
-        <h2 style="margin:0 0 15px;font-size:18px;color:#FCD116;">🔔 Nouveau Lead — ${source}</h2>
+        /** Notification sent to agents/admin when a new lead arrives */
+        newLeadNotification: (leadName: string, leadEmail: string, score: number, service: string, source: string) => EMAIL_WRAPPER(`
+        <h2 style="margin:0 0 15px;font-size:18px;color:#FCD116;">🔔 ${t("Nouveau Lead")} — ${source}</h2>
         <table style="width:100%;border-collapse:collapse;margin:0 0 20px;">
-            <tr><td style="padding:8px 0;color:#888;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.05);">Nom</td><td style="padding:8px 0;color:#fff;font-size:13px;font-weight:bold;border-bottom:1px solid rgba(255,255,255,0.05);">${leadName}</td></tr>
-            <tr><td style="padding:8px 0;color:#888;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.05);">Email</td><td style="padding:8px 0;color:#fff;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.05);">${leadEmail}</td></tr>
-            <tr><td style="padding:8px 0;color:#888;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.05);">Score</td><td style="padding:8px 0;color:${score >= 70 ? '#4ade80' : '#fbbf24'};font-size:18px;font-weight:900;border-bottom:1px solid rgba(255,255,255,0.05);">${score}%</td></tr>
-            <tr><td style="padding:8px 0;color:#888;font-size:13px;">Service</td><td style="padding:8px 0;color:#FCD116;font-size:13px;font-weight:bold;">${service}</td></tr>
+            <tr><td style="padding:8px 0;color:#888;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.05);">${t("Nom")}</td><td style="padding:8px 0;color:#fff;font-size:13px;font-weight:bold;border-bottom:1px solid rgba(255,255,255,0.05);">${leadName}</td></tr>
+            <tr><td style="padding:8px 0;color:#888;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.05);">${t("Email")}</td><td style="padding:8px 0;color:#fff;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.05);">${leadEmail}</td></tr>
+            <tr><td style="padding:8px 0;color:#888;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.05);">${t("Score")}</td><td style="padding:8px 0;color:${score >= 70 ? '#4ade80' : '#fbbf24'};font-size:18px;font-weight:900;border-bottom:1px solid rgba(255,255,255,0.05);">${score}%</td></tr>
+            <tr><td style="padding:8px 0;color:#888;font-size:13px;">${t("Service")}</td><td style="padding:8px 0;color:#FCD116;font-size:13px;font-weight:bold;">${service}</td></tr>
         </table>
-        <a href="https://retour-gagnant.vercel.app/agent/leads" style="display:inline-block;background:#FCD116;color:#1a2332;text-decoration:none;padding:12px 30px;border-radius:8px;font-weight:bold;font-size:13px;">Voir dans le Dashboard Agent</a>
-    `),
+        <a href="https://retour-gagnant.vercel.app/agent/leads" style="display:inline-block;background:#FCD116;color:#1a2332;text-decoration:none;padding:12px 30px;border-radius:8px;font-weight:bold;font-size:13px;">${t("Voir dans le Dashboard Agent")}</a>
+    `, t),
 
-    /** Agent reply sent from the dashboard */
-    agentReply: (clientName: string, agentMessage: string) => EMAIL_WRAPPER(`
-        <h2 style="margin:0 0 15px;font-size:18px;color:#FCD116;">Bonjour ${clientName},</h2>
+        /** Agent reply sent from the dashboard */
+        agentReply: (clientName: string, agentMessage: string) => EMAIL_WRAPPER(`
+        <h2 style="margin:0 0 15px;font-size:18px;color:#FCD116;">${t("Bonjour")} ${clientName},</h2>
         <div style="color:#ccc;font-size:14px;line-height:1.8;margin:0 0 20px;white-space:pre-wrap;">${agentMessage}</div>
         <hr style="border:none;border-top:1px solid rgba(255,255,255,0.05);margin:20px 0;" />
         <p style="color:#666;font-size:12px;margin:0;">
-            Cet email vous a été envoyé par un conseiller de Retour Gagnant Bénin.<br/>
-            Pour toute réponse, envoyez un email à contact@retour-gagnant.bj
+            ${t("Cet email vous a été envoyé par un conseiller de Retour Gagnant Bénin.")}<br/>
+            ${t("Pour toute réponse, envoyez un email à")} contact@retour-gagnant.bj
         </p>
-    `),
-};
+    `, t),
+    };
+}

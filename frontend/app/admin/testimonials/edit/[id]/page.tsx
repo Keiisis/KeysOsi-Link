@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation, T } from '@/lib/translation';
 import { useForm, useNavigation } from "@refinedev/core";
 import {
     ArrowLeft, Save, User, Quote, Star,
@@ -14,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { Testimonial } from "../../page";
 
 export default function TestimonialsEdit() {
+    const { t } = useTranslation();
     const { id } = useParams();
     const { list } = useNavigation();
 
@@ -88,7 +90,7 @@ export default function TestimonialsEdit() {
         return (
             <div className="flex flex-col items-center justify-center py-40">
                 <Loader2 className="animate-spin text-[#3b82f6] opacity-50 mb-4" size={48} />
-                <p className="text-gray-600 font-black uppercase tracking-[0.3em] text-[10px]">Ouverture du Registre...</p>
+                <p className="text-gray-600 font-black uppercase tracking-[0.3em] text-[10px]"><T>Ouverture du Registre...</T></p>
             </div>
         );
     }
@@ -100,7 +102,7 @@ export default function TestimonialsEdit() {
                 <div className="flex items-center gap-6">
                     <button
                         onClick={() => list("testimonials")}
-                        title="Retour à la liste"
+                        title={t("Retour à la liste")}
                         className="p-4 bg-[#0a0f18] border border-white/5 rounded-2xl text-gray-500 hover:text-white hover:border-[#3b82f6]/30 transition-all shadow-2xl group"
                     >
                         <ArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
@@ -108,9 +110,9 @@ export default function TestimonialsEdit() {
                     <div>
                         <div className="flex items-center gap-2 text-[#3b82f6] mb-1">
                             <Quote size={14} />
-                            <span className="text-[10px] font-black uppercase tracking-[0.4em]">Modération de Témoignage</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.4em]"><T>Modération de Témoignage</T></span>
                         </div>
-                        <h1 className="text-4xl font-black text-white font-heading tracking-tight italic">ÉDITION <span className="text-benin-gradient">AMBASSADEUR</span></h1>
+                        <h1 className="text-4xl font-black text-white font-heading tracking-tight italic"><T>ÉDITION</T> <span className="text-benin-gradient"><T>AMBASSADEUR</T></span></h1>
                     </div>
                 </div>
 
@@ -133,22 +135,22 @@ export default function TestimonialsEdit() {
                             {/* Author Info */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1">Identité de l&apos;auteur</label>
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1"><T>Identité de l&apos;auteur</T></label>
                                     <input
                                         name="name"
                                         value={formData.name || ''}
                                         onChange={handleChange}
-                                        placeholder="Ex: Koffi Mensah"
+                                        placeholder={t("Ex: Koffi Mensah")}
                                         className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white text-sm font-bold focus:outline-none focus:border-[#3b82f6]/40 transition-all"
                                     />
                                 </div>
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1">Localisation / Diaspora</label>
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1"><T>Localisation / Diaspora</T></label>
                                     <input
                                         name="location"
                                         value={formData.location || ''}
                                         onChange={handleChange}
-                                        placeholder="Ex: Paris, France"
+                                        placeholder={t("Ex: Paris, France")}
                                         className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white text-sm font-bold focus:outline-none focus:border-[#3b82f6]/40 transition-all"
                                     />
                                 </div>
@@ -157,17 +159,17 @@ export default function TestimonialsEdit() {
                             {/* Service and Rating */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1">Service Concerné</label>
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1"><T>Service Concerné</T></label>
                                     <input
                                         name="service"
                                         value={formData.service || ''}
                                         onChange={handleChange}
-                                        placeholder="Ex: Construction Immobilière"
+                                        placeholder={t("Ex: Construction Immobilière")}
                                         className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white text-sm font-bold focus:outline-none focus:border-[#3b82f6]/40 transition-all"
                                     />
                                 </div>
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1">Note de Satisfaction</label>
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1"><T>Note de Satisfaction</T></label>
                                     <div className="flex gap-4 p-4 bg-white/5 rounded-2xl border-2 border-white/5">
                                         {[1, 2, 3, 4, 5].map((s) => (
                                             <button
@@ -197,7 +199,7 @@ export default function TestimonialsEdit() {
                                         className="text-[#3b82f6] hover:text-white transition-colors flex items-center gap-1 group"
                                     >
                                         <Sparkles size={12} className="group-hover:animate-pulse" />
-                                        <span>OPTIMISER PAR IA</span>
+                                        <span><T>OPTIMISER PAR IA</T></span>
                                     </button>
                                 </label>
                                 <textarea
@@ -205,14 +207,14 @@ export default function TestimonialsEdit() {
                                     value={formData.text || ''}
                                     onChange={handleChange}
                                     rows={8}
-                                    placeholder="Copiez ici le témoignage brut reçu..."
+                                    placeholder={t("Copiez ici le témoignage brut reçu...")}
                                     className="w-full bg-white/5 border-2 border-white/5 rounded-[2rem] py-6 px-8 text-white text-sm font-medium focus:outline-none focus:border-[#3b82f6]/40 transition-all resize-none italic leading-relaxed"
                                 />
                             </div>
 
                             {/* Photo URL */}
                             <div className="space-y-3">
-                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1">URL de la photo de profil</label>
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1"><T>URL de la photo de profil</T></label>
                                 <input
                                     name="photo"
                                     value={formData.photo || ''}
@@ -236,8 +238,8 @@ export default function TestimonialsEdit() {
                         <div className="space-y-6">
                             <div className="flex items-center justify-between p-6 bg-white/5 rounded-[1.5rem] border border-white/5">
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-black text-white uppercase tracking-widest">Statut de Publication</p>
-                                    <p className="text-xs text-gray-500">Visible sur la page d&apos;accueil</p>
+                                    <p className="text-[10px] font-black text-white uppercase tracking-widest"><T>Statut de Publication</T></p>
+                                    <p className="text-xs text-gray-500"><T>Visible sur la page d&apos;accueil</T></p>
                                 </div>
                                 <button
                                     onClick={() => setFormData((prev) => ({ ...prev, approved: !prev.approved }))}
@@ -265,7 +267,7 @@ export default function TestimonialsEdit() {
 
                     {/* Final Rendering Preview */}
                     <div className="space-y-4">
-                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1">Rendu de la Carte</span>
+                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1"><T>Rendu de la Carte</T></span>
                         <Card className="bg-[#0a0f18] border-white/5 rounded-[2.5rem] p-10 shadow-3xl relative overflow-hidden group border-2 border-white/5">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-[#3b82f6]/10 rounded-full blur-[60px] pointer-events-none" />
 
@@ -274,7 +276,7 @@ export default function TestimonialsEdit() {
                                     <div className="flex items-center gap-4">
                                         <div className="w-16 h-16 rounded-2xl bg-benin-gradient p-1 shadow-2xl">
                                             <div className="w-full h-full bg-[#0a0f18] rounded-[1.2rem] flex items-center justify-center overflow-hidden">
-                                                {formData.photo ? <Image src={formData.photo} alt="Avatar" fill className="object-cover" /> : <User size={24} className="text-gray-800" />}
+                                                {formData.photo ? <Image src={formData.photo} alt={t("Avatar")} fill className="object-cover" /> : <User size={24} className="text-gray-800" />}
                                             </div>
                                         </div>
                                         <div>

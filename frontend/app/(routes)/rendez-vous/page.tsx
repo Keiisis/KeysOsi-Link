@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import { MapPin, CheckCircle, Calendar, Phone, Clock, Video, MessagesSquare, Smartphone, MessageCircle } from 'lucide-react';
+import { MapPin, CheckCircle, Calendar, Phone, Video, MessagesSquare, MessageCircle } from 'lucide-react';
 import { COMPANY_INFO } from '@/lib/constants/company-info';
+import { useTranslation, T } from '@/lib/translation';
 
 // Benin cities — real positions on viewBox 0 0 1000 1000
 const beninCities = [
@@ -23,6 +24,7 @@ const beninCities = [
 ];
 
 export default function RendezVousPage() {
+    const { t } = useTranslation();
     const [step, setStep] = useState(1);
     const [form, setForm] = useState({
         nom: '', prenom: '', email: '', telephone: '', service: 'Passeport / Administratif', message: '',
@@ -59,9 +61,9 @@ export default function RendezVousPage() {
                 <div className="container mx-auto px-4 text-center">
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                         <Calendar className="mx-auto mb-4 text-[#FCD116]" size={40} />
-                        <h1 className="text-3xl md:text-5xl font-bold font-heading mb-4">Prendre Rendez-vous</h1>
+                        <h1 className="text-3xl md:text-5xl font-bold font-heading mb-4"><T>Prendre Rendez-vous</T></h1>
                         <p className="text-white/60 text-base md:text-lg max-w-xl mx-auto">
-                            Planifiez une consultation gratuite avec nos experts.
+                            <T>Planifiez une consultation gratuite avec nos experts.</T>
                         </p>
                     </motion.div>
                 </div>
@@ -78,7 +80,7 @@ export default function RendezVousPage() {
                         <div className="sticky top-24">
                             <h3 className="text-xl font-bold text-[#1a2332] mb-4 flex items-center gap-2">
                                 <MapPin className="text-[#008751]" size={22} />
-                                Notre présence au Bénin
+                                <T>Notre présence au Bénin</T>
                             </h3>
 
                             {/* SVG Map of Benin */}
@@ -147,10 +149,10 @@ export default function RendezVousPage() {
                                 {/* Legend */}
                                 <div className="mt-6 flex items-center justify-center gap-6 text-sm text-white/50">
                                     <div className="flex items-center gap-2">
-                                        <span className="w-3 h-3 rounded-full bg-[#FCD116]" /> Bureaux principaux
+                                        <span className="w-3 h-3 rounded-full bg-[#FCD116]" /> <T>Bureaux principaux</T>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className="w-2 h-2 rounded-full bg-white" /> Zone couverte
+                                        <span className="w-2 h-2 rounded-full bg-white" /> <T>Zone couverte</T>
                                     </div>
                                 </div>
                             </div>
@@ -159,7 +161,7 @@ export default function RendezVousPage() {
                             <div className="mt-6 flex items-center gap-3 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                                 <Phone className="text-[#008751]" size={20} />
                                 <div>
-                                    <p className="text-sm font-bold text-[#1a2332]">Besoin d'aide immédiate ?</p>
+                                    <p className="text-sm font-bold text-[#1a2332]"><T>Besoin d&apos;aide immédiate ?</T></p>
                                     <a
                                         href={COMPANY_INFO.whatsappLink}
                                         target="_blank"
@@ -182,8 +184,8 @@ export default function RendezVousPage() {
                         <Card className="border-0 shadow-xl overflow-hidden">
                             <div className="h-1.5 bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D]" />
                             <CardHeader>
-                                <CardTitle className="text-2xl">Planifier une consultation</CardTitle>
-                                <CardDescription>Remplissez ce formulaire — premier appel de 15 min gratuit.</CardDescription>
+                                <CardTitle className="text-2xl"><T>Planifier une consultation</T></CardTitle>
+                                <CardDescription><T>Remplissez ce formulaire — premier appel de 15 min gratuit.</T></CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <AnimatePresence mode="wait">
@@ -195,8 +197,8 @@ export default function RendezVousPage() {
                                             className="text-center py-12 space-y-4"
                                         >
                                             <CheckCircle className="mx-auto text-[#008751]" size={48} />
-                                            <h3 className="text-xl font-bold text-[#1a2332]">Demande envoyée !</h3>
-                                            <p className="text-gray-500">Un conseiller vous contactera sous 24h.</p>
+                                            <h3 className="text-xl font-bold text-[#1a2332]"><T>Demande envoyée !</T></h3>
+                                            <p className="text-gray-500"><T>Un conseiller vous contactera sous 24h.</T></p>
                                         </motion.div>
                                     ) : (
                                         <motion.form key="form" onSubmit={handleSubmit} className="space-y-5">
@@ -216,23 +218,23 @@ export default function RendezVousPage() {
                                                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <div className="space-y-2">
-                                                            <label className="text-sm font-medium text-gray-700">Nom *</label>
+                                                            <label className="text-sm font-medium text-gray-700"><T>Nom</T> *</label>
                                                             <input type="text" required value={form.nom} onChange={e => setForm(p => ({ ...p, nom: e.target.value }))}
-                                                                className="w-full p-3 text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#008751] outline-none" placeholder="Votre nom" />
+                                                                className="w-full p-3 text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#008751] outline-none" placeholder={t("Votre nom")} />
                                                         </div>
                                                         <div className="space-y-2">
-                                                            <label className="text-sm font-medium text-gray-700">Prénom</label>
+                                                            <label className="text-sm font-medium text-gray-700"><T>Prénom</T></label>
                                                             <input type="text" value={form.prenom} onChange={e => setForm(p => ({ ...p, prenom: e.target.value }))}
-                                                                className="w-full p-3 text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#008751] outline-none" placeholder="Votre prénom" />
+                                                                className="w-full p-3 text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#008751] outline-none" placeholder={t("Votre prénom")} />
                                                         </div>
                                                     </div>
                                                     <div className="space-y-2">
-                                                        <label className="text-sm font-medium text-gray-700">Email *</label>
+                                                        <label className="text-sm font-medium text-gray-700"><T>Email</T> *</label>
                                                         <input type="email" required value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-                                                            className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#008751] outline-none" placeholder="email@exemple.com" />
+                                                            className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#008751] outline-none" placeholder={t("email@exemple.com")} />
                                                     </div>
                                                     <div className="space-y-2">
-                                                        <label className="text-sm font-medium text-gray-700">Téléphone / WhatsApp</label>
+                                                        <label className="text-sm font-medium text-gray-700"><T>Téléphone / WhatsApp</T></label>
                                                         <input type="tel" value={form.telephone} onChange={e => setForm(p => ({ ...p, telephone: e.target.value }))}
                                                             className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#008751] outline-none" placeholder="+33 6 00 00 00 00" />
                                                     </div>
@@ -242,23 +244,23 @@ export default function RendezVousPage() {
                                             {step === 2 && (
                                                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                                                     <div className="space-y-2">
-                                                        <label className="text-sm font-medium text-gray-700">Type de Service</label>
-                                                        <select value={form.service} onChange={e => setForm(p => ({ ...p, service: e.target.value }))}
+                                                        <label htmlFor="service-select" className="text-sm font-medium text-gray-700"><T>Type de Service</T></label>
+                                                        <select id="service-select" title={t("Type de Service")} value={form.service} onChange={e => setForm(p => ({ ...p, service: e.target.value }))}
                                                             className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#008751] outline-none bg-white">
-                                                            <option>Passeport / Administratif</option>
-                                                            <option>Logement / Immobilier</option>
-                                                            <option>Création d&apos;Entreprise</option>
-                                                            <option>Guide Culturel</option>
-                                                            <option>Construction</option>
-                                                            <option>Investissement</option>
-                                                            <option>Autre</option>
+                                                            <option>{t("Passeport / Administratif")}</option>
+                                                            <option>{t("Logement / Immobilier")}</option>
+                                                            <option>{t("Création d'Entreprise")}</option>
+                                                            <option>{t("Guide Culturel")}</option>
+                                                            <option>{t("Construction")}</option>
+                                                            <option>{t("Investissement")}</option>
+                                                            <option>{t("Autre")}</option>
                                                         </select>
                                                     </div>
                                                     <div className="space-y-2">
-                                                        <label className="text-sm font-medium text-gray-700">Message (Optionnel)</label>
-                                                        <textarea rows={5} value={form.message} onChange={e => setForm(p => ({ ...p, message: e.target.value }))}
+                                                        <label htmlFor="message-input" className="text-sm font-medium text-gray-700"><T>Message (Optionnel)</T></label>
+                                                        <textarea id="message-input" title={t("Message (Optionnel)")} rows={5} value={form.message} onChange={e => setForm(p => ({ ...p, message: e.target.value }))}
                                                             className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#008751] outline-none resize-none"
-                                                            placeholder="Détaillez votre projet..." />
+                                                            placeholder={t("Détaillez votre projet...")} />
                                                     </div>
                                                 </motion.div>
                                             )}
@@ -268,10 +270,12 @@ export default function RendezVousPage() {
 
                                                     {/* Date & Heure */}
                                                     <div className="space-y-3">
-                                                        <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                                            <Calendar size={16} className="text-[#008751]" /> Date souhaitée
+                                                        <label htmlFor="date-input" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                                                            <Calendar size={16} className="text-[#008751]" /> <T>Date souhaitée</T>
                                                         </label>
                                                         <input
+                                                            id="date-input"
+                                                            title={t("Date souhaitée")}
                                                             type="date"
                                                             min={new Date().toISOString().split('T')[0]}
                                                             value={form.date}
@@ -290,7 +294,7 @@ export default function RendezVousPage() {
                                                                         : 'border-gray-200 text-gray-500 hover:border-[#008751]/50'
                                                                         }`}
                                                                 >
-                                                                    {slot}
+                                                                    {t(slot)}
                                                                 </button>
                                                             ))}
                                                         </div>
@@ -299,7 +303,7 @@ export default function RendezVousPage() {
                                                     {/* Mode de consultation */}
                                                     <div className="space-y-3">
                                                         <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                                            <MessagesSquare size={16} className="text-[#008751]" /> Mode de consultation
+                                                            <MessagesSquare size={16} className="text-[#008751]" /> <T>Mode de consultation</T>
                                                         </label>
                                                         <div className="grid grid-cols-2 gap-3">
                                                             {[
@@ -318,7 +322,7 @@ export default function RendezVousPage() {
                                                                         }`}
                                                                 >
                                                                     <method.icon size={16} className={form.contactMethod === method.id ? 'text-[#008751]' : 'text-gray-400'} />
-                                                                    {method.id}
+                                                                    {t(method.id)}
                                                                 </button>
                                                             ))}
                                                         </div>
@@ -330,39 +334,39 @@ export default function RendezVousPage() {
                                             {step === 4 && (
                                                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="text-center space-y-4 py-6">
                                                     <div className="text-5xl">📋</div>
-                                                    <h3 className="text-xl font-bold text-[#1a2332]">Récapitulatif</h3>
+                                                    <h3 className="text-xl font-bold text-[#1a2332]"><T>Récapitulatif</T></h3>
                                                     <div className="text-left bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
-                                                        <p><span className="font-semibold">Nom:</span> {form.nom} {form.prenom}</p>
-                                                        <p><span className="font-semibold">Email:</span> {form.email}</p>
-                                                        {form.telephone && <p><span className="font-semibold">Tél:</span> {form.telephone}</p>}
-                                                        <p><span className="font-semibold">Service:</span> {form.service}</p>
+                                                        <p><span className="font-semibold"><T>Nom:</T></span> {form.nom} {form.prenom}</p>
+                                                        <p><span className="font-semibold"><T>Email:</T></span> {form.email}</p>
+                                                        {form.telephone && <p><span className="font-semibold"><T>Tél:</T></span> {form.telephone}</p>}
+                                                        <p><span className="font-semibold"><T>Service:</T></span> {form.service}</p>
                                                         <div className="h-px bg-gray-200 my-2" />
-                                                        <p><span className="font-semibold">Date:</span> {form.date || 'Non définie'} — {form.timeSlot || 'Non défini'}</p>
-                                                        <p><span className="font-semibold">Mode:</span> {form.contactMethod}</p>
+                                                        <p><span className="font-semibold"><T>Date:</T></span> {form.date || t('Non définie')} — {form.timeSlot ? t(form.timeSlot) : t('Non défini')}</p>
+                                                        <p><span className="font-semibold"><T>Mode:</T></span> {t(form.contactMethod)}</p>
                                                         {form.message && <p className="mt-2 italic text-gray-600">&quot;{form.message}&quot;</p>}
                                                     </div>
-                                                    <p className="text-gray-500 text-sm">Un conseiller vous recontactera sous 24h.</p>
+                                                    <p className="text-gray-500 text-sm"><T>Un conseiller vous recontactera sous 24h.</T></p>
                                                 </motion.div>
                                             )}
 
                                             {status === 'error' && (
-                                                <p className="text-[#E8112D] text-sm text-center">Erreçur. Réessayez ou contactez-nous par WhatsApp.</p>
+                                                <p className="text-[#E8112D] text-sm text-center"><T>Erreur. Réessayez ou contactez-nous par WhatsApp.</T></p>
                                             )}
 
                                             <div className="flex justify-between pt-4">
                                                 <Button type="button" variant="outline" onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1}
                                                     className="rounded-xl">
-                                                    Précédent
+                                                    <T>Précédent</T>
                                                 </Button>
                                                 {step < 4 ? (
                                                     <Button type="button" onClick={() => setStep(Math.min(4, step + 1))}
                                                         className="bg-[#008751] hover:bg-[#006B40] text-white rounded-xl px-8">
-                                                        Suivant
+                                                        <T>Suivant</T>
                                                     </Button>
                                                 ) : (
                                                     <Button type="submit" disabled={status === 'loading'}
                                                         className="bg-[#008751] hover:bg-[#006B40] text-white font-bold rounded-xl px-8">
-                                                        {status === 'loading' ? 'Envoi...' : '✅ Confirmer'}
+                                                        {status === 'loading' ? <T>Envoi...</T> : <>✅ <T>Confirmer</T></>}
                                                     </Button>
                                                 )}
                                             </div>

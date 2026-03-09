@@ -34,12 +34,140 @@ export async function POST(request: Request) {
             shipping_fee,
         } = body
 
-        // Validation
+        // ═══ VALIDATION STRICTE DES ENTRÉES ══════════════════════
         if (!customer_name || !customer_phone || !payment_method || !amount) {
             return NextResponse.json(
                 { error: 'Champs obligatoires manquants' },
                 { status: 400 }
             )
+        }
+
+        // Montant: nombre positif, non nul, non flottant absurde
+        const parsedAmount = typeof amount === 'number' ? amount : parseFloat(String(amount))
+        if (isNaN(parsedAmount) || parsedAmount <= 0) {
+            return NextResponse.json({ error: 'Montant invalide' }, { status: 400 })
+        }
+
+        // Méthode de paiement: liste blanche stricte
+        const ALLOWED_METHODS = ['kkiapay', 'fedapay', 'stripe', 'paypal', 'zeyow']
+        if (!ALLOWED_METHODS.includes(payment_method)) {
+            return NextResponse.json({ error: 'Méthode de paiement non autorisée' }, { status: 400 })
+        }
+
+        // Quantité produit unique: entier strictement positif
+        if (quantity !== undefined) {
+            const parsedQty = parseInt(String(quantity), 10)
+            if (isNaN(parsedQty) || parsedQty < 1 || parsedQty > 10000 || parsedQty !== parseFloat(String(quantity))) {
+                return NextResponse.json({ error: 'Quantité invalide (entier entre 1 et 10 000)' }, { status: 400 })
+            }
+        }
+
+        // Limite et validation du panier (anti-DoS + anti-injection de quantité)
+        if (Array.isArray(cart_items)) {
+            if (cart_items.length > 50) {
+                return NextResponse.json({ error: 'Trop d\'articles dans le panier (max 50)' }, { status: 400 })
+            }
+            for (const item of cart_items) {
+                const itemQty = parseInt(String(item.quantity), 10)
+                if (isNaN(itemQty) || itemQty < 1 || itemQty > 10000 || itemQty !== parseFloat(String(item.quantity))) {
+                    return NextResponse.json(
+                        { error: `Quantité invalide pour un article du panier` },
+                        { status: 400 }
+                    )
+                }
+                item.quantity = itemQty // Normaliser en entier
+            }
+        }
+
+        // ═══ VALIDATION DU MONTANT CÔTÉ SERVEUR ═══════════════════
+        // JAMAIS faire confiance au montant envoyé par le client.
+        // On recalcule le montant attendu depuis les prix en base de données.
+        let expectedSubtotal = 0
+        // validatedAmount : montant réel à stocker en DB.
+        // Initialisé au montant client, écrasé par le calcul serveur dès qu'on a des produits.
+        let validatedAmount = parsedAmount
+        // validatedShippingFee : clamped server-side ici (scope global) pour être utilisable
+        // dans l'INSERT même si aucun produit n'est présent dans la commande.
+        const validatedShippingFee = Math.max(0, Math.min(Number(shipping_fee) || 0, 100000))
+        const itemsForPriceCheck = cart_items && cart_items.length > 0
+            ? cart_items
+            : (product_id ? [{ product_id, quantity: quantity || 1 }] : [])
+
+        // Anti-épuisement de coupon : interdire l'usage d'un coupon sans produit.
+        // Sans produits, le montant n'est pas recalculé côté serveur — un attaquant
+        // pourrait créer des dizaines de commandes bidon pour épuiser les utilisations d'un coupon.
+        if (coupon_id && itemsForPriceCheck.length === 0) {
+            return NextResponse.json(
+                { error: 'Un coupon ne peut pas être appliqué sans article' },
+                { status: 400 }
+            )
+        }
+
+        if (itemsForPriceCheck.length > 0) {
+            for (const item of itemsForPriceCheck) {
+                if (!item.product_id) continue
+
+                const { data: prod } = await supabase
+                    .from('products')
+                    .select('price, sale_price, is_active')
+                    .eq('id', item.product_id)
+                    .single()
+
+                if (!prod || !prod.is_active) {
+                    return NextResponse.json(
+                        { error: `Produit introuvable ou inactif: ${item.product_id}` },
+                        { status: 400 }
+                    )
+                }
+
+                const unitPrice = (prod.sale_price && prod.sale_price < prod.price)
+                    ? prod.sale_price
+                    : prod.price
+
+                expectedSubtotal += unitPrice * (item.quantity || 1)
+            }
+
+            // Recalculer le coupon côté serveur si fourni
+            let serverCouponDiscount = 0
+            if (coupon_id) {
+                const { data: coupon } = await supabase
+                    .from('coupons')
+                    .select('discount_type, discount_value, is_active, expires_at, max_uses, current_uses')
+                    .eq('id', coupon_id)
+                    .single()
+
+                if (
+                    coupon &&
+                    coupon.is_active &&
+                    (!coupon.expires_at || new Date(coupon.expires_at) >= new Date()) &&
+                    coupon.current_uses < coupon.max_uses
+                ) {
+                    if (coupon.discount_type === 'percentage') {
+                        serverCouponDiscount = Math.round(expectedSubtotal * coupon.discount_value / 100)
+                    } else {
+                        serverCouponDiscount = Math.max(0, coupon.discount_value)
+                    }
+                }
+            }
+
+            // Frais de livraison: déjà clamped au scope global (validatedShippingFee)
+
+            const expectedTotal = Math.max(0, expectedSubtotal - serverCouponDiscount + validatedShippingFee)
+
+            // Tolérance de 1 XOF pour les arrondis
+            if (Math.abs(parsedAmount - expectedTotal) > 1) {
+                console.error(
+                    `[Checkout] Montant invalide — reçu: ${parsedAmount} XOF, attendu: ${expectedTotal} XOF` +
+                    ` (sous-total: ${expectedSubtotal}, coupon: ${serverCouponDiscount}, livraison: ${validatedShippingFee})`
+                )
+                return NextResponse.json(
+                    { error: 'Montant invalide. Veuillez actualiser la page et réessayer.' },
+                    { status: 400 }
+                )
+            }
+
+            // Stocker le montant calculé serveur (pas celui du client)
+            validatedAmount = expectedTotal
         }
 
         // ═══ STOCK RESERVATION (Atomic) ═══════════════════════════
@@ -82,7 +210,7 @@ export async function POST(request: Request) {
                 product_id: product_id || null,
                 product_title: product_title || '',
                 quantity: quantity || 1,
-                amount,
+                amount: validatedAmount, // Toujours le montant validé serveur, jamais celui du client
                 currency: currency || 'XOF',
                 customer_name,
                 customer_email: customer_email || null,
@@ -94,7 +222,7 @@ export async function POST(request: Request) {
                 shipping_country: shipping_country || null,
                 shipping_address: shipping_address || null,
                 shipping_zone: shipping_zone || null,
-                shipping_fee: shipping_fee || 0,
+                shipping_fee: validatedShippingFee, // Valeur clampée serveur, jamais celle du client
             })
             .select('id')
             .single()
@@ -114,9 +242,36 @@ export async function POST(request: Request) {
             )
         }
 
-        // Increment coupon use if any
+        // Incrémenter l'usage du coupon de façon atomique via RPC
+        // Puis re-vérifier immédiatement que la limite n'est pas dépassée (anti-race condition).
+        // Si deux requêtes simultanées ont toutes deux passé le check en mémoire, l'une d'elles
+        // sera détectée ici et l'ordre sera annulé.
         if (coupon_id) {
             await supabase.rpc('increment_coupon_use', { c_id: coupon_id })
+
+            // Re-vérification post-incrément pour détecter le race condition
+            const { data: couponCheck } = await supabase
+                .from('coupons')
+                .select('current_uses, max_uses')
+                .eq('id', coupon_id)
+                .single()
+
+            if (couponCheck && couponCheck.current_uses > couponCheck.max_uses) {
+                // Tenter d'annuler l'incrément
+                try { await supabase.rpc('decrement_coupon_use' as string, { c_id: coupon_id }) } catch { /* non bloquant */ }
+                // Annuler la commande et libérer le stock
+                await supabase.from('orders').delete().eq('id', data.id)
+                for (const reserved of reservedItems) {
+                    await supabase.rpc('release_stock', {
+                        p_product_id: reserved.product_id,
+                        p_quantity: reserved.quantity,
+                    })
+                }
+                return NextResponse.json(
+                    { error: 'Ce code promo a atteint sa limite d\'utilisation. Veuillez réessayer sans coupon.' },
+                    { status: 409 }
+                )
+            }
         }
 
         // Auto-create Nexus Tracker entry for order tracking
@@ -141,7 +296,7 @@ export async function POST(request: Request) {
             statut: 'reception',
             etapes: orderSteps,
             progression: Math.round((1 / orderSteps.length) * 100),
-            notes_internes: `Commande automatique.\nProduit: ${product_title || 'Panier'}\nMontant: ${amount} ${currency || 'XOF'}\nMéthode: ${payment_method}`,
+            notes_internes: `Commande automatique.\nProduit: ${product_title || 'Panier'}\nMontant: ${validatedAmount} ${currency || 'XOF'}\nMéthode: ${payment_method}`,
         }).then(({ error: trackErr }) => {
             if (trackErr) console.error('[TRACKER] Boutique track error:', trackErr.message)
         })

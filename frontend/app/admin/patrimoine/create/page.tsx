@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation, T } from '@/lib/translation';
 import { useForm, useNavigation, useList } from "@refinedev/core";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -15,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { Patrimoine } from "../page";
 
 export default function PatrimonioCreate() {
+    const { t } = useTranslation();
     const { list } = useNavigation();
 
     const { onFinish, formLoading } = useForm<Patrimoine>({
@@ -93,16 +95,16 @@ export default function PatrimonioCreate() {
                 <div className="flex items-center gap-6">
                     <button
                         onClick={() => list("patrimoine")}
-                        title="Retour à la liste"
+                        title={t("Retour à la liste")}
                         className="p-4 bg-white/5 border border-white/5 rounded-2xl text-gray-400 hover:text-[#FCD116] hover:bg-white/10 transition-all shadow-2xl group"
                     >
                         <ArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
                     </button>
                     <div>
-                        <h1 className="text-3xl font-black font-heading text-white tracking-tight">Nouvelle Archive</h1>
+                        <h1 className="text-3xl font-black font-heading text-white tracking-tight"><T>Nouvelle Archive</T></h1>
                         <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px] text-gray-500 font-black uppercase tracking-[0.3em]">Module:</span>
-                            <span className="text-[#FCD116] font-mono text-xs italic">Initiation de Séquence</span>
+                            <span className="text-[10px] text-gray-500 font-black uppercase tracking-[0.3em]"><T>Module:</T></span>
+                            <span className="text-[#FCD116] font-mono text-xs italic"><T>Initiation de Séquence</T></span>
                         </div>
                     </div>
                 </div>
@@ -133,7 +135,7 @@ export default function PatrimonioCreate() {
                                     name="title"
                                     value={formData.title || ''}
                                     onChange={handleChange}
-                                    placeholder="Ex: Palais Royaux d'Abomey"
+                                    placeholder={t("Ex: Palais Royaux d'Abomey")}
                                     className="w-full bg-white/5 border-2 border-white/5 rounded-[1.5rem] py-5 px-8 text-white focus:outline-none focus:border-[#FCD116]/30 transition-all text-2xl font-black font-heading placeholder:text-gray-700"
                                 />
                             </div>
@@ -147,7 +149,7 @@ export default function PatrimonioCreate() {
                                         name="location"
                                         value={formData.location || ''}
                                         onChange={handleChange}
-                                        placeholder="Ex: Abomey, Sud Bénin"
+                                        placeholder={t("Ex: Abomey, Sud Bénin")}
                                         className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white text-sm font-bold focus:outline-none focus:border-[#008751]/40 transition-all"
                                     />
                                 </div>
@@ -174,7 +176,7 @@ export default function PatrimonioCreate() {
                                     value={formData.description || ''}
                                     onChange={handleChange}
                                     rows={8}
-                                    placeholder="Déployez l'histoire captivante de ce lieu..."
+                                    placeholder={t("Déployez l'histoire captivante de ce lieu...")}
                                     className="w-full bg-white/5 border-2 border-white/5 rounded-[2rem] py-6 px-8 text-white focus:outline-none focus:border-[#FCD116]/20 transition-all resize-none leading-relaxed text-sm font-medium"
                                 />
                             </div>
@@ -184,8 +186,8 @@ export default function PatrimonioCreate() {
                     <Card className="bg-[#0a0f18] border-white/5 p-10 rounded-[3rem] shadow-3xl overflow-hidden group">
                         <div className="flex justify-between items-center mb-8">
                             <div className="space-y-1">
-                                <h3 className="text-2xl font-black text-white font-heading">Galerie Média</h3>
-                                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Gérez l&apos;immersion visuelle</p>
+                                <h3 className="text-2xl font-black text-white font-heading"><T>Galerie Média</T></h3>
+                                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest"><T>Gérez l&apos;immersion visuelle</T></p>
                             </div>
                             <Button
                                 onClick={() => setIsGalleryModalOpen(true)}
@@ -208,7 +210,7 @@ export default function PatrimonioCreate() {
                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                             <button
                                                 onClick={() => toggleGalleryImage(url)}
-                                                title="Supprimer l'image"
+                                                title={t("Supprimer l'image")}
                                                 className="p-2 bg-red-500 text-white rounded-lg hover:scale-110 transition-transform"
                                             >
                                                 <Trash2 size={16} />
@@ -222,8 +224,8 @@ export default function PatrimonioCreate() {
                                     className="col-span-full py-16 border-2 border-dashed border-white/5 rounded-[2rem] flex flex-col items-center justify-center cursor-pointer hover:bg-white/[0.02] hover:border-[#FCD116]/30 transition-all"
                                 >
                                     <Grid size={32} className="text-gray-800 mb-4" />
-                                    <p className="text-gray-600 font-black uppercase tracking-widest text-[10px]">La galerie est vide.</p>
-                                    <p className="text-gray-700 text-[8px] mt-2 uppercase">Cliquez pour synchroniser des médias</p>
+                                    <p className="text-gray-600 font-black uppercase tracking-widest text-[10px]"><T>La galerie est vide.</T></p>
+                                    <p className="text-gray-700 text-[8px] mt-2 uppercase"><T>Cliquez pour synchroniser des médias</T></p>
                                 </div>
                             )}
                         </div>
@@ -235,11 +237,11 @@ export default function PatrimonioCreate() {
                     <div className="sticky top-10 space-y-8">
                         {/* Real-time Card Preview */}
                         <div className="space-y-4">
-                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1">Rendu Final Temps Réel</span>
+                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1"><T>Rendu Final Temps Réel</T></span>
                             <div className="relative aspect-[3/4] rounded-[3rem] overflow-hidden shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] border-4 border-white/5 group">
                                 <Image
                                     src={formData.imagename ? (formData.imagename.startsWith('http') ? formData.imagename : `/assets/patrimoine/${formData.imagename}`) : '/images/placeholder.jpg'}
-                                    alt="Preview"
+                                    alt={t("Preview")}
                                     fill
                                     className="object-cover group-hover:scale-105 transition-transform duration-1000"
                                 />
@@ -256,7 +258,7 @@ export default function PatrimonioCreate() {
                         </div>
 
                         <Card className="bg-[#0a0f18] border-[#FCD116]/20 p-8 rounded-[2.5rem]">
-                            <h4 className="text-white font-black text-sm uppercase tracking-widest mb-4">Directives de Curateur</h4>
+                            <h4 className="text-white font-black text-sm uppercase tracking-widest mb-4"><T>Directives de Curateur</T></h4>
                             <ul className="space-y-4 mb-8">
                                 <li className="flex gap-3 text-xs text-gray-500">
                                     <Check size={14} className="text-[#008751] shrink-0" />
@@ -282,7 +284,7 @@ export default function PatrimonioCreate() {
                                 )}
                             >
                                 {isOptimizing ? <Loader2 size={16} className="animate-spin text-[#FCD116]" /> : <Sparkles size={16} className="text-[#FCD116]" />}
-                                <span className="text-white font-bold text-[10px] uppercase tracking-widest">Optimiser par IA</span>
+                                <span className="text-white font-bold text-[10px] uppercase tracking-widest"><T>Optimiser par IA</T></span>
                             </motion.button>
                         </Card>
                     </div>
@@ -308,12 +310,12 @@ export default function PatrimonioCreate() {
                         >
                             <div className="p-10 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                                 <div className="space-y-1">
-                                    <h2 className="text-3xl font-black text-white font-heading">Archives Média</h2>
-                                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.4em]">Sélectionnez les visuels pour cette archive</p>
+                                    <h2 className="text-3xl font-black text-white font-heading"><T>Archives Média</T></h2>
+                                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.4em]"><T>Sélectionnez les visuels pour cette archive</T></p>
                                 </div>
                                 <button
                                     onClick={() => setIsGalleryModalOpen(false)}
-                                    title="Fermer"
+                                    title={t("Fermer")}
                                     className="p-4 bg-white/5 rounded-2xl text-gray-500 hover:text-white transition-colors"
                                 >
                                     <X size={24} />
@@ -332,7 +334,7 @@ export default function PatrimonioCreate() {
                                                 isSelected ? "border-[#FCD116] scale-95 shadow-[0_0_30px_rgba(252,209,22,0.3)]" : "border-transparent group-hover:border-white/20"
                                             )}
                                         >
-                                            <Image src={img.url || img.image_url || ''} alt="Gallery" fill className="object-cover" />
+                                            <Image src={img.url || img.image_url || ''} alt={t("Gallery")} fill className="object-cover" />
                                             <div className={cn(
                                                 "absolute inset-0 transition-all duration-500",
                                                 isSelected ? "bg-[#FCD116]/20" : "bg-black/40 group-hover:bg-black/0"

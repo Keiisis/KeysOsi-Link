@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useList, useUpdate } from '@refinedev/core'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -32,6 +33,7 @@ const statusConfig: Record<string, { icon: typeof Clock, label: string, classes:
 }
 
 export default function AdminOrdersPage() {
+    const { t } = useTranslation();
     const queryResult = useList<OrderItem>({
         resource: 'orders',
         pagination: { pageSize: 100 },
@@ -75,10 +77,10 @@ export default function AdminOrdersPage() {
             <div className="space-y-2">
                 <div className="flex items-center gap-2 text-[#FCD116]">
                     <Receipt size={18} />
-                    <span className="text-[10px] font-bold uppercase tracking-[0.4em]">Gestion Commerciale</span>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.4em]"><T>Gestion Commerciale</T></span>
                 </div>
                 <h1 className="text-5xl font-black text-white font-heading tracking-tighter">
-                    COMMANDES <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#008751]">EN LIGNE</span>
+                    COMMANDES <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#008751]"><T>EN LIGNE</T></span>
                 </h1>
             </div>
 
@@ -102,7 +104,7 @@ export default function AdminOrdersPage() {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
                     <input
                         type="text"
-                        placeholder="Rechercher par client, produit, telephone..."
+                        placeholder={t("Rechercher par client, produit, telephone...")}
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
                         className="w-full bg-[#0a0f18] border border-white/5 rounded-2xl py-3.5 pl-12 pr-4 text-white focus:outline-none focus:border-[#FCD116]/30 text-sm"
@@ -134,13 +136,13 @@ export default function AdminOrdersPage() {
                     <div className="divide-y divide-white/5">
                         {/* Header */}
                         <div className="hidden md:grid grid-cols-12 gap-4 px-8 py-4 bg-white/[0.02] text-[9px] font-black text-gray-500 uppercase tracking-widest">
-                            <div className="col-span-2">Client</div>
-                            <div className="col-span-3">Produit</div>
-                            <div className="col-span-1">Qte</div>
-                            <div className="col-span-2">Montant</div>
-                            <div className="col-span-1">Methode</div>
-                            <div className="col-span-1">Statut</div>
-                            <div className="col-span-2">Date</div>
+                            <div className="col-span-2"><T>Client</T></div>
+                            <div className="col-span-3"><T>Produit</T></div>
+                            <div className="col-span-1"><T>Qte</T></div>
+                            <div className="col-span-2"><T>Montant</T></div>
+                            <div className="col-span-1"><T>Methode</T></div>
+                            <div className="col-span-1"><T>Statut</T></div>
+                            <div className="col-span-2"><T>Date</T></div>
                         </div>
 
                         <AnimatePresence mode="popLayout">

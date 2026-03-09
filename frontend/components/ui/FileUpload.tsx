@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import { Upload, X, Loader2, Image as ImageIcon, CheckCircle2 } from 'lucide-react'
@@ -16,6 +17,7 @@ interface FileUploadProps {
 }
 
 export default function FileUpload({ value, onChange, type, label, required, hint, className }: FileUploadProps) {
+    const { t } = useTranslation();
     const [uploading, setUploading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [drag, setDrag] = useState(false)
@@ -95,7 +97,7 @@ export default function FileUpload({ value, onChange, type, label, required, hin
                     <>
                         <Image
                             src={value}
-                            alt="Aperçu"
+                            alt={t("Aperçu")}
                             fill
                             className="object-cover"
                             unoptimized
@@ -104,7 +106,7 @@ export default function FileUpload({ value, onChange, type, label, required, hin
                         <div className="absolute inset-0 bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                             <button
                                 type="button"
-                                title="Supprimer"
+                                title={t("Supprimer")}
                                 onClick={(e) => { e.stopPropagation(); onChange('') }}
                                 className="w-8 h-8 flex items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg"
                             >
@@ -112,7 +114,7 @@ export default function FileUpload({ value, onChange, type, label, required, hin
                             </button>
                             <button
                                 type="button"
-                                title="Changer l'image"
+                                title={t("Changer l'image")}
                                 onClick={(e) => { e.stopPropagation(); inputRef.current?.click() }}
                                 className="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 backdrop-blur text-white hover:bg-white/40 transition-colors shadow-lg"
                             >
@@ -133,7 +135,7 @@ export default function FileUpload({ value, onChange, type, label, required, hin
                 {uploading && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/80 backdrop-blur-sm">
                         <Loader2 size={22} className="animate-spin text-[#008751]" />
-                        <span className="text-[11px] text-gray-500 font-semibold">Envoi en cours...</span>
+                        <span className="text-[11px] text-gray-500 font-semibold"><T>Envoi en cours...</T></span>
                     </div>
                 )}
 

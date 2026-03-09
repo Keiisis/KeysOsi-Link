@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect } from 'react'
 import {
     CurrencyCode, detectUserCurrency,
@@ -25,6 +26,7 @@ export function Price({
     noConvert = false,
 }: PriceProps) {
     const [displayCurrency, setDisplayCurrency] = useState<CurrencyCode>(currency)
+    const { t } = useTranslation();
     const [ready, setReady] = useState(noConvert)
 
     useEffect(() => {
@@ -55,11 +57,11 @@ export function Price({
                     value={displayCurrency}
                     onChange={e => setDisplayCurrency(e.target.value as CurrencyCode)}
                     className="bg-[#0a0f14] border border-white/10 rounded-lg px-2 py-1 text-[0.7em] text-gray-300 cursor-pointer ml-1 hover:border-[#FCD116]/30 focus:border-[#FCD116]/50 focus:outline-none transition-colors"
-                    aria-label="Devise"
+                    aria-label={t("Devise")}
                 >
-                    <option value="XOF">🇧🇯 FCFA</option>
-                    <option value="EUR">🇪🇺 EUR €</option>
-                    <option value="USD">🇺🇸 USD $</option>
+                    <option value="XOF"><T>🇧🇯 FCFA</T></option>
+                    <option value="EUR"><T>🇪🇺 EUR €</T></option>
+                    <option value="USD"><T>🇺🇸 USD $</T></option>
                 </select>
             )}
         </span>

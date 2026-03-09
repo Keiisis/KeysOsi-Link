@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins, Inter } from "next/font/google";
 import { LayoutShell } from "@/components/layout/LayoutShell";
+import { TranslationProvider } from "@/lib/translation";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -58,7 +59,9 @@ export default async function RootLayout({
         className={`${poppins.variable} ${inter.variable} font-sans bg-background text-foreground antialiased`}
         suppressHydrationWarning={true}
       >
-        <LayoutShell>{children}</LayoutShell>
+        <TranslationProvider>
+          <LayoutShell>{children}</LayoutShell>
+        </TranslationProvider>
       </body>
     </html>
   );

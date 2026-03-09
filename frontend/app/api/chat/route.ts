@@ -1,8 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { fetchWithGroqRotation } from '@/lib/groq'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+
+// ─── Language-aware error messages ───────────────────────────────────────────
+const CHAT_ERRORS: Record<string, { technical: string; notConfigured: string }> = {
+    fr: {
+        technical: "Je rencontre un souci technique. N'hésitez pas à nous appeler au +229 01 60 32 21 21 ou au +229 01 94 35 50 50.",
+        notConfigured: "L'assistant n'est pas encore configuré. Contactez-nous directement au +229 01 60 32 21 21 ou au +229 01 94 35 50 50.",
+    },
+    en: {
+        technical: "I'm experiencing a technical issue. Feel free to call us at +229 01 60 32 21 21 or +229 01 94 35 50 50.",
+        notConfigured: "The assistant is not yet configured. Contact us directly at +229 01 60 32 21 21 or +229 01 94 35 50 50.",
+    },
+    es: {
+        technical: "Estoy experimentando un problema técnico. Llámenos al +229 01 60 32 21 21 o +229 01 94 35 50 50.",
+        notConfigured: "El asistente no está configurado aún. Contáctenos directamente al +229 01 60 32 21 21 o +229 01 94 35 50 50.",
+    },
+    pt: {
+        technical: "Estou com um problema técnico. Ligue-nos no +229 01 60 32 21 21 ou +229 01 94 35 50 50.",
+        notConfigured: "O assistente ainda não está configurado. Contacte-nos no +229 01 60 32 21 21 ou +229 01 94 35 50 50.",
+    },
+    cr: {
+        technical: "Mwen jwenn yon pwoblèm teknik. Pa ezite rele nou nan +229 01 60 32 21 21 oubyen +229 01 94 35 50 50.",
+        notConfigured: "Asistan an poko konfigire. Kontakte nou dirèkteman nan +229 01 60 32 21 21 oubyen +229 01 94 35 50 50.",
+    },
+    ht: {
+        technical: "Mwen kontre yon pwoblèm teknik. Pa ezite rele nou nan +229 01 60 32 21 21 oswa +229 01 94 35 50 50.",
+        notConfigured: "Asistan an poko konfigire. Kontakte nou dirèkteman nan +229 01 60 32 21 21 oswa +229 01 94 35 50 50.",
+    },
+}
+const getChatError = (lang: string, type: 'technical' | 'notConfigured') =>
+    (CHAT_ERRORS[lang] ?? CHAT_ERRORS.fr)[type]
 
 const PROVIDER_ENDPOINTS: Record<string, string> = {
     groq: 'https://api.groq.com/openai/v1/chat/completions',
@@ -96,19 +127,26 @@ const callGroqOrOpenAI = async (
     temperature: number,
     maxTokens: number
 ) => {
-    const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            model,
-            messages,
-            temperature,
-            max_tokens: maxTokens,
-        }),
-    })
+    const payload = {
+        model,
+        messages,
+        temperature,
+        max_tokens: maxTokens,
+    }
+
+    let response: Response
+    if (endpoint.includes('groq')) {
+        response = await fetchWithGroqRotation(payload, apiKey)
+    } else {
+        response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        })
+    }
 
     if (!response.ok) {
         const errorText = await response.text()
@@ -194,8 +232,23 @@ const callGemini = async (
 }
 
 export async function POST(request: NextRequest) {
+    let lang = 'fr' // hoisted so catch block can use it for language-aware error messages
     try {
-        const { messages, context = 'frontend' } = await request.json()
+        const body = await request.json()
+        const { messages, context = 'frontend' } = body
+        lang = typeof body.lang === 'string' ? body.lang : 'fr'
+
+        const langMap: Record<string, string> = {
+            fr: 'French',
+            en: 'English',
+            es: 'Spanish',
+            pt: 'Portuguese',
+            cr: 'Guadeloupean Creole (Antillean Creole)',
+            ht: 'Haitian Creole'
+        }
+
+        const targetLangName = langMap[lang] || 'French'
+        const languageInstruction = `\n\nCRITICAL: The user is currently browsing the site in ${targetLangName}. You MUST absolutely respond in ${targetLangName}. Do NOT respond in French if the current language is not French. Use a natural and fluent tone for ${targetLangName}.`
 
         // Get AI config from DB
         const config = await getAiConfig()
@@ -205,13 +258,13 @@ export async function POST(request: NextRequest) {
             const envKey = process.env.GROQ_API_KEY
             if (!envKey) {
                 return NextResponse.json(
-                    { reply: 'L\'assistant n\'est pas configuré. Contactez-nous au +229 01 23 45 67.' },
+                    { reply: getChatError(lang, 'notConfigured') },
                     { status: 500 }
                 )
             }
 
             // Use env fallback with Groq
-            const fallbackPrompt = `Tu es l'Assistant Virtuel de Retour Gagnant Bénin.${CONTEXT_PROMPTS[context] || CONTEXT_PROMPTS.frontend}`
+            const fallbackPrompt = `Tu es l'Assistant Virtuel de Retour Gagnant Bénin.${languageInstruction}${CONTEXT_PROMPTS[context] || CONTEXT_PROMPTS.frontend}`
             const reply = await callGroqOrOpenAI(
                 PROVIDER_ENDPOINTS.groq,
                 envKey,
@@ -248,6 +301,7 @@ INSTRUCTION STRICTE : Utilise ces données json pour répondre directement aux q
         // Build context-aware system prompt
         const contextPrompt = CONTEXT_PROMPTS[context] || CONTEXT_PROMPTS.frontend
         const fullSystemPrompt = `${config.systemPrompt}
+${languageInstruction}
 
 === PERSONNALITÉ ===
 ${config.personality}
@@ -304,7 +358,7 @@ ${dynamicContext}`
         const errMsg = error instanceof Error ? error.message : 'Unknown error'
         console.error('Chat API error:', errMsg)
         return NextResponse.json(
-            { reply: 'Je rencontre un souci technique. N\'hésite pas à nous appeler au +229 01 23 45 67.' },
+            { reply: getChatError(lang, 'technical') },
             { status: 500 }
         )
     }

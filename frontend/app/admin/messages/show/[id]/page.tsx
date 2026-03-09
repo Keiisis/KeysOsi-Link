@@ -7,7 +7,8 @@ import {
     Trash2, User, MoreVertical, ShieldCheck,
     MessageSquare, Reply, ExternalLink, Globe,
     Download, Printer, AlertCircle, CheckCircle2,
-    Inbox, HardDrive, Share2, Sparkles, Loader2, Send
+    Inbox, HardDrive, Share2, Sparkles, Loader2, Send,
+    Languages
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
@@ -59,6 +60,9 @@ export default function MessageShow() {
     const [liveMessages, setLiveMessages] = useState<ChatMessage[]>([]);
     const [chatInput, setChatInput] = useState("");
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const [translations, setTranslations] = useState<Record<string, { translated?: string, sourceLanguage?: string, translating?: boolean }>>({});
+    const [detectedClientLanguage, setDetectedClientLanguage] = useState<string>("Anglais"); // Defaults to English for outgoing if unknown
+    const [translatingOwn, setTranslatingOwn] = useState(false);
 
     // Live chat effect
     useEffect(() => {
@@ -94,6 +98,56 @@ export default function MessageShow() {
 
         return () => { supabase.removeChannel(channel); };
     }, [record, id]);
+
+    // Trigger Auto-translate for client messages
+    useEffect(() => {
+        liveMessages.forEach(msg => {
+            if (msg.role === 'client' && !translations[msg.id]) {
+                setTranslations(prev => {
+                    if (prev[msg.id]) return prev;
+                    return { ...prev, [msg.id]: { translating: true } };
+                });
+
+                fetch('/api/ai/translate-message', {
+                    method: 'POST',
+                    body: JSON.stringify({ text: msg.content, mode: 'detect_and_translate' })
+                })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.translated) {
+                            setTranslations(prev => ({
+                                ...prev,
+                                [msg.id]: { translated: data.translated, sourceLanguage: data.sourceLanguage }
+                            }));
+                            const langLow = data.sourceLanguage?.toLowerCase() || '';
+                            if (!langLow.includes('franç') && !langLow.includes('french') && data.sourceLanguage !== "Inconnue") {
+                                setDetectedClientLanguage(data.sourceLanguage);
+                            }
+                        }
+                    })
+                    .catch(console.error);
+            }
+        });
+    }, [liveMessages, translations]);
+
+    const handleTranslateOutbox = async () => {
+        if (!chatInput.trim()) return;
+        setTranslatingOwn(true);
+        try {
+            const res = await fetch('/api/ai/translate-message', {
+                method: 'POST',
+                body: JSON.stringify({ text: chatInput, mode: 'translate_to', targetLanguage: detectedClientLanguage })
+            });
+            const data = await res.json();
+            if (data.translated) {
+                setChatInput(data.translated);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setTranslatingOwn(false);
+        }
+    };
 
     // Send admin msg
     const sendAdminMessage = async (e: React.FormEvent) => {
@@ -244,11 +298,22 @@ export default function MessageShow() {
                                                     <User size={14} className="text-gray-400" />
                                                 </div>
                                             )}
-                                            <div className={`max-w-[80%] px-5 py-4 rounded-2xl text-[14px] leading-relaxed shadow-xl ${msg.role === 'agent'
-                                                ? 'bg-[#008751] text-white rounded-tr-sm border border-[#008751]/30'
-                                                : 'bg-white/[0.03] text-gray-300 rounded-tl-sm border border-white/10'
-                                                }`}>
-                                                {msg.content}
+                                            <div className="flex flex-col gap-1 max-w-[80%]">
+                                                <div className={`px-5 py-4 rounded-2xl text-[14px] leading-relaxed shadow-xl ${msg.role === 'agent'
+                                                    ? 'bg-[#008751] text-white rounded-tr-sm border border-[#008751]/30'
+                                                    : 'bg-white/[0.03] text-gray-300 rounded-tl-sm border border-white/10'
+                                                    }`}>
+                                                    {msg.content}
+                                                </div>
+                                                {msg.role === 'client' && translations[msg.id]?.translated && translations[msg.id]?.translated !== msg.content && (
+                                                    <div className="text-[11px] text-gray-400 bg-white/5 border border-white/5 p-3 rounded-xl flex flex-col gap-1 mt-1 font-mono">
+                                                        <span className="text-[#FCD116] font-bold"><Languages size={12} className="inline mr-1" /> Traduit de: {translations[msg.id]?.sourceLanguage}</span>
+                                                        <span>{translations[msg.id]?.translated}</span>
+                                                    </div>
+                                                )}
+                                                {msg.role === 'client' && translations[msg.id]?.translating && !translations[msg.id]?.translated && (
+                                                    <span className="text-[10px] text-gray-500 animate-pulse ml-2"><Languages size={10} className="inline mr-1" /> Traduction auto...</span>
+                                                )}
                                             </div>
                                             {msg.role === 'agent' && (
                                                 <div className="w-8 h-8 rounded-full bg-[#FCD116]/10 border border-[#FCD116]/20 flex items-center justify-center shrink-0 mt-1 shadow-[0_0_15px_rgba(252,209,22,0.15)]">
@@ -262,7 +327,7 @@ export default function MessageShow() {
                             </div>
 
                             {/* Chat Input */}
-                            <div className="p-6 bg-[#0a0f18] border-t border-white/5 z-10">
+                            <div className="p-6 bg-[#0a0f18] border-t border-white/5 z-10 space-y-3">
                                 <form onSubmit={sendAdminMessage} className="flex gap-3">
                                     <input
                                         type="text"
@@ -279,8 +344,24 @@ export default function MessageShow() {
                                         <Send size={20} className="text-white ml-0.5" />
                                     </Button>
                                 </form>
-                            </div>
-                        </Card>
+                                <div className="flex items-center justify-between px-2">
+                                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                                        <Languages size={14} className="text-[#FCD116]" />
+                                        Langue détectée (client) : <span className="font-bold text-gray-300">{detectedClientLanguage}</span>
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleTranslateOutbox}
+                                        disabled={!chatInput.trim() || translatingOwn}
+                                        className="text-xs text-[#FCD116] hover:text-[#E5BD14] hover:bg-[#FCD116]/10"
+                                    >
+                                        {translatingOwn ? <Loader2 size={14} className="animate-spin mr-1" /> : <Languages size={14} className="mr-1" />}
+                                        Traduire mon texte avant envoi
+                                    </Button>
+                                </div>
+                            </div>                </Card>
                     ) : (
                         <>
                             <Card className="bg-[#0a0f18] border-white/5 rounded-[3rem] shadow-3xl overflow-hidden relative">

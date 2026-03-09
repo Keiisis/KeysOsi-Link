@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowRight, ExternalLink } from 'lucide-react'
+import { ArrowRight, ExternalLink } from 'lucide-react'; import { useTranslation, T } from '@/lib/translation'
 
 interface Sponsor {
     id: string
@@ -116,6 +116,7 @@ function MarqueeRow({
 }
 
 export default function PartnersSection() {
+    const { t } = useTranslation();
     const [sponsors, setSponsors] = useState<Sponsor[]>([])
     const [loaded, setLoaded] = useState(false)
 
@@ -129,10 +130,10 @@ export default function PartnersSection() {
     // Fallback statique pendant le chargement et si la table n'est pas encore créée
     const fallback: Sponsor[] = [
         { id: '1', name: 'Gouvernement du Bénin', logo_url: null, website_url: null, sort_order: 0 },
-        { id: '2', name: 'APIEX',                 logo_url: null, website_url: null, sort_order: 1 },
-        { id: '3', name: 'Chambre de Commerce',   logo_url: null, website_url: null, sort_order: 2 },
-        { id: '4', name: 'Ambassade de France',   logo_url: null, website_url: null, sort_order: 3 },
-        { id: '5', name: 'Diaspora Connect',      logo_url: null, website_url: null, sort_order: 4 },
+        { id: '2', name: 'APIEX', logo_url: null, website_url: null, sort_order: 1 },
+        { id: '3', name: 'Chambre de Commerce', logo_url: null, website_url: null, sort_order: 2 },
+        { id: '4', name: 'Ambassade de France', logo_url: null, website_url: null, sort_order: 3 },
+        { id: '5', name: 'Diaspora Connect', logo_url: null, website_url: null, sort_order: 4 },
     ]
 
     const items = loaded && sponsors.length > 0 ? sponsors : fallback
@@ -168,9 +169,9 @@ export default function PartnersSection() {
                 </div>
 
                 <p className="text-[11px] font-black tracking-[0.35em] text-gray-400 uppercase">
-                    Ils nous font confiance{' '}
-                    <span className="text-[#008751]">&amp;</span>{' '}
-                    nous soutiennent
+                    <T>Ils nous font confiance</T>{' '}
+                    <span className="text-[#008751]"><T>&amp;</T></span>{' '}
+                    <T>nous soutiennent</T>
                 </p>
             </div>
 
@@ -199,7 +200,7 @@ export default function PartnersSection() {
                         hover:shadow-[0_8px_28px_rgba(0,135,81,0.25)]
                         transition-all duration-300"
                 >
-                    Découvrir nos partenaires privilégiés
+                    <T>Découvrir nos partenaires privilégiés</T>
                     <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
                     <ExternalLink size={11} className="opacity-40 group-hover:opacity-80" />
                 </Link>

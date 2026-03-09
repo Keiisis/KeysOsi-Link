@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { sendEmail, EMAIL_TEMPLATES, getEmailConfig } from '@/lib/email';
+import { sendEmail, getEmailTemplates, getEmailConfig } from '@/lib/email';
+import { fetchWithGroqRotation } from '@/lib/groq';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -13,25 +14,21 @@ async function generateAutoReply(clientName: string, subject: string, message: s
         const groqKey = process.env.GROQ_API_KEY;
         if (!groqKey) return 'Votre demande est entre de bonnes mains. Notre équipe d\'experts travaille dessus.';
 
-        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile',
-                messages: [
-                    {
-                        role: 'system',
-                        content: `Tu es l'assistant de Retour Gagnant Bénin. Génère un court message personnalisé (2-3 phrases max) pour accuser réception d'un message client. Sois chaleureux, rassurant et professionnel. Ne donne AUCUN prix. Mentionne que l'équipe va le contacter rapidement. NE PAS utiliser de markdown.`
-                    },
-                    {
-                        role: 'user',
-                        content: `Le client "${clientName}" a envoyé un message avec le sujet "${subject}": "${message}". Génère un accusé de réception personnalisé.`
-                    }
-                ],
-                temperature: 0.7,
-                max_tokens: 150,
-            }),
-        });
+        const res = await fetchWithGroqRotation({
+            model: 'llama-3.1-8b-instant',
+            messages: [
+                {
+                    role: 'system',
+                    content: `Tu es l'assistant de Retour Gagnant Bénin. Génère un court message personnalisé (2-3 phrases max) pour accuser réception d'un message client. Sois chaleureux, rassurant et professionnel. Ne donne AUCUN prix. Mentionne que l'équipe va le contacter rapidement. NE PAS utiliser de markdown.`
+                },
+                {
+                    role: 'user',
+                    content: `Le client "${clientName}" a envoyé un message avec le sujet "${subject}": "${message}". Génère un accusé de réception personnalisé.`
+                }
+            ],
+            temperature: 0.7,
+            max_tokens: 150,
+        }, groqKey);
 
         const data = await res.json();
         return data.choices?.[0]?.message?.content || 'Votre demande est entre de bonnes mains.';
@@ -83,7 +80,7 @@ export async function POST(req: NextRequest) {
                 await sendEmail({
                     to: email,
                     subject: `Retour Gagnant — Nous avons reçu votre message`,
-                    html: EMAIL_TEMPLATES.autoReply(clientName, aiReply),
+                    html: (await getEmailTemplates('fr')).autoReply(clientName, aiReply),
                     context: 'auto_reply',
                     relatedId: msgId,
                 });
@@ -94,7 +91,7 @@ export async function POST(req: NextRequest) {
                     await sendEmail({
                         to: config.adminEmail,
                         subject: `🔔 Nouveau Contact — ${clientName} (${sujet || 'Contact'})`,
-                        html: EMAIL_TEMPLATES.newLeadNotification(clientName, email, 0, sujet || 'Contact', 'Formulaire de Contact'),
+                        html: (await getEmailTemplates('fr')).newLeadNotification(clientName, email, 0, sujet || 'Contact', 'Formulaire de Contact'),
                         context: 'admin_notification',
                         relatedId: msgId,
                     });
@@ -126,7 +123,7 @@ export async function POST(req: NextRequest) {
         })
 
         return NextResponse.json({ success: true, message: 'Message envoyé avec succès !' });
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { error: 'Erreur lors de l\'envoi du message.' },
             { status: 500 }

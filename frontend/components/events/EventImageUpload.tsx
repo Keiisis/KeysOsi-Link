@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import { Upload, X, ImageIcon, Loader2, Link as LinkIcon } from 'lucide-react'
+import { useTranslation, T } from '@/lib/translation'
 
 interface EventImageUploadProps {
     label: string
@@ -24,6 +25,7 @@ export default function EventImageUpload({
     aspectRatio = 'video',
     className = '',
 }: EventImageUploadProps) {
+    const { t } = useTranslation();
     const [uploading, setUploading] = useState(false)
     const [error, setError] = useState('')
     const [dragOver, setDragOver] = useState(false)
@@ -39,10 +41,10 @@ export default function EventImageUpload({
         try {
             const res = await fetch('/api/upload/event', { method: 'POST', body: fd })
             const data = await res.json()
-            if (!res.ok) throw new Error(data.error || 'Échec upload')
+            if (!res.ok) throw new Error(data.error || t('Échec upload'))
             onChange(data.url)
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Erreur upload')
+            setError(e instanceof Error ? e.message : t('Erreur upload'))
         } finally {
             setUploading(false)
         }
@@ -50,8 +52,8 @@ export default function EventImageUpload({
 
     const handleFile = useCallback((file: File | null | undefined) => {
         if (!file) return
-        if (!file.type.startsWith('image/')) { setError('Fichier image requis (JPG, PNG, WebP)'); return }
-        if (file.size > 8 * 1024 * 1024) { setError('Image trop lourde (max 8 MB)'); return }
+        if (!file.type.startsWith('image/')) { setError(t('Fichier image requis (JPG, PNG, WebP)')); return }
+        if (file.size > 8 * 1024 * 1024) { setError(t('Image trop lourde (max 8 MB)')); return }
         upload(file)
     }, [upload])
 
@@ -73,7 +75,7 @@ export default function EventImageUpload({
                     <button type="button" onClick={() => setShowUrl(v => !v)}
                         className="text-[10px] font-bold text-gray-400 hover:text-gray-600 flex items-center gap-1 cursor-pointer transition-colors">
                         <LinkIcon size={10} />
-                        {showUrl ? 'Masquer URL' : 'Coller une URL'}
+                        {showUrl ? t('Masquer URL') : t('Coller une URL')}
                     </button>
                 )}
             </div>
@@ -84,7 +86,7 @@ export default function EventImageUpload({
                     type="url"
                     value={value}
                     onChange={e => onChange(e.target.value)}
-                    placeholder="https://..."
+                    placeholder={t('https://...')}
                     className="w-full px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white text-sm focus:outline-none focus:border-[#008751]/50 transition-all"
                 />
             )}
@@ -108,7 +110,7 @@ export default function EventImageUpload({
                     /* ── Preview ── */
                     <div className={`relative w-full ${aspectClass}`} style={{ minHeight: aspectRatio === 'auto' ? '120px' : undefined }}>
                         <Image
-                            src={value} alt="Aperçu"
+                            src={value} alt={t("Aperçu")}
                             fill className="object-cover"
                             unoptimized
                         />
@@ -117,8 +119,7 @@ export default function EventImageUpload({
                             <button type="button"
                                 onClick={e => { e.stopPropagation(); inputRef.current?.click() }}
                                 className="px-3 py-2 rounded-xl bg-white text-[#1a2332] text-[11px] font-black flex items-center gap-1.5 shadow-md hover:bg-gray-100 cursor-pointer transition-all">
-                                <Upload size={12} /> Remplacer
-                            </button>
+                                <Upload size={12} /> <T>Remplacer</T> </button>
                             <button type="button"
                                 onClick={e => { e.stopPropagation(); onChange('') }}
                                 className="w-8 h-8 rounded-xl bg-red-500 text-white flex items-center justify-center shadow-md hover:bg-red-600 cursor-pointer transition-all">
@@ -130,7 +131,7 @@ export default function EventImageUpload({
                     /* ── Loading ── */
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
                         <div className="w-12 h-12 rounded-full border-2 border-[#008751] border-t-transparent animate-spin" />
-                        <span className="text-xs font-bold text-gray-400">Envoi en cours...</span>
+                        <span className="text-xs font-bold text-gray-400"><T>Envoi en cours...</T></span>
                     </div>
                 ) : (
                     /* ── Drop zone ── */
@@ -141,10 +142,10 @@ export default function EventImageUpload({
                         </div>
                         <div>
                             <p className="text-sm font-bold text-gray-300">
-                                Glisser-déposer ou{' '}
-                                <span className="text-[#008751] underline underline-offset-2">parcourir</span>
+                                <T>Glisser-déposer ou</T>{' '}
+                                <span className="text-[#008751] underline underline-offset-2"><T>parcourir</T></span>
                             </p>
-                            <p className="text-[10px] text-gray-600 mt-1">JPG, PNG, WebP — max 8 MB</p>
+                            <p className="text-[10px] text-gray-600 mt-1"><T>JPG, PNG, WebP — max 8 MB</T></p>
                         </div>
                     </div>
                 )}
@@ -156,7 +157,7 @@ export default function EventImageUpload({
                     onClick={() => inputRef.current?.click()}
                     className="w-full py-2.5 rounded-xl border border-white/[0.08] bg-white/[0.03] text-xs font-bold text-gray-400 hover:text-white hover:border-[#008751]/40 hover:bg-[#008751]/5 transition-all flex items-center justify-center gap-2 cursor-pointer">
                     {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
-                    {uploading ? 'Envoi...' : 'Choisir depuis l\'appareil'}
+                    {uploading ? t('Envoi...') : t('Choisir depuis l\'appareil')}
                 </button>
             )}
 

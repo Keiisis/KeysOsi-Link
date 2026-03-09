@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation, T } from '@/lib/translation';
 import { useForm, useNavigation, useList } from "@refinedev/core";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Save, MapPin, Image as ImageIcon, Sparkles, Loader2, Plus, Trash2, Grid, Check, X } from "lucide-react";
@@ -12,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { Patrimoine } from "../../page";
 
 export default function PatrimonioEdit() {
+    const { t } = useTranslation();
     const { id } = useParams();
     const { list } = useNavigation();
 
@@ -101,7 +103,7 @@ export default function PatrimonioEdit() {
         return (
             <div className="flex flex-col items-center justify-center py-32 space-y-4">
                 <Loader2 className="animate-spin text-[#FCD116]" size={40} />
-                <p className="text-gray-500 font-mono text-sm">Synchronisation avec l&apos;archive...</p>
+                <p className="text-gray-500 font-mono text-sm"><T>Synchronisation avec l&apos;archive...</T></p>
             </div>
         );
     }
@@ -118,9 +120,9 @@ export default function PatrimonioEdit() {
                         <ArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
                     </button>
                     <div>
-                        <h1 className="text-3xl font-black font-heading text-white tracking-tight">Configuration de l&apos;Archive</h1>
+                        <h1 className="text-3xl font-black font-heading text-white tracking-tight"><T>Configuration de l&apos;Archive</T></h1>
                         <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px] text-gray-500 font-black uppercase tracking-[0.3em]">Node ID:</span>
+                            <span className="text-[10px] text-gray-500 font-black uppercase tracking-[0.3em]"><T>Node ID:</T></span>
                             <span className="text-[#FCD116] font-mono text-xs">{id}</span>
                         </div>
                     </div>
@@ -152,7 +154,7 @@ export default function PatrimonioEdit() {
                                     name="title"
                                     value={formData.title || ''}
                                     onChange={handleChange}
-                                    placeholder="Ex: Palais Royaux d'Abomey"
+                                    placeholder={t("Ex: Palais Royaux d'Abomey")}
                                     className="w-full bg-white/5 border-2 border-white/5 rounded-[1.5rem] py-5 px-8 text-white focus:outline-none focus:border-[#FCD116]/30 transition-all text-2xl font-black font-heading placeholder:text-gray-700"
                                 />
                             </div>
@@ -166,7 +168,7 @@ export default function PatrimonioEdit() {
                                         name="location"
                                         value={formData.location || ''}
                                         onChange={handleChange}
-                                        placeholder="Ex: Abomey, Sud Bénin"
+                                        placeholder={t("Ex: Abomey, Sud Bénin")}
                                         className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white text-sm font-bold focus:outline-none focus:border-[#008751]/40 transition-all"
                                     />
                                 </div>
@@ -193,7 +195,7 @@ export default function PatrimonioEdit() {
                                     value={formData.description || ''}
                                     onChange={handleChange}
                                     rows={8}
-                                    placeholder="Déployez l'histoire captivante de ce lieu..."
+                                    placeholder={t("Déployez l'histoire captivante de ce lieu...")}
                                     className="w-full bg-white/5 border-2 border-white/5 rounded-[2rem] py-6 px-8 text-white focus:outline-none focus:border-[#FCD116]/20 transition-all resize-none leading-relaxed text-sm font-medium"
                                 />
                             </div>
@@ -206,8 +208,8 @@ export default function PatrimonioEdit() {
                     <Card className="bg-[#0a0f18] border-white/5 p-10 rounded-[3rem] shadow-3xl overflow-hidden group">
                         <div className="flex justify-between items-center mb-8">
                             <div className="space-y-1">
-                                <h3 className="text-2xl font-black text-white font-heading">Galerie Média</h3>
-                                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Gérez l&apos;immersion visuelle</p>
+                                <h3 className="text-2xl font-black text-white font-heading"><T>Galerie Média</T></h3>
+                                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest"><T>Gérez l&apos;immersion visuelle</T></p>
                             </div>
                             <Button
                                 onClick={() => setIsGalleryModalOpen(true)}
@@ -243,8 +245,8 @@ export default function PatrimonioEdit() {
                                     className="col-span-full py-16 border-2 border-dashed border-white/5 rounded-[2rem] flex flex-col items-center justify-center cursor-pointer hover:bg-white/[0.02] hover:border-[#FCD116]/30 transition-all"
                                 >
                                     <Grid size={32} className="text-gray-800 mb-4" />
-                                    <p className="text-gray-600 font-black uppercase tracking-widest text-[10px]">La galerie est vide.</p>
-                                    <p className="text-gray-700 text-[8px] mt-2 uppercase">Cliquez pour synchroniser des médias</p>
+                                    <p className="text-gray-600 font-black uppercase tracking-widest text-[10px]"><T>La galerie est vide.</T></p>
+                                    <p className="text-gray-700 text-[8px] mt-2 uppercase"><T>Cliquez pour synchroniser des médias</T></p>
                                 </div>
                             )}
                         </div>
@@ -259,16 +261,16 @@ export default function PatrimonioEdit() {
                             <div className="space-y-6">
                                 <div className="flex items-center gap-3">
                                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_#22c55e]" />
-                                    <span className="text-[10px] font-black text-white uppercase tracking-[0.3em]">Live sur le Portail</span>
+                                    <span className="text-[10px] font-black text-white uppercase tracking-[0.3em]"><T>Live sur le Portail</T></span>
                                 </div>
 
                                 <div className="space-y-4 pt-4 border-t border-white/5">
                                     <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5">
-                                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Visibilité</span>
-                                        <span className="text-[10px] font-black text-[#FCD116] uppercase">Max Immersion</span>
+                                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest"><T>Visibilité</T></span>
+                                        <span className="text-[10px] font-black text-[#FCD116] uppercase"><T>Max Immersion</T></span>
                                     </div>
                                     <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5">
-                                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Médias Liés</span>
+                                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest"><T>Médias Liés</T></span>
                                         <span className="text-[10px] font-black text-white">{formData.gallery?.length || 0} Photos</span>
                                     </div>
                                 </div>
@@ -277,11 +279,11 @@ export default function PatrimonioEdit() {
 
                         {/* Real-time Card Preview */}
                         <div className="space-y-4">
-                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1">Rendu Final Temps Réel</span>
+                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1"><T>Rendu Final Temps Réel</T></span>
                             <div className="relative aspect-[3/4] rounded-[3rem] overflow-hidden shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] border-4 border-white/5 group">
                                 <Image
                                     src={formData.imagename ? (formData.imagename.startsWith('http') ? formData.imagename : `/assets/patrimoine/${formData.imagename}`) : '/images/placeholder.jpg'}
-                                    alt="Preview"
+                                    alt={t("Preview")}
                                     fill
                                     className="object-cover group-hover:scale-105 transition-transform duration-1000"
                                 />
@@ -311,8 +313,8 @@ export default function PatrimonioEdit() {
                                 {isOptimizing ? <Loader2 size={20} className="animate-spin" /> : <Sparkles size={20} />}
                             </div>
                             <div className="text-left">
-                                <h4 className="text-white font-bold text-xs">Optimisation Narrative IA</h4>
-                                <p className="text-[9px] text-gray-500 font-medium lowercase">Llama 3 • SEO & Storytelling</p>
+                                <h4 className="text-white font-bold text-xs"><T>Optimisation Narrative IA</T></h4>
+                                <p className="text-[9px] text-gray-500 font-medium lowercase"><T>Llama 3 • SEO & Storytelling</T></p>
                             </div>
                         </motion.button>
                     </div>
@@ -340,8 +342,8 @@ export default function PatrimonioEdit() {
                         >
                             <div className="p-10 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                                 <div className="space-y-1">
-                                    <h2 className="text-3xl font-black text-white font-heading">Archives Média</h2>
-                                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.4em]">Sélectionnez les visuels pour cette archive</p>
+                                    <h2 className="text-3xl font-black text-white font-heading"><T>Archives Média</T></h2>
+                                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.4em]"><T>Sélectionnez les visuels pour cette archive</T></p>
                                 </div>
                                 <button
                                     onClick={() => setIsGalleryModalOpen(false)}
@@ -366,7 +368,7 @@ export default function PatrimonioEdit() {
                                                 isSelected ? "border-[#FCD116] scale-95 shadow-[0_0_30px_rgba(252,209,22,0.3)]" : "border-transparent group-hover:border-white/20"
                                             )}
                                         >
-                                            <Image src={imageSource || ''} alt="Gallery" fill className="object-cover" />
+                                            <Image src={imageSource || ''} alt={t("Gallery")} fill className="object-cover" />
                                             <div className={cn(
                                                 "absolute inset-0 transition-all duration-500",
                                                 isSelected ? "bg-[#FCD116]/20" : "bg-black/40 group-hover:bg-black/0"

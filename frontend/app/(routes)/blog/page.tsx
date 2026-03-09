@@ -6,9 +6,10 @@ import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
-    BookOpen, Search, Clock, ArrowRight, Eye, Tag,
+    BookOpen, Search, Clock, ArrowRight, Eye,
     TrendingUp, Building2, Globe2, Briefcase, Landmark
 } from 'lucide-react'
+import { useTranslation, T } from '@/lib/translation'
 
 interface BlogPost {
     id: string
@@ -32,6 +33,7 @@ const CATEGORIES = [
 ]
 
 export default function BlogPage() {
+    const { t } = useTranslation()
     const [posts, setPosts] = useState<BlogPost[]>([])
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
@@ -66,13 +68,13 @@ export default function BlogPage() {
                 <div className="max-w-6xl mx-auto relative z-10 text-center">
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                         <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.4em] flex items-center justify-center gap-2 mb-4">
-                            <BookOpen size={14} /> Centre de Ressources
+                            <BookOpen size={14} /> <T>Centre de Ressources</T>
                         </span>
                         <h1 className="text-4xl md:text-5xl font-black text-white mb-4">
-                            Le <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-yellow-400">Blog</span>
+                            <T>Le</T> <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-yellow-400"><T>Blog</T></span>
                         </h1>
                         <p className="text-gray-400 max-w-xl mx-auto text-sm md:text-base">
-                            Guides, conseils et actualités pour réussir votre retour au Bénin
+                            <T>Guides, conseils et actualités pour réussir votre retour au Bénin</T>
                         </p>
                     </motion.div>
 
@@ -83,7 +85,7 @@ export default function BlogPage() {
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Rechercher un article..."
+                            placeholder={t("Rechercher un article...")}
                             className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50 text-sm"
                         />
                     </div>
@@ -99,7 +101,7 @@ export default function BlogPage() {
                                     : 'bg-white/5 text-gray-500 border border-white/5 hover:text-white'
                                     }`}
                             >
-                                <cat.icon size={12} /> {cat.label}
+                                <cat.icon size={12} /> {t(cat.label)}
                             </button>
                         ))}
                     </div>
@@ -115,7 +117,7 @@ export default function BlogPage() {
                 ) : filtered.length === 0 ? (
                     <div className="text-center py-20 text-gray-500">
                         <BookOpen className="mx-auto mb-3 text-gray-700" size={40} />
-                        <p className="text-sm">Aucun article trouvé</p>
+                        <p className="text-sm"><T>Aucun article trouvé</T></p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -144,20 +146,20 @@ export default function BlogPage() {
                                             )}
                                             <div className="absolute top-3 left-3">
                                                 <span className="text-[10px] font-bold uppercase bg-black/60 backdrop-blur-md text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20">
-                                                    {post.category}
+                                                    {t(post.category)}
                                                 </span>
                                             </div>
                                         </div>
                                         {/* Content */}
                                         <div className="p-5">
-                                            <h2 className="text-base font-bold text-white group-hover:text-emerald-400 transition-colors line-clamp-2 mb-2">{post.title}</h2>
-                                            <p className="text-xs text-gray-500 line-clamp-3 mb-4">{post.excerpt}</p>
+                                            <h2 className="text-base font-bold text-white group-hover:text-emerald-400 transition-colors line-clamp-2 mb-2">{t(post.title)}</h2>
+                                            <p className="text-xs text-gray-500 line-clamp-3 mb-4">{t(post.excerpt)}</p>
                                             <div className="flex items-center justify-between text-[10px] text-gray-600">
                                                 <span className="flex items-center gap-1"><Clock size={10} /> {new Date(post.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                                                <span className="flex items-center gap-1"><Eye size={10} /> {post.views} vues</span>
+                                                <span className="flex items-center gap-1"><Eye size={10} /> {post.views} {t("vues")}</span>
                                             </div>
                                             <div className="mt-4 flex items-center gap-1 text-xs font-bold text-emerald-400 group-hover:gap-2 transition-all">
-                                                Lire l&apos;article <ArrowRight size={12} />
+                                                <T>Lire l&apos;article</T> <ArrowRight size={12} />
                                             </div>
                                         </div>
                                     </div>

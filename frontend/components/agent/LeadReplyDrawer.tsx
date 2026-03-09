@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -25,6 +26,7 @@ const scoreStyle = (score: number) => {
 }
 
 export default function LeadReplyDrawer({ lead, onClose, onSent }: LeadReplyDrawerProps) {
+    const { t } = useTranslation();
     const clientName = lead ? `${lead.client_prenom} ${lead.client_nom}`.trim() : ''
     const defaultSubject = lead
         ? `Retour Gagnant — Votre projet : ${lead.recommended_service}`
@@ -211,7 +213,7 @@ export default function LeadReplyDrawer({ lead, onClose, onSent }: LeadReplyDraw
                                 <button
                                     type="button"
                                     onClick={onClose}
-                                    title="Fermer"
+                                    title={t("Fermer")}
                                     disabled={status === 'sending'}
                                     className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-gray-500 hover:text-white hover:bg-white/10 transition-all disabled:opacity-40"
                                 >
@@ -242,12 +244,12 @@ export default function LeadReplyDrawer({ lead, onClose, onSent }: LeadReplyDraw
                                             <CheckCircle2 size={36} className="text-emerald-400" />
                                         </motion.div>
                                         <div>
-                                            <h3 className="text-xl font-black text-white">Email envoyé</h3>
+                                            <h3 className="text-xl font-black text-white"><T>Email envoyé</T></h3>
                                             <p className="text-sm text-gray-500 mt-1">
                                                 Message transmis à <span className="text-white font-bold">{lead.client_email}</span>
                                             </p>
                                         </div>
-                                        <p className="text-[10px] text-gray-600 uppercase tracking-widest">Fermeture automatique...</p>
+                                        <p className="text-[10px] text-gray-600 uppercase tracking-widest"><T>Fermeture automatique...</T></p>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
@@ -269,7 +271,7 @@ export default function LeadReplyDrawer({ lead, onClose, onSent }: LeadReplyDraw
                                                 <button
                                                     type="button"
                                                     onClick={() => { setStatus('idle'); setErrorMsg('') }}
-                                                    title="Fermer"
+                                                    title={t("Fermer")}
                                                     className="ml-auto shrink-0 text-red-500 hover:text-red-300 transition-colors"
                                                 >
                                                     <X size={14} />
@@ -288,7 +290,7 @@ export default function LeadReplyDrawer({ lead, onClose, onSent }: LeadReplyDraw
                                                 className="flex items-center gap-3 p-3 rounded-xl bg-[#FCD116]/8 border border-[#FCD116]/20"
                                             >
                                                 <Sparkles size={14} className="text-[#FCD116] shrink-0" />
-                                                <p className="text-xs text-[#FCD116]/80 font-medium">Message amélioré par l&apos;IA — Relisez avant d&apos;envoyer.</p>
+                                                <p className="text-xs text-[#FCD116]/80 font-medium"><T>Message amélioré par l&apos;IA — Relisez avant d&apos;envoyer.</T></p>
                                                 <button
                                                     type="button"
                                                     onClick={() => { setBody(defaultBody); setAiImproved(false) }}
@@ -310,7 +312,7 @@ export default function LeadReplyDrawer({ lead, onClose, onSent }: LeadReplyDraw
                                             value={subject}
                                             onChange={(e) => setSubject(e.target.value)}
                                             disabled={status === 'improving' || status === 'sending'}
-                                            title="Objet de l'email"
+                                            title={t("Objet de l'email")}
                                             className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-5 py-3.5 text-sm text-white font-medium placeholder:text-gray-600 focus:outline-none focus:border-white/25 transition-all disabled:opacity-50"
                                         />
                                     </div>
@@ -341,7 +343,7 @@ export default function LeadReplyDrawer({ lead, onClose, onSent }: LeadReplyDraw
                                                             <div className="relative">
                                                                 <Sparkles size={24} className="text-[#FCD116] animate-pulse" />
                                                             </div>
-                                                            <p className="text-xs font-bold text-[#FCD116]/80 uppercase tracking-widest">Amélioration en cours...</p>
+                                                            <p className="text-xs font-bold text-[#FCD116]/80 uppercase tracking-widest"><T>Amélioration en cours...</T></p>
                                                             <div className="flex gap-1">
                                                                 {[0, 1, 2].map(i => (
                                                                     <motion.div
@@ -363,9 +365,9 @@ export default function LeadReplyDrawer({ lead, onClose, onSent }: LeadReplyDraw
                                                 onChange={(e) => { setBody(e.target.value); if (aiImproved) setAiImproved(false) }}
                                                 disabled={status === 'improving' || status === 'sending'}
                                                 rows={16}
-                                                title="Contenu de l'email"
+                                                title={t("Contenu de l'email")}
                                                 className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-5 py-4 text-sm text-white font-mono leading-relaxed placeholder:text-gray-600 focus:outline-none focus:border-white/25 transition-all disabled:opacity-50 resize-none"
-                                                placeholder="Rédigez votre message..."
+                                                placeholder={t("Rédigez votre message...")}
                                             />
                                         </div>
                                     </div>

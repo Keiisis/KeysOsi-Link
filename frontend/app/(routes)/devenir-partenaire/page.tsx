@@ -9,10 +9,11 @@ import {
     Home, Leaf, Palette, Cpu, Gem, Plane, HeartPulse, TrendingUp,
     GraduationCap, ShoppingBag, LayoutGrid, Package, Wrench,
     Megaphone, PiggyBank, Users, BarChart3, Camera, Send, Star,
-    Shield, Zap, Network, ChevronRight, Image as ImageIcon,
+    Shield, Zap, Network, ChevronRight,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import FileUpload from '@/components/ui/FileUpload'
+import { useTranslation, T } from '@/lib/translation'
 
 // ─── Category definitions with real icons ────────────────────────────────────
 
@@ -74,45 +75,68 @@ const EMPTY_FORM: FormData = {
 
 // ─── Ultra-Realistic 3D Icon ──────────────────────────────────────────────────
 
-function Icon3D({
-    icon: Icon, from, to, size = 22, containerSize = 48,
-}: { icon: React.ComponentType<{ size?: number; className?: string }>; from: string; to: string; size?: number; containerSize?: number }) {
-    const r = Math.round(containerSize * 0.29)
+const SIZES: Record<number, string> = {
+    28: 'w-7 h-7',
+    32: 'w-8 h-8',
+    44: 'w-11 h-11',
+    48: 'w-12 h-12',
+}
+
+const RADIUS: Record<number, string> = {
+    28: 'rounded-[8px]',
+    32: 'rounded-[9px]',
+    44: 'rounded-[13px]',
+    48: 'rounded-[14px]',
+}
+
+const INNER_RADIUS: Record<number, string> = {
+    28: 'rounded-[6px]',
+    32: 'rounded-[7px]',
+    44: 'rounded-[11px]',
+    48: 'rounded-[12px]',
+}
+
+function Icon3D({ icon: Icon, from, to, size = 20, containerSize = 48 }: { icon: React.ComponentType<{ size?: number; className?: string }>; from: string; to: string; size?: number; containerSize?: number }) {
+    const sizeClass = SIZES[containerSize] || 'w-12 h-12'
+    const radiusClass = RADIUS[containerSize] || 'rounded-[14px]'
+    const innerRadiusClass = INNER_RADIUS[containerSize] || 'rounded-[12px]'
+
     return (
-        <div className="relative flex-shrink-0" style={{ width: containerSize, height: containerSize, perspective: '200px' }}>
+        <div
+            className={cn("relative flex-shrink-0 [perspective:200px]", sizeClass)}
+            style={{ '--from': from, '--to': to } as React.CSSProperties}
+        >
             {/* Volumetric glow underneath */}
-            <div className="absolute inset-x-[15%] bottom-[-20%] h-[40%] rounded-full blur-lg opacity-60"
-                style={{ background: `radial-gradient(ellipse, ${from}90, transparent 70%)` }} />
+            <div
+                className="absolute inset-x-[15%] bottom-[-20%] h-[40%] rounded-full blur-lg opacity-60 bg-[radial-gradient(ellipse,var(--from)_90,transparent_70%)]"
+            />
             {/* Main 3D body */}
             <div
-                className="relative w-full h-full flex items-center justify-center overflow-hidden"
+                className={cn(
+                    "relative w-full h-full flex items-center justify-center overflow-hidden [transform:rotateX(4deg)_rotateY(-3deg)]",
+                    radiusClass,
+                    "bg-[linear-gradient(160deg,var(--from),var(--to)_60%,var(--from)cc_100%)]"
+                )}
                 style={{
-                    borderRadius: r,
-                    background: `linear-gradient(160deg, ${from}, ${to} 60%, ${from}cc 100%)`,
-                    transform: 'rotateX(4deg) rotateY(-3deg)',
                     boxShadow: [
                         `0 1px 0 rgba(255,255,255,0.35) inset`,
                         `0 -1px 0 rgba(0,0,0,0.45) inset`,
                         `1px 0 0 rgba(255,255,255,0.08) inset`,
                         `-1px 0 0 rgba(0,0,0,0.15) inset`,
-                        `0 ${containerSize * 0.35}px ${containerSize * 0.7}px ${from}50`,
+                        `0 ${containerSize * 0.35}px ${containerSize * 0.7}px color-mix(in srgb, var(--from) 50%, transparent)`,
                         `0 ${containerSize * 0.1}px ${containerSize * 0.15}px rgba(0,0,0,0.5)`,
-                        `0 0 ${containerSize * 0.5}px ${from}20`,
+                        `0 0 ${containerSize * 0.5}px color-mix(in srgb, var(--from) 20%, transparent)`,
                     ].join(', '),
                 }}
             >
                 {/* Glass shine reflection */}
-                <div className="absolute inset-0 pointer-events-none"
-                    style={{
-                        borderRadius: r,
-                        background: 'linear-gradient(135deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.08) 40%, transparent 60%)',
-                    }} />
+                <div
+                    className={cn("absolute inset-0 pointer-events-none bg-[linear-gradient(135deg,rgba(255,255,255,0.35)_0%,rgba(255,255,255,0.08)_40%,transparent_60%)]", radiusClass)}
+                />
                 {/* Inner depth ring */}
-                <div className="absolute inset-[2px] pointer-events-none"
-                    style={{
-                        borderRadius: r - 2,
-                        boxShadow: '0 1px 3px rgba(255,255,255,0.12) inset, 0 -1px 2px rgba(0,0,0,0.25) inset',
-                    }} />
+                <div
+                    className={cn("absolute inset-[2px] pointer-events-none shadow-[0_1px_3px_rgba(255,255,255,0.12)_inset,0_-1px_2px_rgba(0,0,0,0.25)_inset]", innerRadiusClass)}
+                />
                 {/* Icon */}
                 <Icon size={size} className="relative z-10 text-white drop-shadow-lg" />
             </div>
@@ -193,6 +217,7 @@ function Pill({ label, selected, onClick }: { label: string; selected: boolean; 
 // ─────────────────────────────────────────────
 
 export default function DevenirPartenairePage() {
+    const { t } = useTranslation()
     const [step, setStep] = useState(0)
     const [form, setForm] = useState<FormData>(EMPTY_FORM)
     const [submitting, setSubmitting] = useState(false)
@@ -241,10 +266,8 @@ export default function DevenirPartenairePage() {
             <div className="min-h-screen bg-[#030a15] flex items-center justify-center px-4 py-16">
                 {/* Background blobs */}
                 <div className="fixed inset-0 pointer-events-none overflow-hidden">
-                    <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] rounded-full opacity-[0.06]"
-                        style={{ background: 'radial-gradient(circle, #008751, transparent 70%)' }} />
-                    <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full opacity-[0.05]"
-                        style={{ background: 'radial-gradient(circle, #FCD116, transparent 70%)' }} />
+                    <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] rounded-full opacity-[0.06] bg-[radial-gradient(circle,#008751,transparent_70%)]" />
+                    <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full opacity-[0.05] bg-[radial-gradient(circle,#FCD116,transparent_70%)]" />
                 </div>
 
                 <motion.div
@@ -253,11 +276,10 @@ export default function DevenirPartenairePage() {
                     transition={{ type: 'spring', stiffness: 260, damping: 24 }}
                     className="relative max-w-lg w-full"
                 >
-                    <div className="rounded-[32px] border border-white/[0.08] overflow-hidden"
-                        style={{ background: 'linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))' }}>
+                    <div className="rounded-[32px] border border-white/[0.08] overflow-hidden bg-gradient-to-br from-white/[0.05] to-white/[0.02]">
 
                         {/* Top gradient bar */}
-                        <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg, #008751, #FCD116, #008751)' }} />
+                        <div className="h-1 w-full bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#008751]" />
 
                         <div className="p-8 space-y-7 text-center">
                             {/* Animated icon */}
@@ -267,27 +289,19 @@ export default function DevenirPartenairePage() {
                                 transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.2 }}
                                 className="flex justify-center"
                             >
-                                <div className="relative" style={{ perspective: '300px' }}>
+                                <div className="relative [perspective:300px]">
                                     {/* Volumetric glow */}
-                                    <div className="absolute inset-x-[10%] bottom-[-25%] h-[50%] rounded-full blur-xl opacity-70"
-                                        style={{ background: 'radial-gradient(ellipse, #00875190, transparent 70%)' }} />
-                                    <div className="w-24 h-24 rounded-[28px] flex items-center justify-center relative overflow-hidden"
-                                        style={{
-                                            background: 'linear-gradient(160deg, #008751, #0d9488 60%, #008751cc)',
-                                            transform: 'rotateX(5deg) rotateY(-3deg)',
-                                            boxShadow: '0 2px 0 rgba(255,255,255,0.35) inset, 0 -2px 0 rgba(0,0,0,0.4) inset, 0 20px 60px rgba(0,135,81,0.5), 0 4px 16px rgba(0,0,0,0.6), 0 0 80px rgba(0,135,81,0.2)',
-                                        }}>
+                                    <div className="absolute inset-x-[10%] bottom-[-25%] h-[50%] rounded-full blur-xl opacity-70 bg-[radial-gradient(ellipse,theme(colors.emerald.600)_rgba(0,135,81,0.5),transparent_70%)]" />
+                                    <div className="w-24 h-24 rounded-[28px] flex items-center justify-center relative overflow-hidden [transform:rotateX(5deg)_rotateY(-3deg)] shadow-[0_2px_0_rgba(255,255,255,0.35)_inset,0_2px_0_rgba(0,0,0,0.4)_inset,0_20px_60px_rgba(0,135,81,0.5),0_4px_16px_rgba(0,0,0,0.6),0_0_80px_rgba(0,135,81,0.2)] bg-gradient-to-br from-[#008751] via-emerald-600/90 to-[#008751]/80">
                                         {/* Glass shine */}
-                                        <div className="absolute inset-0 rounded-[28px] pointer-events-none"
-                                            style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.08) 40%, transparent 60%)' }} />
-                                        <CheckCircle2 size={44} className="relative z-10 text-white" style={{ filter: 'drop-shadow(0 3px 4px rgba(0,0,0,0.4))' }} />
+                                        <div className="absolute inset-0 rounded-[28px] pointer-events-none bg-gradient-to-br from-white/40 via-white/10 to-transparent" />
+                                        <CheckCircle2 size={44} className="relative z-10 text-white drop-shadow-lg" />
                                     </div>
                                     {/* Orbit dot */}
                                     <motion.div
                                         animate={{ rotate: 360 }}
                                         transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
-                                        className="absolute -top-2 -right-2 w-6 h-6 rounded-full border-2 border-[#030a15] flex items-center justify-center"
-                                        style={{ background: 'linear-gradient(135deg, #FCD116, #f59e0b)', boxShadow: '0 0 12px rgba(252,209,22,0.5)' }}>
+                                        className="absolute -top-2 -right-2 w-6 h-6 rounded-full border-2 border-[#030a15] flex items-center justify-center bg-gradient-to-br from-[#FCD116] to-amber-500 shadow-[0_0_12px_rgba(252,209,22,0.5)]">
                                         <Star size={10} fill="white" className="text-white" />
                                     </motion.div>
                                 </div>
@@ -295,16 +309,15 @@ export default function DevenirPartenairePage() {
 
                             <div className="space-y-3">
                                 <h1 className="text-3xl font-black text-white font-heading tracking-tighter">
-                                    Candidature envoyée !
+                                    <T>Candidature envoyée !</T>
                                 </h1>
                                 <p className="text-gray-400 leading-relaxed text-[15px]">
-                                    Merci <strong className="text-white">{form.contact_name}</strong> ! Notre équipe examine votre dossier sous 48–72h. Vous recevrez une réponse à <strong className="text-[#FCD116]">{form.email}</strong>.
+                                    {t("Merci")} <strong className="text-white">{form.contact_name}</strong> ! {t("Notre équipe examine votre dossier sous 48–72h. Vous recevrez une réponse à")} <strong className="text-[#FCD116]">{form.email}</strong>.
                                 </p>
                             </div>
 
-                            {/* Recap card */}
                             <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5 text-left space-y-3">
-                                <p className="text-[9px] font-black text-gray-500 uppercase tracking-[0.3em]">Récapitulatif</p>
+                                <p className="text-[9px] font-black text-gray-500 uppercase tracking-[0.3em]"><T>Récapitulatif</T></p>
                                 <div className="grid grid-cols-2 gap-3">
                                     {[
                                         ['Structure', form.company_name],
@@ -313,8 +326,8 @@ export default function DevenirPartenairePage() {
                                         ['Statut', 'En examen'],
                                     ].map(([label, val]) => (
                                         <div key={label}>
-                                            <p className="text-[9px] text-gray-600 uppercase tracking-wider">{label}</p>
-                                            <p className={cn('text-sm font-bold mt-0.5', label === 'Statut' ? 'text-[#FCD116]' : 'text-white')}>{val}</p>
+                                            <p className="text-[9px] text-gray-600 uppercase tracking-wider">{t(label)}</p>
+                                            <p className={cn('text-sm font-bold mt-0.5', label === 'Statut' ? 'text-[#FCD116]' : 'text-white')}>{['Statut', 'Catégorie'].includes(label) ? t(val) : val}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -323,12 +336,11 @@ export default function DevenirPartenairePage() {
                             <div className="flex flex-col sm:flex-row gap-3 justify-center">
                                 <Link href="/partenaires"
                                     className="flex items-center justify-center gap-2 text-sm font-bold text-gray-400 hover:text-white border border-white/10 hover:border-white/20 px-6 py-3 rounded-2xl transition-all">
-                                    <ArrowLeft size={14} /> Voir nos partenaires
+                                    <ArrowLeft size={14} /> <T>Voir nos partenaires</T>
                                 </Link>
                                 <Link href="/"
-                                    className="flex items-center justify-center gap-2 text-sm font-black text-[#030a15] px-6 py-3 rounded-2xl transition-all"
-                                    style={{ background: 'linear-gradient(135deg, #FCD116, #f59e0b)' }}>
-                                    Retour à l&apos;accueil <ChevronRight size={14} />
+                                    className="flex items-center justify-center gap-2 text-sm font-black text-[#030a15] px-6 py-3 rounded-2xl transition-all bg-gradient-to-br from-[#FCD116] to-amber-500">
+                                    <T>Retour à l&apos;accueil</T> <ChevronRight size={14} />
                                 </Link>
                             </div>
                         </div>
@@ -345,12 +357,9 @@ export default function DevenirPartenairePage() {
 
             {/* ── Ambient background ── */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-                <div className="absolute top-0 right-0 w-[800px] h-[800px] rounded-full opacity-[0.06]"
-                    style={{ background: 'radial-gradient(circle at 70% 20%, #008751, transparent 60%)' }} />
-                <div className="absolute bottom-0 left-0 w-[600px] h-[600px] rounded-full opacity-[0.04]"
-                    style={{ background: 'radial-gradient(circle at 30% 80%, #FCD116, transparent 60%)' }} />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] rounded-full opacity-[0.025]"
-                    style={{ background: 'radial-gradient(circle, #4f46e5, transparent 60%)' }} />
+                <div className="absolute top-0 right-0 w-[800px] h-[800px] rounded-full opacity-[0.06] bg-[radial-gradient(circle_at_70%_20%,#008751,transparent_60%)]" />
+                <div className="absolute bottom-0 left-0 w-[600px] h-[600px] rounded-full opacity-[0.04] bg-[radial-gradient(circle_at_30%_80%,#FCD116,transparent_60%)]" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] rounded-full opacity-[0.025] bg-[radial-gradient(circle,#4f46e5,transparent_60%)]" />
                 {/* Grid overlay */}
                 <svg className="absolute inset-0 w-full h-full opacity-[0.025]">
                     <defs>
@@ -367,27 +376,26 @@ export default function DevenirPartenairePage() {
                 <div className="max-w-3xl mx-auto text-center space-y-6">
                     <Link href="/partenaires"
                         className="inline-flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-gray-300 transition-colors mb-2">
-                        <ArrowLeft size={13} /> Retour aux partenaires
+                        <ArrowLeft size={13} /> <T>Retour aux partenaires</T>
                     </Link>
 
                     {/* Badge */}
                     <div className="flex justify-center">
                         <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-[#FCD116]/20 bg-[#FCD116]/5 text-[#FCD116] text-[11px] font-black uppercase tracking-[0.3em]">
                             <Handshake size={13} />
-                            Réseau Retour Gagnant
+                            <T>Réseau Retour Gagnant</T>
                         </div>
                     </div>
 
                     <h1 className="text-5xl md:text-6xl font-black font-heading tracking-tighter leading-none">
-                        Devenir{' '}
-                        <span className="text-transparent bg-clip-text"
-                            style={{ backgroundImage: 'linear-gradient(135deg, #FCD116 0%, #008751 100%)' }}>
-                            Partenaire
+                        <T>Devenir</T>{' '}
+                        <span className="text-transparent bg-clip-text bg-gradient-to-br from-[#FCD116] to-[#008751]">
+                            <T>Partenaire</T>
                         </span>
                     </h1>
 
                     <p className="text-gray-400 text-lg max-w-xl mx-auto leading-relaxed">
-                        Rejoignez notre réseau d&apos;élite et touchez la diaspora béninoise du monde entier. Ensemble, construisons des ponts entre l&apos;Afrique et la diaspora.
+                        <T>Rejoignez notre réseau d&apos;élite et touchez la diaspora béninoise du monde entier. Ensemble, construisons des ponts entre l&apos;Afrique et la diaspora.</T>
                     </p>
 
                     {/* Benefits — real 3D icons */}
@@ -401,7 +409,7 @@ export default function DevenirPartenairePage() {
                             <div key={b.label}
                                 className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border border-white/[0.07] bg-white/[0.03] backdrop-blur-sm">
                                 <Icon3D icon={b.icon} from={b.from} to={b.to} size={14} containerSize={28} />
-                                <span className="text-xs font-bold text-gray-300">{b.label}</span>
+                                <span className="text-xs font-bold text-gray-300">{t(b.label)}</span>
                             </div>
                         ))}
                     </div>
@@ -425,17 +433,14 @@ export default function DevenirPartenairePage() {
                                         transition={{ duration: 1.5, repeat: Infinity, repeatType: 'reverse' }}
                                     >
                                         <div
-                                            className={cn('w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-300')}
-                                            style={isDone ? {
-                                                background: 'linear-gradient(145deg, #008751, #0d9488)',
-                                                boxShadow: '0 2px 0 rgba(255,255,255,0.18) inset, 0 6px 20px rgba(0,135,81,0.45)',
-                                            } : isActive ? {
-                                                background: 'linear-gradient(145deg, #FCD116, #f59e0b)',
-                                                boxShadow: '0 2px 0 rgba(255,255,255,0.25) inset, 0 6px 24px rgba(252,209,22,0.5)',
-                                            } : {
-                                                background: 'rgba(255,255,255,0.04)',
-                                                border: '1px solid rgba(255,255,255,0.08)',
-                                            }}
+                                            className={cn(
+                                                'w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-300',
+                                                isDone
+                                                    ? 'bg-gradient-to-br from-[#008751] to-emerald-600 shadow-[inset_0_2px_0_rgba(255,255,255,0.18),0_6px_20px_rgba(0,135,81,0.45)]'
+                                                    : isActive
+                                                        ? 'bg-gradient-to-br from-[#FCD116] to-amber-500 shadow-[inset_0_2px_0_rgba(255,255,255,0.25),0_6px_24px_rgba(252,209,22,0.5)]'
+                                                        : 'bg-white/5 border border-white/10'
+                                            )}
                                         >
                                             {isDone
                                                 ? <CheckCircle2 size={20} className="text-white drop-shadow-sm" />
@@ -446,14 +451,13 @@ export default function DevenirPartenairePage() {
                                     <p className={cn(
                                         'text-[9px] font-black uppercase tracking-widest hidden sm:block text-center whitespace-nowrap',
                                         isDone ? 'text-emerald-500' : isActive ? 'text-[#FCD116]' : 'text-gray-700'
-                                    )}>{s.title}</p>
+                                    )}>{t(s.title)}</p>
                                 </div>
                                 {i < STEPS.length - 1 && (
                                     <div className="relative flex-1 mx-2.5 h-px">
                                         <div className="absolute inset-0 bg-white/[0.07] rounded-full" />
                                         <motion.div
-                                            className="absolute inset-0 rounded-full"
-                                            style={{ background: 'linear-gradient(90deg, #008751, #0d9488)' }}
+                                            className="absolute inset-0 rounded-full bg-gradient-to-r from-[#008751] to-emerald-600"
                                             initial={{ scaleX: 0, originX: 0 }}
                                             animate={{ scaleX: isDone ? 1 : 0 }}
                                             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
@@ -474,8 +478,7 @@ export default function DevenirPartenairePage() {
                         exit={{ opacity: 0, x: -32 }}
                         transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                     >
-                        <div className="rounded-[28px] border border-white/[0.08] overflow-hidden"
-                            style={{ background: 'linear-gradient(145deg, rgba(255,255,255,0.045), rgba(255,255,255,0.02))' }}>
+                        <div className="rounded-[28px] border border-white/[0.08] overflow-hidden bg-gradient-to-br from-white/[0.045] to-white/[0.02]">
 
                             {/* Step header */}
                             <div className="px-8 pt-7 pb-5 border-b border-white/[0.06] flex items-center gap-4">
@@ -491,8 +494,8 @@ export default function DevenirPartenairePage() {
                                     )
                                 })()}
                                 <div className="flex-1">
-                                    <h2 className="text-lg font-black text-white">{STEPS[step].title}</h2>
-                                    <p className="text-[11px] text-gray-500 mt-0.5">{STEPS[step].subtitle}</p>
+                                    <h2 className="text-lg font-black text-white">{t(STEPS[step].title)}</h2>
+                                    <p className="text-[11px] text-gray-500 mt-0.5">{t(STEPS[step].subtitle)}</p>
                                 </div>
                                 <span className="text-[11px] font-mono text-gray-700 font-bold">{step + 1}/{STEPS.length}</span>
                             </div>
@@ -503,16 +506,16 @@ export default function DevenirPartenairePage() {
                                 {step === 0 && (
                                     <div className="space-y-6">
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <Field label="Nom de la structure" required>
-                                                <TextInput icon={Building2} value={form.company_name} onChange={v => set('company_name', v)} placeholder="Ex : Immo Bénin Prestige" />
+                                            <Field label={t("Nom de la structure")} required>
+                                                <TextInput icon={Building2} value={form.company_name} onChange={v => set('company_name', v)} placeholder={t("Ex : Immo Bénin Prestige")} />
                                             </Field>
-                                            <Field label="Votre nom complet" required>
-                                                <TextInput icon={Users} value={form.contact_name} onChange={v => set('contact_name', v)} placeholder="Prénom et nom" />
+                                            <Field label={t("Votre nom complet")} required>
+                                                <TextInput icon={Users} value={form.contact_name} onChange={v => set('contact_name', v)} placeholder={t("Prénom et nom")} />
                                             </Field>
                                         </div>
 
                                         {/* Category grid — 3D icon cards */}
-                                        <Field label="Secteur d'activité" required hint="Sélectionnez la catégorie qui correspond le mieux à votre activité">
+                                        <Field label={t("Secteur d'activité")} required hint={t("Sélectionnez la catégorie qui correspond le mieux à votre activité")}>
                                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-1">
                                                 {CATEGORIES.map(cat => {
                                                     const CatIcon = cat.icon
@@ -530,16 +533,16 @@ export default function DevenirPartenairePage() {
                                                                     ? 'border-white/20 bg-white/[0.08]'
                                                                     : 'border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.1]'
                                                             )}
-                                                            style={isSelected ? {
-                                                                boxShadow: `0 0 0 1px ${cat.from}60, 0 4px 20px ${cat.from}30`
-                                                            } : {}}
+                                                            style={{
+                                                                boxShadow: isSelected ? `0 0 0 1px ${cat.from}60, 0 4px 20px ${cat.from}30` : undefined
+                                                            }}
                                                         >
                                                             <Icon3D icon={CatIcon} from={cat.from} to={cat.to} size={14} containerSize={32} />
                                                             <span className={cn(
                                                                 'text-[11px] font-bold leading-tight truncate',
                                                                 isSelected ? 'text-white' : 'text-gray-400'
                                                             )}>
-                                                                {cat.label}
+                                                                {t(cat.label)}
                                                             </span>
                                                             {isSelected && (
                                                                 <motion.div
@@ -556,19 +559,19 @@ export default function DevenirPartenairePage() {
                                             </div>
                                         </Field>
 
-                                        <Field label="Localisation" required hint="Ville et pays où vous exercez votre activité">
-                                            <TextInput icon={MapPin} value={form.location} onChange={v => set('location', v)} placeholder="Ex : Cotonou, Bénin" />
+                                        <Field label={t("Localisation")} required hint={t("Ville et pays où vous exercez votre activité")}>
+                                            <TextInput icon={MapPin} value={form.location} onChange={v => set('location', v)} placeholder={t("Ex : Cotonou, Bénin")} />
                                         </Field>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <Field label="Années d'existence">
+                                            <Field label={t("Années d'existence")}>
                                                 <div className="flex flex-wrap gap-1.5">
-                                                    {YEARS_OPTIONS.map(y => <Pill key={y} label={y} selected={form.years_in_business === y} onClick={() => set('years_in_business', y)} />)}
+                                                    {YEARS_OPTIONS.map(y => <Pill key={y} label={t(y)} selected={form.years_in_business === y} onClick={() => set('years_in_business', y)} />)}
                                                 </div>
                                             </Field>
-                                            <Field label="Taille de l'équipe">
+                                            <Field label={t("Taille de l'équipe")}>
                                                 <div className="flex flex-wrap gap-1.5">
-                                                    {TEAM_OPTIONS.map(t => <Pill key={t} label={t} selected={form.team_size === t} onClick={() => set('team_size', t)} />)}
+                                                    {TEAM_OPTIONS.map(tOption => <Pill key={tOption} label={t(tOption)} selected={form.team_size === tOption} onClick={() => set('team_size', tOption)} />)}
                                                 </div>
                                             </Field>
                                         </div>
@@ -578,27 +581,27 @@ export default function DevenirPartenairePage() {
                                 {/* ════ STEP 2 — ACTIVITÉ ════ */}
                                 {step === 1 && (
                                     <div className="space-y-6">
-                                        <Field label="Décrivez votre activité principale" required hint="Soyez précis : produits, services, zone géographique couverte">
+                                        <Field label={t("Décrivez votre activité principale")} required hint={t("Soyez précis : produits, services, zone géographique couverte")}>
                                             <TextArea value={form.activity_description} onChange={v => set('activity_description', v)} rows={5}
-                                                placeholder="Notre entreprise est spécialisée dans... Nous proposons... Notre zone d'intervention est..." />
+                                                placeholder={t("Notre entreprise est spécialisée dans... Nous proposons... Notre zone d'intervention est...")} />
                                         </Field>
 
-                                        <Field label="Votre public cible" hint="Qui sont vos clients, bénéficiaires ou partenaires ?">
-                                            <TextInput icon={Users} value={form.target_audience} onChange={v => set('target_audience', v)} placeholder="Ex : Diaspora béninoise, entrepreneurs locaux, familles..." />
+                                        <Field label={t("Votre public cible")} hint={t("Qui sont vos clients, bénéficiaires ou partenaires ?")}>
+                                            <TextInput icon={Users} value={form.target_audience} onChange={v => set('target_audience', v)} placeholder={t("Ex : Diaspora béninoise, entrepreneurs locaux, familles...")} />
                                         </Field>
 
-                                        <Field label="Ce que vous apportez au réseau" hint="Produits, services ou ressources que vous pouvez partager avec la communauté">
-                                            <TextArea value={form.what_offer} onChange={v => set('what_offer', v)} rows={3} placeholder="Je peux apporter à la communauté..." />
+                                        <Field label={t("Ce que vous apportez au réseau")} hint={t("Produits, services ou ressources que vous pouvez partager avec la communauté")}>
+                                            <TextArea value={form.what_offer} onChange={v => set('what_offer', v)} rows={3} placeholder={t("Je peux apporter à la communauté...")} />
                                         </Field>
 
-                                        <Field label="Chiffre d'affaires annuel estimé">
+                                        <Field label={t("Chiffre d'affaires annuel estimé")}>
                                             <div className="flex flex-wrap gap-1.5">
-                                                {REVENUE_OPTIONS.map(r => <Pill key={r} label={r} selected={form.revenue_range === r} onClick={() => set('revenue_range', r)} />)}
+                                                {REVENUE_OPTIONS.map(r => <Pill key={r} label={t(r)} selected={form.revenue_range === r} onClick={() => set('revenue_range', r)} />)}
                                             </div>
                                         </Field>
 
                                         {/* Partnership types — 3D icon cards */}
-                                        <Field label="Types de partenariat souhaités" required hint="Sélectionnez un ou plusieurs types de collaboration">
+                                        <Field label={t("Types de partenariat souhaités")} required hint={t("Sélectionnez un ou plusieurs types de collaboration")}>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-1">
                                                 {PARTNERSHIP_TYPES.map(pt => {
                                                     const PtIcon = pt.icon
@@ -613,15 +616,15 @@ export default function DevenirPartenairePage() {
                                                             className={cn(
                                                                 'flex items-center gap-3 px-4 py-3.5 rounded-2xl border text-left transition-all duration-200',
                                                                 isSelected
-                                                                    ? 'border-white/15 bg-white/[0.07]'
+                                                                    ? 'border-white/15 bg-white/[0.07] shadow-[0_0_0_1px_var(--pt-from-50),_0_4px_20px_var(--pt-from-25)]'
                                                                     : 'border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/[0.1]'
                                                             )}
-                                                            style={isSelected ? { boxShadow: `0 0 0 1px ${pt.from}50, 0 4px 20px ${pt.from}25` } : {}}
+                                                            style={isSelected ? { '--pt-from-50': `${pt.from}50`, '--pt-from-25': `${pt.from}25` } as React.CSSProperties : undefined}
                                                         >
                                                             <Icon3D icon={PtIcon} from={pt.from} to={pt.to} size={16} containerSize={36} />
                                                             <div className="flex-1 min-w-0">
-                                                                <p className={cn('text-[12px] font-bold leading-tight', isSelected ? 'text-white' : 'text-gray-300')}>{pt.label}</p>
-                                                                <p className="text-[10px] text-gray-600 mt-0.5 leading-tight">{pt.sub}</p>
+                                                                <p className={cn('text-[12px] font-bold leading-tight', isSelected ? 'text-white' : 'text-gray-300')}>{t(pt.label)}</p>
+                                                                <p className="text-[10px] text-gray-600 mt-0.5 leading-tight">{t(pt.sub)}</p>
                                                             </div>
                                                             <div className={cn(
                                                                 'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all',
@@ -641,19 +644,19 @@ export default function DevenirPartenairePage() {
                                 {step === 2 && (
                                     <div className="space-y-5">
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <Field label="Email professionnel" required>
-                                                <TextInput icon={Mail} type="email" value={form.email} onChange={v => set('email', v)} placeholder="contact@votre-entreprise.com" />
+                                            <Field label={t("Email professionnel")} required>
+                                                <TextInput icon={Mail} type="email" value={form.email} onChange={v => set('email', v)} placeholder={t("contact@votre-entreprise.com")} />
                                             </Field>
-                                            <Field label="Téléphone">
-                                                <TextInput icon={Phone} type="tel" value={form.phone} onChange={v => set('phone', v)} placeholder="+229 01 23 45 67" />
+                                            <Field label={t("Téléphone")}>
+                                                <TextInput icon={Phone} type="tel" value={form.phone} onChange={v => set('phone', v)} placeholder="+229 01 60 32 21 21" />
                                             </Field>
                                         </div>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <Field label="WhatsApp" hint="Numéro avec indicatif pays">
-                                                <TextInput icon={Phone} type="tel" value={form.whatsapp} onChange={v => set('whatsapp', v)} placeholder="+22901234567" />
+                                            <Field label="WhatsApp" hint={t("Numéro avec indicatif pays")}>
+                                                <TextInput icon={Phone} type="tel" value={form.whatsapp} onChange={v => set('whatsapp', v)} placeholder="+229 01 60 32 21 21" />
                                             </Field>
-                                            <Field label="Site web">
+                                            <Field label={t("Site web")}>
                                                 <TextInput icon={Globe} type="url" value={form.website} onChange={v => set('website', v)} placeholder="https://votre-site.com" />
                                             </Field>
                                         </div>
@@ -662,7 +665,7 @@ export default function DevenirPartenairePage() {
                                         <div className="pt-2 border-t border-white/[0.06]">
                                             <div className="flex items-center gap-3 mb-4">
                                                 <Icon3D icon={Network} from="#2563eb" to="#4f46e5" size={13} containerSize={28} />
-                                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Réseaux sociaux (optionnel)</span>
+                                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]"><T>Réseaux sociaux (optionnel)</T></span>
                                             </div>
                                             <div className="space-y-3">
                                                 {[
@@ -675,7 +678,7 @@ export default function DevenirPartenairePage() {
                                                         <div className="flex-1">
                                                             <input
                                                                 type="url" value={form[key]} onChange={e => set(key, e.target.value)}
-                                                                placeholder={placeholder} title={label}
+                                                                placeholder={placeholder} title={t(label)}
                                                                 className="w-full rounded-2xl bg-white/[0.04] border border-white/[0.08] text-white text-sm px-4 py-3 focus:outline-none focus:border-[#008751]/60 transition-all placeholder-gray-700"
                                                             />
                                                         </div>
@@ -689,32 +692,32 @@ export default function DevenirPartenairePage() {
                                 {/* ════ STEP 4 — CANDIDATURE ════ */}
                                 {step === 3 && (
                                     <div className="space-y-6">
-                                        <Field label="Pourquoi souhaitez-vous rejoindre notre réseau ?" required hint="Exprimez votre motivation, vos valeurs communes avec Retour Gagnant Bénin">
+                                        <Field label={t("Pourquoi souhaitez-vous rejoindre notre réseau ?")} required hint={t("Exprimez votre motivation, vos valeurs communes avec Retour Gagnant Bénin")}>
                                             <TextArea value={form.why_partner} onChange={v => set('why_partner', v)} rows={6}
-                                                placeholder="Je souhaite rejoindre Retour Gagnant car notre vision est alignée... Je peux contribuer à la diaspora en... Ensemble, nous pouvons..." />
+                                                placeholder={t("Je souhaite rejoindre Retour Gagnant car notre vision est alignée... Je peux contribuer à la diaspora en... Ensemble, nous pouvons...")} />
                                         </Field>
 
                                         {/* Visuals upload */}
                                         <div className="pt-2 border-t border-white/[0.06]">
                                             <div className="flex items-center gap-3 mb-5">
                                                 <Icon3D icon={Camera} from="#7c3aed" to="#9333ea" size={13} containerSize={28} />
-                                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Visuels de votre marque (optionnel)</span>
+                                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]"><T>Visuels de votre marque (optionnel)</T></span>
                                             </div>
                                             <div className="space-y-4">
                                                 <div className="flex gap-5 items-start">
                                                     <FileUpload
-                                                        type="logo" label="Logo"
+                                                        type="logo" label={t("Logo")}
                                                         value={form.logo_url} onChange={v => set('logo_url', v)}
-                                                        hint="PNG, JPG — max 5MB" className="w-[120px] flex-shrink-0"
+                                                        hint={t("PNG, JPG — max 5MB")} className="w-[120px] flex-shrink-0"
                                                     />
                                                     <div className="flex-1 pt-8 text-[12px] text-gray-500 leading-relaxed">
-                                                        Votre logo apparaîtra sur votre profil visible par toute la diaspora. Format carré recommandé (500×500px minimum).
+                                                        <T>Votre logo apparaîtra sur votre profil visible par toute la diaspora. Format carré recommandé (500×500px minimum).</T>
                                                     </div>
                                                 </div>
                                                 <FileUpload
-                                                    type="cover" label="Photo de couverture"
+                                                    type="cover" label={t("Photo de couverture")}
                                                     value={form.cover_image_url} onChange={v => set('cover_image_url', v)}
-                                                    hint="Image panoramique de votre établissement, produits ou services — 1200×400px recommandé"
+                                                    hint={t("Image panoramique de votre établissement, produits ou services — 1200×400px recommandé")}
                                                 />
                                             </div>
                                         </div>
@@ -723,7 +726,7 @@ export default function DevenirPartenairePage() {
                                         <div className="rounded-2xl border border-[#008751]/20 bg-[#008751]/[0.06] p-5 space-y-3">
                                             <div className="flex items-center gap-2">
                                                 <Icon3D icon={CheckCircle2} from="#008751" to="#0d9488" size={12} containerSize={24} />
-                                                <span className="text-[10px] font-black text-[#008751] uppercase tracking-[0.2em]">Récapitulatif de votre candidature</span>
+                                                <span className="text-[10px] font-black text-[#008751] uppercase tracking-[0.2em]"><T>Récapitulatif de votre candidature</T></span>
                                             </div>
                                             <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
                                                 {[
@@ -732,11 +735,11 @@ export default function DevenirPartenairePage() {
                                                     ['Catégorie', form.category],
                                                     ['Localisation', form.location],
                                                     ['Email', form.email],
-                                                    ['Partenariats', form.partnership_types.join(', ')],
+                                                    ['Partenariats', form.partnership_types.map(pt => t(PARTNERSHIP_TYPES.find(p => p.value === pt)?.label || pt)).join(', ')],
                                                 ].filter(([, v]) => v).map(([label, val]) => (
                                                     <div key={label}>
-                                                        <span className="text-gray-500">{label} : </span>
-                                                        <span className="text-white font-bold">{val}</span>
+                                                        <span className="text-gray-500">{t(label)} : </span>
+                                                        <span className="text-white font-bold">{label === 'Catégorie' ? t(val) : val}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -758,7 +761,7 @@ export default function DevenirPartenairePage() {
                                 <div className="flex items-center justify-between pt-5 border-t border-white/[0.06]">
                                     <button type="button" onClick={() => setStep(s => s - 1)} disabled={step === 0}
                                         className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-white transition-colors disabled:opacity-25 disabled:cursor-not-allowed">
-                                        <ArrowLeft size={15} /> Précédent
+                                        <ArrowLeft size={15} /> <T>Précédent</T>
                                     </button>
 
                                     {step < STEPS.length - 1 ? (
@@ -777,7 +780,7 @@ export default function DevenirPartenairePage() {
                                                 boxShadow: validateStep() ? '0 2px 0 rgba(255,255,255,0.15) inset, 0 8px 24px rgba(0,135,81,0.4)' : 'none',
                                             }}
                                         >
-                                            Continuer <ArrowRight size={15} />
+                                            <T>Continuer</T> <ArrowRight size={15} />
                                         </motion.button>
                                     ) : (
                                         <motion.button
@@ -793,7 +796,7 @@ export default function DevenirPartenairePage() {
                                             }}
                                         >
                                             {submitting ? <Loader2 size={16} className="animate-spin" /> : <Handshake size={16} />}
-                                            {submitting ? 'Envoi en cours...' : 'Soumettre ma candidature'}
+                                            {submitting ? t('Envoi en cours...') : t('Soumettre ma candidature')}
                                             {!submitting && <ChevronRight size={14} />}
                                         </motion.button>
                                     )}
@@ -828,7 +831,7 @@ export default function DevenirPartenairePage() {
                                 <Icon3D icon={s.icon} from={s.from} to={s.to} size={18} containerSize={44} />
                                 <div>
                                     <p className="text-2xl font-black text-[#FCD116]">{s.value}</p>
-                                    <p className="text-[11px] text-gray-600 mt-0.5 font-bold">{s.label}</p>
+                                    <p className="text-[11px] text-gray-600 mt-0.5 font-bold"><T>{s.label}</T></p>
                                 </div>
                             </div>
                         ))}

@@ -8,6 +8,7 @@ import {
     Calendar, MapPin, Users, Ticket, Crown,
     ArrowRight, Star, Search, Sparkles,
 } from 'lucide-react'
+import { useTranslation, T } from '@/lib/translation'
 
 interface EventData {
     id: string
@@ -40,17 +41,18 @@ const CATEGORIES = [
 
 const CAT_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
     conference: { bg: 'bg-blue-50', text: 'text-blue-700', dot: '#3b82f6' },
-    gala:       { bg: 'bg-amber-50', text: 'text-amber-700', dot: '#f59e0b' },
-    workshop:   { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: '#008751' },
+    gala: { bg: 'bg-amber-50', text: 'text-amber-700', dot: '#f59e0b' },
+    workshop: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: '#008751' },
     networking: { bg: 'bg-purple-50', text: 'text-purple-700', dot: '#8b5cf6' },
-    cultural:   { bg: 'bg-rose-50', text: 'text-rose-700', dot: '#E8112D' },
-    other:      { bg: 'bg-gray-100', text: 'text-gray-600', dot: '#6b7280' },
+    cultural: { bg: 'bg-rose-50', text: 'text-rose-700', dot: '#E8112D' },
+    other: { bg: 'bg-gray-100', text: 'text-gray-600', dot: '#6b7280' },
 }
 
 const formatDate = (d: string) => new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
 const formatPrice = (n: number) => new Intl.NumberFormat('fr-FR').format(n)
 
 export default function EvenementsPage() {
+    const { t } = useTranslation()
     const [events, setEvents] = useState<EventData[]>([])
     const [loading, setLoading] = useState(true)
     const [activeCategory, setActiveCategory] = useState('all')
@@ -99,18 +101,18 @@ export default function EvenementsPage() {
                         initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}
                         className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-[#008751]/20 bg-[#008751]/5 text-[#008751] text-[11px] font-black uppercase tracking-[0.35em] mb-6"
                     >
-                        <Sparkles size={12} /> Événements RGB
+                        <Sparkles size={12} /> <T>Événements RGB</T>
                     </motion.div>
 
                     <motion.h1
                         initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
                         className="text-5xl md:text-7xl font-black font-heading tracking-tighter leading-none text-[#1a2332] mb-5"
                     >
-                        Nos{' '}
+                        <T>Nos</T>{' '}
                         <span className="relative inline-block">
                             <span className="relative z-10 text-transparent bg-clip-text"
                                 style={{ backgroundImage: 'linear-gradient(135deg, #008751 0%, #FCD116 55%, #E8112D 100%)' }}>
-                                Événements
+                                <T>Événements</T>
                             </span>
                             <span className="absolute -bottom-2 left-0 right-0 h-[5px] rounded-full"
                                 style={{ background: 'linear-gradient(90deg, #008751, #FCD116, #E8112D)' }} />
@@ -121,7 +123,7 @@ export default function EvenementsPage() {
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}
                         className="text-gray-500 text-lg max-w-xl mx-auto leading-relaxed mb-10"
                     >
-                        Galas, conférences, ateliers et networking — les rencontres qui font avancer la diaspora béninoise.
+                        <T>Galas, conférences, ateliers et networking — les rencontres qui font avancer la diaspora béninoise.</T>
                     </motion.p>
 
                     <motion.div
@@ -131,7 +133,7 @@ export default function EvenementsPage() {
                         <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input
                             type="text" value={search} onChange={e => setSearch(e.target.value)}
-                            placeholder="Rechercher un événement..."
+                            placeholder={t("Rechercher un événement...")}
                             className="w-full pl-11 pr-4 py-4 rounded-2xl bg-gray-50 border border-gray-200 text-gray-900 text-sm focus:outline-none focus:border-[#008751] focus:ring-2 focus:ring-[#008751]/10 transition-all placeholder-gray-400 shadow-sm"
                         />
                     </motion.div>
@@ -151,7 +153,7 @@ export default function EvenementsPage() {
                                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 * i + 0.25 }}
                                 className="text-center p-4 rounded-2xl bg-gray-50 border border-gray-100">
                                 <div className="text-3xl font-black" style={{ color: s.color }}>{s.value}</div>
-                                <div className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">{s.label}</div>
+                                <div className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">{t(s.label)}</div>
                             </motion.div>
                         ))}
                     </div>
@@ -165,12 +167,11 @@ export default function EvenementsPage() {
                         const isActive = activeCategory === cat.value
                         return (
                             <button type="button" key={cat.value} onClick={() => setActiveCategory(cat.value)}
-                                className={`px-5 py-2.5 rounded-full border text-xs font-bold transition-all cursor-pointer ${
-                                    isActive
-                                        ? 'bg-[#008751] text-white border-[#008751] shadow-[0_4px_16px_rgba(0,135,81,0.3)]'
-                                        : 'bg-white text-gray-600 border-gray-200 hover:border-[#008751] hover:text-[#008751]'
-                                }`}>
-                                {cat.label}
+                                className={`px-5 py-2.5 rounded-full border text-xs font-bold transition-all cursor-pointer ${isActive
+                                    ? 'bg-[#008751] text-white border-[#008751] shadow-[0_4px_16px_rgba(0,135,81,0.3)]'
+                                    : 'bg-white text-gray-600 border-gray-200 hover:border-[#008751] hover:text-[#008751]'
+                                    }`}>
+                                {t(cat.label)}
                             </button>
                         )
                     })}
@@ -185,7 +186,7 @@ export default function EvenementsPage() {
                             style={{ background: 'linear-gradient(135deg, #FCD116, #f59e0b)' }}>
                             <Star size={14} fill="white" className="text-white" />
                         </div>
-                        <span className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">À la une</span>
+                        <span className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]"><T>À la une</T></span>
                         <div className="flex-1 h-px bg-gradient-to-r from-gray-200 to-transparent" />
                     </div>
 
@@ -212,7 +213,7 @@ export default function EvenementsPage() {
                                     <div className="absolute top-5 left-5">
                                         <span className="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider text-[#1a2332] shadow-md"
                                             style={{ background: 'linear-gradient(135deg, #FCD116, #f59e0b)' }}>
-                                            À la une
+                                            <T>À la une</T>
                                         </span>
                                     </div>
                                 </div>
@@ -222,15 +223,15 @@ export default function EvenementsPage() {
                                         return (
                                             <span className={`inline-flex w-fit items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold ${cc.bg} ${cc.text}`}>
                                                 <span className="w-1.5 h-1.5 rounded-full" style={{ background: cc.dot }} />
-                                                {evt.category}
+                                                {t(evt.category)}
                                             </span>
                                         )
                                     })()}
                                     <h2 className="text-2xl md:text-3xl font-black font-heading tracking-tight text-[#1a2332] group-hover:text-[#008751] transition-colors leading-tight">
-                                        {evt.title}
+                                        {t(evt.title)}
                                     </h2>
                                     <p className="text-gray-500 text-sm leading-relaxed line-clamp-3">
-                                        {evt.short_description || evt.description}
+                                        {t(evt.short_description || evt.description)}
                                     </p>
                                     <div className="flex flex-wrap gap-4 text-xs text-gray-400">
                                         <span className="flex items-center gap-1.5">
@@ -240,7 +241,7 @@ export default function EvenementsPage() {
                                         {evt.location && (
                                             <span className="flex items-center gap-1.5">
                                                 <MapPin size={12} className="text-[#E8112D]" />
-                                                {evt.location}
+                                                {t(evt.location)}
                                             </span>
                                         )}
                                     </div>
@@ -252,11 +253,11 @@ export default function EvenementsPage() {
                                                     <span className="text-sm font-bold text-gray-400 ml-1">{evt.currency}</span>
                                                 </span>
                                             ) : (
-                                                <span className="text-xs font-black text-[#008751] bg-[#008751]/8 px-3 py-1.5 rounded-full border border-[#008751]/20">GRATUIT</span>
+                                                <span className="text-xs font-black text-[#008751] bg-[#008751]/8 px-3 py-1.5 rounded-full border border-[#008751]/20"><T>GRATUIT</T></span>
                                             )}
                                         </div>
                                         <span className="flex items-center gap-1.5 text-xs font-black text-[#008751] group-hover:gap-3 transition-all">
-                                            Voir les détails <ArrowRight size={14} />
+                                            <T>Voir les détails</T> <ArrowRight size={14} />
                                         </span>
                                     </div>
                                 </div>
@@ -271,7 +272,7 @@ export default function EvenementsPage() {
                 {featured.length > 0 && filtered.some(e => !e.is_featured) && activeCategory === 'all' && !search && (
                     <div className="flex items-center gap-4 mb-8">
                         <div className="flex-1 h-px bg-gray-100" />
-                        <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.25em]">Tous les événements</span>
+                        <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.25em]"><T>Tous les événements</T></span>
                         <div className="flex-1 h-px bg-gray-100" />
                     </div>
                 )}
@@ -287,12 +288,12 @@ export default function EvenementsPage() {
                         <div className="w-20 h-20 mx-auto rounded-[22px] flex items-center justify-center mb-5 bg-gradient-to-br from-[#f0fdf4] to-[#dcfce7]">
                             <Calendar size={36} className="text-[#008751]/40" />
                         </div>
-                        <p className="text-[#1a2332] font-bold text-lg">Aucun événement trouvé</p>
-                        <p className="text-gray-400 text-sm mt-1">De nouveaux événements seront bientôt publiés.</p>
+                        <p className="text-[#1a2332] font-bold text-lg"><T>Aucun événement trouvé</T></p>
+                        <p className="text-gray-400 text-sm mt-1"><T>De nouveaux événements seront bientôt publiés.</T></p>
                         {(search || activeCategory !== 'all') && (
                             <button type="button" onClick={() => { setSearch(''); setActiveCategory('all') }}
                                 className="mt-4 text-[#008751] text-sm font-bold hover:underline cursor-pointer">
-                                Réinitialiser les filtres
+                                <T>Réinitialiser les filtres</T>
                             </button>
                         )}
                     </div>
@@ -326,7 +327,7 @@ export default function EvenementsPage() {
                                                 )}
                                                 <div className="absolute top-3 left-3">
                                                     <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold shadow-sm ${cc.bg} ${cc.text}`}>
-                                                        {evt.category}
+                                                        {t(evt.category)}
                                                     </span>
                                                 </div>
                                                 {evt.price_vip > 0 && (
@@ -340,7 +341,7 @@ export default function EvenementsPage() {
                                             </div>
                                             <div className="p-5 flex-1 flex flex-col gap-3">
                                                 <h3 className="text-[15px] font-black text-[#1a2332] group-hover:text-[#008751] transition-colors leading-snug line-clamp-2 font-heading">
-                                                    {evt.title}
+                                                    {t(evt.title)}
                                                 </h3>
                                                 <div className="flex flex-col gap-1.5 text-xs text-gray-400">
                                                     <span className="flex items-center gap-1.5">
@@ -350,13 +351,13 @@ export default function EvenementsPage() {
                                                     {evt.location && (
                                                         <span className="flex items-center gap-1.5">
                                                             <MapPin size={11} className="text-[#E8112D] flex-shrink-0" />
-                                                            <span className="truncate">{evt.location}</span>
+                                                            <span className="truncate">{t(evt.location)}</span>
                                                         </span>
                                                     )}
                                                     {evt.max_capacity > 0 && (
                                                         <span className="flex items-center gap-1.5">
                                                             <Users size={11} className="text-gray-300 flex-shrink-0" />
-                                                            {evt.max_capacity} places
+                                                            {evt.max_capacity} {t("places")}
                                                         </span>
                                                     )}
                                                 </div>
@@ -367,11 +368,11 @@ export default function EvenementsPage() {
                                                             <span className="text-[10px] text-gray-400 ml-1">{evt.currency}</span>
                                                         </div>
                                                     ) : (
-                                                        <span className="text-[11px] font-black text-[#008751] bg-[#008751]/8 px-2.5 py-1 rounded-full border border-[#008751]/15">GRATUIT</span>
+                                                        <span className="text-[11px] font-black text-[#008751] bg-[#008751]/8 px-2.5 py-1 rounded-full border border-[#008751]/15"><T>GRATUIT</T></span>
                                                     )}
                                                     <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-black text-white group-hover:gap-2.5 transition-all"
                                                         style={{ background: 'linear-gradient(135deg, #008751, #006039)', boxShadow: '0 4px 14px rgba(0,135,81,0.25)' }}>
-                                                        <Ticket size={12} /> Participer
+                                                        <Ticket size={12} /> <T>Participer</T>
                                                     </span>
                                                 </div>
                                             </div>
@@ -388,12 +389,12 @@ export default function EvenementsPage() {
             <div className="relative overflow-hidden">
                 <div className="h-[6px]" style={{ background: 'linear-gradient(90deg, #008751 33%, #FCD116 33% 66%, #E8112D 66%)' }} />
                 <div className="bg-gradient-to-br from-[#f0fdf4] via-white to-[#fef9c3] py-16 text-center px-4">
-                    <h2 className="text-2xl font-black text-[#1a2332] mb-2 font-heading">Vous organisez un événement ?</h2>
-                    <p className="text-gray-500 text-sm mb-6 max-w-sm mx-auto">Rejoignez le réseau RGB et touchez la diaspora béninoise.</p>
+                    <h2 className="text-2xl font-black text-[#1a2332] mb-2 font-heading"><T>Vous organisez un événement ?</T></h2>
+                    <p className="text-gray-500 text-sm mb-6 max-w-sm mx-auto"><T>Rejoignez le réseau RGB et touchez la diaspora béninoise.</T></p>
                     <Link href="/devenir-partenaire"
                         className="inline-flex items-center gap-2 px-7 py-4 rounded-full font-black text-sm text-white transition-all hover:scale-[1.03] active:scale-[0.98]"
                         style={{ background: 'linear-gradient(135deg, #008751, #006039)', boxShadow: '0 8px 32px rgba(0,135,81,0.3)' }}>
-                        Devenir partenaire <ArrowRight size={15} />
+                        <T>Devenir partenaire</T> <ArrowRight size={15} />
                     </Link>
                 </div>
             </div>

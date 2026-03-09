@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -46,8 +47,8 @@ function ToastContainer({ toasts, dismiss }: { toasts: Toast[]; dismiss: (id: nu
                         className={cn(
                             'pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-bold shadow-2xl',
                             t.type === 'success' ? 'bg-[#008751]/20 border-[#008751]/40 text-[#00c97a]' :
-                            t.type === 'error'   ? 'bg-[#E8112D]/20 border-[#E8112D]/40 text-[#ff6b7a]' :
-                                                   'bg-white/10 border-white/10 text-white'
+                                t.type === 'error' ? 'bg-[#E8112D]/20 border-[#E8112D]/40 text-[#ff6b7a]' :
+                                    'bg-white/10 border-white/10 text-white'
                         )}
                     >
                         {t.type === 'success' ? <CheckCircle2 size={16} /> : t.type === 'error' ? <XCircle size={16} /> : <UserCog size={16} />}
@@ -83,8 +84,8 @@ function DeleteModal({ user, onConfirm, onCancel, loading }: {
                         <AlertTriangle size={24} className="text-red-500" />
                     </div>
                     <div>
-                        <p className="text-[10px] font-black text-red-500 uppercase tracking-widest">Action irréversible</p>
-                        <h3 className="text-xl font-black text-white">Supprimer ce compte</h3>
+                        <p className="text-[10px] font-black text-red-500 uppercase tracking-widest"><T>Action irréversible</T></p>
+                        <h3 className="text-xl font-black text-white"><T>Supprimer ce compte</T></h3>
                     </div>
                 </div>
 
@@ -98,7 +99,7 @@ function DeleteModal({ user, onConfirm, onCancel, loading }: {
                 </div>
 
                 <p className="text-sm text-gray-400">
-                    Le compte sera <span className="text-red-400 font-bold">définitivement supprimé</span> de Supabase Auth et de la base de données. Cet agent ne pourra plus se connecter.
+                    Le compte sera <span className="text-red-400 font-bold"><T>définitivement supprimé</T></span> de Supabase Auth et de la base de données. Cet agent ne pourra plus se connecter.
                 </p>
 
                 <div className="flex gap-3">
@@ -125,6 +126,7 @@ function UserDrawer({ mode, user, onClose, onSaved, toast }: {
     onSaved: (updated: AdminUser, isNew: boolean) => void
     toast: (type: Toast['type'], msg: string) => void
 }) {
+    const { t } = useTranslation();
     const [fullName, setFullName] = useState(user?.full_name ?? '')
     const [email, setEmail] = useState(user?.email ?? '')
     const [password, setPassword] = useState('')
@@ -218,9 +220,9 @@ function UserDrawer({ mode, user, onClose, onSaved, toast }: {
 
                     {/* Nom */}
                     <div>
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Nom complet *</label>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block"><T>Nom complet *</T></label>
                         <input type="text" value={fullName} onChange={e => setFullName(e.target.value)}
-                            placeholder="Prénom et Nom"
+                            placeholder={t("Prénom et Nom")}
                             className="w-full bg-white/5 border border-white/5 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 transition-colors" />
                     </div>
 
@@ -228,10 +230,10 @@ function UserDrawer({ mode, user, onClose, onSaved, toast }: {
                     <div>
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
                             <Mail size={11} /> Email *
-                            {mode === 'edit' && <span className="font-normal normal-case text-gray-600">(non modifiable après création)</span>}
+                            {mode === 'edit' && <span className="font-normal normal-case text-gray-600"><T>(non modifiable après création)</T></span>}
                         </label>
                         <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-                            placeholder="agent@retourgagnant.com"
+                            placeholder={t("agent@retourgagnant.com")}
                             disabled={mode === 'edit'}
                             className="w-full bg-white/5 border border-white/5 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" />
                     </div>
@@ -240,7 +242,7 @@ function UserDrawer({ mode, user, onClose, onSaved, toast }: {
                     <div>
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
                             <KeyRound size={11} /> {mode === 'create' ? 'Mot de passe *' : 'Nouveau mot de passe'}
-                            {mode === 'edit' && <span className="font-normal normal-case text-gray-600">(laisser vide = inchangé)</span>}
+                            {mode === 'edit' && <span className="font-normal normal-case text-gray-600"><T>(laisser vide = inchangé)</T></span>}
                         </label>
                         <div className="relative">
                             <input type={showPassword ? 'text' : 'password'} value={password}
@@ -257,7 +259,7 @@ function UserDrawer({ mode, user, onClose, onSaved, toast }: {
 
                     {/* Role */}
                     <div>
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 block">Rôle *</label>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 block"><T>Rôle *</T></label>
                         <div className="grid grid-cols-3 gap-2">
                             {ROLES.map(r => (
                                 <button key={r.value} type="button" onClick={() => setRole(r.value)}
@@ -277,8 +279,8 @@ function UserDrawer({ mode, user, onClose, onSaved, toast }: {
                     {mode === 'edit' && (
                         <div className="flex items-center justify-between p-4 rounded-xl bg-white/[0.03] border border-white/5">
                             <div>
-                                <p className="text-sm font-bold text-white">Compte actif</p>
-                                <p className="text-[10px] text-gray-500">L&apos;agent peut se connecter</p>
+                                <p className="text-sm font-bold text-white"><T>Compte actif</T></p>
+                                <p className="text-[10px] text-gray-500"><T>L&apos;agent peut se connecter</T></p>
                             </div>
                             <button type="button" onClick={() => setIsActive(!isActive)}
                                 className={cn('w-12 h-6 rounded-full transition-colors relative', isActive ? 'bg-[#008751]' : 'bg-white/10')}
@@ -313,6 +315,7 @@ function UserDrawer({ mode, user, onClose, onSaved, toast }: {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function AdminUsersPage() {
+    const { t } = useTranslation();
     const [users, setUsers] = useState<AdminUser[]>([])
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
@@ -352,7 +355,7 @@ export default function AdminUsersPage() {
         const interval = setInterval(() => {
             fetch('/api/admin/users').then(r => r.json()).then(d => {
                 if (d.users) setUsers(d.users)
-            }).catch(() => {})
+            }).catch(() => { })
         }, 30000)
         return () => clearInterval(interval)
     }, [])
@@ -422,21 +425,21 @@ export default function AdminUsersPage() {
                     <div className="space-y-2">
                         <div className="flex items-center gap-2 text-[#FCD116]">
                             <UserCog size={18} />
-                            <span className="text-[10px] font-bold uppercase tracking-[0.4em]">Gestion des Accès</span>
+                            <span className="text-[10px] font-bold uppercase tracking-[0.4em]"><T>Gestion des Accès</T></span>
                         </div>
                         <h1 className="text-4xl font-black text-white font-heading tracking-tighter">
-                            UTILISATEURS <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#E8112D]">SYSTÈME</span>
+                            UTILISATEURS <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#E8112D]"><T>SYSTÈME</T></span>
                         </h1>
                     </div>
                     <div className="flex items-center gap-3 flex-wrap">
                         <button type="button" onClick={fetchUsers}
                             className="p-3 rounded-xl bg-white/5 border border-white/5 text-gray-400 hover:text-white transition-colors"
-                            title="Rafraîchir la liste">
+                            title={t("Rafraîchir la liste")}>
                             <RefreshCw size={16} />
                         </button>
                         <div className="relative">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={15} />
-                            <input type="text" placeholder="Rechercher..." value={search}
+                            <input type="text" placeholder={t("Rechercher...")} value={search}
                                 onChange={e => setSearch(e.target.value)}
                                 className="bg-[#0a0f18] border border-white/5 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-[#FCD116]/30 text-sm w-52" />
                         </div>
@@ -501,7 +504,7 @@ export default function AdminUsersPage() {
                         <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center">
                             <UserCog size={28} className="text-gray-700" />
                         </div>
-                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">Aucun utilisateur trouvé</p>
+                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest"><T>Aucun utilisateur trouvé</T></p>
                         <button type="button" onClick={() => { setEditingUser(undefined); setDrawerMode('create') }}
                             className="text-[#008751] text-xs font-bold hover:underline">
                             + Créer le premier compte
@@ -587,7 +590,7 @@ export default function AdminUsersPage() {
                                             {user.role !== 'superadmin' && (
                                                 <button type="button" onClick={() => setDeletingUser(user)}
                                                     className="p-2 rounded-xl bg-red-500/10 text-red-500 border border-red-500/10 hover:bg-red-500 hover:text-white transition-all"
-                                                    title="Supprimer le compte">
+                                                    title={t("Supprimer le compte")}>
                                                     <Trash2 size={13} />
                                                 </button>
                                             )}

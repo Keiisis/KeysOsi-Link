@@ -2,169 +2,163 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { escapeHtml } from '@/lib/security'
 import QRCode from 'qrcode'
+import { fetchWithGroqRotation } from '@/lib/groq'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 // Appel Groq pour générer un message de remerciement personnalisé
 async function generateGroqMessage(
-    customerName: string,
-    productTitle: string,
-    amount: number
+  customerName: string,
+  productTitle: string,
+  amount: number
 ): Promise<string> {
-    const apiKey = process.env.GROQ_API_KEY
-    if (!apiKey) return ''
-    try {
-        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile',
-                max_tokens: 120,
-                temperature: 0.7,
-                messages: [
-                    {
-                        role: 'system',
-                        content: `Tu es le service client de Retour Gagnant Bénin, une agence de confiance basée à Cotonou.
+  const apiKey = process.env.GROQ_API_KEY
+  if (!apiKey) return ''
+  try {
+    const res = await fetchWithGroqRotation({
+      model: 'llama-3.1-8b-instant',
+      max_tokens: 120,
+      temperature: 0.7,
+      messages: [
+        {
+          role: 'system',
+          content: `Tu es le service client de Retour Gagnant Bénin, une agence de confiance basée à Cotonou.
 Rédige un court message de remerciement (2-3 phrases) en français formel et chaleureux, à insérer dans une facture officielle.
 Ne commence pas par "Voici" ou "Bien sûr". Sois direct, sincère et élégant.`,
-                    },
-                    {
-                        role: 'user',
-                        content: `Client: ${customerName} | Produit: ${productTitle} | Montant: ${new Intl.NumberFormat('fr-FR').format(amount)} FCFA`,
-                    },
-                ],
-            }),
-        })
-        const data = await res.json()
-        return data.choices?.[0]?.message?.content?.trim() || ''
-    } catch {
-        return ''
-    }
+        },
+        {
+          role: 'user',
+          content: `Client: ${customerName} | Produit: ${productTitle} | Montant: ${new Intl.NumberFormat('fr-FR').format(amount)} FCFA`,
+        },
+      ],
+    }, apiKey);
+    const data = await res.json()
+    return data.choices?.[0]?.message?.content?.trim() || ''
+  } catch {
+    return ''
+  }
 }
 
 export async function GET(
-    request: NextRequest,
-    context: { params: Promise<{ id: string }> }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
-    try {
-        const { id: orderId } = await context.params
+  try {
+    const { id: orderId } = await context.params
 
-        if (!supabaseUrl || !supabaseServiceKey) {
-            return NextResponse.json({ error: 'Configuration serveur manquante' }, { status: 503 })
-        }
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return NextResponse.json({ error: 'Configuration serveur manquante' }, { status: 503 })
+    }
 
-        const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-        const { data: order, error } = await supabase
-            .from('orders')
-            .select('*')
-            .eq('id', orderId)
-            .single()
+    const { data: order, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .single()
 
-        if (error || !order) {
-            return NextResponse.json({ error: 'Commande introuvable' }, { status: 404 })
-        }
+    if (error || !order) {
+      return NextResponse.json({ error: 'Commande introuvable' }, { status: 404 })
+    }
 
-        // Fetch site settings for branding
-        const { data: settingsData } = await supabase
-            .from('settings')
-            .select('key, value')
-            .in('key', ['contact_email', 'contact_phone', 'hero_title', 'contact_address'])
+    // Fetch site settings for branding
+    const { data: settingsData } = await supabase
+      .from('settings')
+      .select('key, value')
+      .in('key', ['contact_email', 'contact_phone', 'hero_title', 'contact_address'])
 
-        const settings: Record<string, string> = {}
-        for (const s of settingsData || []) settings[s.key] = s.value
+    const settings: Record<string, string> = {}
+    for (const s of settingsData || []) settings[s.key] = s.value
 
-        const siteName = settings.hero_title || 'Retour Gagnant Bénin'
-        const siteEmail = settings.contact_email || 'contact@retourgagnant.bj'
-        const sitePhone = settings.contact_phone || '+229 XX XX XX XX'
-        const siteAddress = settings.contact_address || 'Haie Vive, Cotonou, République du Bénin'
+    const siteName = settings.hero_title || 'Retour Gagnant Bénin'
+    const siteEmail = settings.contact_email || 'contact@retourgagnant.bj'
+    const sitePhone = settings.contact_phone || '+229 XX XX XX XX'
+    const siteAddress = settings.contact_address || 'Haie Vive, Cotonou, République du Bénin'
 
-        const formatPrice = (n: number) =>
-            new Intl.NumberFormat('fr-FR').format(n) + ' FCFA'
+    const formatPrice = (n: number) =>
+      new Intl.NumberFormat('fr-FR').format(n) + ' FCFA'
 
-        const invoiceRef = `RG-${orderId.slice(0, 8).toUpperCase()}`
-        const date = new Date(order.created_at).toLocaleDateString('fr-FR', {
-            year: 'numeric', month: 'long', day: 'numeric',
-        })
+    const invoiceRef = `RG-${orderId.slice(0, 8).toUpperCase()}`
+    const date = new Date(order.created_at).toLocaleDateString('fr-FR', {
+      year: 'numeric', month: 'long', day: 'numeric',
+    })
 
-        // Construire la liste des produits (panier ou produit unique)
-        type CartItem = { product_id?: string; title?: string; name?: string; price?: number; sale_price?: number; quantity?: number }
-        const cartItems: CartItem[] = (order.cart_items && Array.isArray(order.cart_items) && order.cart_items.length > 0)
-            ? order.cart_items
-            : [{ title: order.product_title, price: order.amount / (order.quantity || 1), quantity: order.quantity || 1 }]
+    // Construire la liste des produits (panier ou produit unique)
+    type CartItem = { product_id?: string; title?: string; name?: string; price?: number; sale_price?: number; quantity?: number }
+    const cartItems: CartItem[] = (order.cart_items && Array.isArray(order.cart_items) && order.cart_items.length > 0)
+      ? order.cart_items
+      : [{ title: order.product_title, price: order.amount / (order.quantity || 1), quantity: order.quantity || 1 }]
 
-        const subTotal = cartItems.reduce((acc: number, item: CartItem) => {
-            const price = item.sale_price && item.sale_price < (item.price || 0)
-                ? item.sale_price : (item.price || 0)
-            return acc + price * (item.quantity || 1)
-        }, 0)
-        const shippingFee = order.shipping_fee || 0
-        const couponDiscount = order.coupon_id ? (subTotal + shippingFee - order.amount) : 0
+    const subTotal = cartItems.reduce((acc: number, item: CartItem) => {
+      const price = item.sale_price && item.sale_price < (item.price || 0)
+        ? item.sale_price : (item.price || 0)
+      return acc + price * (item.quantity || 1)
+    }, 0)
+    const shippingFee = order.shipping_fee || 0
+    const couponDiscount = order.coupon_id ? (subTotal + shippingFee - order.amount) : 0
 
-        // Appels parallèles : QR Code + Groq
-        const baseUrl = (() => {
-            const origin = request.headers.get('origin')
-            if (origin) return origin
-            const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
-            if (siteUrl) return siteUrl
-            return `https://retour-gagnant.vercel.app`
-        })()
+    // Appels parallèles : QR Code + Groq
+    const baseUrl = (() => {
+      const origin = request.headers.get('origin')
+      if (origin) return origin
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+      if (siteUrl) return siteUrl
+      return `https://retour-gagnant.vercel.app`
+    })()
 
-        const verificationUrl = `${baseUrl}/api/invoices/${orderId}`
-        const logoUrl = `${baseUrl}/logo.jpg`
+    const verificationUrl = `${baseUrl}/api/invoices/${orderId}`
+    const logoUrl = `${baseUrl}/logo.jpg`
 
-        const [qrCodeBase64, groqMessage] = await Promise.all([
-            QRCode.toDataURL(verificationUrl, {
-                color: { dark: '#008751', light: '#ffffff' },
-                width: 130,
-                margin: 1,
-            }).catch(() => ''),
-            generateGroqMessage(order.customer_name || 'Client', order.product_title || 'notre produit', order.amount),
-        ])
+    const [qrCodeBase64, groqMessage] = await Promise.all([
+      QRCode.toDataURL(verificationUrl, {
+        color: { dark: '#008751', light: '#ffffff' },
+        width: 130,
+        margin: 1,
+      }).catch(() => ''),
+      generateGroqMessage(order.customer_name || 'Client', order.product_title || 'notre produit', order.amount),
+    ])
 
-        const paymentMethodLabel: Record<string, string> = {
-            kkiapay: 'Mobile Money — Kkiapay',
-            fedapay: 'Mobile Money — FedaPay',
-            stripe: 'Carte bancaire — Stripe',
-            paypal: 'PayPal Business',
-            zeyow: 'Zeyow',
-        }
-        const payLabel = paymentMethodLabel[order.payment_method] || (order.payment_method || '').toUpperCase()
-        const isPaid = order.payment_status === 'completed'
+    const paymentMethodLabel: Record<string, string> = {
+      kkiapay: 'Mobile Money — Kkiapay',
+      fedapay: 'Mobile Money — FedaPay',
+      stripe: 'Carte bancaire — Stripe',
+      paypal: 'PayPal Business',
+      zeyow: 'Zeyow',
+    }
+    const payLabel = paymentMethodLabel[order.payment_method] || (order.payment_method || '').toUpperCase()
+    const isPaid = order.payment_status === 'completed'
 
-        // Lignes des produits commandés
-        const productRowsHtml = cartItems.map((item: CartItem) => {
-            const displayPrice = (item.sale_price && item.sale_price < (item.price || 0))
-                ? item.sale_price : (item.price || 0)
-            const lineTotal = displayPrice * (item.quantity || 1)
-            const itemTitle = item.title || item.name || order.product_title || 'Produit'
-            return `
+    // Lignes des produits commandés
+    const productRowsHtml = cartItems.map((item: CartItem) => {
+      const displayPrice = (item.sale_price && item.sale_price < (item.price || 0))
+        ? item.sale_price : (item.price || 0)
+      const lineTotal = displayPrice * (item.quantity || 1)
+      const itemTitle = item.title || item.name || order.product_title || 'Produit'
+      return `
               <tr>
                 <td style="padding:16px;font-size:14px;color:#1a1a1a;border-bottom:1px solid #f0f0f0;">${escapeHtml(itemTitle)}</td>
                 <td style="padding:16px;font-size:14px;color:#555;text-align:center;border-bottom:1px solid #f0f0f0;">${item.quantity || 1}</td>
                 <td style="padding:16px;font-size:14px;color:#555;text-align:right;border-bottom:1px solid #f0f0f0;">${formatPrice(displayPrice)}</td>
                 <td style="padding:16px;font-size:14px;font-weight:700;color:#1a1a1a;text-align:right;border-bottom:1px solid #f0f0f0;">${formatPrice(lineTotal)}</td>
               </tr>`
-        }).join('')
+    }).join('')
 
-        const couponRow = couponDiscount > 0 ? `
+    const couponRow = couponDiscount > 0 ? `
           <tr>
             <td colspan="3" style="padding:10px 16px;font-size:13px;color:#008751;text-align:right;">Réduction coupon</td>
             <td style="padding:10px 16px;font-size:13px;color:#008751;font-weight:700;text-align:right;">− ${formatPrice(couponDiscount)}</td>
           </tr>` : ''
 
 
-        const groqSection = groqMessage ? `
+    const groqSection = groqMessage ? `
           <div style="margin:40px 0 30px;padding:24px 28px;background:linear-gradient(135deg,#f0fdf6,#f8fff4);border-left:4px solid #008751;border-radius:0 12px 12px 0;">
             <p style="margin:0;font-size:14px;color:#2d5a3d;line-height:1.8;font-style:italic;">&ldquo;${escapeHtml(groqMessage)}&rdquo;</p>
             <p style="margin:12px 0 0;font-size:11px;color:#008751;font-weight:700;text-transform:uppercase;letter-spacing:1px;">— L'équipe ${escapeHtml(siteName)}</p>
           </div>` : ''
 
-        const html = `<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
@@ -342,14 +336,14 @@ export async function GET(
 </body>
 </html>`
 
-        return new NextResponse(html, {
-            status: 200,
-            headers: {
-                'Content-Type': 'text/html; charset=utf-8',
-                'Content-Disposition': `inline; filename="facture-${invoiceRef}.html"`,
-            },
-        })
-    } catch {
-        return NextResponse.json({ error: 'Erreur génération facture' }, { status: 500 })
-    }
+    return new NextResponse(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Content-Disposition': `inline; filename="facture-${invoiceRef}.html"`,
+      },
+    })
+  } catch {
+    return NextResponse.json({ error: 'Erreur génération facture' }, { status: 500 })
+  }
 }

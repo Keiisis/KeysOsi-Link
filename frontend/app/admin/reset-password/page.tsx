@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -7,6 +8,7 @@ import { ShieldCheck, Lock, Loader2, CheckCircle2, AlertCircle, Eye, EyeOff } fr
 import { supabase } from '@/lib/supabase';
 
 export default function ResetPasswordPage() {
+    const { t } = useTranslation();
     const router = useRouter();
     const [password, setPassword] = useState('');
     const [confirm, setConfirm] = useState('');
@@ -73,8 +75,8 @@ export default function ResetPasswordPage() {
                             <ShieldCheck size={40} className="text-[#FCD116]" />
                         </div>
                     </div>
-                    <h1 className="text-3xl font-bold text-white font-heading">NOUVEAU MOT DE PASSE</h1>
-                    <p className="text-gray-500 mt-2 uppercase tracking-[0.3em] text-[10px] font-bold">Réinitialisation Sécurisée</p>
+                    <h1 className="text-3xl font-bold text-white font-heading"><T>NOUVEAU MOT DE PASSE</T></h1>
+                    <p className="text-gray-500 mt-2 uppercase tracking-[0.3em] text-[10px] font-bold"><T>Réinitialisation Sécurisée</T></p>
                 </div>
 
                 {status === 'success' ? (
@@ -86,8 +88,8 @@ export default function ResetPasswordPage() {
                         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#008751]/10 border border-[#008751]/20 mb-6">
                             <CheckCircle2 size={32} className="text-[#008751]" />
                         </div>
-                        <h2 className="text-xl font-black text-white mb-2">Mot de Passe Mis à Jour !</h2>
-                        <p className="text-gray-500 text-sm">Redirection vers le dashboard dans quelques secondes...</p>
+                        <h2 className="text-xl font-black text-white mb-2"><T>Mot de Passe Mis à Jour !</T></h2>
+                        <p className="text-gray-500 text-sm"><T>Redirection vers le dashboard dans quelques secondes...</T></p>
                     </motion.div>
                 ) : (
                     <div className="bg-[#0f141e]/80 backdrop-blur-xl border border-white/5 rounded-3xl p-8 shadow-2xl">
@@ -99,7 +101,7 @@ export default function ResetPasswordPage() {
 
                         <form onSubmit={handleReset} className="space-y-6">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Nouveau Mot de Passe</label>
+                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1"><T>Nouveau Mot de Passe</T></label>
                                 <div className="relative group">
                                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-[#FCD116] transition-colors" size={18} />
                                     <input
@@ -108,7 +110,7 @@ export default function ResetPasswordPage() {
                                         minLength={8}
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        placeholder="Minimum 8 caractères"
+                                        placeholder={t("Minimum 8 caractères")}
                                         className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-12 text-white placeholder:text-gray-600 focus:outline-none focus:border-[#FCD116]/50 transition-all text-sm"
                                     />
                                     <button
@@ -122,7 +124,7 @@ export default function ResetPasswordPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Confirmer le Mot de Passe</label>
+                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1"><T>Confirmer le Mot de Passe</T></label>
                                 <div className="relative group">
                                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-[#FCD116] transition-colors" size={18} />
                                     <input
@@ -130,7 +132,7 @@ export default function ResetPasswordPage() {
                                         required
                                         value={confirm}
                                         onChange={(e) => setConfirm(e.target.value)}
-                                        placeholder="Répétez le mot de passe"
+                                        placeholder={t("Répétez le mot de passe")}
                                         className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:border-[#FCD116]/50 transition-all text-sm"
                                     />
                                 </div>

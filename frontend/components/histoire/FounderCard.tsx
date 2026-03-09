@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { Quote } from 'lucide-react'
 import Image from 'next/image'
+import { useTranslation } from '@/lib/translation'
 
 export interface FounderData {
     name: string
@@ -12,6 +13,7 @@ export interface FounderData {
 }
 
 export function FounderCard({ founder, index }: { founder: FounderData, index: number }) {
+    const { t } = useTranslation();
     return (
         <motion.div
             initial={{ opacity: 0, y: 40 }}
@@ -28,7 +30,7 @@ export function FounderCard({ founder, index }: { founder: FounderData, index: n
                 {founder.image ? (
                     <Image
                         src={founder.image}
-                        alt={founder.name}
+                        alt={t(founder.name)}
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-700"
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -50,7 +52,7 @@ export function FounderCard({ founder, index }: { founder: FounderData, index: n
             <div className="relative z-10 p-8 -mt-12">
                 <div className="flex items-center gap-2 mb-2">
                     <div className="w-8 h-[2px] bg-[#FCD116]" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#FCD116]">{founder.role}</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#FCD116]">{t(founder.role)}</span>
                 </div>
                 <h3 className="text-2xl font-black text-white font-heading tracking-tight mb-4">
                     {founder.name}
@@ -60,7 +62,7 @@ export function FounderCard({ founder, index }: { founder: FounderData, index: n
                 <div className="relative pl-6 border-l-2 border-white/10">
                     <Quote size={16} className="absolute -left-2 -top-1 text-[#FCD116]/40 bg-[#0a0f18]" />
                     <p className="text-sm text-gray-400 italic leading-relaxed">
-                        {founder.quote}
+                        {t(founder.quote)}
                     </p>
                 </div>
             </div>

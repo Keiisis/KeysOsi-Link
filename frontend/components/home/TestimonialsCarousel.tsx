@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Quote, Star, Send, CheckCircle, MapPin, User, Briefcase, MessageSquare, Upload, Camera } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Quote, Star, Send, CheckCircle, MapPin, User, Briefcase, MessageSquare, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
+import { useTranslation, T } from "@/lib/translation";
 
 interface Testimonial {
     id: number;
@@ -48,13 +49,10 @@ const fallbackTestimonials: Testimonial[] = [
     },
 ];
 
-const BENIN_COLORS = {
-    green: "#008751",
-    yellow: "#FCD116",
-    red: "#E8112D"
-};
+
 
 function TestimonialCard({ item }: { item: Testimonial }) {
+    const { t } = useTranslation();
     return (
         <div className="flex-shrink-0 w-[380px] p-6 mx-3">
             <div className="relative bg-white/90 backdrop-blur-md rounded-3xl p-8 shadow-xl border border-white/20 hover:border-[#FCD116]/50 transition-all duration-300 h-full group overflow-hidden">
@@ -81,7 +79,7 @@ function TestimonialCard({ item }: { item: Testimonial }) {
                     <div>
                         <h4 className="font-bold text-[#1a2332] text-lg leading-tight">{item.name}</h4>
                         <p className="text-xs text-[#E8112D] font-medium flex items-center gap-1 uppercase tracking-wider mt-0.5">
-                            {item.role}
+                            {t(item.role)}
                         </p>
                     </div>
                 </div>
@@ -95,7 +93,7 @@ function TestimonialCard({ item }: { item: Testimonial }) {
                     ))}
                 </div>
                 <p className="text-gray-700 leading-relaxed mb-6 text-[15px] relative z-10">
-                    &ldquo;{item.text}&rdquo;
+                    &ldquo;{t(item.text)}&rdquo;
                 </p>
                 <div className="flex items-center justify-between pt-4 border-t border-gray-100/50">
                     <div className="flex items-center gap-1.5 text-gray-500 text-xs">
@@ -103,7 +101,7 @@ function TestimonialCard({ item }: { item: Testimonial }) {
                         <span>{item.location}</span>
                     </div>
                     <span className="text-[10px] font-bold px-2 py-1 rounded bg-[#008751]/10 text-[#008751] uppercase tracking-wide">
-                        {item.service}
+                        {t(item.service)}
                     </span>
                 </div>
             </div>
@@ -112,6 +110,7 @@ function TestimonialCard({ item }: { item: Testimonial }) {
 }
 
 function SubmissionForm() {
+    const { t } = useTranslation();
     const [formData, setFormData] = useState({ name: '', role: '', location: '', text: '', service: '', rating: 5 });
     const [photo, setPhoto] = useState<File | null>(null);
     const [isSubmitted, setIsSubmitted] = useState(false);
@@ -133,7 +132,7 @@ function SubmissionForm() {
             if (photo) {
                 const fileExt = photo.name.split('.').pop();
                 const fileName = `${Math.random()}.${fileExt}`;
-                const { data: uploadData, error: uploadError } = await supabase.storage
+                const { error: uploadError } = await supabase.storage
                     .from('testimonials')
                     .upload(fileName, photo);
 
@@ -172,14 +171,14 @@ function SubmissionForm() {
                         <CheckCircle size={48} className="text-[#008751]" />
                     </div>
                 </div>
-                <h3 className="text-3xl font-bold text-[#1a2332] mb-3 font-heading">Merci ! 🇧🇯</h3>
-                <p className="text-gray-600 max-w-xs mx-auto">Votre témoignage a été reçu. Il sera publié après validation.</p>
+                <h3 className="text-3xl font-bold text-[#1a2332] mb-3 font-heading"><T>Merci ! 🇧🇯</T></h3>
+                <p className="text-gray-600 max-w-xs mx-auto"><T>Votre témoignage a été reçu. Il sera publié après validation.</T></p>
                 <Button
                     variant="ghost"
                     className="mt-8 text-[#008751] hover:bg-[#008751]/10"
                     onClick={() => { setIsSubmitted(false); setFormData({ name: '', role: '', location: '', text: '', service: '', rating: 5 }); setPhoto(null); }}
                 >
-                    Envoyer un autre avis
+                    <T>Envoyer un autre avis</T>
                 </Button>
             </motion.div>
         );
@@ -198,9 +197,9 @@ function SubmissionForm() {
             >
                 <div className="text-center mb-8">
                     <h3 className="text-2xl font-bold font-heading bg-clip-text text-transparent bg-gradient-to-r from-[#008751] to-[#1a2332]">
-                        Partagez votre expérience
+                        <T>Partagez votre expérience</T>
                     </h3>
-                    <p className="text-gray-500 text-sm mt-2">Rejoignez la communauté du Retour Gagnant</p>
+                    <p className="text-gray-500 text-sm mt-2"><T>Rejoignez la communauté du Retour Gagnant</T></p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="space-y-5">
@@ -208,7 +207,7 @@ function SubmissionForm() {
                             <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#008751] transition-colors" />
                             <input
                                 type="text"
-                                placeholder="Votre nom"
+                                placeholder={t("Votre nom")}
                                 required
                                 value={formData.name}
                                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
@@ -219,7 +218,7 @@ function SubmissionForm() {
                             <Briefcase size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#FCD116] transition-colors" />
                             <input
                                 type="text"
-                                placeholder="Votre rôle (ex: Entrepreneur)"
+                                placeholder={t("Votre rôle (ex: Entrepreneur)")}
                                 required
                                 value={formData.role}
                                 onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
@@ -232,7 +231,7 @@ function SubmissionForm() {
                             <MapPin size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#E8112D] transition-colors" />
                             <input
                                 type="text"
-                                placeholder="Ville, Pays"
+                                placeholder={t("Ville, Pays")}
                                 required
                                 value={formData.location}
                                 onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
@@ -241,29 +240,31 @@ function SubmissionForm() {
                         </div>
                         <select
                             required
+                            aria-label={t("Service utilisé")}
                             value={formData.service}
                             onChange={(e) => setFormData(prev => ({ ...prev, service: e.target.value }))}
                             className="w-full px-4 py-4 rounded-xl border border-gray-200/50 bg-white/50 text-sm focus:outline-none focus:border-[#008751] focus:ring-4 focus:ring-[#008751]/10 transition-all text-gray-600 font-medium cursor-pointer"
                         >
-                            <option value="">Service utilisé</option>
-                            <option value="Administratif">Passeport & Administratif</option>
-                            <option value="Immobilier">Logement Premium</option>
-                            <option value="Business">Création d'Entreprise</option>
-                            <option value="Culture">Guide Culturel</option>
-                            <option value="Construction">Construction</option>
-                            <option value="Investissement">Investissement</option>
+                            <option value=""><T>Service utilisé</T></option>
+                            <option value="Administratif"><T>Passeport & Administratif</T></option>
+                            <option value="Immobilier"><T>Logement Premium</T></option>
+                            <option value="Business"><T>Création d&apos;Entreprise</T></option>
+                            <option value="Culture"><T>Guide Culturel</T></option>
+                            <option value="Construction"><T>Construction</T></option>
+                            <option value="Investissement"><T>Investissement</T></option>
                         </select>
                     </div>
                 </div>
                 <div className="flex flex-col md:flex-row gap-5 items-center justify-between p-4 bg-white/40 rounded-2xl border border-white/60">
                     <div className="flex flex-col items-center md:items-start gap-2">
-                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Votre Note</span>
+                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest"><T>Votre Note</T></span>
                         <div className="flex gap-2">
                             {[1, 2, 3, 4, 5].map((star) => (
                                 <button
                                     key={star}
                                     type="button"
                                     onClick={() => setFormData(prev => ({ ...prev, rating: star }))}
+                                    aria-label={t("Note de {star} sur 5", { star })}
                                     className="focus:outline-none transition-transform hover:scale-110 active:scale-95"
                                 >
                                     <Star
@@ -275,10 +276,11 @@ function SubmissionForm() {
                         </div>
                     </div>
                     <div className="flex flex-col items-center md:items-end gap-2 w-full md:w-auto">
-                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Votre Photo (Optionnel)</span>
+                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest"><T>Votre Photo (Optionnel)</T></span>
                         <input
                             type="file"
                             accept="image/*"
+                            aria-label={t("Sélectionner une photo")}
                             ref={fileInputRef}
                             className="hidden"
                             onChange={handlePhotoChange}
@@ -290,15 +292,15 @@ function SubmissionForm() {
                         >
                             {photo ? (
                                 <>
-                                    <div className="w-6 h-6 rounded-full overflow-hidden border border-gray-200">
-                                        <img src={URL.createObjectURL(photo)} alt="Preview" className="w-full h-full object-cover" />
+                                    <div className="w-6 h-6 rounded-full overflow-hidden border border-gray-200 relative">
+                                        <Image src={URL.createObjectURL(photo)} alt={t("Preview")} fill className="object-cover" />
                                     </div>
                                     <span className="text-sm font-medium text-[#008751] truncate max-w-[120px]">{photo.name}</span>
                                 </>
                             ) : (
                                 <>
                                     <Camera size={18} className="text-gray-400" />
-                                    <span className="text-sm font-medium text-gray-500">Ajouter une photo</span>
+                                    <span className="text-sm font-medium text-gray-500"><T>Ajouter une photo</T></span>
                                 </>
                             )}
                         </button>
@@ -307,7 +309,7 @@ function SubmissionForm() {
                 <div className="relative group">
                     <MessageSquare size={18} className="absolute left-4 top-5 text-gray-400 group-focus-within:text-[#008751] transition-colors" />
                     <textarea
-                        placeholder="Racontez-nous votre histoire..."
+                        placeholder={t("Racontez-nous votre histoire...")}
                         required
                         rows={4}
                         value={formData.text}
@@ -323,12 +325,12 @@ function SubmissionForm() {
                     {isLoading ? (
                         <span className="flex items-center gap-2">
                             <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            Publication en cours...
+                            {t('Publication en cours...')}
                         </span>
                     ) : (
                         <span className="flex items-center gap-2">
                             <Send size={20} />
-                            Envoyer mon avis
+                            <T>Envoyer mon avis</T>
                         </span>
                     )}
                 </Button>
@@ -339,7 +341,7 @@ function SubmissionForm() {
 
 export default function TestimonialsCarousel() {
     const [testimonials, setTestimonials] = useState<Testimonial[]>(fallbackTestimonials);
-    const [isLoaded, setIsLoaded] = useState(false);
+
 
     useEffect(() => {
         const fetchTestimonials = async () => {
@@ -367,8 +369,6 @@ export default function TestimonialsCarousel() {
                 }
             } catch {
                 console.warn('Testimonials using fallback data');
-            } finally {
-                setIsLoaded(true);
             }
         };
 
@@ -392,13 +392,13 @@ export default function TestimonialsCarousel() {
                     className="text-center relative z-10"
                 >
                     <span className="inline-block px-4 py-1.5 rounded-full bg-[#E8112D]/5 text-[#E8112D] text-sm font-bold tracking-widest uppercase mb-4 border border-[#E8112D]/10">
-                        La Voix de la Diaspora
+                        <T>La Voix de la Diaspora</T>
                     </span>
                     <h2 className="text-4xl md:text-6xl font-bold font-heading text-[#1a2332] mb-6">
-                        Ils ont osé le <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D]">Retour Gagnant</span>
+                        <T>Ils ont osé le</T> <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D]"><T>Retour Gagnant</T></span>
                     </h2>
                     <p className="text-gray-500 text-lg max-w-2xl mx-auto leading-relaxed">
-                        Découvrez les histoires inspirantes de ceux qui ont franchi le pas.
+                        <T>Découvrez les histoires inspirantes de ceux qui ont franchi le pas.</T>
                     </p>
                 </motion.div>
             </div>

@@ -1,2 +1,3 @@
 'use client';
-export default function ServicesShow() { return <div>Détails du service</div>; }
+import { useTranslation, T } from '@/lib/translation';
+export default function ServicesShow() { return <div><T>Détails du service</T></div>; }

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import Image from "next/image";
 import { X, ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
+import { useTranslation, T } from "@/lib/translation";
 
 interface GalleryImage {
     id: number;
@@ -20,6 +21,7 @@ const kenBurnsVariants = [
 ];
 
 export default function ImmersiveGallery() {
+    const { t } = useTranslation();
     const [images, setImages] = useState<GalleryImage[]>([]);
     const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
     const [heroIndex, setHeroIndex] = useState(0);
@@ -141,12 +143,12 @@ export default function ImmersiveGallery() {
                     className="absolute top-16 left-0 right-0 z-10 text-center px-4"
                 >
                     <span className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-[#FCD116] text-sm font-semibold tracking-widest uppercase mb-4 border border-white/10">
-                        Immersion Visuelle
+                        <T>Immersion Visuelle</T>
                     </span>
                     <h2 className="text-5xl md:text-7xl font-bold font-heading text-white drop-shadow-2xl">
-                        Vision du{" "}
+                        <T>Vision du</T>{" "}
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D]">
-                            Bénin
+                            <T>Bénin</T>
                         </span>
                     </h2>
                 </motion.div>
@@ -290,7 +292,7 @@ export default function ImmersiveGallery() {
                                 {/* Hover overlay */}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
                                     <span className="text-white text-sm font-semibold drop-shadow-lg">
-                                        🇧🇯 Découvrir
+                                        🇧🇯 <T>Découvrir</T>
                                     </span>
                                 </div>
                             </motion.div>
@@ -302,17 +304,17 @@ export default function ImmersiveGallery() {
                 <div className="flex justify-center items-center gap-8 mt-12 pt-8 border-t border-white/10">
                     <div className="text-center">
                         <span className="text-3xl font-bold text-[#FCD116]">{images.length}</span>
-                        <p className="text-white/40 text-xs mt-1 uppercase tracking-wider">Photos</p>
+                        <p className="text-white/40 text-xs mt-1 uppercase tracking-wider"><T>Photos</T></p>
                     </div>
                     <div className="w-px h-10 bg-white/10" />
                     <div className="text-center">
                         <span className="text-3xl font-bold text-[#008751]">∞</span>
-                        <p className="text-white/40 text-xs mt-1 uppercase tracking-wider">Souvenirs</p>
+                        <p className="text-white/40 text-xs mt-1 uppercase tracking-wider"><T>Souvenirs</T></p>
                     </div>
                     <div className="w-px h-10 bg-white/10" />
                     <div className="text-center">
                         <span className="text-3xl font-bold text-[#E8112D]">1</span>
-                        <p className="text-white/40 text-xs mt-1 uppercase tracking-wider">Bénin</p>
+                        <p className="text-white/40 text-xs mt-1 uppercase tracking-wider"><T>Bénin</T></p>
                     </div>
                 </div>
             </div>

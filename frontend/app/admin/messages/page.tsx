@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation, T } from '@/lib/translation';
 import { useList, useNavigation, useDelete, useUpdate } from "@refinedev/core";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -23,6 +24,7 @@ interface MessageItem {
 }
 
 export default function MessagesList() {
+    const { t } = useTranslation();
     const { show } = useNavigation();
     const queryResult = useList<MessageItem>({
         resource: "messages",
@@ -57,10 +59,10 @@ export default function MessagesList() {
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-[#E8112D]">
                         <Inbox size={18} />
-                        <span className="text-[10px] font-black uppercase tracking-[0.4em]">Flux d'Interactions Clients</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.4em]"><T>Flux d'Interactions Clients</T></span>
                     </div>
                     <h1 className="text-5xl font-black text-white font-heading tracking-tighter">
-                        NEXUS <span className="text- benin-gradient">CLIENT</span>
+                        NEXUS <span className="text- benin-gradient"><T>CLIENT</T></span>
                     </h1>
                 </div>
 
@@ -69,7 +71,7 @@ export default function MessagesList() {
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
                         <input
                             type="text"
-                            placeholder="Rechercher une conversion..."
+                            placeholder={t("Rechercher une conversion...")}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full bg-[#0a0f18] border border-white/5 rounded-2xl py-3.5 pl-12 pr-4 text-white text-xs font-bold focus:outline-none focus:border-[#E8112D]/40 transition-all"
@@ -101,7 +103,7 @@ export default function MessagesList() {
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-40">
                             <Loader2 className="animate-spin text-[#E8112D] mb-4" size={40} />
-                            <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest text-center italic">Scanning des liaisons entrantes...</p>
+                            <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest text-center italic"><T>Scanning des liaisons entrantes...</T></p>
                         </div>
                     ) : filteredItems.length > 0 ? (
                         <AnimatePresence mode="popLayout">
@@ -213,8 +215,8 @@ export default function MessagesList() {
                     ) : (
                         <div className="py-40 flex flex-col items-center justify-center opacity-40">
                             <AlertCircle size={64} className="text-gray-800 mb-6" />
-                            <p className="text-gray-500 font-black uppercase tracking-[0.4em] text-sm">Silence Opérationnel</p>
-                            <p className="text-[10px] text-gray-700 mt-2 font-bold uppercase">Aucune liaison active dans cet espace.</p>
+                            <p className="text-gray-500 font-black uppercase tracking-[0.4em] text-sm"><T>Silence Opérationnel</T></p>
+                            <p className="text-[10px] text-gray-700 mt-2 font-bold uppercase"><T>Aucune liaison active dans cet espace.</T></p>
                         </div>
                     )}
                 </div>

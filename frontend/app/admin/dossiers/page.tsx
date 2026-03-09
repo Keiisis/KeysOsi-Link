@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useList, useUpdate } from '@refinedev/core'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -33,6 +34,7 @@ const stepStatuses = [
 ]
 
 export default function AdminDossiersPage() {
+    const { t } = useTranslation();
     const listResult = useList({
         resource: 'dossier_tracking',
         sorters: [{ field: 'created_at', order: 'desc' }],
@@ -121,7 +123,7 @@ export default function AdminDossiersPage() {
                         <FileText size={28} className="text-[#008751]" />
                         Nexus Tracker
                     </h1>
-                    <p className="text-gray-500 text-sm mt-1">Gérez le suivi des dossiers clients en temps réel</p>
+                    <p className="text-gray-500 text-sm mt-1"><T>Gérez le suivi des dossiers clients en temps réel</T></p>
                 </div>
                 <button
                     onClick={() => setShowCreateModal(true)}
@@ -139,7 +141,7 @@ export default function AdminDossiersPage() {
                     type="text"
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    placeholder="Rechercher un dossier..."
+                    placeholder={t("Rechercher un dossier...")}
                     className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751]"
                 />
             </div>
@@ -219,23 +221,23 @@ export default function AdminDossiersPage() {
                                                 {/* Client Info */}
                                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                                                     <div>
-                                                        <p className="text-gray-500 text-[10px] uppercase tracking-widest font-bold mb-1">Email</p>
+                                                        <p className="text-gray-500 text-[10px] uppercase tracking-widest font-bold mb-1"><T>Email</T></p>
                                                         <p className="text-gray-300">{dossier.client_email as string}</p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-gray-500 text-[10px] uppercase tracking-widest font-bold mb-1">WhatsApp</p>
+                                                        <p className="text-gray-500 text-[10px] uppercase tracking-widest font-bold mb-1"><T>WhatsApp</T></p>
                                                         <p className="text-gray-300">{(dossier.client_whatsapp as string) || '—'}</p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-gray-500 text-[10px] uppercase tracking-widest font-bold mb-1">Créé le</p>
+                                                        <p className="text-gray-500 text-[10px] uppercase tracking-widest font-bold mb-1"><T>Créé le</T></p>
                                                         <p className="text-gray-300">{new Date(dossier.created_at as string).toLocaleDateString('fr-FR')}</p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-gray-500 text-[10px] uppercase tracking-widest font-bold mb-1">Statut global</p>
+                                                        <p className="text-gray-500 text-[10px] uppercase tracking-widest font-bold mb-1"><T>Statut global</T></p>
                                                         <select
                                                             value={dossier.statut as string}
                                                             onChange={e => updateStatut(dossier.id as string, e.target.value)}
-                                                            title="Changer le statut du dossier"
+                                                            title={t("Changer le statut du dossier")}
                                                             className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-[#008751]"
                                                         >
                                                             {Object.entries(statutLabels).map(([val, lab]) => (
@@ -247,7 +249,7 @@ export default function AdminDossiersPage() {
 
                                                 {/* Steps Management */}
                                                 <div>
-                                                    <h4 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-4">Étapes du dossier</h4>
+                                                    <h4 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-4"><T>Étapes du dossier</T></h4>
                                                     <div className="space-y-3">
                                                         {etapes.map((step, idx) => {
                                                             const stepConfig = stepStatuses.find(s => s.value === step.status) || stepStatuses[2]
@@ -285,7 +287,7 @@ export default function AdminDossiersPage() {
                     {filtered.length === 0 && (
                         <div className="text-center py-16 text-gray-500">
                             <FileText size={40} className="mx-auto mb-4 opacity-30" />
-                            <p className="font-bold">Aucun dossier trouvé</p>
+                            <p className="font-bold"><T>Aucun dossier trouvé</T></p>
                         </div>
                     )}
                 </div>
@@ -309,72 +311,72 @@ export default function AdminDossiersPage() {
                             className="bg-[#0f141e] border border-white/10 rounded-3xl p-8 w-full max-w-lg shadow-2xl"
                         >
                             <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-xl font-black font-heading">Nouveau Dossier</h3>
-                                <button onClick={() => setShowCreateModal(false)} title="Fermer" className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10">
+                                <h3 className="text-xl font-black font-heading"><T>Nouveau Dossier</T></h3>
+                                <button onClick={() => setShowCreateModal(false)} title={t("Fermer")} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10">
                                     <X size={16} />
                                 </button>
                             </div>
 
                             <div className="space-y-4">
                                 <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 block">N° Dossier</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 block"><T>N° Dossier</T></label>
                                     <input
                                         type="text"
                                         value={newDossier.num_dossier}
                                         onChange={e => setNewDossier({ ...newDossier, num_dossier: e.target.value })}
-                                        placeholder="RG-2026-XXXXX"
+                                        placeholder={t("RG-2026-XXXXX")}
                                         className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751] font-mono"
                                     />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 block">Nom</label>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 block"><T>Nom</T></label>
                                         <input
                                             type="text"
                                             value={newDossier.client_nom}
                                             onChange={e => setNewDossier({ ...newDossier, client_nom: e.target.value })}
-                                            placeholder="Nom"
+                                            placeholder={t("Nom")}
                                             className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751]"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 block">Prénom</label>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 block"><T>Prénom</T></label>
                                         <input
                                             type="text"
                                             value={newDossier.client_prenom}
                                             onChange={e => setNewDossier({ ...newDossier, client_prenom: e.target.value })}
-                                            placeholder="Prénom"
+                                            placeholder={t("Prénom")}
                                             className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751]"
                                         />
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 block">Email</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 block"><T>Email</T></label>
                                     <input
                                         type="email"
                                         value={newDossier.client_email}
                                         onChange={e => setNewDossier({ ...newDossier, client_email: e.target.value })}
-                                        placeholder="client@email.com"
+                                        placeholder={t("client@email.com")}
                                         className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751]"
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 block">WhatsApp</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 block"><T>WhatsApp</T></label>
                                     <input
                                         type="tel"
                                         value={newDossier.client_whatsapp}
                                         onChange={e => setNewDossier({ ...newDossier, client_whatsapp: e.target.value })}
-                                        placeholder="+229 XX XX XX XX"
+                                        placeholder={t("+229 XX XX XX XX")}
                                         className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751]"
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 block">Service</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 block"><T>Service</T></label>
                                     <input
                                         type="text"
                                         value={newDossier.service_type}
                                         onChange={e => setNewDossier({ ...newDossier, service_type: e.target.value })}
-                                        placeholder="Ex: Passeport & Documents"
+                                        placeholder={t("Ex: Passeport & Documents")}
                                         className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751]"
                                     />
                                 </div>

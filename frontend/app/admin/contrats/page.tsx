@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
@@ -26,6 +27,7 @@ interface Contract {
 }
 
 export default function AdminContractsPage() {
+    const { t } = useTranslation();
     const [contracts, setContracts] = useState<Contract[]>([])
     const [loading, setLoading] = useState(true)
     const [creating, setCreating] = useState(false)
@@ -90,51 +92,51 @@ export default function AdminContractsPage() {
             <div className="min-h-screen bg-[#0a0f14] py-8 px-4">
                 <div className="max-w-3xl mx-auto">
                     <div className="flex items-center justify-between mb-6">
-                        <h1 className="text-xl font-black text-white">Nouveau Contrat / Devis</h1>
+                        <h1 className="text-xl font-black text-white"><T>Nouveau Contrat / Devis</T></h1>
                         <button onClick={() => setCreating(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
                     </div>
 
                     <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="text-xs font-bold text-gray-400 mb-1 block">Nom du client *</label>
+                                <label className="text-xs font-bold text-gray-400 mb-1 block"><T>Nom du client *</T></label>
                                 <div className="relative">
                                     <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                                    <input type="text" value={form.client_nom} onChange={(e) => setForm({ ...form, client_nom: e.target.value })} placeholder="Jean Dupont" className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-9 pr-4 text-white text-sm focus:outline-none focus:border-emerald-500/50" />
+                                    <input type="text" value={form.client_nom} onChange={(e) => setForm({ ...form, client_nom: e.target.value })} placeholder={t("Jean Dupont")} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-9 pr-4 text-white text-sm focus:outline-none focus:border-emerald-500/50" />
                                 </div>
                             </div>
                             <div>
-                                <label className="text-xs font-bold text-gray-400 mb-1 block">Email du client *</label>
+                                <label className="text-xs font-bold text-gray-400 mb-1 block"><T>Email du client *</T></label>
                                 <div className="relative">
                                     <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                                    <input type="email" value={form.client_email} onChange={(e) => setForm({ ...form, client_email: e.target.value })} placeholder="email@client.com" className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-9 pr-4 text-white text-sm focus:outline-none focus:border-emerald-500/50" />
+                                    <input type="email" value={form.client_email} onChange={(e) => setForm({ ...form, client_email: e.target.value })} placeholder={t("email@client.com")} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-9 pr-4 text-white text-sm focus:outline-none focus:border-emerald-500/50" />
                                 </div>
                             </div>
                         </div>
                         <div>
-                            <label className="text-xs font-bold text-gray-400 mb-1 block">Titre du contrat *</label>
-                            <input type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Contrat d'accompagnement — Nationalité" className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-emerald-500/50" />
+                            <label className="text-xs font-bold text-gray-400 mb-1 block"><T>Titre du contrat *</T></label>
+                            <input type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t("Contrat d'accompagnement — Nationalité")} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-emerald-500/50" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="text-xs font-bold text-gray-400 mb-1 block">Montant</label>
+                                <label className="text-xs font-bold text-gray-400 mb-1 block"><T>Montant</T></label>
                                 <div className="relative">
                                     <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                                     <input type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-9 pr-4 text-white text-sm focus:outline-none focus:border-emerald-500/50" />
                                 </div>
                             </div>
                             <div>
-                                <label className="text-xs font-bold text-gray-400 mb-1 block">Devise</label>
+                                <label className="text-xs font-bold text-gray-400 mb-1 block"><T>Devise</T></label>
                                 <select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white text-sm focus:outline-none">
-                                    <option value="XOF">XOF (FCFA)</option>
-                                    <option value="EUR">EUR (€)</option>
-                                    <option value="USD">USD ($)</option>
+                                    <option value="XOF"><T>XOF (FCFA)</T></option>
+                                    <option value="EUR"><T>EUR (€)</T></option>
+                                    <option value="USD"><T>USD ($)</T></option>
                                 </select>
                             </div>
                         </div>
                         <div>
-                            <label className="text-xs font-bold text-gray-400 mb-1 block">Contenu du contrat *</label>
-                            <textarea rows={12} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} placeholder="Termes et conditions du contrat..." className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white text-sm focus:outline-none resize-none font-mono" />
+                            <label className="text-xs font-bold text-gray-400 mb-1 block"><T>Contenu du contrat *</T></label>
+                            <textarea rows={12} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} placeholder={t("Termes et conditions du contrat...")} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white text-sm focus:outline-none resize-none font-mono" />
                         </div>
                         <button onClick={handleCreate} className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-xl transition-all flex items-center gap-2 text-sm">
                             <Save size={16} /> Créer le contrat
@@ -150,7 +152,7 @@ export default function AdminContractsPage() {
             <div className="max-w-5xl mx-auto">
                 <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
                     <div>
-                        <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.3em]">Gestion</span>
+                        <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.3em]"><T>Gestion</T></span>
                         <h1 className="text-2xl font-black text-white flex items-center gap-2">
                             <FileSignature size={22} className="text-emerald-400" /> Contrats & Devis
                         </h1>
@@ -167,7 +169,7 @@ export default function AdminContractsPage() {
                 ) : contracts.length === 0 ? (
                     <div className="text-center py-20 text-gray-500">
                         <FileSignature className="mx-auto mb-3 text-gray-700" size={40} />
-                        <p className="text-sm">Aucun contrat créé</p>
+                        <p className="text-sm"><T>Aucun contrat créé</T></p>
                     </div>
                 ) : (
                     <div className="space-y-3">

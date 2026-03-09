@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { motion, useInView } from 'framer-motion';
+import { motion, useInView } from 'framer-motion'; import { useTranslation, T } from '@/lib/translation';
 
 const stats = [
     { label: "Projets Réalisés", target: 500, suffix: "+" },
@@ -43,6 +43,7 @@ function Counter({ target, suffix }: { target: number, suffix: string }) {
 }
 
 export default function StatsSection() {
+    const { t } = useTranslation();
     return (
         <section className="py-20 bg-primary/95 text-white">
             <div className="container mx-auto px-4">
@@ -57,7 +58,7 @@ export default function StatsSection() {
                             className="text-center space-y-2"
                         >
                             <Counter target={stat.target} suffix={stat.suffix || ""} />
-                            <p className="text-lg opacity-90 font-light">{stat.label}</p>
+                            <p className="text-lg opacity-90 font-light">{t(stat.label)}</p>
                         </motion.div>
                     ))}
                 </div>

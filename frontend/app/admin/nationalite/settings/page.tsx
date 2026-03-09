@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import {
@@ -35,6 +36,7 @@ const IC = 'w-full bg-white/[0.04] border border-white/10 rounded-xl py-3 px-4 t
 const LC = 'text-xs font-bold text-gray-400 mb-1.5 block'
 
 export default function NationaliteSettingsPage() {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [saved, setSaved] = useState(false)
@@ -178,7 +180,7 @@ export default function NationaliteSettingsPage() {
                 {saved && (
                     <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 flex items-center gap-3">
                         <CheckCircle2 size={18} className="text-emerald-400" />
-                        <p className="text-sm text-emerald-400 font-bold">Paramètres enregistrés avec succès. Les changements sont immédiatement appliqués.</p>
+                        <p className="text-sm text-emerald-400 font-bold"><T>Paramètres enregistrés avec succès. Les changements sont immédiatement appliqués.</T></p>
                     </div>
                 )}
 
@@ -189,8 +191,8 @@ export default function NationaliteSettingsPage() {
                             <DollarSign size={20} className="text-[#FCD116]" />
                         </div>
                         <div>
-                            <h2 className="text-lg font-black text-white">Tarification</h2>
-                            <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Montant et devise des frais de dossier</p>
+                            <h2 className="text-lg font-black text-white"><T>Tarification</T></h2>
+                            <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold"><T>Montant et devise des frais de dossier</T></p>
                         </div>
                     </div>
 
@@ -221,7 +223,7 @@ export default function NationaliteSettingsPage() {
                                 Devise <span className="text-red-400">*</span>
                             </label>
                             <select
-                                title="Devise"
+                                title={t("Devise")}
                                 value={currency}
                                 onChange={e => setCurrency(e.target.value)}
                                 className={IC}
@@ -234,13 +236,13 @@ export default function NationaliteSettingsPage() {
                     </div>
 
                     <div>
-                        <label className={LC}>Description du paiement</label>
+                        <label className={LC}><T>Description du paiement</T></label>
                         <input
                             type="text"
                             value={paymentDescription}
                             onChange={e => setPaymentDescription(e.target.value)}
                             className={IC}
-                            placeholder="Frais de traitement de dossier de reconnaissance de nationalité béninoise"
+                            placeholder={t("Frais de traitement de dossier de reconnaissance de nationalité béninoise")}
                         />
                         <p className="text-[10px] text-gray-600 mt-1.5 flex items-center gap-1">
                             <Info size={10} /> Affiché lors du paiement (passerelle).
@@ -249,7 +251,7 @@ export default function NationaliteSettingsPage() {
 
                     {/* Quick preview */}
                     <div className="bg-gradient-to-r from-emerald-900/20 to-yellow-900/10 border border-emerald-500/10 rounded-2xl p-5 text-center">
-                        <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold mb-1">Aperçu du montant affiché</p>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold mb-1"><T>Aperçu du montant affiché</T></p>
                         <p className="text-3xl font-black text-[#FCD116]">
                             {amount.toLocaleString('fr-FR')} {currency}
                         </p>
@@ -263,7 +265,7 @@ export default function NationaliteSettingsPage() {
                             <FileText size={20} className="text-emerald-400" />
                         </div>
                         <div>
-                            <h2 className="text-lg font-black text-white">Documents requis</h2>
+                            <h2 className="text-lg font-black text-white"><T>Documents requis</T></h2>
                             <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">
                                 Pièces jointes demandées au candidat ({requiredDocs.length})
                             </p>
@@ -301,7 +303,7 @@ export default function NationaliteSettingsPage() {
                                     {doc.multi ? 'Multi-fichier ✓' : 'Un seul'}
                                 </button>
                                 <button
-                                    title="Supprimer ce document"
+                                    title={t("Supprimer ce document")}
                                     onClick={() => removeDocument(i)}
                                     className="p-2 text-red-500/50 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                                 >
@@ -318,37 +320,37 @@ export default function NationaliteSettingsPage() {
                         </p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <label className={LC}>Nom du document</label>
+                                <label className={LC}><T>Nom du document</T></label>
                                 <input
                                     type="text"
                                     value={newDocLabel}
                                     onChange={e => setNewDocLabel(e.target.value)}
                                     className={IC}
-                                    placeholder="Ex: Acte de naissance"
+                                    placeholder={t("Ex: Acte de naissance")}
                                     onKeyDown={e => e.key === 'Enter' && addDocument()}
                                 />
                             </div>
                             <div>
-                                <label className={LC}>Indice / aide (optionnel)</label>
+                                <label className={LC}><T>Indice / aide (optionnel)</T></label>
                                 <input
                                     type="text"
                                     value={newDocHint}
                                     onChange={e => setNewDocHint(e.target.value)}
                                     className={IC}
-                                    placeholder="Ex: Vous pouvez charger plusieurs fichiers"
+                                    placeholder={t("Ex: Vous pouvez charger plusieurs fichiers")}
                                 />
                             </div>
                         </div>
                         <div className="flex items-center justify-between">
                             <label className="flex items-center gap-2 cursor-pointer">
                                 <input
-                                    title="Autoriser multi-fichier"
+                                    title={t("Autoriser multi-fichier")}
                                     type="checkbox"
                                     checked={newDocMulti}
                                     onChange={e => setNewDocMulti(e.target.checked)}
                                     className="w-4 h-4 accent-emerald-500"
                                 />
-                                <span className="text-xs text-gray-400">Autoriser plusieurs fichiers</span>
+                                <span className="text-xs text-gray-400"><T>Autoriser plusieurs fichiers</T></span>
                             </label>
                             <button
                                 onClick={addDocument}
@@ -365,9 +367,9 @@ export default function NationaliteSettingsPage() {
                 <div className="bg-blue-500/5 border border-blue-500/10 rounded-2xl p-5 flex items-start gap-4">
                     <Globe2 size={20} className="text-blue-400 shrink-0 mt-0.5" />
                     <div className="text-xs text-gray-400 space-y-1">
-                        <p className="font-bold text-blue-400">Comment ça fonctionne ?</p>
-                        <p>Le montant et la devise sont affichés au demandeur dans le formulaire de nationalité. Le paiement est ensuite effectué via les passerelles activées (Kkiapay, FedaPay, Zeyow).</p>
-                        <p>Les documents listés ci-dessus sont obligatoires : le demandeur ne pourra pas passer à l&apos;étape suivante sans les avoir tous fournis.</p>
+                        <p className="font-bold text-blue-400"><T>Comment ça fonctionne ?</T></p>
+                        <p><T>Le montant et la devise sont affichés au demandeur dans le formulaire de nationalité. Le paiement est ensuite effectué via les passerelles activées (Kkiapay, FedaPay, Zeyow).</T></p>
+                        <p><T>Les documents listés ci-dessus sont obligatoires : le demandeur ne pourra pas passer à l&apos;étape suivante sans les avoir tous fournis.</T></p>
                         <p className="flex items-center gap-2 mt-2">
                             <CreditCard size={12} className="text-amber-400" />
                             <Link href="/admin/settings/payment" className="text-amber-400 hover:underline font-bold">

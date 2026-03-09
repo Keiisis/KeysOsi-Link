@@ -79,12 +79,23 @@ export async function POST(request: Request) {
         // Récupérer la commande — le montant est TOUJOURS stocké en XOF dans la DB
         const { data: order, error: orderError } = await supabase
             .from('orders')
-            .select('amount, currency, customer_name, customer_email')
+            .select('amount, currency, customer_name, customer_email, payment_method, payment_status')
             .eq('id', order_id)
             .single()
 
         if (orderError || !order) {
             return NextResponse.json({ error: 'Commande introuvable' }, { status: 404 })
+        }
+
+        // Vérifier que la commande est bien associée à PayPal (non falsifiable — défini côté serveur).
+        // Empêche la création d'un PayPal order pour une commande d'un autre gateway.
+        if (order.payment_method !== 'paypal') {
+            console.warn(`[PayPal Create] Tentative sur commande ${order_id} (méthode: ${order.payment_method})`)
+            return NextResponse.json({ error: 'Commande non associée à PayPal' }, { status: 400 })
+        }
+
+        if (order.payment_status === 'completed') {
+            return NextResponse.json({ error: 'Commande déjà payée' }, { status: 400 })
         }
 
         // Convertir XOF → devise PayPal configurée (ex: 15000 XOF → 22.87 EUR)

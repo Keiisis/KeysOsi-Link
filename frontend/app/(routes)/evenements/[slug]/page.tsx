@@ -10,6 +10,7 @@ import {
     ArrowLeft, CheckCircle2, X, Share2, ChevronLeft, ChevronRight,
     Phone, Mail, User, CreditCard, ExternalLink,
 } from 'lucide-react'
+import { useTranslation, T } from '@/lib/translation'
 
 interface EventData {
     id: string; title: string; slug: string; description: string; short_description: string
@@ -34,6 +35,8 @@ const PAYMENT_METHODS = [
 export default function EventDetailPage() {
     const params = useParams()
     const slug = params?.slug as string
+
+    const { t } = useTranslation()
 
     const [event, setEvent] = useState<EventData | null>(null)
     const [loading, setLoading] = useState(true)
@@ -106,9 +109,9 @@ export default function EventDetailPage() {
             <div className="w-20 h-20 rounded-[22px] bg-gray-50 flex items-center justify-center">
                 <Calendar size={36} className="text-gray-300" />
             </div>
-            <p className="font-black text-[#1a2332] text-lg">Événement introuvable</p>
+            <p className="font-black text-[#1a2332] text-lg"><T>Événement introuvable</T></p>
             <Link href="/evenements" className="text-[#008751] text-sm font-bold hover:underline flex items-center gap-1">
-                <ArrowLeft size={14} /> Retour aux événements
+                <ArrowLeft size={14} /> <T>Retour aux événements</T>
             </Link>
         </div>
     )
@@ -136,18 +139,18 @@ export default function EventDetailPage() {
                     <div className="absolute top-6 left-4 md:left-8 z-10 pt-16 md:pt-0">
                         <Link href="/evenements"
                             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/90 backdrop-blur-sm text-[#1a2332] text-xs font-bold shadow-lg hover:bg-white transition-all border border-white/50">
-                            <ArrowLeft size={14} /> Retour
+                            <ArrowLeft size={14} /> <T>Retour</T>
                         </Link>
                     </div>
 
                     {/* Navigation galerie */}
                     {allImages.length > 1 && (
                         <>
-                            <button type="button" aria-label="Photo précédente" onClick={() => setGalleryIdx(i => (i - 1 + allImages.length) % allImages.length)}
+                            <button type="button" aria-label={t("Photo précédente")} onClick={() => setGalleryIdx(i => (i - 1 + allImages.length) % allImages.length)}
                                 className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 backdrop-blur-sm text-[#1a2332] flex items-center justify-center hover:bg-white transition-all shadow-lg border border-white/50 cursor-pointer">
                                 <ChevronLeft size={18} />
                             </button>
-                            <button type="button" aria-label="Photo suivante" onClick={() => setGalleryIdx(i => (i + 1) % allImages.length)}
+                            <button type="button" aria-label={t("Photo suivante")} onClick={() => setGalleryIdx(i => (i + 1) % allImages.length)}
                                 className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 backdrop-blur-sm text-[#1a2332] flex items-center justify-center hover:bg-white transition-all shadow-lg border border-white/50 cursor-pointer">
                                 <ChevronRight size={18} />
                             </button>
@@ -183,7 +186,7 @@ export default function EventDetailPage() {
                             <div className="flex items-center justify-between">
                                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-[#008751]/8 text-[#008751] border border-[#008751]/15">
                                     <span className="w-1.5 h-1.5 rounded-full bg-[#008751]" />
-                                    {event.category}
+                                    {t(event.category)}
                                 </span>
                                 <button type="button"
                                     className="w-9 h-9 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400 hover:text-[#008751] hover:border-[#008751]/20 transition-all cursor-pointer">
@@ -192,7 +195,7 @@ export default function EventDetailPage() {
                             </div>
 
                             <h1 className="text-3xl md:text-4xl font-black font-heading tracking-tight text-[#1a2332] leading-tight">
-                                {event.title}
+                                {t(event.title)}
                             </h1>
 
                             {/* Méta-infos */}
@@ -202,7 +205,7 @@ export default function EventDetailPage() {
                                         <Calendar size={15} className="text-[#008751]" />
                                     </div>
                                     <div>
-                                        <div className="text-[11px] text-gray-400 font-bold uppercase tracking-wide">Date</div>
+                                        <div className="text-[11px] text-gray-400 font-bold uppercase tracking-wide"><T>Date</T></div>
                                         <div className="text-xs font-bold text-[#1a2332]">{formatDate(event.start_date)}</div>
                                         <div className="text-[10px] text-gray-400">
                                             {formatTime(event.start_date)}
@@ -217,8 +220,8 @@ export default function EventDetailPage() {
                                             <MapPin size={15} className="text-[#E8112D]" />
                                         </div>
                                         <div>
-                                            <div className="text-[11px] text-gray-400 font-bold uppercase tracking-wide">Lieu</div>
-                                            <div className="text-xs font-bold text-[#1a2332]">{event.location}</div>
+                                            <div className="text-[11px] text-gray-400 font-bold uppercase tracking-wide"><T>Lieu</T></div>
+                                            <div className="text-xs font-bold text-[#1a2332]">{t(event.location)}</div>
                                             {event.location_map_url && (
                                                 <a href={event.location_map_url} target="_blank" rel="noopener noreferrer"
                                                     className="text-[10px] text-[#E8112D] hover:underline flex items-center gap-0.5">
@@ -235,7 +238,7 @@ export default function EventDetailPage() {
                                             <Users size={15} className="text-gray-400" />
                                         </div>
                                         <div>
-                                            <div className="text-[11px] text-gray-400 font-bold uppercase tracking-wide">Capacité</div>
+                                            <div className="text-[11px] text-gray-400 font-bold uppercase tracking-wide"><T>Capacité</T></div>
                                             <div className="text-xs font-bold text-[#1a2332]">{event.max_capacity} places</div>
                                         </div>
                                     </div>
@@ -243,15 +246,14 @@ export default function EventDetailPage() {
                             </div>
                         </div>
 
-                        {/* Description */}
                         <div className="bg-white rounded-[24px] border border-gray-100 p-7 md:p-8"
                             style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
                             <h2 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                                 <span className="w-4 h-[3px] rounded-full bg-[#008751]" />
-                                Description
+                                <T>Description</T>
                             </h2>
                             <div className="text-[15px] text-gray-600 leading-relaxed whitespace-pre-line">
-                                {event.description || event.short_description || 'Aucune description disponible.'}
+                                {t(event.description || event.short_description || 'Aucune description disponible.')}
                             </div>
                         </div>
 
@@ -261,7 +263,7 @@ export default function EventDetailPage() {
                                 style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
                                 <h2 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                                     <span className="w-4 h-[3px] rounded-full bg-[#FCD116]" />
-                                    Galerie ({allImages.length} photos)
+                                    {t('Galerie')} ({allImages.length} {t('photos')})
                                 </h2>
                                 <div className="grid grid-cols-4 gap-2">
                                     {allImages.map((img, idx) => (
@@ -286,8 +288,8 @@ export default function EventDetailPage() {
 
                                 <div className="p-6 space-y-5">
                                     <div>
-                                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Rejoignez l&apos;événement</div>
-                                        <h3 className="text-lg font-black text-[#1a2332] leading-tight">{event.title}</h3>
+                                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1"><T>Rejoignez l'événement</T></div>
+                                        <h3 className="text-lg font-black text-[#1a2332] leading-tight">{t(event.title)}</h3>
                                     </div>
 
                                     {/* Prix */}
@@ -295,7 +297,7 @@ export default function EventDetailPage() {
                                         <div className="flex items-center justify-between p-4 rounded-2xl bg-[#f0fdf4] border border-[#008751]/15">
                                             <div className="flex items-center gap-2">
                                                 <Ticket size={16} className="text-[#008751]" />
-                                                <span className="text-sm font-bold text-[#1a2332]">Standard</span>
+                                                <span className="text-sm font-bold text-[#1a2332]"><T>Standard</T></span>
                                             </div>
                                             {event.price_standard > 0 ? (
                                                 <span className="text-lg font-black text-[#008751]">
@@ -303,7 +305,7 @@ export default function EventDetailPage() {
                                                     <span className="text-xs font-bold text-gray-400 ml-1">{event.currency}</span>
                                                 </span>
                                             ) : (
-                                                <span className="text-sm font-black text-[#008751]">GRATUIT</span>
+                                                <span className="text-sm font-black text-[#008751]"><T>GRATUIT</T></span>
                                             )}
                                         </div>
 
@@ -311,7 +313,7 @@ export default function EventDetailPage() {
                                             <div className="flex items-center justify-between p-4 rounded-2xl bg-[#fefce8] border border-[#FCD116]/30">
                                                 <div className="flex items-center gap-2">
                                                     <Crown size={16} className="text-amber-500" />
-                                                    <span className="text-sm font-bold text-[#1a2332]">VIP</span>
+                                                    <span className="text-sm font-bold text-[#1a2332]"><T>VIP</T></span>
                                                 </div>
                                                 <span className="text-lg font-black text-amber-600">
                                                     {formatPrice(event.price_vip)}
@@ -330,7 +332,7 @@ export default function EventDetailPage() {
                                                 boxShadow: '0 8px 32px rgba(0,135,81,0.35)',
                                             }}>
                                             <Ticket size={16} />
-                                            {event.price_standard === 0 ? 'Participer gratuitement' : `Participer — ${formatPrice(event.price_standard)} ${event.currency}`}
+                                            {event.price_standard === 0 ? t('Participer gratuitement') : `${t('Participer')} — ${formatPrice(event.price_standard)} ${event.currency}`}
                                         </button>
 
                                         {event.price_vip > 0 && (
@@ -341,25 +343,24 @@ export default function EventDetailPage() {
                                                     boxShadow: '0 8px 32px rgba(252,209,22,0.4)',
                                                 }}>
                                                 <Crown size={16} />
-                                                Réserver VIP — {formatPrice(event.price_vip)} {event.currency}
+                                                {t('Réserver VIP')} — {formatPrice(event.price_vip)} {event.currency}
                                             </button>
                                         )}
                                     </div>
 
-                                    {/* Infos supplémentaires */}
                                     <div className="pt-2 border-t border-gray-50 space-y-2">
                                         <div className="flex items-center gap-2 text-[11px] text-gray-400">
                                             <CheckCircle2 size={12} className="text-[#008751]" />
-                                            Ticket envoyé par email après inscription
+                                            <T>Ticket envoyé par email après inscription</T>
                                         </div>
                                         <div className="flex items-center gap-2 text-[11px] text-gray-400">
                                             <CheckCircle2 size={12} className="text-[#008751]" />
-                                            Paiement 100% sécurisé
+                                            <T>Paiement 100% sécurisé</T>
                                         </div>
                                         {event.max_capacity > 0 && (
                                             <div className="flex items-center gap-2 text-[11px] text-gray-400">
                                                 <Users size={12} className="text-[#008751]" />
-                                                Places limitées — {event.max_capacity} au total
+                                                {t('Places limitées')} — {event.max_capacity} {t('au total')}
                                             </div>
                                         )}
                                     </div>
@@ -389,9 +390,11 @@ export default function EventDetailPage() {
                         >
                             {/* Bande drapeau top */}
                             <div className="h-[5px]"
-                                style={{ background: ticketType === 'vip'
-                                    ? 'linear-gradient(90deg, #FCD116, #f59e0b)'
-                                    : 'linear-gradient(90deg, #008751, #006039)' }} />
+                                style={{
+                                    background: ticketType === 'vip'
+                                        ? 'linear-gradient(90deg, #FCD116, #f59e0b)'
+                                        : 'linear-gradient(90deg, #008751, #006039)'
+                                }} />
 
                             {/* Header modal */}
                             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-50">
@@ -408,7 +411,7 @@ export default function EventDetailPage() {
                                     </div>
                                     <div>
                                         <h3 className="text-sm font-black text-[#1a2332]">
-                                            Inscription {ticketType === 'vip' ? 'VIP' : 'Standard'}
+                                            {t('Inscription')} {ticketType === 'vip' ? t('VIP') : t('Standard')}
                                         </h3>
                                         <p className="text-[10px] text-gray-400 truncate max-w-[200px]">{event.title}</p>
                                     </div>
@@ -431,37 +434,36 @@ export default function EventDetailPage() {
                                             style={{ background: 'linear-gradient(135deg, #008751, #006039)', boxShadow: '0 12px 40px rgba(0,135,81,0.3)' }}>
                                             <CheckCircle2 size={36} className="text-white" />
                                         </div>
-                                        <h4 className="text-xl font-black text-[#1a2332]">Inscription confirmée !</h4>
+                                        <h4 className="text-xl font-black text-[#1a2332]"><T>Inscription confirmée !</T></h4>
                                         <p className="text-gray-500 text-sm leading-relaxed">
-                                            Votre ticket vous sera envoyé par email à{' '}
+                                            <T>Votre ticket vous sera envoyé par email à</T>{' '}
                                             <strong className="text-[#008751]">{form.email}</strong>
                                         </p>
                                         <div className="flex items-center gap-2 justify-center text-[11px] text-gray-400 bg-gray-50 px-4 py-2 rounded-full border border-gray-100 w-fit mx-auto">
                                             <CheckCircle2 size={11} className="text-[#008751]" />
-                                            Ticket généré et sécurisé anti-fraude
+                                            <T>Ticket généré et sécurisé anti-fraude</T>
                                         </div>
                                         <button type="button" onClick={() => setShowModal(false)}
                                             className="text-[#008751] text-sm font-bold hover:underline cursor-pointer">
-                                            Fermer
+                                            <T>Fermer</T>
                                         </button>
                                     </motion.div>
                                 ) : (
                                     <>
                                         {/* Stepper */}
                                         <div className="flex items-center gap-2 justify-center">
-                                            {['Informations', 'Paiement'].map((s, i) => (
+                                            {[t('Informations'), t('Paiement')].map((s, i) => (
                                                 <div key={s} className="flex items-center gap-2">
-                                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black transition-all ${
-                                                        formStep >= i
-                                                            ? 'text-white shadow-md'
-                                                            : 'bg-gray-100 text-gray-400'
-                                                    }`}
-                                                    style={formStep >= i ? {
-                                                        background: ticketType === 'vip'
-                                                            ? 'linear-gradient(135deg, #FCD116, #f59e0b)'
-                                                            : 'linear-gradient(135deg, #008751, #006039)',
-                                                        color: ticketType === 'vip' ? '#1a2332' : 'white',
-                                                    } : {}}>
+                                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black transition-all ${formStep >= i
+                                                        ? 'text-white shadow-md'
+                                                        : 'bg-gray-100 text-gray-400'
+                                                        }`}
+                                                        style={formStep >= i ? {
+                                                            background: ticketType === 'vip'
+                                                                ? 'linear-gradient(135deg, #FCD116, #f59e0b)'
+                                                                : 'linear-gradient(135deg, #008751, #006039)',
+                                                            color: ticketType === 'vip' ? '#1a2332' : 'white',
+                                                        } : {}}>
                                                         {i + 1}
                                                     </div>
                                                     <span className={`text-[11px] font-bold ${formStep >= i ? 'text-[#1a2332]' : 'text-gray-400'}`}>{s}</span>
@@ -484,13 +486,13 @@ export default function EventDetailPage() {
                                                     <div key={f.key}>
                                                         <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                                                             <f.icon size={10} />
-                                                            {f.label}{f.required && <span className="text-[#E8112D]">*</span>}
+                                                            {t(f.label)}{f.required && <span className="text-[#E8112D]">*</span>}
                                                         </label>
                                                         <input
                                                             type={f.type}
                                                             value={form[f.key as keyof typeof form]}
                                                             onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
-                                                            placeholder={f.placeholder}
+                                                            placeholder={t(f.placeholder)}
                                                             className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-[#1a2332] text-sm focus:outline-none focus:border-[#008751] focus:ring-2 focus:ring-[#008751]/10 transition-all placeholder-gray-400"
                                                         />
                                                     </div>
@@ -502,7 +504,7 @@ export default function EventDetailPage() {
                                         {formStep === 1 && !isFree && (
                                             <div className="space-y-4">
                                                 <div className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-100">
-                                                    <span className="text-xs font-bold text-gray-500">Montant à payer</span>
+                                                    <span className="text-xs font-bold text-gray-500"><T>Montant à payer</T></span>
                                                     <span className="text-xl font-black"
                                                         style={{ color: ticketType === 'vip' ? '#d97706' : '#008751' }}>
                                                         {formatPrice(price)}
@@ -510,17 +512,16 @@ export default function EventDetailPage() {
                                                     </span>
                                                 </div>
                                                 <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-                                                    <CreditCard size={10} /> Moyen de paiement
+                                                    <CreditCard size={10} /> <T>Moyen de paiement</T>
                                                 </label>
                                                 <div className="grid grid-cols-2 gap-2">
                                                     {PAYMENT_METHODS.map(pm => (
                                                         <button type="button" key={pm.id}
                                                             onClick={() => setForm(f => ({ ...f, payment_method: pm.id }))}
-                                                            className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                                                                form.payment_method === pm.id
-                                                                    ? 'border-[#008751] bg-[#008751]/5 shadow-sm'
-                                                                    : 'border-gray-100 bg-gray-50 hover:border-gray-200'
-                                                            }`}>
+                                                            className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${form.payment_method === pm.id
+                                                                ? 'border-[#008751] bg-[#008751]/5 shadow-sm'
+                                                                : 'border-gray-100 bg-gray-50 hover:border-gray-200'
+                                                                }`}>
                                                             <div className="flex items-center gap-1.5 mb-0.5">
                                                                 <div className="w-2 h-2 rounded-full" style={{ background: pm.color }} />
                                                                 <div className="text-xs font-bold text-[#1a2332]">{pm.label}</div>
@@ -538,12 +539,11 @@ export default function EventDetailPage() {
                                             </p>
                                         )}
 
-                                        {/* Actions */}
                                         <div className="flex gap-3">
                                             {formStep > 0 && (
                                                 <button type="button" onClick={() => setFormStep(f => f - 1)}
                                                     className="flex-1 py-3 rounded-2xl border border-gray-200 text-xs font-bold text-gray-500 hover:text-[#1a2332] hover:border-gray-300 cursor-pointer transition-all">
-                                                    Retour
+                                                    <T>Retour</T>
                                                 </button>
                                             )}
                                             <button type="button"
@@ -562,10 +562,10 @@ export default function EventDetailPage() {
                                                         ? '0 8px 24px rgba(252,209,22,0.3)'
                                                         : '0 8px 24px rgba(0,135,81,0.3)',
                                                 }}>
-                                                {submitting ? 'Envoi...'
-                                                    : formStep === 0 && !isFree ? 'Continuer'
-                                                    : isFree ? 'Confirmer l\'inscription'
-                                                    : 'Procéder au paiement'}
+                                                {submitting ? t('Envoi...')
+                                                    : formStep === 0 && !isFree ? t('Continuer')
+                                                        : isFree ? t("Confirmer l'inscription")
+                                                            : t('Procéder au paiement')}
                                             </button>
                                         </div>
                                     </>

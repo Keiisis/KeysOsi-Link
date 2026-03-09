@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation, T } from '@/lib/translation';
 import { useList, useNavigation, useDelete, useUpdate } from "@refinedev/core";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -27,6 +28,7 @@ export interface Patrimoine extends BaseRecord {
 }
 
 export default function PatrimonioList() {
+    const { t } = useTranslation();
     const { create, edit } = useNavigation();
     const queryResult = useList<Patrimoine>({
         resource: "patrimoine",
@@ -60,10 +62,10 @@ export default function PatrimonioList() {
                 <div className="space-y-4">
                     <div className="flex items-center gap-3 text-[#FCD116]">
                         <ScrollText size={20} />
-                        <span className="text-[10px] font-black uppercase tracking-[0.5em]">Curateur National des Trésors</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.5em]"><T>Curateur National des Trésors</T></span>
                     </div>
                     <h1 className="text-7xl font-black text-white font-heading tracking-tighter leading-none">
-                        HERITAGE <span className="text- benin-gradient">VAULT</span>
+                        HERITAGE <span className="text- benin-gradient"><T>VAULT</T></span>
                     </h1>
                     <p className="text-gray-500 max-w-2xl font-medium text-lg leading-relaxed">
                         Gérez le patrimoine culturel et historique du Bénin. Chaque archive est un pont entre le passé glorieux et le futur numérique.
@@ -75,7 +77,7 @@ export default function PatrimonioList() {
                         <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
                         <input
                             type="text"
-                            placeholder="Rechercher dans les archives..."
+                            placeholder={t("Rechercher dans les archives...")}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full bg-[#0a0f18] border-2 border-white/5 rounded-[2rem] py-5 pl-14 pr-6 text-white text-sm font-bold focus:outline-none focus:border-[#FCD116]/40 transition-all placeholder:text-gray-700"
@@ -102,7 +104,7 @@ export default function PatrimonioList() {
                             <BookOpen size={32} className="text-[#FCD116] animate-pulse" />
                         </div>
                     </div>
-                    <p className="mt-8 text-[10px] text-gray-600 font-black uppercase tracking-[0.6em] animate-pulse">Ouverture des Sceaux...</p>
+                    <p className="mt-8 text-[10px] text-gray-600 font-black uppercase tracking-[0.6em] animate-pulse"><T>Ouverture des Sceaux...</T></p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-10">
@@ -166,7 +168,7 @@ export default function PatrimonioList() {
                                     <div className="absolute bottom-0 left-0 w-full p-10 space-y-4">
                                         <div className="flex items-center gap-3">
                                             <div className="w-2 h-2 rounded-full bg-[#008751]" />
-                                            <span className="text-[10px] font-black text-[#008751] uppercase tracking-[0.4em]">Archive Déployée</span>
+                                            <span className="text-[10px] font-black text-[#008751] uppercase tracking-[0.4em]"><T>Archive Déployée</T></span>
                                         </div>
 
                                         <h3 className="text-3xl font-black text-white font-heading leading-none group-hover:text-[#FCD116] transition-colors">
@@ -209,8 +211,8 @@ export default function PatrimonioList() {
                         <div className="w-24 h-24 rounded-[2rem] bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:border-[#FCD116]/40 transition-all">
                             <Plus size={40} className="text-gray-600 group-hover:text-[#FCD116]" />
                         </div>
-                        <h3 className="text-white font-black font-heading text-xl uppercase tracking-widest text-center">Ajouter un Joyau</h3>
-                        <p className="text-[10px] text-gray-600 font-bold uppercase tracking-[0.4em] mt-2">Expansion de l&apos;Archive</p>
+                        <h3 className="text-white font-black font-heading text-xl uppercase tracking-widest text-center"><T>Ajouter un Joyau</T></h3>
+                        <p className="text-[10px] text-gray-600 font-bold uppercase tracking-[0.4em] mt-2"><T>Expansion de l&apos;Archive</T></p>
                     </motion.div>
                 </div>
             )}
@@ -219,7 +221,7 @@ export default function PatrimonioList() {
             <div className="flex flex-wrap gap-8 py-10 border-t border-white/5">
                 <div className="flex items-baseline gap-4">
                     <span className="text-6xl font-black text-white font-heading">{items.length}</span>
-                    <span className="text-xs font-black text-[#FCD116] uppercase tracking-[0.5em]">Trésors Répertoriés</span>
+                    <span className="text-xs font-black text-[#FCD116] uppercase tracking-[0.5em]"><T>Trésors Répertoriés</T></span>
                 </div>
                 <div className="h-16 w-[1px] bg-white/5 hidden md:block" />
                 <div className="flex items-center gap-4">
@@ -227,8 +229,8 @@ export default function PatrimonioList() {
                         <Globe size={24} />
                     </div>
                     <div>
-                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Couverture Géographique</p>
-                        <p className="text-white font-bold text-sm">Pancan-Bénin • Diaspora</p>
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest"><T>Couverture Géographique</T></p>
+                        <p className="text-white font-bold text-sm"><T>Pancan-Bénin • Diaspora</T></p>
                     </div>
                 </div>
             </div>

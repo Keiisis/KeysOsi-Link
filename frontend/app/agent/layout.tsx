@@ -14,6 +14,7 @@ import {
     Shield, PanelLeftClose, PanelLeft,
     Command, UserCog, Globe, Handshake
 } from 'lucide-react'
+import { useTranslation, T } from '@/lib/translation'
 
 // ═══════════════════════════════════════════
 // Types
@@ -96,8 +97,10 @@ const useInactivityLogout = (onLogout: () => void) => {
 export default function AgentLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
 
+    const isLoginPage = pathname === '/agent/login'
+    const { t } = useTranslation()
     const [agent, setAgent] = useState<AgentProfile | null>(null)
-    const [loading, setLoading] = useState(true)
+    const [loading, setLoading] = useState(!isLoginPage)
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const [scrolled, setScrolled] = useState(false)
@@ -108,8 +111,6 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
     const [unreadMessages, setUnreadMessages] = useState(0)
     const [unreadVoices, setUnreadVoices] = useState(0)
     const [unreadPartenaires, setUnreadPartenaires] = useState(0)
-
-    const isLoginPage = pathname === '/agent/login'
 
     // ─── Scroll detection ───
     useEffect(() => {
@@ -122,10 +123,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
 
     // ─── Auth check ───
     useEffect(() => {
-        if (isLoginPage) {
-            setLoading(false)
-            return
-        }
+        if (isLoginPage) return
 
         const checkAuth = async () => {
             // Utilise getSession() — lit les cookies locaux, rapide et fiable
@@ -261,7 +259,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
         }
         await supabase.auth.signOut()
         window.location.href = '/agent/login'
-    }, [agent?.id])
+    }, [agent])
 
 
     // ─── Inactivity auto-logout ───
@@ -285,8 +283,11 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
 
     // ─── Close mobile menu on route change ───
     useEffect(() => {
-        setMobileMenuOpen(false)
-    }, [pathname])
+        if (mobileMenuOpen) {
+            const timer = setTimeout(() => setMobileMenuOpen(false), 0)
+            return () => clearTimeout(timer)
+        }
+    }, [pathname, mobileMenuOpen])
 
     // Login page: no shell
     if (isLoginPage) return <>{children}</>
@@ -314,7 +315,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                             />
                         </div>
                         <p className="text-nexus-text-muted text-xs font-bold uppercase tracking-[0.3em]">
-                            Sécurisation...
+                            <T>Sécurisation...</T>
                         </p>
                     </div>
                 </div>
@@ -324,48 +325,48 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
 
     const menuSections: NavSection[] = [
         {
-            label: 'PRINCIPAL',
+            label: t('PRINCIPAL'),
             items: [
-                { title: 'Tableau de Bord', icon: LayoutDashboard, href: '/agent' },
-                { title: 'Mes Dossiers', icon: FileText, href: '/agent/dossiers' },
-                { title: 'Leads Oracle', icon: Compass, href: '/agent/leads' },
-                { title: 'Demandes Nat.', icon: Globe, href: '/agent/nationalite' },
+                { title: t('Tableau de Bord'), icon: LayoutDashboard, href: '/agent' },
+                { title: t('Mes Dossiers'), icon: FileText, href: '/agent/dossiers' },
+                { title: t('Leads Oracle'), icon: Compass, href: '/agent/leads' },
+                { title: t('Demandes Nat.'), icon: Globe, href: '/agent/nationalite' },
             ],
         },
         {
-            label: 'COMMUNICATION',
+            label: t('COMMUNICATION'),
             items: [
-                { title: 'Messages', icon: MessageSquare, href: '/agent/messages', badge: unreadMessages },
-                { title: 'Vocaux', icon: Headphones, href: '/agent/vocaux', badge: unreadVoices },
+                { title: t('Messages'), icon: MessageSquare, href: '/agent/messages', badge: unreadMessages },
+                { title: t('Vocaux'), icon: Headphones, href: '/agent/vocaux', badge: unreadVoices },
             ],
         },
         {
-            label: 'ORGANISATION',
+            label: t('ORGANISATION'),
             items: [
-                { title: 'Agenda', icon: CalendarDays, href: '/agent/agenda' },
-                { title: 'Événements', icon: CalendarDays, href: '/agent/evenements' },
-                { title: 'Documents', icon: FolderOpen, href: '/agent/documents' },
-                { title: 'Clients', icon: UsersIcon, href: '/agent/clients' },
-                { title: 'Partenaires', icon: Handshake, href: '/agent/partenaires', badge: unreadPartenaires },
+                { title: t('Agenda'), icon: CalendarDays, href: '/agent/agenda' },
+                { title: t('Événements'), icon: CalendarDays, href: '/agent/evenements' },
+                { title: t('Documents'), icon: FolderOpen, href: '/agent/documents' },
+                { title: t('Clients'), icon: UsersIcon, href: '/agent/clients' },
+                { title: t('Partenaires'), icon: Handshake, href: '/agent/partenaires', badge: unreadPartenaires },
             ],
         },
         {
-            label: 'OUTILS',
+            label: t('OUTILS'),
             items: [
-                { title: 'Devis & Paiements', icon: Send, href: '/agent/devis' },
-                { title: 'Performances', icon: TrendingUp, href: '/agent/performances' },
-                { title: 'Base de Connaissance', icon: BookOpen, href: '/agent/wiki' },
+                { title: t('Devis & Paiements'), icon: Send, href: '/agent/devis' },
+                { title: t('Performances'), icon: TrendingUp, href: '/agent/performances' },
+                { title: t('Base de Connaissance'), icon: BookOpen, href: '/agent/wiki' },
             ],
         },
         {
-            label: 'COMPTE',
+            label: t('COMPTE'),
             items: [
-                { title: 'Mon Profil', icon: UserCog, href: '/agent/profil' },
+                { title: t('Mon Profil'), icon: UserCog, href: '/agent/profil' },
             ],
         },
     ]
 
-    const currentPageTitle = menuSections.flatMap(s => s.items).find(i => i.href === pathname)?.title || 'Navigation'
+    const currentPageTitle = menuSections.flatMap(s => s.items).find(i => i.href === pathname)?.title || t('Navigation')
 
     // ─── Sidebar Navigation Item ───
     const NavLink = ({ item, index, compact = false }: { item: NavItem; index: number; compact?: boolean }) => {
@@ -448,12 +449,12 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                             className="overflow-hidden"
                         >
                             <h1 className="text-sm font-black font-heading tracking-tight text-white leading-none">
-                                BUREAU <span className="text-emerald-400">AGENT</span>
+                                <T>BUREAU</T> <span className="text-emerald-400"><T>AGENT</T></span>
                             </h1>
                             <div className="flex items-center gap-1.5 mt-1">
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-nexus-pulse" />
                                 <span className="text-[9px] text-nexus-text-muted font-bold uppercase tracking-[0.2em]">
-                                    En Ligne
+                                    <T>En Ligne</T>
                                 </span>
                             </div>
                         </motion.div>
@@ -490,10 +491,10 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                             </div>
                             <div className="flex-1 overflow-hidden">
                                 <p className="text-xs font-bold text-white truncate">
-                                    {agent?.full_name || 'Agent'}
+                                    {agent?.full_name || t('Agent')}
                                 </p>
                                 <p className="text-[9px] text-nexus-text-muted font-mono uppercase truncate">
-                                    {agent?.role === 'admin' ? 'Admin / Agent' : 'Agent Terrain'}
+                                    {agent?.role === 'admin' ? t('Admin / Agent') : t('Agent Terrain')}
                                 </p>
                             </div>
                         </div>
@@ -502,7 +503,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                             className="flex items-center gap-2.5 w-full px-3 py-2 text-red-400/70 hover:text-red-400 hover:bg-red-500/8 rounded-lg transition-all group text-[11px] font-bold"
                         >
                             <LogOut size={14} className="group-hover:-translate-x-0.5 transition-transform" />
-                            <span>DÉCONNEXION</span>
+                            <span><T>DÉCONNEXION</T></span>
                         </button>
                     </div>
                 ) : (
@@ -512,7 +513,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                         </div>
                         <button
                             onClick={handleLogout}
-                            title="Déconnexion"
+                            title={t('Déconnexion')}
                             className="p-2 text-red-400/70 hover:text-red-400 hover:bg-red-500/8 rounded-lg transition-all"
                         >
                             <LogOut size={16} />
@@ -559,7 +560,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                         >
                             <button
                                 onClick={() => setMobileMenuOpen(false)}
-                                title="Fermer le menu"
+                                title={t('Fermer le menu')}
                                 className="absolute top-4 right-4 p-2 rounded-lg hover:bg-white/5 text-nexus-text-muted"
                             >
                                 <X size={18} />
@@ -588,7 +589,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                         {/* Mobile hamburger */}
                         <button
                             onClick={() => setMobileMenuOpen(true)}
-                            title="Ouvrir le menu"
+                            title={t('Ouvrir le menu')}
                             className="p-2 rounded-lg hover:bg-white/5 transition-colors text-nexus-text-muted lg:hidden"
                         >
                             <Menu size={20} />
@@ -598,7 +599,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
                             className="hidden lg:flex p-2 rounded-lg hover:bg-white/5 transition-colors text-nexus-text-muted"
-                            title={sidebarOpen ? 'Réduire' : 'Agrandir'}
+                            title={sidebarOpen ? t('Réduire') : t('Agrandir')}
                         >
                             {sidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeft size={18} />}
                         </button>
@@ -606,7 +607,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                         {/* Breadcrumb */}
                         <div className="hidden md:flex items-center gap-1.5 text-xs">
                             <CircleDot size={10} className="text-emerald-500" />
-                            <span className="font-bold text-nexus-text-muted uppercase tracking-[0.15em] text-[10px]">Bureau</span>
+                            <span className="font-bold text-nexus-text-muted uppercase tracking-[0.15em] text-[10px]"><T>Bureau</T></span>
                             <ChevronRight size={10} className="text-nexus-text-muted" />
                             <span className="text-nexus-text-secondary font-semibold text-[11px]">
                                 {currentPageTitle}
@@ -621,7 +622,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                             className="flex items-center gap-2 py-1.5 px-3 rounded-lg bg-white/[0.03] border border-nexus-border-subtle hover:bg-white/[0.05] hover:border-nexus-border-default transition-all text-nexus-text-muted"
                         >
                             <Search size={13} />
-                            <span className="hidden lg:inline text-[11px]">Rechercher...</span>
+                            <span className="hidden lg:inline text-[11px]">{t('Rechercher...')}</span>
                             <kbd className="hidden lg:inline text-[9px] font-mono bg-white/5 px-1.5 py-0.5 rounded border border-white/10">
                                 ⌘K
                             </kbd>
@@ -632,7 +633,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                             <button
                                 onClick={() => setNotifOpen(!notifOpen)}
                                 className="relative p-2 rounded-lg hover:bg-white/5 text-nexus-text-muted hover:text-white transition-all"
-                                title="Notifications"
+                                title={t('Notifications')}
                             >
                                 <Bell size={17} />
                                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
@@ -650,10 +651,10 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                                     >
                                         <h4 className="text-xs font-bold text-white mb-3 flex items-center gap-2">
                                             <Bell size={12} className="text-emerald-400" />
-                                            Notifications
+                                            <T>Notifications</T>
                                         </h4>
                                         <p className="text-[11px] text-nexus-text-muted text-center py-4">
-                                            Aucune notification récente
+                                            <T>Aucune notification récente</T>
                                         </p>
                                     </motion.div>
                                 )}
@@ -690,7 +691,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                                         <Command size={16} className="text-emerald-400" />
                                         <input
                                             type="text"
-                                            placeholder="Rechercher un dossier, client, commande..."
+                                            placeholder={t('Rechercher un dossier, client, commande...')}
                                             autoFocus
                                             className="flex-1 bg-transparent text-sm text-white placeholder:text-nexus-text-muted focus:outline-none"
                                         />
@@ -699,13 +700,13 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                                         </kbd>
                                     </div>
                                     <div className="border-t border-nexus-border-subtle pt-3">
-                                        <p className="text-[10px] text-nexus-text-muted uppercase tracking-wider font-bold mb-2">Accès rapide</p>
+                                        <p className="text-[10px] text-nexus-text-muted uppercase tracking-wider font-bold mb-2"><T>Accès rapide</T></p>
                                         <div className="space-y-1">
                                             {[
-                                                { icon: FileText, label: 'Dossiers', href: '/agent/dossiers' },
-                                                { icon: Compass, label: 'Leads Oracle', href: '/agent/leads' },
-                                                { icon: MessageSquare, label: 'Messages', href: '/agent/messages' },
-                                                { icon: CalendarDays, label: 'Agenda', href: '/agent/agenda' },
+                                                { icon: FileText, label: t('Dossiers'), href: '/agent/dossiers' },
+                                                { icon: Compass, label: t('Leads Oracle'), href: '/agent/leads' },
+                                                { icon: MessageSquare, label: t('Messages'), href: '/agent/messages' },
+                                                { icon: CalendarDays, label: t('Agenda'), href: '/agent/agenda' },
                                             ].map((item) => (
                                                 <Link
                                                     key={item.href}

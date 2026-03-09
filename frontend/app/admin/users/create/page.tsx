@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState } from 'react'
 import { ArrowLeft, UserPlus, Loader2, Shield, User, Eye, EyeOff, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
@@ -7,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
 export default function CreateUserPage() {
+    const { t } = useTranslation();
     const router = useRouter()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
@@ -65,12 +67,12 @@ export default function CreateUserPage() {
                 </h2>
                 <p className="text-gray-400 text-sm text-center max-w-xs">
                     {wasUpdated
-                        ? <>Le compte existant de <span className="text-white font-bold">{fullName}</span> a été mis à jour avec le nouveau mot de passe.</>
-                        : <><span className="text-white font-bold">{fullName}</span> peut maintenant se connecter avec ses identifiants.</>
+                        ? <><T>Le compte existant de</T> <span className="text-white font-bold">{fullName}</span> <T>a été mis à jour avec le nouveau mot de passe.</T></>
+                        : <><span className="text-white font-bold">{fullName}</span> <T>peut maintenant se connecter avec ses identifiants.</T></>
                     }
                 </p>
                 <p className="text-[10px] text-gray-600 font-mono bg-white/5 px-4 py-2 rounded-lg">{email}</p>
-                <p className="text-[10px] text-gray-600">Redirection en cours...</p>
+                <p className="text-[10px] text-gray-600"><T>Redirection en cours...</T></p>
             </div>
         )
     }
@@ -82,14 +84,14 @@ export default function CreateUserPage() {
                 <Link
                     href="/admin/users"
                     className="p-3 rounded-xl bg-white/5 border border-white/5 text-gray-400 hover:text-white transition-colors"
-                    title="Retour"
+                    title={t("Retour")}
                 >
                     <ArrowLeft size={18} />
                 </Link>
                 <div>
                     <div className="flex items-center gap-2 text-[#FCD116]">
                         <UserPlus size={16} />
-                        <span className="text-[10px] font-black uppercase tracking-[0.4em]">Nouveau Compte</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.4em]"><T>Nouveau Compte</T></span>
                     </div>
                     <h1 className="text-3xl font-black text-white font-heading tracking-tighter">
                         Créer un Utilisateur
@@ -99,8 +101,8 @@ export default function CreateUserPage() {
 
             <div className="bg-[#0a0f18] border border-white/5 rounded-2xl overflow-hidden">
                 <div className="p-8 border-b border-white/5">
-                    <p className="text-sm font-black text-white">Informations du Compte</p>
-                    <p className="text-[10px] text-gray-500 mt-1">Le compte est créé immédiatement, sans email de confirmation.</p>
+                    <p className="text-sm font-black text-white"><T>Informations du Compte</T></p>
+                    <p className="text-[10px] text-gray-500 mt-1"><T>Le compte est créé immédiatement, sans email de confirmation.</T></p>
                 </div>
                 <div className="p-8 space-y-6">
                     {/* Full Name */}
@@ -112,7 +114,7 @@ export default function CreateUserPage() {
                             type="text"
                             value={fullName}
                             onChange={e => setFullName(e.target.value)}
-                            placeholder="Prénom et Nom"
+                            placeholder={t("Prénom et Nom")}
                             className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 transition-colors"
                         />
                     </div>
@@ -126,7 +128,7 @@ export default function CreateUserPage() {
                             type="email"
                             value={email}
                             onChange={e => setEmail(e.target.value)}
-                            placeholder="agent@retourgagnant.com"
+                            placeholder={t("agent@retourgagnant.com")}
                             className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 transition-colors"
                         />
                     </div>
@@ -141,7 +143,7 @@ export default function CreateUserPage() {
                                 type={showPassword ? 'text' : 'password'}
                                 value={password}
                                 onChange={e => setPassword(e.target.value)}
-                                placeholder="Minimum 6 caractères"
+                                placeholder={t("Minimum 6 caractères")}
                                 className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 pr-12 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 transition-colors"
                             />
                             <button

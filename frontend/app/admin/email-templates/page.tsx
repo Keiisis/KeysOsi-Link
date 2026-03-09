@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -43,6 +44,7 @@ function fillPreview(html: string): string {
 }
 
 export default function AdminEmailTemplatesPage() {
+    const { t } = useTranslation();
     const [templates, setTemplates] = useState<EmailTemplate[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
@@ -190,10 +192,10 @@ export default function AdminEmailTemplatesPage() {
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-[#3b82f6]">
                         <Mail size={18} />
-                        <span className="text-[10px] font-black uppercase tracking-[0.5em]">Communication</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.5em]"><T>Communication</T></span>
                     </div>
                     <h1 className="text-4xl font-black text-white font-heading tracking-tighter">
-                        TEMPLATES <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#3b82f6] to-[#06b6d4]">EMAIL</span>
+                        TEMPLATES <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#3b82f6] to-[#06b6d4]"><T>EMAIL</T></span>
                     </h1>
                     <p className="text-sm text-gray-500">
                         {templates.length} template(s) — personnalisables avec variables dynamiques
@@ -204,7 +206,7 @@ export default function AdminEmailTemplatesPage() {
                         type="button"
                         onClick={fetchTemplates}
                         className="p-3 rounded-xl bg-white/5 border border-white/5 text-gray-400 hover:text-white transition-colors"
-                        title="Rafraîchir"
+                        title={t("Rafraîchir")}
                     >
                         <RefreshCw size={16} />
                     </button>
@@ -237,7 +239,7 @@ export default function AdminEmailTemplatesPage() {
                                     <div className="w-8 h-8 rounded-lg bg-[#3b82f6]/20 flex items-center justify-center">
                                         <Plus size={14} className="text-[#3b82f6]" />
                                     </div>
-                                    <p className="text-sm font-black text-white">Nouveau Template</p>
+                                    <p className="text-sm font-black text-white"><T>Nouveau Template</T></p>
                                 </div>
                                 <button type="button" onClick={() => setShowCreate(false)} className="text-gray-500 hover:text-white transition-colors">
                                     <X size={16} />
@@ -246,36 +248,36 @@ export default function AdminEmailTemplatesPage() {
                             <div className="p-6 space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Nom *</label>
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider"><T>Nom *</T></label>
                                         <input
                                             type="text"
                                             value={createForm.name}
                                             onChange={e => setCreateForm(p => ({ ...p, name: e.target.value }))}
-                                            placeholder="Confirmation de commande"
-                                            title="Nom du template"
+                                            placeholder={t("Confirmation de commande")}
+                                            title={t("Nom du template")}
                                             className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-[#3b82f6]/40 transition-colors"
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Slug (identifiant) *</label>
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider"><T>Slug (identifiant) *</T></label>
                                         <input
                                             type="text"
                                             value={createForm.slug}
                                             onChange={e => setCreateForm(p => ({ ...p, slug: e.target.value.toLowerCase().replace(/\s+/g, '_') }))}
-                                            placeholder="order_confirmation"
-                                            title="Slug du template"
+                                            placeholder={t("order_confirmation")}
+                                            title={t("Slug du template")}
                                             className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white text-sm font-mono focus:outline-none focus:border-[#3b82f6]/40 transition-colors"
                                         />
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Objet de l&apos;email *</label>
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider"><T>Objet de l&apos;email *</T></label>
                                     <input
                                         type="text"
                                         value={createForm.subject}
                                         onChange={e => setCreateForm(p => ({ ...p, subject: e.target.value }))}
-                                        placeholder="Retour Gagnant — {{titre}}"
-                                        title="Objet de l'email"
+                                        placeholder={t("Retour Gagnant — {{titre}}")}
+                                        title={t("Objet de l'email")}
                                         className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-[#3b82f6]/40 transition-colors"
                                     />
                                 </div>
@@ -287,8 +289,8 @@ export default function AdminEmailTemplatesPage() {
                                         value={createForm.html_body}
                                         onChange={e => setCreateForm(p => ({ ...p, html_body: e.target.value }))}
                                         rows={12}
-                                        title="Corps HTML"
-                                        placeholder="<!DOCTYPE html><html>...</html>"
+                                        title={t("Corps HTML")}
+                                        placeholder={t("<!DOCTYPE html><html>...</html>")}
                                         className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-green-400 text-xs font-mono focus:outline-none focus:border-[#3b82f6]/40 resize-none transition-colors leading-relaxed"
                                     />
                                 </div>
@@ -300,8 +302,8 @@ export default function AdminEmailTemplatesPage() {
                                         type="text"
                                         value={createForm.variables}
                                         onChange={e => setCreateForm(p => ({ ...p, variables: e.target.value }))}
-                                        placeholder="prenom, nom, ref, montant"
-                                        title="Variables du template"
+                                        placeholder={t("prenom, nom, ref, montant")}
+                                        title={t("Variables du template")}
                                         className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white text-sm font-mono focus:outline-none focus:border-[#3b82f6]/40 transition-colors"
                                     />
                                 </div>
@@ -378,7 +380,7 @@ export default function AdminEmailTemplatesPage() {
                                             setPreviewId(previewId === template.id ? null : template.id)
                                             setEditingId(null)
                                         }}
-                                        title="Aperçu"
+                                        title={t("Aperçu")}
                                         className={cn(
                                             'p-2 rounded-xl border transition-all text-xs font-bold',
                                             previewId === template.id
@@ -394,7 +396,7 @@ export default function AdminEmailTemplatesPage() {
                                             startEdit(template)
                                             setExpandedId(template.id)
                                         }}
-                                        title="Modifier"
+                                        title={t("Modifier")}
                                         className="p-2 rounded-xl bg-white/5 border border-white/5 text-gray-400 hover:text-[#FCD116] hover:bg-[#FCD116]/10 transition-all"
                                     >
                                         <Edit2 size={14} />
@@ -402,7 +404,7 @@ export default function AdminEmailTemplatesPage() {
                                     <button
                                         type="button"
                                         onClick={() => handleDelete(template)}
-                                        title="Supprimer"
+                                        title={t("Supprimer")}
                                         className="p-2 rounded-xl bg-red-500/10 border border-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
                                     >
                                         <Trash2 size={14} />
@@ -465,33 +467,33 @@ export default function AdminEmailTemplatesPage() {
                                                     <>
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                             <div className="space-y-2">
-                                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Nom du template</label>
+                                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider"><T>Nom du template</T></label>
                                                                 <input
                                                                     type="text"
                                                                     value={editForm.name}
                                                                     onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))}
-                                                                    title="Nom du template"
+                                                                    title={t("Nom du template")}
                                                                     className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-[#3b82f6]/40 transition-colors"
                                                                 />
                                                             </div>
                                                             <div className="space-y-2">
-                                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Slug</label>
+                                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider"><T>Slug</T></label>
                                                                 <input
                                                                     type="text"
                                                                     value={editForm.slug}
                                                                     onChange={e => setEditForm(p => ({ ...p, slug: e.target.value }))}
-                                                                    title="Slug du template"
+                                                                    title={t("Slug du template")}
                                                                     className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white text-sm font-mono focus:outline-none focus:border-[#3b82f6]/40 transition-colors"
                                                                 />
                                                             </div>
                                                         </div>
                                                         <div className="space-y-2">
-                                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Objet de l&apos;email</label>
+                                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider"><T>Objet de l&apos;email</T></label>
                                                             <input
                                                                 type="text"
                                                                 value={editForm.subject}
                                                                 onChange={e => setEditForm(p => ({ ...p, subject: e.target.value }))}
-                                                                title="Objet de l'email"
+                                                                title={t("Objet de l'email")}
                                                                 className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-[#3b82f6]/40 transition-colors"
                                                             />
                                                         </div>
@@ -503,7 +505,7 @@ export default function AdminEmailTemplatesPage() {
                                                                 value={editForm.html_body}
                                                                 onChange={e => setEditForm(p => ({ ...p, html_body: e.target.value }))}
                                                                 rows={20}
-                                                                title="Corps HTML"
+                                                                title={t("Corps HTML")}
                                                                 className="w-full bg-[#030509] border border-white/10 rounded-xl py-4 px-5 text-green-400 text-xs font-mono focus:outline-none focus:border-[#3b82f6]/40 resize-y transition-colors leading-relaxed"
                                                             />
                                                         </div>
@@ -515,8 +517,8 @@ export default function AdminEmailTemplatesPage() {
                                                                 type="text"
                                                                 value={editForm.variables}
                                                                 onChange={e => setEditForm(p => ({ ...p, variables: e.target.value }))}
-                                                                placeholder="prenom, nom, ref, montant"
-                                                                title="Variables du template"
+                                                                placeholder={t("prenom, nom, ref, montant")}
+                                                                title={t("Variables du template")}
                                                                 className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white text-sm font-mono focus:outline-none focus:border-[#3b82f6]/40 transition-colors"
                                                             />
                                                             <p className="text-[10px] text-gray-600">Utilisez {`{{variable}}`} dans le HTML. Séparez les noms par des virgules.</p>
@@ -528,7 +530,7 @@ export default function AdminEmailTemplatesPage() {
                                                         <iframe
                                                             srcDoc={fillPreview(editForm.html_body)}
                                                             className="w-full min-h-[400px] max-h-[600px] border-0"
-                                                            title="Preview édition"
+                                                            title={t("Preview édition")}
                                                             sandbox="allow-same-origin"
                                                         />
                                                     </div>
@@ -559,12 +561,12 @@ export default function AdminEmailTemplatesPage() {
                                         {editingId !== template.id && previewId !== template.id && (
                                             <div className="p-5 space-y-3">
                                                 <div className="flex items-start gap-3">
-                                                    <span className="text-[10px] font-black text-gray-600 uppercase tracking-wider mt-0.5 shrink-0 w-14">Objet</span>
+                                                    <span className="text-[10px] font-black text-gray-600 uppercase tracking-wider mt-0.5 shrink-0 w-14"><T>Objet</T></span>
                                                     <span className="text-xs text-gray-300">{template.subject}</span>
                                                 </div>
                                                 {(template.variables || []).length > 0 && (
                                                     <div className="flex items-start gap-3">
-                                                        <span className="text-[10px] font-black text-gray-600 uppercase tracking-wider mt-0.5 shrink-0 w-14">Vars</span>
+                                                        <span className="text-[10px] font-black text-gray-600 uppercase tracking-wider mt-0.5 shrink-0 w-14"><T>Vars</T></span>
                                                         <div className="flex flex-wrap gap-1">
                                                             {(template.variables || []).map(v => (
                                                                 <span key={v} className="text-[9px] font-mono text-[#FCD116]/70 bg-[#FCD116]/5 border border-[#FCD116]/15 px-2 py-0.5 rounded">
@@ -576,7 +578,7 @@ export default function AdminEmailTemplatesPage() {
                                                 )}
                                                 {template.updated_at && (
                                                     <div className="flex items-center gap-3">
-                                                        <span className="text-[10px] font-black text-gray-600 uppercase tracking-wider shrink-0 w-14">Modifié</span>
+                                                        <span className="text-[10px] font-black text-gray-600 uppercase tracking-wider shrink-0 w-14"><T>Modifié</T></span>
                                                         <span className="text-[10px] text-gray-500">
                                                             {new Date(template.updated_at).toLocaleString('fr-FR')}
                                                         </span>
@@ -593,7 +595,7 @@ export default function AdminEmailTemplatesPage() {
                     {templates.length === 0 && !loading && (
                         <div className="flex flex-col items-center justify-center py-24 space-y-3">
                             <Mail size={40} className="text-gray-700" />
-                            <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">Aucun template email</p>
+                            <p className="text-gray-500 text-xs font-bold uppercase tracking-widest"><T>Aucun template email</T></p>
                             <button
                                 type="button"
                                 onClick={() => setShowCreate(true)}

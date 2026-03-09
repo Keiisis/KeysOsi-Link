@@ -6,12 +6,17 @@ import Link from 'next/link'
 import {
     Target, Users, Heart, Shield, Compass,
     ArrowRight, Lightbulb, Star,
-    Globe, Handshake, Award
+    Globe, Handshake, Award, LucideIcon
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { TimelineSection, TimelineItem } from '@/components/histoire/TimelineSection'
 import { FounderCard, FounderData } from '@/components/histoire/FounderCard'
 import { usePageSections } from '@/lib/hooks/usePageSections'
+import { useTranslation, T } from '@/lib/translation'
+
+const iconMap: Record<string, LucideIcon> = {
+    Target, Users, Heart, Shield, Compass, Star, Globe, Award, Handshake, Lightbulb
+}
 
 /* ═══════════════════════════════════════════════════════════════
    DONNÉES ÉDITABLES — Remplacez par le vrai contenu des promoteurs
@@ -109,6 +114,7 @@ const stats = [
 /* ═══════════════════════════════════════════════════════════════ */
 
 export default function NotreHistoirePage() {
+    const { t } = useTranslation()
     const { sections } = usePageSections('notre-histoire')
     const dynFounders = (sections.founders || founders) as unknown as FounderData[]
     const dynTimeline = (sections.timeline || timelineItems) as unknown as TimelineItem[]
@@ -150,24 +156,23 @@ export default function NotreHistoirePage() {
                     >
                         <div className="flex items-center justify-center gap-3 mb-8">
                             <span className="w-16 h-[2px] bg-[#FCD116]" />
-                            <span className="text-[#FCD116] font-black tracking-[0.5em] uppercase text-[10px]">Notre Histoire</span>
+                            <span className="text-[#FCD116] font-black tracking-[0.5em] uppercase text-[10px]"><T>Notre Histoire</T></span>
                             <span className="w-16 h-[2px] bg-[#FCD116]" />
                         </div>
 
                         <h1 className="text-5xl sm:text-6xl md:text-8xl font-black font-heading tracking-tighter leading-[0.9] mb-8">
-                            N&eacute;s d&apos;une{' '}
+                            {t("Nés d'une")}{' '}
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D]">
-                                Vision
+                                {t("Vision")}
                             </span>
                             <br />
                             <span className="text-gray-400 text-3xl sm:text-4xl md:text-5xl font-light italic tracking-normal">
-                                Port&eacute;s par une Mission
+                                {t("Portés par une Mission")}
                             </span>
                         </h1>
 
                         <p className="text-gray-400 max-w-2xl mx-auto text-base md:text-lg leading-relaxed font-light mb-12">
-                            Derrière Retour Gagnant, il y a des visionnaires qui ont transformé un rêve en réalité.
-                            Découvrez le parcours de ceux qui œuvrent chaque jour pour rendre votre retour au Bénin inoubliable.
+                            {t("Derrière Retour Gagnant, il y a des visionnaires qui ont transformé un rêve en réalité. Découvrez le parcours de ceux qui œuvrent chaque jour pour rendre votre retour au Bénin inoubliable.")}
                         </p>
 
                         <motion.div
@@ -177,7 +182,7 @@ export default function NotreHistoirePage() {
                             className="flex items-center justify-center gap-6"
                         >
                             <a href="#origine" className="group flex items-center gap-3 text-[#FCD116] font-bold text-sm uppercase tracking-widest hover:gap-5 transition-all">
-                                Découvrir notre parcours
+                                <T>Découvrir notre parcours</T>
                                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                             </a>
                         </motion.div>
@@ -217,28 +222,23 @@ export default function NotreHistoirePage() {
                                 <Lightbulb size={22} className="text-[#E8112D]" />
                             </div>
                             <div>
-                                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#E8112D]">Le Constat</span>
+                                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#E8112D]"><T>Le Constat</T></span>
                                 <h2 className="text-3xl md:text-4xl font-black font-heading tracking-tight">
-                                    Le Monde Avant Retour Gagnant
+                                    <T>Le Monde Avant Retour Gagnant</T>
                                 </h2>
                             </div>
                         </div>
 
                         <div className="space-y-6 text-gray-400 text-base md:text-lg leading-relaxed pl-0 md:pl-16">
                             <p>
-                                Pendant des décennies, les membres de la diaspora béninoise faisaient face à un paradoxe cruel :
-                                le désir profond de revenir enrichir leur terre natale, confronté à un mur de complexités administratives,
-                                juridiques et logistiques.
+                                <T>Pendant des décennies, les membres de la diaspora béninoise faisaient face à un paradoxe cruel : le désir profond de revenir enrichir leur terre natale, confronté à un mur de complexités administratives, juridiques et logistiques.</T>
                             </p>
                             <p>
-                                Les d&eacute;marches &eacute;taient opaques, les interlocuteurs dispers&eacute;s, et les arnaques fr&eacute;quentes.
-                                Combien de projets de retour ont &eacute;t&eacute; abandonn&eacute;s faute d&apos;accompagnement ? Combien de r&ecirc;ves
-                                ont &eacute;t&eacute; bris&eacute;s par la bureaucratie ?
+                                <T>Les démarches étaient opaques, les interlocuteurs dispersés, et les arnaques fréquentes. Combien de projets de retour ont été abandonnés faute d&apos;accompagnement ? Combien de rêves ont été brisés par la bureaucratie ?</T>
                             </p>
                             <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 border-l-2 border-l-[#FCD116]">
                                 <p className="text-white/80 italic font-medium">
-                                    &quot;Il fallait que quelqu&apos;un se l&egrave;ve et dise : plus jamais un retour ne sera un parcours du combattant.
-                                    C&apos;est cette conviction qui a tout d&eacute;clench&eacute;.&quot;
+                                    <T>&quot;Il fallait que quelqu'un se lève et dise : plus jamais un retour ne sera un parcours du combattant. C'est cette conviction qui a tout déclenché.&quot;</T>
                                 </p>
                             </div>
                         </div>
@@ -264,13 +264,13 @@ export default function NotreHistoirePage() {
                     >
                         <div className="flex items-center justify-center gap-3 mb-4">
                             <span className="w-12 h-[2px] bg-[#008751]" />
-                            <span className="text-[#008751] font-black tracking-[0.5em] uppercase text-[10px]">Notre Parcours</span>
+                            <span className="text-[#008751] font-black tracking-[0.5em] uppercase text-[10px]"><T>Notre Parcours</T></span>
                             <span className="w-12 h-[2px] bg-[#008751]" />
                         </div>
                         <h2 className="text-4xl md:text-5xl font-black font-heading tracking-tighter">
-                            De l&apos;Id&eacute;e &agrave; la{' '}
+                            {t("De l'Idée à la")}{' '}
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] to-[#FCD116]">
-                                R&eacute;alit&eacute;
+                                {t("Réalité")}
                             </span>
                         </h2>
                     </motion.div>
@@ -285,26 +285,29 @@ export default function NotreHistoirePage() {
             <section className="py-20 relative">
                 <div className="container mx-auto px-6">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        {dynStats.map((stat: (typeof stats)[number], i: number) => (
-                            <motion.div
-                                key={stat.label}
-                                initial={{ opacity: 0, y: 30 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.5, delay: i * 0.1 }}
-                                className="text-center p-8 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-[#FCD116]/20 transition-all group"
-                            >
-                                <div className="w-14 h-14 rounded-2xl bg-[#FCD116]/10 border border-[#FCD116]/20 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                                    <stat.icon size={24} className="text-[#FCD116]" />
-                                </div>
-                                <div className="text-4xl md:text-5xl font-black text-white font-heading tracking-tighter mb-2">
-                                    {stat.value}
-                                </div>
-                                <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">
-                                    {stat.label}
-                                </div>
-                            </motion.div>
-                        ))}
+                        {dynStats.map((stat: (typeof stats)[number], i: number) => {
+                            const IconComp = typeof stat.icon === 'string' ? (iconMap[stat.icon] || Target) : (stat.icon || Target)
+                            return (
+                                <motion.div
+                                    key={stat.label}
+                                    initial={{ opacity: 0, y: 30 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ duration: 0.5, delay: i * 0.1 }}
+                                    className="text-center p-8 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-[#FCD116]/20 transition-all group"
+                                >
+                                    <div className="w-14 h-14 rounded-2xl bg-[#FCD116]/10 border border-[#FCD116]/20 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                                        <IconComp size={24} className="text-[#FCD116]" />
+                                    </div>
+                                    <div className="text-4xl md:text-5xl font-black text-white font-heading tracking-tighter mb-2">
+                                        {stat.value}
+                                    </div>
+                                    <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                                        {stat.label}
+                                    </div>
+                                </motion.div>
+                            )
+                        })}
                     </div>
                 </div>
             </section>
@@ -327,18 +330,17 @@ export default function NotreHistoirePage() {
                     >
                         <div className="flex items-center justify-center gap-3 mb-4">
                             <span className="w-12 h-[2px] bg-[#FCD116]" />
-                            <span className="text-[#FCD116] font-black tracking-[0.5em] uppercase text-[10px]">Les Visionnaires</span>
+                            <span className="text-[#FCD116] font-black tracking-[0.5em] uppercase text-[10px]"><T>Les Visionnaires</T></span>
                             <span className="w-12 h-[2px] bg-[#FCD116]" />
                         </div>
                         <h2 className="text-4xl md:text-5xl font-black font-heading tracking-tighter mb-4">
-                            Les Architectes du{' '}
+                            <T>Les Architectes du</T>{' '}
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#008751]">
-                                Changement
+                                <T>Changement</T>
                             </span>
                         </h2>
                         <p className="text-gray-400 max-w-xl mx-auto text-sm leading-relaxed">
-                            Rencontrez les promoteurs qui ont donn&eacute; vie &agrave; cette vision et qui continuent de porter
-                            l&apos;ambition de Retour Gagnant chaque jour.
+                            <T>Rencontrez les promoteurs qui ont donné vie à cette vision et qui continuent de porter l&apos;ambition de Retour Gagnant chaque jour.</T>
                         </p>
                     </motion.div>
 
@@ -368,16 +370,16 @@ export default function NotreHistoirePage() {
                             <span className="w-12 h-[2px] bg-[#008751]" />
                         </div>
                         <h2 className="text-4xl md:text-5xl font-black font-heading tracking-tighter">
-                            Nos{' '}
+                            <T>Nos</T>{' '}
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] to-[#FCD116]">
-                                Valeurs
+                                <T>Valeurs</T>
                             </span>
                         </h2>
                     </motion.div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         {dynValues.map((val: (typeof values)[number], i: number) => {
-                            const IconComp = val.icon && typeof val.icon !== 'string' ? val.icon : Target
+                            const IconComp = typeof val.icon === 'string' ? (iconMap[val.icon] || Target) : (val.icon || Target)
                             return (
                                 <motion.div
                                     key={val.title}
@@ -423,24 +425,23 @@ export default function NotreHistoirePage() {
                     >
                         <Handshake size={48} className="text-[#FCD116] mx-auto" />
                         <h2 className="text-4xl md:text-6xl font-black font-heading tracking-tighter">
-                            Votre Retour Gagnant{' '}
+                            <T>Votre Retour Gagnant</T>{' '}
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D]">
-                                Commence Ici
+                                <T>Commence Ici</T>
                             </span>
                         </h2>
                         <p className="text-gray-400 text-base md:text-lg leading-relaxed max-w-xl mx-auto">
-                            Rejoignez les centaines de familles qui ont fait confiance à notre expertise.
-                            Prenons 15 minutes pour discuter de votre projet de retour.
+                            <T>Rejoignez les centaines de familles qui ont fait confiance à notre expertise. Prenons 15 minutes pour discuter de votre projet de retour.</T>
                         </p>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                             <Link href="/rendez-vous">
                                 <Button className="h-16 px-10 text-lg font-black rounded-full bg-[#FCD116] text-[#0f141e] hover:bg-[#008751] hover:text-white transition-all shadow-xl shadow-[#FCD116]/20 hover:shadow-[#008751]/20">
-                                    Prendre Rendez-vous
+                                    <T>Prendre Rendez-vous</T>
                                 </Button>
                             </Link>
                             <Link href="/contact">
                                 <Button variant="outline" className="h-16 px-10 text-lg font-bold rounded-full border-white/10 text-white hover:bg-white/5 transition-all">
-                                    Nous Contacter
+                                    <T>Nous Contacter</T>
                                 </Button>
                             </Link>
                         </div>

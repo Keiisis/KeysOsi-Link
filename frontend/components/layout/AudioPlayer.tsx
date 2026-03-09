@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useTranslation } from '@/lib/translation';
 import { VolumeX } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function AudioPlayer() {
+    const { t } = useTranslation();
     const src = '/audio/benin-ambiance.mp3';
     const audioRef = useRef<HTMLAudioElement>(null);
     const [isMuted, setIsMuted] = useState(true);
@@ -109,8 +111,8 @@ export default function AudioPlayer() {
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 1 }}
-                aria-label={isMuted ? "Activer le son" : "Couper le son"}
-                title={isMuted ? "🔊 Activer l'ambiance sonore" : "🔇 Couper le son"}
+                aria-label={isMuted ? t("Activer le son") : t("Couper le son")}
+                title={isMuted ? `🔊 ${t("Activer l'ambiance sonore")}` : `🔇 ${t("Couper le son")}` }
             >
                 {isMuted ? (
                     <VolumeX size={18} className="text-white/70" />

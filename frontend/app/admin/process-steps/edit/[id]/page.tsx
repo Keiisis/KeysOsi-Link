@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useForm, useNavigation } from '@refinedev/core'
 import { useParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
@@ -12,6 +13,7 @@ import { ProcessStep } from '../../page'
 const ICON_TYPES = ['cowrie', 'recade', 'drum', 'tata', 'assin', 'passport', 'tree']
 
 export default function ProcessStepEdit() {
+    const { t } = useTranslation();
     const { id } = useParams()
     const { list } = useNavigation()
     const { onFinish, query, formLoading } = useForm<ProcessStep>({
@@ -61,11 +63,11 @@ export default function ProcessStepEdit() {
     return (
         <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in duration-700 pb-20">
             <div className="flex items-center gap-6">
-                <button onClick={() => list('process_steps')} title="Retour à la liste" className="p-4 bg-white/5 border border-white/5 rounded-2xl text-gray-400 hover:text-[#FCD116] transition-all">
+                <button onClick={() => list('process_steps')} title={t("Retour à la liste")} className="p-4 bg-white/5 border border-white/5 rounded-2xl text-gray-400 hover:text-[#FCD116] transition-all">
                     <ArrowLeft size={24} />
                 </button>
                 <div>
-                    <h1 className="text-3xl font-black text-white font-heading">Modifier l&apos;Étape</h1>
+                    <h1 className="text-3xl font-black text-white font-heading"><T>Modifier l&apos;Étape</T></h1>
                     <p className="text-xs text-gray-500 mt-1">ID: {id}</p>
                 </div>
             </div>
@@ -73,15 +75,15 @@ export default function ProcessStepEdit() {
             <Card className="bg-[#0a0f18] border-white/5 p-8 rounded-[2.5rem]">
                 <form onSubmit={handleSave} className="space-y-6">
                     <div className="space-y-3">
-                        <label htmlFor="title" className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">Titre</label>
-                        <input id="title" placeholder="Titre de l'étape" value={formData.title || ''} onChange={(e) => setFormData((p) => ({ ...p, title: e.target.value }))} required className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white text-lg font-bold focus:outline-none focus:border-[#FCD116]/30" />
+                        <label htmlFor="title" className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]"><T>Titre</T></label>
+                        <input id="title" placeholder={t("Titre de l'étape")} value={formData.title || ''} onChange={(e) => setFormData((p) => ({ ...p, title: e.target.value }))} required className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white text-lg font-bold focus:outline-none focus:border-[#FCD116]/30" />
                     </div>
                     <div className="space-y-3">
-                        <label htmlFor="description" className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">Description</label>
-                        <textarea id="description" placeholder="Description de l'étape" value={formData.description || ''} onChange={(e) => setFormData((p) => ({ ...p, description: e.target.value }))} rows={3} required className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white text-sm focus:outline-none resize-none" />
+                        <label htmlFor="description" className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]"><T>Description</T></label>
+                        <textarea id="description" placeholder={t("Description de l'étape")} value={formData.description || ''} onChange={(e) => setFormData((p) => ({ ...p, description: e.target.value }))} rows={3} required className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white text-sm focus:outline-none resize-none" />
                     </div>
                     <div className="space-y-3">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">Icône</label>
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]"><T>Icône</T></label>
                         <div className="flex gap-3 flex-wrap">
                             {ICON_TYPES.map((type) => (
                                 <button key={type} type="button" onClick={() => setFormData((p) => ({ ...p, icon_type: type }))} className={`p-4 rounded-2xl border-2 transition-all ${formData.icon_type === type ? 'border-[#FCD116] bg-[#FCD116]/10' : 'border-white/5 bg-white/5'}`}>
@@ -93,11 +95,11 @@ export default function ProcessStepEdit() {
                     </div>
                     <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-3">
-                            <label htmlFor="order" className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">Ordre</label>
+                            <label htmlFor="order" className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]"><T>Ordre</T></label>
                             <input id="order" type="number" placeholder="1" value={formData.order ?? 1} onChange={(e) => setFormData((p) => ({ ...p, order: parseInt(e.target.value) || 1 }))} className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white font-mono focus:outline-none" />
                         </div>
                         <div className="space-y-3">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">Visible</label>
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]"><T>Visible</T></label>
                             <button
                                 type="button"
                                 onClick={() => setFormData((p) => ({ ...p, is_active: !p.is_active }))}

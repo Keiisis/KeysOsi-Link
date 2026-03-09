@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useForm, useNavigation } from '@refinedev/core'
 import { useState } from 'react'
 import { ArrowLeft, Save, Loader2 } from 'lucide-react'
@@ -10,6 +11,7 @@ import { GoldenIcon } from '@/components/ui/GoldenIcon'
 const ICON_TYPES = ['cowrie', 'recade', 'drum', 'tata', 'assin', 'passport', 'tree']
 
 export default function ProcessStepCreate() {
+    const { t } = useTranslation();
     const { list } = useNavigation()
     const { onFinish, formLoading } = useForm({
         resource: 'process_steps',
@@ -35,44 +37,44 @@ export default function ProcessStepCreate() {
             <div className="flex items-center gap-6">
                 <button
                     onClick={() => list('process_steps')}
-                    title="Retour à la liste"
+                    title={t("Retour à la liste")}
                     className="p-4 bg-white/5 border border-white/5 rounded-2xl text-gray-400 hover:text-[#FCD116] transition-all"
                 >
                     <ArrowLeft size={24} />
                 </button>
                 <div>
-                    <h1 className="text-3xl font-black text-white font-heading">Nouvelle Étape</h1>
-                    <p className="text-xs text-gray-500 mt-1">Section &quot;Votre Parcours&quot;</p>
+                    <h1 className="text-3xl font-black text-white font-heading"><T>Nouvelle Étape</T></h1>
+                    <p className="text-xs text-gray-500 mt-1"><T>Section &quot;Votre Parcours&quot;</T></p>
                 </div>
             </div>
 
             <Card className="bg-[#0a0f18] border-white/5 p-8 rounded-[2.5rem]">
                 <form onSubmit={handleSave} className="space-y-6">
                     <div className="space-y-3">
-                        <label htmlFor="title" className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">Titre de l&apos;étape</label>
+                        <label htmlFor="title" className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]"><T>Titre de l&apos;étape</T></label>
                         <input
                             id="title"
                             value={formData.title}
                             onChange={(e) => setFormData((p) => ({ ...p, title: e.target.value }))}
-                            placeholder="Ex: Prise de Contact"
+                            placeholder={t("Ex: Prise de Contact")}
                             required
                             className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white text-lg font-bold focus:outline-none focus:border-[#FCD116]/30"
                         />
                     </div>
                     <div className="space-y-3">
-                        <label htmlFor="description" className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">Description</label>
+                        <label htmlFor="description" className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]"><T>Description</T></label>
                         <textarea
                             id="description"
                             value={formData.description}
                             onChange={(e) => setFormData((p) => ({ ...p, description: e.target.value }))}
-                            placeholder="Description courte..."
+                            placeholder={t("Description courte...")}
                             rows={3}
                             required
                             className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white text-sm focus:outline-none resize-none"
                         />
                     </div>
                     <div className="space-y-3">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">Icône</label>
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]"><T>Icône</T></label>
                         <div className="flex gap-3 flex-wrap">
                             {ICON_TYPES.map((type) => (
                                 <button
@@ -88,13 +90,13 @@ export default function ProcessStepCreate() {
                         </div>
                     </div>
                     <div className="space-y-3">
-                        <label htmlFor="order" className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">Ordre d&apos;affichage</label>
+                        <label htmlFor="order" className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]"><T>Ordre d&apos;affichage</T></label>
                         <input
                             id="order"
                             type="number"
                             value={formData.order}
                             onChange={(e) => setFormData((p) => ({ ...p, order: parseInt(e.target.value) || 1 }))}
-                            title="Ordre d'affichage"
+                            title={t("Ordre d'affichage")}
                             placeholder="1"
                             className="w-32 bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white font-mono focus:outline-none"
                         />

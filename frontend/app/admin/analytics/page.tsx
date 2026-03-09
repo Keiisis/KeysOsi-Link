@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
@@ -152,7 +153,7 @@ export default function AdminAnalyticsPage() {
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
                     <div>
-                        <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.3em]">Dashboard</span>
+                        <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.3em]"><T>Dashboard</T></span>
                         <h1 className="text-2xl font-black text-white flex items-center gap-2">
                             <BarChart3 size={24} className="text-emerald-400" /> Analytics
                         </h1>
@@ -188,7 +189,7 @@ export default function AdminAnalyticsPage() {
                         </h3>
                         <div className="flex items-end gap-3 h-40">
                             {stats.leadsByMonth.length === 0 ? (
-                                <p className="text-xs text-gray-500 m-auto">Pas encore de données</p>
+                                <p className="text-xs text-gray-500 m-auto"><T>Pas encore de données</T></p>
                             ) : stats.leadsByMonth.map((m, i) => (
                                 <div key={i} className="flex-1 flex flex-col items-center gap-2">
                                     <span className="text-[10px] font-bold text-emerald-400">{m.count}</span>
@@ -209,7 +210,7 @@ export default function AdminAnalyticsPage() {
                         </h3>
                         <div className="space-y-3">
                             {stats.serviceDistribution.length === 0 ? (
-                                <p className="text-xs text-gray-500">Pas encore de données</p>
+                                <p className="text-xs text-gray-500"><T>Pas encore de données</T></p>
                             ) : stats.serviceDistribution.map((s, i) => {
                                 const pct = stats.totalLeads > 0 ? Math.round((s.count / stats.totalLeads) * 100) : 0
                                 const colors = ['bg-emerald-500', 'bg-blue-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500', 'bg-cyan-500']

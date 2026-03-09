@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import { GoldenIcon } from '@/components/ui/GoldenIcon';
 import PricingCalculator3D from '@/components/services/PricingCalculator3D';
 import CinematicIntro from '@/components/services/CinematicIntro';
+import { useTranslation, T } from '@/lib/translation';
 
 // Fallback service data — user can override this via Strapi Admin
 const FALLBACK_SERVICES: Record<string, {
@@ -161,6 +162,7 @@ import { createClient } from '@supabase/supabase-js';
 // ... other imports stay the same ...
 
 export default function ServiceDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+    const { t } = useTranslation();
     const { slug } = use(params);
     const [service, setService] = useState(FALLBACK_SERVICES[slug] || null);
 
@@ -215,7 +217,7 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
     const [showIntro, setShowIntro] = useState(slug === 'passeport');
 
     if (!service) {
-        return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Chargement...</div>;
+        return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><T>Chargement...</T></div>;
     }
 
     return (
@@ -236,11 +238,11 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
                     <div className="container mx-auto px-4 relative z-10">
                         {/* Breadcrumb */}
                         <div className="flex items-center gap-2 text-sm text-white/50 mb-8">
-                            <Link href="/" className="hover:text-white/80 transition-colors">Accueil</Link>
+                            <Link href="/" className="hover:text-white/80 transition-colors"><T>Accueil</T></Link>
                             <ChevronRight size={14} />
-                            <Link href="/services" className="hover:text-white/80 transition-colors">Services</Link>
+                            <Link href="/services" className="hover:text-white/80 transition-colors"><T>Services</T></Link>
                             <ChevronRight size={14} />
-                            <span className="text-[#FCD116]">{service.title}</span>
+                            <span className="text-[#FCD116]">{t(service.title)}</span>
                         </div>
 
                         <motion.div
@@ -282,8 +284,8 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
                                 )}
                             </div>
                             <div>
-                                <h1 className="text-4xl md:text-5xl font-bold font-heading mb-4">{service.title}</h1>
-                                <p className="text-xl text-white/70">{service.subtitle}</p>
+                                <h1 className="text-4xl md:text-5xl font-bold font-heading mb-4">{t(service.title)}</h1>
+                                <p className="text-xl text-white/70">{t(service.subtitle)}</p>
                             </div>
                         </motion.div>
                     </div>
@@ -301,12 +303,12 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
                                 className="lg:col-span-2 space-y-10"
                             >
                                 <div>
-                                    <h2 className="text-2xl font-bold text-[#1a2332] mb-4">Description du service</h2>
-                                    <p className="text-gray-600 leading-relaxed text-lg">{service.description}</p>
+                                    <h2 className="text-2xl font-bold text-[#1a2332] mb-4"><T>Description du service</T></h2>
+                                    <p className="text-gray-600 leading-relaxed text-lg">{t(service.description)}</p>
                                 </div>
 
                                 <div>
-                                    <h2 className="text-2xl font-bold text-[#1a2332] mb-6">Ce que nous proposons</h2>
+                                    <h2 className="text-2xl font-bold text-[#1a2332] mb-6"><T>Ce que nous proposons</T></h2>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {service.features.map((item, i) => (
                                             <motion.div
@@ -317,7 +319,7 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
                                                 className="flex items-start gap-3 bg-white p-4 rounded-xl shadow-sm border border-gray-100"
                                             >
                                                 <CheckCircle2 className="shrink-0 mt-0.5" style={{ color: service.color }} size={20} />
-                                                <span className="text-gray-700">{item}</span>
+                                                <span className="text-gray-700">{t(item)}</span>
                                             </motion.div>
                                         ))}
                                     </div>
@@ -343,18 +345,18 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
                                         <CardContent className="p-6">
                                             <h3 className="text-lg font-bold text-[#1a2332] mb-2 flex items-center gap-2">
                                                 <Calendar size={18} className="text-[#008751]" />
-                                                Prêt à démarrer ?
+                                                <T>Prêt à démarrer ?</T>
                                             </h3>
                                             <p className="text-sm text-gray-500 mb-4">
-                                                Réservez un créneau avec nos experts pour concrétiser votre projet.
+                                                <T>Réservez un créneau avec nos experts pour concrétiser votre projet.</T>
                                             </p>
                                             <Link href="/rendez-vous" className="block">
                                                 <Button className="w-full bg-[#1a2332] hover:bg-[#2c3b55] text-white font-bold h-12 rounded-xl transition-all shadow-md hover:shadow-lg">
-                                                    Prendre Rendez-vous
+                                                    <T>Prendre Rendez-vous</T>
                                                 </Button>
                                             </Link>
                                             <p className="text-xs text-center text-gray-400 mt-3">
-                                                Premier appel de 15 min gratuit
+                                                <T>Premier appel de 15 min gratuit</T>
                                             </p>
                                         </CardContent>
                                     </Card>

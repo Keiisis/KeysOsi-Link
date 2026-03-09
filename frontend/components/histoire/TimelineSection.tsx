@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
+import { useTranslation, T } from '@/lib/translation'
 
 export interface TimelineItem {
     year: string
@@ -11,6 +12,7 @@ export interface TimelineItem {
 }
 
 export function TimelineSection({ items }: { items: TimelineItem[] }) {
+    const { t } = useTranslation();
     return (
         <div className="relative">
             {/* Vertical line */}
@@ -21,7 +23,7 @@ export function TimelineSection({ items }: { items: TimelineItem[] }) {
                     const isEven = index % 2 === 0
                     return (
                         <motion.div
-                            key={item.year}
+                            key={t(item.year)}
                             initial={{ opacity: 0, y: 30 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true, margin: '-80px' }}
@@ -53,10 +55,10 @@ export function TimelineSection({ items }: { items: TimelineItem[] }) {
                                     )}
                                     <h4 className="text-lg font-black text-white font-heading tracking-tight mb-2 flex items-center gap-2">
                                         {item.highlight && <ArrowRight size={16} className="text-[#FCD116]" />}
-                                        {item.title}
+                                        {t(item.title)}
                                     </h4>
                                     <p className="text-sm text-gray-400 leading-relaxed">
-                                        {item.description}
+                                        {t(item.description)}
                                     </p>
                                 </div>
                             </div>

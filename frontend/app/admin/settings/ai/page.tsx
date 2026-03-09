@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useList, useUpdate } from '@refinedev/core'
 import { useState, useEffect } from 'react'
 import {
@@ -47,6 +48,7 @@ const PROVIDERS = [
 ]
 
 export default function AIConfigPage() {
+    const { t } = useTranslation();
     const queryResult = useList({
         resource: 'ai_config',
         pagination: { pageSize: 1 },
@@ -142,7 +144,7 @@ export default function AIConfigPage() {
         return (
             <div className="flex flex-col items-center justify-center py-32 space-y-4">
                 <Loader2 className="animate-spin text-[#FCD116]" size={40} />
-                <p className="text-gray-500 font-mono text-sm">Chargement de la configuration IA...</p>
+                <p className="text-gray-500 font-mono text-sm"><T>Chargement de la configuration IA...</T></p>
             </div>
         )
     }
@@ -154,7 +156,7 @@ export default function AIConfigPage() {
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-[#FCD116]">
                         <Brain size={18} />
-                        <span className="text-[10px] font-black uppercase tracking-[0.5em]">Intelligence Artificielle</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.5em]"><T>Intelligence Artificielle</T></span>
                     </div>
                     <h1 className="text-5xl font-black text-white font-heading tracking-tighter">
                         ASSISTANT <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#f97316]">IA</span>
@@ -265,7 +267,7 @@ export default function AIConfigPage() {
                                         type={showKey ? 'text' : 'password'}
                                         value={form.api_key}
                                         onChange={(e) => setForm((prev) => ({ ...prev, api_key: e.target.value }))}
-                                        placeholder="sk-... ou gsk_..."
+                                        placeholder={t("sk-... ou gsk_...")}
                                         className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 pr-14 text-white text-sm font-mono focus:outline-none focus:border-[#3b82f6]/40 transition-all"
                                     />
                                     <button
@@ -308,8 +310,8 @@ export default function AIConfigPage() {
                                         className="w-full accent-[#FCD116]"
                                     />
                                     <div className="flex justify-between text-[9px] text-gray-600">
-                                        <span>Précis</span>
-                                        <span>Créatif</span>
+                                        <span><T>Précis</T></span>
+                                        <span><T>Créatif</T></span>
                                     </div>
                                 </div>
                                 <div className="space-y-3">
@@ -341,7 +343,7 @@ export default function AIConfigPage() {
                                 onChange={(e) => setForm((prev) => ({ ...prev, system_prompt: e.target.value }))}
                                 rows={16}
                                 className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-5 px-6 text-white text-sm font-mono focus:outline-none focus:border-[#008751]/40 transition-all resize-none leading-relaxed"
-                                placeholder="Décrivez le comportement de l'assistant..."
+                                placeholder={t("Décrivez le comportement de l'assistant...")}
                             />
                         </div>
                     </Card>
@@ -357,15 +359,15 @@ export default function AIConfigPage() {
                             </h4>
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl">
-                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Provider</span>
+                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest"><T>Provider</T></span>
                                     <span className="text-sm font-black text-[#FCD116]">{selectedProvider?.name}</span>
                                 </div>
                                 <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl">
-                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Modèle</span>
+                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest"><T>Modèle</T></span>
                                     <span className="text-[10px] font-mono text-white">{form.model}</span>
                                 </div>
                                 <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl">
-                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Clé API</span>
+                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest"><T>Clé API</T></span>
                                     <span className={cn(
                                         'text-[10px] font-black uppercase px-2 py-0.5 rounded-full',
                                         form.api_key ? 'text-[#008751] bg-[#008751]/10' : 'text-red-400 bg-red-500/10'
@@ -389,7 +391,7 @@ export default function AIConfigPage() {
                                     <input
                                         value={form.personality}
                                         onChange={(e) => setForm((prev) => ({ ...prev, personality: e.target.value }))}
-                                        placeholder="Ex: Chaleureux, professionnel..."
+                                        placeholder={t("Ex: Chaleureux, professionnel...")}
                                         className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white text-sm focus:outline-none"
                                     />
                                 </div>
@@ -400,7 +402,7 @@ export default function AIConfigPage() {
                                     <input
                                         value={form.tone}
                                         onChange={(e) => setForm((prev) => ({ ...prev, tone: e.target.value }))}
-                                        placeholder="Ex: Amical et informatif"
+                                        placeholder={t("Ex: Amical et informatif")}
                                         className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white text-sm focus:outline-none"
                                     />
                                 </div>
@@ -409,19 +411,19 @@ export default function AIConfigPage() {
 
                         {/* Context Info */}
                         <Card className="bg-[#0a0f18] border-[#FCD116]/20 p-8 rounded-[2.5rem]">
-                            <h4 className="text-sm font-black text-white uppercase tracking-widest mb-4">Modes Contextuels</h4>
+                            <h4 className="text-sm font-black text-white uppercase tracking-widest mb-4"><T>Modes Contextuels</T></h4>
                             <div className="space-y-3 text-xs text-gray-500">
                                 <div className="flex gap-2 items-start">
                                     <span className="w-2 h-2 rounded-full bg-[#008751] mt-1.5 shrink-0" />
-                                    <span><strong className="text-white">Frontend</strong> — Ton chaleureux, pas d&apos;infos confidentielles</span>
+                                    <span><strong className="text-white"><T>Frontend</T></strong> <T>— Ton chaleureux, pas d&apos;infos confidentielles</T></span>
                                 </div>
                                 <div className="flex gap-2 items-start">
                                     <span className="w-2 h-2 rounded-full bg-[#3b82f6] mt-1.5 shrink-0" />
-                                    <span><strong className="text-white">Agent</strong> — Opérationnel, accès données, professionnel</span>
+                                    <span><strong className="text-white"><T>Agent</T></strong> <T>— Opérationnel, accès données, professionnel</T></span>
                                 </div>
                                 <div className="flex gap-2 items-start">
                                     <span className="w-2 h-2 rounded-full bg-[#FCD116] mt-1.5 shrink-0" />
-                                    <span><strong className="text-white">Admin</strong> — Accès complet, analytique, exhaustif</span>
+                                    <span><strong className="text-white"><T>Admin</T></strong> <T>— Accès complet, analytique, exhaustif</T></span>
                                 </div>
                             </div>
                         </Card>

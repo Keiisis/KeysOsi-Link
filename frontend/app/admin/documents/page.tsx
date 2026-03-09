@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
@@ -54,7 +55,7 @@ export default function AdminDocumentsPage() {
         <div className="min-h-screen bg-[#0a0f14] py-8 px-4">
             <div className="max-w-5xl mx-auto">
                 <div className="mb-8">
-                    <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.3em]">Gestion</span>
+                    <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.3em]"><T>Gestion</T></span>
                     <h1 className="text-2xl font-black text-white flex items-center gap-2">
                         <FolderOpen size={22} className="text-emerald-400" /> Documents Clients
                     </h1>
@@ -80,7 +81,7 @@ export default function AdminDocumentsPage() {
                 ) : documents.length === 0 ? (
                     <div className="text-center py-20 text-gray-500">
                         <FolderOpen className="mx-auto mb-3 text-gray-700" size={40} />
-                        <p className="text-sm">Aucun document</p>
+                        <p className="text-sm"><T>Aucun document</T></p>
                     </div>
                 ) : (
                     <div className="space-y-3">

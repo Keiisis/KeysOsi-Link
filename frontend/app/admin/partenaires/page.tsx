@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
@@ -76,6 +77,7 @@ const STATUS_META = {
 // Main component
 // ─────────────────────────────────────────────
 export default function AdminPartenaires() {
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState<'partners' | 'candidatures'>('partners')
 
     // Partners state
@@ -234,15 +236,15 @@ export default function AdminPartenaires() {
                 <div>
                     <div className="flex items-center gap-2 text-[#008751] mb-2">
                         <Handshake size={16} />
-                        <span className="text-[10px] font-black uppercase tracking-[0.4em]">Réseau Partenaires</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.4em]"><T>Réseau Partenaires</T></span>
                     </div>
                     <h1 className="text-3xl font-black text-white font-heading tracking-tighter">
-                        PARTENAIRES <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#008751]">& CANDIDATURES</span>
+                        PARTENAIRES <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#008751]"><T>& CANDIDATURES</T></span>
                     </h1>
                 </div>
                 <div className="flex items-center gap-3">
                     <button type="button" onClick={() => { fetchPartners(); fetchApplications() }}
-                        className="p-3 rounded-xl bg-white/5 border border-white/5 text-gray-400 hover:text-white transition-colors" title="Rafraîchir">
+                        className="p-3 rounded-xl bg-white/5 border border-white/5 text-gray-400 hover:text-white transition-colors" title={t("Rafraîchir")}>
                         <RefreshCw size={16} />
                     </button>
                 </div>
@@ -301,22 +303,22 @@ export default function AdminPartenaires() {
                                 <div className="bg-[#0a0f18] border border-[#008751]/20 rounded-2xl overflow-hidden">
                                     <div className="flex items-center justify-between p-5 border-b border-white/5 bg-[#008751]/5">
                                         <p className="text-sm font-black text-white">{editing === 'new' ? 'Nouveau partenaire' : 'Modifier le partenaire'}</p>
-                                        <button type="button" title="Fermer" onClick={() => { setEditing(null); setForm({}) }} className="text-gray-500 hover:text-white transition-colors"><X size={16} /></button>
+                                        <button type="button" title={t("Fermer")} onClick={() => { setEditing(null); setForm({}) }} className="text-gray-500 hover:text-white transition-colors"><X size={16} /></button>
                                     </div>
                                     <div className="p-6 space-y-4">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <Inp label="Nom *" value={form.name || ''} onChange={v => setForm(p => ({ ...p, name: v }))} placeholder="Nom de la structure" />
+                                            <Inp label="Nom *" value={form.name || ''} onChange={v => setForm(p => ({ ...p, name: v }))} placeholder={t("Nom de la structure")} />
                                             <div className="space-y-1.5">
-                                                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Catégorie</label>
-                                                <select title="Catégorie" value={form.category || ''} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
+                                                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider"><T>Catégorie</T></label>
+                                                <select title={t("Catégorie")} value={form.category || ''} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
                                                     className="w-full rounded-xl bg-white/5 border border-white/10 text-white px-3 py-2.5 text-sm focus:outline-none">
                                                     {CATEGORIES.map(c => <option key={c} value={c} className="bg-[#0a0f18]">{c}</option>)}
                                                 </select>
                                             </div>
-                                            <Inp label="Localisation" value={form.location || ''} onChange={v => setForm(p => ({ ...p, location: v }))} placeholder="Ville, Pays" />
+                                            <Inp label="Localisation" value={form.location || ''} onChange={v => setForm(p => ({ ...p, location: v }))} placeholder={t("Ville, Pays")} />
                                             <Inp label="Site web" value={form.website || ''} onChange={v => setForm(p => ({ ...p, website: v }))} placeholder="https://..." />
                                             <Inp label="Téléphone" value={form.phone || ''} onChange={v => setForm(p => ({ ...p, phone: v }))} placeholder="+229..." />
-                                            <Inp label="Email" value={form.email || ''} onChange={v => setForm(p => ({ ...p, email: v }))} placeholder="contact@..." />
+                                            <Inp label="Email" value={form.email || ''} onChange={v => setForm(p => ({ ...p, email: v }))} placeholder={t("contact@...")} />
                                             <div className="flex items-start gap-4">
                                                 <FileUpload
                                                     type="logo"
@@ -337,9 +339,9 @@ export default function AdminPartenaires() {
                                                 />
                                             </div>
                                             <div className="md:col-span-2 space-y-1.5">
-                                                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Description</label>
-                                                <textarea title="Description" value={form.description || ''} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={3}
-                                                    placeholder="Description du partenaire..."
+                                                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider"><T>Description</T></label>
+                                                <textarea title={t("Description")} value={form.description || ''} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={3}
+                                                    placeholder={t("Description du partenaire...")}
                                                     className="w-full rounded-xl bg-white/5 border border-white/10 text-white px-4 py-3 text-sm focus:outline-none" />
                                             </div>
                                         </div>
@@ -377,7 +379,7 @@ export default function AdminPartenaires() {
                             {partners.length === 0 && (
                                 <div className="flex flex-col items-center py-16 gap-3">
                                     <Building2 size={32} className="text-gray-700" />
-                                    <p className="text-gray-500 text-sm">Aucun partenaire enregistré</p>
+                                    <p className="text-gray-500 text-sm"><T>Aucun partenaire enregistré</T></p>
                                 </div>
                             )}
                             {partners.map(p => (
@@ -395,8 +397,8 @@ export default function AdminPartenaires() {
                                         <div className="min-w-0">
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 <p className="font-bold text-sm text-white">{p.name}</p>
-                                                {p.is_premium && <span className="text-[9px] px-2 py-0.5 rounded-full bg-[#FCD116]/15 text-[#FCD116] border border-[#FCD116]/25 font-black uppercase">★ PREMIUM</span>}
-                                                {!p.is_active && <span className="text-[9px] px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/25 font-black uppercase">INACTIF</span>}
+                                                {p.is_premium && <span className="text-[9px] px-2 py-0.5 rounded-full bg-[#FCD116]/15 text-[#FCD116] border border-[#FCD116]/25 font-black uppercase"><T>★ PREMIUM</T></span>}
+                                                {!p.is_active && <span className="text-[9px] px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/25 font-black uppercase"><T>INACTIF</T></span>}
                                             </div>
                                             <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-2">
                                                 <span>{p.category}</span>
@@ -416,11 +418,11 @@ export default function AdminPartenaires() {
                                                 p.is_active ? 'bg-[#008751]/15 text-[#008751] hover:bg-[#008751]/25' : 'bg-white/5 text-gray-500 hover:text-white')}>
                                             <Eye size={13} />
                                         </button>
-                                        <button type="button" title="Modifier" onClick={() => startEdit(p)}
+                                        <button type="button" title={t("Modifier")} onClick={() => startEdit(p)}
                                             className="p-2 rounded-lg bg-white/5 text-gray-400 hover:text-[#FCD116] hover:bg-[#FCD116]/10 transition-all">
                                             <Pencil size={13} />
                                         </button>
-                                        <button type="button" title="Supprimer" onClick={() => handleDelete(p.id, p.name)}
+                                        <button type="button" title={t("Supprimer")} onClick={() => handleDelete(p.id, p.name)}
                                             className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all">
                                             <Trash2 size={13} />
                                         </button>
@@ -499,7 +501,7 @@ export default function AdminPartenaires() {
                                                         <Phone size={12} /> WA
                                                     </a>
                                                 )}
-                                                <button type="button" title="Supprimer la candidature" onClick={() => deleteApp(app.id)}
+                                                <button type="button" title={t("Supprimer la candidature")} onClick={() => deleteApp(app.id)}
                                                     className="p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/10 transition-all">
                                                     <Trash2 size={12} />
                                                 </button>
@@ -541,7 +543,7 @@ export default function AdminPartenaires() {
                                                         )}
                                                         {app.partnership_types?.length > 0 && (
                                                             <div>
-                                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2">Types de partenariat souhaités</p>
+                                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2"><T>Types de partenariat souhaités</T></p>
                                                                 <div className="flex flex-wrap gap-2">
                                                                     {app.partnership_types.map(pt => (
                                                                         <span key={pt} className="text-[10px] font-bold bg-[#FCD116]/10 text-[#FCD116] border border-[#FCD116]/20 px-2 py-1 rounded-lg">{pt}</span>
@@ -552,12 +554,12 @@ export default function AdminPartenaires() {
 
                                                         {/* Notes */}
                                                         <div className="space-y-2">
-                                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Notes internes</label>
+                                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider"><T>Notes internes</T></label>
                                                             <textarea
                                                                 value={appNotes[app.id] ?? app.notes ?? ''}
                                                                 onChange={e => setAppNotes(p => ({ ...p, [app.id]: e.target.value }))}
-                                                                placeholder="Ajouter des notes sur cette candidature..."
-                                                                title="Notes internes"
+                                                                placeholder={t("Ajouter des notes sur cette candidature...")}
+                                                                title={t("Notes internes")}
                                                                 rows={2}
                                                                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#FCD116]/30 resize-none"
                                                             />

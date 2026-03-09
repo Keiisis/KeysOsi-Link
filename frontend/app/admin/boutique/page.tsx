@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useList, useNavigation, useDelete, useUpdate } from '@refinedev/core'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -27,6 +28,7 @@ interface ProductItem {
 }
 
 export default function AdminBoutiquePage() {
+    const { t } = useTranslation();
     const { create, edit } = useNavigation()
     const queryResult = useList<ProductItem>({
         resource: 'products',
@@ -58,10 +60,10 @@ export default function AdminBoutiquePage() {
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-[#FCD116]">
                         <ShoppingBag size={18} />
-                        <span className="text-[10px] font-bold uppercase tracking-[0.4em]">Commerce en Ligne</span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.4em]"><T>Commerce en Ligne</T></span>
                     </div>
                     <h1 className="text-5xl font-black text-white font-heading tracking-tighter">
-                        BOUTIQUE <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#008751]">ADMIN</span>
+                        BOUTIQUE <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#008751]"><T>ADMIN</T></span>
                     </h1>
                 </div>
 
@@ -70,7 +72,7 @@ export default function AdminBoutiquePage() {
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
                         <input
                             type="text"
-                            placeholder="Rechercher un produit..."
+                            placeholder={t("Rechercher un produit...")}
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                             className="w-full bg-[#0a0f18] border border-white/5 rounded-2xl py-3.5 pl-12 pr-4 text-white focus:outline-none focus:border-[#FCD116]/30 transition-all text-sm font-medium"
@@ -111,13 +113,13 @@ export default function AdminBoutiquePage() {
                     <div className="divide-y divide-white/5">
                         {/* Table header */}
                         <div className="hidden md:grid grid-cols-12 gap-4 px-8 py-4 bg-white/[0.02] text-[9px] font-black text-gray-500 uppercase tracking-widest">
-                            <div className="col-span-1">Image</div>
-                            <div className="col-span-3">Produit</div>
-                            <div className="col-span-2">Categorie</div>
-                            <div className="col-span-1">Prix</div>
-                            <div className="col-span-1">Stock</div>
-                            <div className="col-span-1">Statut</div>
-                            <div className="col-span-3 text-right">Actions</div>
+                            <div className="col-span-1"><T>Image</T></div>
+                            <div className="col-span-3"><T>Produit</T></div>
+                            <div className="col-span-2"><T>Categorie</T></div>
+                            <div className="col-span-1"><T>Prix</T></div>
+                            <div className="col-span-1"><T>Stock</T></div>
+                            <div className="col-span-1"><T>Statut</T></div>
+                            <div className="col-span-3 text-right"><T>Actions</T></div>
                         </div>
 
                         <AnimatePresence mode="popLayout">
@@ -215,7 +217,7 @@ export default function AdminBoutiquePage() {
                                                     ? 'bg-[#FCD116]/10 text-[#FCD116] border-[#FCD116]/20'
                                                     : 'bg-white/5 text-gray-500 border-white/5 hover:text-[#FCD116]'
                                             )}
-                                            title="Mettre en vedette"
+                                            title={t("Mettre en vedette")}
                                         >
                                             <Star size={14} />
                                         </button>
@@ -227,7 +229,7 @@ export default function AdminBoutiquePage() {
                                             <Edit3 size={12} className="mr-1.5" /> Modifier
                                         </Button>
                                         <button
-                                            title="Supprimer le produit"
+                                            title={t("Supprimer le produit")}
                                             onClick={() => {
                                                 if (confirm('Supprimer ce produit ?')) {
                                                     deleteItem({ resource: 'products', id: item.id })

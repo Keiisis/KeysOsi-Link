@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useOne, useUpdate, useNavigation } from '@refinedev/core'
 import { useParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
@@ -11,6 +12,7 @@ import { ImageUpload } from '@/components/admin/ImageUpload'
 const categories = ['Mode', 'Artisanat', 'Alimentaire', 'Culturel', 'Accessoires', 'Autre']
 
 export default function EditProductPage() {
+    const { t } = useTranslation();
     const params = useParams()
     const productId = params.id as string
     const { list } = useNavigation()
@@ -95,7 +97,7 @@ export default function EditProductPage() {
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => list('products')}
-                        title="Retour"
+                        title={t("Retour")}
                         className="p-3 rounded-xl bg-white/5 border border-white/5 text-gray-400 hover:text-white transition-colors"
                     >
                         <ArrowLeft size={18} />
@@ -103,7 +105,7 @@ export default function EditProductPage() {
                     <div>
                         <div className="flex items-center gap-2 text-[#FCD116]">
                             <ShoppingBag size={16} />
-                            <span className="text-[10px] font-black uppercase tracking-[0.4em]">Modifier le Produit</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.4em]"><T>Modifier le Produit</T></span>
                         </div>
                         <h1 className="text-3xl font-black text-white font-heading tracking-tighter">
                             {title || 'Edition'}
@@ -139,27 +141,27 @@ export default function EditProductPage() {
                 <div className="lg:col-span-2 space-y-6">
                     <Card className="bg-[#0a0f18] border-white/5 rounded-[2rem] overflow-hidden">
                         <CardHeader className="p-8 border-b border-white/5">
-                            <CardTitle className="text-lg font-black text-white">Informations Produit</CardTitle>
+                            <CardTitle className="text-lg font-black text-white"><T>Informations Produit</T></CardTitle>
                         </CardHeader>
                         <CardContent className="p-8 space-y-6">
                             <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Titre *</label>
-                                <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Titre du produit" title="Titre du produit" className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30" />
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block"><T>Titre *</T></label>
+                                <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder={t("Titre du produit")} title={t("Titre du produit")} className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30" />
                             </div>
                             <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Description courte</label>
-                                <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} placeholder="Description courte" title="Description courte" className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 resize-none" />
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block"><T>Description courte</T></label>
+                                <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} placeholder={t("Description courte")} title={t("Description courte")} className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 resize-none" />
                             </div>
                             <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Description longue</label>
-                                <textarea value={longDescription} onChange={e => setLongDescription(e.target.value)} rows={6} placeholder="Description longue" title="Description longue" className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 resize-none" />
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block"><T>Description longue</T></label>
+                                <textarea value={longDescription} onChange={e => setLongDescription(e.target.value)} rows={6} placeholder={t("Description longue")} title={t("Description longue")} className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 resize-none" />
                             </div>
                         </CardContent>
                     </Card>
 
                     <Card className="bg-[#0a0f18] border-white/5 rounded-[2rem] overflow-hidden">
                         <CardHeader className="p-8 border-b border-white/5">
-                            <CardTitle className="text-lg font-black text-white">Images du produit</CardTitle>
+                            <CardTitle className="text-lg font-black text-white"><T>Images du produit</T></CardTitle>
                         </CardHeader>
                         <CardContent className="p-8 space-y-4">
                             {images.map((img, i) => (
@@ -194,34 +196,34 @@ export default function EditProductPage() {
                 <div className="space-y-6">
                     <Card className="bg-[#0a0f18] border-white/5 rounded-[2rem] overflow-hidden">
                         <CardHeader className="p-8 border-b border-white/5">
-                            <CardTitle className="text-lg font-black text-white">Tarification</CardTitle>
+                            <CardTitle className="text-lg font-black text-white"><T>Tarification</T></CardTitle>
                         </CardHeader>
                         <CardContent className="p-8 space-y-6">
                             <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Prix (XOF) *</label>
-                                <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="Prix" title="Prix" className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30" />
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block"><T>Prix (XOF) *</T></label>
+                                <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder={t("Prix")} title={t("Prix")} className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30" />
                             </div>
                             <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Prix Promo (XOF)</label>
-                                <input type="number" value={salePrice} onChange={e => setSalePrice(e.target.value)} placeholder="Prix promo" title="Prix promo" className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30" />
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block"><T>Prix Promo (XOF)</T></label>
+                                <input type="number" value={salePrice} onChange={e => setSalePrice(e.target.value)} placeholder={t("Prix promo")} title={t("Prix promo")} className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30" />
                             </div>
                         </CardContent>
                     </Card>
 
                     <Card className="bg-[#0a0f18] border-white/5 rounded-[2rem] overflow-hidden">
                         <CardHeader className="p-8 border-b border-white/5">
-                            <CardTitle className="text-lg font-black text-white">Organisation</CardTitle>
+                            <CardTitle className="text-lg font-black text-white"><T>Organisation</T></CardTitle>
                         </CardHeader>
                         <CardContent className="p-8 space-y-6">
                             <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Categorie</label>
-                                <select value={category} aria-label="Catégorie" title="Catégorie" onChange={e => setCategory(e.target.value)} className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block"><T>Categorie</T></label>
+                                <select value={category} aria-label={t("Catégorie")} title={t("Catégorie")} onChange={e => setCategory(e.target.value)} className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30">
                                     {categories.map(cat => (<option key={cat} value={cat} className="bg-[#0a0f18]">{cat}</option>))}
                                 </select>
                             </div>
                             <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Stock</label>
-                                <input type="number" value={stock} onChange={e => setStock(e.target.value)} placeholder="Stock disponible" title="Stock" className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30" />
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block"><T>Stock</T></label>
+                                <input type="number" value={stock} onChange={e => setStock(e.target.value)} placeholder={t("Stock disponible")} title={t("Stock")} className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30" />
                             </div>
                         </CardContent>
                     </Card>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { MapPin } from "lucide-react";
+import { useTranslation, T } from "@/lib/translation";
 import { supabase } from "@/lib/supabase";
 
 interface HeritageItem {
@@ -116,6 +117,7 @@ const fallbackItems: HeritageItem[] = [
 const colorPalette = ["#E8112D", "#FCD116", "#008751", "#E8112D", "#008751", "#FCD116"];
 
 export default function HeritageCarousel() {
+    const { t } = useTranslation();
     const [items, setItems] = useState<HeritageItem[]>(fallbackItems);
     const [loading, setLoading] = useState(true);
 
@@ -162,7 +164,7 @@ export default function HeritageCarousel() {
     // Duplicate list for infinite scroll effect
     const displayItems = items.length > 0 ? [...items, ...items] : [];
 
-    if (loading) return <div className="py-24 text-center">Chargement du patrimoine...</div>;
+    if (loading) return <div className="py-24 text-center">{t("Chargement du patrimoine...")}</div>;
     if (items.length === 0) return null;
 
     return (
@@ -170,13 +172,13 @@ export default function HeritageCarousel() {
             {/* Section Title */}
             <div className="container mx-auto px-4 mb-16 text-center">
                 <span className="text-[#008751] font-semibold tracking-widest uppercase text-sm mb-2 block">
-                    Découverte & Racines
+                    <T>Découverte & Racines</T>
                 </span>
                 <h2 className="text-4xl md:text-5xl font-bold font-heading text-[#1a2332] mb-4">
-                    Patrimoine & <span className="text-benin-gradient">Culture</span>
+                    <T>Patrimoine</T> & <span className="text-benin-gradient"><T>Culture</T></span>
                 </h2>
                 <p className="text-gray-600 max-w-2xl mx-auto text-lg">
-                    Plongez au cœur de l&apos;histoire et des traditions qui font la fierté du Bénin. Un héritage vivant à préserver et à transmettre.
+                    <T>Plongez au cœur de l&apos;histoire et des traditions qui font la fierté du Bénin. Un héritage vivant à préserver et à transmettre.</T>
                 </p>
             </div>
 
@@ -210,12 +212,13 @@ export default function HeritageCarousel() {
 }
 
 function HeritageCard({ item }: { item: HeritageItem }) {
+    const { t } = useTranslation();
     return (
         <div className="relative group w-[350px] h-[450px] flex-shrink-0 cursor-pointer overflow-hidden rounded-3xl border border-gray-100 shadow-flag bg-white">
             <div className={`absolute inset-0 bg-gray-200 transition-transform duration-700 group-hover:scale-110`}>
                 <Image
                     src={`/assets/patrimoine/${item.imageName}`}
-                    alt={item.title}
+                    alt={t(item.title)}
                     fill
                     className="object-cover"
                     onError={(e) => {
@@ -233,13 +236,13 @@ function HeritageCard({ item }: { item: HeritageItem }) {
             <div className="absolute bottom-0 left-0 w-full p-8 translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
                 <div className="flex items-center gap-2 mb-2">
                     <MapPin size={16} className="text-white/80" />
-                    <span className="text-white/90 text-sm font-medium uppercase tracking-wide">{item.location}</span>
+                    <span className="text-white/90 text-sm font-medium uppercase tracking-wide">{t(item.location || "")}</span>
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-2 font-heading leading-tight whitespace-normal">
-                    {item.title}
+                    {t(item.title)}
                 </h3>
                 <p className="text-white/80 text-sm line-clamp-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100 whitespace-normal">
-                    {item.description}
+                    {t(item.description)}
                 </p>
 
                 {/* Accent Bar */}

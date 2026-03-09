@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation, T } from '@/lib/translation';
 import { useForm, useNavigation } from "@refinedev/core";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Save, ImageIcon, CloudUpload, Tag, Type, Loader2 } from "lucide-react";
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { GalleryItem } from "../page";
 
 export default function GalleryCreate() {
+    const { t } = useTranslation();
     const { list } = useNavigation();
 
     const { onFinish, formLoading } = useForm<GalleryItem>({
@@ -46,8 +48,8 @@ export default function GalleryCreate() {
                         <ArrowLeft size={24} />
                     </button>
                     <div>
-                        <h1 className="text-3xl font-black font-heading text-white tracking-tight italic">NOUVEL <span className="text- benin-gradient">ACTE VISUEL</span></h1>
-                        <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.3em] mt-1">Imagerie &amp; Esthétique Diaspora</p>
+                        <h1 className="text-3xl font-black font-heading text-white tracking-tight italic"><T>NOUVEL</T> <span className="text- benin-gradient"><T>ACTE VISUEL</T></span></h1>
+                        <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.3em] mt-1"><T>Imagerie &amp; Esthétique Diaspora</T></p>
                     </div>
                 </div>
 
@@ -87,7 +89,7 @@ export default function GalleryCreate() {
                                     name="title"
                                     value={formData.title || ''}
                                     onChange={handleChange}
-                                    placeholder="Ex: Villa Cotonou 2024"
+                                    placeholder={t("Ex: Villa Cotonou 2024")}
                                     className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white text-sm font-bold focus:outline-none"
                                 />
                             </div>
@@ -102,10 +104,10 @@ export default function GalleryCreate() {
                                     onChange={handleChange}
                                     className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white text-sm font-bold focus:outline-none appearance-none"
                                 >
-                                    <option value="general">Général</option>
-                                    <option value="heritage">Patrimoine</option>
-                                    <option value="construction">Chantiers</option>
-                                    <option value="tourisme">Tourisme</option>
+                                    <option value="general"><T>Général</T></option>
+                                    <option value="heritage"><T>Patrimoine</T></option>
+                                    <option value="construction"><T>Chantiers</T></option>
+                                    <option value="tourisme"><T>Tourisme</T></option>
                                 </select>
                             </div>
                         </form>
@@ -114,11 +116,11 @@ export default function GalleryCreate() {
 
                 {/* Preview Section */}
                 <div className="space-y-8">
-                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1">Développement Visuel</span>
+                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1"><T>Développement Visuel</T></span>
                     <div className="aspect-square relative rounded-[3.5rem] overflow-hidden border-4 border-white/5 shadow-3xl bg-white/[0.02] flex flex-col items-center justify-center p-10">
                         {formData.url ? (
                             <>
-                                <Image src={formData.url} alt="Preview" fill className="object-cover animate-in fade-in duration-1000" />
+                                <Image src={formData.url} alt={t("Preview")} fill className="object-cover animate-in fade-in duration-1000" />
                                 <div className="absolute inset-0 bg-black/40 backdrop-blur-sm opacity-0 hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-12 text-center text-white">
                                     <h3 className="text-2xl font-black font-heading mb-2">{formData.title || 'Sans Titre'}</h3>
                                     <span className="text-[10px] font-black uppercase tracking-widest text-[#FCD116]">{formData.category}</span>
@@ -129,8 +131,8 @@ export default function GalleryCreate() {
                                 <div className="w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center mx-auto mb-6">
                                     <ImageIcon size={40} className="text-gray-800" />
                                 </div>
-                                <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">En attente de liaison...</p>
-                                <p className="text-[8px] text-gray-800 uppercase">L&apos;aperçu se générera automatiquement</p>
+                                <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest"><T>En attente de liaison...</T></p>
+                                <p className="text-[8px] text-gray-800 uppercase"><T>L&apos;aperçu se générera automatiquement</T></p>
                             </div>
                         )}
                     </div>

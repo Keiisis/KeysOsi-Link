@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useRef, useCallback } from 'react'
 import { Upload, X, Loader2, ImageIcon, CheckCircle2 } from 'lucide-react'
 import Image from 'next/image'
@@ -21,6 +22,7 @@ export function ImageUpload({
     folder = 'images',
     className,
 }: ImageUploadProps) {
+    const { t } = useTranslation();
     const [uploading, setUploading] = useState(false)
     const [dragOver, setDragOver] = useState(false)
     const [error, setError] = useState('')
@@ -88,7 +90,7 @@ export function ImageUpload({
                 // Preview
                 <div className="relative rounded-2xl overflow-hidden border border-white/10 group">
                     <div className="relative w-full h-48">
-                        <Image src={value} alt="Preview" fill className="object-cover" />
+                        <Image src={value} alt={t("Preview")} fill className="object-cover" />
                     </div>
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                         <button
@@ -102,7 +104,7 @@ export function ImageUpload({
                             type="button"
                             onClick={removeImage}
                             className="p-2 rounded-xl bg-[#E8112D]/20 text-[#E8112D] hover:bg-[#E8112D]/40 transition-colors"
-                            title="Supprimer l'image"
+                            title={t("Supprimer l'image")}
                         >
                             <X size={16} />
                         </button>
@@ -131,16 +133,16 @@ export function ImageUpload({
                     {uploading ? (
                         <>
                             <Loader2 size={32} className="animate-spin text-[#FCD116] mb-3" />
-                            <p className="text-xs text-gray-400 font-bold">Upload en cours...</p>
+                            <p className="text-xs text-gray-400 font-bold"><T>Upload en cours...</T></p>
                         </>
                     ) : (
                         <>
                             <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center mb-4">
                                 <Upload size={24} className="text-gray-400" />
                             </div>
-                            <p className="text-sm font-bold text-white mb-1">Glissez une image ici</p>
-                            <p className="text-[10px] text-gray-500 uppercase tracking-widest">ou cliquez pour parcourir</p>
-                            <p className="text-[9px] text-gray-600 mt-2">JPG, PNG, WebP — Max 5 Mo</p>
+                            <p className="text-sm font-bold text-white mb-1"><T>Glissez une image ici</T></p>
+                            <p className="text-[10px] text-gray-500 uppercase tracking-widest"><T>ou cliquez pour parcourir</T></p>
+                            <p className="text-[9px] text-gray-600 mt-2"><T>JPG, PNG, WebP — Max 5 Mo</T></p>
                         </>
                     )}
                 </div>
@@ -149,7 +151,7 @@ export function ImageUpload({
             {/* URL manuelle */}
             <div className="flex items-center gap-2">
                 <div className="flex-1 h-px bg-white/5" />
-                <span className="text-[9px] text-gray-600 font-bold uppercase tracking-widest">ou URL directe</span>
+                <span className="text-[9px] text-gray-600 font-bold uppercase tracking-widest"><T>ou URL directe</T></span>
                 <div className="flex-1 h-px bg-white/5" />
             </div>
             <div className="relative">
@@ -160,8 +162,8 @@ export function ImageUpload({
                     onChange={e => onChange(e.target.value)}
                     placeholder="https://example.com/image.jpg"
                     className="w-full bg-white/5 border border-white/5 rounded-xl py-2.5 pl-9 pr-4 text-white text-xs focus:outline-none focus:border-[#FCD116]/30 transition-colors font-mono"
-                    aria-label="URL directe de l'image"
-                    title="URL de l'image"
+                    aria-label={t("URL directe de l'image")}
+                    title={t("URL de l'image")}
                 />
             </div>
 
@@ -175,8 +177,8 @@ export function ImageUpload({
                 accept="image/*"
                 onChange={handleFileSelect}
                 className="hidden"
-                aria-label="Sélectionner un fichier image"
-                title="Sélecteur d'image"
+                aria-label={t("Sélectionner un fichier image")}
+                title={t("Sélecteur d'image")}
             />
         </div>
     )

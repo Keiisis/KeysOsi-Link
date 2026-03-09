@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Plus, Trash2, Save, ChevronUp, ChevronDown, Edit3, X, HelpCircle } from 'lucide-react'
@@ -7,6 +8,7 @@ import { Plus, Trash2, Save, ChevronUp, ChevronDown, Edit3, X, HelpCircle } from
 interface FAQ { id: string; question_fr: string; answer_fr: string; sort_order: number; is_active: boolean }
 
 export default function AdminFaqPage() {
+    const { t } = useTranslation();
     const [faqs, setFaqs] = useState<FAQ[]>([])
     const [editing, setEditing] = useState<string | null>(null)
     const [adding, setAdding] = useState(false)
@@ -72,8 +74,8 @@ export default function AdminFaqPage() {
         <div className="min-h-screen bg-[#0a0f14] py-8 px-4">
             <div className="max-w-4xl mx-auto">
                 <div className="mb-6">
-                    <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.3em]">Nationalité</span>
-                    <h1 className="text-2xl font-black text-white flex items-center gap-2"><HelpCircle size={22} className="text-emerald-400" /> Gestion FAQ</h1>
+                    <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.3em]"><T>Nationalité</T></span>
+                    <h1 className="text-2xl font-black text-white flex items-center gap-2"><HelpCircle size={22} className="text-emerald-400" /> <T>Gestion FAQ</T></h1>
                     <p className="text-xs text-gray-500 mt-1">{faqs.length} questions — Ajoutez, modifiez, réordonnez ou supprimez</p>
                 </div>
 
@@ -82,11 +84,11 @@ export default function AdminFaqPage() {
                         <div key={faq.id} className={`bg-white/[0.03] border rounded-xl overflow-hidden transition-all ${faq.is_active ? 'border-white/5' : 'border-red-500/10 opacity-60'}`}>
                             {editing === faq.id ? (
                                 <div className="p-5 space-y-3">
-                                    <input value={editQ} onChange={e => setEditQ(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white text-sm focus:outline-none" placeholder="Question" />
-                                    <textarea value={editA} onChange={e => setEditA(e.target.value)} rows={6} className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white text-sm focus:outline-none resize-none" placeholder="Réponse" />
+                                    <input value={editQ} onChange={e => setEditQ(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white text-sm focus:outline-none" placeholder={t("Question")} />
+                                    <textarea value={editA} onChange={e => setEditA(e.target.value)} rows={6} className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white text-sm focus:outline-none resize-none" placeholder={t("Réponse")} />
                                     <div className="flex gap-2">
-                                        <button onClick={() => update(faq.id)} disabled={saving} className="bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-lg flex items-center gap-1"><Save size={12} /> Sauvegarder</button>
-                                        <button onClick={() => setEditing(null)} className="bg-white/5 text-gray-400 text-xs px-4 py-2 rounded-lg">Annuler</button>
+                                        <button onClick={() => update(faq.id)} disabled={saving} className="bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-lg flex items-center gap-1"><Save size={12} /> <T>Sauvegarder</T></button>
+                                        <button onClick={() => setEditing(null)} className="bg-white/5 text-gray-400 text-xs px-4 py-2 rounded-lg"><T>Annuler</T></button>
                                     </div>
                                 </div>
                             ) : (
@@ -113,15 +115,15 @@ export default function AdminFaqPage() {
 
                 {adding ? (
                     <div className="mt-4 bg-white/[0.03] border border-emerald-500/20 rounded-xl p-5 space-y-3">
-                        <input value={newQ} onChange={e => setNewQ(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white text-sm focus:outline-none" placeholder="Nouvelle question" />
-                        <textarea value={newA} onChange={e => setNewA(e.target.value)} rows={5} className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white text-sm focus:outline-none resize-none" placeholder="Réponse détaillée..." />
+                        <input value={newQ} onChange={e => setNewQ(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white text-sm focus:outline-none" placeholder={t("Nouvelle question")} />
+                        <textarea value={newA} onChange={e => setNewA(e.target.value)} rows={5} className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white text-sm focus:outline-none resize-none" placeholder={t("Réponse détaillée...")} />
                         <div className="flex gap-2">
-                            <button onClick={add} disabled={saving} className="bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-lg flex items-center gap-1"><Save size={12} /> Ajouter</button>
-                            <button onClick={() => setAdding(false)} className="bg-white/5 text-gray-400 text-xs px-4 py-2 rounded-lg">Annuler</button>
+                            <button onClick={add} disabled={saving} className="bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-lg flex items-center gap-1"><Save size={12} /> <T>Ajouter</T></button>
+                            <button onClick={() => setAdding(false)} className="bg-white/5 text-gray-400 text-xs px-4 py-2 rounded-lg"><T>Annuler</T></button>
                         </div>
                     </div>
                 ) : (
-                    <button onClick={() => setAdding(true)} className="mt-4 bg-white/5 hover:bg-white/10 text-white font-bold text-xs px-4 py-3 rounded-xl transition-all flex items-center gap-2 w-full justify-center border border-dashed border-white/10"><Plus size={14} /> Ajouter une question</button>
+                    <button onClick={() => setAdding(true)} className="mt-4 bg-white/5 hover:bg-white/10 text-white font-bold text-xs px-4 py-3 rounded-xl transition-all flex items-center gap-2 w-full justify-center border border-dashed border-white/10"><Plus size={14} /> <T>Ajouter une question</T></button>
                 )}
             </div>
         </div>

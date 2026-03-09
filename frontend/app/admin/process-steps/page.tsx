@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useList, useNavigation, useDelete, useUpdate } from '@refinedev/core'
 import { useState } from 'react'
 import {
@@ -22,6 +23,7 @@ export interface ProcessStep extends BaseRecord {
 }
 
 export default function ProcessStepsList() {
+    const { t } = useTranslation();
     const { create, edit } = useNavigation()
     const queryResult = useList<ProcessStep>({
         resource: 'process_steps',
@@ -52,12 +54,12 @@ export default function ProcessStepsList() {
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-[#FCD116]">
                         <Sparkles size={18} />
-                        <span className="text-[10px] font-black uppercase tracking-[0.5em]">Section Frontend</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.5em]"><T>Section Frontend</T></span>
                     </div>
                     <h1 className="text-5xl font-black text-white font-heading tracking-tighter">
-                        VOTRE <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] to-[#FCD116]">PARCOURS</span>
+                        VOTRE <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] to-[#FCD116]"><T>PARCOURS</T></span>
                     </h1>
-                    <p className="text-gray-500 max-w-xl text-sm">Gérez les étapes de la démarche affichées sur le site public.</p>
+                    <p className="text-gray-500 max-w-xl text-sm"><T>Gérez les étapes de la démarche affichées sur le site public.</T></p>
                 </div>
                 <Button
                     onClick={() => create('process_steps')}
@@ -95,7 +97,7 @@ export default function ProcessStepsList() {
                             <button
                                 onClick={() => edit('process_steps', step.id)}
                                 className="p-3 bg-white/5 text-gray-400 rounded-xl hover:bg-[#FCD116] hover:text-black transition-all"
-                                title="Modifier"
+                                title={t("Modifier")}
                             >
                                 <Edit2 size={16} />
                             </button>
@@ -104,7 +106,7 @@ export default function ProcessStepsList() {
                                     if (confirm('Supprimer cette étape ?')) deleteItem({ resource: 'process_steps', id: step.id })
                                 }}
                                 className="p-3 bg-white/5 text-gray-400 rounded-xl hover:bg-red-500 hover:text-white transition-all"
-                                title="Supprimer"
+                                title={t("Supprimer")}
                             >
                                 <Trash2 size={16} />
                             </button>

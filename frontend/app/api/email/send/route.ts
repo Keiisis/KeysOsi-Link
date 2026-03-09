@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { sendEmail, EMAIL_TEMPLATES } from '@/lib/email';
+import { sendEmail, getEmailTemplates } from '@/lib/email';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -23,9 +23,9 @@ export async function POST(req: NextRequest) {
         // Generate the HTML based on context
         let html: string;
         if (context === 'agent_reply') {
-            html = EMAIL_TEMPLATES.agentReply(clientName || 'Client', message);
+            html = (await getEmailTemplates('fr')).agentReply(clientName || 'Client', message);
         } else {
-            html = EMAIL_TEMPLATES.agentReply(clientName || 'Client', message);
+            html = (await getEmailTemplates('fr')).agentReply(clientName || 'Client', message);
         }
 
         const result = await sendEmail({

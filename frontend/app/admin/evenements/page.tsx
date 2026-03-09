@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
@@ -27,6 +28,7 @@ const formatDate = (d: string) => new Date(d).toLocaleDateString('fr-FR', { day:
 const formatPrice = (n: number) => new Intl.NumberFormat('fr-FR').format(n)
 
 export default function AdminEventsPage() {
+    const { t } = useTranslation();
     const [events, setEvents] = useState<EventData[]>([])
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
@@ -88,7 +90,7 @@ export default function AdminEventsPage() {
             {/* Search */}
             <div className="relative max-w-sm">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
-                <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher..."
+                <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder={t("Rechercher...")}
                     className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white focus:outline-none focus:border-[#008751]/50" />
             </div>
 
@@ -98,7 +100,7 @@ export default function AdminEventsPage() {
             ) : filtered.length === 0 ? (
                 <div className="text-center py-16">
                     <Calendar size={40} className="mx-auto text-gray-700 mb-3" />
-                    <p className="text-gray-500 font-bold text-sm">Aucun événement</p>
+                    <p className="text-gray-500 font-bold text-sm"><T>Aucun événement</T></p>
                 </div>
             ) : (
                 <div className="rounded-2xl border border-white/[0.06] overflow-hidden"
@@ -107,11 +109,11 @@ export default function AdminEventsPage() {
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-white/[0.06]">
-                                    <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-wider">Événement</th>
-                                    <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-wider">Date</th>
-                                    <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-wider">Prix</th>
-                                    <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-wider">Statut</th>
-                                    <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-wider">Actions</th>
+                                    <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-wider"><T>Événement</T></th>
+                                    <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-wider"><T>Date</T></th>
+                                    <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-wider"><T>Prix</T></th>
+                                    <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-wider"><T>Statut</T></th>
+                                    <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-wider"><T>Actions</T></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -144,10 +146,10 @@ export default function AdminEventsPage() {
                                                         className="appearance-none px-3 py-1.5 pr-7 rounded-full text-[10px] font-bold border cursor-pointer"
                                                         style={{ background: `${st.color}15`, borderColor: `${st.color}30`, color: st.color }}
                                                     >
-                                                        <option value="draft">Brouillon</option>
-                                                        <option value="published">Publié</option>
-                                                        <option value="cancelled">Annulé</option>
-                                                        <option value="completed">Terminé</option>
+                                                        <option value="draft"><T>Brouillon</T></option>
+                                                        <option value="published"><T>Publié</T></option>
+                                                        <option value="cancelled"><T>Annulé</T></option>
+                                                        <option value="completed"><T>Terminé</T></option>
                                                     </select>
                                                     <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: st.color }} />
                                                 </div>
@@ -155,19 +157,19 @@ export default function AdminEventsPage() {
                                             <td className="px-5 py-4">
                                                 <div className="flex items-center justify-end gap-1">
                                                     <Link href={`/evenements/${evt.slug}`}
-                                                        className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-[#008751] hover:bg-[#008751]/10 transition-colors" title="Voir">
+                                                        className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-[#008751] hover:bg-[#008751]/10 transition-colors" title={t("Voir")}>
                                                         <ExternalLink size={13} />
                                                     </Link>
                                                     <Link href={`/admin/evenements/edit/${evt.id}`}
-                                                        className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-[#FCD116] hover:bg-[#FCD116]/10 transition-colors" title="Modifier">
+                                                        className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-[#FCD116] hover:bg-[#FCD116]/10 transition-colors" title={t("Modifier")}>
                                                         <Edit size={13} />
                                                     </Link>
                                                     <Link href={`/admin/evenements/${evt.id}/registrations`}
-                                                        className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors" title="Inscrits">
+                                                        className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors" title={t("Inscrits")}>
                                                         <Users size={13} />
                                                     </Link>
                                                     <button onClick={() => handleDelete(evt.id)} disabled={deleting === evt.id}
-                                                        className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer disabled:opacity-30" title="Supprimer">
+                                                        className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer disabled:opacity-30" title={t("Supprimer")}>
                                                         <Trash2 size={13} />
                                                     </button>
                                                 </div>

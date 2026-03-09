@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, useScroll, useTransform, useSpring, AnimatePresence, useMotionValue } from 'framer-motion';
 import Image from 'next/image';
+import { useTranslation, T } from '@/lib/translation';
 import { Maximize2, X, ChevronLeft, ChevronRight, Sparkles, Map, Eye, EyeOff, LayoutPanelTop } from 'lucide-react';
 
 interface GalleryImage {
@@ -15,6 +16,7 @@ interface GalleryImage {
  * INTERNAL COMPONENT to prevent Hydration Error with useScroll(ref)
  */
 function ScrolledDiaporama({ images, containerRef }: { images: GalleryImage[], containerRef: React.RefObject<HTMLDivElement | null> }) {
+    const { t } = useTranslation();
     const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
     const [museumMode, setMuseumMode] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -110,7 +112,7 @@ function ScrolledDiaporama({ images, containerRef }: { images: GalleryImage[], c
                 <div className="absolute inset-0 bg-gradient-to-tr from-[#008751] via-[#FCD116] to-[#E8112D] opacity-0 group-hover:opacity-20 transition-opacity" />
                 {museumMode ? <EyeOff size={24} className="text-[#FCD116]" /> : <Eye size={24} />}
                 <span className="absolute right-full mr-4 whitespace-nowrap bg-black/80 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                    {museumMode ? 'Quitter le Mode Musée' : 'Activer le Mode Musée'}
+                    {museumMode ? t('Quitter le Mode Musée') : t('Activer le Mode Musée')}
                 </span>
             </motion.button>
 
@@ -143,11 +145,11 @@ function ScrolledDiaporama({ images, containerRef }: { images: GalleryImage[], c
                                 className="flex items-center gap-8 mb-12"
                             >
                                 <LayoutPanelTop className="text-[#FCD116]" size={18} />
-                                <span className="text-[#FCD116] font-black tracking-[1.2em] uppercase text-[12px] opacity-80">Collection Impériale</span>
+                                <span className="text-[#FCD116] font-black tracking-[1.2em] uppercase text-[12px] opacity-80"><T>Collection Impériale</T></span>
                             </motion.div>
 
                             <h2 className="text-8xl md:text-[12rem] font-bold font-heading text-white leading-[0.8] mb-12 tracking-tighter">
-                                L'ÂME <br />
+                                L&apos;ÂME <br />
                                 <span className="italic text-transparent bg-clip-text bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D] filter drop-shadow-[0_20px_60px_rgba(252,209,22,0.5)]">
                                     ÉTERNELLE
                                 </span>
@@ -163,7 +165,7 @@ function ScrolledDiaporama({ images, containerRef }: { images: GalleryImage[], c
                                     IMMERSION TOTALE
                                 </motion.button>
                                 <p className="text-white/30 text-2xl font-extralight leading-relaxed max-w-xl border-l-[3px] border-[#E8112D] pl-12 font-serif italic">
-                                    "Une traversée onirique à travers {images.length || 238} fragments de notre patrie. Laissez-vous porter par le flux du temps."
+                                    {t('Une traversée onirique à travers {{count}} fragments de notre patrie. Laissez-vous porter par le flux du temps.', { count: images.length || 238 })}
                                 </p>
                             </div>
                         </div>
@@ -247,7 +249,7 @@ function ScrolledDiaporama({ images, containerRef }: { images: GalleryImage[], c
                             <div className="absolute bottom-20 flex items-center gap-16 bg-white/5 backdrop-blur-3xl px-12 py-8 rounded-full border border-white/10">
                                 <button onClick={() => setLightboxIndex(prev => (prev! - 1 + images.length) % images.length)} className="text-white/30 hover:text-[#FCD116] transition-all"><ChevronLeft size={50} /></button>
                                 <div className="text-center min-w-[200px]">
-                                    <p className="text-[#FCD116] font-black tracking-[0.5em] text-[12px] mb-2 uppercase">Relique du Bénin</p>
+                                    <p className="text-[#FCD116] font-black tracking-[0.5em] text-[12px] mb-2 uppercase"><T>Relique du Bénin</T></p>
                                     <h3 className="text-white font-heading font-black text-3xl tracking-tighter uppercase">{images[lightboxIndex].filename.split('.')[0].slice(-8)}</h3>
                                 </div>
                                 <button onClick={() => setLightboxIndex(next => (next! + 1) % images.length)} className="text-white/30 hover:text-[#008751] transition-all"><ChevronRight size={50} /></button>
@@ -261,6 +263,7 @@ function ScrolledDiaporama({ images, containerRef }: { images: GalleryImage[], c
 }
 
 function DreamCard({ img, museumMode, onClick }: { img: GalleryImage, museumMode: boolean, onClick: () => void }) {
+    const { t } = useTranslation();
     return (
         <motion.div
             whileHover={{ scale: 1.2, zIndex: 100, rotate: -3 }}
@@ -284,9 +287,9 @@ function DreamCard({ img, museumMode, onClick }: { img: GalleryImage, museumMode
                     <div className="space-y-6">
                         <div className="flex items-center gap-4">
                             <Map className="text-[#FCD116]" size={24} />
-                            <span className="text-white font-black text-[14px] tracking-[0.6em]">PATRIMOINE ROYAL</span>
+                            <span className="text-white font-black text-[14px] tracking-[0.6em]"><T>PATRIMOINE ROYAL</T></span>
                         </div>
-                        <h4 className="text-white font-heading font-black text-6xl tracking-tighter">BÉNIN REVEAL</h4>
+                        <h4 className="text-white font-heading font-black text-6xl tracking-tighter"><T>BÉNIN REVEAL</T></h4>
                     </div>
                     <div className="w-28 h-28 rounded-full bg-white flex items-center justify-center text-black shadow-inner">
                         <Maximize2 size={36} />
@@ -301,6 +304,8 @@ function DreamCard({ img, museumMode, onClick }: { img: GalleryImage, museumMode
 }
 
 export default function PhotoDiaporama() {
+    const { t } = useTranslation();
+
     const [images, setImages] = useState<GalleryImage[]>([]);
     const [isMounted, setIsMounted] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -328,7 +333,7 @@ export default function PhotoDiaporama() {
                 <div className="flex items-center justify-center h-screen bg-[#05080a]">
                     <div className="flex flex-col items-center gap-6">
                         <div className="w-24 h-24 border-t-2 border-[#FCD116] border-solid rounded-full animate-spin" />
-                        <span className="text-[10px] text-white/20 uppercase tracking-[1em] font-black">Initialisation du Rêve...</span>
+                        <span className="text-[10px] text-white/20 uppercase tracking-[1em] font-black"><T>Initialisation du Rêve...</T></span>
                     </div>
                 </div>
             )}

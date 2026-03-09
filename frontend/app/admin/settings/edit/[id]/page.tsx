@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation, T } from '@/lib/translation';
 import { useForm, useNavigation, useOne } from "@refinedev/core";
 import {
     ArrowLeft, Save, ShieldCheck, Database, LayoutGrid, Loader2
@@ -17,6 +18,7 @@ interface Setting {
 }
 
 export default function SettingsEdit() {
+    const { t } = useTranslation();
     const params = useParams();
     const id = params.id as string;
     const { list } = useNavigation();
@@ -67,7 +69,7 @@ export default function SettingsEdit() {
         return (
             <div className="min-h-[50vh] flex flex-col items-center justify-center">
                 <Loader2 className="animate-spin text-[#FCD116] mb-4" size={40} />
-                <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.3em]">Chargement du bloc...</p>
+                <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.3em]"><T>Chargement du bloc...</T></p>
             </div>
         );
     }
@@ -84,8 +86,8 @@ export default function SettingsEdit() {
                         <ArrowLeft size={24} />
                     </button>
                     <div>
-                        <h1 className="text-3xl font-black font-heading text-white tracking-tight italic">RÉGLAGE <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-400 to-white">NOEUD</span></h1>
-                        <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.3em] mt-1">Paramètres avancés</p>
+                        <h1 className="text-3xl font-black font-heading text-white tracking-tight italic"><T>RÉGLAGE</T> <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-400 to-white"><T>NOEUD</T></span></h1>
+                        <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.3em] mt-1"><T>Paramètres avancés</T></p>
                     </div>
                 </div>
 
@@ -111,10 +113,10 @@ export default function SettingsEdit() {
                                 name="key"
                                 value={formData.key || ''}
                                 onChange={handleChange}
-                                placeholder="ex: contact_email"
+                                placeholder={t("ex: contact_email")}
                                 className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-5 px-6 text-white text-sm font-bold font-mono focus:outline-none focus:border-[#FCD116]/40 transition-all"
                             />
-                            <p className="text-[10px] text-gray-500 font-bold ml-1 uppercase">Identifiant utilisé dans le code (minuscules, sans espace)</p>
+                            <p className="text-[10px] text-gray-500 font-bold ml-1 uppercase"><T>Identifiant utilisé dans le code (minuscules, sans espace)</T></p>
                         </div>
                     </div>
 
@@ -128,10 +130,10 @@ export default function SettingsEdit() {
                             value={formData.value || ''}
                             onChange={handleChange}
                             rows={8}
-                            placeholder="ex: contact@retour-gagnant.com"
+                            placeholder={t("ex: contact@retour-gagnant.com")}
                             className="w-full bg-white/5 border-2 border-white/5 rounded-3xl py-6 px-8 text-white text-sm font-medium focus:outline-none focus:border-[#FCD116]/40 transition-all font-mono"
                         />
-                        <p className="text-[10px] text-gray-500 font-bold ml-1 uppercase">La valeur peut être du texte, JSON, ou une URL</p>
+                        <p className="text-[10px] text-gray-500 font-bold ml-1 uppercase"><T>La valeur peut être du texte, JSON, ou une URL</T></p>
                     </div>
                 </form>
             </Card>
@@ -142,7 +144,7 @@ export default function SettingsEdit() {
                     <ShieldCheck size={24} />
                 </div>
                 <div>
-                    <h4 className="text-red-500 font-bold text-sm uppercase tracking-widest mb-1">Attention</h4>
+                    <h4 className="text-red-500 font-bold text-sm uppercase tracking-widest mb-1"><T>Attention</T></h4>
                     <p className="text-gray-400 text-xs font-medium leading-relaxed">
                         La modification de ces variables système peut altérer le fonctionnement public de l'application. Soyez certain des changements apportés.
                     </p>

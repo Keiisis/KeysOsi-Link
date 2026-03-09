@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Target, Heart, Globe, Users, Award, ArrowRight } from 'lucide-react';
 import { usePageSections } from '@/lib/hooks/usePageSections';
+import { useTranslation, T } from '@/lib/translation';
 
 interface ValueItem {
     icon?: React.ElementType
@@ -34,6 +35,7 @@ const team: TeamMember[] = [
 ];
 
 export default function AProposPage() {
+    const { t } = useTranslation()
     const { sections } = usePageSections('a-propos')
     const dynamicValues = (sections.values as unknown as ValueItem[]) || values
     const dynamicTeam = (sections.team as unknown as TeamMember[]) || team
@@ -55,17 +57,17 @@ export default function AProposPage() {
                         className="max-w-3xl mx-auto text-center"
                     >
                         <span className="inline-block px-4 py-1.5 rounded-full bg-white/10 text-[#FCD116] text-sm font-semibold tracking-widest uppercase mb-6 border border-white/10">
-                            À Propos
+                            <T>À Propos</T>
                         </span>
                         <h1 className="text-4xl md:text-6xl font-bold font-heading mb-6">
-                            Votre Retour,{' '}
+                            <T>Votre Retour,</T>{' '}
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D]">
-                                Notre Mission
+                                <T>Notre Mission</T>
                             </span>
                         </h1>
                         <p className="text-xl text-white/70 leading-relaxed">
-                            Retour Gagnant accompagne la diaspora béninoise dans toutes les étapes de son retour.
-                            Du passeport à l&apos;investissement, nous transformons votre rêve de retour en réalité concrète.
+                            <T>Retour Gagnant accompagne la diaspora béninoise dans toutes les étapes de son retour.</T>
+                            <br /><T>Du passeport à l&apos;investissement, nous transformons votre rêve de retour en réalité concrète.</T>
                         </p>
                     </motion.div>
                 </div>
@@ -81,23 +83,19 @@ export default function AProposPage() {
                             viewport={{ once: true }}
                             className="space-y-6"
                         >
-                            <span className="text-[#E8112D] font-bold tracking-widest uppercase text-sm">Notre Histoire</span>
+                            <span className="text-[#E8112D] font-bold tracking-widest uppercase text-sm"><T>Notre Histoire</T></span>
                             <h2 className="text-3xl md:text-4xl font-bold font-heading text-[#1a2332]">
-                                Née de la diaspora,<br />pour la diaspora
+                                <T>Née de la diaspora,</T><br /><T>pour la diaspora</T>
                             </h2>
                             <p className="text-gray-600 leading-relaxed text-lg">
-                                Fondée par des membres de la diaspora béninoise ayant eux-mêmes vécu l&apos;expérience
-                                du retour, Retour Gagnant est née d&apos;un constat simple : rentrer au pays ne devrait
-                                pas être un parcours du combattant.
+                                <T>Fondée par des membres de la diaspora béninoise ayant eux-mêmes vécu l&apos;expérience du retour, Retour Gagnant est née d&apos;un constat simple : rentrer au pays ne devrait pas être un parcours du combattant.</T>
                             </p>
                             <p className="text-gray-600 leading-relaxed">
-                                Aujourd&apos;hui, nous avons accompagné plus de 500 projets de retour réussis.
-                                Des passeports aux investissements immobiliers, en passant par la création
-                                d&apos;entreprise, nous sommes le partenaire de confiance de la diaspora.
+                                <T>Aujourd&apos;hui, nous avons accompagné plus de 500 projets de retour réussis. Des passeports aux investissements immobiliers, en passant par la création d&apos;entreprise, nous sommes le partenaire de confiance de la diaspora.</T>
                             </p>
                             <Link href="/rendez-vous">
                                 <Button className="bg-[#008751] text-white hover:bg-[#006B40] mt-4 font-semibold px-8 py-6 text-base rounded-xl">
-                                    Planifier un appel gratuit <ArrowRight className="ml-2" size={18} />
+                                    <T>Planifier un appel gratuit</T> <ArrowRight className="ml-2" size={18} />
                                 </Button>
                             </Link>
                         </motion.div>
@@ -112,8 +110,8 @@ export default function AProposPage() {
                                 <span className="text-8xl">🇧🇯</span>
                             </div>
                             <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-8">
-                                <p className="text-white font-heading font-bold text-xl">Cotonou, Bénin</p>
-                                <p className="text-white/70 text-sm">Siège de Retour Gagnant</p>
+                                <p className="text-white font-heading font-bold text-xl"><T>Cotonou, Bénin</T></p>
+                                <p className="text-white/70 text-sm"><T>Siège de Retour Gagnant</T></p>
                             </div>
                         </motion.div>
                     </div>
@@ -124,9 +122,9 @@ export default function AProposPage() {
             <section className="py-20 bg-gray-50">
                 <div className="container mx-auto px-4">
                     <div className="text-center mb-16">
-                        <span className="text-[#E8112D] font-bold tracking-widest uppercase text-sm mb-2 block">Nos Valeurs</span>
+                        <span className="text-[#E8112D] font-bold tracking-widest uppercase text-sm mb-2 block"><T>Nos Valeurs</T></span>
                         <h2 className="text-3xl md:text-4xl font-bold font-heading text-[#1a2332]">
-                            Ce qui nous <span className="text-[#008751]">anime</span>
+                            <T>Ce qui nous</T> <span className="text-[#008751]"><T>anime</T></span>
                         </h2>
                     </div>
 
@@ -145,8 +143,8 @@ export default function AProposPage() {
                                     <div className="w-14 h-14 rounded-xl bg-[#008751]/10 flex items-center justify-center mx-auto mb-4">
                                         {IconComp ? <IconComp className="text-[#008751]" size={28} /> : <Target className="text-[#008751]" size={28} />}
                                     </div>
-                                    <h3 className="font-bold text-lg text-[#1a2332] mb-2">{v.title}</h3>
-                                    <p className="text-gray-500 text-sm">{v.desc || v.description}</p>
+                                    <h3 className="font-bold text-lg text-[#1a2332] mb-2">{t(v.title)}</h3>
+                                    <p className="text-gray-500 text-sm">{v.desc ? t(v.desc) : v.description ? t(v.description) : ''}</p>
                                 </motion.div>
                             )
                         })}
@@ -158,9 +156,9 @@ export default function AProposPage() {
             <section className="py-20 bg-white">
                 <div className="container mx-auto px-4">
                     <div className="text-center mb-16">
-                        <span className="text-[#E8112D] font-bold tracking-widest uppercase text-sm mb-2 block">Notre Équipe</span>
+                        <span className="text-[#E8112D] font-bold tracking-widest uppercase text-sm mb-2 block"><T>Notre Équipe</T></span>
                         <h2 className="text-3xl md:text-4xl font-bold font-heading text-[#1a2332]">
-                            Des experts <span className="text-[#FCD116]">dédiés</span>
+                            <T>Des experts</T> <span className="text-[#FCD116]"><T>dédiés</T></span>
                         </h2>
                     </div>
 
@@ -175,8 +173,8 @@ export default function AProposPage() {
                                 className="bg-gradient-to-br from-[#0f141e] to-[#1a2a3a] rounded-2xl p-6 text-center group hover:scale-105 transition-transform"
                             >
                                 <div className="text-5xl mb-4">{m.emoji}</div>
-                                <h3 className="font-bold text-white mb-1">{m.name}</h3>
-                                <p className="text-white/50 text-sm">{m.role}</p>
+                                <h3 className="font-bold text-white mb-1">{t(m.name)}</h3>
+                                <p className="text-white/50 text-sm">{t(m.role)}</p>
                             </motion.div>
                         ))}
                     </div>
@@ -188,14 +186,14 @@ export default function AProposPage() {
                 <div className="container mx-auto px-4 text-center">
                     <Award className="mx-auto mb-6 text-[#FCD116]" size={48} />
                     <h2 className="text-3xl md:text-4xl font-bold font-heading mb-4">
-                        Prêt à commencer votre retour ?
+                        <T>Prêt à commencer votre retour ?</T>
                     </h2>
                     <p className="text-white/80 text-lg mb-8 max-w-xl mx-auto">
-                        Rejoignez les centaines de membres de la diaspora qui nous ont fait confiance.
+                        <T>Rejoignez les centaines de membres de la diaspora qui nous ont fait confiance.</T>
                     </p>
                     <Link href="/rendez-vous">
                         <Button className="bg-[#FCD116] text-[#1a2332] hover:bg-[#e5c014] font-bold px-10 py-6 text-lg rounded-xl shadow-xl">
-                            Réserver un appel gratuit
+                            <T>Réserver un appel gratuit</T>
                         </Button>
                     </Link>
                 </div>

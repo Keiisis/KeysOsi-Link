@@ -10,16 +10,19 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import ClientBell from './ClientBell';
 import { useCart } from '@/lib/store/cartStore';
+import { useTranslation, T } from '@/lib/translation';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 export default function Header() {
     const { itemCount, openCart } = useCart();
+    const { t } = useTranslation();
     const navLinks = [
-        { label: "Accueil", href: "/" },
-        { label: "Blog", href: "/blog" },
-        { label: "Contact", href: "/contact" },
-        { label: "Notre Histoire", href: "/notre-histoire" },
-        { label: "Événements", href: "/evenements" },
-        { label: "Boutique", href: "/boutique" },
+        { label: t("Accueil"), href: "/" },
+        { label: t("Blog"), href: "/blog" },
+        { label: t("Contact"), href: "/contact" },
+        { label: t("Notre Histoire"), href: "/notre-histoire" },
+        { label: t("Événements"), href: "/evenements" },
+        { label: t("Boutique"), href: "/boutique" },
     ];
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -52,17 +55,17 @@ export default function Header() {
                         <div className="relative w-14 h-14 xl:w-20 xl:h-20 overflow-hidden rounded-full border border-white/10 group-hover:border-[#FCD116]/50 transition-colors bg-white shadow-lg">
                             <Image
                                 src="/images/logo.jpg"
-                                alt="Retour Gagnant Logo"
+                                alt={t("Retour Gagnant Logo")}
                                 fill
                                 className="object-cover"
                             />
                         </div>
                         <div className="hidden sm:flex flex-col">
-                            <span className="font-heading font-black text-2xl xl:text-3xl tracking-tighter text-[#008751] group-hover:text-white transition-colors duration-500">
-                                RETOUR <span className="text-[#E8112D]">GAGNANT</span>
+                            <span className="font-heading font-black text-2xl xl:text-3xl tracking-tighter group-hover:text-white transition-colors duration-500">
+                                <span className="text-[#008751]">RETOUR</span> <span className="text-[#E8112D]">GAGNANT</span>
                             </span>
                             <span className="text-[10px] xl:text-[12px] font-bold tracking-[0.4em] uppercase font-sans text-white/50 group-hover:text-[#FCD116] transition-colors duration-500">
-                                BENIN
+                                <T>BENIN</T>
                             </span>
                         </div>
                     </Link>
@@ -102,6 +105,9 @@ export default function Header() {
 
                     {/* User Area & Rendez-vous Button */}
                     <div className="hidden lg:flex items-center gap-6 shrink-0">
+                        {/* Language Switcher */}
+                        <LanguageSwitcher />
+
                         {/* Cart Button */}
                         <button
                             onClick={openCart}
@@ -119,7 +125,7 @@ export default function Header() {
 
                         <Link href="/rendez-vous">
                             <Button className="font-black rounded-full px-6 xl:px-8 h-12 xl:h-14 text-[11px] xl:text-[13px] uppercase tracking-widest shadow-[0_0_20px_rgba(252,209,22,0.15)] transition-all duration-500 transform hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(252,209,22,0.4)] bg-[#FCD116] text-[#0f141e] border-none relative overflow-hidden group">
-                                <span className="relative z-10">Rendez-vous</span>
+                                <span className="relative z-10"><T>Rendez-vous</T></span>
                                 <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out z-0" />
                             </Button>
                         </Link>
@@ -130,7 +136,7 @@ export default function Header() {
                         <button
                             onClick={openCart}
                             className="relative p-2 text-white/70 hover:text-[#FCD116] transition-colors shrink-0"
-                            aria-label="Ouvrir le panier"
+                            aria-label={t("Ouvrir le panier")}
                         >
                             <ShoppingBag size={24} />
                             {itemCount > 0 && (
@@ -143,7 +149,7 @@ export default function Header() {
                         <button
                             className="p-2 sm:p-3 shrink-0 rounded-xl hover:bg-white/5 transition-colors"
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            aria-label="Toggle Menu"
+                            aria-label={t("Toggle Menu")}
                         >
                             {isMobileMenuOpen ?
                                 <X size={26} className="text-white" /> :
@@ -193,7 +199,7 @@ export default function Header() {
                             >
                                 <Link href="/rendez-vous" onClick={() => setIsMobileMenuOpen(false)}>
                                     <Button className="w-full py-7 text-xl font-black bg-[#008751] text-white hover:bg-[#E8112D] rounded-2xl shadow-[0_0_20px_rgba(0,135,81,0.3)] border-none transform transition-all active:scale-95">
-                                        RÉSERVER MON RETOUR
+                                        {t("RÉSERVER MON RETOUR")}
                                     </Button>
                                 </Link>
                             </motion.div>

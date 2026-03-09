@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation, T } from '@/lib/translation';
 import { useForm, useNavigation } from "@refinedev/core";
 import { motion } from "framer-motion";
 import {
@@ -15,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { Testimonial } from "../page";
 
 export default function TestimonialsCreate() {
+    const { t } = useTranslation();
     const { list } = useNavigation();
 
     const { onFinish, formLoading } = useForm<Testimonial>({
@@ -82,9 +84,9 @@ export default function TestimonialsCreate() {
                     <div>
                         <div className="flex items-center gap-2 text-[#3b82f6] mb-1">
                             <Quote size={14} />
-                            <span className="text-[10px] font-black uppercase tracking-[0.4em]">Amplification de Voix</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.4em]"><T>Amplification de Voix</T></span>
                         </div>
-                        <h1 className="text-4xl font-black text-white font-heading tracking-tight italic">NOUVEL <span className="text- benin-gradient">AMBASSADEUR</span></h1>
+                        <h1 className="text-4xl font-black text-white font-heading tracking-tight italic"><T>NOUVEL</T> <span className="text- benin-gradient"><T>AMBASSADEUR</T></span></h1>
                     </div>
                 </div>
 
@@ -106,22 +108,22 @@ export default function TestimonialsCreate() {
                         <form className="space-y-10">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1">Identité de l'auteur</label>
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1"><T>Identité de l'auteur</T></label>
                                     <input
                                         name="name"
                                         value={formData.name || ''}
                                         onChange={handleChange}
-                                        placeholder="Ex: Koffi Mensah"
+                                        placeholder={t("Ex: Koffi Mensah")}
                                         className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white text-sm font-bold focus:outline-none focus:border-[#3b82f6]/40 transition-all"
                                     />
                                 </div>
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1">Localisation / Diaspora</label>
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1"><T>Localisation / Diaspora</T></label>
                                     <input
                                         name="location"
                                         value={formData.location || ''}
                                         onChange={handleChange}
-                                        placeholder="Ex: Paris, France"
+                                        placeholder={t("Ex: Paris, France")}
                                         className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white text-sm font-bold focus:outline-none focus:border-[#3b82f6]/40 transition-all"
                                     />
                                 </div>
@@ -129,17 +131,17 @@ export default function TestimonialsCreate() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1">Service Concerné</label>
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1"><T>Service Concerné</T></label>
                                     <input
                                         name="service"
                                         value={formData.service || ''}
                                         onChange={handleChange}
-                                        placeholder="Ex: Construction Immobilière"
+                                        placeholder={t("Ex: Construction Immobilière")}
                                         className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white text-sm font-bold focus:outline-none focus:border-[#3b82f6]/40 transition-all"
                                     />
                                 </div>
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1">Note de Satisfaction</label>
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1"><T>Note de Satisfaction</T></label>
                                     <div className="flex gap-4 p-4 bg-white/5 rounded-2xl border-2 border-white/5">
                                         {[1, 2, 3, 4, 5].map((s) => (
                                             <button
@@ -160,7 +162,7 @@ export default function TestimonialsCreate() {
 
                             <div className="space-y-3">
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1 flex items-center justify-between">
-                                    <span>Contenu du Témoignage</span>
+                                    <span><T>Contenu du Témoignage</T></span>
                                     <button
                                         type="button"
                                         onClick={handleOptimize}
@@ -168,7 +170,7 @@ export default function TestimonialsCreate() {
                                         className="text-[#3b82f6] hover:text-white transition-colors flex items-center gap-1 group"
                                     >
                                         {isOptimizing ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} className="group-hover:animate-pulse" />}
-                                        <span>OPTIMISER PAR IA</span>
+                                        <span><T>OPTIMISER PAR IA</T></span>
                                     </button>
                                 </label>
                                 <textarea
@@ -176,13 +178,13 @@ export default function TestimonialsCreate() {
                                     value={formData.text || ''}
                                     onChange={handleChange}
                                     rows={8}
-                                    placeholder="Copiez ici le témoignage brut reçu..."
+                                    placeholder={t("Copiez ici le témoignage brut reçu...")}
                                     className="w-full bg-white/5 border-2 border-white/5 rounded-[2rem] py-6 px-8 text-white text-sm font-medium focus:outline-none focus:border-[#3b82f6]/40 transition-all resize-none italic leading-relaxed"
                                 />
                             </div>
 
                             <div className="space-y-3">
-                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1">URL de la photo (Optionnel)</label>
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1"><T>URL de la photo (Optionnel)</T></label>
                                 <input
                                     name="photo"
                                     value={formData.photo || ''}
@@ -196,7 +198,7 @@ export default function TestimonialsCreate() {
                 </div>
 
                 <div className="lg:col-span-5 space-y-8">
-                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1">Aperçu de l'Impact</span>
+                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1"><T>Aperçu de l'Impact</T></span>
                     <Card className="bg-[#0a0f18] border-white/5 rounded-[2.5rem] p-10 shadow-3xl relative overflow-hidden group border-2 border-white/5">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-[#3b82f6]/10 rounded-full blur-[60px] pointer-events-none" />
 
@@ -205,7 +207,7 @@ export default function TestimonialsCreate() {
                                 <div className="flex items-center gap-4">
                                     <div className="w-16 h-16 rounded-2xl bg-benin-gradient p-1 shadow-2xl">
                                         <div className="w-full h-full bg-[#0a0f18] rounded-[1.2rem] flex items-center justify-center overflow-hidden">
-                                            {formData.photo ? <Image src={formData.photo} alt="Avatar" fill className="object-cover" /> : <User size={24} className="text-gray-800" />}
+                                            {formData.photo ? <Image src={formData.photo} alt={t("Avatar")} fill className="object-cover" /> : <User size={24} className="text-gray-800" />}
                                         </div>
                                     </div>
                                     <div>

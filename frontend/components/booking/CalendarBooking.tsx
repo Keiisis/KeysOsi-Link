@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
@@ -27,6 +28,7 @@ const DAYS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
 const MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 
 export default function CalendarBooking() {
+    const { t } = useTranslation();
     const [step, setStep] = useState(1)
     const [selectedDate, setSelectedDate] = useState<Date | null>(null)
     const [selectedTime, setSelectedTime] = useState('')
@@ -142,12 +144,12 @@ export default function CalendarBooking() {
         return (
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white/[0.03] border border-emerald-500/20 rounded-2xl p-8 text-center max-w-md mx-auto">
                 <CheckCircle2 size={48} className="text-emerald-400 mx-auto mb-4" />
-                <h3 className="text-xl font-black text-white mb-2">Rendez-vous Confirmé !</h3>
+                <h3 className="text-xl font-black text-white mb-2"><T>Rendez-vous Confirmé !</T></h3>
                 <p className="text-sm text-gray-400 mb-1">
                     {selectedDate?.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
                 </p>
                 <p className="text-emerald-400 font-bold text-sm mb-4">{selectedTime}</p>
-                <p className="text-xs text-gray-500">Un email de confirmation vous a été envoyé.</p>
+                <p className="text-xs text-gray-500"><T>Un email de confirmation vous a été envoyé.</T></p>
             </motion.div>
         )
     }
@@ -170,7 +172,7 @@ export default function CalendarBooking() {
             {/* Step 1: Service Selection */}
             {step === 1 && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
-                    <h2 className="text-lg font-bold text-white mb-4">Quel service souhaitez-vous ?</h2>
+                    <h2 className="text-lg font-bold text-white mb-4"><T>Quel service souhaitez-vous ?</T></h2>
                     {SERVICES.map(s => (
                         <button
                             key={s}
@@ -230,11 +232,11 @@ export default function CalendarBooking() {
                                     })}
                                 </div>
                             ) : (
-                                <p className="text-xs text-gray-500">Cliquez sur une date dans le calendrier</p>
+                                <p className="text-xs text-gray-500"><T>Cliquez sur une date dans le calendrier</T></p>
                             )}
                         </div>
                     </div>
-                    <button onClick={() => setStep(1)} className="text-xs text-gray-500 hover:text-white mt-4 flex items-center gap-1"><ChevronLeft size={12} /> Retour</button>
+                    <button onClick={() => setStep(1)} className="text-xs text-gray-500 hover:text-white mt-4 flex items-center gap-1"><ChevronLeft size={12} /> <T>Retour</T></button>
                 </motion.div>
             )}
 
@@ -242,38 +244,38 @@ export default function CalendarBooking() {
             {step === 3 && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                     <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-6 max-w-lg mx-auto">
-                        <h2 className="text-lg font-bold text-white mb-1">Vos coordonnées</h2>
+                        <h2 className="text-lg font-bold text-white mb-1"><T>Vos coordonnées</T></h2>
                         <p className="text-xs text-gray-500 mb-6">
                             {selectedService} — {selectedDate?.toLocaleDateString('fr-FR')} — {selectedTime}
                         </p>
 
                         <div className="space-y-4">
                             <div>
-                                <label className="text-xs font-bold text-gray-400 mb-1 block">Nom complet *</label>
+                                <label className="text-xs font-bold text-gray-400 mb-1 block"><T>Nom complet *</T></label>
                                 <div className="relative">
                                     <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                                    <input type="text" value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} placeholder="Jean Dupont" className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-9 pr-4 text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50" />
+                                    <input type="text" value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} placeholder={t("Jean Dupont")} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-9 pr-4 text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50" />
                                 </div>
                             </div>
                             <div>
-                                <label className="text-xs font-bold text-gray-400 mb-1 block">Email *</label>
+                                <label className="text-xs font-bold text-gray-400 mb-1 block"><T>Email *</T></label>
                                 <div className="relative">
                                     <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                                    <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="votre@email.com" className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-9 pr-4 text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50" />
+                                    <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder={t("votre@email.com")} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-9 pr-4 text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50" />
                                 </div>
                             </div>
                             <div>
-                                <label className="text-xs font-bold text-gray-400 mb-1 block">Téléphone / WhatsApp</label>
+                                <label className="text-xs font-bold text-gray-400 mb-1 block"><T>Téléphone / WhatsApp</T></label>
                                 <div className="relative">
                                     <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                                     <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+33 6 12 34 56 78" className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-9 pr-4 text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50" />
                                 </div>
                             </div>
                             <div>
-                                <label className="text-xs font-bold text-gray-400 mb-1 block">Notes (optionnel)</label>
+                                <label className="text-xs font-bold text-gray-400 mb-1 block"><T>Notes (optionnel)</T></label>
                                 <div className="relative">
                                     <MessageSquare size={14} className="absolute left-3 top-3 text-gray-500" />
-                                    <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Précisions sur votre demande..." rows={3} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-9 pr-4 text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50 resize-none" />
+                                    <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder={t("Précisions sur votre demande...")} rows={3} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-9 pr-4 text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50 resize-none" />
                                 </div>
                             </div>
                         </div>
@@ -286,7 +288,7 @@ export default function CalendarBooking() {
                             {loading ? <Loader2 size={16} className="animate-spin" /> : <CalendarDays size={16} />}
                             Confirmer le rendez-vous
                         </button>
-                        <button onClick={() => setStep(2)} className="text-xs text-gray-500 hover:text-white mt-3 flex items-center gap-1 mx-auto"><ChevronLeft size={12} /> Modifier la date</button>
+                        <button onClick={() => setStep(2)} className="text-xs text-gray-500 hover:text-white mt-3 flex items-center gap-1 mx-auto"><ChevronLeft size={12} /> <T>Modifier la date</T></button>
                     </div>
                 </motion.div>
             )}

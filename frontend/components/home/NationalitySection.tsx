@@ -4,40 +4,52 @@ import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     CheckCircle2, Globe, Heart, MapPin, Users, FileText, Shield,
-    Sparkles, ChevronRight, ChevronLeft, Loader2, Star,
+    Sparkles, ChevronLeft, Loader2, Star,
     ArrowRight, Phone, Mail, User, Compass, Fingerprint,
-    Landmark, ScrollText, Dna, BookOpen, Scaling, CheckSquare,
+    Landmark, ScrollText, Dna, BookOpen, Scaling,
     MessageSquare, Home, FileCheck2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { useEffect } from "react";
+import { useTranslation, T } from "@/lib/translation";
 
 /* ────────────────── IMMERSIVE COMPONENTS ────────────────── */
 const FloatingParticles = () => {
+    const [particles] = useState(() => Array.from({ length: 20 }, (_, i) => ({
+        id: i,
+        width: Math.random() * 6 + 2,
+        height: Math.random() * 6 + 2,
+        left: Math.random() * 100,
+        top: Math.random() * 100,
+        y: Math.random() * -100 - 50,
+        x: Math.random() * 50 - 25,
+        duration: Math.random() * 5 + 5,
+        delay: Math.random() * 5,
+    })))
+
     return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-            {[...Array(20)].map((_, i) => (
+            {particles.map((p) => (
                 <motion.div
-                    key={`particle-${i}`}
+                    key={`particle-${p.id}`}
                     className="absolute bg-white rounded-full opacity-20"
                     style={{
-                        width: Math.random() * 6 + 2 + 'px',
-                        height: Math.random() * 6 + 2 + 'px',
-                        left: Math.random() * 100 + '%',
-                        top: Math.random() * 100 + '%',
+                        width: p.width + 'px',
+                        height: p.height + 'px',
+                        left: p.left + '%',
+                        top: p.top + '%',
                     }}
                     animate={{
-                        y: [0, Math.random() * -100 - 50],
-                        x: [0, Math.random() * 50 - 25],
+                        y: [0, p.y],
+                        x: [0, p.x],
                         opacity: [0, 0.4, 0],
                         scale: [0, 1, 0.5],
                     }}
                     transition={{
-                        duration: Math.random() * 5 + 5,
+                        duration: p.duration,
                         repeat: Infinity,
                         ease: "linear",
-                        delay: Math.random() * 5,
+                        delay: p.delay,
                     }}
                 />
             ))}
@@ -84,7 +96,7 @@ const ScoreRing = ({ score }: { score: number }) => {
                 >
                     {score}%
                 </motion.span>
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Potentiel</span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1"><T>Potentiel</T></span>
             </div>
         </div>
     );
@@ -95,15 +107,15 @@ const ScoreRing = ({ score }: { score: number }) => {
 interface OptionData {
     value: string;
     label: string;
-    icon: any;
+    icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
     detail?: string;
 }
 
-interface StepConfig {
+interface StepData {
     id: string;
     title: string;
     subtitle: string;
-    icon: any;
+    icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
     type: 'choice' | 'input' | 'multi' | 'textarea';
     options?: OptionData[];
     inputConfig?: { name: string; placeholder: string; type?: string; required?: boolean }[];
@@ -119,7 +131,7 @@ interface OracleResult {
 }
 
 /* ────────────────── STEPS ────────────────── */
-const journeySteps: StepConfig[] = [
+const journeySteps: StepData[] = [
     {
         id: 'lien_benin',
         title: 'Votre Lien avec le Bénin',
@@ -200,7 +212,7 @@ const journeySteps: StepConfig[] = [
 ];
 
 /* ────────────────── SCORING ────────────────── */
-function calculateScore(answers: Record<string, any>): OracleResult {
+function calculateScore(answers: Record<string, string | string[]>): OracleResult {
     let score = 50;
     const insights: string[] = [];
 
@@ -232,10 +244,11 @@ function calculateScore(answers: Record<string, any>): OracleResult {
 
 /* ────────────────── MAIN COMPONENT ────────────────── */
 export default function NationalitySection() {
+    const { t } = useTranslation();
     const [mode, setMode] = useState<'intro' | 'journey' | 'result'>('intro');
     const [currentStep, setCurrentStep] = useState(0);
-    const [answers, setAnswers] = useState<Record<string, any>>({});
-    const [contactInfo, setContactInfo] = useState({ nom: '', prenom: '', email: '', whatsapp: '' });
+    const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
+    const [contactInfo, setContactInfo] = useState<{ nom: string; prenom: string; email: string; whatsapp: string }>({ nom: '', prenom: '', email: '', whatsapp: '' });
     const [freeMessage, setFreeMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [result, setResult] = useState<OracleResult | null>(null);
@@ -248,20 +261,20 @@ export default function NationalitySection() {
     const canProceed = useCallback(() => {
         if (!step) return false;
         if (step.type === 'choice') return !!answers[step.id];
-        if (step.type === 'multi') return (answers[step.id] || []).length > 0;
+        if (step.type === 'multi') return (answers[step.id] as string[] || []).length > 0;
         if (step.type === 'input') return contactInfo.nom.trim() !== '' && contactInfo.email.trim() !== '';
         if (step.type === 'textarea') return true;
         return true;
     }, [step, answers, contactInfo]);
 
-    const selectChoice = (value: string) => {
-        setAnswers(prev => ({ ...prev, [step.id]: value }));
+    const handleSelectOption = (category: string, option: string | string[]) => {
+        setAnswers(prev => ({ ...prev, [category]: option }));
         setTimeout(() => goNext(), 300); // Rapide transition
     };
 
     const toggleMulti = (value: string) => {
         setAnswers(prev => {
-            const current = prev[step.id] || [];
+            const current = prev[step.id] as string[] || [];
             if (value === 'aucun') return { ...prev, [step.id]: ['aucun'] };
             const filtered = current.filter((v: string) => v !== 'aucun');
             return {
@@ -298,7 +311,7 @@ export default function NationalitySection() {
             'liberte': 'Liberté de circuler',
             'retraite': 'Retraite'
         };
-        const motivationLabel = labels[answers.motivation] || 'Non spécifié';
+        const motivationLabel = labels[answers.motivation as string] || 'Non spécifié';
         const combinedMotivation = `Motivation: ${motivationLabel}\n\nMessage du client:\n${freeMessage || 'Aucun message supplémentaire.'}`;
 
         // 1. Submit to Oracle (for Admin Dashboard)
@@ -387,7 +400,7 @@ export default function NationalitySection() {
                                     transition={{ delay: 0.1 }}
                                     className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-[#E8112D]/10 text-[#E8112D] text-sm font-bold tracking-widest uppercase"
                                 >
-                                    Identité & Citoyenneté
+                                    <T>Identité & Citoyenneté</T>
                                 </motion.div>
                                 <motion.h2
                                     initial={{ opacity: 0, y: 20 }}
@@ -395,7 +408,7 @@ export default function NationalitySection() {
                                     transition={{ delay: 0.2 }}
                                     className="text-4xl md:text-6xl font-bold font-heading text-[#1a2332] leading-[1.1]"
                                 >
-                                    Obtenir la <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D]">Nationalité Béninoise</span>
+                                    <T>Obtenir la</T> <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D]"><T>Nationalité Béninoise</T></span>
                                 </motion.h2>
                                 <motion.p
                                     initial={{ opacity: 0, y: 20 }}
@@ -403,7 +416,7 @@ export default function NationalitySection() {
                                     transition={{ delay: 0.3 }}
                                     className="text-xl text-gray-600 leading-relaxed max-w-lg"
                                 >
-                                    Retrouvez votre fierté et vos droits. Que vous soyez descendant d'afro-descendants ou ayant des liens familiaux, nous vous accompagnons dans toutes les démarches administratives.
+                                    <T>Retrouvez votre fierté et vos droits. Que vous soyez descendant d&apos;afro-descendants ou ayant des liens familiaux, nous vous accompagnons dans toutes les démarches administratives.</T>
                                 </motion.p>
 
                                 <motion.div
@@ -413,10 +426,10 @@ export default function NationalitySection() {
                                     className="space-y-5"
                                 >
                                     {[
-                                        "Analyse approfondie de votre dossier",
-                                        "Recherche ou reconstitution de preuves",
-                                        "Dépôt et suivi VIP auprès des autorités",
-                                        "Accompagnement jusqu'au passeport"
+                                        t("Analyse approfondie de votre dossier"),
+                                        t("Recherche ou reconstitution de preuves"),
+                                        t("Dépôt et suivi VIP auprès des autorités"),
+                                        t("Accompagnement jusqu'au passeport")
                                     ].map((item, i) => (
                                         <div key={i} className="flex items-center gap-4">
                                             <div className="w-6 h-6 rounded-full bg-[#008751]/10 flex items-center justify-center flex-shrink-0">
@@ -450,10 +463,10 @@ export default function NationalitySection() {
                                     </motion.div>
 
                                     <h3 className="text-3xl font-bold text-gray-900 font-heading mb-4">
-                                        Test d'Éligibilité
+                                        <T>Test d&apos;Éligibilité</T>
                                     </h3>
-                                    <p className="text-gray-500 mb-10 text-lg">
-                                        Découvrez vos chances d'obtenir la nationalité béninoise et recevez un plan d'action concret en 6 étapes interactives.
+                                    <p className="text-gray-600 text-lg md:text-xl font-medium leading-relaxed max-w-2xl mx-auto">
+                                        <T>Libérez le potentiel de votre identité et facilitez vos démarches pour rejoindre le réseau Retour Gagnant. L&apos;analyse est confidentielle et personnalisée.</T>
                                     </p>
 
                                     <Button
@@ -461,14 +474,14 @@ export default function NationalitySection() {
                                         className="w-full h-16 bg-[#1a2332] hover:bg-[#2a364a] text-white font-bold rounded-2xl text-lg shadow-[0_10px_40px_-10px_rgba(26,35,50,0.5)] transition-all hover:-translate-y-1 hover:shadow-[0_20px_40px_-10px_rgba(26,35,50,0.6)] group"
                                     >
                                         <span className="flex items-center gap-3">
-                                            Démarrer l'Analyse
+                                            <T>Démarrer l&apos;Analyse</T>
                                             <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform" />
                                         </span>
                                     </Button>
 
                                     <div className="flex items-center gap-6 mt-8 text-sm font-medium text-gray-400">
-                                        <span className="flex items-center gap-2"><Sparkles size={16} className="text-[#FCD116]" /> Rapide</span>
-                                        <span className="flex items-center gap-2"><CheckCircle2 size={16} className="text-[#008751]" /> Confidentiel</span>
+                                        <span className="flex items-center gap-2"><Sparkles size={16} className="text-[#FCD116]" /> <T>Rapide</T></span>
+                                        <span className="flex items-center gap-2"><CheckCircle2 size={16} className="text-[#008751]" /> <T>Confidentiel</T></span>
                                     </div>
                                 </div>
                             </motion.div>
@@ -490,9 +503,10 @@ export default function NationalitySection() {
                                 <div className="flex justify-between items-end mb-4">
                                     <div>
                                         <h3 className="text-[#008751] font-bold tracking-widest text-xs uppercase mb-1">
-                                            Étape {currentStep + 1} de {totalSteps}
+                                            <span className="text-[#008751] font-bold"><T>Note importante :</T></span> <T>Cette simulation n&apos;est pas un document officiel mais un guide d&apos;orientation basé sur l&apos;IA.</T>
+                                            <T>Étape</T> {currentStep + 1} <T>de</T> {totalSteps}
                                         </h3>
-                                        <p className="text-gray-400 text-sm font-medium">Analyse en cours...</p>
+                                        <p className="text-gray-400 text-sm font-medium"><T>Analyse en cours...</T></p>
                                     </div>
                                     <div className="text-2xl font-black text-gray-300 font-heading">
                                         {progress}%
@@ -505,7 +519,7 @@ export default function NationalitySection() {
                                         animate={{ width: `${progress}%` }}
                                         transition={{ duration: 0.6, ease: 'easeOut' }}
                                     >
-                                        <div className="absolute inset-0 bg-white/20" style={{ backgroundImage: 'linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent)', backgroundSize: '1rem 1rem' }} />
+                                        <div className="absolute inset-0 bg-white/20 bg-[linear-gradient(45deg,rgba(255,255,255,.15)_25%,transparent_25%,transparent_50%,rgba(255,255,255,.15)_50%,rgba(255,255,255,.15)_75%,transparent_75%,transparent)] bg-[length:1rem_1rem]" />
                                     </motion.div>
                                 </div>
                             </div>
@@ -532,15 +546,12 @@ export default function NationalitySection() {
 
                                     {/* Question Header */}
                                     <div className="flex flex-col items-center text-center mb-10">
-                                        <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center mb-6 shadow-inner relative">
-                                            {(() => {
-                                                const Icon = step.icon;
-                                                return <Icon size={28} className="text-[#1a2332]" strokeWidth={1.5} />;
-                                            })()}
-                                            {step.id === 'contact_info' && <motion.div className="absolute -top-1 -right-1 w-3 h-3 bg-[#008751] rounded-full border-2 border-white" animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 2 }} />}
+                                        <div className="w-12 h-12 rounded-2xl bg-white shadow-xl flex items-center justify-center text-[#1a2332] border border-gray-100">
+                                            <step.icon size={24} />
                                         </div>
-                                        <h2 className="text-3xl font-black text-gray-900 font-heading mb-3">{step.title}</h2>
-                                        <p className="text-gray-500 text-lg max-w-md">{step.subtitle}</p>
+                                        {step.id === 'contact_info' && <motion.div className="absolute -top-1 -right-1 w-3 h-3 bg-[#008751] rounded-full border-2 border-white" animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 2 }} />}
+                                        <h2 className="text-3xl font-black text-gray-900 font-heading mb-3">{t(step.title)}</h2>
+                                        <p className="text-gray-500 text-lg max-w-md">{t(step.subtitle)}</p>
                                     </div>
 
                                     {/* Form Elements Based on Type */}
@@ -559,7 +570,7 @@ export default function NationalitySection() {
                                                             initial={{ opacity: 0, y: 15 }}
                                                             animate={{ opacity: 1, y: 0 }}
                                                             transition={{ delay: i * 0.05 }}
-                                                            onClick={() => selectChoice(opt.value)}
+                                                            onClick={() => handleSelectOption(step.id, opt.value)}
                                                             className={`relative p-5 rounded-2xl border-2 text-left transition-all overflow-hidden ${isSelected
                                                                 ? 'bg-[#008751]/5 border-[#008751] shadow-[0_8px_20px_rgba(0,135,81,0.15)] ring-1 ring-[#008751]/20'
                                                                 : 'bg-white border-gray-100 shadow-sm hover:border-[#008751]/40 hover:shadow-md'
@@ -576,8 +587,8 @@ export default function NationalitySection() {
                                                                     })()}
                                                                 </div>
                                                                 <div>
-                                                                    <span className={`text-base font-bold block ${isSelected ? 'text-[#008751]' : 'text-gray-800'}`}>{opt.label}</span>
-                                                                    {opt.detail && <span className="text-sm text-gray-500 block mt-1">{opt.detail}</span>}
+                                                                    <span className={`text-base font-bold block ${isSelected ? 'text-[#008751]' : 'text-gray-800'}`}>{t(opt.label)}</span>
+                                                                    {opt.detail && <span className="text-sm text-gray-500 block mt-1">{t(opt.detail)}</span>}
                                                                 </div>
                                                             </div>
                                                         </motion.button>
@@ -591,7 +602,7 @@ export default function NationalitySection() {
                                             <div className="space-y-4">
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     {step.options.map((opt, i) => {
-                                                        const selected = (answers[step.id] || []).includes(opt.value);
+                                                        const selected = (answers[step.id] as string[] || []).includes(opt.value);
                                                         return (
                                                             <motion.button
                                                                 key={opt.value}
@@ -611,7 +622,7 @@ export default function NationalitySection() {
                                                                         const Icon = opt.icon;
                                                                         return <Icon size={22} className={selected ? 'text-[#008751]' : 'text-gray-400'} strokeWidth={1.5} />;
                                                                     })()}
-                                                                    <span className={`text-sm font-bold ${selected ? 'text-[#008751]' : 'text-gray-700'}`}>{opt.label}</span>
+                                                                    <span className={`text-sm font-bold ${selected ? 'text-[#008751]' : 'text-gray-700'}`}>{t(opt.label)}</span>
                                                                 </div>
                                                                 <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${selected ? 'bg-[#008751] border-[#008751]' : 'border-gray-200'}`}>
                                                                     {selected && <CheckCircle2 size={14} className="text-white" strokeWidth={3} />}
@@ -642,9 +653,9 @@ export default function NationalitySection() {
                                                         </div>
                                                         <input
                                                             type={field.type || 'text'}
-                                                            value={(contactInfo as any)[field.name] || ''}
+                                                            value={contactInfo[field.name as keyof typeof contactInfo] || ''}
                                                             onChange={(e) => setContactInfo(prev => ({ ...prev, [field.name]: e.target.value }))}
-                                                            placeholder={field.placeholder}
+                                                            placeholder={t(field.placeholder)}
                                                             required={field.required}
                                                             className="w-full pl-14 pr-6 py-5 bg-gray-50 border-2 border-gray-100 rounded-2xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#008751] focus:bg-white focus:ring-4 focus:ring-[#008751]/10 transition-all text-base font-medium"
                                                         />
@@ -660,7 +671,7 @@ export default function NationalitySection() {
                                                     value={freeMessage}
                                                     onChange={(e) => setFreeMessage(e.target.value)}
                                                     rows={6}
-                                                    placeholder="Racontez-nous votre histoire, posez vos questions, parlez-nous de votre projet..."
+                                                    placeholder={t("Racontez-nous votre histoire, posez vos questions, parlez-nous de votre projet...")}
                                                     className="w-full px-6 py-5 bg-gray-50 border-2 border-gray-100 rounded-2xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#008751] focus:bg-white focus:ring-4 focus:ring-[#008751]/10 transition-all text-base font-medium resize-none shadow-sm"
                                                 />
                                             </motion.div>
@@ -676,7 +687,7 @@ export default function NationalitySection() {
                                     className="flex items-center gap-2 text-gray-400 hover:text-gray-800 transition-colors group text-sm font-bold tracking-wide uppercase py-2"
                                 >
                                     <ChevronLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-                                    Retour
+                                    <T>Retour</T>
                                 </button>
 
                                 {currentStep < totalSteps - 1 ? (
@@ -685,7 +696,7 @@ export default function NationalitySection() {
                                         disabled={!canProceed()}
                                         className="h-14 bg-[#1a2332] hover:bg-[#2a364a] text-white font-bold px-10 rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-[0_8px_20px_-8px_rgba(26,35,50,0.5)] hover:shadow-[0_15px_25px_-8px_rgba(26,35,50,0.6)] group"
                                     >
-                                        Étape Suivante
+                                        <T>Étape Suivante</T>
                                         <ArrowRight size={18} className="ml-3 group-hover:translate-x-1 transition-transform" />
                                     </Button>
                                 ) : (
@@ -700,7 +711,7 @@ export default function NationalitySection() {
                                             </div>
                                         )}
                                         <span className="flex items-center">
-                                            Lancer l'Analyse <Sparkles size={18} className="ml-3 text-[#FCD116]" />
+                                            <T>Lancer l&apos;Analyse</T> <Sparkles size={18} className="ml-3 text-[#FCD116]" />
                                         </span>
                                     </Button>
                                 )}
@@ -730,18 +741,18 @@ export default function NationalitySection() {
                                     <ScoreRing score={result.score} />
 
                                     <h2 className="text-3xl md:text-5xl font-black font-heading text-[#1a2332] mb-4">
-                                        Félicitations <span className="text-[#008751]">{contactInfo.prenom}</span> !
+                                        <T>Félicitations</T> <span className="text-[#008751]">{contactInfo.prenom}</span> !
                                     </h2>
 
                                     <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6 mb-8 mt-8">
                                         <p className="text-gray-600 text-lg leading-relaxed">
-                                            L'Oracle de Retour Gagnant a analysé vos réponses avec succès. Votre profil offre d'excellentes perspectives pour l'obtention de la nationalité béninoise.
+                                            <T>L&apos;Oracle de Retour Gagnant a analysé vos réponses avec succès. Votre profil offre d&apos;excellentes perspectives pour l&apos;obtention de la nationalité béninoise.</T>
                                         </p>
                                     </div>
 
                                     {/* Insights AI Stylisés */}
                                     <div className="space-y-4 mb-10 text-left">
-                                        <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest px-2">Analyse de votre profil :</h4>
+                                        <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest px-2"><T>Analyse de votre profil :</T></h4>
                                         {result.insights.map((insight, i) => (
                                             <motion.div
                                                 key={i}
@@ -753,7 +764,7 @@ export default function NationalitySection() {
                                                 <div className="w-8 h-8 rounded-full bg-[#FCD116]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                                                     <Star size={14} className="text-[#FCD116]" />
                                                 </div>
-                                                <span className="text-[15px] font-medium text-gray-700 leading-snug">{insight}</span>
+                                                <span className="text-[15px] font-medium text-gray-700 leading-snug">{t(insight)}</span>
                                             </motion.div>
                                         ))}
                                     </div>
@@ -761,7 +772,7 @@ export default function NationalitySection() {
                                     {/* Reference */}
                                     {result.reference && (
                                         <div className="mb-10">
-                                            <span className="text-xs text-gray-400 uppercase tracking-widest block mb-2 font-bold">Votre code d'analyse (N.A.G)</span>
+                                            <span className="text-xs text-gray-400 uppercase tracking-widest block mb-2 font-bold"><T>Votre code d&apos;analyse (N.A.G)</T></span>
                                             <div className="inline-block bg-[#1a2332] text-white px-6 py-3 rounded-xl font-mono text-lg font-bold tracking-wider shadow-lg">
                                                 {result.reference}
                                             </div>
@@ -779,7 +790,7 @@ export default function NationalitySection() {
                                             <Button className="w-full h-16 bg-[#008751] hover:bg-[#006a41] text-white font-bold rounded-2xl text-base shadow-[0_10px_30px_rgba(0,135,81,0.3)] hover:shadow-[0_15px_35px_rgba(0,135,81,0.4)] transition-all group overflow-hidden relative">
                                                 <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
                                                 <span className="relative z-10 flex items-center justify-center gap-2">
-                                                    Consulter un Expert Privé
+                                                    <T>Consulter un Expert Privé</T>
                                                     <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                                                 </span>
                                             </Button>
@@ -787,7 +798,7 @@ export default function NationalitySection() {
                                     </motion.div>
 
                                     <p className="text-sm font-medium text-gray-400 mt-6 flex items-center justify-center gap-2">
-                                        <Shield size={16} /> Ces données ont été bien transmises sécuritairement à nos agents.
+                                        <Shield size={16} /> <T>Ces données ont été bien transmises sécuritairement à nos agents.</T>
                                     </p>
                                 </div>
                             </div>

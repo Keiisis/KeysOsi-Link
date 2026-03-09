@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import {
@@ -87,8 +88,8 @@ export default function AdminFrontendHub() {
                             <Palette size={24} className="text-[#008751]" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-white">Gestion du Frontend</h1>
-                            <p className="text-gray-400 text-sm">Tout le contenu visible sur votre site public</p>
+                            <h1 className="text-2xl font-bold text-white"><T>Gestion du Frontend</T></h1>
+                            <p className="text-gray-400 text-sm"><T>Tout le contenu visible sur votre site public</T></p>
                         </div>
                     </div>
                     <p className="text-gray-500 text-sm max-w-2xl mt-4">
@@ -156,7 +157,7 @@ export default function AdminFrontendHub() {
             <div className="bg-[#FCD116]/5 border border-[#FCD116]/10 rounded-xl p-4 flex items-start gap-3">
                 <Globe size={18} className="text-[#FCD116] mt-0.5 flex-shrink-0" />
                 <div>
-                    <p className="text-sm text-gray-300 font-medium">Astuce</p>
+                    <p className="text-sm text-gray-300 font-medium"><T>Astuce</T></p>
                     <p className="text-xs text-gray-500 mt-0.5">
                         Toutes les modifications effectuées ici sont appliquées en temps réel sur le site.
                         Les données en cache sont automatiquement rafraîchies à chaque visite.

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Search, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { supabase } from '@/lib/supabase'
+import { useTranslation, T } from '@/lib/translation'
 
 const FALLBACK_PARTNERS: Partner[] = [
     {
@@ -52,6 +53,7 @@ const CATEGORIES = [
 ]
 
 export default function PartnerDirectory() {
+    const { t } = useTranslation()
     const [partners, setPartners] = useState<Partner[]>(FALLBACK_PARTNERS)
     const [selectedCategory, setSelectedCategory] = useState('Tous')
     const [searchQuery, setSearchQuery] = useState('')
@@ -99,10 +101,14 @@ export default function PartnerDirectory() {
     const filtered = partners.filter(p => {
         const matchesCat = selectedCategory === 'Tous' || p.category === selectedCategory
         const q = searchQuery.toLowerCase()
+        const tName = t(p.name).toLowerCase()
+        const tDesc = t(p.description).toLowerCase()
+        const tLoc = t(p.location).toLowerCase()
+
         const matchesSearch = !q ||
-            p.name.toLowerCase().includes(q) ||
-            p.description.toLowerCase().includes(q) ||
-            p.location.toLowerCase().includes(q)
+            tName.includes(q) ||
+            tDesc.includes(q) ||
+            tLoc.includes(q)
         return matchesCat && matchesSearch
     })
 
@@ -120,20 +126,19 @@ export default function PartnerDirectory() {
                                     type="button"
                                     variant={selectedCategory === cat ? 'default' : 'outline'}
                                     onClick={() => setSelectedCategory(cat)}
-                                    className={`rounded-full whitespace-nowrap text-sm flex-shrink-0 ${
-                                        selectedCategory === cat
+                                    className={`rounded-full whitespace-nowrap text-sm flex-shrink-0 ${selectedCategory === cat
                                             ? 'bg-[#008751] hover:bg-[#006e42] text-white border-transparent'
                                             : 'border-gray-200 text-gray-600 hover:border-[#008751] hover:text-[#008751]'
-                                    }`}
+                                        }`}
                                 >
-                                    {cat}
+                                    {t(cat)}
                                 </Button>
                             ))}
                         </div>
                         <div className="relative w-full md:w-72 flex-shrink-0">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none"/>
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
                             <Input
-                                placeholder="Rechercher un partenaire..."
+                                placeholder={t("Rechercher un partenaire...")}
                                 className="pl-10 bg-white border-gray-200 rounded-full"
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
@@ -144,7 +149,7 @@ export default function PartnerDirectory() {
                     {/* Grid */}
                     {loading ? (
                         <div className="flex justify-center py-24">
-                            <Loader2 className="w-8 h-8 animate-spin text-[#008751]"/>
+                            <Loader2 className="w-8 h-8 animate-spin text-[#008751]" />
                         </div>
                     ) : filtered.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -158,14 +163,14 @@ export default function PartnerDirectory() {
                         </div>
                     ) : (
                         <div className="text-center py-24 flex flex-col items-center gap-3 opacity-50">
-                            <p className="text-xl font-semibold">Aucun partenaire trouvé.</p>
+                            <p className="text-xl font-semibold"><T>Aucun partenaire trouvé.</T></p>
                             <Button
                                 type="button"
                                 variant="link"
                                 className="text-[#008751]"
                                 onClick={() => { setSelectedCategory('Tous'); setSearchQuery('') }}
                             >
-                                Réinitialiser les filtres
+                                <T>Réinitialiser les filtres</T>
                             </Button>
                         </div>
                     )}
@@ -173,7 +178,7 @@ export default function PartnerDirectory() {
             </section>
 
             {/* Profile modal — rendered outside the section to escape overflow */}
-            <PartnerProfileModal partner={selected} onClose={() => setSelected(null)}/>
+            <PartnerProfileModal partner={selected} onClose={() => setSelected(null)} />
         </>
     )
 }

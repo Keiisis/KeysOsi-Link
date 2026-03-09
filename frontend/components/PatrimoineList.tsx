@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
+import { useTranslation, T } from '@/lib/translation'
 
 interface PatrimoineItem {
     id: string
@@ -29,6 +30,7 @@ const fallbackItems: PatrimoineItem[] = [
 ]
 
 export default function PatrimoineList() {
+    const { t } = useTranslation()
     const [items, setItems] = useState<PatrimoineItem[]>(fallbackItems)
     const [loading, setLoading] = useState(true)
 
@@ -52,7 +54,7 @@ export default function PatrimoineList() {
         fetchData()
     }, [])
 
-    if (loading) return <div className="text-center py-10 text-white">Chargement du patrimoine...</div>
+    if (loading) return <div className="text-center py-10 text-white"><T>Chargement du patrimoine...</T></div>
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -77,12 +79,12 @@ export default function PatrimoineList() {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                         <h3 className="absolute bottom-4 left-4 text-xl font-bold text-white font-heading">
-                            {item.title}
+                            {t(item.title)}
                         </h3>
                     </div>
                     <div className="p-6">
                         <p className="text-gray-300 text-sm leading-relaxed line-clamp-4">
-                            {item.description}
+                            {t(item.description)}
                         </p>
                     </div>
                 </motion.div>

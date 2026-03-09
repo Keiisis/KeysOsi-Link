@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -36,6 +37,7 @@ const answerLabels: Record<string, { label: string; icon: typeof MapPin }> = {
 }
 
 export default function AdminLeadsOraclePage() {
+    const { t } = useTranslation();
     const [leads, setLeads] = useState<Lead[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
@@ -123,7 +125,7 @@ export default function AdminLeadsOraclePage() {
     const renderOracleAnswers = (lead: Lead) => {
         const answers = lead.answers
         if (!answers || Object.keys(answers).length === 0) {
-            return <p className="text-gray-600 text-xs italic">Aucune réponse Oracle enregistrée.</p>
+            return <p className="text-gray-600 text-xs italic"><T>Aucune réponse Oracle enregistrée.</T></p>
         }
         return (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -193,10 +195,10 @@ export default function AdminLeadsOraclePage() {
                     <div className="space-y-2">
                         <div className="flex items-center gap-2 text-[#FCD116]">
                             <Sparkles size={18} className="text-[#FCD116]" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.5em]">L&apos;Oracle</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.5em]"><T>L&apos;Oracle</T></span>
                         </div>
                         <h1 className="text-4xl font-black text-white font-heading tracking-tighter">
-                            LEADS <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#008751]">ORACLE</span>
+                            LEADS <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#008751]"><T>ORACLE</T></span>
                         </h1>
                         <p className="text-sm text-gray-500">
                             {leads.length} lead(s) • {stats.notContacted} à contacter • Score moyen : {stats.avgScore}%
@@ -245,8 +247,8 @@ export default function AdminLeadsOraclePage() {
                             type="text"
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            placeholder="Nom, email, service..."
-                            title="Rechercher"
+                            placeholder={t("Nom, email, service...")}
+                            title={t("Rechercher")}
                             className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-[#FCD116]/40 text-sm"
                         />
                     </div>
@@ -283,7 +285,7 @@ export default function AdminLeadsOraclePage() {
                         {filtered.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-20 gap-3">
                                 <Sparkles size={36} className="text-gray-700" />
-                                <p className="text-gray-500 text-sm font-bold">Aucun lead trouvé</p>
+                                <p className="text-gray-500 text-sm font-bold"><T>Aucun lead trouvé</T></p>
                             </div>
                         ) : (
                             <div className="divide-y divide-white/5">
@@ -344,7 +346,7 @@ export default function AdminLeadsOraclePage() {
                                                             ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
                                                             : 'bg-white/5 text-gray-500 border-white/10 hover:text-amber-400 hover:border-amber-500/20'
                                                     )}
-                                                    title="Voir les réponses Oracle"
+                                                    title={t("Voir les réponses Oracle")}
                                                 >
                                                     <Sparkles size={11} />
                                                     Oracle
@@ -363,9 +365,9 @@ export default function AdminLeadsOraclePage() {
                                                     )}
                                                 >
                                                     {lead.is_contacted ? (
-                                                        <span className="flex items-center gap-1"><CheckCircle2 size={11} /> Contacté</span>
+                                                        <span className="flex items-center gap-1"><CheckCircle2 size={11} /> <T>Contacté</T></span>
                                                     ) : (
-                                                        <span className="flex items-center gap-1"><Clock size={11} /> À contacter</span>
+                                                        <span className="flex items-center gap-1"><Clock size={11} /> <T>À contacter</T></span>
                                                     )}
                                                 </button>
 
@@ -374,7 +376,7 @@ export default function AdminLeadsOraclePage() {
                                                     type="button"
                                                     onClick={() => setSelectedLead(lead)}
                                                     className="flex items-center gap-1.5 text-xs font-bold bg-[#3b82f6]/15 text-[#3b82f6] hover:bg-[#3b82f6]/25 border border-[#3b82f6]/20 hover:border-[#3b82f6]/40 px-3 py-1.5 rounded-lg transition-all"
-                                                    title="Envoyer un email"
+                                                    title={t("Envoyer un email")}
                                                 >
                                                     <Mail size={12} /> Répondre
                                                 </button>
@@ -387,7 +389,7 @@ export default function AdminLeadsOraclePage() {
                                                         rel="noopener noreferrer"
                                                         onClick={() => { if (!lead.is_contacted) toggleContacted(lead) }}
                                                         className="flex items-center gap-1 text-xs font-bold bg-green-500/20 text-green-400 hover:bg-green-500/30 px-3 py-1.5 rounded-lg transition-all"
-                                                        title="WhatsApp"
+                                                        title={t("WhatsApp")}
                                                     >
                                                         <Phone size={12} /> WA
                                                     </a>
@@ -397,7 +399,7 @@ export default function AdminLeadsOraclePage() {
                                                 <button
                                                     type="button"
                                                     onClick={() => deleteLead(lead)}
-                                                    title="Supprimer"
+                                                    title={t("Supprimer")}
                                                     className="p-1.5 rounded-lg bg-red-500/10 text-red-500 border border-red-500/10 hover:bg-red-500 hover:text-white transition-all"
                                                 >
                                                     <Trash2 size={12} />

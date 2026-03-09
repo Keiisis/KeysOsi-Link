@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -22,8 +23,8 @@ const KEY_META: Record<string, { label: string; type: 'text' | 'color' | 'email'
     site_slogan: { label: 'Slogan', type: 'text', placeholder: "L'alliance parfaite..." },
     logo_url: { label: 'URL du logo', type: 'url', placeholder: '/logo.png' },
     primary_color: { label: 'Couleur primaire', type: 'color' },
-    contact_email: { label: 'Email de contact', type: 'email', placeholder: 'contact@retourgagnant.bj' },
-    contact_phone: { label: 'Téléphone', type: 'tel', placeholder: '+229 01 23 45 67' },
+    contact_email: { label: 'Email de contact', type: 'email', placeholder: 'contact@retourgagnantbenin.bj' },
+    contact_phone: { label: 'Téléphone', type: 'tel', placeholder: '+229 01 60 32 21 21 / +229 01 94 35 50 50' },
     address: { label: 'Adresse', type: 'text', placeholder: 'Haie Vive, Cotonou, Bénin' },
     facebook_url: { label: 'Facebook', type: 'url', placeholder: 'https://facebook.com/...' },
     instagram_url: { label: 'Instagram', type: 'url', placeholder: 'https://instagram.com/...' },
@@ -68,6 +69,7 @@ const SUB_PAGE_CATEGORIES: Record<string, string> = {
 interface Toast { id: number; type: 'success' | 'error'; msg: string }
 
 export default function AdminSettingsPage() {
+    const { t } = useTranslation();
     const [settings, setSettings] = useState<Setting[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
@@ -162,10 +164,10 @@ export default function AdminSettingsPage() {
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-[#FCD116]">
                         <Settings size={18} />
-                        <span className="text-[10px] font-black uppercase tracking-[0.5em]">Configuration du Système</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.5em]"><T>Configuration du Système</T></span>
                     </div>
                     <h1 className="text-4xl font-black text-white font-heading tracking-tighter">
-                        PARAMÈTRES <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#008751]">SYSTÈME</span>
+                        PARAMÈTRES <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#008751]"><T>SYSTÈME</T></span>
                     </h1>
                     <p className="text-sm text-gray-500">
                         {settings.length} paramètre(s) configuré(s) — modifiables en temps réel
@@ -175,7 +177,7 @@ export default function AdminSettingsPage() {
                     type="button"
                     onClick={fetchSettings}
                     className="p-3 rounded-xl bg-white/5 border border-white/5 text-gray-400 hover:text-white transition-colors"
-                    title="Rafraîchir"
+                    title={t("Rafraîchir")}
                 >
                     <RefreshCw size={16} />
                 </button>
@@ -192,8 +194,8 @@ export default function AdminSettingsPage() {
                         <Globe size={18} style={{ color: '#FCD116' }} />
                     </div>
                     <div>
-                        <p className="text-sm font-black text-white">Informations Générales</p>
-                        <p className="text-[10px] text-gray-500 mt-0.5">Identité du site, contacts officiels et réseaux sociaux</p>
+                        <p className="text-sm font-black text-white"><T>Informations Générales</T></p>
+                        <p className="text-[10px] text-gray-500 mt-0.5"><T>Identité du site, contacts officiels et réseaux sociaux</T></p>
                     </div>
                 </div>
 
@@ -229,8 +231,8 @@ export default function AdminSettingsPage() {
                                                                 value={editValue}
                                                                 onChange={e => setEditValue(e.target.value)}
                                                                 className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-[#FCD116]/40 w-32"
-                                                                title="Code couleur hex"
-                                                                placeholder="#FCD116"
+                                                                title={t("Code couleur hex")}
+                                                                placeholder={t("#FCD116")}
                                                             />
                                                         </div>
                                                     ) : (
@@ -249,7 +251,7 @@ export default function AdminSettingsPage() {
                                                         type="button"
                                                         onClick={() => saveEdit(setting)}
                                                         disabled={saving}
-                                                        title="Sauvegarder"
+                                                        title={t("Sauvegarder")}
                                                         className="p-2.5 rounded-xl bg-[#008751]/20 text-[#008751] hover:bg-[#008751]/30 transition-colors disabled:opacity-40"
                                                     >
                                                         {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
@@ -257,7 +259,7 @@ export default function AdminSettingsPage() {
                                                     <button
                                                         type="button"
                                                         onClick={cancelEdit}
-                                                        title="Annuler"
+                                                        title={t("Annuler")}
                                                         className="p-2.5 rounded-xl bg-white/5 text-gray-500 hover:text-white transition-colors"
                                                     >
                                                         <X size={14} />
@@ -272,7 +274,7 @@ export default function AdminSettingsPage() {
                                                         </div>
                                                     ) : (
                                                         <span className="text-sm text-white/80 truncate max-w-xs">
-                                                            {setting.value || <span className="text-gray-600 italic">Non défini</span>}
+                                                            {setting.value || <span className="text-gray-600 italic"><T>Non défini</T></span>}
                                                         </span>
                                                     )}
                                                 </div>
@@ -282,7 +284,7 @@ export default function AdminSettingsPage() {
                                             <button
                                                 type="button"
                                                 onClick={() => startEdit(setting)}
-                                                title="Modifier"
+                                                title={t("Modifier")}
                                                 className="p-2 rounded-xl bg-white/5 border border-white/5 text-gray-600 hover:text-white hover:bg-white/10 transition-all opacity-0 group-hover:opacity-100"
                                             >
                                                 <Edit2 size={13} />
@@ -295,7 +297,7 @@ export default function AdminSettingsPage() {
                         {generalSettings.length === 0 && !loading && (
                             <div className="p-12 text-center">
                                 <Database size={32} className="mx-auto mb-3 text-gray-700" />
-                                <p className="text-gray-500 text-sm">Aucun paramètre général trouvé</p>
+                                <p className="text-gray-500 text-sm"><T>Aucun paramètre général trouvé</T></p>
                             </div>
                         )}
                     </div>
@@ -305,7 +307,7 @@ export default function AdminSettingsPage() {
             {/* Autres catégories avec données en DB (non general) */}
             {otherCategories.length > 0 && (
                 <div className="space-y-4">
-                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">Autres catégories en base</p>
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]"><T>Autres catégories en base</T></p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {otherCategories.map(cat => {
                             const meta = CATEGORY_META[cat]
@@ -340,7 +342,7 @@ export default function AdminSettingsPage() {
 
             {/* Shortcuts vers sous-pages dédiées */}
             <div className="space-y-4">
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">Configurations avancées</p>
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]"><T>Configurations avancées</T></p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {[
                         {
@@ -398,7 +400,7 @@ export default function AdminSettingsPage() {
                 <div className="bg-[#0a0f18] border border-white/5 rounded-2xl p-6">
                     <div className="flex items-center gap-3 mb-5">
                         <Palette size={16} className="text-[#FCD116]" />
-                        <p className="text-xs font-black text-white uppercase tracking-wider">Aperçu Identité Visuelle</p>
+                        <p className="text-xs font-black text-white uppercase tracking-wider"><T>Aperçu Identité Visuelle</T></p>
                     </div>
                     <div className="flex flex-wrap items-center gap-4">
                         {/* Logo */}
@@ -407,7 +409,7 @@ export default function AdminSettingsPage() {
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
                                     src={generalSettings.find(s => s.key === 'logo_url')?.value}
-                                    alt="Logo"
+                                    alt={t("Logo")}
                                     className="w-10 h-10 object-contain"
                                 />
                             </div>

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, MessageCircle, Calculator, ChevronDown, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTranslation, T } from "@/lib/translation";
 
 interface PricingOption {
     label: string;
@@ -19,13 +20,19 @@ interface PricingCalculator3DProps {
 }
 
 export default function PricingCalculator3D({ options, baseColor, serviceName }: PricingCalculator3DProps) {
+    const { t } = useTranslation();
     const [selectedOption, setSelectedOption] = useState<PricingOption>(options[0]);
     const [isOpen, setIsOpen] = useState(false);
 
     // Format message for WhatsApp negotiation
     const handleNegotiate = () => {
         const message = encodeURIComponent(
-            `Bonjour Retour Gagnant 🇧🇯,\n\nJe suis intéressé par le service *${serviceName}*.\nOption sélectionnée : *${selectedOption.label}* (${selectedOption.price}).\n\nJ'aimerais discuter des détails et négocier cette offre.`
+            t("whatsapp_negotiate_message", {
+                defaultValue: `Bonjour Retour Gagnant 🇧🇯,\n\nJe suis intéressé par le service *{{serviceName}}*.\nOption sélectionnée : *{{selectedOption}}* ({{price}}).\n\nJ'aimerais discuter des détails et négocier cette offre.`,
+                serviceName: serviceName,
+                selectedOption: selectedOption.label,
+                price: selectedOption.price
+            })
         );
         window.open(`https://wa.me/2290160322121?text=${message}`, '_blank');
     };
@@ -51,8 +58,8 @@ export default function PricingCalculator3D({ options, baseColor, serviceName }:
                             <Calculator size={24} style={{ color: baseColor }} />
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-gray-900">Calculateur Intelligent</h3>
-                            <p className="text-xs text-gray-500">Estimation immédiate</p>
+                            <h3 className="text-lg font-bold text-gray-900"><T>Calculateur Intelligent</T></h3>
+                            <p className="text-xs text-gray-500"><T>Estimation immédiate</T></p>
                         </div>
                     </div>
 
@@ -110,7 +117,7 @@ export default function PricingCalculator3D({ options, baseColor, serviceName }:
                                 {selectedOption.price}
                             </motion.div>
                         </AnimatePresence>
-                        <p className="text-sm text-gray-400 mt-2 font-medium">Prix estimatif (hors options)</p>
+                        <p className="text-sm text-gray-400 mt-2 font-medium"><T>Prix estimatif (hors options)</T></p>
                     </div>
 
                     {/* Action Button */}
@@ -120,11 +127,11 @@ export default function PricingCalculator3D({ options, baseColor, serviceName }:
                         style={{ backgroundColor: baseColor }}
                     >
                         <MessageCircle className="mr-2 group-hover:rotate-12 transition-transform" />
-                        Négocier cette offre
+                        <T>Négocier cette offre</T>
                     </Button>
 
                     <p className="text-xs text-center text-gray-400 mt-4 opacity-70">
-                        Discussion directe avec un expert via WhatsApp
+                        <T>Discussion directe avec un expert via WhatsApp</T>
                     </p>
                 </div>
             </motion.div>

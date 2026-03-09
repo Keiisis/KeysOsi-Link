@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { GoldenIcon } from "@/components/ui/GoldenIcon";
 import { supabase } from "@/lib/supabase";
+import { useTranslation, T } from "@/lib/translation";
 
 interface Step {
     id: number
@@ -21,6 +22,7 @@ const fallbackSteps: Step[] = [
 ]
 
 export default function ProcessSteps() {
+    const { t } = useTranslation();
     const [steps, setSteps] = useState<Step[]>(fallbackSteps)
 
     useEffect(() => {
@@ -56,8 +58,8 @@ export default function ProcessSteps() {
 
             <div className="container mx-auto px-4 relative z-10">
                 <div className="text-center mb-20 space-y-4">
-                    <span className="text-[#FDB931] font-bold tracking-widest uppercase text-sm">Votre Parcours</span>
-                    <h2 className="text-4xl md:text-5xl font-bold font-heading text-white">Notre <span className="text-gold-gradient">Démarche</span></h2>
+                    <span className="text-[#FDB931] font-bold tracking-widest uppercase text-sm"><T>Votre Parcours</T></span>
+                    <h2 className="text-4xl md:text-5xl font-bold font-heading text-white"><T>Notre</T> <span className="text-gold-gradient"><T>Démarche</T></span></h2>
                     <div className="w-24 h-1.5 bg-gradient-to-r from-transparent via-[#28a745] to-transparent mx-auto rounded-full mt-4" />
                 </div>
 
@@ -79,8 +81,8 @@ export default function ProcessSteps() {
 
                                 {/* Content */}
                                 <div className="text-center space-y-3 px-4">
-                                    <h3 className="text-xl font-bold text-white group-hover:text-[#FDB931] transition-colors">{step.title}</h3>
-                                    <p className="text-gray-400 text-sm leading-relaxed">{step.description}</p>
+                                    <h3 className="text-xl font-bold text-white group-hover:text-[#FDB931] transition-colors">{t(step.title)}</h3>
+                                    <p className="text-gray-400 text-sm leading-relaxed">{t(step.description)}</p>
                                 </div>
                             </div>
                         ))}

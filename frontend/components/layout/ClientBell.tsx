@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, CheckCircle2, ShieldAlert, ArrowRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import { useTranslation, T } from '@/lib/translation'
 
 interface Notification {
     id: string
@@ -18,6 +19,7 @@ interface Notification {
 }
 
 export default function ClientBell() {
+    const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(false)
     const [notifications, setNotifications] = useState<Notification[]>([])
     const [unreadCount, setUnreadCount] = useState(0)
@@ -109,7 +111,7 @@ export default function ClientBell() {
                         className="absolute top-full right-0 mt-4 w-80 bg-[#0B1015] border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
                     >
                         <div className="p-4 border-b border-white/5 flex items-center justify-between">
-                            <h3 className="font-bold text-white text-sm">Notifications</h3>
+                            <h3 className="font-bold text-white text-sm"><T>Notifications</T></h3>
                             {unreadCount > 0 && (
                                 <button
                                     onClick={() => markAsRead()}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { sendEmail, EMAIL_TEMPLATES, getEmailConfig } from '@/lib/email';
+import { sendEmail, getEmailTemplates, getEmailConfig } from '@/lib/email';
+import { fetchWithGroqRotation } from '@/lib/groq';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -13,25 +14,21 @@ async function generateAutoReply(clientName: string, service: string): Promise<s
         const groqKey = process.env.GROQ_API_KEY;
         if (!groqKey) return 'Votre demande de rendez-vous est confirmée. Notre équipe la prépare.';
 
-        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile',
-                messages: [
-                    {
-                        role: 'system',
-                        content: `Tu es l'assistant de Retour Gagnant Bénin. Génère un court message personnalisé (2-3 phrases max) pour confirmer la réception d'une demande de rendez-vous pour le service donné. Sois chaleureux, rassurant et professionnel. Ne donne AUCUN prix et AUCUNE date (l'agent s'en chargera). NE PAS utiliser de markdown.`
-                    },
-                    {
-                        role: 'user',
-                        content: `Le client "${clientName}" a demandé un rendez-vous pour le service "${service}".`
-                    }
-                ],
-                temperature: 0.7,
-                max_tokens: 150,
-            }),
-        });
+        const res = await fetchWithGroqRotation({
+            model: 'llama-3.1-8b-instant',
+            messages: [
+                {
+                    role: 'system',
+                    content: `Tu es l'assistant de Retour Gagnant Bénin. Génère un court message personnalisé (2-3 phrases max) pour confirmer la réception d'une demande de rendez-vous pour le service donné. Sois chaleureux, rassurant et professionnel. Ne donne AUCUN prix et AUCUNE date (l'agent s'en chargera). NE PAS utiliser de markdown.`
+                },
+                {
+                    role: 'user',
+                    content: `Le client "${clientName}" a demandé un rendez-vous pour le service "${service}".`
+                }
+            ],
+            temperature: 0.7,
+            max_tokens: 150,
+        }, groqKey);
 
         const data = await res.json();
         return data.choices?.[0]?.message?.content || 'Votre demande de rendez-vous est confirmée.';
@@ -85,7 +82,7 @@ export async function POST(req: NextRequest) {
                 await sendEmail({
                     to: email,
                     subject: `Retour Gagnant — Votre demande de rendez-vous`,
-                    html: EMAIL_TEMPLATES.autoReply(clientName, aiReply),
+                    html: (await getEmailTemplates('fr')).autoReply(clientName, aiReply),
                     context: 'auto_reply',
                     relatedId: msgId,
                 });
@@ -96,7 +93,7 @@ export async function POST(req: NextRequest) {
                     await sendEmail({
                         to: config.adminEmail,
                         subject: `📅 Nouvelle Demande de RDV — ${clientName} (${service})`,
-                        html: EMAIL_TEMPLATES.newLeadNotification(clientName, email, 0, service || 'Consultation', 'Formulaire de Rendez-vous'),
+                        html: (await getEmailTemplates('fr')).newLeadNotification(clientName, email, 0, service || 'Consultation', 'Formulaire de Rendez-vous'),
                         context: 'admin_notification',
                         relatedId: msgId,
                     });

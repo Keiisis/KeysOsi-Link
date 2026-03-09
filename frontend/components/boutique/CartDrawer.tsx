@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     X, ShoppingCart, Trash2, Plus, Minus, ShoppingBag, ArrowRight
@@ -13,6 +14,7 @@ import { Price } from '@/components/ui/Price'
 import { CurrencyCode } from '@/lib/currency'
 
 export function CartDrawer() {
+    const { t } = useTranslation();
     const { items, removeItem, updateQuantity, clearCart, itemCount, totalAmount, isOpen, closeCart } = useCart()
     const [showCheckout, setShowCheckout] = useState(false)
 
@@ -45,7 +47,7 @@ export function CartDrawer() {
                                         <ShoppingCart size={20} className="text-[#FCD116]" />
                                     </div>
                                     <div>
-                                        <h3 className="text-base font-black text-white font-heading">Panier</h3>
+                                        <h3 className="text-base font-black text-white font-heading"><T>Panier</T></h3>
                                         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
                                             {itemCount} article{itemCount > 1 ? 's' : ''}
                                         </p>
@@ -54,7 +56,7 @@ export function CartDrawer() {
                                 <button
                                     onClick={closeCart}
                                     className="p-2 rounded-xl hover:bg-white/5 text-gray-400 transition-colors"
-                                    title="Fermer le panier"
+                                    title={t("Fermer le panier")}
                                 >
                                     <X size={20} />
                                 </button>
@@ -65,8 +67,8 @@ export function CartDrawer() {
                                 {items.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
                                         <ShoppingBag size={48} className="text-gray-700" />
-                                        <p className="text-gray-500 font-bold">Votre panier est vide</p>
-                                        <p className="text-xs text-gray-600">Ajoutez des produits depuis la boutique</p>
+                                        <p className="text-gray-500 font-bold"><T>Votre panier est vide</T></p>
+                                        <p className="text-xs text-gray-600"><T>Ajoutez des produits depuis la boutique</T></p>
                                     </div>
                                 ) : (
                                     items.map(item => {
@@ -99,7 +101,7 @@ export function CartDrawer() {
                                                         <button
                                                             onClick={() => updateQuantity(item.id, item.quantity - 1)}
                                                             className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
-                                                            title="Diminuer la quantité"
+                                                            title={t("Diminuer la quantité")}
                                                         >
                                                             <Minus size={12} />
                                                         </button>
@@ -107,7 +109,7 @@ export function CartDrawer() {
                                                         <button
                                                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
                                                             className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
-                                                            title="Augmenter la quantité"
+                                                            title={t("Augmenter la quantité")}
                                                         >
                                                             <Plus size={12} />
                                                         </button>
@@ -119,7 +121,7 @@ export function CartDrawer() {
                                                     <button
                                                         onClick={() => removeItem(item.id)}
                                                         className="p-1.5 rounded-lg text-gray-600 hover:text-[#E8112D] hover:bg-[#E8112D]/10 transition-colors"
-                                                        title="Supprimer du panier"
+                                                        title={t("Supprimer du panier")}
                                                     >
                                                         <Trash2 size={14} />
                                                     </button>
@@ -137,7 +139,7 @@ export function CartDrawer() {
                             {items.length > 0 && (
                                 <div className="p-6 border-t border-white/5 space-y-4">
                                     <div className="flex justify-between items-center">
-                                        <span className="text-xs text-gray-400 font-bold uppercase tracking-widest">Total</span>
+                                        <span className="text-xs text-gray-400 font-bold uppercase tracking-widest"><T>Total</T></span>
                                         <span className="text-2xl font-black text-[#FCD116] font-heading">
                                             <Price amount={totalAmount} currency={items[0]?.currency as CurrencyCode} showSelector />
                                         </span>

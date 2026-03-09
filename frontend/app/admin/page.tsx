@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation, T } from '@/lib/translation';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +32,7 @@ interface RecentMessage {
 }
 
 export default function AdminDashboard() {
+    const { t } = useTranslation();
     const [stats, setStats] = useState({
         patrimoine: 0,
         services: 0,
@@ -135,10 +137,10 @@ export default function AdminDashboard() {
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-[#FCD116]">
                         <Activity size={18} className="animate-pulse" />
-                        <span className="text-[10px] font-bold uppercase tracking-[0.4em]">Opérations en Cours</span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.4em]"><T>Opérations en Cours</T></span>
                     </div>
                     <h2 className="text-5xl font-black text-white font-heading tracking-tight leading-none">
-                        VIBE <span className="text- benin-gradient">CONTROL</span>
+                        VIBE <span className="text- benin-gradient"><T>CONTROL</T></span>
                     </h2>
                     <p className="text-gray-500 max-w-xl font-medium">
                         Bienvenue dans le centre de commandement de Retour Gagnant. Pilotez l&apos;expérience digitale du futur du Bénin.
@@ -147,7 +149,7 @@ export default function AdminDashboard() {
 
                 <div className="flex items-center gap-6 bg-white/5 border border-white/10 p-4 rounded-3xl backdrop-blur-md">
                     <div className="flex flex-col text-right">
-                        <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1">Dernière Sync</span>
+                        <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1"><T>Dernière Sync</T></span>
                         <div className="flex items-center gap-2 text-white font-mono text-xs">
                             <Clock size={12} className="text-[#008751]" />
                             {new Date().toLocaleTimeString()}
@@ -155,7 +157,7 @@ export default function AdminDashboard() {
                     </div>
                     <div className="w-[1px] h-10 bg-white/10" />
                     <div className="flex flex-col">
-                        <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1">Node Status</span>
+                        <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1"><T>Node Status</T></span>
                         <div className="flex items-center gap-2 text-green-400 font-bold text-xs">
                             <Zap size={12} fill="currentColor" />
                             OPTIMAL
@@ -175,7 +177,7 @@ export default function AdminDashboard() {
             {/* ═══════════════════════════════════════════ */}
             <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 <MetricCard
-                    title="Patrimoine"
+                    title={t("Patrimoine")}
                     value={stats.patrimoine}
                     icon={Map}
                     color="#FCD116"
@@ -183,7 +185,7 @@ export default function AdminDashboard() {
                     loading={loading}
                 />
                 <MetricCard
-                    title="Services"
+                    title={t("Services")}
                     value={stats.services}
                     icon={ShieldCheck}
                     color="#008751"
@@ -191,7 +193,7 @@ export default function AdminDashboard() {
                     loading={loading}
                 />
                 <MetricCard
-                    title="Interactions"
+                    title={t("Interactions")}
                     value={stats.messages}
                     icon={MessageSquare}
                     color="#E8112D"
@@ -199,7 +201,7 @@ export default function AdminDashboard() {
                     loading={loading}
                 />
                 <MetricCard
-                    title="Ambassadeurs"
+                    title={t("Ambassadeurs")}
                     value={stats.testimonials}
                     icon={Users}
                     color="#3b82f6"
@@ -214,13 +216,13 @@ export default function AdminDashboard() {
             <motion.div variants={item}>
                 <div className="flex items-center gap-2 text-[#008751] mb-4">
                     <ShoppingBag size={16} />
-                    <span className="text-[10px] font-black uppercase tracking-[0.4em]">Performance Boutique</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.4em]"><T>Performance Boutique</T></span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <MetricCard title="Revenu Total" value={loading ? '...' : `${new Intl.NumberFormat('fr-FR').format(commerceStats.totalRevenue)} XOF`} icon={TrendingUp} color="#008751" glow="rgba(0,135,81,0.15)" loading={false} />
-                    <MetricCard title="Commandes" value={commerceStats.ordersCount} icon={Receipt} color="#FCD116" glow="rgba(252,209,22,0.15)" loading={loading} />
-                    <MetricCard title="En Attente" value={commerceStats.pendingOrders} icon={Clock} color="#E8112D" glow="rgba(232,17,45,0.15)" loading={loading} />
-                    <MetricCard title="Produits Actifs" value={commerceStats.productsCount} icon={Package} color="#3b82f6" glow="rgba(59,130,246,0.15)" loading={loading} />
+                    <MetricCard title={t("Revenu Total")} value={loading ? '...' : `${new Intl.NumberFormat('fr-FR').format(commerceStats.totalRevenue)} XOF`} icon={TrendingUp} color="#008751" glow="rgba(0,135,81,0.15)" loading={false} />
+                    <MetricCard title={t("Commandes")} value={commerceStats.ordersCount} icon={Receipt} color="#FCD116" glow="rgba(252,209,22,0.15)" loading={loading} />
+                    <MetricCard title={t("En Attente")} value={commerceStats.pendingOrders} icon={Clock} color="#E8112D" glow="rgba(232,17,45,0.15)" loading={loading} />
+                    <MetricCard title={t("Produits Actifs")} value={commerceStats.productsCount} icon={Package} color="#3b82f6" glow="rgba(59,130,246,0.15)" loading={loading} />
                 </div>
             </motion.div>
 
@@ -262,10 +264,10 @@ export default function AdminDashboard() {
                     <Card className="bg-[#0a0f18] border-white/5 rounded-[2.5rem] shadow-3xl overflow-hidden group">
                         <CardHeader className="p-8 border-b border-white/5 flex flex-row items-center justify-between bg-white/[0.02]">
                             <div>
-                                <CardTitle className="text-white font-heading text-xl">Flux d&apos;Activité</CardTitle>
-                                <p className="text-xs text-gray-500 mt-1 uppercase tracking-widest">Temps Réel • Messages Entrants</p>
+                                <CardTitle className="text-white font-heading text-xl"><T>Flux d&apos;Activité</T></CardTitle>
+                                <p className="text-xs text-gray-500 mt-1 uppercase tracking-widest"><T>Temps Réel • Messages Entrants</T></p>
                             </div>
-                            <Button variant="ghost" className="text-[#FCD116] hover:bg-[#FCD116]/10 font-bold text-xs uppercase tracking-tighter">Tout Surveiller</Button>
+                            <Button variant="ghost" className="text-[#FCD116] hover:bg-[#FCD116]/10 font-bold text-xs uppercase tracking-tighter"><T>Tout Surveiller</T></Button>
                         </CardHeader>
                         <CardContent className="p-0">
                             <div className="divide-y divide-white/5 max-h-[500px] overflow-y-auto scrollbar-hide">
@@ -307,7 +309,7 @@ export default function AdminDashboard() {
                                         </motion.div>
                                     ))
                                 ) : (
-                                    <div className="text-center py-40 text-gray-600 italic">Silence radio... Aucune interaction récente.</div>
+                                    <div className="text-center py-40 text-gray-600 italic"><T>Silence radio... Aucune interaction récente.</T></div>
                                 )}
                             </div>
                         </CardContent>
@@ -331,10 +333,10 @@ export default function AdminDashboard() {
                                     <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5 hover:border-[#FCD116]/30 transition-all cursor-pointer">
                                         <div className="flex items-center gap-3">
                                             <Globe size={18} className="text-gray-400" />
-                                            <span className="text-xs font-bold text-gray-300">Traffic Source</span>
+                                            <span className="text-xs font-bold text-gray-300"><T>Traffic Source</T></span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-xs font-mono text-white">FR, BJ, US</span>
+                                            <span className="text-xs font-mono text-white"><T>FR, BJ, US</T></span>
                                             <ArrowUpRight size={14} className="text-gray-500" />
                                         </div>
                                     </div>

@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -135,6 +136,7 @@ const ALL_COUNTRIES = [
 ].sort()
 
 export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
+    const { t } = useTranslation();
     const { items, totalAmount, clearCart } = useCart()
     const [step, setStep] = useState<Step>('info')
     const [provider, setProvider] = useState<PaymentProvider | null>(null)
@@ -193,7 +195,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ order_id: orderId }),
-                }).catch(() => {})
+                }).catch(() => { })
             }
             setStep('info')
             setProvider(null)
@@ -781,7 +783,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                 <ShoppingBag size={20} className="text-[#FCD116]" />
                             </div>
                             <div>
-                                <h3 className="text-base font-black text-white font-heading">Checkout Panier</h3>
+                                <h3 className="text-base font-black text-white font-heading"><T>Checkout Panier</T></h3>
                                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
                                     {step === 'success' ? snapshotCount : items.length} article{(step === 'success' ? snapshotCount : items.length) > 1 ? 's' : ''}
                                 </p>
@@ -791,7 +793,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                             type="button"
                             onClick={onClose}
                             className="p-2 rounded-xl hover:bg-white/5 text-gray-400 transition-colors"
-                            title="Fermer"
+                            title={t("Fermer")}
                         >
                             <X size={20} />
                         </button>
@@ -826,7 +828,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                             </div>
                         )}
                         <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/5">
-                            <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Total</span>
+                            <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold"><T>Total</T></span>
                             <span className="text-xl font-black text-[#FCD116] font-heading">
                                 <Price amount={finalTotal} currency="XOF" noConvert />
                             </span>
@@ -840,26 +842,26 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                         {step === 'info' && (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
                                 <div>
-                                    <label htmlFor="cart-name" className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Nom complet *</label>
+                                    <label htmlFor="cart-name" className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block"><T>Nom complet *</T></label>
                                     <div className="relative">
                                         <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" />
-                                        <input id="cart-name" type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Votre nom complet" className="w-full bg-white/5 border border-white/5 rounded-xl py-3 pl-11 pr-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 transition-colors" />
+                                        <input id="cart-name" type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder={t("Votre nom complet")} className="w-full bg-white/5 border border-white/5 rounded-xl py-3 pl-11 pr-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 transition-colors" />
                                     </div>
                                 </div>
                                 <div>
-                                    <label htmlFor="cart-phone" className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Téléphone *</label>
+                                    <label htmlFor="cart-phone" className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block"><T>Téléphone *</T></label>
                                     <div className="relative">
                                         <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" />
-                                        <input id="cart-phone" type="tel" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="+229 XX XX XX XX" className="w-full bg-white/5 border border-white/5 rounded-xl py-3 pl-11 pr-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 transition-colors" />
+                                        <input id="cart-phone" type="tel" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder={t("+229 XX XX XX XX")} className="w-full bg-white/5 border border-white/5 rounded-xl py-3 pl-11 pr-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 transition-colors" />
                                     </div>
                                 </div>
                                 <div>
                                     <label htmlFor="cart-email" className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">
-                                        Email <span className="text-[#FCD116] normal-case font-normal tracking-normal">— pour recevoir votre facture</span>
+                                        Email <span className="text-[#FCD116] normal-case font-normal tracking-normal"><T>— pour recevoir votre facture</T></span>
                                     </label>
                                     <div className="relative">
                                         <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" />
-                                        <input id="cart-email" type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} placeholder="votre@email.com" className="w-full bg-white/5 border border-white/5 rounded-xl py-3 pl-11 pr-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 transition-colors" />
+                                        <input id="cart-email" type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} placeholder={t("votre@email.com")} className="w-full bg-white/5 border border-white/5 rounded-xl py-3 pl-11 pr-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 transition-colors" />
                                     </div>
                                 </div>
 
@@ -869,7 +871,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                         <MapPin size={12} /> Pays de livraison *
                                     </label>
                                     <select
-                                        title="Pays de livraison"
+                                        title={t("Pays de livraison")}
                                         value={shippingCountry}
                                         onChange={e => {
                                             const country = e.target.value
@@ -879,8 +881,8 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                         }}
                                         className="w-full bg-white/5 border border-white/5 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 transition-colors"
                                     >
-                                        <option value="">Sélectionnez votre pays</option>
-                                        <option value="digital">Service digital (pas de livraison physique)</option>
+                                        <option value=""><T>Sélectionnez votre pays</T></option>
+                                        <option value="digital"><T>Service digital (pas de livraison physique)</T></option>
                                         <optgroup label="──────────">
                                             {ALL_COUNTRIES.map(c => (
                                                 <option key={c} value={c} className="bg-[#0a0f18]">{c}</option>
@@ -895,14 +897,14 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                 </div>
                                 {shippingCountry && shippingZone !== 'digital' && (
                                     <div>
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Adresse de livraison *</label>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block"><T>Adresse de livraison *</T></label>
                                         <div className="relative">
                                             <MapPin size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" />
                                             <input
                                                 type="text"
                                                 value={shippingAddress}
                                                 onChange={e => setShippingAddress(e.target.value)}
-                                                placeholder="Quartier, rue, numéro..."
+                                                placeholder={t("Quartier, rue, numéro...")}
                                                 className="w-full bg-white/5 border border-white/5 rounded-xl py-3 pl-11 pr-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 transition-colors"
                                             />
                                         </div>
@@ -911,13 +913,13 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
 
                                 {!appliedCoupon && (
                                     <div className="pt-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Code promo</label>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block"><T>Code promo</T></label>
                                         <div className="flex gap-2">
                                             <input
                                                 type="text"
                                                 value={couponCode}
                                                 onChange={e => setCouponCode(e.target.value.toUpperCase())}
-                                                placeholder="Votre code..."
+                                                placeholder={t("Votre code...")}
                                                 className="flex-1 bg-white/5 border border-white/5 rounded-xl py-3 px-4 text-white text-sm font-mono focus:outline-none focus:border-[#FCD116]/30 transition-colors"
                                             />
                                             <Button
@@ -957,7 +959,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                 {providers.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center py-8 space-y-3">
                                         <CreditCard size={32} className="text-gray-600" />
-                                        <p className="text-sm text-gray-400 text-center">Aucune passerelle active.</p>
+                                        <p className="text-sm text-gray-400 text-center"><T>Aucune passerelle active.</T></p>
                                     </div>
                                 ) : providers.map(p => (
                                     <motion.button
@@ -984,7 +986,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                 ))}
                                 <div className="flex items-center gap-2 text-gray-600 justify-center mt-3">
                                     <Shield size={13} />
-                                    <span className="text-[10px] font-bold uppercase tracking-widest">Transaction 100% sécurisée</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-widest"><T>Transaction 100% sécurisée</T></span>
                                 </div>
                                 <button
                                     type="button"
@@ -1004,8 +1006,8 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                         <Lock size={14} className="text-[#635BFF]" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-bold text-white">Paiement par carte — Stripe</p>
-                                        <p className="text-[10px] text-gray-500">Sécurisé par Stripe · TLS 256-bit</p>
+                                        <p className="text-sm font-bold text-white"><T>Paiement par carte — Stripe</T></p>
+                                        <p className="text-[10px] text-gray-500"><T>Sécurisé par Stripe · TLS 256-bit</T></p>
                                     </div>
                                 </div>
                                 <div>
@@ -1028,9 +1030,9 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                     className="w-full h-14 rounded-xl bg-[#635BFF] text-white font-black text-sm hover:bg-[#635BFF]/80 transition-all disabled:opacity-50"
                                 >
                                     {stripeReady ? (
-                                        <span className="flex items-center gap-1 justify-center">Payer <Price amount={finalTotal} currency="XOF" noConvert /> <Lock size={14} className="ml-2" /></span>
+                                        <span className="flex items-center gap-1 justify-center"><T>Payer</T> <Price amount={finalTotal} currency="XOF" noConvert /> <Lock size={14} className="ml-2" /></span>
                                     ) : (
-                                        <><Loader2 size={16} className="animate-spin mr-2" /> Chargement...</>
+                                        <><Loader2 size={16} className="animate-spin mr-2" /> <T>Chargement...</T></>
                                     )}
                                 </Button>
                                 <button
@@ -1048,11 +1050,11 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
                                 <div className="flex items-center gap-2 mb-2">
                                     <div className="w-8 h-8 rounded-lg bg-[#009CDE]/10 border border-[#009CDE]/30 flex items-center justify-center overflow-hidden">
-                                        <img src="/assets/icones moyens de paiement/paypal.png" alt="PayPal" className="w-5 h-5 object-contain" />
+                                        <img src="/assets/icones moyens de paiement/paypal.png" alt={t("PayPal")} className="w-5 h-5 object-contain" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-bold text-white">Paiement via PayPal</p>
-                                        <p className="text-[10px] text-gray-500">Connectez-vous à votre compte PayPal</p>
+                                        <p className="text-sm font-bold text-white"><T>Paiement via PayPal</T></p>
+                                        <p className="text-[10px] text-gray-500"><T>Connectez-vous à votre compte PayPal</T></p>
                                     </div>
                                 </div>
                                 <div className="bg-white/5 rounded-2xl p-4">
@@ -1078,8 +1080,8 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-10 space-y-6">
                                 <Loader2 size={48} className="animate-spin text-[#FCD116]" />
                                 <div className="text-center">
-                                    <p className="text-white font-bold">Traitement en cours</p>
-                                    <p className="text-xs text-gray-500 mt-1">Ne fermez pas cette fenêtre...</p>
+                                    <p className="text-white font-bold"><T>Traitement en cours</T></p>
+                                    <p className="text-xs text-gray-500 mt-1"><T>Ne fermez pas cette fenêtre...</T></p>
                                 </div>
                             </motion.div>
                         )}
@@ -1091,8 +1093,8 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                     <CheckCircle2 size={40} className="text-[#008751]" />
                                 </div>
                                 <div className="text-center">
-                                    <h4 className="text-2xl font-black text-white font-heading">Paiement reçu</h4>
-                                    <p className="text-sm text-gray-400 mt-2 max-w-xs">Votre commande a été confirmée.</p>
+                                    <h4 className="text-2xl font-black text-white font-heading"><T>Paiement reçu</T></h4>
+                                    <p className="text-sm text-gray-400 mt-2 max-w-xs"><T>Votre commande a été confirmée.</T></p>
                                     {orderId && <p className="text-[10px] text-gray-600 font-mono mt-4">Réf: {orderId.slice(0, 8).toUpperCase()}</p>}
                                 </div>
                                 <Button
@@ -1112,12 +1114,12 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                     <AlertCircle size={40} className="text-[#E8112D]" />
                                 </div>
                                 <div className="text-center">
-                                    <h4 className="text-2xl font-black text-white font-heading">Erreur</h4>
+                                    <h4 className="text-2xl font-black text-white font-heading"><T>Erreur</T></h4>
                                     <p className="text-sm text-gray-400 mt-2 max-w-xs">{errorMessage || 'Une erreur est survenue.'}</p>
                                 </div>
                                 <div className="flex gap-3">
-                                    <Button type="button" onClick={() => setStep('payment')} variant="outline" className="h-12 px-6 rounded-xl border-white/10 text-white">Réessayer</Button>
-                                    <Button type="button" onClick={onClose} className="h-12 px-6 rounded-xl bg-white/10 text-white">Fermer</Button>
+                                    <Button type="button" onClick={() => setStep('payment')} variant="outline" className="h-12 px-6 rounded-xl border-white/10 text-white"><T>Réessayer</T></Button>
+                                    <Button type="button" onClick={onClose} className="h-12 px-6 rounded-xl bg-white/10 text-white"><T>Fermer</T></Button>
                                 </div>
                             </motion.div>
                         )}

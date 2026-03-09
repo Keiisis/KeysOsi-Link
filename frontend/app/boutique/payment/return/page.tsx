@@ -26,44 +26,65 @@ function ZeyowReturnContent() {
             return
         }
 
-        const isSuccess =
-            status === 'success' ||
-            status === 'SUCCESS' ||
-            status === 'completed' ||
-            status === 'paid' ||
-            status === '1'
+        // Si Zeyow indique un échec explicite dans l'URL, ne pas interroger le serveur
+        const isExplicitFailure =
+            status === 'cancelled' ||
+            status === 'cancel' ||
+            status === 'failed' ||
+            status === 'failure' ||
+            status === '0'
 
-        if (!isSuccess) {
+        if (isExplicitFailure) {
             setState('error')
             setErrorMsg('Le paiement a été annulé ou refusé.')
             return
         }
 
-        // Vérifier et confirmer via le webhook Zeyow
-        fetch('/api/webhooks/zeyow', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                order_id: orderId,
-                transaction_id: transactionId,
-                status: 'SUCCESS',
-            }),
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.ok || data.message === 'Déjà traité') {
-                    setRef(orderId.slice(0, 8).toUpperCase())
-                    setState('success')
-                } else {
+        // Vérifier le statut de la commande côté serveur.
+        // La route /api/checkout/zeyow/confirm NE COMPLÈTE JAMAIS la commande elle-même —
+        // elle lit uniquement le statut défini par le webhook Zeyow (seul flux de confiance).
+        // Si le webhook n'est pas encore arrivé (pending), on réessaie jusqu'à 15 fois (30s max).
+        let attempts = 0
+        const MAX_ATTEMPTS = 15
+        const RETRY_DELAY = 2000 // 2s entre chaque tentative
+
+        const checkStatus = () => {
+            fetch('/api/checkout/zeyow/confirm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order_id: orderId }),
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success === true) {
+                        // Webhook Zeyow a confirmé le paiement
+                        setRef(orderId.slice(0, 8).toUpperCase())
+                        setState('success')
+                    } else if (data.pending === true) {
+                        // Webhook pas encore arrivé — réessayer
+                        attempts++
+                        if (attempts < MAX_ATTEMPTS) {
+                            setTimeout(checkStatus, RETRY_DELAY)
+                        } else {
+                            // Timeout : 30s sans confirmation
+                            setState('error')
+                            setErrorMsg(
+                                'La confirmation du paiement prend du temps. Vérifiez vos commandes dans votre compte ou contactez le support.'
+                            )
+                        }
+                    } else {
+                        setState('error')
+                        setErrorMsg(data.error || 'Vérification échouée.')
+                    }
+                })
+                .catch(() => {
                     setState('error')
-                    setErrorMsg(data.error || 'Vérification échouée.')
-                }
-            })
-            .catch(() => {
-                setState('error')
-                setErrorMsg('Erreur de vérification. Contactez le support.')
-            })
-    }, [orderId, status, transactionId])
+                    setErrorMsg('Erreur de connexion. Contactez le support.')
+                })
+        }
+
+        checkStatus()
+    }, [orderId, status])
 
     if (state === 'verifying') {
         return (

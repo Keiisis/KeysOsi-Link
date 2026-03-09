@@ -9,6 +9,7 @@ import { useCart } from '@/lib/store/cartStore'
 import { useWishlist } from '@/lib/store/wishlistStore'
 import { Price } from '@/components/ui/Price'
 import { CurrencyCode } from '@/lib/currency'
+import { T, useTranslation } from '@/lib/translation'
 
 export interface Product {
     id: string
@@ -25,6 +26,7 @@ export interface Product {
 }
 
 export function ProductCard({ product, index }: { product: Product, index: number }) {
+    const { t } = useTranslation()
     const { addItem } = useCart()
     const { toggleItem, isInWishlist } = useWishlist()
     const [heartBounce, setHeartBounce] = useState(false)
@@ -85,7 +87,7 @@ export function ProductCard({ product, index }: { product: Product, index: numbe
                             <>
                                 <Image
                                     src={product.images[0]}
-                                    alt={product.title}
+                                    alt={t(product.title)}
                                     fill
                                     className="object-cover transform group-hover:scale-110 transition-transform duration-[1.5s] ease-[cubic-bezier(0.16,1,0.3,1)]"
                                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
@@ -107,17 +109,17 @@ export function ProductCard({ product, index }: { product: Product, index: numbe
                             <div className="flex flex-col gap-2">
                                 {hasDiscount && (
                                     <span className="px-3 py-1 rounded-xl bg-[#E8112D]/90 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-[0.2em] shadow-lg border border-white/10">
-                                        Promo
+                                        <T>Promo</T>
                                     </span>
                                 )}
                                 {product.is_featured && (
                                     <span className="px-3 py-1 rounded-xl bg-gradient-to-r from-[#FCD116] to-[#E5BD14] text-black text-[9px] font-black uppercase tracking-[0.2em] shadow-lg border border-black/10">
-                                        Vedette
+                                        <T>Vedette</T>
                                     </span>
                                 )}
                                 {isOutOfStock && (
                                     <span className="px-3 py-1 rounded-xl bg-black/60 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-[0.2em] shadow-lg border border-white/10">
-                                        Rupture
+                                        <T>Rupture</T>
                                     </span>
                                 )}
                             </div>
@@ -131,7 +133,7 @@ export function ProductCard({ product, index }: { product: Product, index: numbe
                                         ? 'bg-[#E8112D]/80 border-[#E8112D]/50 text-white shadow-lg shadow-[#E8112D]/30'
                                         : 'bg-black/20 border-white/10 text-white opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0'
                                         } ${isFav ? 'opacity-100 translate-x-0' : ''}`}
-                                    title={isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                                    title={isFav ? t('Retirer des favoris') : t('Ajouter aux favoris')}
                                 >
                                     <Heart size={16} fill={isFav ? 'currentColor' : 'none'} />
                                 </motion.button>
@@ -148,7 +150,7 @@ export function ProductCard({ product, index }: { product: Product, index: numbe
                                     onClick={handleAddToCart}
                                     className="flex items-center gap-2 bg-[#FCD116] text-black font-black uppercase tracking-widest text-[10px] sm:text-xs px-6 py-3 rounded-full hover:bg-white hover:scale-105 transition-all shadow-xl shadow-black/50"
                                 >
-                                    <ShoppingCart size={16} /> Ajouter
+                                    <ShoppingCart size={16} /> <T>Ajouter</T>
                                 </button>
                             </div>
                         )}
@@ -163,16 +165,16 @@ export function ProductCard({ product, index }: { product: Product, index: numbe
                             <div className="flex items-center gap-2">
                                 <div className="h-[2px] w-4 bg-[#FCD116]" />
                                 <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.3em] text-[#FCD116]">
-                                    {product.category}
+                                    {t(product.category)}
                                 </span>
                             </div>
 
                             <h3 className="text-lg sm:text-xl font-black text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-gray-400 transition-all line-clamp-2 font-heading tracking-tight leading-tight">
-                                {product.title}
+                                {t(product.title)}
                             </h3>
 
                             <p className="text-xs sm:text-sm text-gray-400 line-clamp-2 leading-relaxed font-light">
-                                {product.description}
+                                {t(product.description)}
                             </p>
                         </div>
 

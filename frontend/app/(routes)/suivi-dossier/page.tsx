@@ -1,8 +1,8 @@
 'use client'
-
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, FileCheck, Clock, AlertTriangle, CheckCircle2, Loader2, ArrowLeft, Shield, Zap, Sparkles } from 'lucide-react'
+import { useTranslation, T } from '@/lib/translation'
 
 interface DossierEtape {
     id: number
@@ -25,13 +25,23 @@ interface DossierData {
     updated_at: string
 }
 
-const statusConfig: Record<string, { color: string, icon: typeof CheckCircle2, label: string }> = {
-    completed: { color: '#008751', icon: CheckCircle2, label: 'Terminé' },
-    in_progress: { color: '#FCD116', icon: Zap, label: 'En cours' },
-    pending: { color: '#6b7280', icon: Clock, label: 'En attente' },
+const statusConfig: Record<string, { tw: { border: string, bg: string, text: string, bgAlpha: string, borderAlpha: string, shadow: string }, icon: typeof CheckCircle2, label: string }> = {
+    completed: {
+        tw: { border: 'border-[#008751]', bg: 'bg-[#008751]', text: 'text-[#008751]', bgAlpha: 'bg-[#008751]/15', borderAlpha: 'border-[#008751]/30', shadow: 'shadow-[0_0_20px_rgba(0,135,81,0.4)]' },
+        icon: CheckCircle2, label: 'Terminé'
+    },
+    in_progress: {
+        tw: { border: 'border-[#FCD116]', bg: 'bg-[#FCD116]', text: 'text-[#FCD116]', bgAlpha: 'bg-[#FCD116]/15', borderAlpha: 'border-[#FCD116]/30', shadow: 'shadow-[0_0_20px_rgba(252,209,22,0.4)]' },
+        icon: Zap, label: 'En cours'
+    },
+    pending: {
+        tw: { border: 'border-gray-500', bg: 'bg-gray-500', text: 'text-gray-500', bgAlpha: 'bg-gray-500/15', borderAlpha: 'border-gray-500/30', shadow: 'shadow-none' },
+        icon: Clock, label: 'En attente'
+    },
 }
 
 export default function SuiviDossierPage() {
+    const { t, lang } = useTranslation()
     const [numDossier, setNumDossier] = useState('')
     const [email, setEmail] = useState('')
     const [isSearching, setIsSearching] = useState(false)
@@ -58,10 +68,10 @@ export default function SuiviDossierPage() {
             if (data.found) {
                 setDossier(data.dossier)
             } else {
-                setErrorMsg(data.message || 'Aucun dossier trouvé.')
+                setErrorMsg(data.message || t('Aucun dossier trouvé.'))
             }
         } catch {
-            setErrorMsg('Erreur de connexion. Veuillez réessayer.')
+            setErrorMsg(t('Erreur de connexion. Veuillez réessayer.'))
         } finally {
             setIsSearching(false)
             setHasSearched(true)
@@ -96,13 +106,13 @@ export default function SuiviDossierPage() {
                     >
                         <div className="inline-flex items-center gap-2 mb-6 px-5 py-2 rounded-full bg-[#008751]/10 border border-[#008751]/20">
                             <Shield size={14} className="text-[#008751]" />
-                            <span className="text-[11px] uppercase tracking-[4px] font-bold text-[#008751]">Nexus Tracker</span>
+                            <span className="text-[11px] uppercase tracking-[4px] font-bold text-[#008751]"><T>Nexus Tracker</T></span>
                         </div>
                         <h1 className="text-4xl md:text-6xl font-black font-heading mb-6 tracking-tight">
-                            Suivi de <span className="bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D] bg-clip-text text-transparent">Dossier</span>
+                            <T>Suivi de</T> <span className="bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D] bg-clip-text text-transparent"><T>Dossier</T></span>
                         </h1>
                         <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-                            Consultez l&apos;avancement de votre dossier en temps réel grâce à notre système de suivi intelligent.
+                            <T>Consultez l&apos;avancement de votre dossier en temps réel grâce à notre système de suivi intelligent.</T>
                         </p>
                     </motion.div>
 
@@ -120,27 +130,27 @@ export default function SuiviDossierPage() {
                                         <form onSubmit={handleSearch} className="space-y-6">
                                             <div>
                                                 <label className="text-[11px] font-black uppercase tracking-[3px] text-gray-400 mb-2 block">
-                                                    Numéro de dossier
+                                                    <T>Numéro de dossier</T>
                                                 </label>
                                                 <input
                                                     type="text"
                                                     required
                                                     value={numDossier}
                                                     onChange={e => setNumDossier(e.target.value)}
-                                                    placeholder="Ex: RG-2026-00001"
+                                                    placeholder={t("Ex: RG-2026-00001")}
                                                     className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751] focus:bg-white/[0.08] transition-all text-lg font-mono tracking-wider"
                                                 />
                                             </div>
                                             <div>
                                                 <label className="text-[11px] font-black uppercase tracking-[3px] text-gray-400 mb-2 block">
-                                                    Email associé
+                                                    <T>Email associé</T>
                                                 </label>
                                                 <input
                                                     type="email"
                                                     required
                                                     value={email}
                                                     onChange={e => setEmail(e.target.value)}
-                                                    placeholder="votre@email.com"
+                                                    placeholder={t("votre@email.com")}
                                                     className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751] focus:bg-white/[0.08] transition-all"
                                                 />
                                             </div>
@@ -153,12 +163,12 @@ export default function SuiviDossierPage() {
                                                 {isSearching ? (
                                                     <>
                                                         <Loader2 size={18} className="animate-spin" />
-                                                        Recherche en cours...
+                                                        <T>Recherche en cours...</T>
                                                     </>
                                                 ) : (
                                                     <>
                                                         <Search size={18} />
-                                                        Traquer mon dossier
+                                                        <T>Traquer mon dossier</T>
                                                     </>
                                                 )}
                                             </button>
@@ -191,18 +201,18 @@ export default function SuiviDossierPage() {
                                 {/* Back Button */}
                                 <button
                                     onClick={resetSearch}
-                                    title="Nouvelle recherche"
+                                    title={t("Nouvelle recherche")}
                                     className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-8 group"
                                 >
                                     <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                                    <span className="text-sm font-bold uppercase tracking-widest">Nouvelle recherche</span>
+                                    <span className="text-sm font-bold uppercase tracking-widest"><T>Nouvelle recherche</T></span>
                                 </button>
 
                                 {/* Dossier Header Card */}
                                 <div className="bg-gradient-to-br from-[#008751]/20 to-[#008751]/5 border border-[#008751]/30 rounded-3xl p-8 mb-10 backdrop-blur-xl">
                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                                         <div>
-                                            <p className="text-[11px] font-black uppercase tracking-[4px] text-[#008751] mb-2">Dossier N°</p>
+                                            <p className="text-[11px] font-black uppercase tracking-[4px] text-[#008751] mb-2"><T>Dossier N°</T></p>
                                             <h2 className="text-3xl font-black font-mono tracking-wider text-white">{dossier.num_dossier}</h2>
                                             <p className="text-gray-400 mt-2 text-sm">
                                                 {dossier.client_prenom} {dossier.client_nom} — <span className="text-[#FCD116]">{dossier.service_type}</span>
@@ -226,7 +236,7 @@ export default function SuiviDossierPage() {
                                                     <span className="text-xl fond-black text-white font-mono">{dossier.progression}%</span>
                                                 </div>
                                             </div>
-                                            <p className="text-[10px] uppercase tracking-widest text-gray-400 mt-2 font-bold">Progression</p>
+                                            <p className="text-[10px] uppercase tracking-widest text-gray-400 mt-2 font-bold"><T>Progression</T></p>
                                         </div>
                                     </div>
                                 </div>
@@ -249,48 +259,38 @@ export default function SuiviDossierPage() {
                                             >
                                                 {/* Node */}
                                                 <div
-                                                    className="absolute -left-8 top-1 w-8 h-8 rounded-full flex items-center justify-center border-2 z-10"
-                                                    style={{
-                                                        borderColor: config.color,
-                                                        backgroundColor: etape.status === 'completed' ? config.color : '#0a0f18',
-                                                        boxShadow: etape.status !== 'pending' ? `0 0 20px ${config.color}40` : 'none'
-                                                    }}
+                                                    className={`absolute -left-8 top-1 w-8 h-8 rounded-full flex items-center justify-center border-2 z-10 ${config.tw.border} ${etape.status === 'completed' ? config.tw.bg : 'bg-[#0a0f18]'} ${etape.status !== 'pending' ? config.tw.shadow : ''}`}
                                                 >
-                                                    <Icon size={14} className={etape.status === 'completed' ? 'text-white' : ''} style={{ color: etape.status !== 'completed' ? config.color : undefined }} />
+                                                    <Icon size={14} className={etape.status === 'completed' ? 'text-white' : config.tw.text} />
                                                 </div>
 
                                                 {/* Card */}
                                                 <div
                                                     className={`ml-6 p-5 rounded-2xl border transition-all ${etape.status === 'in_progress'
-                                                            ? 'bg-[#FCD116]/5 border-[#FCD116]/30 shadow-[0_0_30px_rgba(252,209,22,0.1)]'
-                                                            : etape.status === 'completed'
-                                                                ? 'bg-[#008751]/5 border-[#008751]/20'
-                                                                : 'bg-white/[0.02] border-white/5'
+                                                        ? 'bg-[#FCD116]/5 border-[#FCD116]/30 shadow-[0_0_30px_rgba(252,209,22,0.1)]'
+                                                        : etape.status === 'completed'
+                                                            ? 'bg-[#008751]/5 border-[#008751]/20'
+                                                            : 'bg-white/[0.02] border-white/5'
                                                         }`}
                                                 >
                                                     <div className="flex items-center justify-between mb-1">
-                                                        <h4 className="font-bold text-[15px]">{etape.label}</h4>
+                                                        <h4 className="font-bold text-[15px]">{t(etape.label)}</h4>
                                                         <span
-                                                            className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full"
-                                                            style={{
-                                                                color: config.color,
-                                                                backgroundColor: `${config.color}15`,
-                                                                border: `1px solid ${config.color}30`
-                                                            }}
+                                                            className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${config.tw.text} ${config.tw.bgAlpha} ${config.tw.borderAlpha}`}
                                                         >
-                                                            {config.label}
+                                                            {t(config.label)}
                                                         </span>
                                                     </div>
                                                     {etape.date && (
-                                                        <p className="text-gray-500 text-xs mt-1">{new Date(etape.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                                                        <p className="text-gray-500 text-xs mt-1">{new Date(etape.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                                                     )}
                                                     {etape.note && (
-                                                        <p className="text-gray-400 text-sm mt-2 leading-relaxed">{etape.note}</p>
+                                                        <p className="text-gray-400 text-sm mt-2 leading-relaxed">{t(etape.note)}</p>
                                                     )}
                                                     {etape.status === 'in_progress' && (
                                                         <div className="mt-3 flex items-center gap-2">
                                                             <span className="w-2 h-2 bg-[#FCD116] rounded-full animate-pulse" />
-                                                            <span className="text-[#FCD116] text-[11px] font-bold uppercase tracking-widest">Traitement actif</span>
+                                                            <span className="text-[#FCD116] text-[11px] font-bold uppercase tracking-widest"><T>Traitement actif</T></span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -309,7 +309,7 @@ export default function SuiviDossierPage() {
                                     >
                                         <div className="flex items-center gap-3 mb-4">
                                             <AlertTriangle size={20} className="text-[#E8112D]" />
-                                            <h4 className="font-black text-[15px] text-[#E8112D]">Documents manquants</h4>
+                                            <h4 className="font-black text-[15px] text-[#E8112D]"><T>Documents manquants</T></h4>
                                         </div>
                                         <ul className="space-y-2">
                                             {dossier.documents_manquants.map((doc, i) => (
@@ -330,14 +330,14 @@ export default function SuiviDossierPage() {
                                     className="mt-10 text-center"
                                 >
                                     <p className="text-gray-500 text-sm mb-4">
-                                        Une question sur votre dossier ?
+                                        <T>Une question sur votre dossier ?</T>
                                     </p>
                                     <a
                                         href="/contact"
                                         className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-white/5 border border-white/10 text-white font-bold text-sm hover:bg-white/10 transition-all"
                                     >
                                         <Sparkles size={16} className="text-[#FCD116]" />
-                                        Contacter un conseiller
+                                        <T>Contacter un conseiller</T>
                                     </a>
                                 </motion.div>
                             </motion.div>

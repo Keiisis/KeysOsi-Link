@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useCreate, useNavigation } from '@refinedev/core'
 import { useState } from 'react'
 import { ArrowLeft, Save, ShoppingBag, Plus, Loader2 } from 'lucide-react'
@@ -10,6 +11,7 @@ import { ImageUpload } from '@/components/admin/ImageUpload'
 const categories = ['Mode', 'Artisanat', 'Alimentaire', 'Culturel', 'Accessoires', 'Autre']
 
 export default function CreateProductPage() {
+    const { t } = useTranslation();
     const { list } = useNavigation()
     const createResult = useCreate()
     const createProduct = createResult.mutate
@@ -59,7 +61,7 @@ export default function CreateProductPage() {
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => list('products')}
-                        title="Retour"
+                        title={t("Retour")}
                         className="p-3 rounded-xl bg-white/5 border border-white/5 text-gray-400 hover:text-white transition-colors"
                     >
                         <ArrowLeft size={18} />
@@ -67,7 +69,7 @@ export default function CreateProductPage() {
                     <div>
                         <div className="flex items-center gap-2 text-[#FCD116]">
                             <ShoppingBag size={16} />
-                            <span className="text-[10px] font-black uppercase tracking-[0.4em]">Nouveau Produit</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.4em]"><T>Nouveau Produit</T></span>
                         </div>
                         <h1 className="text-3xl font-black text-white font-heading tracking-tighter">
                             Creer un Article
@@ -90,7 +92,7 @@ export default function CreateProductPage() {
                 <div className="lg:col-span-2 space-y-6">
                     <Card className="bg-[#0a0f18] border-white/5 rounded-[2rem] overflow-hidden">
                         <CardHeader className="p-8 border-b border-white/5">
-                            <CardTitle className="text-lg font-black text-white">Informations Produit</CardTitle>
+                            <CardTitle className="text-lg font-black text-white"><T>Informations Produit</T></CardTitle>
                         </CardHeader>
                         <CardContent className="p-8 space-y-6">
                             <div>
@@ -101,7 +103,7 @@ export default function CreateProductPage() {
                                     type="text"
                                     value={title}
                                     onChange={e => setTitle(e.target.value)}
-                                    placeholder="Ex: Tissu Wax authentique du Benin"
+                                    placeholder={t("Ex: Tissu Wax authentique du Benin")}
                                     className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30"
                                 />
                             </div>
@@ -113,7 +115,7 @@ export default function CreateProductPage() {
                                 <textarea
                                     value={description}
                                     onChange={e => setDescription(e.target.value)}
-                                    placeholder="Breve description visible dans le catalogue"
+                                    placeholder={t("Breve description visible dans le catalogue")}
                                     rows={3}
                                     className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 resize-none"
                                 />
@@ -126,7 +128,7 @@ export default function CreateProductPage() {
                                 <textarea
                                     value={longDescription}
                                     onChange={e => setLongDescription(e.target.value)}
-                                    placeholder="Description detaillee sur la page du produit"
+                                    placeholder={t("Description detaillee sur la page du produit")}
                                     rows={6}
                                     className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30 resize-none"
                                 />
@@ -137,7 +139,7 @@ export default function CreateProductPage() {
                     {/* Images */}
                     <Card className="bg-[#0a0f18] border-white/5 rounded-[2rem] overflow-hidden">
                         <CardHeader className="p-8 border-b border-white/5">
-                            <CardTitle className="text-lg font-black text-white">Images du produit</CardTitle>
+                            <CardTitle className="text-lg font-black text-white"><T>Images du produit</T></CardTitle>
                         </CardHeader>
                         <CardContent className="p-8 space-y-4">
                             {images.map((img, i) => (
@@ -172,7 +174,7 @@ export default function CreateProductPage() {
                 <div className="space-y-6">
                     <Card className="bg-[#0a0f18] border-white/5 rounded-[2rem] overflow-hidden">
                         <CardHeader className="p-8 border-b border-white/5">
-                            <CardTitle className="text-lg font-black text-white">Tarification</CardTitle>
+                            <CardTitle className="text-lg font-black text-white"><T>Tarification</T></CardTitle>
                         </CardHeader>
                         <CardContent className="p-8 space-y-6">
                             <div>
@@ -195,7 +197,7 @@ export default function CreateProductPage() {
                                     type="number"
                                     value={salePrice}
                                     onChange={e => setSalePrice(e.target.value)}
-                                    placeholder="Optionnel"
+                                    placeholder={t("Optionnel")}
                                     className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30"
                                 />
                             </div>
@@ -204,7 +206,7 @@ export default function CreateProductPage() {
 
                     <Card className="bg-[#0a0f18] border-white/5 rounded-[2rem] overflow-hidden">
                         <CardHeader className="p-8 border-b border-white/5">
-                            <CardTitle className="text-lg font-black text-white">Organisation</CardTitle>
+                            <CardTitle className="text-lg font-black text-white"><T>Organisation</T></CardTitle>
                         </CardHeader>
                         <CardContent className="p-8 space-y-6">
                             <div>
@@ -213,8 +215,8 @@ export default function CreateProductPage() {
                                 </label>
                                 <select
                                     value={category}
-                                    title="Catégorie"
-                                    aria-label="Catégorie"
+                                    title={t("Catégorie")}
+                                    aria-label={t("Catégorie")}
                                     onChange={e => setCategory(e.target.value)}
                                     className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30"
                                 >

@@ -46,43 +46,56 @@ export async function POST(request: Request) {
         const sandbox = sm.paypal_sandbox === 'true'
         const webhookId = sm.paypal_webhook_id
 
-        // Vérifier la signature PayPal si le webhook_id est configuré
-        if (clientId && clientSecret && webhookId) {
-            try {
-                const base = sandbox
-                    ? 'https://api-m.sandbox.paypal.com'
-                    : 'https://api-m.paypal.com'
-                const accessToken = await getPayPalAccessToken(clientId, clientSecret, sandbox)
+        // Vérification de signature PayPal — OBLIGATOIRE (fail-closed)
+        // Si les credentials sont incomplets → rejet immédiat.
+        // Ne jamais traiter un webhook sans vérification cryptographique.
+        if (!clientId || !clientSecret || !webhookId) {
+            console.error('[PayPal Webhook] Credentials incomplets (paypal_client_id/secret/webhook_id) — rejeté')
+            return NextResponse.json(
+                { error: 'Webhook PayPal non configuré — ajoutez paypal_webhook_id dans les settings admin' },
+                { status: 403 }
+            )
+        }
 
-                const verifyRes = await fetch(
-                    `${base}/v1/notifications/verify-webhook-signature`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            Authorization: `Bearer ${accessToken}`,
-                        },
-                        body: JSON.stringify({
-                            auth_algo: headers['paypal-auth-algo'],
-                            cert_url: headers['paypal-cert-url'],
-                            transmission_id: headers['paypal-transmission-id'],
-                            transmission_sig: headers['paypal-transmission-sig'],
-                            transmission_time: headers['paypal-transmission-time'],
-                            webhook_id: webhookId,
-                            webhook_event: eventData,
-                        }),
-                    }
-                )
+        try {
+            const base = sandbox
+                ? 'https://api-m.sandbox.paypal.com'
+                : 'https://api-m.paypal.com'
+            const accessToken = await getPayPalAccessToken(clientId, clientSecret, sandbox)
 
-                const verifyData = await verifyRes.json()
-                if (verifyData.verification_status !== 'SUCCESS') {
-                    console.error('PayPal webhook signature invalid:', verifyData)
-                    return NextResponse.json({ error: 'Signature invalide' }, { status: 400 })
+            const verifyRes = await fetch(
+                `${base}/v1/notifications/verify-webhook-signature`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                    body: JSON.stringify({
+                        auth_algo: headers['paypal-auth-algo'],
+                        cert_url: headers['paypal-cert-url'],
+                        transmission_id: headers['paypal-transmission-id'],
+                        transmission_sig: headers['paypal-transmission-sig'],
+                        transmission_time: headers['paypal-transmission-time'],
+                        webhook_id: webhookId,
+                        webhook_event: eventData,
+                    }),
                 }
-            } catch (e) {
-                console.error('PayPal webhook verification error:', e)
-                // En cas d'erreur de vérification, on log mais on continue (fail-open en dev)
+            )
+
+            const verifyData = await verifyRes.json()
+            if (verifyData.verification_status !== 'SUCCESS') {
+                console.error('PayPal webhook signature invalid:', verifyData)
+                return NextResponse.json({ error: 'Signature invalide' }, { status: 400 })
             }
+        } catch (e) {
+            // Fail-closed : toute erreur de vérification de signature = rejet
+            // Ne JAMAIS traiter un webhook dont la signature ne peut pas être vérifiée
+            console.error('[PayPal Webhook] Erreur de vérification de signature — rejeté:', e)
+            return NextResponse.json(
+                { error: 'Vérification de signature échouée' },
+                { status: 400 }
+            )
         }
 
         const resource = eventData.resource || {}
@@ -105,10 +118,18 @@ export async function POST(request: Request) {
 
                 if (!order || order.payment_status === 'completed') break
 
-                await supabase
+                // Garde atomique + vérification du résultat pour éviter la double-décrémentation du stock.
+                // PayPal peut re-livrer le même webhook. Deux livraisons simultanées peuvent toutes deux
+                // passer le check en mémoire avant que l'une n'écrive.
+                // Seule la livraison qui obtient 1 ligne mise à jour doit décrémenter le stock.
+                const { data: updatedPaypal } = await supabase
                     .from('orders')
                     .update({ payment_status: 'completed', transaction_id: captureId })
                     .eq('id', customId)
+                    .eq('payment_status', 'pending')
+                    .select('id')
+
+                if (!updatedPaypal || updatedPaypal.length === 0) break // Déjà traité
 
                 if (order.product_id) {
                     await supabase.rpc('decrement_stock', {
@@ -129,10 +150,12 @@ export async function POST(request: Request) {
             case 'PAYMENT.CAPTURE.DECLINED': {
                 const customId = resource.custom_id
                 if (customId) {
+                    // Garde atomique : ne jamais écraser une commande déjà complétée
                     await supabase
                         .from('orders')
                         .update({ payment_status: 'failed', transaction_id: resource.id })
                         .eq('id', customId)
+                        .eq('payment_status', 'pending')
                 }
                 break
             }
@@ -140,10 +163,12 @@ export async function POST(request: Request) {
             case 'PAYMENT.CAPTURE.REFUNDED': {
                 const customId = resource.custom_id
                 if (customId) {
+                    // Garde atomique : ne jamais écraser une commande déjà complétée
                     await supabase
                         .from('orders')
                         .update({ payment_status: 'refunded', transaction_id: resource.id })
                         .eq('id', customId)
+                        .eq('payment_status', 'pending')
                 }
                 break
             }

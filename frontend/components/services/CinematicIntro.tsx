@@ -1,8 +1,10 @@
 "use client";
 
+import { useTranslation, T } from '@/lib/translation';
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { Plane, Compass, MapPin } from "lucide-react";
+
 
 // --- SVG PATHS (High Fidelity) ---
 
@@ -99,7 +101,7 @@ export default function CinematicIntro({ onComplete }: { onComplete: () => void 
                             onClick={onComplete}
                             className="absolute top-8 right-8 z-[60] text-white/20 hover:text-white/80 text-[10px] tracking-[0.2em] uppercase transition-colors"
                         >
-                            Passer l'introduction
+                            <T>Passer l&apos;introduction</T>
                         </motion.button>
                     )}
                 </AnimatePresence>
@@ -149,13 +151,13 @@ export default function CinematicIntro({ onComplete }: { onComplete: () => void 
                                         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 2.5 }}
                                         className="text-3xl md:text-4xl font-heading font-light text-[#008751] tracking-wide"
                                     >
-                                        L'Histoire commence par une racine.
+                                        <T>L&apos;Histoire commence par une racine.</T>
                                     </motion.h2>
                                     <motion.p
                                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 3.5 }}
                                         className="text-white/60 text-sm uppercase tracking-[0.4em]"
                                     >
-                                        Votre ancrage.
+                                        <T>Votre ancrage.</T>
                                     </motion.p>
                                 </motion.div>
                             </motion.div>
@@ -208,13 +210,13 @@ export default function CinematicIntro({ onComplete }: { onComplete: () => void 
                                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
                                         className="text-3xl md:text-5xl font-heading text-white font-bold"
                                     >
-                                        Vous avez conquis le monde.
+                                        <T>Vous avez conquis le monde.</T>
                                     </motion.h2>
                                     <motion.p
                                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2.5 }}
                                         className="text-[#FCD116] text-xl mt-4 italic font-light"
                                     >
-                                        "Mais le succès a un goût d'inachevé..."
+                                        <T>&quot;Mais le succès a un goût d&apos;inachevé...&quot;</T>
                                     </motion.p>
                                 </div>
                             </motion.div>
@@ -255,7 +257,7 @@ export default function CinematicIntro({ onComplete }: { onComplete: () => void 
                                     transition={{ duration: 1 }}
                                     className="text-4xl md:text-6xl font-heading text-[#E8112D] font-bold tracking-tight"
                                 >
-                                    Le sang appelle le sang.
+                                    <T>Le sang appelle le sang.</T>
                                 </motion.h2>
                                 <motion.p
                                     initial={{ width: 0, opacity: 0 }}
@@ -321,7 +323,7 @@ export default function CinematicIntro({ onComplete }: { onComplete: () => void 
                                         transition={{ delay: 4, duration: 0.8, type: "spring" }}
                                     >
                                         <h1 className="text-5xl md:text-8xl lg:text-9xl font-bold font-heading text-white tracking-tighter drop-shadow-2xl">
-                                            RETOUR <span className="text-[#FCD116]">GAGNANT</span>
+                                            RETOUR <span className="text-[#FCD116]"><T>GAGNANT</T></span>
                                         </h1>
                                     </motion.div>
 
@@ -331,7 +333,7 @@ export default function CinematicIntro({ onComplete }: { onComplete: () => void 
                                         transition={{ delay: 5, duration: 1 }}
                                         className="text-white/80 text-xl md:text-3xl mt-6 font-light tracking-[0.2em] uppercase"
                                     >
-                                        Votre place est ici.
+                                        <T>Votre place est ici.</T>
                                     </motion.p>
                                 </div>
                             </motion.div>

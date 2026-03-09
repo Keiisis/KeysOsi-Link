@@ -5,6 +5,12 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
+// XOF et autres devises zero-decimal pour Stripe
+const ZERO_DECIMAL = new Set([
+    'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA',
+    'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF',
+])
+
 export async function POST(request: Request) {
     try {
         if (!supabaseUrl || !supabaseServiceKey) {
@@ -14,11 +20,11 @@ export async function POST(request: Request) {
             )
         }
 
-        // Utiliser le service role pour contourner RLS
         const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
         const body = await request.json()
-        const { order_id, transaction_id, payment_method } = body
+        const { order_id, transaction_id } = body
+        // NOTE: `payment_method` du client est IGNORÉ — on utilise toujours celui en DB
 
         if (!order_id || !transaction_id) {
             return NextResponse.json(
@@ -27,10 +33,10 @@ export async function POST(request: Request) {
             )
         }
 
-        // Idempotence — empêcher le double traitement
+        // ─── Récupérer la commande ───────────────────────────────────────────
         const { data: existingOrder, error: fetchError } = await supabase
             .from('orders')
-            .select('payment_status, transaction_id, amount, payment_method, product_id, quantity')
+            .select('payment_status, transaction_id, amount, payment_method, product_id, quantity, currency')
             .eq('id', order_id)
             .single()
 
@@ -39,6 +45,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: false, error: 'Order not found' }, { status: 404 })
         }
 
+        // ─── Idempotence ─────────────────────────────────────────────────────
         if (
             existingOrder.payment_status === 'completed' &&
             existingOrder.transaction_id === transaction_id
@@ -46,10 +53,30 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: true, message: 'Already verified' })
         }
 
-        let isVerified = false
-        const method = payment_method || existingOrder.payment_method
+        // La méthode de paiement vient UNIQUEMENT de la DB — jamais du client
+        const method = existingOrder.payment_method
 
-        // Lire tous les settings nécessaires en une seule requête
+        // ─── Vérifier que transaction_id n'a pas déjà été utilisé pour une AUTRE commande ──
+        // Empêche la réutilisation d'une transaction valide pour payer plusieurs commandes
+        const { data: existingTx } = await supabase
+            .from('orders')
+            .select('id')
+            .eq('transaction_id', transaction_id)
+            .eq('payment_status', 'completed')
+            .neq('id', order_id)
+            .maybeSingle()
+
+        if (existingTx) {
+            console.error(
+                `[Verify] Transaction ID réutilisée: ${transaction_id} déjà utilisée sur la commande ${existingTx.id}`
+            )
+            return NextResponse.json(
+                { success: false, error: 'Transaction déjà utilisée pour une autre commande' },
+                { status: 400 }
+            )
+        }
+
+        // ─── Charger les settings paiement ──────────────────────────────────
         const { data: settingsData } = await supabase
             .from('settings')
             .select('key, value')
@@ -63,11 +90,22 @@ export async function POST(request: Request) {
         const sm: Record<string, string> = {}
         for (const s of settingsData || []) sm[s.key] = s.value
 
+        let isVerified = false
+
         // ─── KKIAPAY ─────────────────────────────────────────────────────────
         if (method === 'kkiapay') {
             try {
                 const isSandbox = sm.kkiapay_sandbox === 'true'
                 const privateKey = sm.kkiapay_private_key || ''
+
+                // Fail-closed : sans clé privée, impossible de vérifier auprès de Kkiapay
+                if (!privateKey) {
+                    return NextResponse.json(
+                        { success: false, error: 'Kkiapay non configuré (clé privée manquante dans les settings admin)' },
+                        { status: 503 }
+                    )
+                }
+
                 const kkiapayBase = isSandbox
                     ? 'https://api-sandbox.kkiapay.me'
                     : 'https://api.kkiapay.me'
@@ -83,15 +121,27 @@ export async function POST(request: Request) {
                 const verifyData = await verifyRes.json()
                 console.log('Kkiapay verify response (HTTP', verifyRes.status, '):', JSON.stringify(verifyData).slice(0, 300))
 
-                if (verifyData.status === 'SUCCESS') {
-                    isVerified = true
-                } else {
-                    console.warn('Kkiapay status non-SUCCESS:', verifyData.status, '| message:', verifyData.message)
+                if (verifyData.status !== 'SUCCESS') {
+                    console.warn('Kkiapay status non-SUCCESS:', verifyData.status)
                     return NextResponse.json(
                         { success: false, error: `Kkiapay: ${verifyData.message || verifyData.status || 'vérification échouée'}` },
                         { status: 400 }
                     )
                 }
+
+                // Vérification du montant Kkiapay
+                if (verifyData.amount !== undefined && verifyData.amount < existingOrder.amount) {
+                    console.error('[Verify/Kkiapay] Montant insuffisant:', {
+                        paid: verifyData.amount,
+                        expected: existingOrder.amount,
+                    })
+                    return NextResponse.json(
+                        { success: false, error: 'Montant Kkiapay insuffisant' },
+                        { status: 400 }
+                    )
+                }
+
+                isVerified = true
             } catch (e) {
                 console.error('Kkiapay verification error', e)
                 return NextResponse.json(
@@ -110,17 +160,13 @@ export async function POST(request: Request) {
                     ? 'https://sandbox-api.fedapay.com'
                     : 'https://api.fedapay.com'
 
-                // Vérification DB : l'ID FedaPay a été stocké dans la commande lors de la création
-                // server-side (POST /api/checkout/fedapay). On vérifie que l'ID fourni correspond.
-                const storedTxId = existingOrder.transaction_id
-                console.log('FedaPay verify — storedTxId:', storedTxId, '| received:', transaction_id)
-
-                if (storedTxId && storedTxId === String(transaction_id)) {
-                    console.log('FedaPay verify DB OK — transaction_id:', transaction_id)
-                    isVerified = true
-                } else if (secretKey) {
-                    // Fallback : essayer l'API FedaPay si la clé est disponible
-                    console.log('FedaPay DB check failed, trying API fallback...')
+                // Toujours passer par l'API FedaPay — ne JAMAIS utiliser le transaction_id
+                // stocké en DB comme raccourci d'acceptation.
+                // RAISON : le webhook stocke transaction_id même pour les paiements ÉCHOUÉS
+                // (payment_status = 'failed'). Si on accepte le raccourci, un attaquant qui
+                // paie 100 XOF pour une commande de 50 000 XOF (webhook marque 'failed' + stocke tx_id)
+                // peut appeler verify avec ce tx_id et obtenir { success: true } sans payer réellement.
+                if (secretKey) {
                     try {
                         const verifyRes = await fetch(`${apiBase}/v1/transactions/${transaction_id}`, {
                             headers: {
@@ -130,25 +176,40 @@ export async function POST(request: Request) {
                         })
                         if (verifyRes.ok) {
                             const verifyData = await verifyRes.json()
+                            const txObject = verifyData?.['v1/transaction'] || verifyData?.v1?.transaction || verifyData?.transaction || verifyData
                             const verifiedStatus =
-                                verifyData?.['v1/transaction']?.status
-                                || verifyData?.v1?.transaction?.status
-                                || verifyData?.transaction?.status
+                                txObject?.status
                                 || verifyData?.status
                             console.log('FedaPay API verify — statut:', verifiedStatus, '| id:', transaction_id)
-                            if (verifiedStatus === 'approved' || verifiedStatus === 'transferred') isVerified = true
-                            else {
+                            if (verifiedStatus === 'approved' || verifiedStatus === 'transferred') {
+                                // ─── Vérification du montant FedaPay ─────────────────────────
+                                // FedaPay stocke le montant en centimes (1 XOF = 100 centimes).
+                                // CRITIQUE : ne jamais sauter cette vérification — un attaquant
+                                // pourrait payer 100 XOF et valider une commande à 50 000 XOF.
+                                const txAmount = txObject?.amount
+                                if (txAmount !== undefined && txAmount !== null) {
+                                    const verifiedAmountXof = txAmount / 100
+                                    if (verifiedAmountXof < existingOrder.amount * 0.99) {
+                                        console.error('[Verify/FedaPay] Montant insuffisant:', {
+                                            paid: verifiedAmountXof,
+                                            expected: existingOrder.amount,
+                                        })
+                                        return NextResponse.json(
+                                            { success: false, error: 'Montant FedaPay insuffisant' },
+                                            { status: 400 }
+                                        )
+                                    }
+                                }
+                                isVerified = true
+                            } else {
                                 return NextResponse.json(
                                     { success: false, error: `FedaPay statut: ${verifiedStatus || 'inconnu'}` },
                                     { status: 400 }
                                 )
                             }
                         } else {
-                            // API 404 — sandbox limitation connue
                             const errBody = await verifyRes.text()
-                            console.warn(`FedaPay API ${verifyRes.status}: ${errBody.slice(0, 100)} | storedTxId was: ${storedTxId}`)
-                            // Si la transaction a été créée server-side mais transaction_id non stocké en DB,
-                            // on ne peut pas vérifier — renvoyer une erreur claire
+                            console.warn(`FedaPay API ${verifyRes.status}: ${errBody.slice(0, 100)}`)
                             return NextResponse.json(
                                 { success: false, error: 'FedaPay: impossible de vérifier — réessayez ou contactez le support' },
                                 { status: 400 }
@@ -162,9 +223,10 @@ export async function POST(request: Request) {
                         )
                     }
                 } else {
-                    console.error('FedaPay: clé secrète manquante ET aucun transaction_id en DB')
+                    // Fail-closed : sans clé secrète, impossible de vérifier auprès de FedaPay
+                    console.error('[Verify/FedaPay] Clé secrète manquante — vérification impossible')
                     return NextResponse.json(
-                        { success: false, error: 'Configuration FedaPay incomplète' },
+                        { success: false, error: 'Configuration FedaPay incomplète (clé secrète manquante dans les settings admin)' },
                         { status: 503 }
                     )
                 }
@@ -181,22 +243,66 @@ export async function POST(request: Request) {
         else if (method === 'stripe') {
             try {
                 const secretKey = sm.stripe_secret_key
-                if (secretKey) {
-                    const stripe = new Stripe(secretKey)
-                    const pi = await stripe.paymentIntents.retrieve(transaction_id)
-                    if (pi.status === 'succeeded') {
-                        isVerified = true
-                    }
+                if (!secretKey) {
+                    return NextResponse.json({ success: false, error: 'Stripe non configuré' }, { status: 503 })
                 }
+
+                const stripe = new Stripe(secretKey)
+                const pi = await stripe.paymentIntents.retrieve(transaction_id)
+
+                if (pi.status !== 'succeeded') {
+                    return NextResponse.json(
+                        { success: false, error: `Stripe PaymentIntent non abouti: ${pi.status}` },
+                        { status: 400 }
+                    )
+                }
+
+                // Vérification du montant Stripe
+                const currency = (existingOrder.currency || 'XOF').toUpperCase()
+                const expectedStripeAmount = ZERO_DECIMAL.has(currency)
+                    ? Math.round(existingOrder.amount)
+                    : Math.round(existingOrder.amount * 100)
+
+                if (pi.amount < expectedStripeAmount) {
+                    console.error('[Verify/Stripe] Montant insuffisant:', {
+                        paid: pi.amount,
+                        expected: expectedStripeAmount,
+                        currency,
+                    })
+                    return NextResponse.json(
+                        { success: false, error: 'Montant Stripe insuffisant' },
+                        { status: 400 }
+                    )
+                }
+
+                // Vérifier que ce PaymentIntent appartient bien à cette commande.
+                // metadata.order_id est OBLIGATOIRE — toujours défini par checkout/stripe/route.ts.
+                // Un PaymentIntent sans metadata.order_id = créé hors de notre système → rejet.
+                if (!pi.metadata?.order_id || pi.metadata.order_id !== order_id) {
+                    console.error('[Verify/Stripe] order_id metadata manquant ou incorrect:', {
+                        pi_order_id: pi.metadata?.order_id,
+                        requested_order_id: order_id,
+                    })
+                    return NextResponse.json(
+                        { success: false, error: 'Transaction Stripe non associée à cette commande' },
+                        { status: 400 }
+                    )
+                }
+
+                isVerified = true
             } catch (e) {
                 console.error('Stripe verification error', e)
+                return NextResponse.json(
+                    { success: false, error: 'Erreur de connexion à Stripe' },
+                    { status: 502 }
+                )
             }
         }
 
         // ─── PAYPAL ──────────────────────────────────────────────────────────
         else if (method === 'paypal') {
             if (
-                existingOrder.payment_status === 'completed' ||
+                existingOrder.payment_status === 'completed' &&
                 existingOrder.transaction_id === transaction_id
             ) {
                 isVerified = true
@@ -225,20 +331,56 @@ export async function POST(request: Request) {
                                 }
                             )
                             const captureData = await captureRes.json()
-                            if (captureData.status === 'COMPLETED') {
-                                isVerified = true
+
+                            if (captureData.status !== 'COMPLETED') {
+                                return NextResponse.json(
+                                    { success: false, error: `PayPal capture non complétée: ${captureData.status}` },
+                                    { status: 400 }
+                                )
                             }
+
+                            // Vérifier via custom_id que la capture appartient bien à cette commande.
+                            // custom_id est OBLIGATOIRE — toujours défini par paypal/create/route.ts.
+                            // Un custom_id absent ou non concordant = capture externe → rejet immédiat.
+                            const captureCustomId =
+                                captureData.custom_id ||
+                                captureData.invoice_id
+                            if (!captureCustomId || captureCustomId !== order_id) {
+                                console.error('[Verify/PayPal] custom_id manquant ou incorrect:', {
+                                    capture_order: captureCustomId,
+                                    requested: order_id,
+                                })
+                                return NextResponse.json(
+                                    { success: false, error: 'Capture PayPal non associée à cette commande' },
+                                    { status: 400 }
+                                )
+                            }
+
+                            isVerified = true
                         }
                     }
                 } catch (e) {
                     console.error('PayPal verification error', e)
+                    return NextResponse.json(
+                        { success: false, error: 'Erreur de connexion à PayPal' },
+                        { status: 502 }
+                    )
                 }
             }
         }
 
         // ─── ZEYOW ───────────────────────────────────────────────────────────
+        // Zeyow utilise un flow de redirection. La confirmation se fait via
+        // /api/checkout/zeyow/confirm (appelé par le browser après redirect).
         else if (method === 'zeyow') {
-            isVerified = true
+            if (existingOrder.payment_status === 'completed') {
+                isVerified = true
+            } else {
+                return NextResponse.json(
+                    { success: false, error: 'Zeyow: paiement non encore confirmé. Utilisez la page de retour Zeyow.' },
+                    { status: 400 }
+                )
+            }
         }
 
         if (!isVerified) {
@@ -248,21 +390,30 @@ export async function POST(request: Request) {
             )
         }
 
-        // Mettre à jour le statut
-        const { error } = await supabase
+        // ─── Mise à jour atomique — uniquement si encore pending ────────────
+        // La clause .eq('payment_status', 'pending') garantit qu'une commande
+        // déjà complétée ou échouée ne peut pas être modifiée.
+        const { error: updateError, data: updatedRows } = await supabase
             .from('orders')
             .update({ payment_status: 'completed', transaction_id })
             .eq('id', order_id)
+            .eq('payment_status', 'pending') // Garde atomique : jamais modifier une commande déjà traitée
+            .select('id')
 
-        if (error) {
-            console.error('Order update error:', error.message)
+        if (updateError) {
+            console.error('Order update error:', updateError.message)
             return NextResponse.json(
                 { success: false, error: 'Database update failed' },
                 { status: 500 }
             )
         }
 
-        // Décrémenter le stock (atomique, anti-race condition)
+        // Aucune ligne modifiée = commande n'était pas pending (idempotence silencieuse)
+        if (!updatedRows || updatedRows.length === 0) {
+            return NextResponse.json({ success: true, message: 'Already verified' })
+        }
+
+        // ─── Décrémenter le stock ────────────────────────────────────────────
         if (existingOrder.product_id) {
             await supabase.rpc('decrement_stock', {
                 p_id: existingOrder.product_id,
@@ -270,8 +421,7 @@ export async function POST(request: Request) {
             })
         }
 
-        // Notification email — utiliser l'origine de la requête pour avoir une URL absolue
-        // (NEXT_PUBLIC_SITE_URL peut être vide sur Vercel → URL relative → fetch échoue)
+        // ─── Notification email ──────────────────────────────────────────────
         try {
             const origin = new URL(request.url).origin
             await fetch(`${origin}/api/notifications/order`, {

@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
@@ -25,6 +26,7 @@ const PAGE_LABELS: Record<string, string> = {
 }
 
 export default function AdminPageContent() {
+    const { t } = useTranslation();
     const [sections, setSections] = useState<PageSection[]>([])
     const [loading, setLoading] = useState(true)
     const [expandedPage, setExpandedPage] = useState<string | null>(null)
@@ -82,7 +84,7 @@ export default function AdminPageContent() {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-2xl font-bold text-white">Contenu des Pages</h1>
+                <h1 className="text-2xl font-bold text-white"><T>Contenu des Pages</T></h1>
                 <p className="text-gray-400 text-sm mt-1">
                     Modifiez les textes, valeurs, timeline et informations de contact affichés sur le site.
                 </p>
@@ -144,13 +146,13 @@ export default function AdminPageContent() {
                                             {editingId === section.id ? (
                                                 <div className="space-y-3">
                                                     <div>
-                                                        <label className="text-xs text-gray-400 mb-1 block">Titre de la section</label>
-                                                        <Input title="Titre de la section" placeholder="Titre" value={editTitle} onChange={e => setEditTitle(e.target.value)} className="bg-white/5 border-white/10 text-white" />
+                                                        <label className="text-xs text-gray-400 mb-1 block"><T>Titre de la section</T></label>
+                                                        <Input title={t("Titre de la section")} placeholder={t("Titre")} value={editTitle} onChange={e => setEditTitle(e.target.value)} className="bg-white/5 border-white/10 text-white" />
                                                     </div>
                                                     <div>
-                                                        <label className="text-xs text-gray-400 mb-1 block">Contenu (JSON)</label>
+                                                        <label className="text-xs text-gray-400 mb-1 block"><T>Contenu (JSON)</T></label>
                                                         <textarea
-                                                            title="Contenu JSON"
+                                                            title={t("Contenu JSON")}
                                                             placeholder='{"key": "value"}'
                                                             value={editContent}
                                                             onChange={e => setEditContent(e.target.value)}

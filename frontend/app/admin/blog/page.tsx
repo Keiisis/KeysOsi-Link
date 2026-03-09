@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
@@ -24,6 +25,7 @@ interface BlogPost {
 const CATEGORIES = ['general', 'citoyennete', 'investissement', 'immobilier', 'culture', 'business']
 
 export default function AdminBlogPage() {
+    const { t } = useTranslation();
     const [posts, setPosts] = useState<BlogPost[]>([])
     const [loading, setLoading] = useState(true)
     const [editing, setEditing] = useState<BlogPost | null>(null)
@@ -119,26 +121,26 @@ export default function AdminBlogPage() {
 
                     <div className="space-y-4">
                         <div>
-                            <label className="text-xs font-bold text-gray-400 mb-1 block">Titre *</label>
+                            <label className="text-xs font-bold text-gray-400 mb-1 block"><T>Titre *</T></label>
                             <input
                                 type="text" value={form.title}
                                 onChange={(e) => setForm({ ...form, title: e.target.value, slug: generating ? generateSlug(e.target.value) : form.slug })}
                                 className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-emerald-500/50"
-                                placeholder="Titre de l'article"
+                                placeholder={t("Titre de l'article")}
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="text-xs font-bold text-gray-400 mb-1 block">Slug URL</label>
+                                <label className="text-xs font-bold text-gray-400 mb-1 block"><T>Slug URL</T></label>
                                 <input
                                     type="text" value={form.slug}
                                     onChange={(e) => setForm({ ...form, slug: e.target.value })}
                                     className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-emerald-500/50"
-                                    placeholder="url-de-l-article"
+                                    placeholder={t("url-de-l-article")}
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-bold text-gray-400 mb-1 block">Catégorie</label>
+                                <label className="text-xs font-bold text-gray-400 mb-1 block"><T>Catégorie</T></label>
                                 <select
                                     value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
                                     className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white text-sm focus:outline-none"
@@ -148,7 +150,7 @@ export default function AdminBlogPage() {
                             </div>
                         </div>
                         <div>
-                            <label className="text-xs font-bold text-gray-400 mb-1 block">Image de couverture (URL)</label>
+                            <label className="text-xs font-bold text-gray-400 mb-1 block"><T>Image de couverture (URL)</T></label>
                             <input
                                 type="text" value={form.cover_image}
                                 onChange={(e) => setForm({ ...form, cover_image: e.target.value })}
@@ -157,21 +159,21 @@ export default function AdminBlogPage() {
                             />
                         </div>
                         <div>
-                            <label className="text-xs font-bold text-gray-400 mb-1 block">Résumé / Extrait</label>
+                            <label className="text-xs font-bold text-gray-400 mb-1 block"><T>Résumé / Extrait</T></label>
                             <textarea
                                 rows={2} value={form.excerpt}
                                 onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
                                 className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white text-sm focus:outline-none resize-none"
-                                placeholder="Court résumé..."
+                                placeholder={t("Court résumé...")}
                             />
                         </div>
                         <div>
-                            <label className="text-xs font-bold text-gray-400 mb-1 block">Contenu (Markdown)</label>
+                            <label className="text-xs font-bold text-gray-400 mb-1 block"><T>Contenu (Markdown)</T></label>
                             <textarea
                                 rows={15} value={form.content}
                                 onChange={(e) => setForm({ ...form, content: e.target.value })}
                                 className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white text-sm focus:outline-none resize-none font-mono"
-                                placeholder="## Titre&#10;&#10;Votre contenu ici..."
+                                placeholder={t("## Titre&#10;&#10;Votre contenu ici...")}
                             />
                         </div>
                         <div className="flex items-center gap-3">
@@ -204,7 +206,7 @@ export default function AdminBlogPage() {
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
                     <div>
-                        <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.3em]">Gestion</span>
+                        <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.3em]"><T>Gestion</T></span>
                         <h1 className="text-2xl font-black text-white flex items-center gap-2">
                             <BookOpen size={22} className="text-emerald-400" /> Blog
                         </h1>
@@ -222,7 +224,7 @@ export default function AdminBlogPage() {
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                     <input
                         type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Rechercher..."
+                        placeholder={t("Rechercher...")}
                         className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm placeholder:text-gray-600 focus:outline-none"
                     />
                 </div>

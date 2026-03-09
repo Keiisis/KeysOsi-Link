@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import {
     MessageSquare, Search, Mail, Clock, CheckCircle2,
-    Send, Reply, User, AlertCircle, Bot
+    Send, Reply, User, AlertCircle, Bot, Languages, Loader2
 } from 'lucide-react'
 
 interface Message {
@@ -37,6 +37,9 @@ export default function AgentMessagesPage() {
     const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
     const [replyText, setReplyText] = useState('')
     const messagesEndRef = useRef<HTMLDivElement>(null)
+    const [translations, setTranslations] = useState<Record<string, { translated?: string, sourceLanguage?: string, translating?: boolean }>>({});
+    const [detectedClientLanguage, setDetectedClientLanguage] = useState<string>("Anglais");
+    const [translatingOwn, setTranslatingOwn] = useState(false);
 
     const fetchMessages = async () => {
         const { data } = await supabase
@@ -133,6 +136,56 @@ export default function AgentMessagesPage() {
         }
         setSelected(msg)
     }
+
+    // Auto-translate client messages
+    useEffect(() => {
+        chatHistory.forEach(msg => {
+            if (msg.role === 'client' && !translations[msg.id]) {
+                setTranslations(prev => {
+                    if (prev[msg.id]) return prev;
+                    return { ...prev, [msg.id]: { translating: true } };
+                });
+
+                fetch('/api/ai/translate-message', {
+                    method: 'POST',
+                    body: JSON.stringify({ text: msg.content, mode: 'detect_and_translate' })
+                })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.translated) {
+                            setTranslations(prev => ({
+                                ...prev,
+                                [msg.id]: { translated: data.translated, sourceLanguage: data.sourceLanguage }
+                            }));
+                            const langLow = data.sourceLanguage?.toLowerCase() || '';
+                            if (!langLow.includes('franç') && !langLow.includes('french') && data.sourceLanguage !== "Inconnue") {
+                                setDetectedClientLanguage(data.sourceLanguage);
+                            }
+                        }
+                    })
+                    .catch(console.error);
+            }
+        });
+    }, [chatHistory, translations]);
+
+    const handleTranslateOutbox = async () => {
+        if (!replyText.trim()) return;
+        setTranslatingOwn(true);
+        try {
+            const res = await fetch('/api/ai/translate-message', {
+                method: 'POST',
+                body: JSON.stringify({ text: replyText, mode: 'translate_to', targetLanguage: detectedClientLanguage })
+            });
+            const data = await res.json();
+            if (data.translated) {
+                setReplyText(data.translated);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setTranslatingOwn(false);
+        }
+    };
 
     const handleReply = async (method: 'chat' | 'email') => {
         if (!selected || !replyText.trim()) return
@@ -239,7 +292,7 @@ export default function AgentMessagesPage() {
                 <div className="xl:col-span-3 bg-white/[0.03] border border-white/5 rounded-2xl flex flex-col overflow-hidden">
                     <div className="p-4 border-b border-white/5 bg-white/[0.01]">
                         <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                            Files d'attente
+                            Files d&apos;attente
                         </h2>
                     </div>
                     <div className="flex-1 overflow-y-auto divide-y divide-white/5 custom-scrollbar">
@@ -339,13 +392,24 @@ export default function AgentMessagesPage() {
                                                 <User size={14} className="text-gray-400" />
                                             </div>
                                         )}
-                                        <div className={`max-w-[70%] text-sm p-4 leading-relaxed shadow-lg
-                                            ${chat.role === 'agent'
-                                                ? 'bg-blue-600 text-white rounded-2xl rounded-br-sm'
-                                                : 'bg-white/10 border border-white/5 text-gray-200 rounded-2xl rounded-tl-sm'
-                                            }`}
-                                        >
-                                            <p className="whitespace-pre-wrap">{chat.content}</p>
+                                        <div className="flex flex-col gap-1 max-w-[70%]">
+                                            <div className={`text-sm p-4 leading-relaxed shadow-lg
+                                                ${chat.role === 'agent'
+                                                    ? 'bg-blue-600 text-white rounded-2xl rounded-br-sm'
+                                                    : 'bg-white/10 border border-white/5 text-gray-200 rounded-2xl rounded-tl-sm'
+                                                }`}
+                                            >
+                                                <p className="whitespace-pre-wrap">{chat.content}</p>
+                                            </div>
+                                            {chat.role === 'client' && translations[chat.id]?.translated && translations[chat.id]?.translated !== chat.content && (
+                                                <div className="text-[11px] text-gray-400 bg-white/5 border border-white/5 p-3 rounded-xl flex flex-col gap-1 mt-1 font-mono">
+                                                    <span className="text-blue-400 font-bold"><Languages size={12} className="inline mr-1" /> Traduit de: {translations[chat.id]?.sourceLanguage}</span>
+                                                    <span>{translations[chat.id]?.translated}</span>
+                                                </div>
+                                            )}
+                                            {chat.role === 'client' && translations[chat.id]?.translating && !translations[chat.id]?.translated && (
+                                                <span className="text-[10px] text-gray-500 animate-pulse ml-2"><Languages size={10} className="inline mr-1" /> Traduction auto...</span>
+                                            )}
                                         </div>
                                         {chat.role === 'agent' && (
                                             <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-auto border border-blue-500/50">
@@ -388,9 +452,24 @@ export default function AgentMessagesPage() {
                                         <Mail size={16} /> <span className="hidden sm:inline">Envoyer (Email)</span>
                                     </button>
                                 </div>
-                                <div className="flex items-center gap-2 mt-2 px-2">
+                                <div className="flex items-center justify-between px-2 mt-2 border-t border-white/5 pt-3">
+                                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                                        <Languages size={14} className="text-blue-400" />
+                                        Langue détectée (client) : <span className="font-bold text-gray-300">{detectedClientLanguage}</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleTranslateOutbox}
+                                        disabled={!replyText.trim() || translatingOwn}
+                                        className="text-xs font-bold text-blue-400 hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed bg-blue-500/10 hover:bg-blue-500/20 px-3 py-1.5 rounded-lg flex items-center gap-2 transition-all"
+                                    >
+                                        {translatingOwn ? <Loader2 size={14} className="animate-spin" /> : <Languages size={14} />}
+                                        Traduire mon texte avant envoi
+                                    </button>
+                                </div>
+                                <div className="flex items-center gap-2 mt-4 px-2">
                                     <AlertCircle size={10} className="text-blue-400" />
-                                    <p className="text-[10px] text-gray-400 font-medium">Répondez depuis cette console, l'email sera envoyé via l'adresse officielle.</p>
+                                    <p className="text-[10px] text-gray-400 font-medium">Répondez depuis cette console, l&apos;email sera envoyé via l&apos;adresse officielle.</p>
                                 </div>
                             </div>
                         </>

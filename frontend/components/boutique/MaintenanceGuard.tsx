@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Wrench, Clock, ArrowLeft } from 'lucide-react'
@@ -42,7 +43,7 @@ export function MaintenanceGuard({ children }: MaintenanceGuardProps) {
 
                     <div>
                         <h1 className="text-4xl font-black text-white font-heading mb-4">
-                            Boutique en <span className="text-[#FCD116]">Maintenance</span>
+                            Boutique en <span className="text-[#FCD116]"><T>Maintenance</T></span>
                         </h1>
                         <p className="text-gray-400 text-sm leading-relaxed">
                             {message}

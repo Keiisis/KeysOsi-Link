@@ -12,6 +12,7 @@ import {
 import Link from 'next/link'
 import { Price, useCurrency } from '@/components/ui/Price'
 import { CurrencyCode, convertCurrency } from '@/lib/currency'
+import { useTranslation, T } from '@/lib/translation'
 
 type PaymentProvider = 'kkiapay' | 'fedapay' | 'zeyow'
 
@@ -37,19 +38,7 @@ declare global {
     }
 }
 
-const STEPS = [
-    { num: 1, label: 'Afro-descendance' },
-    { num: 2, label: 'Infos personnelles' },
-    { num: 3, label: 'Document & Parents' },
-    { num: 4, label: 'Pièces jointes' },
-    { num: 5, label: 'Récapitulatif' },
-    { num: 6, label: 'Paiement & Soumission' },
-]
 
-const COUNTRIES = ['Bénin', 'France', 'États-Unis', 'Brésil', 'Haïti', 'Canada', 'Royaume-Uni', 'Jamaïque', 'Trinidad et Tobago', 'Colombie', 'Cuba', 'Guadeloupe', 'Martinique', 'Guyane française', 'Suriname', 'Barbade', 'Bahamas', 'République Dominicaine', 'Porto Rico', 'Antigua-et-Barbuda', 'Allemagne', 'Belgique', 'Suisse', 'Pays-Bas', 'Italie', 'Espagne', 'Portugal', 'Ghana', 'Togo', 'Nigeria', 'Sénégal', 'Côte d\'Ivoire', 'Cameroun', 'Congo', 'Gabon', 'Mali', 'Burkina Faso', 'Guinée', 'Niger', 'Tchad', 'Autre']
-const PROFESSIONS = ['Salarié(e)', 'Entrepreneur/Commerçant', 'Profession libérale', 'Étudiant(e)', 'Fonctionnaire', 'Retraité(e)', 'Artisan', 'Agriculteur', 'Artiste', 'Ingénieur', 'Médecin', 'Avocat', 'Enseignant', 'Sans emploi', 'Autre']
-const GENRES = ['Masculin', 'Féminin', 'Non-binaire', 'Préfère ne pas préciser']
-const LIENS = ['Père', 'Mère', 'Grand-père paternel', 'Grand-mère paternelle', 'Grand-père maternel', 'Grand-mère maternelle', 'Arrière-grand-père', 'Arrière-grand-mère', 'Autre']
 
 const AnimatedBackground = ({ bgImageUrl }: { bgImageUrl: string }) => (
     <div className="fixed inset-0 w-full h-full z-0 overflow-hidden pointer-events-none bg-[#0a0f14]">
@@ -80,6 +69,22 @@ const AnimatedBackground = ({ bgImageUrl }: { bgImageUrl: string }) => (
 )
 
 export default function NationaliteFormPage() {
+    const { t } = useTranslation()
+
+    const STEPS = [
+        { num: 1, label: t('Afro-descendance') },
+        { num: 2, label: t('Infos personnelles') },
+        { num: 3, label: t('Document & Parents') },
+        { num: 4, label: t('Pièces jointes') },
+        { num: 5, label: t('Récapitulatif') },
+        { num: 6, label: t('Paiement & Soumission') },
+    ]
+
+    const COUNTRIES = ['Bénin', 'France', 'États-Unis', 'Brésil', 'Haïti', 'Canada', 'Royaume-Uni', 'Jamaïque', 'Trinidad et Tobago', 'Colombie', 'Cuba', 'Guadeloupe', 'Martinique', 'Guyane française', 'Suriname', 'Barbade', 'Bahamas', 'République Dominicaine', 'Porto Rico', 'Antigua-et-Barbuda', 'Allemagne', 'Belgique', 'Suisse', 'Pays-Bas', 'Italie', 'Espagne', 'Portugal', 'Ghana', 'Togo', 'Nigeria', 'Sénégal', 'Côte d\'Ivoire', 'Cameroun', 'Congo', 'Gabon', 'Mali', 'Burkina Faso', 'Guinée', 'Niger', 'Tchad', 'Autre']
+    const PROFESSIONS = ['Salarié(e)', 'Entrepreneur/Commerçant', 'Profession libérale', 'Étudiant(e)', 'Fonctionnaire', 'Retraité(e)', 'Artisan', 'Agriculteur', 'Artiste', 'Ingénieur', 'Médecin', 'Avocat', 'Enseignant', 'Sans emploi', 'Autre']
+    const GENRES = ['Masculin', 'Féminin', 'Non-binaire', 'Préfère ne pas préciser']
+    const LIENS = [t('Père'), t('Mère'), t('Grand-père paternel'), t('Grand-mère paternelle'), t('Grand-père maternel'), t('Grand-mère maternelle'), t('Arrière-grand-père'), t('Arrière-grand-mère'), t('Autre')]
+
     const [step, setStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
     const [showWelcome, setShowWelcome] = useState(false)
@@ -96,16 +101,16 @@ export default function NationaliteFormPage() {
     const [rawDocs, setRawDocs] = useState<{ label: string, name: string, file: File }[]>([])
     const [uploadProgress, setUploadProgress] = useState(0)
     const [requiredDocs, setRequiredDocs] = useState<{ label: string, multi: boolean, hint?: string }[]>([
-        { label: 'Pièce d\'identité en cours de validité', multi: false },
-        { label: 'Justificatif de domicile', multi: false },
-        { label: 'Preuve de profession', multi: false },
-        { label: 'Preuve d\'afro descendance', multi: true, hint: 'Vous pouvez charger plusieurs documents ici !' },
-        { label: 'Casier judiciaire ou Certificat d\'antécédents criminels', multi: false },
+        { label: t('Pièce d\'identité en cours de validité'), multi: false },
+        { label: t('Justificatif de domicile'), multi: false },
+        { label: t('Preuve de profession'), multi: false },
+        { label: t('Preuve d\'afro descendance'), multi: true, hint: t('Vous pouvez charger plusieurs documents ici !') },
+        { label: t('Casier judiciaire ou Certificat d\'antécédents criminels'), multi: false },
     ])
     const [bgImageUrl, setBgImageUrl] = useState<string>('/images/bg-default-afro.jpg')
     const [formAmount, setFormAmount] = useState(250)
     const [formCurrency, setFormCurrency] = useState<CurrencyCode>('USD')
-    const { format: formatUserPrice } = useCurrency()
+    const { format } = useCurrency()
 
     const [form, setForm] = useState({
         knows_about_law: false, is_afro_descendant: true, afro_descendant_description: '',
@@ -142,7 +147,7 @@ export default function NationaliteFormPage() {
         supabase.from('page_sections').select('content').eq('page', 'nationalite').eq('section_key', 'form_settings').single()
             .then(({ data }) => {
                 if (data?.content) {
-                    const c = data.content as Record<string, any>
+                    const c = data.content as Record<string, unknown>
                     if (c.amount) setFormAmount(Number(c.amount))
                     if (c.currency) setFormCurrency(c.currency as CurrencyCode)
                     if (c.required_documents && Array.isArray(c.required_documents)) {
@@ -152,16 +157,16 @@ export default function NationaliteFormPage() {
             })
     }, [])
 
-    const u = useCallback((key: keyof NationaliteForm, val: any) => setForm(p => ({ ...p, [key]: val })), [])
+    const u = useCallback((key: keyof NationaliteForm, val: unknown) => setForm(p => ({ ...p, [key]: val })), [])
     const IC = "w-full bg-white/[0.04] border border-white/10 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 placeholder:text-gray-600 transition-all"
     const LC = "text-xs font-bold text-gray-400 mb-1.5 block"
     const RQ = "text-red-400 ml-0.5"
 
     // Payment providers from existing settings
     const providers = [
-        { id: 'kkiapay' as PaymentProvider, name: 'Kkiapay', subtitle: 'Mobile Money / Carte', color: 'bg-[#4A90D9]/20 border-[#4A90D9]/40 text-[#4A90D9]', isReady: paymentSettings.kkiapay_enabled === 'true' && !!paymentSettings.kkiapay_public_key },
-        { id: 'fedapay' as PaymentProvider, name: 'FedaPay', subtitle: 'Mobile Money / Carte', color: 'bg-[#2ECC71]/20 border-[#2ECC71]/40 text-[#2ECC71]', isReady: paymentSettings.fedapay_enabled === 'true' && !!paymentSettings.fedapay_public_key },
-        { id: 'zeyow' as PaymentProvider, name: 'Zeyow', subtitle: 'Carte Virtuelle', color: 'bg-[#FF6B35]/20 border-[#FF6B35]/40 text-[#FF6B35]', isReady: paymentSettings.zeyow_enabled === 'true' && !!paymentSettings.zeyow_redirect_url },
+        { id: 'kkiapay' as PaymentProvider, name: 'Kkiapay', subtitle: t('Mobile Money / Carte'), color: 'bg-[#4A90D9]/20 border-[#4A90D9]/40 text-[#4A90D9]', isReady: paymentSettings.kkiapay_enabled === 'true' && !!paymentSettings.kkiapay_public_key },
+        { id: 'fedapay' as PaymentProvider, name: 'FedaPay', subtitle: t('Mobile Money / Carte'), color: 'bg-[#2ECC71]/20 border-[#2ECC71]/40 text-[#2ECC71]', isReady: paymentSettings.fedapay_enabled === 'true' && !!paymentSettings.fedapay_public_key },
+        { id: 'zeyow' as PaymentProvider, name: 'Zeyow', subtitle: t('Carte Virtuelle'), color: 'bg-[#FF6B35]/20 border-[#FF6B35]/40 text-[#FF6B35]', isReady: paymentSettings.zeyow_enabled === 'true' && !!paymentSettings.zeyow_redirect_url },
     ].filter(p => p.isReady)
 
     const handleKkiapay = () => {
@@ -178,9 +183,9 @@ export default function NationaliteFormPage() {
                 setPaymentTxId(String(response.transactionId || '')); setPaymentDone(true); setPaymentProcessing(false)
             })
             window.addKkiapayListener('failed', () => {
-                setPaymentError('Le paiement Kkiapay a échoué.'); setPaymentProcessing(false)
+                setPaymentError(t('Le paiement Kkiapay a échoué.')); setPaymentProcessing(false)
             })
-        } catch { setPaymentError('Impossible d\'ouvrir Kkiapay'); setPaymentProcessing(false) }
+        } catch { setPaymentError(t('Impossible d\'ouvrir Kkiapay')); setPaymentProcessing(false) }
     }
 
     const handleFedapay = () => {
@@ -197,17 +202,17 @@ export default function NationaliteFormPage() {
                     const tx = resp.transaction as Record<string, unknown> | undefined
                     if (resp.reason === 'APPROVED' || (tx && tx.status === 'approved')) {
                         setPaymentTxId(String(tx?.id || resp.id || '')); setPaymentDone(true)
-                    } else { setPaymentError('Paiement FedaPay non approuvé.') }
+                    } else { setPaymentError(t('Paiement FedaPay non approuvé.')) }
                     setPaymentProcessing(false)
                 },
             })
-        } catch { setPaymentError('Impossible d\'initialiser FedaPay'); setPaymentProcessing(false) }
+        } catch { setPaymentError(t('Impossible d\'initialiser FedaPay')); setPaymentProcessing(false) }
     }
 
     const handleZeyow = () => {
         setPaymentProvider('zeyow')
         const redirectUrl = paymentSettings.zeyow_redirect_url
-        if (!redirectUrl) { setPaymentError('Zeyow non configuré.'); return }
+        if (!redirectUrl) { setPaymentError(t('Zeyow non configuré.')); return }
         // Convertir le montant en FCFA pour Zeyow
         const amountXOF = formCurrency === 'XOF' ? formAmount : convertCurrency(formAmount, formCurrency, 'XOF')
         window.location.href = `${redirectUrl}?amount=${amountXOF}&phone=${form.telephone}&email=${form.email}&context=nationality`
@@ -218,24 +223,24 @@ export default function NationaliteFormPage() {
     const validate = (): string[] => {
         const e: string[] = []
         if (step === 1) {
-            if (!form.afro_descendant_description) e.push('Décrivez votre afro-descendance')
-            if (!form.ancestor1_nom) e.push('Nom de l\'ancêtre 1 requis')
-            if (!form.ancestor1_lien_parente) e.push('Lien de parenté requis')
+            if (!form.afro_descendant_description) e.push(t('Décrivez votre afro-descendance'))
+            if (!form.ancestor1_nom) e.push(t('Nom de l\'ancêtre 1 requis'))
+            if (!form.ancestor1_lien_parente) e.push(t('Lien de parenté requis'))
         }
         if (step === 2) {
-            if (!form.nom) e.push('Nom requis')
-            if (!form.prenom) e.push('Prénom requis')
-            if (!form.email) e.push('Email requis')
-            if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.push('Email invalide')
-            if (!form.genre) e.push('Genre requis')
-            if (!form.date_naissance) e.push('Date de naissance requise')
-            if (!form.pays_residence) e.push('Pays de résidence requis')
+            if (!form.nom) e.push(t('Nom requis'))
+            if (!form.prenom) e.push(t('Prénom requis'))
+            if (!form.email) e.push(t('Email requis'))
+            if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.push(t('Email invalide'))
+            if (!form.genre) e.push(t('Genre requis'))
+            if (!form.date_naissance) e.push(t('Date de naissance requise'))
+            if (!form.pays_residence) e.push(t('Pays de résidence requis'))
         }
-        if (step === 3 && !form.type_document_identite) e.push('Type de document requis')
+        if (step === 3 && !form.type_document_identite) e.push(t('Type de document requis'))
         if (step === 4) {
             const req = requiredDocs.map(d => d.label)
             const uploaded = rawDocs.map(d => d.label)
-            req.forEach(l => { if (!uploaded.includes(l)) e.push(`Document manquant : ${l}`) })
+            req.forEach(l => { if (!uploaded.includes(l)) e.push(`${t('Document manquant :')} ${t(l)}`) })
         }
         // Step 5 = Récapitulatif (pas de validation, juste relecture)
         return e
@@ -246,7 +251,7 @@ export default function NationaliteFormPage() {
 
     const submit = async () => {
         if (!paymentDone) {
-            setErrors(['Veuillez effectuer le paiement avant de soumettre.'])
+            setErrors([t('Veuillez effectuer le paiement avant de soumettre.')])
             return
         }
         setSubmitting(true)
@@ -271,18 +276,18 @@ export default function NationaliteFormPage() {
                         upsert: attempt > 0,
                     })
                     if (data && !error) {
-                        finalUploadedUrls.push(`${doc.label}: ${filename}`)
+                        finalUploadedUrls.push(`${t(doc.label)}: ${filename}`)
                         uploaded = true
                         break
                     } else {
-                        console.error(`[UPLOAD] Echec tentative ${attempt + 1} pour "${doc.label}":`, error?.message)
+                        console.error(`[UPLOAD] Echec tentative ${attempt + 1} pour "${t(doc.label)}":`, error?.message)
                     }
                 } catch (err) {
-                    console.error(`[UPLOAD] Erreur tentative ${attempt + 1} pour "${doc.label}":`, err)
+                    console.error(`[UPLOAD] Erreur tentative ${attempt + 1} pour "${t(doc.label)}":`, err)
                 }
             }
             if (!uploaded) {
-                finalUploadedUrls.push(`${doc.label}: ${doc.name} (upload échoué)`)
+                finalUploadedUrls.push(`${t(doc.label)}: ${doc.name} (upload échoué)`)
                 uploadFailCount++
             }
             setUploadProgress(10 + Math.floor((i + 1) / rawDocs.length * 50))
@@ -325,10 +330,10 @@ export default function NationaliteFormPage() {
                 setUploadProgress(100)
                 setShowWelcome(true)
             } else {
-                setErrors([result.error || 'Erreur lors de la soumission. Veuillez réessayer.'])
+                setErrors([result.error || t('Erreur lors de la soumission. Veuillez réessayer.')])
             }
         } catch {
-            setErrors(['Erreur réseau. Vérifiez votre connexion et réessayez.'])
+            setErrors([t('Erreur réseau. Vérifiez votre connexion et réessayez.')])
         }
         setSubmitting(false)
     }
@@ -350,22 +355,23 @@ export default function NationaliteFormPage() {
                         <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-[#008751]/30 to-[#FCD116]/30 border-2 border-[#FCD116]/30 flex items-center justify-center"><Home size={36} className="text-[#FCD116]" /></div>
                     </motion.div>
                     <motion.h1 initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5 }} className="text-4xl md:text-5xl font-black text-white leading-tight mb-4">
-                        Bienvenue<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D]">Chez Vous</span>
+                        Bienvenue<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D]"><T>Chez Vous</T></span>
                     </motion.h1>
-                    <motion.p initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.7 }} className="text-gray-400 text-sm mb-2">Votre demande a été enregistrée avec succès</motion.p>
+                    <motion.p initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.7 }} className="text-gray-400 text-sm mb-2"><T>Votre demande a été enregistrée avec succès</T></motion.p>
                     <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 1, type: 'spring' }} className="inline-block bg-white/5 backdrop-blur-xl border border-[#FCD116]/20 rounded-2xl px-6 py-3 mb-6">
-                        <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Référence</p>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold"><T>Référence</T></p>
                         <p className="text-xl font-mono font-black text-[#FCD116]">{appRef}</p>
                     </motion.div>
-                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.3 }} className="text-xs text-gray-500 mb-4">Conservez votre référence <span className="text-[#FCD116] font-bold">{appRef}</span> pour suivre votre dossier</motion.p>
+                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.3 }} className="text-xs text-gray-500 mb-4"><T>Conservez votre référence</T> <span className="text-[#FCD116] font-bold">{appRef}</span> <T>pour suivre votre dossier</T></motion.p>
                     <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 1.5 }} className="space-y-3">
-                        <p className="text-xs text-gray-600 italic max-w-sm mx-auto">&quot;La terre de vos ancêtres vous attend les bras ouverts. Ce n&apos;est pas un retour, c&apos;est une renaissance.&quot;</p>
-                        <div className="flex items-center justify-center gap-1 text-[10px] text-gray-600"><Heart size={10} className="text-[#E8112D]" /> Retour Gagnant Bénin</div>
+                        <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto">
+                            <T>Nous avons conçu une gamme de services pour simplifier chaque étape de votre retour, de l&apos;administratif à l&apos;investissement.</T>
+                        </p>            <div className="flex items-center justify-center gap-1 text-[10px] text-gray-600"><Heart size={10} className="text-[#E8112D]" /> <T>Retour Gagnant Bénin</T></div>
                     </motion.div>
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2 }} className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-                        <Link href="/suivi-dossier" className="bg-gradient-to-r from-[#008751] to-[#00b06a] hover:shadow-[0_8px_30px_rgba(0,135,81,0.4)] text-white font-black text-sm px-6 py-3 rounded-xl transition-all uppercase tracking-widest text-[11px]">📍 Suivre mon dossier</Link>
-                        <Link href="/nationalite" className="bg-white/10 hover:bg-white/15 text-white font-bold text-sm px-6 py-3 rounded-xl transition-all">Retour à la page</Link>
-                        <Link href="/" className="text-xs text-gray-500 hover:text-white transition-colors">Accueil</Link>
+                        <Link href="/suivi-dossier" className="bg-gradient-to-r from-[#008751] to-[#00b06a] hover:shadow-[0_8px_30px_rgba(0,135,81,0.4)] text-white font-black text-sm px-6 py-3 rounded-xl transition-all uppercase tracking-widest text-[11px]">📍 <T>Suivre mon dossier</T></Link>
+                        <Link href="/nationalite" className="bg-white/10 hover:bg-white/15 text-white font-bold text-sm px-6 py-3 rounded-xl transition-all"><T>Retour à la page</T></Link>
+                        <Link href="/" className="text-xs text-gray-500 hover:text-white transition-colors"><T>Accueil</T></Link>
                     </motion.div>
                 </motion.div>
             </motion.div>
@@ -379,22 +385,22 @@ export default function NationaliteFormPage() {
         <div className="min-h-screen relative flex items-center justify-center px-4">
             <AnimatedBackground bgImageUrl={bgImageUrl} />
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative z-10 bg-[#0b1411]/80 backdrop-blur-2xl border border-emerald-500/20 shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-3xl p-8 max-w-2xl w-full max-h-[85vh] overflow-y-auto">
-                <h2 className="text-xl font-black text-white text-center mb-2">Savez-vous ce qu&apos;est la reconnaissance de la nationalité aux afro-descendants en République du Bénin ?</h2>
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-xs text-amber-400 mb-4 text-center">Lisez et cochez la mention &quot;J&apos;ai lu et compris&quot; pour poursuivre</div>
+                <h2 className="text-xl font-black text-white text-center mb-2"><T>Savez-vous ce qu&apos;est la reconnaissance de la nationalité aux afro-descendants en République du Bénin ?</T></h2>
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-xs text-amber-400 mb-4 text-center"><T>Lisez et cochez la mention &quot;J&apos;ai lu et compris&quot; pour poursuivre</T></div>
                 <div className="text-sm text-gray-300 leading-relaxed space-y-3 mb-6">
-                    <p>La reconnaissance de la nationalité béninoise aux afrodescendants est un acte de mémoire, de justice et une porte ouverte vers le retour aux racines des descendants des Africains déportés lors de la traite négrière transatlantique, comme membres légitimes de la Nation béninoise.</p>
-                    <p>La loi 2024-31 du 02 Septembre 2024 portant reconnaissance de la nationalité béninoise aux afro-descendants organise en ce sens un mode d&apos;acquisition de la nationalité béninoise par toute personne qui d&apos;après sa généalogie, a un ascendant africain subsaharien déporté hors du continent africain dans le cadre de la traite des noirs et du commerce triangulaire.</p>
-                    <p className="font-bold text-white">La loi s&apos;adresse à l&apos;afro-descendant :</p>
-                    <ul className="list-disc pl-5 space-y-1"><li>âgé d&apos;au moins 18 ans,</li><li>résidant hors du continent africain,</li><li>et pouvant établir sa filiation avec un ascendant africain subsaharien victime de la traite négrière.</li></ul>
-                    <p><span className="font-bold text-white">La preuve de l&apos;afro-descendance peut être apportée par :</span> des actes d&apos;état civil, des certificats officiels, des tests d&apos;ADN génétiques, des actes notariés, des arbres généalogiques, des extraits d&apos;archives historiques, et tout autre document probant.</p>
+                    <p><T>La reconnaissance de la nationalité béninoise aux afrodescendants est un acte de mémoire, de justice et une porte ouverte vers le retour aux racines des descendants des Africains déportés lors de la traite négrière transatlantique, comme membres légitimes de la Nation béninoise.</T></p>
+                    <p><T>La loi 2024-31 du 02 Septembre 2024 portant reconnaissance de la nationalité béninoise aux afro-descendants organise en ce sens un mode d&apos;acquisition de la nationalité béninoise par toute personne qui d&apos;après sa généalogie, a un ascendant africain subsaharien déporté hors du continent africain dans le cadre de la traite des noirs et du commerce triangulaire.</T></p>
+                    <p className="font-bold text-white"><T>La loi s&apos;adresse à l&apos;afro-descendant :</T></p>
+                    <ul className="list-disc pl-5 space-y-1"><li>âgé d&apos;au moins 18 ans,</li><li><T>résidant hors du continent africain,</T></li><li><T>et pouvant établir sa filiation avec un ascendant africain subsaharien victime de la traite négrière.</T></li></ul>
+                    <p><span className="font-bold text-white"><T>La preuve de l&apos;afro-descendance peut être apportée par :</T></span> <T>des actes d&apos;état civil, des certificats officiels, des tests d&apos;ADN génétiques, des actes notariés, des arbres généalogiques, des extraits d&apos;archives historiques, et tout autre document probant.</T></p>
                 </div>
                 <label className="flex items-center gap-3 cursor-pointer mb-6 bg-white/5 hover:bg-white/10 transition-colors rounded-xl p-4">
                     <input type="checkbox" checked={lawAccepted} onChange={e => setLawAccepted(e.target.checked)} className="w-5 h-5 accent-emerald-500" />
-                    <span className="text-sm font-bold text-emerald-400">J&apos;ai lu et compris</span>
+                    <span className="text-sm font-bold text-emerald-400"><T>J&apos;ai lu et compris</T></span>
                 </label>
                 <div className="flex gap-3">
-                    <Link href="/nationalite" className="flex-1 bg-white/5 text-gray-300 hover:text-white font-bold text-sm py-3 rounded-xl text-center hover:bg-white/10 transition-all backdrop-blur-md">Retour</Link>
-                    <button onClick={() => { if (lawAccepted) { u('knows_about_law', true); setStep(1) } }} disabled={!lawAccepted} className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-black text-sm py-3 rounded-xl disabled:opacity-30 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20">Continuer <ArrowRight size={16} /></button>
+                    <Link href="/nationalite" className="flex-1 bg-white/5 text-gray-300 hover:text-white font-bold text-sm py-3 rounded-xl text-center hover:bg-white/10 transition-all backdrop-blur-md"><T>Retour</T></Link>
+                    <button onClick={() => { if (lawAccepted) { u('knows_about_law', true); setStep(1) } }} disabled={!lawAccepted} className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-black text-sm py-3 rounded-xl disabled:opacity-30 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"><T>Continuer</T> <ArrowRight size={16} /></button>
                 </div>
             </motion.div>
         </div>
@@ -411,9 +417,9 @@ export default function NationaliteFormPage() {
 
             <div className="relative z-10 max-w-3xl mx-auto">
                 <div className="text-center mb-6">
-                    <Link href="/nationalite" className="inline-flex items-center gap-2 text-xs text-gray-400 hover:text-white mb-3 transition-colors bg-black/20 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/5"><ChevronLeft size={14} /> Retour à l&apos;accueil</Link>
-                    <h1 className="text-3xl md:text-4xl font-black text-white drop-shadow-lg">Reconnaissance de Nationalité</h1>
-                    <p className="text-sm text-gray-300 mt-2 font-medium">Veuillez remplir le formulaire ci-dessous</p>
+                    <Link href="/nationalite" className="inline-flex items-center gap-2 text-xs text-gray-400 hover:text-white mb-3 transition-colors bg-black/20 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/5"><ChevronLeft size={14} /> <T>Retour à l&apos;accueil</T></Link>
+                    <h1 className="text-3xl md:text-4xl font-black text-white drop-shadow-lg"><T>Reconnaissance de Nationalité</T></h1>
+                    <p className="text-sm text-gray-300 mt-2 font-medium"><T>Veuillez remplir le formulaire ci-dessous</T></p>
                 </div>
 
                 {/* Progress */}
@@ -422,7 +428,7 @@ export default function NationaliteFormPage() {
                         <div key={s.num} className="flex items-center">
                             <div className={`flex items-center gap-1.5 shrink-0 ${step >= s.num ? 'text-emerald-400' : 'text-gray-600'}`}>
                                 <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black transition-all ${step > s.num ? 'bg-emerald-500 text-white' : step === s.num ? 'bg-emerald-500/20 border border-emerald-500 text-emerald-400' : 'bg-white/5 border border-white/10'}`}>{step > s.num ? <CheckCircle2 size={12} /> : s.num}</div>
-                                <span className="text-[9px] font-bold uppercase tracking-wider hidden lg:block whitespace-nowrap">{s.label}</span>
+                                <span className="text-[9px] font-bold uppercase tracking-wider hidden lg:block whitespace-nowrap">{t(s.label)}</span>
                             </div>
                             {i < 5 && <div className={`w-6 lg:w-12 h-px mx-1.5 ${step > s.num ? 'bg-emerald-500/50' : 'bg-white/10'}`} />}
                         </div>
@@ -449,23 +455,23 @@ export default function NationaliteFormPage() {
                         <div className="relative z-10">
 
                             {step === 1 && <div className="space-y-5">
-                                <h2 className="text-lg font-black text-white">Votre identification Afro-descendante</h2>
-                                <div><label className={LC}>Êtes-vous afro-descendant(e) ?<span className={RQ}>*</span></label><div className="flex gap-3 mt-1">{[true, false].map(v => <button key={String(v)} onClick={() => u('is_afro_descendant', v)} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${form.is_afro_descendant === v ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400' : 'bg-white/5 border border-white/10 text-gray-500'}`}>{v ? 'Oui' : 'Non'}</button>)}</div></div>
-                                <div><label className={LC}>Comment êtes-vous afro-descendant(e) ?<span className={RQ}>*</span></label><textarea rows={4} value={form.afro_descendant_description} onChange={e => u('afro_descendant_description', e.target.value)} placeholder="Décrivez en quelques mots votre ascendance..." className={IC + ' resize-none'} /></div>
-                                <div className="border-t border-white/5 pt-5"><h3 className="text-sm font-black text-white mb-4">Informations sur vos ancêtres</h3>
+                                <h2 className="text-lg font-black text-white"><T>Votre identification Afro-descendante</T></h2>
+                                <div><label className={LC}><T>Êtes-vous afro-descendant(e) ?</T><span className={RQ}>*</span></label><div className="flex gap-3 mt-1">{[true, false].map(v => <button key={String(v)} onClick={() => u('is_afro_descendant', v)} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${form.is_afro_descendant === v ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400' : 'bg-white/5 border border-white/10 text-gray-500'}`}>{v ? t('Oui') : t('Non')}</button>)}</div></div>
+                                <div><label className={LC}><T>Comment êtes-vous afro-descendant(e) ?</T><span className={RQ}>*</span></label><textarea rows={4} value={form.afro_descendant_description} onChange={e => u('afro_descendant_description', e.target.value)} placeholder={t("Décrivez en quelques mots votre ascendance...")} className={IC + ' resize-none'} /></div>
+                                <div className="border-t border-white/5 pt-5"><h3 className="text-sm font-black text-white mb-4"><T>Informations sur vos ancêtres</T></h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{[1, 2].map(n => {
                                         const f = form as Record<string, any>
                                         return (
                                             <div key={n} className="space-y-3">
-                                                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">{n === 1 ? '1ère' : '2ème'} Personne</span>
-                                                <div><label className={LC}>Nom{n === 1 && <span className={RQ}>*</span>}</label><input title={`Nom Ancêtre ${n}`} value={f[`ancestor${n}_nom`] || ''} onChange={e => u(`ancestor${n}_nom` as any, e.target.value)} className={IC} placeholder="Nom" /></div>
-                                                <div><label className={LC}>Prénom(s)</label><input title={`Prénom Ancêtre ${n}`} value={f[`ancestor${n}_prenom`] || ''} onChange={e => u(`ancestor${n}_prenom` as any, e.target.value)} className={IC} placeholder="Prénom(s)" /></div>
-                                                <div><label className={LC}>Date de naissance</label><input title={`Date de naissance Ancêtre ${n}`} type="date" value={f[`ancestor${n}_date_naissance`] || ''} onChange={e => u(`ancestor${n}_date_naissance` as any, e.target.value)} className={IC} /></div>
-                                                <div><label className={LC}>Lien de parenté{n === 1 && <span className={RQ}>*</span>}</label><select title={`Lien de parenté Ancêtre ${n}`} value={f[`ancestor${n}_lien_parente`] || ''} onChange={e => u(`ancestor${n}_lien_parente` as any, e.target.value)} className={IC}><option value="">Choisir</option>{LIENS.map(l => <option key={l} value={l}>{l}</option>)}</select></div>
-                                                <div><label className={LC}>Vivant(e) ?</label><div className="flex gap-2">{[true, false].map(v => <button title={v ? 'Oui' : 'Non'} key={String(v)} onClick={() => u(`ancestor${n}_vivant` as any, v)} className={`flex-1 py-2 rounded-lg text-xs font-bold ${f[`ancestor${n}_vivant`] === v ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400' : 'bg-white/5 border border-white/10 text-gray-500'}`}>{v ? 'Oui' : 'Non'}</button>)}</div></div>
-                                                <div><label className={LC}>Nationalité</label><select title={`Nationalité Ancêtre ${n}`} value={f[`ancestor${n}_nationalite`] || ''} onChange={e => u(`ancestor${n}_nationalite` as any, e.target.value)} className={IC}><option value="">Pays</option>{COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-                                                <div><label className={LC}>Pays de résidence</label><select title={`Pays de résidence Ancêtre ${n}`} value={f[`ancestor${n}_pays_residence`] || ''} onChange={e => u(`ancestor${n}_pays_residence` as any, e.target.value)} className={IC}><option value="">Pays</option>{COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-                                                <div><label className={LC}>Autres informations</label><textarea title={`Autres informations Ancêtre ${n}`} rows={2} value={f[`ancestor${n}_autres_infos`] || ''} onChange={e => u(`ancestor${n}_autres_infos` as any, e.target.value)} className={IC + ' resize-none'} placeholder="Informations complémentaires..." /></div>
+                                                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">{n === 1 ? t('1ère') : t('2ème')} {t('Personne')}</span>
+                                                <div><label className={LC}><T>Nom</T>{n === 1 && <span className={RQ}>*</span>}</label><input title={`Nom Ancêtre ${n}`} value={f[`ancestor${n}_nom`] || ''} onChange={e => u(`ancestor${n}_nom` as keyof NationaliteForm, e.target.value)} className={IC} placeholder={t('Nom')} /></div>
+                                                <div><label className={LC}><T>Prénom(s)</T></label><input title={`Prénom Ancêtre ${n}`} value={f[`ancestor${n}_prenom`] || ''} onChange={e => u(`ancestor${n}_prenom` as keyof NationaliteForm, e.target.value)} className={IC} placeholder={t('Prénom(s)')} /></div>
+                                                <div><label className={LC}><T>Date de naissance</T></label><input title={`Date de naissance Ancêtre ${n}`} type="date" value={f[`ancestor${n}_date_naissance`] || ''} onChange={e => u(`ancestor${n}_date_naissance` as keyof NationaliteForm, e.target.value)} className={IC} /></div>
+                                                <div><label className={LC}><T>Lien de parenté</T>{n === 1 && <span className={RQ}>*</span>}</label><select title={`Lien de parenté Ancêtre ${n}`} value={f[`ancestor${n}_lien_parente`] || ''} onChange={e => u(`ancestor${n}_lien_parente` as keyof NationaliteForm, e.target.value)} className={IC}><option value="">{t("Choisir")}</option>{LIENS.map(item => Object.assign(item, { translated: true })).map(l => <option key={l} value={l}>{l}</option>)}</select></div>
+                                                <div><label className={LC}><T>Vivant(e) ?</T></label><div className="flex gap-2">{[true, false].map(v => <button title={v ? t('Oui') : t('Non')} key={String(v)} onClick={() => u(`ancestor${n}_vivant` as keyof NationaliteForm, v)} className={`flex-1 py-2 rounded-lg text-xs font-bold ${f[`ancestor${n}_vivant`] === v ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400' : 'bg-white/5 border border-white/10 text-gray-500'}`}>{v ? t('Oui') : t('Non')}</button>)}</div></div>
+                                                <div><label className={LC}><T>Nationalité</T></label><select title={`Nationalité Ancêtre ${n}`} value={f[`ancestor${n}_nationalite`] || ''} onChange={e => u(`ancestor${n}_nationalite` as keyof NationaliteForm, e.target.value)} className={IC}><option value="">{t("Pays")}</option>{COUNTRIES.map(item => Object.assign(item, { translated: true })).map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+                                                <div><label className={LC}><T>Pays de résidence</T></label><select title={`Pays de résidence Ancêtre ${n}`} value={f[`ancestor${n}_pays_residence`] || ''} onChange={e => u(`ancestor${n}_pays_residence` as keyof NationaliteForm, e.target.value)} className={IC}><option value="">{t("Pays")}</option>{COUNTRIES.map(item => Object.assign(item, { translated: true })).map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+                                                <div><label className={LC}><T>Autres informations</T></label><textarea title={`Autres informations Ancêtre ${n}`} rows={2} value={f[`ancestor${n}_autres_infos`] || ''} onChange={e => u(`ancestor${n}_autres_infos` as keyof NationaliteForm, e.target.value)} className={IC + ' resize-none'} placeholder={t('Informations complémentaires...')} /></div>
                                             </div>
                                         )
                                     })}</div>
@@ -473,114 +479,115 @@ export default function NationaliteFormPage() {
                             </div>}
 
                             {step === 2 && <div className="space-y-5">
-                                <h2 className="text-lg font-black text-white">Informations Personnelles</h2>
+                                <h2 className="text-lg font-black text-white"><T>Informations Personnelles</T></h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div><label className={LC}>Nom<span className={RQ}>*</span></label><input title="Votre Nom" value={form.nom} onChange={e => u('nom', e.target.value)} className={IC} placeholder="Nom de famille" /></div>
-                                    <div><label className={LC}>Prénom(s)<span className={RQ}>*</span></label><input title="Votre Prénom" value={form.prenom} onChange={e => u('prenom', e.target.value)} className={IC} placeholder="Prénom(s)" /></div>
-                                    <div><label className={LC}>Genre<span className={RQ}>*</span></label><select title="Genre" value={form.genre} onChange={e => u('genre', e.target.value)} className={IC}><option value="">Choisir</option>{GENRES.map(g => <option key={g} value={g}>{g}</option>)}</select></div>
-                                    <div><label className={LC}>Date de naissance<span className={RQ}>*</span></label><input title="Date de naissance" type="date" value={form.date_naissance} onChange={e => u('date_naissance', e.target.value)} className={IC} /></div>
-                                    <div><label className={LC}>Pays de naissance</label><select title="Pays de naissance" value={form.pays_naissance} onChange={e => u('pays_naissance', e.target.value)} className={IC}><option value="">Pays</option>{COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-                                    <div><label className={LC}>Ville de naissance</label><input title="Ville de naissance" value={form.ville_naissance} onChange={e => u('ville_naissance', e.target.value)} className={IC} placeholder="Ville" /></div>
-                                    <div><label className={LC}>Nationalité<span className={RQ}>*</span></label><select title="Nationalité" value={form.nationalite} onChange={e => u('nationalite', e.target.value)} className={IC}><option value="">Pays</option>{COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-                                    <div><label className={LC}>Pays de résidence<span className={RQ}>*</span></label><select title="Pays de résidence" value={form.pays_residence} onChange={e => u('pays_residence', e.target.value)} className={IC}><option value="">Pays</option>{COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-                                    <div className="md:col-span-2"><label className={LC}>Adresse complète</label><input title="Adresse" value={form.adresse_residence} onChange={e => u('adresse_residence', e.target.value)} className={IC} placeholder="Adresse" /></div>
-                                    <div><label className={LC}>Téléphone</label><input title="Téléphone" value={form.telephone} onChange={e => u('telephone', e.target.value)} className={IC} placeholder="+229 XX XX XX XX" /></div>
-                                    <div><label className={LC}>Email<span className={RQ}>*</span></label><input title="Email" type="email" value={form.email} onChange={e => u('email', e.target.value)} className={IC} placeholder="email@exemple.com" /></div>
-                                    <div><label className={LC}>Profession</label><select title="Profession" value={form.profession} onChange={e => u('profession', e.target.value)} className={IC}><option value="">Choisir</option>{PROFESSIONS.map(p => <option key={p} value={p}>{p}</option>)}</select></div>
+                                    <div><label className={LC}><T>Nom</T><span className={RQ}>*</span></label><input title={t("Votre Nom")} value={form.nom} onChange={e => u('nom', e.target.value)} className={IC} placeholder={t('Nom de famille')} /></div>
+                                    <div><label className={LC}><T>Prénom(s)</T><span className={RQ}>*</span></label><input title={t("Votre Prénom")} value={form.prenom} onChange={e => u('prenom', e.target.value)} className={IC} placeholder={t('Prénom(s)')} /></div>
+                                    <div><label className={LC}><T>Genre</T><span className={RQ}>*</span></label><select title={t("Genre")} value={form.genre} onChange={e => u('genre', e.target.value)} className={IC}><option value="">{t("Choisir")}</option>{GENRES.map(item => Object.assign(item, { translated: true })).map(g => <option key={g} value={g}>{g}</option>)}</select></div>
+                                    <div><label className={LC}><T>Date de naissance</T><span className={RQ}>*</span></label><input title={t("Date de naissance")} type="date" value={form.date_naissance} onChange={e => u('date_naissance', e.target.value)} className={IC} /></div>
+                                    <div><label className={LC}><T>Pays de naissance</T></label><select title={t("Pays de naissance")} value={form.pays_naissance} onChange={e => u('pays_naissance', e.target.value)} className={IC}><option value="">{t("Pays")}</option>{COUNTRIES.map(item => Object.assign(item, { translated: true })).map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+                                    <div><label className={LC}><T>Ville de naissance</T></label><input title={t("Ville de naissance")} value={form.ville_naissance} onChange={e => u('ville_naissance', e.target.value)} className={IC} placeholder={t('Ville')} /></div>
+                                    <div><label className={LC}><T>Nationalité</T><span className={RQ}>*</span></label><select title={t("Nationalité")} value={form.nationalite} onChange={e => u('nationalite', e.target.value)} className={IC}><option value="">{t("Pays")}</option>{COUNTRIES.map(item => Object.assign(item, { translated: true })).map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+                                    <div><label className={LC}><T>Pays de résidence</T><span className={RQ}>*</span></label><select title={t("Pays de résidence")} value={form.pays_residence} onChange={e => u('pays_residence', e.target.value)} className={IC}><option value="">{t("Pays")}</option>{COUNTRIES.map(item => Object.assign(item, { translated: true })).map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+                                    <div className="md:col-span-2"><label className={LC}><T>Adresse complète</T></label><input title={t("Adresse")} value={form.adresse_residence} onChange={e => u('adresse_residence', e.target.value)} className={IC} placeholder={t('Adresse')} /></div>
+                                    <div><label className={LC}><T>Téléphone</T></label><input title={t("Téléphone")} value={form.telephone} onChange={e => u('telephone', e.target.value)} className={IC} placeholder={t("+229 XX XX XX XX")} /></div>
+                                    <div><label className={LC}><T>Email</T><span className={RQ}>*</span></label><input title={t("Email")} type="email" value={form.email} onChange={e => u('email', e.target.value)} className={IC} placeholder={t("email@exemple.com")} /></div>
+                                    <div><label className={LC}><T>Profession</T></label><select title={t("Profession")} value={form.profession} onChange={e => u('profession', e.target.value)} className={IC}><option value="">{t("Choisir")}</option>{PROFESSIONS.map(item => Object.assign(item, { translated: true })).map(p => <option key={t(p)} value={t(p)}>{t(p)}</option>)}</select></div>
                                 </div>
 
                                 <div className="border-t border-white/5 pt-5 space-y-4">
-                                    <h3 className="text-sm font-black text-white">Situation familiale</h3>
+                                    <h3 className="text-sm font-black text-white"><T>Situation familiale</T></h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div><label className={LC}>Situation matrimoniale</label><select title="Situation matrimoniale" value={form.situation_matrimoniale} onChange={e => u('situation_matrimoniale', e.target.value)} className={IC}><option value="">Choisir</option><option value="celibataire">Célibataire</option><option value="marie">Marié(e)</option><option value="divorce">Divorcé(e)</option><option value="veuf">Veuf/Veuve</option><option value="union_libre">Union libre</option></select></div>
-                                        <div><label className={LC}>Nombre d&apos;enfants</label><input title="Nombre d'enfants" type="number" min={0} value={form.nombre_enfants} onChange={e => u('nombre_enfants', Number(e.target.value))} className={IC} placeholder="0" /></div>
+                                        <div><label className={LC}><T>Situation matrimoniale</T></label><select title={t("Situation matrimoniale")} value={form.situation_matrimoniale} onChange={e => u('situation_matrimoniale', e.target.value)} className={IC}><option value="">{t("Choisir")}</option><option value="celibataire">{t("Célibataire")}</option><option value="marie">{t("Marié(e)")}</option><option value="divorce">{t("Divorcé(e)")}</option><option value="veuf">{t("Veuf/Veuve")}</option><option value="union_libre">{t("Union libre")}</option></select></div>
+                                        <div><label className={LC}><T>Nombre d&apos;enfants</T></label><input title={t("Nombre d'enfants")} type="number" min={0} value={form.nombre_enfants} onChange={e => u('nombre_enfants', Number(e.target.value))} className={IC} placeholder="0" /></div>
                                     </div>
                                 </div>
 
                                 <div className="flex items-center gap-3 bg-white/[0.03] border border-white/5 rounded-xl p-4">
-                                    <button title="Demande depuis le Bénin ?" onClick={() => u('demande_depuis_benin', !form.demande_depuis_benin)} className={`w-12 h-6 rounded-full transition-all relative ${form.demande_depuis_benin ? 'bg-emerald-500' : 'bg-white/10'}`}><div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all shadow ${form.demande_depuis_benin ? 'left-6' : 'left-0.5'}`} /></button>
-                                    <span className="text-sm text-gray-400">Demande depuis le Bénin ?</span>
+                                    <button title={t("Demande depuis le Bénin ?")} onClick={() => u('demande_depuis_benin', !form.demande_depuis_benin)} className={`w-12 h-6 rounded-full transition-all relative ${form.demande_depuis_benin ? 'bg-emerald-500' : 'bg-white/10'}`}><div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all shadow ${form.demande_depuis_benin ? 'left-6' : 'left-0.5'}`} /></button>
+                                    <span className="text-sm text-gray-400"><T>Demande depuis le Bénin ?</T></span>
                                 </div>
                             </div>}
 
                             {step === 3 && <div className="space-y-5">
-                                <h2 className="text-lg font-black text-white">Document d&apos;identité &amp; Parents</h2>
+                                <h2 className="text-lg font-black text-white"><T>Document d&apos;identité &amp; Parents</T></h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div><label className={LC}>Type de document<span className={RQ}>*</span></label><select title="Type de document d&apos;identité" value={form.type_document_identite} onChange={e => u('type_document_identite', e.target.value)} className={IC}><option value="">Choisir</option><option value="passeport">Passeport</option><option value="cni">CNI</option><option value="carte_electeur">Carte d&apos;électeur</option><option value="autre">Autre</option></select></div>
-                                    <div><label className={LC}>Autorité de délivrance</label><input title="Autorité de délivrance" value={form.autorite_delivrance} onChange={e => u('autorite_delivrance', e.target.value)} className={IC} /></div>
-                                    <div><label className={LC}>Numéro du document</label><input title="Numéro du document" value={form.numero_document} onChange={e => u('numero_document', e.target.value)} className={IC} /></div>
-                                    <div><label className={LC}>Pays de délivrance</label><select title="Pays de délivrance" value={form.pays_delivrance} onChange={e => u('pays_delivrance', e.target.value)} className={IC}><option value="">Pays</option>{COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-                                    <div><label className={LC}>Date d&apos;expiration</label><input title="Date d&apos;expiration" type="date" value={form.date_expiration_document} onChange={e => u('date_expiration_document', e.target.value)} className={IC} /></div>
-                                    <div><label className={LC}>Lieu de délivrance</label><input title="Lieu de délivrance" value={form.lieu_delivrance} onChange={e => u('lieu_delivrance', e.target.value)} className={IC} /></div>
+                                    <div><label className={LC}><T>Type de document</T><span className={RQ}>*</span></label><select title={t("Type de document d&apos;identité")} value={form.type_document_identite} onChange={e => u('type_document_identite', e.target.value)} className={IC}><option value="">{t("Choisir")}</option><option value="passeport">{t("Passeport")}</option><option value="cni">{t("CNI")}</option><option value="carte_electeur">Carte d&apos;électeur</option><option value="autre">{t("Autre")}</option></select></div>
+                                    <div><label className={LC}><T>Autorité de délivrance</T></label><input title={t("Autorité de délivrance")} value={form.autorite_delivrance} onChange={e => u('autorite_delivrance', e.target.value)} className={IC} /></div>
+                                    <div><label className={LC}><T>Numéro du document</T></label><input title={t("Numéro du document")} value={form.numero_document} onChange={e => u('numero_document', e.target.value)} className={IC} /></div>
+                                    <div><label className={LC}><T>Pays de délivrance</T></label><select title={t("Pays de délivrance")} value={form.pays_delivrance} onChange={e => u('pays_delivrance', e.target.value)} className={IC}><option value="">{t("Pays")}</option>{COUNTRIES.map(item => Object.assign(item, { translated: true })).map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+                                    <div><label className={LC}><T>Date d&apos;expiration</T></label><input title={t("Date d&apos;expiration")} type="date" value={form.date_expiration_document} onChange={e => u('date_expiration_document', e.target.value)} className={IC} /></div>
+                                    <div><label className={LC}><T>Lieu de délivrance</T></label><input title={t("Lieu de délivrance")} value={form.lieu_delivrance} onChange={e => u('lieu_delivrance', e.target.value)} className={IC} /></div>
                                 </div>
 
                                 {/* Upload du document d'identité */}
                                 <div className="border-t border-white/5 pt-5">
-                                    <h3 className="text-sm font-black text-white mb-3">Scan / Photo du document</h3>
-                                    <p className="text-[11px] text-gray-500 mb-3">Joignez une photo ou un scan lisible de votre {form.type_document_identite === 'passeport' ? 'passeport' : form.type_document_identite === 'cni' ? 'carte d\'identité' : 'document'}.</p>
+                                    <h3 className="text-sm font-black text-white mb-3"><T>Scan / Photo du document</T></h3>
+                                    <p className="text-[11px] text-gray-500 mb-3">{t('Joignez une photo ou un scan lisible de votre')} {form.type_document_identite === 'passeport' ? t('passeport') : form.type_document_identite === 'cni' ? t('carte d\'identité') : t('document')}.</p>
                                     <label className="cursor-pointer block bg-white/[0.03] border border-dashed border-emerald-500/30 rounded-xl p-5 text-center hover:border-emerald-500/60 transition-all">
                                         <FileText size={24} className="mx-auto text-emerald-400/50 mb-2" />
-                                        <p className="text-xs font-bold text-emerald-400">Cliquer ou glisser-déposer</p>
-                                        <p className="text-[10px] text-gray-600 mt-1">PNG, JPG, PDF — Max 5 Mo</p>
-                                        {rawDocs.find(d => d.label === 'Document d\'identité (scan)') && <p className="text-[10px] text-emerald-400 mt-2 font-bold">Fichier sélectionné : {rawDocs.find(d => d.label === 'Document d\'identité (scan)')?.name}</p>}
-                                        <input title="Scan du document d'identité" type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={e => { const f = e.target.files; if (f && f[0]) { setRawDocs(p => [...p.filter(d => d.label !== 'Document d\'identité (scan)'), { label: 'Document d\'identité (scan)', name: f[0].name, file: f[0] }]) } }} />
+                                        <p className="text-xs font-bold text-emerald-400"><T>Cliquer ou glisser-déposer</T></p>
+                                        <p className="text-[10px] text-gray-600 mt-1"><T>PNG, JPG, PDF — Max 5 Mo</T></p>
+                                        {rawDocs.find(d => d.label === 'Document d\'identité (scan)') && <p className="text-[10px] text-emerald-400 mt-2 font-bold"><T>Fichier sélectionné :</T> {rawDocs.find(d => d.label === 'Document d\'identité (scan)')?.name}</p>}
+                                        <input title={t("Scan du document d'identité")} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={e => { const f = e.target.files; if (f && f[0]) { setRawDocs(p => [...p.filter(d => d.label !== 'Document d\'identité (scan)'), { label: 'Document d\'identité (scan)', name: f[0].name, file: f[0] }]) } }} />
                                     </label>
                                 </div>
 
-                                <div className="border-t border-white/5 pt-5"><h3 className="text-sm font-black text-white mb-4">Informations sur vos parents</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{['Père', 'Mère'].map(p => {
+                                <div className="border-t border-white/5 pt-5"><h3 className="text-sm font-black text-white mb-4"><T>Informations sur vos parents</T></h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{[t('Père'), 'Mère'].map(p => {
                                         const k = p === 'Père' ? 'pere' : 'mere';
                                         const f = form as Record<string, any>
                                         return (
-                                            <div key={p} className="space-y-3">
-                                                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">{p}</span>
-                                                <div><label className={LC}>Nom</label><input title={`Nom du ${p}`} value={f[`${k}_nom`] || ''} onChange={e => u(`${k}_nom` as any, e.target.value)} className={IC} placeholder="Nom" /></div>
-                                                <div><label className={LC}>Prénom(s)</label><input title={`Prénom du ${p}`} value={f[`${k}_prenom`] || ''} onChange={e => u(`${k}_prenom` as any, e.target.value)} className={IC} placeholder="Prénom(s)" /></div>
-                                                <div><label className={LC}>Date de naissance</label><input title={`Date de naissance du ${p}`} type="date" value={f[`${k}_date_naissance`] || ''} onChange={e => u(`${k}_date_naissance` as any, e.target.value)} className={IC} /></div>
+                                            <div key={t(p)} className="space-y-3">
+                                                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">{t(p)}</span>
+                                                <div><label className={LC}><T>Nom</T></label><input title={`Nom du ${t(p)}`} value={f[`${k}_nom`] || ''} onChange={e => u(`${k}_nom` as keyof NationaliteForm, e.target.value)} className={IC} placeholder={t('Nom')} /></div>
+                                                <div><label className={LC}><T>Prénom(s)</T></label><input title={`Prénom du ${t(p)}`} value={f[`${k}_prenom`] || ''} onChange={e => u(`${k}_prenom` as keyof NationaliteForm, e.target.value)} className={IC} placeholder={t('Prénom(s)')} /></div>
+                                                <div><label className={LC}><T>Date de naissance</T></label><input title={`Date de naissance du ${t(p)}`} type="date" value={f[`${k}_date_naissance`] || ''} onChange={e => u(`${k}_date_naissance` as keyof NationaliteForm, e.target.value)} className={IC} /></div>
                                             </div>
                                         )
                                     })}</div></div>
 
                                 {/* Motivation et RGPD */}
                                 <div className="border-t border-white/5 pt-5 space-y-4">
-                                    <h3 className="text-sm font-black text-white">Lettre de motivation</h3>
-                                    <p className="text-[11px] text-gray-500">Expliquez pourquoi cette démarche est importante pour vous. Ce texte sera joint a votre dossier.</p>
-                                    <textarea title="Votre motivation" rows={5} value={form.motivation_lettre} onChange={e => u('motivation_lettre', e.target.value)} placeholder="Rédigez ici votre motivation pour obtenir la nationalité béninoise..." className={IC + ' resize-none'} />
+                                    <h3 className="text-sm font-black text-white"><T>Lettre de motivation</T></h3>
+                                    <p className="text-[11px] text-gray-500"><T>Expliquez pourquoi cette démarche est importante pour vous. Ce texte sera joint a votre dossier.</T></p>
+                                    <textarea title={t("Votre motivation")} rows={5} value={form.motivation_lettre} onChange={e => u('motivation_lettre', e.target.value)} placeholder={t('Rédigez ici votre motivation pour obtenir la nationalité béninoise...')} className={IC + ' resize-none'} />
                                 </div>
 
                                 <div className="flex items-center gap-3 bg-white/[0.03] border border-white/5 rounded-xl p-4">
-                                    <button title="Consentement RGPD" onClick={() => u('consentement_rgpd', !form.consentement_rgpd)} className={`w-12 h-6 rounded-full transition-all relative shrink-0 ${form.consentement_rgpd ? 'bg-emerald-500' : 'bg-white/10'}`}><div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all shadow ${form.consentement_rgpd ? 'left-6' : 'left-0.5'}`} /></button>
-                                    <span className="text-[11px] text-gray-400">J&apos;accepte que mes données personnelles soient traitées dans le cadre de cette demande de nationalité, conformément à la politique de confidentialité de Retour Gagnant Benin.</span>
+                                    <button title={t("Consentement RGPD")} onClick={() => u('consentement_rgpd', !form.consentement_rgpd)} className={`w-12 h-6 rounded-full transition-all relative shrink-0 ${form.consentement_rgpd ? 'bg-emerald-500' : 'bg-white/10'}`}><div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all shadow ${form.consentement_rgpd ? 'left-6' : 'left-0.5'}`} /></button>
+                                    <span className="text-[11px] text-gray-400"><T>J&apos;accepte que mes données personnelles soient traitées dans le cadre de cette demande de nationalité, conformément à la politique de confidentialité de Retour Gagnant Benin.</T></span>
                                 </div>
                             </div>}
 
                             {step === 4 && <div className="space-y-4">
-                                <h2 className="text-lg font-black text-white">Pièces à joindre</h2>
-                                <p className="text-xs text-gray-500">Formats : PNG, JPG, JPEG, PDF. Taille max : 5 Mo.</p>
+                                <h2 className="text-lg font-black text-white"><T>Pièces à joindre</T></h2>
+                                <p className="text-xs text-gray-500"><T>Formats : PNG, JPG, JPEG, PDF. Taille max : 5 Mo.</T></p>
                                 {requiredDocs.map((doc, i) => (
                                     <div key={i} className="bg-white/[0.03] border border-white/5 rounded-xl p-5 flex items-center justify-between hover:border-emerald-500/20 transition-all">
-                                        <div className="flex items-center gap-4"><FileText size={18} className="text-emerald-400/60" /><div><span className="text-sm text-white">{doc.label}<span className="text-red-400 ml-1">*</span></span>{doc.hint && <p className="text-[10px] text-gray-600">{doc.hint}</p>}</div></div>
-                                        <label className="cursor-pointer shrink-0"><div className="text-right"><p className="text-[10px] text-gray-600">Glisser déposer ou</p><p className="text-xs font-bold text-emerald-400">{doc.multi ? 'CHOISIR FICHIER(S)' : 'CHOISIR UN FICHIER'}</p></div>
-                                            <input title={doc.label} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" multiple={doc.multi} onChange={e => { const f = e.target.files; if (f) { const newDocs = Array.from(f).map(fi => ({ label: doc.label, name: fi.name, file: fi })); setRawDocs(p => [...p, ...newDocs]) } }} />
+                                        <div className="flex items-center gap-4"><FileText size={18} className="text-emerald-400/60" /><div><span className="text-sm text-white">{t(doc.label)}<span className="text-red-400 ml-1">*</span></span>{doc.hint && <p className="text-[10px] text-gray-600">{doc.hint}</p>}</div></div>
+                                        <label className="cursor-pointer shrink-0"><div className="text-right"><p className="text-[10px] text-gray-600"><T>Glisser déposer ou</T></p><p className="text-xs font-bold text-emerald-400">{doc.multi ? t('CHOISIR FICHIER(S)') : t('CHOISIR UN FICHIER')}</p></div>
+                                            <input title={t(doc.label)} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" multiple={doc.multi} onChange={e => { const f = e.target.files; if (f) { const newDocs = Array.from(f).map(fi => ({ label: doc.label, name: fi.name, file: fi })); setRawDocs(p => [...p, ...newDocs]) } }} />
                                         </label>
                                     </div>
                                 ))}
                                 {rawDocs.length > 0 && <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-4 space-y-3">
-                                    <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Fichiers ajoutés ({rawDocs.length})</p>
+                                    <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider">{t("Fichiers ajoutés")} ({rawDocs.length})</p>
                                     {rawDocs.map((d, i) => {
                                         const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(d.name)
                                         return (
                                             <div key={i} className="flex items-center gap-3 bg-white/[0.02] rounded-lg p-2">
-                                                {isImage ? (
-                                                    <img src={URL.createObjectURL(d.file)} alt={d.label} className="w-14 h-14 object-cover rounded-lg border border-white/10" />
-                                                ) : (
+                                                {isImage ? (<>
+                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                    < img src={URL.createObjectURL(d.file)} alt={d.label} className="w-14 h-14 object-cover rounded-lg border border-white/10" />
+                                                </>) : (
                                                     <div className="w-14 h-14 flex items-center justify-center bg-white/5 rounded-lg border border-white/10"><FileText size={20} className="text-gray-500" /></div>
                                                 )}
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-xs text-white font-bold truncate">{d.label}</p>
+                                                    <p className="text-xs text-white font-bold truncate">{t(d.label)}</p>
                                                     <p className="text-[10px] text-gray-500 truncate">{d.name} — {(d.file.size / 1024).toFixed(0)} Ko</p>
                                                 </div>
-                                                <button title="Supprimer" onClick={() => setRawDocs(p => p.filter((_, idx) => idx !== i))} className="p-1.5 text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"><X size={14} /></button>
+                                                <button title={t("Supprimer")} onClick={() => setRawDocs(p => p.filter((_, idx) => idx !== i))} className="p-1.5 text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"><X size={14} /></button>
                                             </div>
                                         )
                                     })}
@@ -588,25 +595,25 @@ export default function NationaliteFormPage() {
                             </div>}
 
                             {step === 6 && <div className="space-y-5">
-                                <h2 className="text-lg font-black text-white">Paiement des frais de traitement</h2>
+                                <h2 className="text-lg font-black text-white"><T>Paiement des frais de traitement</T></h2>
                                 <div className="bg-gradient-to-r from-emerald-900/20 to-yellow-900/10 border border-emerald-500/10 rounded-2xl p-6 text-center">
                                     <p className="text-3xl font-black text-[#FCD116]"><Price amount={formAmount} currency={formCurrency} showOriginal /></p>
-                                    <p className="text-xs text-gray-500 mt-1">Frais de traitement de dossier</p>
+                                    <p className="text-xs text-gray-500 mt-1"><T>Frais de traitement de dossier</T></p>
                                 </div>
 
                                 {paymentDone ? (
                                     <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-5 text-center">
                                         <CheckCircle2 size={32} className="text-emerald-400 mx-auto mb-2" />
-                                        <p className="text-sm font-bold text-emerald-400">Paiement effectué via {paymentProvider}</p>
+                                        <p className="text-sm font-bold text-emerald-400"><T>Paiement effectué via</T> {paymentProvider}</p>
                                         {paymentTxId && <p className="text-[10px] text-gray-500 mt-1 font-mono">TX: {paymentTxId}</p>}
                                     </div>
                                 ) : paymentProcessing ? (
-                                    <div className="flex flex-col items-center py-8"><Loader2 size={32} className="animate-spin text-[#FCD116]" /><p className="text-sm text-gray-400 mt-3">Traitement en cours...</p></div>
+                                    <div className="flex flex-col items-center py-8"><Loader2 size={32} className="animate-spin text-[#FCD116]" /><p className="text-sm text-gray-400 mt-3"><T>Traitement en cours...</T></p></div>
                                 ) : (
                                     <div className="space-y-3">
-                                        <p className="text-xs text-gray-400 font-bold">Sélectionnez votre moyen de paiement :</p>
+                                        <p className="text-xs text-gray-400 font-bold"><T>Sélectionnez votre moyen de paiement :</T></p>
                                         {providers.length === 0 ? (
-                                            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 text-center"><CreditCard size={24} className="text-gray-600 mx-auto mb-2" /><p className="text-xs text-amber-400">Aucune passerelle de paiement active. Contactez l&apos;administrateur.</p></div>
+                                            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 text-center"><CreditCard size={24} className="text-gray-600 mx-auto mb-2" /><p className="text-xs text-amber-400"><T>Aucune passerelle de paiement active. Contactez l&apos;administrateur.</T></p></div>
                                         ) : providers.map(p => (
                                             <button key={p.id} title={`Payer avec ${p.name}`} onClick={payHandlers[p.id]} className={`w-full flex items-center gap-4 p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/20 transition-all group text-left`}>
                                                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg border ${p.color}`}><CreditCard size={22} /></div>
@@ -615,19 +622,19 @@ export default function NationaliteFormPage() {
                                             </button>
                                         ))}
                                         {paymentError && <p className="text-xs text-red-400 flex items-center gap-2"><AlertCircle size={12} /> {paymentError}</p>}
-                                        <div className="flex items-center gap-2 text-gray-600 justify-center mt-2"><Shield size={14} /><span className="text-[10px] font-bold uppercase tracking-widest">Transaction 100% sécurisée</span></div>
+                                        <div className="flex items-center gap-2 text-gray-600 justify-center mt-2"><Shield size={14} /><span className="text-[10px] font-bold uppercase tracking-widest"><T>Transaction 100% sécurisée</T></span></div>
                                     </div>
                                 )}
                             </div>}
 
                             {step === 5 && <div className="space-y-5">
-                                <h2 className="text-lg font-black text-white">Récapitulatif de votre demande</h2>
-                                <p className="text-xs text-gray-400">Vérifiez attentivement vos informations avant de procéder au paiement.</p>
+                                <h2 className="text-lg font-black text-white"><T>Récapitulatif de votre demande</T></h2>
+                                <p className="text-xs text-gray-400"><T>Vérifiez attentivement vos informations avant de procéder au paiement.</T></p>
                                 {[
-                                    { title: 'Identité', items: [['Nom complet', `${form.prenom} ${form.nom}`], ['Genre', form.genre], ['Né(e) le', form.date_naissance], ['Nationalité', form.nationalite], ['Résidence', `${form.adresse_residence ? form.adresse_residence + ', ' : ''}${form.pays_residence}`], ['Email', form.email], ['Téléphone', form.telephone], ['Profession', form.profession]] },
-                                    { title: 'Afro-descendance', items: [['Description', form.afro_descendant_description], ['Ancêtre 1', `${form.ancestor1_prenom} ${form.ancestor1_nom} — ${form.ancestor1_lien_parente}`], ...(form.ancestor2_nom ? [['Ancêtre 2', `${form.ancestor2_prenom} ${form.ancestor2_nom} — ${form.ancestor2_lien_parente}`]] : [])] },
-                                    { title: "Document d'identité", items: [['Type', form.type_document_identite], ['Numéro', form.numero_document], ['Pays délivrance', form.pays_delivrance], ['Expiration', form.date_expiration_document]] },
-                                    { title: 'Parents', items: [['Père', `${form.pere_prenom} ${form.pere_nom}`], ['Mère', `${form.mere_prenom} ${form.mere_nom}`]] },
+                                    { title: t('Identité'), items: [[t('Nom complet'), `${form.prenom} ${form.nom}`], [t('Genre'), form.genre], [t('Né(e) le'), form.date_naissance], [t('Nationalité'), form.nationalite], [t('Résidence'), `${form.adresse_residence ? form.adresse_residence + ', ' : ''}${form.pays_residence}`], [t('Email'), form.email], [t('Téléphone'), form.telephone], [t('Profession'), form.profession]] },
+                                    { title: t('Afro-descendance'), items: [[t('Description'), form.afro_descendant_description], [t('Ancêtre 1'), `${form.ancestor1_prenom} ${form.ancestor1_nom} — ${form.ancestor1_lien_parente}`], ...(form.ancestor2_nom ? [[t('Ancêtre 2'), `${form.ancestor2_prenom} ${form.ancestor2_nom} — ${form.ancestor2_lien_parente}`]] : [])] },
+                                    { title: t("Document d'identité"), items: [[t('Type'), form.type_document_identite], [t('Numéro'), form.numero_document], [t('Pays délivrance'), form.pays_delivrance], [t('Expiration'), form.date_expiration_document]] },
+                                    { title: t('Parents'), items: [[t('Père'), `${form.pere_prenom} ${form.pere_nom}`], [t('Mère'), `${form.mere_prenom} ${form.mere_nom}`]] },
                                 ].map((sec, si) => (
                                     <div key={si} className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
                                         <h3 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-2">{sec.title}</h3>
@@ -636,18 +643,19 @@ export default function NationaliteFormPage() {
                                 ))}
                                 {/* Pièces jointes avec aperçu */}
                                 <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
-                                    <h3 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-3">Pièces jointes ({rawDocs.length})</h3>
+                                    <h3 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-3">{t("Pièces jointes")} ({rawDocs.length})</h3>
                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                         {rawDocs.map((d, i) => {
                                             const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(d.name)
                                             return (
                                                 <div key={i} className="bg-white/[0.02] rounded-lg p-2 text-center">
-                                                    {isImage ? (
-                                                        <img src={URL.createObjectURL(d.file)} alt={d.label} className="w-full h-20 object-cover rounded-lg mb-1.5" />
-                                                    ) : (
+                                                    {isImage ? (<>
+                                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                        < img src={URL.createObjectURL(d.file)} alt={d.label} className="w-full h-20 object-cover rounded-lg mb-1.5" />
+                                                    </>) : (
                                                         <div className="w-full h-20 flex items-center justify-center bg-white/5 rounded-lg mb-1.5"><FileText size={24} className="text-gray-500" /></div>
                                                     )}
-                                                    <p className="text-[10px] text-white font-bold truncate">{d.label}</p>
+                                                    <p className="text-[10px] text-white font-bold truncate">{t(d.label)}</p>
                                                     <p className="text-[8px] text-gray-600 truncate">{d.name}</p>
                                                 </div>
                                             )
@@ -656,7 +664,7 @@ export default function NationaliteFormPage() {
                                 </div>
                                 {/* Montant à régler */}
                                 <div className="bg-gradient-to-r from-emerald-900/20 to-yellow-900/10 border border-emerald-500/10 rounded-2xl p-5 text-center">
-                                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold mb-1">Montant à régler à l&apos;étape suivante</p>
+                                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold mb-1"><T>Montant à régler à l&apos;étape suivante</T></p>
                                     <p className="text-2xl font-black text-[#FCD116]"><Price amount={formAmount} currency={formCurrency} showOriginal /></p>
                                 </div>
                             </div>}
@@ -665,12 +673,12 @@ export default function NationaliteFormPage() {
                 </AnimatePresence>
 
                 <div className="flex items-center justify-between mt-6">
-                    {step > 1 ? <button onClick={prev} className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors font-bold"><ArrowLeft size={16} /> Précédent</button> : <div />}
+                    {step > 1 ? <button onClick={prev} className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors font-bold"><ArrowLeft size={16} /> <T>Précédent</T></button> : <div />}
                     {step < 6 ? (
-                        <button onClick={next} className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-sm px-6 py-3 rounded-xl transition-all flex items-center gap-2 shadow-[0_0_30px_rgba(16,185,129,0.2)]">Suivant <ArrowRight size={16} /></button>
+                        <button onClick={next} className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-sm px-6 py-3 rounded-xl transition-all flex items-center gap-2 shadow-[0_0_30px_rgba(16,185,129,0.2)]"><T>Suivant</T> <ArrowRight size={16} /></button>
                     ) : (
                         <button onClick={submit} disabled={submitting || !paymentDone} className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-black text-sm px-8 py-3 rounded-xl transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_30px_rgba(16,185,129,0.2)]">
-                            {submitting ? <><Loader2 size={16} className="animate-spin" /> Envoi...</> : !paymentDone ? <><CreditCard size={16} /> Payez d&apos;abord</> : <><Send size={16} /> Confirmer et Soumettre</>}
+                            {submitting ? <><Loader2 size={16} className="animate-spin" /> <T>Envoi...</T></> : !paymentDone ? <><CreditCard size={16} /> Payez d&apos;abord</> : <><Send size={16} /> <T>Confirmer et Soumettre</T></>}
                         </button>
                     )}
                 </div>
