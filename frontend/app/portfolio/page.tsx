@@ -234,6 +234,22 @@ export default function PortfolioImmersivePage() {
                     </h2>
                 </motion.div>
 
+                {/* --- Image Immersion (Team / Brand) ---------------------------------------- */}
+                <motion.div
+                    initial={{ y: 30, opacity: 0, scale: 0.95 }}
+                    animate={{ y: 0, opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.8, delay: 0.25, type: "spring" }}
+                    className="relative w-full max-w-sm mx-auto h-[200px] mb-10 group rounded-[2rem] overflow-hidden shadow-[0_15px_40px_-10px_rgba(0,0,0,0.15)] border-4 border-white"
+                >
+                    <div className="absolute inset-0 bg-gradient-to-tr from-[#008751]/20 to-[#FCD116]/20 z-10 mix-blend-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+                    <Image
+                        src="https://ywvsfhqdtkgzavxsumnk.supabase.co/storage/v1/object/public/gallery/portfolio/image_RGB.jpg"
+                        alt="Retour Gagnant Bénin"
+                        fill
+                        className="object-cover transform group-hover:scale-110 transition-transform duration-1000 ease-out"
+                    />
+                </motion.div>
+
                 <div className="flex flex-col gap-5 mb-14 w-full">
                     <InteractionCard href="/" isPrimary delay={0.3}>
                         <div className="p-3.5 bg-white/20 backdrop-blur-md rounded-2xl shadow-inner border border-white/30">
