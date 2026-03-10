@@ -119,7 +119,6 @@ const InteractionCard = ({ children, href, isPrimary = false, delay = 0 }: Inter
 // --- 🎥 Composant Principal -----------------------------------------
 export default function PortfolioImmersivePage() {
     const { t } = useTranslation()
-    const [isLoaded, setIsLoaded] = useState(false)
     const containerRef = useRef<HTMLDivElement>(null)
     const { scrollYProgress } = useScroll({ target: containerRef })
 
@@ -127,9 +126,7 @@ export default function PortfolioImmersivePage() {
     const blob2Y = useTransform(scrollYProgress, [0, 1], ["0%", "-50%"])
     const blob3Y = useTransform(scrollYProgress, [0, 1], ["0%", "80%"])
 
-    useEffect(() => {
-        setIsLoaded(true)
-    }, [])
+    const [showIntro, setShowIntro] = useState(true)
 
     const services = [
         { id: '01', title: t("Nationalité Béninoise"), desc: t("Dossiers Afro-descendants"), bg: "bg-[#008751]", text: "text-white", iconBg: "bg-white/20" },
@@ -145,7 +142,45 @@ export default function PortfolioImmersivePage() {
     return (
         <div ref={containerRef} className="relative min-h-screen bg-[#F0F2F5] text-gray-900 font-sans selection:bg-[#008751] selection:text-white overflow-x-hidden pt-10 pb-28">
 
-            <MinimalLanguageSelector />
+            {/* --- 🎬 Splash Screen Video Intro --- */}
+            <AnimatePresence>
+                {showIntro && (
+                    <motion.div
+                        initial={{ opacity: 1 }}
+                        exit={{ opacity: 0, scale: 1.1, filter: "blur(10px)" }}
+                        transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+                        className="fixed inset-0 z-[200] bg-[#050505] flex flex-col items-center justify-center overflow-hidden"
+                    >
+                        <video
+                            src="https://ywvsfhqdtkgzavxsumnk.supabase.co/storage/v1/object/public/videos/portfolio/video-cut.mp4"
+                            autoPlay
+                            muted
+                            playsInline
+                            onEnded={() => setShowIntro(false)}
+                            className="absolute inset-0 w-full h-full object-cover opacity-90 scale-105"
+                        />
+                        {/* Voile assombrissant pour faire ressortir le bouton */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 pointer-events-none" />
+
+                        <div className="relative z-10 flex flex-col items-center justify-end h-full w-full pb-12">
+                            <motion.button
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 2, duration: 0.8 }}
+                                onClick={() => setShowIntro(false)}
+                                className="px-6 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white tracking-widest text-xs font-bold border border-white/20 transition-all uppercase"
+                            >
+                                {t("Passer l'introduction")}
+                            </motion.button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Sélecteur de langue accessible par dessus tout mais sous l'intro */}
+            <div className="relative z-[150]">
+                <MinimalLanguageSelector />
+            </div>
 
             <style jsx global>{`
                 @keyframes shimmer {
