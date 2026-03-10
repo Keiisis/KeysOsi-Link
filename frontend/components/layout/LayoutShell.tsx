@@ -13,7 +13,8 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
     // Les routes /admin et /agent ont leurs propres layouts dédiés
     const isAdminRoute = pathname.startsWith('/admin')
     const isAgentRoute = pathname.startsWith('/agent')
-    const isStandaloneRoute = isAdminRoute || isAgentRoute
+    const isPortfolioRoute = pathname.startsWith('/portfolio')
+    const isStandaloneRoute = isAdminRoute || isAgentRoute || isPortfolioRoute
 
     if (isStandaloneRoute) {
         return <>{children}</>
