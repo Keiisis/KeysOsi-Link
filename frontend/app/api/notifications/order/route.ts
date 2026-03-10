@@ -225,7 +225,7 @@ function generateCustomerEmailHTML(
   const logoUrl = `${baseUrl}/logo.jpg`
   const ref = `RG-${(order.id as string).slice(0, 8).toUpperCase()}`
   const date = new Date().toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })
-  const siteEmail = settings.contact_email || 'contact@retourgagnant.bj'
+  const siteEmail = settings.contact_email || 'contact@retourgagnantbenin.bj'
   const sitePhone = settings.contact_phone || ''
   const payMethodLabel: Record<string, string> = {
     kkiapay: 'Mobile Money — Kkiapay', fedapay: 'Mobile Money — FedaPay',

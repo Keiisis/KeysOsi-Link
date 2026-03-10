@@ -72,7 +72,7 @@ export async function GET(
     for (const s of settingsData || []) settings[s.key] = s.value
 
     const siteName = settings.hero_title || 'Retour Gagnant Bénin'
-    const siteEmail = settings.contact_email || 'contact@retourgagnant.bj'
+    const siteEmail = settings.contact_email || 'contact@retourgagnantbenin.bj'
     const sitePhone = settings.contact_phone || '+229 XX XX XX XX'
     const siteAddress = settings.contact_address || 'Haie Vive, Cotonou, République du Bénin'
 

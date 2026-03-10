@@ -33,7 +33,7 @@ const DEFAULT_TEMPLATES = [
       <p style="margin:0;color:#888;font-size:14px">Référence de commande</p>
       <p style="margin:4px 0 0;color:#1a1a1a;font-size:20px;font-weight:bold">#{{ref}}</p>
     </div>
-    <p style="color:#555;line-height:1.6">En cas de question, contactez-nous à <a href="mailto:contact@retourgagnant.bj" style="color:#008751">contact@retourgagnant.bj</a>.</p>
+    <p style="color:#555;line-height:1.6">En cas de question, contactez-nous à <a href="mailto:contact@retourgagnantbenin.bj" style="color:#008751">contact@retourgagnantbenin.bj</a>.</p>
   </div>
   <div style="background:#f4f4f4;padding:20px;text-align:center">
     <p style="margin:0;color:#888;font-size:12px">© Retour Gagnant Bénin — Haie Vive, Cotonou</p>

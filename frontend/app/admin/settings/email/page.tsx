@@ -240,7 +240,7 @@ export default function EmailSettingsPage() {
                                     name="smtp_from_email"
                                     value={form.smtp_from_email}
                                     onChange={handleChange}
-                                    placeholder={t("contact@retourgagnant.bj")}
+                                    placeholder={t("contact@retourgagnantbenin.bj")}
                                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white focus:outline-none focus:border-white/30 transition-all font-mono text-sm"
                                 />
                             </div>
