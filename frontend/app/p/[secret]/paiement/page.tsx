@@ -109,38 +109,65 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
         }
         if (cardMountedRef.current) return
         const publicKey = settings.stripe_public_key
-        if (!publicKey || !window.Stripe) return
+        if (!publicKey) return
 
-        if (!stripeInstanceRef.current) {
-            stripeInstanceRef.current = window.Stripe(publicKey)
+        const initStripe = () => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const win = window as any
+            if (!win.Stripe) return
+
+            if (!stripeInstanceRef.current) {
+                stripeInstanceRef.current = win.Stripe(publicKey)
+            }
+
+            const elements = stripeInstanceRef.current!.elements({
+                appearance: {
+                    theme: 'night',
+                    variables: {
+                        colorPrimary: '#F59E0B',
+                        colorBackground: '#0d1520',
+                        colorText: '#ffffff',
+                        borderRadius: '12px',
+                    },
+                },
+            })
+
+            const card = elements.create('card', {
+                style: { base: { color: '#ffffff', fontSize: '15px', '::placeholder': { color: '#4b5563' } } },
+                hidePostalCode: true,
+            })
+
+            setTimeout(() => {
+                const el = document.getElementById('stripe-card-element')
+                if (el) {
+                    card.mount('#stripe-card-element')
+                    cardElementRef.current = card
+                    cardMountedRef.current = true
+                    setStripeReady(true)
+                }
+            }, 100)
         }
 
-        const elements = stripeInstanceRef.current.elements({
-            appearance: {
-                theme: 'night',
-                variables: {
-                    colorPrimary: '#F59E0B',
-                    colorBackground: '#0d1520',
-                    colorText: '#ffffff',
-                    borderRadius: '12px',
-                },
-            },
-        })
-
-        const card = elements.create('card', {
-            style: { base: { color: '#ffffff', fontSize: '15px', '::placeholder': { color: '#4b5563' } } },
-            hidePostalCode: true,
-        })
-
-        setTimeout(() => {
-            const el = document.getElementById('stripe-card-element')
-            if (el) {
-                card.mount('#stripe-card-element')
-                cardElementRef.current = card
-                cardMountedRef.current = true
-                setStripeReady(true)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const win = window as any
+        if (win.Stripe) {
+            initStripe()
+        } else {
+            // Charger Stripe.js dynamiquement
+            const existing = document.querySelector('script[src*="js.stripe.com"]')
+            if (existing) {
+                const check = setInterval(() => { if (win.Stripe) { clearInterval(check); initStripe() } }, 200)
+                setTimeout(() => clearInterval(check), 10000)
+            } else {
+                const s = document.createElement('script')
+                s.src = 'https://js.stripe.com/v3/'
+                s.onload = () => {
+                    const check = setInterval(() => { if (win.Stripe) { clearInterval(check); initStripe() } }, 200)
+                    setTimeout(() => clearInterval(check), 10000)
+                }
+                document.head.appendChild(s)
             }
-        }, 100)
+        }
     }, [step, settings.stripe_public_key])
 
     // ─── PayPal ──────────────────────────
@@ -340,11 +367,19 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
         const sandbox = settings.fedapay_sandbox === 'true'
         if (!publicKey) { cancelOrder(oid); setErrorMessage('FedaPay non configuré'); setStep('error'); return }
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const win = window as any
         const ensureFedaPay = (): Promise<void> => new Promise((resolve, reject) => {
-            if (window.FedaPay) { resolve(); return }
+            if (win.FedaPay) { resolve(); return }
+            const existing = document.querySelector('script[src*="fedapay"]')
+            if (existing) {
+                const t = setInterval(() => { if (win.FedaPay) { clearInterval(t); resolve() } }, 200)
+                setTimeout(() => { clearInterval(t); reject(new Error('FedaPay timeout')) }, 8000)
+                return
+            }
             const s = document.createElement('script')
             s.src = 'https://cdn.fedapay.com/checkout.js?v=1.1.7'
-            s.onload = () => { const t = setInterval(() => { if (window.FedaPay) { clearInterval(t); resolve() } }, 200); setTimeout(() => { clearInterval(t); reject(new Error('FedaPay timeout')) }, 8000) }
+            s.onload = () => { const t = setInterval(() => { if (win.FedaPay) { clearInterval(t); resolve() } }, 200); setTimeout(() => { clearInterval(t); reject(new Error('FedaPay timeout')) }, 8000) }
             s.onerror = () => reject(new Error('SDK FedaPay indisponible'))
             document.head.appendChild(s)
         })
@@ -360,7 +395,7 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
         } catch { cancelOrder(oid); setErrorMessage('Erreur FedaPay'); setStep('error'); return }
 
         try {
-            window.FedaPay.init('#fedapay-button', { public_key: publicKey, environment: sandbox ? 'sandbox' : 'live', transaction: { id: fedapayTxId }, onComplete: async (resp: Record<string, unknown>) => { const tx = resp.transaction as Record<string, unknown> | undefined; if (resp.reason === 'APPROVED' || (tx && (tx.status === 'approved' || tx.status === 'transferred'))) { await verifyPayment(oid, String(fedapayTxId)) } else { cancelOrder(oid); setErrorMessage('Paiement non approuvé'); setStep('error') } } })
+            win.FedaPay.init('#fedapay-button', { public_key: publicKey, environment: sandbox ? 'sandbox' : 'live', transaction: { id: fedapayTxId }, onComplete: async (resp: Record<string, unknown>) => { const tx = resp.transaction as Record<string, unknown> | undefined; if (resp.reason === 'APPROVED' || (tx && (tx.status === 'approved' || tx.status === 'transferred'))) { await verifyPayment(oid, String(fedapayTxId)) } else { cancelOrder(oid); setErrorMessage('Paiement non approuvé'); setStep('error') } } })
             setTimeout(() => { document.getElementById('fedapay-button')?.click() }, 100)
         } catch (err) { cancelOrder(oid); setErrorMessage(`Erreur FedaPay: ${err instanceof Error ? err.message : ''}`); setStep('error') }
     }
