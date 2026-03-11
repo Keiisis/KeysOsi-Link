@@ -1,34 +1,33 @@
-import nodemailer from 'nodemailer';
-import { createClient } from '@supabase/supabase-js';
+import nodemailer from 'nodemailer'
+import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
 export interface EmailConfig {
-    host: string;
-    port: number;
-    user: string;
-    pass: string;
-    fromName: string;
-    fromEmail: string;
-    adminEmail: string;
+    host: string
+    port: number
+    user: string
+    pass: string
+    fromName: string
+    fromEmail: string
+    adminEmail: string
 }
 
-/**
- * Fetch SMTP email configuration from the `settings` table in Supabase.
- * Falls back to safe defaults if not configured yet.
- */
+// ═══════════════════════════════════════════════════════
+// SMTP CONFIG (from Supabase settings table)
+// ═══════════════════════════════════════════════════════
 export async function getEmailConfig(): Promise<EmailConfig> {
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = createClient(supabaseUrl, supabaseKey)
     const { data } = await supabase
         .from('settings')
         .select('key, value')
-        .eq('category', 'email');
+        .eq('category', 'email')
 
-    const map: Record<string, string> = {};
-    (data || []).forEach((row: { key: string; value: string }) => {
-        map[row.key] = row.value;
-    });
+    const map: Record<string, string> = {}
+    ;(data || []).forEach((row: { key: string; value: string }) => {
+        map[row.key] = row.value
+    })
 
     return {
         host: map['smtp_host'] || '',
@@ -38,19 +37,15 @@ export async function getEmailConfig(): Promise<EmailConfig> {
         fromName: map['smtp_from_name'] || 'Retour Gagnant Bénin',
         fromEmail: map['smtp_from_email'] || '',
         adminEmail: map['email_admin_destination'] || '',
-    };
+    }
 }
 
-/**
- * Create a Nodemailer transporter from database config.
- * Returns null if SMTP is not configured yet.
- */
 export async function createTransporter() {
-    const config = await getEmailConfig();
+    const config = await getEmailConfig()
 
     if (!config.host || !config.user || !config.pass) {
-        console.log('[EMAIL] SMTP not configured yet — skipping email send.');
-        return null;
+        console.log('[EMAIL] SMTP not configured yet — skipping email send.')
+        return null
     }
 
     return nodemailer.createTransport({
@@ -61,30 +56,24 @@ export async function createTransporter() {
             user: config.user,
             pass: config.pass,
         },
-        tls: {
-            rejectUnauthorized: false
-        }
-    });
+        tls: { rejectUnauthorized: false }
+    })
 }
 
-/**
- * Send an email using the SMTP config from the database.
- * Logs the email to `email_logs` table for traceability.
- */
 export async function sendEmail(options: {
-    to: string;
-    subject: string;
-    html: string;
-    replyTo?: string;
-    context?: string;    // 'auto_reply' | 'agent_reply' | 'admin_notification' | 'lead_notification'
-    relatedId?: string;  // ID of the message/lead this email is about
+    to: string
+    subject: string
+    html: string
+    replyTo?: string
+    context?: string
+    relatedId?: string
 }): Promise<{ success: boolean; error?: string }> {
     try {
-        const config = await getEmailConfig();
-        const transporter = await createTransporter();
+        const config = await getEmailConfig()
+        const transporter = await createTransporter()
 
         if (!transporter) {
-            return { success: false, error: 'SMTP non configuré. Allez dans Admin > Paramètres > Email.' };
+            return { success: false, error: 'SMTP non configuré. Allez dans Admin > Paramètres > Email.' }
         }
 
         const info = await transporter.sendMail({
@@ -93,10 +82,9 @@ export async function sendEmail(options: {
             subject: options.subject,
             html: options.html,
             replyTo: options.replyTo || config.fromEmail,
-        });
+        })
 
-        // Log the email
-        const supabase = createClient(supabaseUrl, supabaseKey);
+        const supabase = createClient(supabaseUrl, supabaseKey)
         await supabase.from('email_logs').insert({
             to_email: options.to,
             subject: options.subject,
@@ -105,20 +93,14 @@ export async function sendEmail(options: {
             related_id: options.relatedId || null,
             status: 'sent',
             smtp_response: info.messageId || '',
-        });
+        })
 
-        return { success: true };
+        return { success: true }
     } catch (err) {
-        let errorMessage = 'Unknown error';
-        if (err instanceof Error) {
-            errorMessage = err.message;
-        } else if (typeof err === 'string') {
-            errorMessage = err;
-        }
-        console.error('[EMAIL] Send error:', errorMessage);
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+        console.error('[EMAIL] Send error:', errorMessage)
 
-        // Log the failure
-        const supabase = createClient(supabaseUrl, supabaseKey);
+        const supabase = createClient(supabaseUrl, supabaseKey)
         await supabase.from('email_logs').insert({
             to_email: options.to,
             subject: options.subject,
@@ -127,85 +109,288 @@ export async function sendEmail(options: {
             related_id: options.relatedId || null,
             status: 'failed',
             smtp_response: errorMessage,
-        });
+        })
 
-        return { success: false, error: errorMessage };
+        return { success: false, error: errorMessage }
     }
 }
 
 // ═══════════════════════════════════════════════════════
-// EMAIL TEMPLATES — Bénin-themed, premium design
+// 🌍 MULTILINGUAL EMAIL TRANSLATIONS
 // ═══════════════════════════════════════════════════════
+interface EmailTranslations {
+    greeting: string
+    thankYou: string
+    received: string
+    expertContact: string
+    bookBtn: string
+    newLead: string
+    name: string
+    email: string
+    score: string
+    service: string
+    viewDashboard: string
+    sentBy: string
+    replyTo: string
+    footer: string
+    autoSent: string
+    hello: string
+}
 
-const EMAIL_WRAPPER = (content: string, t: (k: string) => string = (k) => k) => `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background:#0f141e;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
-  <table width="100%" style="max-width:600px;margin:0 auto;background:#1a2332;border-radius:16px;overflow:hidden;">
-    <!-- Flag header -->
-    <tr><td style="height:4px;background:linear-gradient(to right,#008751,#FCD116,#E8112D);"></td></tr>
-    <!-- Logo area -->
-    <tr><td style="padding:30px 30px 10px;text-align:center;">
-      <h1 style="margin:0;font-size:22px;color:#008751;font-weight:900;">RETOUR <span style="color:#E8112D;">GAGNANT</span></h1>
-      <p style="margin:4px 0 0;font-size:10px;color:#666;letter-spacing:3px;text-transform:uppercase;">BÉNIN</p>
-    </td></tr>
-    <!-- Content -->
-    <tr><td style="padding:20px 30px 30px;">
-      ${content}
-    </td></tr>
-    <!-- Footer -->
-    <tr><td style="padding:20px 30px;background:#0f141e;border-top:1px solid rgba(255,255,255,0.05);text-align:center;">
-      <p style="margin:0;font-size:11px;color:#555;">${t("© 2025 Retour Gagnant Bénin — Tradition, Modernité, Excellence")}</p>
-      <p style="margin:6px 0 0;font-size:10px;color:#444;">${t("Cet email a été envoyé automatiquement. Ne pas répondre directement.")}</p>
+const EMAIL_I18N: Record<string, EmailTranslations> = {
+    fr: {
+        greeting: 'Bonjour',
+        hello: 'Bonjour',
+        thankYou: 'Merci',
+        received: 'Nous avons bien reçu votre demande et notre équipe l\'examine avec attention.',
+        expertContact: 'Un expert de notre équipe vous contactera dans les plus brefs délais pour un accompagnement personnalisé.',
+        bookBtn: 'Réserver un rendez-vous gratuit',
+        newLead: 'Nouveau Lead',
+        name: 'Nom',
+        email: 'Email',
+        score: 'Score',
+        service: 'Service',
+        viewDashboard: 'Voir dans le Dashboard',
+        sentBy: 'Cet email vous a été envoyé par un conseiller de Retour Gagnant Bénin.',
+        replyTo: 'Pour toute réponse, envoyez un email à',
+        footer: `© ${new Date().getFullYear()} Retour Gagnant Bénin — Tradition, Modernité, Excellence`,
+        autoSent: 'Cet email a été envoyé automatiquement. Ne pas répondre directement.',
+    },
+    en: {
+        greeting: 'Hello',
+        hello: 'Hello',
+        thankYou: 'Thank you',
+        received: 'We have received your request and our team is carefully reviewing it.',
+        expertContact: 'A member of our team will contact you shortly for personalized support.',
+        bookBtn: 'Book a free consultation',
+        newLead: 'New Lead',
+        name: 'Name',
+        email: 'Email',
+        score: 'Score',
+        service: 'Service',
+        viewDashboard: 'View in Dashboard',
+        sentBy: 'This email was sent by a consultant from Retour Gagnant Bénin.',
+        replyTo: 'To reply, send an email to',
+        footer: `© ${new Date().getFullYear()} Retour Gagnant Bénin — Tradition, Modernity, Excellence`,
+        autoSent: 'This email was sent automatically. Do not reply directly.',
+    },
+    es: {
+        greeting: 'Hola',
+        hello: 'Hola',
+        thankYou: 'Gracias',
+        received: 'Hemos recibido su solicitud y nuestro equipo la está examinando con atención.',
+        expertContact: 'Un experto de nuestro equipo se pondrá en contacto con usted en breve para un acompañamiento personalizado.',
+        bookBtn: 'Reservar una consulta gratuita',
+        newLead: 'Nuevo Lead',
+        name: 'Nombre',
+        email: 'Email',
+        score: 'Puntuación',
+        service: 'Servicio',
+        viewDashboard: 'Ver en el Dashboard',
+        sentBy: 'Este email fue enviado por un consultor de Retour Gagnant Bénin.',
+        replyTo: 'Para responder, envíe un email a',
+        footer: `© ${new Date().getFullYear()} Retour Gagnant Bénin — Tradición, Modernidad, Excelencia`,
+        autoSent: 'Este email fue enviado automáticamente. No responda directamente.',
+    },
+    pt: {
+        greeting: 'Olá',
+        hello: 'Olá',
+        thankYou: 'Obrigado',
+        received: 'Recebemos o seu pedido e a nossa equipa está a analisá-lo com atenção.',
+        expertContact: 'Um especialista da nossa equipa entrará em contacto consigo brevemente para um acompanhamento personalizado.',
+        bookBtn: 'Agendar uma consulta gratuita',
+        newLead: 'Novo Lead',
+        name: 'Nome',
+        email: 'Email',
+        score: 'Pontuação',
+        service: 'Serviço',
+        viewDashboard: 'Ver no Dashboard',
+        sentBy: 'Este email foi enviado por um consultor de Retour Gagnant Bénin.',
+        replyTo: 'Para responder, envie um email para',
+        footer: `© ${new Date().getFullYear()} Retour Gagnant Bénin — Tradição, Modernidade, Excelência`,
+        autoSent: 'Este email foi enviado automaticamente. Não responda diretamente.',
+    },
+    ar: {
+        greeting: 'مرحبا',
+        hello: 'مرحبا',
+        thankYou: 'شكرا',
+        received: 'لقد تلقينا طلبك وفريقنا يفحصه بعناية.',
+        expertContact: 'سيتصل بك أحد خبراء فريقنا في أقرب وقت ممكن لتقديم دعم مخصص.',
+        bookBtn: 'حجز استشارة مجانية',
+        newLead: 'عميل محتمل جديد',
+        name: 'الاسم',
+        email: 'البريد الإلكتروني',
+        score: 'النقاط',
+        service: 'الخدمة',
+        viewDashboard: 'عرض في لوحة التحكم',
+        sentBy: 'تم إرسال هذا البريد من قبل مستشار في Retour Gagnant Bénin.',
+        replyTo: 'للرد، أرسل بريدًا إلكترونيًا إلى',
+        footer: `© ${new Date().getFullYear()} Retour Gagnant Bénin — التقاليد، الحداثة، التميز`,
+        autoSent: 'تم إرسال هذا البريد تلقائيًا. لا ترد مباشرة.',
+    },
+}
+
+// Mapper les noms de langues détectées vers les codes
+function resolveLocale(lang: string): string {
+    const l = (lang || '').toLowerCase()
+    if (l.includes('franç') || l.includes('french') || l === 'fr') return 'fr'
+    if (l.includes('angl') || l.includes('english') || l === 'en') return 'en'
+    if (l.includes('espag') || l.includes('spanish') || l === 'es') return 'es'
+    if (l.includes('portug') || l === 'pt') return 'pt'
+    if (l.includes('arab') || l === 'ar') return 'ar'
+    return 'fr' // Défaut Bénin = Français
+}
+
+function getI18n(lang: string): EmailTranslations {
+    return EMAIL_I18N[resolveLocale(lang)] || EMAIL_I18N['fr']
+}
+
+// ═══════════════════════════════════════════════════════
+// 🎨 PREMIUM EMAIL WRAPPER — Ultra-shine, with logo, multilingual
+// Unified design for ALL emails across the entire site
+// ═══════════════════════════════════════════════════════
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.retourgagnantbenin.bj'
+const LOGO_URL = `${SITE_URL}/logo.jpg`
+const CONTACT_EMAIL = 'contact@retourgagnantbenin.bj'
+
+const EMAIL_WRAPPER = (content: string, lang: string = 'fr') => {
+    const t = getI18n(lang)
+    const isRtl = resolveLocale(lang) === 'ar'
+
+    return `<!DOCTYPE html>
+<html lang="${resolveLocale(lang)}" ${isRtl ? 'dir="rtl"' : ''}>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retour Gagnant Bénin</title>
+</head>
+<body style="margin:0;padding:0;background:#0a0e17;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;-webkit-font-smoothing:antialiased;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0e17;padding:20px 0;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#111827;border-radius:20px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.5);">
+
+        <!-- ══════ FLAG STRIPE ══════ -->
+        <tr><td style="height:5px;background:linear-gradient(90deg,#008751 33%,#FCD116 33%,#FCD116 66%,#E8112D 66%);"></td></tr>
+
+        <!-- ══════ LOGO HEADER ══════ -->
+        <tr><td style="padding:32px 40px 20px;text-align:center;background:linear-gradient(180deg,#111827 0%,#0f1729 100%);">
+          <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
+            <tr>
+              <td style="vertical-align:middle;padding-right:14px;">
+                <img src="${LOGO_URL}" alt="RGB" width="52" height="52" style="border-radius:14px;display:block;border:2px solid rgba(0,135,81,0.3);box-shadow:0 4px 20px rgba(0,135,81,0.2);" />
+              </td>
+              <td style="vertical-align:middle;text-align:left;">
+                <h1 style="margin:0;font-size:20px;font-weight:900;letter-spacing:1px;">
+                  <span style="color:#008751;">RETOUR</span> <span style="color:#E8112D;">GAGNANT</span>
+                </h1>
+                <p style="margin:2px 0 0;font-size:9px;color:rgba(252,209,22,0.8);letter-spacing:4px;text-transform:uppercase;font-weight:700;">BÉNIN</p>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- ══════ DECORATIVE LINE ══════ -->
+        <tr><td style="padding:0 40px;">
+          <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(0,135,81,0.3),rgba(252,209,22,0.2),transparent);"></div>
+        </td></tr>
+
+        <!-- ══════ CONTENT ══════ -->
+        <tr><td style="padding:28px 40px 36px;">
+          ${content}
+        </td></tr>
+
+        <!-- ══════ FOOTER ══════ -->
+        <tr><td style="padding:0 40px;">
+          <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent);"></div>
+        </td></tr>
+        <tr><td style="padding:24px 40px;text-align:center;">
+          <p style="margin:0 0 6px;font-size:11px;color:rgba(255,255,255,0.25);font-weight:600;letter-spacing:0.5px;">
+            ${t.sentBy}
+          </p>
+          <p style="margin:0 0 12px;font-size:11px;color:rgba(255,255,255,0.2);">
+            ${t.replyTo} <a href="mailto:${CONTACT_EMAIL}" style="color:#008751;text-decoration:none;font-weight:600;">${CONTACT_EMAIL}</a>
+          </p>
+          <div style="height:1px;background:rgba(255,255,255,0.04);margin:12px 0;"></div>
+          <p style="margin:0 0 4px;font-size:10px;color:rgba(255,255,255,0.15);letter-spacing:0.3px;">${t.footer}</p>
+          <p style="margin:0;font-size:9px;color:rgba(255,255,255,0.1);">${t.autoSent}</p>
+        </td></tr>
+
+        <!-- ══════ BOTTOM STRIPE ══════ -->
+        <tr><td style="height:4px;background:linear-gradient(90deg,#008751 33%,#FCD116 33%,#FCD116 66%,#E8112D 66%);"></td></tr>
+
+      </table>
     </td></tr>
   </table>
 </body>
-</html>
-`;
+</html>`
+}
 
-import { getServerTranslation } from './server-translation';
+// ═══════════════════════════════════════════════════════
+// 📧 EMAIL TEMPLATES — Multilingual, Premium, Intelligent
+// ═══════════════════════════════════════════════════════
+import { getServerTranslation } from './server-translation'
 
 export const getEmailTemplates = async (locale: string = 'fr') => {
-    const t = await getServerTranslation(locale);
+    // Fallback to basic server translation for legacy support
+    await getServerTranslation(locale).catch(() => {})
+    const t = getI18n(locale)
 
     return {
-        /** Auto-reply sent to a client after they submit a contact/rdv/oracle form */
+        /** Auto-reply to client after form submission */
         autoReply: (clientName: string, aiMessage: string) => EMAIL_WRAPPER(`
-        <h2 style="margin:0 0 15px;font-size:18px;color:#FCD116;">${t("Merci")} ${clientName} 🤝</h2>
-        <p style="color:#ccc;font-size:14px;line-height:1.7;margin:0 0 20px;">
-            ${t("Nous avons bien reçu votre demande et notre équipe l'examine avec attention.")}
+        <h2 style="margin:0 0 16px;font-size:20px;color:#FCD116;font-weight:800;">${t.thankYou} ${clientName} 🤝</h2>
+        <p style="color:rgba(255,255,255,0.7);font-size:14px;line-height:1.8;margin:0 0 20px;">
+            ${t.received}
         </p>
-        <div style="background:rgba(0,135,81,0.1);border-left:3px solid #008751;padding:15px 20px;border-radius:0 8px 8px 0;margin:0 0 20px;">
-            <p style="margin:0;font-size:13px;color:#aaa;font-style:italic;line-height:1.6;">${aiMessage}</p>
+        <div style="background:rgba(0,135,81,0.08);border-left:3px solid #008751;padding:16px 20px;border-radius:0 12px 12px 0;margin:0 0 24px;">
+            <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.6);font-style:italic;line-height:1.7;">${aiMessage}</p>
         </div>
-        <p style="color:#888;font-size:13px;line-height:1.6;margin:0 0 20px;">
-            ${t("Un expert de notre équipe vous contactera dans les plus brefs délais pour un accompagnement personnalisé.")}
+        <p style="color:rgba(255,255,255,0.5);font-size:13px;line-height:1.7;margin:0 0 24px;">
+            ${t.expertContact}
         </p>
-        <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.retourgagnantbenin.bj'}/rendez-vous" style="display:inline-block;background:#008751;color:white;text-decoration:none;padding:12px 30px;border-radius:8px;font-weight:bold;font-size:13px;">${t("Réserver un rendez-vous gratuit")}</a>
-    `, t),
-
-        /** Notification sent to agents/admin when a new lead arrives */
-        newLeadNotification: (leadName: string, leadEmail: string, score: number, service: string, source: string) => EMAIL_WRAPPER(`
-        <h2 style="margin:0 0 15px;font-size:18px;color:#FCD116;">🔔 ${t("Nouveau Lead")} — ${source}</h2>
-        <table style="width:100%;border-collapse:collapse;margin:0 0 20px;">
-            <tr><td style="padding:8px 0;color:#888;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.05);">${t("Nom")}</td><td style="padding:8px 0;color:#fff;font-size:13px;font-weight:bold;border-bottom:1px solid rgba(255,255,255,0.05);">${leadName}</td></tr>
-            <tr><td style="padding:8px 0;color:#888;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.05);">${t("Email")}</td><td style="padding:8px 0;color:#fff;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.05);">${leadEmail}</td></tr>
-            <tr><td style="padding:8px 0;color:#888;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.05);">${t("Score")}</td><td style="padding:8px 0;color:${score >= 70 ? '#4ade80' : '#fbbf24'};font-size:18px;font-weight:900;border-bottom:1px solid rgba(255,255,255,0.05);">${score}%</td></tr>
-            <tr><td style="padding:8px 0;color:#888;font-size:13px;">${t("Service")}</td><td style="padding:8px 0;color:#FCD116;font-size:13px;font-weight:bold;">${service}</td></tr>
+        <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
+          <tr><td>
+            <a href="${SITE_URL}/rendez-vous" style="display:inline-block;background:linear-gradient(135deg,#008751,#00a664);color:white;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:800;font-size:13px;letter-spacing:0.5px;box-shadow:0 4px 15px rgba(0,135,81,0.3);">
+              ${t.bookBtn}
+            </a>
+          </td></tr>
         </table>
-        <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.retourgagnantbenin.bj'}/agent/leads" style="display:inline-block;background:#FCD116;color:#1a2332;text-decoration:none;padding:12px 30px;border-radius:8px;font-weight:bold;font-size:13px;">${t("Voir dans le Dashboard Agent")}</a>
-    `, t),
+    `, locale),
 
-        /** Agent reply sent from the dashboard */
-        agentReply: (clientName: string, agentMessage: string) => EMAIL_WRAPPER(`
-        <h2 style="margin:0 0 15px;font-size:18px;color:#FCD116;">${t("Bonjour")} ${clientName},</h2>
-        <div style="color:#ccc;font-size:14px;line-height:1.8;margin:0 0 20px;white-space:pre-wrap;">${agentMessage}</div>
-        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.05);margin:20px 0;" />
-        <p style="color:#666;font-size:12px;margin:0;">
-            ${t("Cet email vous a été envoyé par un conseiller de Retour Gagnant Bénin.")}<br/>
-            ${t("Pour toute réponse, envoyez un email à")} contact@retourgagnantbenin.bj
-        </p>
-    `, t),
-    };
+        /** Notification to agents/admin for new lead */
+        newLeadNotification: (leadName: string, leadEmail: string, score: number, service: string, source: string) => EMAIL_WRAPPER(`
+        <h2 style="margin:0 0 16px;font-size:20px;color:#FCD116;font-weight:800;">🔔 ${t.newLead} — ${source}</h2>
+        <table style="width:100%;border-collapse:collapse;margin:0 0 24px;">
+            <tr>
+              <td style="padding:10px 0;color:rgba(255,255,255,0.4);font-size:13px;border-bottom:1px solid rgba(255,255,255,0.06);width:100px;">${t.name}</td>
+              <td style="padding:10px 0;color:#fff;font-size:13px;font-weight:700;border-bottom:1px solid rgba(255,255,255,0.06);">${leadName}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 0;color:rgba(255,255,255,0.4);font-size:13px;border-bottom:1px solid rgba(255,255,255,0.06);">${t.email}</td>
+              <td style="padding:10px 0;color:#fff;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.06);">${leadEmail}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 0;color:rgba(255,255,255,0.4);font-size:13px;border-bottom:1px solid rgba(255,255,255,0.06);">${t.score}</td>
+              <td style="padding:10px 0;color:${score >= 70 ? '#4ade80' : '#fbbf24'};font-size:20px;font-weight:900;border-bottom:1px solid rgba(255,255,255,0.06);">${score}%</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 0;color:rgba(255,255,255,0.4);font-size:13px;">${t.service}</td>
+              <td style="padding:10px 0;color:#FCD116;font-size:13px;font-weight:700;">${service}</td>
+            </tr>
+        </table>
+        <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
+          <tr><td>
+            <a href="${SITE_URL}/agent/leads" style="display:inline-block;background:linear-gradient(135deg,#FCD116,#f5c518);color:#111827;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:800;font-size:13px;box-shadow:0 4px 15px rgba(252,209,22,0.3);">
+              ${t.viewDashboard}
+            </a>
+          </td></tr>
+        </table>
+    `, 'fr'),
+
+        /** Agent reply email — sent from chat console */
+        agentReply: (clientName: string, agentMessage: string, language: string = 'fr') => EMAIL_WRAPPER(`
+        <h2 style="margin:0 0 20px;font-size:20px;color:#FCD116;font-weight:800;">${getI18n(language).hello} ${clientName},</h2>
+        <div style="color:rgba(255,255,255,0.75);font-size:14px;line-height:1.9;margin:0 0 24px;white-space:pre-wrap;">${agentMessage}</div>
+    `, language),
+    }
 }

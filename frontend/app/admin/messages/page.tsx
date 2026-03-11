@@ -29,7 +29,10 @@ export default function MessagesList() {
     const queryResult = useList<MessageItem>({
         resource: "messages",
         pagination: { pageSize: 20 },
-        sorters: [{ field: "created_at", order: "desc" }]
+        sorters: [{ field: "created_at", order: "desc" }],
+        filters: [
+            { field: "type", operator: "ne", value: "nationality" }
+        ]
     });
 
     const { mutate: deleteItem } = useDelete();
@@ -59,10 +62,10 @@ export default function MessagesList() {
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-[#E8112D]">
                         <Inbox size={18} />
-                        <span className="text-[10px] font-black uppercase tracking-[0.4em]"><T>Flux d'Interactions Clients</T></span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.4em]"><T>Flux d&apos;Interactions Clients</T></span>
                     </div>
                     <h1 className="text-5xl font-black text-white font-heading tracking-tighter">
-                        NEXUS <span className="text- benin-gradient"><T>CLIENT</T></span>
+                        NEXUS <span className="text-benin-gradient"><T>CLIENT</T></span>
                     </h1>
                 </div>
 
@@ -178,7 +181,7 @@ export default function MessagesList() {
                                             </h5>
                                         </div>
                                         <p className="text-xs text-gray-500 line-clamp-1 italic font-medium group-hover:text-gray-400">
-                                            "{item.message}"
+                                            &ldquo;{item.message}&rdquo;
                                         </p>
                                     </div>
 

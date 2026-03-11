@@ -38,13 +38,14 @@ export default function AgentMessagesPage() {
     const [replyText, setReplyText] = useState('')
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const [translations, setTranslations] = useState<Record<string, { translated?: string, sourceLanguage?: string, translating?: boolean }>>({});
-    const [detectedClientLanguage, setDetectedClientLanguage] = useState<string>("Anglais");
+    const [detectedClientLanguage, setDetectedClientLanguage] = useState<string>("Français");
     const [translatingOwn, setTranslatingOwn] = useState(false);
 
     const fetchMessages = async () => {
         const { data } = await supabase
             .from('messages')
             .select('*')
+            .neq('type', 'nationality')
             .order('created_at', { ascending: false })
 
         setMessages((data || []) as Message[])
@@ -230,7 +231,8 @@ export default function AgentMessagesPage() {
                         message: content,
                         clientName: `${selected.nom} ${selected.prenom}`.trim() || 'Client',
                         context: 'agent_reply',
-                        relatedId: selected.id
+                        relatedId: selected.id,
+                        language: detectedClientLanguage
                     })
                 });
             } catch (err) {

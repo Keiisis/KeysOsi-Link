@@ -55,7 +55,7 @@ export default function AdminDashboard() {
                 const [patCount, serCount, msgCount, testCount] = await Promise.all([
                     supabase.from('patrimoine').select('*', { count: 'exact', head: true }),
                     supabase.from('services').select('*', { count: 'exact', head: true }),
-                    supabase.from('messages').select('*', { count: 'exact', head: true }),
+                    supabase.from('messages').select('*', { count: 'exact', head: true }).neq('type', 'nationality'),
                     supabase.from('testimonials').select('*', { count: 'exact', head: true }),
                 ]);
 
@@ -69,6 +69,7 @@ export default function AdminDashboard() {
                 const { data: messages } = await supabase
                     .from('messages')
                     .select('*')
+                    .neq('type', 'nationality')
                     .order('created_at', { ascending: false })
                     .limit(5);
 
