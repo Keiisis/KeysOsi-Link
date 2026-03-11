@@ -57,7 +57,7 @@ const slideVariants = {
         scale: 1,
         rotateY: 0,
         filter: 'blur(0px)',
-        transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] }
+        transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] as const }
     },
     exit: (direction: number) => ({
         x: direction < 0 ? '50%' : '-50%',
@@ -65,7 +65,7 @@ const slideVariants = {
         scale: 0.9,
         rotateY: direction < 0 ? 15 : -15,
         filter: 'blur(15px)',
-        transition: { duration: 0.6, ease: [0.7, 0, 0.84, 0] }
+        transition: { duration: 0.6, ease: [0.7, 0, 0.84, 0] as const }
     }),
 }
 
