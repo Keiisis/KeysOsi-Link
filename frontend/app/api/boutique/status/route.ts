@@ -14,7 +14,7 @@ export async function GET() {
 
         return NextResponse.json({
             maintenance: settings.boutique_maintenance === 'true',
-            message: settings.boutique_maintenance_message || 'La boutique est temporairement indisponible. Revenez bientot !',
+            message: settings.boutique_maintenance_message || 'La boutique est temporairement indisponible. Revenez bientôt !',
         })
     } catch {
         return NextResponse.json({ maintenance: false, message: '' })

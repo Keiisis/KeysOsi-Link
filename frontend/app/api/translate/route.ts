@@ -131,13 +131,11 @@ ${JSON.stringify(textsToTranslate)}`
                             })
                         }
 
-                        // 5. Save to Supabase (fire and forget)
+                        // 5. Save to Supabase (awaited for reliability)
                         if (recordsToInsert.length > 0) {
-                            supabase.from('translations')
+                            const { error: upsertErr } = await supabase.from('translations')
                                 .upsert(recordsToInsert, { onConflict: 'source_hash,lang' })
-                                .then(({ error }) => {
-                                    if (error) console.error('Error saving translations:', error)
-                                })
+                            if (upsertErr) console.error('Error saving translations:', upsertErr)
                         }
                     }
                 } catch (parseErr) {

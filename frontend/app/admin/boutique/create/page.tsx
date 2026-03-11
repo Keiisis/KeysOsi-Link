@@ -72,7 +72,7 @@ export default function CreateProductPage() {
                             <span className="text-[10px] font-black uppercase tracking-[0.4em]"><T>Nouveau Produit</T></span>
                         </div>
                         <h1 className="text-3xl font-black text-white font-heading tracking-tighter">
-                            Creer un Article
+                            Créer un Article
                         </h1>
                     </div>
                 </div>

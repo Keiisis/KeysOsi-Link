@@ -12,7 +12,7 @@ import {
     ShoppingBag, Receipt, UserCog, Tag,
     Mail, FileText, Compass, X, PanelLeftClose, PanelLeft,
     BarChart3, FileSignature, FolderOpen, Palette, Calendar, Star,
-    Languages
+    Languages, Radar
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -48,6 +48,7 @@ function AdminLayoutContent({
 
     const menuItems = [
         { title: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
+        { title: 'Radar IA', icon: Radar, href: '/admin/radar' },
         { title: 'Événements', icon: Calendar, href: '/admin/evenements' },
         { title: 'Sponsors', icon: Star, href: '/admin/sponsors' },
         { title: 'Analytics', icon: BarChart3, href: '/admin/analytics' },

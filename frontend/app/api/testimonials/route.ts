@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     } catch (error) {
         console.error("Testimonial submission error:", error);
         return NextResponse.json(
-            { error: "Erreçur lors de l'envoi." },
+            { error: "Erreur lors de l'envoi." },
             { status: 500 }
         );
     }

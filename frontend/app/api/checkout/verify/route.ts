@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
+import { rateLimit, getClientIp, rateLimitHeaders, VERIFY_LIMIT } from '@/lib/rate-limit'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -13,6 +14,19 @@ const ZERO_DECIMAL = new Set([
 
 export async function POST(request: Request) {
     try {
+        // ═══ RATE LIMITING ════════════════════════════════════════════
+        // Limite souple : le frontend peut légitimement appeler verify
+        // plusieurs fois (polling en attente du webhook Zeyow, retry après
+        // échec réseau). Limite à 20/min pour bloquer le flood automatisé.
+        const clientIp = getClientIp(request)
+        const rl = rateLimit(`verify:${clientIp}`, VERIFY_LIMIT)
+        if (!rl.allowed) {
+            return NextResponse.json(
+                { success: false, error: 'Trop de tentatives. Veuillez patienter avant de réessayer.' },
+                { status: 429, headers: rateLimitHeaders(rl) }
+            )
+        }
+
         if (!supabaseUrl || !supabaseServiceKey) {
             return NextResponse.json(
                 { success: false, error: 'Configuration serveur manquante (SUPABASE_SERVICE_ROLE_KEY)' },
@@ -352,6 +366,21 @@ export async function POST(request: Request) {
                                 })
                                 return NextResponse.json(
                                     { success: false, error: 'Capture PayPal non associée à cette commande' },
+                                    { status: 400 }
+                                )
+                            }
+
+                            // Vérification du montant PayPal (XOF uniquement — pas de conversion temps réel)
+                            const capturedCurrency = (captureData.amount?.currency_code || '').toUpperCase()
+                            const capturedAmountValue = parseFloat(captureData.amount?.value || '0')
+                            if (capturedCurrency === 'XOF' && capturedAmountValue < existingOrder.amount * 0.99) {
+                                console.error('[Verify/PayPal] Montant insuffisant:', {
+                                    paid: capturedAmountValue,
+                                    expected: existingOrder.amount,
+                                    currency: capturedCurrency,
+                                })
+                                return NextResponse.json(
+                                    { success: false, error: 'Montant PayPal insuffisant' },
                                     { status: 400 }
                                 )
                             }

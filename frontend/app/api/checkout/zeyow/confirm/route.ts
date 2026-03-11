@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { rateLimit, getClientIp, rateLimitHeaders, VERIFY_LIMIT } from '@/lib/rate-limit'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -26,6 +27,18 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
  */
 export async function POST(request: Request) {
     try {
+        // ═══ RATE LIMITING ════════════════════════════════════════════
+        // Limit souple (même que verify) : le frontend poll cet endpoint
+        // en attendant que le webhook Zeyow confirme le paiement.
+        const clientIp = getClientIp(request)
+        const rl = rateLimit(`zeyow-confirm:${clientIp}`, VERIFY_LIMIT)
+        if (!rl.allowed) {
+            return NextResponse.json(
+                { success: false, error: 'Trop de tentatives. Veuillez patienter avant de réessayer.' },
+                { status: 429, headers: rateLimitHeaders(rl) }
+            )
+        }
+
         if (!supabaseUrl || !supabaseServiceKey) {
             return NextResponse.json(
                 { success: false, error: 'Configuration serveur manquante' },

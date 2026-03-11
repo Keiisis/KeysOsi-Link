@@ -57,12 +57,18 @@ export async function POST(request: Request) {
 
         const { data: order, error: fetchErr } = await supabase
             .from('orders')
-            .select('payment_status, amount, product_id, quantity')
+            .select('payment_status, amount, product_id, quantity, payment_method')
             .eq('id', order_id)
             .single()
 
         if (fetchErr || !order) {
             return NextResponse.json({ error: 'Commande introuvable' }, { status: 404 })
+        }
+
+        // Vérifier que la commande est bien une commande Zeyow
+        if (order.payment_method !== 'zeyow') {
+            console.warn(`[Zeyow Webhook] Tentative sur commande ${order_id} (méthode: ${order.payment_method})`)
+            return NextResponse.json({ error: 'Méthode de paiement incorrecte' }, { status: 400 })
         }
 
         // Idempotence

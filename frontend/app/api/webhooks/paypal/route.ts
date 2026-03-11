@@ -112,11 +112,17 @@ export async function POST(request: Request) {
 
                 const { data: order } = await supabase
                     .from('orders')
-                    .select('payment_status, product_id, quantity')
+                    .select('payment_status, product_id, quantity, payment_method')
                     .eq('id', customId)
                     .single()
 
                 if (!order || order.payment_status === 'completed') break
+
+                // Vérifier que la commande est bien une commande PayPal
+                if (order.payment_method !== 'paypal') {
+                    console.warn(`[PayPal Webhook] Tentative sur commande ${customId} (méthode: ${order.payment_method})`)
+                    break
+                }
 
                 // Garde atomique + vérification du résultat pour éviter la double-décrémentation du stock.
                 // PayPal peut re-livrer le même webhook. Deux livraisons simultanées peuvent toutes deux
@@ -163,12 +169,12 @@ export async function POST(request: Request) {
             case 'PAYMENT.CAPTURE.REFUNDED': {
                 const customId = resource.custom_id
                 if (customId) {
-                    // Garde atomique : ne jamais écraser une commande déjà complétée
+                    // Remboursement : ne s'applique qu'à une commande déjà complétée
                     await supabase
                         .from('orders')
                         .update({ payment_status: 'refunded', transaction_id: resource.id })
                         .eq('id', customId)
-                        .eq('payment_status', 'pending')
+                        .eq('payment_status', 'completed')
                 }
                 break
             }

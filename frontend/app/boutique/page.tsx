@@ -6,10 +6,10 @@ import { ShoppingBag, Search, Tag, Loader2, Sparkles, MoveRight } from 'lucide-r
 import { ProductCard, type Product } from '@/components/boutique/ProductCard'
 import { useTranslation } from '@/lib/translation'
 
-const categories = ['Tous', 'Mode', 'Artisanat', 'Alimentaire', 'Culturel', 'Accessoires', 'Autre']
-
 export default function BoutiquePage() {
     const { t } = useTranslation()
+
+    const categories = ['Tous', 'Mode', 'Artisanat', 'Alimentaire', 'Culturel', 'Accessoires', 'Autre']
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')

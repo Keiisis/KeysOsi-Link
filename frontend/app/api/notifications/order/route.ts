@@ -128,7 +128,7 @@ export async function POST(request: Request) {
       });
 
       const fromString = `"${settings.smtp_from_name || siteName}" <${settings.smtp_from_email || settings.smtp_user}>`;
-      const baseUrl = request.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'https://retourgagnant.bj';
+      const baseUrl = request.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.retourgagnantbenin.bj';
 
       // Send to Admin
       if (adminEmail) {

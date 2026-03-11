@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
+import { rateLimit, getClientIp, rateLimitHeaders, PAYMENT_ROUTE_LIMIT } from '@/lib/rate-limit'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -13,6 +14,16 @@ const ZERO_DECIMAL = new Set([
 
 export async function POST(request: Request) {
     try {
+        // ═══ RATE LIMITING ════════════════════════════════════════════
+        const clientIp = getClientIp(request)
+        const rl = rateLimit(`stripe-intent:${clientIp}`, PAYMENT_ROUTE_LIMIT)
+        if (!rl.allowed) {
+            return NextResponse.json(
+                { error: 'Trop de tentatives. Veuillez patienter avant de réessayer.' },
+                { status: 429, headers: rateLimitHeaders(rl) }
+            )
+        }
+
         if (!supabaseUrl || !supabaseServiceKey) {
             return NextResponse.json({ error: 'Configuration serveur manquante' }, { status: 503 })
         }

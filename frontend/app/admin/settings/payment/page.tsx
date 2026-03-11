@@ -45,9 +45,9 @@ const GATEWAYS: GatewayConfig[] = [
         icon: 'K',
         docsUrl: 'https://docs.kkiapay.me',
         fields: [
-            { key: 'kkiapay_public_key', label: 'Cle Publique', placeholder: 'pk_xxx...', type: 'text', required: true, isSecret: false, helpText: 'Visible cote client, utilisee pour initialiser le widget' },
-            { key: 'kkiapay_private_key', label: 'Cle Privee', placeholder: 'prk_xxx...', type: 'password', required: true, isSecret: true, helpText: 'Securisee cote serveur, pour verifier les transactions' },
-            { key: 'kkiapay_secret_key', label: 'Cle Secrete', placeholder: 'sk_xxx...', type: 'password', required: false, isSecret: true, helpText: 'Optionnel — utilisee pour les webhooks' },
+            { key: 'kkiapay_public_key', label: 'Clé Publique', placeholder: 'pk_xxx...', type: 'text', required: true, isSecret: false, helpText: 'Visible côté client, utilisée pour initialiser le widget' },
+            { key: 'kkiapay_private_key', label: 'Clé Privée', placeholder: 'prk_xxx...', type: 'password', required: true, isSecret: true, helpText: 'Sécurisée côté serveur, pour vérifier les transactions' },
+            { key: 'kkiapay_secret_key', label: 'Clé Secrète', placeholder: 'sk_xxx...', type: 'password', required: false, isSecret: true, helpText: 'Optionnel — utilisée pour les webhooks' },
         ],
     },
     {
@@ -58,8 +58,8 @@ const GATEWAYS: GatewayConfig[] = [
         icon: 'F',
         docsUrl: 'https://docs.fedapay.com',
         fields: [
-            { key: 'fedapay_public_key', label: 'Cle Publique', placeholder: 'pk_live_xxx...', type: 'text', required: true, isSecret: false, helpText: 'Utilisee pour Checkout.js cote client' },
-            { key: 'fedapay_secret_key', label: 'Cle Secrete', placeholder: 'sk_live_xxx...', type: 'password', required: true, isSecret: true, helpText: 'Pour les appels API serveur et verification' },
+            { key: 'fedapay_public_key', label: 'Clé Publique', placeholder: 'pk_live_xxx...', type: 'text', required: true, isSecret: false, helpText: 'Utilisée pour Checkout.js côté client' },
+            { key: 'fedapay_secret_key', label: 'Clé Secrète', placeholder: 'sk_live_xxx...', type: 'password', required: true, isSecret: true, helpText: 'Pour les appels API serveur et vérification' },
         ],
     },
     {
@@ -70,7 +70,7 @@ const GATEWAYS: GatewayConfig[] = [
         icon: 'Z',
         docsUrl: 'https://zeyow.com',
         fields: [
-            { key: 'zeyow_redirect_url', label: 'URL de Redirection', placeholder: 'https://pay.zeyow.com/checkout', type: 'url', required: true, isSecret: false, helpText: 'URL vers laquelle le client est redirige pour payer. Le webhook Zeyow doit pointer vers /api/webhooks/zeyow' },
+            { key: 'zeyow_redirect_url', label: 'URL de Redirection', placeholder: 'https://pay.zeyow.com/checkout', type: 'url', required: true, isSecret: false, helpText: 'URL vers laquelle le client est redirigé pour payer. Le webhook Zeyow doit pointer vers /api/webhooks/zeyow' },
         ],
     },
     {
@@ -81,8 +81,8 @@ const GATEWAYS: GatewayConfig[] = [
         icon: 'S',
         docsUrl: 'https://dashboard.stripe.com/apikeys',
         fields: [
-            { key: 'stripe_public_key', label: 'Cle Publique (Publishable Key)', placeholder: 'pk_live_xxx... ou pk_test_xxx...', type: 'text', required: true, isSecret: false, helpText: 'Cle publique Stripe — commence par pk_live_ (production) ou pk_test_ (sandbox)' },
-            { key: 'stripe_secret_key', label: 'Cle Secrete (Secret Key)', placeholder: 'sk_live_xxx... ou sk_test_xxx...', type: 'password', required: true, isSecret: true, helpText: 'Cle secrete Stripe — commence par sk_live_ ou sk_test_. Ne jamais exposer.' },
+            { key: 'stripe_public_key', label: 'Clé Publique (Publishable Key)', placeholder: 'pk_live_xxx... ou pk_test_xxx...', type: 'text', required: true, isSecret: false, helpText: 'Clé publique Stripe — commence par pk_live_ (production) ou pk_test_ (sandbox)' },
+            { key: 'stripe_secret_key', label: 'Clé Secrète (Secret Key)', placeholder: 'sk_live_xxx... ou sk_test_xxx...', type: 'password', required: true, isSecret: true, helpText: 'Clé secrète Stripe — commence par sk_live_ ou sk_test_. Ne jamais exposer.' },
             { key: 'stripe_webhook_secret', label: 'Webhook Signing Secret', placeholder: 'whsec_xxx...', type: 'password', required: false, isSecret: true, helpText: 'Secret de signature des webhooks Stripe. Configurer le webhook vers /api/webhooks/stripe dans le Dashboard Stripe.' },
         ],
     },
@@ -96,8 +96,8 @@ const GATEWAYS: GatewayConfig[] = [
         fields: [
             { key: 'paypal_client_id', label: 'Client ID', placeholder: 'AXxx...', type: 'text', required: true, isSecret: false, helpText: 'Client ID de votre application PayPal (sandbox ou live)' },
             { key: 'paypal_client_secret', label: 'Client Secret', placeholder: 'EXxx...', type: 'password', required: true, isSecret: true, helpText: 'Client Secret de votre application PayPal. Ne jamais exposer.' },
-            { key: 'paypal_currency', label: 'Devise PayPal', placeholder: 'EUR', type: 'text', required: false, isSecret: false, helpText: 'EUR ou USD recommande — PayPal ne supporte pas XOF. Les prix XOF sont convertis automatiquement (taux fixe BCEAO: 1 EUR = 655,957 XOF).' },
-            { key: 'paypal_webhook_id', label: 'Webhook ID (optionnel)', placeholder: 'WH-xxx...', type: 'password', required: false, isSecret: true, helpText: 'ID du webhook PayPal pour verification de signature. Configurer /api/webhooks/paypal dans le Developer Dashboard.' },
+            { key: 'paypal_currency', label: 'Devise PayPal', placeholder: 'EUR', type: 'text', required: false, isSecret: false, helpText: 'EUR ou USD recommandé — PayPal ne supporte pas XOF. Les prix XOF sont convertis automatiquement (taux fixe BCEAO: 1 EUR = 655,957 XOF).' },
+            { key: 'paypal_webhook_id', label: 'Webhook ID (optionnel)', placeholder: 'WH-xxx...', type: 'password', required: false, isSecret: true, helpText: 'ID du webhook PayPal pour vérification de signature. Configurer /api/webhooks/paypal dans le Developer Dashboard.' },
         ],
     },
 ]
@@ -380,7 +380,7 @@ function PaymentSettingsContent() {
                                                 type="button"
                                                 onClick={() => toggleGateway(gateway.id)}
                                                 className="flex items-center gap-2 group"
-                                                title={enabled ? 'Desactiver cette passerelle' : 'Activer cette passerelle'}
+                                                title={enabled ? 'Désactiver cette passerelle' : 'Activer cette passerelle'}
                                             >
                                                 {enabled ? (
                                                     <ToggleRight size={40} className="text-[#008751] group-hover:text-[#008751]/80 transition-colors" />
@@ -524,10 +524,10 @@ function PaymentSettingsContent() {
             <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 flex items-start gap-4">
                 <Shield size={24} className="text-[#008751] flex-shrink-0 mt-0.5" />
                 <div>
-                    <p className="text-sm font-bold text-white mb-1"><T>Securite des Cles API</T></p>
+                    <p className="text-sm font-bold text-white mb-1"><T>Sécurité des Clés API</T></p>
                     <ul className="text-xs text-gray-500 space-y-1 leading-relaxed">
                         <li><T>Les cles privees et secretes ne sont jamais exposees au navigateur du client.</T></li>
-                        <li><T>Toutes les verifications de paiement sont effectuees cote serveur.</T></li>
+                        <li><T>Toutes les vérifications de paiement sont effectuées côté serveur.</T></li>
                         <li><T>Utilisez le mode Sandbox pour tester avant de passer en Production.</T></li>
                         <li><T>Changez vos cles immediatement si vous suspectez une fuite.</T></li>
                     </ul>

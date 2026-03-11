@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { rateLimit, getClientIp, rateLimitHeaders, PAYMENT_ROUTE_LIMIT } from '@/lib/rate-limit'
 
 // Taux de conversion XOF → devises PayPal supportées
 // Le franc CFA (XOF) est arrimé à l'EUR à taux fixe officiel BCEAO depuis 1999
@@ -50,6 +51,16 @@ async function getPayPalAccessToken(
 
 export async function POST(request: Request) {
     try {
+        // ═══ RATE LIMITING ════════════════════════════════════════════
+        const clientIp = getClientIp(request)
+        const rl = rateLimit(`paypal-create:${clientIp}`, PAYMENT_ROUTE_LIMIT)
+        if (!rl.allowed) {
+            return NextResponse.json(
+                { error: 'Trop de tentatives. Veuillez patienter avant de réessayer.' },
+                { status: 429, headers: rateLimitHeaders(rl) }
+            )
+        }
+
         const { order_id } = await request.json()
 
         if (!order_id) {

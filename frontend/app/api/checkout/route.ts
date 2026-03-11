@@ -1,11 +1,25 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { rateLimit, getClientIp, rateLimitHeaders, CHECKOUT_LIMIT } from '@/lib/rate-limit'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 export async function POST(request: Request) {
     try {
+        // ═══ RATE LIMITING ════════════════════════════════════════════
+        // Appliqué avant toute opération coûteuse (DB, parsing body).
+        // Protège contre : flood de création de commandes, épuisement du
+        // stock par réservations massives, abus du système de coupons.
+        const clientIp = getClientIp(request)
+        const rl = rateLimit(`checkout:${clientIp}`, CHECKOUT_LIMIT)
+        if (!rl.allowed) {
+            return NextResponse.json(
+                { error: 'Trop de tentatives. Veuillez patienter avant de réessayer.' },
+                { status: 429, headers: rateLimitHeaders(rl) }
+            )
+        }
+
         if (!supabaseUrl || !supabaseServiceKey) {
             return NextResponse.json(
                 { error: 'Configuration serveur manquante (SUPABASE_SERVICE_ROLE_KEY non définie sur Vercel)' },
@@ -54,6 +68,19 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Méthode de paiement non autorisée' }, { status: 400 })
         }
 
+        // Vérifier que la méthode est activée dans les settings admin
+        const { data: methodSetting } = await supabase
+            .from('settings')
+            .select('value')
+            .eq('key', `${payment_method}_enabled`)
+            .maybeSingle()
+        if (!methodSetting || methodSetting.value !== 'true') {
+            return NextResponse.json(
+                { error: `La méthode de paiement "${payment_method}" n'est pas disponible actuellement` },
+                { status: 400 }
+            )
+        }
+
         // Quantité produit unique: entier strictement positif
         if (quantity !== undefined) {
             const parsedQty = parseInt(String(quantity), 10)
@@ -67,6 +94,7 @@ export async function POST(request: Request) {
             if (cart_items.length > 50) {
                 return NextResponse.json({ error: 'Trop d\'articles dans le panier (max 50)' }, { status: 400 })
             }
+            let totalCartQty = 0
             for (const item of cart_items) {
                 const itemQty = parseInt(String(item.quantity), 10)
                 if (isNaN(itemQty) || itemQty < 1 || itemQty > 10000 || itemQty !== parseFloat(String(item.quantity))) {
@@ -76,6 +104,14 @@ export async function POST(request: Request) {
                     )
                 }
                 item.quantity = itemQty // Normaliser en entier
+                totalCartQty += itemQty
+            }
+            // Anti-DoS : quantité totale toutes lignes confondues
+            if (totalCartQty > 1000) {
+                return NextResponse.json(
+                    { error: 'Quantité totale du panier trop élevée (max 1000 unités)' },
+                    { status: 400 }
+                )
             }
         }
 
@@ -247,7 +283,23 @@ export async function POST(request: Request) {
         // Si deux requêtes simultanées ont toutes deux passé le check en mémoire, l'une d'elles
         // sera détectée ici et l'ordre sera annulé.
         if (coupon_id) {
-            await supabase.rpc('increment_coupon_use', { c_id: coupon_id })
+            const { error: incrErr } = await supabase.rpc('increment_coupon_use', { c_id: coupon_id })
+
+            if (incrErr) {
+                // L'incrément a échoué (fonction SQL manquante ou erreur DB) — annuler la commande
+                console.error('[Checkout] increment_coupon_use failed:', incrErr.message)
+                await supabase.from('orders').delete().eq('id', data.id)
+                for (const reserved of reservedItems) {
+                    await supabase.rpc('release_stock', {
+                        p_product_id: reserved.product_id,
+                        p_quantity: reserved.quantity,
+                    })
+                }
+                return NextResponse.json(
+                    { error: 'Erreur lors de l\'application du code promo. Veuillez réessayer.' },
+                    { status: 500 }
+                )
+            }
 
             // Re-vérification post-incrément pour détecter le race condition
             const { data: couponCheck } = await supabase
@@ -257,8 +309,9 @@ export async function POST(request: Request) {
                 .single()
 
             if (couponCheck && couponCheck.current_uses > couponCheck.max_uses) {
-                // Tenter d'annuler l'incrément
-                try { await supabase.rpc('decrement_coupon_use' as string, { c_id: coupon_id }) } catch { /* non bloquant */ }
+                // Tenter d'annuler l'incrément (best-effort, erreur ignorée)
+                const { error: decrErr } = await supabase.rpc('decrement_coupon_use', { c_id: coupon_id })
+                if (decrErr) console.error('[Checkout] decrement_coupon_use failed:', decrErr.message)
                 // Annuler la commande et libérer le stock
                 await supabase.from('orders').delete().eq('id', data.id)
                 for (const reserved of reservedItems) {

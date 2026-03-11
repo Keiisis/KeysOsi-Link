@@ -303,7 +303,7 @@ export default function NotreHistoirePage() {
                                         {stat.value}
                                     </div>
                                     <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">
-                                        {stat.label}
+                                        {t(stat.label)}
                                     </div>
                                 </motion.div>
                             )
@@ -394,10 +394,10 @@ export default function NotreHistoirePage() {
                                     </div>
                                     <div>
                                         <h3 className="text-xl font-black text-white font-heading tracking-tight mb-2">
-                                            {val.title}
+                                            {t(val.title)}
                                         </h3>
                                         <p className="text-sm text-gray-400 leading-relaxed">
-                                            {val.description}
+                                            {t(val.description)}
                                         </p>
                                     </div>
                                 </motion.div>

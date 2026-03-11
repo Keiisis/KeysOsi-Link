@@ -79,7 +79,7 @@ Texte : ${text}`;
     } catch (error) {
         console.error("Translation Message Error:", error);
         return NextResponse.json(
-            { error: "Serveur erreur" },
+            { error: "Erreur serveur" },
             { status: 500 }
         );
     }

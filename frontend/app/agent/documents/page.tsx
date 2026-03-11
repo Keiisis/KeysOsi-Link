@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
+import { useTranslation } from '@/lib/translation'
 import {
     FolderOpen, Upload, Search, Trash2, Download, X, Loader2,
     FileText, Image, File, Plus, Eye, Filter
@@ -47,6 +48,7 @@ const formatSize = (bytes: number) => {
 }
 
 export default function AgentDocumentsPage() {
+    const { t } = useTranslation()
     const [docs, setDocs] = useState<Document[]>([])
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
@@ -163,7 +165,7 @@ export default function AgentDocumentsPage() {
                 {categories.map(cat => (
                     <button key={cat.id} onClick={() => setFilterCategory(filterCategory === cat.id ? null : cat.id)} className={`border rounded-xl p-3 text-left transition-all ${filterCategory === cat.id ? cat.color : 'bg-white/[0.03] border-white/5 hover:border-white/10'}`}>
                         <p className="text-xl font-black text-white">{docs.filter(d => d.category === cat.id).length}</p>
-                        <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">{cat.label}</p>
+                        <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">{t(cat.label)}</p>
                     </button>
                 ))}
             </div>
@@ -176,7 +178,7 @@ export default function AgentDocumentsPage() {
                 </div>
                 {filterCategory && (
                     <button onClick={() => setFilterCategory(null)} className="flex items-center gap-1 text-xs text-emerald-400 bg-emerald-500/10 px-3 py-2 rounded-xl font-bold hover:bg-emerald-500/20">
-                        <Filter size={12} /> {categories.find(c => c.id === filterCategory)?.label} <X size={10} />
+                        <Filter size={12} /> {t(categories.find(c => c.id === filterCategory)?.label || '')} <X size={10} />
                     </button>
                 )}
             </div>
@@ -251,7 +253,7 @@ export default function AgentDocumentsPage() {
                                 <div>
                                     <label className="text-[11px] font-bold uppercase tracking-widest text-gray-500 mb-1.5 block">Catégorie</label>
                                     <select value={uploadCategory} onChange={e => setUploadCategory(e.target.value)} title="Catégorie" className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white text-sm focus:outline-none focus:border-emerald-500/50">
-                                        {categories.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                                        {categories.map(c => <option key={c.id} value={c.id}>{t(c.label)}</option>)}
                                     </select>
                                 </div>
 

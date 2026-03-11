@@ -120,7 +120,7 @@ export async function POST(request: Request) {
                     body: JSON.stringify({ order_id: orderId, type: 'payment_success' }),
                 }).catch(() => { })
 
-                return NextResponse.json({ ok: true, message: 'Payment verified and confirméed' })
+                return NextResponse.json({ ok: true, message: 'Paiement vérifié et confirmé' })
             }
         }
 

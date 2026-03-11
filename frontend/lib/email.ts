@@ -182,7 +182,7 @@ export const getEmailTemplates = async (locale: string = 'fr') => {
         <p style="color:#888;font-size:13px;line-height:1.6;margin:0 0 20px;">
             ${t("Un expert de notre équipe vous contactera dans les plus brefs délais pour un accompagnement personnalisé.")}
         </p>
-        <a href="https://retour-gagnant.vercel.app/rendez-vous" style="display:inline-block;background:#008751;color:white;text-decoration:none;padding:12px 30px;border-radius:8px;font-weight:bold;font-size:13px;">${t("Réserver un rendez-vous gratuit")}</a>
+        <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.retourgagnantbenin.bj'}/rendez-vous" style="display:inline-block;background:#008751;color:white;text-decoration:none;padding:12px 30px;border-radius:8px;font-weight:bold;font-size:13px;">${t("Réserver un rendez-vous gratuit")}</a>
     `, t),
 
         /** Notification sent to agents/admin when a new lead arrives */
@@ -194,7 +194,7 @@ export const getEmailTemplates = async (locale: string = 'fr') => {
             <tr><td style="padding:8px 0;color:#888;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.05);">${t("Score")}</td><td style="padding:8px 0;color:${score >= 70 ? '#4ade80' : '#fbbf24'};font-size:18px;font-weight:900;border-bottom:1px solid rgba(255,255,255,0.05);">${score}%</td></tr>
             <tr><td style="padding:8px 0;color:#888;font-size:13px;">${t("Service")}</td><td style="padding:8px 0;color:#FCD116;font-size:13px;font-weight:bold;">${service}</td></tr>
         </table>
-        <a href="https://retour-gagnant.vercel.app/agent/leads" style="display:inline-block;background:#FCD116;color:#1a2332;text-decoration:none;padding:12px 30px;border-radius:8px;font-weight:bold;font-size:13px;">${t("Voir dans le Dashboard Agent")}</a>
+        <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.retourgagnantbenin.bj'}/agent/leads" style="display:inline-block;background:#FCD116;color:#1a2332;text-decoration:none;padding:12px 30px;border-radius:8px;font-weight:bold;font-size:13px;">${t("Voir dans le Dashboard Agent")}</a>
     `, t),
 
         /** Agent reply sent from the dashboard */
@@ -204,7 +204,7 @@ export const getEmailTemplates = async (locale: string = 'fr') => {
         <hr style="border:none;border-top:1px solid rgba(255,255,255,0.05);margin:20px 0;" />
         <p style="color:#666;font-size:12px;margin:0;">
             ${t("Cet email vous a été envoyé par un conseiller de Retour Gagnant Bénin.")}<br/>
-            ${t("Pour toute réponse, envoyez un email à")} contact@retour-gagnant.bj
+            ${t("Pour toute réponse, envoyez un email à")} contact@retourgagnantbenin.bj
         </p>
     `, t),
     };

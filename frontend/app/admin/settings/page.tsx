@@ -30,6 +30,9 @@ const KEY_META: Record<string, { label: string; type: 'text' | 'color' | 'email'
     instagram_url: { label: 'Instagram', type: 'url', placeholder: 'https://instagram.com/...' },
     linkedin_url: { label: 'LinkedIn', type: 'url', placeholder: 'https://linkedin.com/...' },
     whatsapp_number: { label: 'WhatsApp (avec indicatif)', type: 'tel', placeholder: '+22901234567' },
+    serper_api_key_1: { label: 'Clé d\'API Serper 1', type: 'text', placeholder: 'xxxx...' },
+    serper_api_key_2: { label: 'Clé d\'API Serper 2', type: 'text', placeholder: 'xxxx...' },
+    serper_api_key_3: { label: 'Clé d\'API Serper 3', type: 'text', placeholder: 'xxxx...' },
 }
 
 const CATEGORY_META: Record<string, { label: string; icon: typeof Settings; color: string; description: string }> = {
@@ -57,6 +60,12 @@ const CATEGORY_META: Record<string, { label: string; icon: typeof Settings; colo
         color: '#a855f7',
         description: 'Personnalisation visuelle du site public',
     },
+    radar: {
+        label: 'Radar IA Configuration',
+        icon: Globe,
+        color: '#FCD116',
+        description: 'Moteur de recherche intelligent & LLMs',
+    }
 }
 
 // Catégories qui ont leurs propres sous-pages dédiées (on affiche juste un lien)

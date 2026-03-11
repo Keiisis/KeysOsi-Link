@@ -150,7 +150,7 @@ export default function CouponsPage() {
                 <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
                     <Card className="bg-[#0a0f18] border-white/10 rounded-[2rem] overflow-hidden">
                         <CardHeader className="p-8 border-b border-white/5">
-                            <CardTitle className="text-lg font-black text-white font-heading"><T>Creer un Coupon</T></CardTitle>
+                            <CardTitle className="text-lg font-black text-white font-heading"><T>Créer un Coupon</T></CardTitle>
                         </CardHeader>
                         <CardContent className="p-8 space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -158,14 +158,14 @@ export default function CouponsPage() {
                                     <label htmlFor="coupon-code" className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block"><T>Code *</T></label>
                                     <div className="flex gap-2">
                                         <input id="coupon-code" type="text" value={newCode} onChange={e => setNewCode(e.target.value.toUpperCase())} placeholder={t("BENIN10")} className="flex-1 bg-white/5 border border-white/5 rounded-xl py-3 px-4 text-white text-sm font-mono focus:outline-none focus:border-[#FCD116]/30" />
-                                        <button onClick={generateCode} className="px-4 rounded-xl bg-white/5 border border-white/5 text-gray-400 hover:text-[#FCD116] transition-colors" title={t("Generer un code")}>
+                                        <button onClick={generateCode} className="px-4 rounded-xl bg-white/5 border border-white/5 text-gray-400 hover:text-[#FCD116] transition-colors" title={t("Générer un code")}>
                                             <Hash size={16} />
                                         </button>
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block"><T>Type de reduction</T></label>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block"><T>Type de réduction</T></label>
                                     <div className="flex gap-2">
                                         <button
                                             onClick={() => setDiscountType('percentage')}
@@ -207,7 +207,7 @@ export default function CouponsPage() {
                                 <Button onClick={() => setShowForm(false)} variant="outline" className="h-12 px-6 rounded-xl border-white/10 text-gray-400"><T>Annuler</T></Button>
                                 <Button onClick={createCoupon} disabled={saving || !newCode.trim()} className="h-12 px-8 rounded-xl bg-[#008751] text-white font-bold gap-2">
                                     {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                                    Creer
+                                    Créer
                                 </Button>
                             </div>
                         </CardContent>
@@ -261,7 +261,7 @@ export default function CouponsPage() {
                                                 ) : expired ? (
                                                     <span className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest bg-[#E8112D]/10 text-[#E8112D] border border-[#E8112D]/20"><T>Expire</T></span>
                                                 ) : exhausted ? (
-                                                    <span className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest bg-gray-500/10 text-gray-500 border border-gray-500/20"><T>Epuise</T></span>
+                                                    <span className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest bg-gray-500/10 text-gray-500 border border-gray-500/20"><T>Épuisé</T></span>
                                                 ) : (
                                                     <span className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest bg-gray-500/10 text-gray-500 border border-gray-500/20"><T>Inactif</T></span>
                                                 )}
@@ -277,7 +277,7 @@ export default function CouponsPage() {
                                     <div className="flex items-center gap-4 mt-4 md:mt-0">
                                         <span className="text-xs text-gray-500 font-mono">{coupon.current_uses}/{coupon.max_uses} utilisations</span>
                                         <button onClick={() => toggleCoupon(coupon.id, coupon.is_active)} className={cn('px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all', coupon.is_active ? 'border-[#E8112D]/20 text-[#E8112D] hover:bg-[#E8112D]/10' : 'border-[#008751]/20 text-[#008751] hover:bg-[#008751]/10')}>
-                                            {coupon.is_active ? 'Desactiver' : 'Activer'}
+                                            {coupon.is_active ? 'Désactiver' : 'Activer'}
                                         </button>
                                         <button onClick={() => deleteCoupon(coupon.id)} className="p-2 rounded-xl text-gray-600 hover:text-[#E8112D] hover:bg-[#E8112D]/10 transition-colors" title={t("Supprimer le coupon")}>
                                             <Trash2 size={16} />

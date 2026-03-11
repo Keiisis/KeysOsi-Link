@@ -27,9 +27,9 @@ interface OrderItem {
 
 const statusConfig: Record<string, { icon: typeof Clock, label: string, classes: string }> = {
     pending: { icon: Clock, label: 'En attente', classes: 'bg-[#FCD116]/15 text-[#FCD116] border-[#FCD116]/30' },
-    completed: { icon: CheckCircle2, label: 'Paye', classes: 'bg-[#008751]/15 text-[#008751] border-[#008751]/30' },
-    failed: { icon: XCircle, label: 'Eéchouée', classes: 'bg-[#E8112D]/15 text-[#E8112D] border-[#E8112D]/30' },
-    refunded: { icon: RefreshCcw, label: 'Rembourse', classes: 'bg-[#4A90D9]/15 text-[#4A90D9] border-[#4A90D9]/30' },
+    completed: { icon: CheckCircle2, label: 'Payé', classes: 'bg-[#008751]/15 text-[#008751] border-[#008751]/30' },
+    failed: { icon: XCircle, label: 'Échouée', classes: 'bg-[#E8112D]/15 text-[#E8112D] border-[#E8112D]/30' },
+    refunded: { icon: RefreshCcw, label: 'Remboursé', classes: 'bg-[#4A90D9]/15 text-[#4A90D9] border-[#4A90D9]/30' },
 }
 
 export default function AdminOrdersPage() {

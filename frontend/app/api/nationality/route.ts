@@ -180,7 +180,7 @@ RÈGLES ABSOLUES :
 
 export async function POST(request: NextRequest) {
     try {
-        const baseUrl = request.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'https://retourgagnant.bj'
+        const baseUrl = request.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.retourgagnantbenin.bj'
         const body = await request.json()
         const { nom, prenom, email } = body
 

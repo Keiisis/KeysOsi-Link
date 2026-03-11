@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendEmail, getEmailTemplates, getEmailConfig } from '@/lib/email';
 import { fetchWithGroqRotation, GROQ_KEYS } from '@/lib/groq';
+import { rateLimit, getClientIp, rateLimitHeaders, CONTACT_LIMIT } from '@/lib/rate-limit';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -38,6 +39,18 @@ async function generateAutoReply(clientName: string, subject: string, message: s
 
 export async function POST(req: NextRequest) {
     try {
+        // ═══ RATE LIMITING ════════════════════════════════════════════
+        // Strict : protège le quota email (Groq + SMTP) et la table messages.
+        // 3 messages / 15 min, blocage progressif jusqu'à 24h pour les abus répétés.
+        const clientIp = getClientIp(req)
+        const rl = rateLimit(`contact:${clientIp}`, CONTACT_LIMIT)
+        if (!rl.allowed) {
+            return NextResponse.json(
+                { error: `Trop de messages envoyés. Réessayez dans ${rl.retryAfter} secondes.` },
+                { status: 429, headers: rateLimitHeaders(rl) }
+            )
+        }
+
         const body = await req.json();
         const { nom, prenom, email, sujet, message } = body;
 
@@ -47,6 +60,17 @@ export async function POST(req: NextRequest) {
                 { status: 400 }
             );
         }
+
+        // Validation format email
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email))) {
+            return NextResponse.json({ error: 'Adresse email invalide.' }, { status: 400 })
+        }
+
+        // Limites de longueur pour éviter les abus
+        if (String(nom).length > 100) return NextResponse.json({ error: 'Nom trop long (max 100 caractères).' }, { status: 400 })
+        if (String(email).length > 254) return NextResponse.json({ error: 'Email trop long.' }, { status: 400 })
+        if (sujet && String(sujet).length > 200) return NextResponse.json({ error: 'Sujet trop long (max 200 caractères).' }, { status: 400 })
+        if (String(message).length > 5000) return NextResponse.json({ error: 'Message trop long (max 5000 caractères).' }, { status: 400 })
 
         const supabase = createClient(supabaseUrl, supabaseKey);
         const clientName = `${prenom || ''} ${nom}`.trim();

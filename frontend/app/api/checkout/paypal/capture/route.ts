@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { rateLimit, getClientIp, rateLimitHeaders, PAYMENT_ROUTE_LIMIT } from '@/lib/rate-limit'
 
 // Taux de conversion XOF → devises PayPal (même table que create/route.ts)
 const XOF_TO: Record<string, number> = {
@@ -42,6 +43,16 @@ async function getPayPalAccessToken(
 
 export async function POST(request: Request) {
     try {
+        // ═══ RATE LIMITING ════════════════════════════════════════════
+        const clientIp = getClientIp(request)
+        const rl = rateLimit(`paypal-capture:${clientIp}`, PAYMENT_ROUTE_LIMIT)
+        if (!rl.allowed) {
+            return NextResponse.json(
+                { success: false, error: 'Trop de tentatives. Veuillez patienter avant de réessayer.' },
+                { status: 429, headers: rateLimitHeaders(rl) }
+            )
+        }
+
         const { paypal_order_id, order_id } = await request.json()
 
         if (!paypal_order_id || !order_id) {

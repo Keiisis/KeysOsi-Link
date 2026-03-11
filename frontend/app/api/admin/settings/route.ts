@@ -12,7 +12,7 @@ function getSupabase() {
 }
 
 // Paramètres par défaut pour la catégorie "general" (seed si absents)
-const GENERAL_DEFAULTS: Array<{ key: string; value: string; label: string; type: string }> = [
+const GENERAL_DEFAULTS: Array<{ key: string; value: string; label: string; type: string; category?: string }> = [
     { key: 'site_title', value: 'Retour Gagnant Bénin', label: 'Titre du site', type: 'text' },
     { key: 'site_slogan', value: "L'alliance parfaite entre l'expertise et l'accompagnement", label: 'Slogan', type: 'text' },
     { key: 'logo_url', value: '/logo.png', label: 'URL du logo', type: 'text' },
@@ -24,6 +24,9 @@ const GENERAL_DEFAULTS: Array<{ key: string; value: string; label: string; type:
     { key: 'instagram_url', value: '', label: 'Instagram', type: 'url' },
     { key: 'linkedin_url', value: '', label: 'LinkedIn', type: 'url' },
     { key: 'whatsapp_number', value: '', label: 'WhatsApp', type: 'text' },
+    { key: 'serper_api_key_1', value: '', label: 'Clé Serper.dev 1', type: 'text', category: 'radar' },
+    { key: 'serper_api_key_2', value: '', label: 'Clé Serper.dev 2', type: 'text', category: 'radar' },
+    { key: 'serper_api_key_3', value: '', label: 'Clé Serper.dev 3', type: 'text', category: 'radar' }
 ]
 
 // GET /api/admin/settings — retourne tous les paramètres groupés par catégorie
@@ -41,14 +44,13 @@ export async function GET() {
 
         const existing = data || []
 
-        // Seed les paramètres généraux manquants
-        const existingGeneralKeys = new Set(
-            existing.filter(s => s.category === 'general').map(s => s.key)
-        )
-        const toInsert = GENERAL_DEFAULTS.filter(d => !existingGeneralKeys.has(d.key)).map(d => ({
+        // Seed les paramètres manquants
+        const existingKeys = new Set(existing.map(s => s.key))
+        
+        const toInsert = GENERAL_DEFAULTS.filter(d => !existingKeys.has(d.key)).map(d => ({
             key: d.key,
             value: d.value,
-            category: 'general',
+            category: d.category || 'general',
         }))
 
         if (toInsert.length > 0) {

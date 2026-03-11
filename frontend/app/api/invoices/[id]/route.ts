@@ -104,7 +104,7 @@ export async function GET(
       if (origin) return origin
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
       if (siteUrl) return siteUrl
-      return `https://retour-gagnant.vercel.app`
+      return 'https://www.retourgagnantbenin.bj'
     })()
 
     const verificationUrl = `${baseUrl}/api/invoices/${orderId}`

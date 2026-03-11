@@ -108,7 +108,7 @@ export default function TestimonialsList() {
                                 statusFilter === s ? "bg-[#3b82f6] text-white shadow-lg shadow-[#3b82f6]/20" : "text-gray-500 hover:text-white"
                             )}
                         >
-                            {s === 'all' ? 'Tous' : s === 'approved' ? 'Approuvés' : 'En Attente'}
+                            {s === 'all' ? 'Tous' : s === 'approved' ? 'Approuvés' : 'En attente'}
                         </button>
                     ))}
                 </div>

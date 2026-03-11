@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useTranslation, T } from "@/lib/translation"
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronRight, ChevronLeft, Sparkles, Globe, Target, Calendar, Wallet, Award, Loader2, ArrowRight } from 'lucide-react'
+import { ChevronLeft, Sparkles, Globe, Target, Calendar, Wallet, Award, Loader2, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
 interface OracleResult {
@@ -13,78 +13,78 @@ interface OracleResult {
     hasOrigins: boolean
 }
 
-const steps = [
-    {
-        id: 'origin',
-        title: 'Vos Origines',
-        subtitle: 'Avez-vous des origines ou des liens avec le Bénin ?',
-        icon: Globe,
-        options: [
-            { value: 'oui', label: 'Oui, origines béninoises', emoji: '🇧🇯' },
-            { value: 'partiel', label: 'Liens familiaux / affectifs', emoji: '💚' },
-            { value: 'non', label: 'Non, mais intéressé(e)', emoji: '🌍' },
-        ]
-    },
-    {
-        id: 'objective',
-        title: 'Votre Objectif',
-        subtitle: 'Quel est votre objectif principal au Bénin ?',
-        icon: Target,
-        options: [
-            { value: 'nationalite', label: 'Obtenir la nationalité', emoji: '🛂' },
-            { value: 'investir', label: 'Investir au Bénin', emoji: '📈' },
-            { value: 'construire', label: 'Construire une maison', emoji: '🏗️' },
-            { value: 'business', label: 'Créer une entreprise', emoji: '💼' },
-            { value: 'culture', label: 'Découvrir mes racines', emoji: '🌳' },
-            { value: 'logement', label: 'Acheter / Louer un bien', emoji: '🏠' },
-        ]
-    },
-    {
-        id: 'timeline',
-        title: 'Votre Horizon',
-        subtitle: 'Dans quel délai souhaitez-vous avancer ?',
-        icon: Calendar,
-        options: [
-            { value: 'urgent', label: 'Dès que possible', emoji: '⚡' },
-            { value: '6mois', label: 'Dans les 6 prochains mois', emoji: '📅' },
-            { value: '1an', label: "D'ici 1 an", emoji: '🗓️' },
-            { value: 'exploration', label: 'Je suis en exploration', emoji: '🔍' },
-        ]
-    },
-    {
-        id: 'budget',
-        title: 'Votre Budget',
-        subtitle: 'Quelle enveloppe avez-vous en tête ?',
-        icon: Wallet,
-        options: [
-            { value: 'petit', label: 'Moins de 5M XOF', emoji: '💰' },
-            { value: 'moyen', label: '5M - 25M XOF', emoji: '💰💰' },
-            { value: 'grand', label: '25M - 100M XOF', emoji: '💰💰💰' },
-            { value: 'illimite', label: 'Plus de 100M XOF', emoji: '🏦' },
-        ]
-    },
-    {
-        id: 'experience',
-        title: 'Votre Expérience',
-        subtitle: 'Avez-vous déjà fait des démarches au Bénin ?',
-        icon: Award,
-        options: [
-            { value: 'jamais', label: 'Jamais, c\'est ma première fois', emoji: '🆕' },
-            { value: 'peu', label: 'Quelques tentatives', emoji: '📝' },
-            { value: 'oui', label: 'Oui, j\'ai de l\'expérience', emoji: '✅' },
-        ]
-    },
-]
-
-const contactStep = {
-    id: 'contact',
-    title: 'Vos Coordonnées',
-    subtitle: 'Pour recevoir votre recommandation personnalisée',
-    icon: Sparkles,
-}
-
 export default function SimulateurPage() {
     const { t } = useTranslation();
+
+    const steps = useMemo(() => [
+        {
+            id: 'origin',
+            title: t('Vos Origines'),
+            subtitle: t('Avez-vous des origines ou des liens avec le Bénin ?'),
+            icon: Globe,
+            options: [
+                { value: 'oui', label: t('Oui, origines béninoises'), emoji: '🇧🇯' },
+                { value: 'partiel', label: t('Liens familiaux / affectifs'), emoji: '💚' },
+                { value: 'non', label: t('Non, mais intéressé(e)'), emoji: '🌍' },
+            ]
+        },
+        {
+            id: 'objective',
+            title: t('Votre Objectif'),
+            subtitle: t('Quel est votre objectif principal au Bénin ?'),
+            icon: Target,
+            options: [
+                { value: 'nationalite', label: t('Obtenir la nationalité'), emoji: '🛂' },
+                { value: 'investir', label: t('Investir au Bénin'), emoji: '📈' },
+                { value: 'construire', label: t('Construire une maison'), emoji: '🏗️' },
+                { value: 'business', label: t('Créer une entreprise'), emoji: '💼' },
+                { value: 'culture', label: t('Découvrir mes racines'), emoji: '🌳' },
+                { value: 'logement', label: t('Acheter / Louer un bien'), emoji: '🏠' },
+            ]
+        },
+        {
+            id: 'timeline',
+            title: t('Votre Horizon'),
+            subtitle: t('Dans quel délai souhaitez-vous avancer ?'),
+            icon: Calendar,
+            options: [
+                { value: 'urgent', label: t('Dès que possible'), emoji: '⚡' },
+                { value: '6mois', label: t('Dans les 6 prochains mois'), emoji: '📅' },
+                { value: '1an', label: t("D'ici 1 an"), emoji: '🗓️' },
+                { value: 'exploration', label: t('Je suis en exploration'), emoji: '🔍' },
+            ]
+        },
+        {
+            id: 'budget',
+            title: t('Votre Budget'),
+            subtitle: t('Quelle enveloppe avez-vous en tête ?'),
+            icon: Wallet,
+            options: [
+                { value: 'petit', label: t('Moins de 5M XOF'), emoji: '💰' },
+                { value: 'moyen', label: t('5M - 25M XOF'), emoji: '💰💰' },
+                { value: 'grand', label: t('25M - 100M XOF'), emoji: '💰💰💰' },
+                { value: 'illimite', label: t('Plus de 100M XOF'), emoji: '🏦' },
+            ]
+        },
+        {
+            id: 'experience',
+            title: t('Votre Expérience'),
+            subtitle: t('Avez-vous déjà fait des démarches au Bénin ?'),
+            icon: Award,
+            options: [
+                { value: 'jamais', label: t("Jamais, c'est ma première fois"), emoji: '🆕' },
+                { value: 'peu', label: t('Quelques tentatives'), emoji: '📝' },
+                { value: 'oui', label: t("Oui, j'ai de l'expérience"), emoji: '✅' },
+            ]
+        },
+    ], [t])
+
+    const contactStep = useMemo(() => ({
+        id: 'contact',
+        title: t('Vos Coordonnées'),
+        subtitle: t('Pour recevoir votre recommandation personnalisée'),
+        icon: Sparkles,
+    }), [t])
     const [currentStep, setCurrentStep] = useState(0)
     const [answers, setAnswers] = useState<Record<string, string>>({})
     const [nom, setNom] = useState('')

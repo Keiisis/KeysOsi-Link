@@ -169,7 +169,7 @@ export async function POST(request: Request) {
                 body: JSON.stringify({ order_id: orderId, type: 'payment_success' }),
             }).catch(() => { })
 
-            return NextResponse.json({ ok: true, message: 'Payment confirméed' })
+            return NextResponse.json({ ok: true, message: 'Paiement confirmé' })
         }
 
         if (status === 'refunded') {
@@ -177,8 +177,8 @@ export async function POST(request: Request) {
                 .from('orders')
                 .update({ payment_status: 'refunded', transaction_id: transactionId })
                 .eq('id', orderId)
-                .eq('payment_status', 'pending')
-            return NextResponse.json({ ok: true, message: 'Refund recorded' })
+                .eq('payment_status', 'completed')
+            return NextResponse.json({ ok: true, message: 'Remboursement enregistré' })
         }
 
         // declined / canceled — garde atomique : ne pas écraser une commande déjà complétée

@@ -120,7 +120,7 @@ const DEFAULT_TEMPLATES = [
     <h2 style="color:#1a1a1a">Bienvenue {{prenom}} !</h2>
     <p style="color:#555;line-height:1.6">Nous sommes ravis de vous accueillir. Votre compte a été créé avec succès.</p>
     <div style="text-align:center;margin:32px 0">
-      <a href="https://retour-gagnant.vercel.app" style="background:#008751;color:#fff;padding:16px 32px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block">Accéder à la plateforme</a>
+      <a href="https://www.retourgagnantbenin.bj" style="background:#008751;color:#fff;padding:16px 32px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block">Accéder à la plateforme</a>
     </div>
   </div>
   <div style="background:#f4f4f4;padding:20px;text-align:center">
