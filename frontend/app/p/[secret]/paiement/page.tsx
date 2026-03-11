@@ -289,6 +289,31 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
         }
     }
 
+    // ─── Helpers: load SDKs dynamically ──────────────────────
+    const ensureKkiapaySDK = (): Promise<void> => new Promise((resolve, reject) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const win = window as any
+        if (win.openKkiapayWidget) { resolve(); return }
+        const existing = document.querySelector('script[src*="kkiapay"]')
+        if (existing) {
+            const check = setInterval(() => {
+                if (win.openKkiapayWidget) { clearInterval(check); resolve() }
+            }, 200)
+            setTimeout(() => { clearInterval(check); reject(new Error('Kkiapay SDK timeout')) }, 10000)
+            return
+        }
+        const s = document.createElement('script')
+        s.src = 'https://cdn.kkiapay.me/k.js'
+        s.onload = () => {
+            const check = setInterval(() => {
+                if (win.openKkiapayWidget) { clearInterval(check); resolve() }
+            }, 200)
+            setTimeout(() => { clearInterval(check); reject(new Error('Kkiapay SDK timeout')) }, 10000)
+        }
+        s.onerror = () => reject(new Error('SDK Kkiapay indisponible'))
+        document.head.appendChild(s)
+    })
+
     // ─── Handlers par provider ──────────────────────
     const handleKkiapay = async () => {
         setProvider('kkiapay')
@@ -299,10 +324,11 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
         const sandbox = settings.kkiapay_sandbox === 'true'
         if (!publicKey) { cancelOrder(oid); setErrorMessage('Kkiapay non configuré'); setStep('error'); return }
         try {
+            await ensureKkiapaySDK()
             window.openKkiapayWidget({ amount: proposal.total_amount, position: 'center', key: publicKey, sandbox, phone: customerPhone, data: { order_id: oid } })
             window.addKkiapayListener('success', async (response) => { await verifyPayment(oid, response.transactionId as string) })
             window.addKkiapayListener('failed', () => { cancelOrder(oid); setErrorMessage('Paiement échoué'); setStep('error') })
-        } catch { cancelOrder(oid); setErrorMessage('Erreur Kkiapay'); setStep('error') }
+        } catch (err) { cancelOrder(oid); setErrorMessage(err instanceof Error ? err.message : 'Erreur Kkiapay'); setStep('error') }
     }
 
     const handleFedapay = async () => {

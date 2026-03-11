@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { jsPDF } from 'jspdf'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
@@ -129,7 +130,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         const ref = generateRef(p.client_name, p.created_at)
 
         // ── Génération PDF ──────────────────────────────────────────────
-        const { default: jsPDF } = await import('jspdf')
         const pdf = new jsPDF('p', 'mm', 'a4')
 
         const PW = 210, PH = 297
