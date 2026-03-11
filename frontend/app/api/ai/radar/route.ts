@@ -286,25 +286,25 @@ export async function POST(req: Request) {
         const minRating = filters?.minRating || 0
         const requirePhone = filters?.requirePhone || false
 
-        const aiPrompt = `Tu es une IA experte en Data Mining, prospection B2B et géolocalisation stricte au Bénin.
+        const aiPrompt = `Tu es une IA experte en Data Mining, prospection B2B et géolocalisation au Bénin.
 Voici des données brutes de lieux récupérés sur Google Maps pour une recherche ciblée sur la VILLE/ZONE de : "${city.toUpperCase()}".
 
 DONNÉES BRUTES :
 ${JSON.stringify(topPlaces)}
 
 INSTRUCTIONS STRICTES ET IMPÉRATIVES :
-1. RIGUEUR GÉOGRAPHIQUE ABSOLUE : Rejette et exclus de ta réponse TOUT lieu dont l'adresse ou la localisation ne correspond pas strictement à "${city.toUpperCase()}". (Exemple: si la recherche est "Ganvié", ne retourne AUCUN lieu situé à "Cotonou", "Abomey-Calavi", etc.). Analyse l'adresse et le nom pour t'en assurer.
-2. INCLUSION TOTALE DES NON-NOTÉS : Tu DOIS conserver et inclure TOUS les résultats qui sont bien dans la bonne ville, MÊME S'ILS N'ONT AUCUNE NOTE (rating inexistant, null, ou 0). Ne discrimine surtout pas les lieux sans avis.
-3. Ne retourne QUE l'objet JSON, sans markdown ou texte avant/après.
+1. FILTRAGE GÉOGRAPHIQUE INTELLIGENT : Conserve tous les lieux qui se trouvent bien à "${city.toUpperCase()}" ou dans sa localité/commune directe. Accepte les variations d'orthographe (ex: Ganvie / Ganvié). Rejette fermement les lieux qui sont manifestement dans une toute AUTRE grande ville différente (ex: si on cherche "Ganvié", on rejette "Cotonou" ou "Ouidah", MAIS on accepte les lieux situés sur le Lac Nokoué, Sô-Ava ou la commune d'Abomey-Calavi s'ils sont pertinents). Ne sois pas "trop" strict si l'adresse Google Maps est un peu floue ou imprécise, tant que le lieu n'est pas hors zone.
+2. INCLUSION TOTALE DES NON-NOTÉS : Tu DOIS conserver et inclure TOUS les résultats pertinents, MÊME S'ILS N'ONT AUCUNE NOTE (rating inexistant, null, ou 0). Ne discrimine surtout pas les lieux sans avis.
+3. Ne retourne QUE l'objet JSON, sans markdown ou texte avant/après. Ne génère aucune phrase d'ouverture !
 4. Pour chaque lieu validé :
    - "title": Nom exact.
-   - "address": Adresse exacte. Si incomplète, ajoute "${city}, Bénin" si tu es certain de la localisation.
+   - "address": Adresse exacte. Si manquante ou trop courte, complète avec "${city}, Bénin".
    - "phone": Formate au format WhatsApp Bénin : "+229XXXXXXXX" (si fourni, sinon null).
    - "rating": La note d'origine (si aucune note, mets null, ne mets pas 0).
    - "reviews_count": Nombre d'avis (si aucun avis, mets 0).
-   - "description": Rédige une "description" marketing percutante et professionnelle (3 phrases max).
-   - "relevance_score": Attribue un score de 0 à 100. Critères : géolocalisation certifiée dans la ville = +50 points, téléphone = +30, richesses des données = +20.
-   - "whatsapp_template": Un message professionnel court (3-4 lignes) d'approche B2B pour un partenariat, prêt à envoyer WhatsApp.
+   - "description": Rédige une courte description marketing percutante et professionnelle (3 phrases max).
+   - "relevance_score": Attribue un score de 0 à 100. Critères : zone parfaite = +50 points, téléphone = +30, données = +20.
+   - "whatsapp_template": Un message professionnel court (3-4 lignes) d'approche B2B pour un partenariat, prêt à envoyer sur WhatsApp.
    - "original_photo_url": Conserve la valeur de "thumbnailUrl" si elle existe dans les données brutes, sinon null.
 ${minRating > 0 ? `5. FILTRE ADDITIONNEL VITAL : Le client exige une note minimum de ${minRating}. Exclus STRICTEMENT tout lieu dont la note est inférieure à ${minRating}. (Note: Si la note est null/inexistante, EXCLUS le lieu aussi car il n'a pas la note minimale requise).` : ''}
 ${requirePhone ? '6. FILTRE ADDITIONNEL VITAL : Exclure systématiquement tout lieu sans numéro de téléphone.' : ''}
