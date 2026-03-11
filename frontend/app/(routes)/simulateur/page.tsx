@@ -237,7 +237,7 @@ export default function SimulateurPage() {
                                 </div>
 
                                 <div className="max-w-md mx-auto space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
                                             <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 block"><T>Nom</T></label>
                                             <input type="text" required value={nom} onChange={e => setNom(e.target.value)} placeholder={t("Votre nom")}

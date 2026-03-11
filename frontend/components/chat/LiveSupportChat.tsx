@@ -145,7 +145,7 @@ export default function LiveSupportChat({ email, clientName }: LiveSupportChatPr
 
     if (isLoading) {
         return (
-            <div className="h-[600px] w-full rounded-3xl bg-white/[0.02] border border-white/5 flex flex-col items-center justify-center">
+            <div className="h-[min(600px,80dvh)] w-full rounded-3xl bg-white/[0.02] border border-white/5 flex flex-col items-center justify-center">
                 <Loader2 className="animate-spin text-emerald-500 mb-4" size={32} />
                 <p className="text-xs text-gray-500 font-bold tracking-widest uppercase"><T>Connexion au canal sécurisé...</T></p>
             </div>
@@ -153,12 +153,12 @@ export default function LiveSupportChat({ email, clientName }: LiveSupportChatPr
     }
 
     return (
-        <div className="h-[600px] w-full flex flex-col rounded-3xl overflow-hidden bg-[#05080a] border border-white/5 shadow-2xl relative animate-in fade-in zoom-in-95 duration-500">
+        <div className="h-[min(600px,80dvh)] w-full flex flex-col rounded-3xl overflow-hidden bg-[#05080a] border border-white/5 shadow-2xl relative animate-in fade-in zoom-in-95 duration-500">
             {/* Ambient Background glow */}
             <div className="absolute top-0 left-1/4 w-[300px] h-[300px] bg-emerald-500/10 rounded-full blur-[80px] pointer-events-none" />
 
             {/* Header */}
-            <div className="bg-gradient-to-r from-emerald-900/40 to-[#0a0f18] backdrop-blur-xl border-b border-white/5 p-5 flex items-center justify-between z-10">
+            <div className="bg-gradient-to-r from-emerald-900/40 to-[#0a0f18] backdrop-blur-xl border-b border-white/5 p-3 sm:p-5 flex items-center justify-between z-10">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
                         <HeadphonesIcon className="text-emerald-400" size={24} />
@@ -174,7 +174,7 @@ export default function LiveSupportChat({ email, clientName }: LiveSupportChatPr
             </div>
 
             {/* Chat Area */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-premium z-10 relative bg-white/[0.01]">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 scrollbar-premium z-10 relative bg-white/[0.01]">
                 {messages.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-center px-4">
                         <div className="w-24 h-24 rounded-[2rem] bg-emerald-500/10 flex items-center justify-center mb-6 shadow-2xl">
@@ -228,7 +228,7 @@ export default function LiveSupportChat({ email, clientName }: LiveSupportChatPr
             </div>
 
             {/* Input Area */}
-            <div className="p-5 bg-[#0a0f18] border-t border-white/5 z-10">
+            <div className="p-3 sm:p-5 bg-[#0a0f18] border-t border-white/5 z-10">
                 <form onSubmit={handleSubmit} className="flex gap-3 relative">
                     <input
                         type="text"

@@ -216,7 +216,7 @@ export default function RendezVousPage() {
 
                                             {step === 1 && (
                                                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
-                                                    <div className="grid grid-cols-2 gap-4">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                         <div className="space-y-2">
                                                             <label className="text-sm font-medium text-gray-700"><T>Nom</T> *</label>
                                                             <input type="text" required value={form.nom} onChange={e => setForm(p => ({ ...p, nom: e.target.value }))}
@@ -305,7 +305,7 @@ export default function RendezVousPage() {
                                                         <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                                                             <MessagesSquare size={16} className="text-[#008751]" /> <T>Mode de consultation</T>
                                                         </label>
-                                                        <div className="grid grid-cols-2 gap-3">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                             {[
                                                                 { id: 'Appel WhatsApp', icon: MessageCircle },
                                                                 { id: 'Appel Téléphonique', icon: Phone },

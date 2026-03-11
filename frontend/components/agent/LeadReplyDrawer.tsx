@@ -170,7 +170,7 @@ export default function LeadReplyDrawer({ lead, onClose, onSent }: LeadReplyDraw
                         {/* ════════════════════════════════════ */}
                         {/* HEADER — Identité du lead           */}
                         {/* ════════════════════════════════════ */}
-                        <div className="relative shrink-0 px-8 pt-8 pb-6 border-b border-white/[0.06] bg-[#070d16]">
+                        <div className="relative shrink-0 px-4 pt-5 pb-4 sm:px-8 sm:pt-8 sm:pb-6 border-b border-white/[0.06] bg-[#070d16]">
                             {/* Accent gradient top */}
                             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D]" />
 
@@ -225,7 +225,7 @@ export default function LeadReplyDrawer({ lead, onClose, onSent }: LeadReplyDraw
                         {/* ════════════════════════════════════ */}
                         {/* BODY — Formulaire                   */}
                         {/* ════════════════════════════════════ */}
-                        <div className="flex-1 overflow-y-auto px-8 py-6 space-y-5">
+                        <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-8 sm:py-6 space-y-5">
 
                             {/* SUCCESS STATE */}
                             <AnimatePresence>
@@ -364,7 +364,7 @@ export default function LeadReplyDrawer({ lead, onClose, onSent }: LeadReplyDraw
                                                 value={body}
                                                 onChange={(e) => { setBody(e.target.value); if (aiImproved) setAiImproved(false) }}
                                                 disabled={status === 'improving' || status === 'sending'}
-                                                rows={16}
+                                                rows={10}
                                                 title={t("Contenu de l'email")}
                                                 className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-5 py-4 text-sm text-white font-mono leading-relaxed placeholder:text-gray-600 focus:outline-none focus:border-white/25 transition-all disabled:opacity-50 resize-none"
                                                 placeholder={t("Rédigez votre message...")}
@@ -379,7 +379,7 @@ export default function LeadReplyDrawer({ lead, onClose, onSent }: LeadReplyDraw
                         {/* FOOTER — Actions                    */}
                         {/* ════════════════════════════════════ */}
                         {status !== 'success' && (
-                            <div className="shrink-0 px-8 py-5 border-t border-white/[0.06] bg-[#070d16]">
+                            <div className="shrink-0 px-4 py-4 sm:px-8 sm:py-5 border-t border-white/[0.06] bg-[#070d16]">
                                 <div className="flex items-center gap-3">
                                     {/* Cancel */}
                                     <button

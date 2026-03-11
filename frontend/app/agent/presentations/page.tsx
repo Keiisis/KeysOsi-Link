@@ -337,7 +337,7 @@ export default function AgentPresentationsPage() {
                                 {/* ─── STEP FORM ─── */}
                                 {modalStep === 'form' && (
                                     <form onSubmit={handleScrape} className="space-y-5 max-w-2xl mx-auto">
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div className="space-y-1.5">
                                                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Nom du Client *</label>
                                                 <input required type="text" value={formData.client_name} onChange={e => setFormData({ ...formData, client_name: e.target.value })} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#FCD116] transition-colors" placeholder="Ex: Jean Dupont" />
@@ -347,7 +347,7 @@ export default function AgentPresentationsPage() {
                                                 <input type="email" value={formData.client_email} onChange={e => setFormData({ ...formData, client_email: e.target.value })} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#FCD116] transition-colors" placeholder="jean@email.com" />
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div className="space-y-1.5">
                                                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Téléphone</label>
                                                 <input type="tel" value={formData.client_phone} onChange={e => setFormData({ ...formData, client_phone: e.target.value })} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#FCD116] transition-colors" placeholder="+229 XX XX XX" />
@@ -360,7 +360,7 @@ export default function AgentPresentationsPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div className="space-y-1.5">
                                                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Date début</label>
                                                 <input type="date" value={formData.start_date} onChange={e => setFormData({ ...formData, start_date: e.target.value })} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#FCD116] transition-colors" />

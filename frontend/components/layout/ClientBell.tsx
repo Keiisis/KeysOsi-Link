@@ -108,7 +108,7 @@ export default function ClientBell() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute top-full right-0 mt-4 w-80 bg-[#0B1015] border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
+                        className="absolute top-full right-0 mt-4 w-[calc(100vw-2rem)] sm:w-80 bg-[#0B1015] border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
                     >
                         <div className="p-4 border-b border-white/5 flex items-center justify-between">
                             <h3 className="font-bold text-white text-sm"><T>Notifications</T></h3>
@@ -122,7 +122,7 @@ export default function ClientBell() {
                             )}
                         </div>
 
-                        <div className="max-h-[300px] overflow-y-auto nexus-scrollbar">
+                        <div className="max-h-[60vh] sm:max-h-[300px] overflow-y-auto nexus-scrollbar">
                             {notifications.length === 0 ? (
                                 <div className="p-8 text-center text-sm text-gray-500">
                                     <Bell size={24} className="mx-auto mb-2 opacity-50" />

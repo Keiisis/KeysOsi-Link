@@ -260,7 +260,7 @@ function UserDrawer({ mode, user, onClose, onSaved, toast }: {
                     {/* Role */}
                     <div>
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 block"><T>Rôle *</T></label>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                             {ROLES.map(r => (
                                 <button key={r.value} type="button" onClick={() => setRole(r.value)}
                                     className={cn('p-3 rounded-xl border text-left transition-all',
@@ -441,7 +441,7 @@ export default function AdminUsersPage() {
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={15} />
                             <input type="text" placeholder={t("Rechercher...")} value={search}
                                 onChange={e => setSearch(e.target.value)}
-                                className="bg-[#0a0f18] border border-white/5 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-[#FCD116]/30 text-sm w-52" />
+                                className="bg-[#0a0f18] border border-white/5 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-[#FCD116]/30 text-sm w-full sm:w-52" />
                         </div>
                         <button type="button" onClick={() => { setEditingUser(undefined); setDrawerMode('create') }}
                             className="flex items-center gap-2 bg-[#008751] hover:bg-[#00a36b] text-white font-black text-xs tracking-widest px-5 py-3 rounded-xl transition-all shadow-lg">

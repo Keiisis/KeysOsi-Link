@@ -148,7 +148,7 @@ function ScrolledDiaporama({ images, containerRef }: { images: GalleryImage[], c
                                 <span className="text-[#FCD116] font-black tracking-[1.2em] uppercase text-[12px] opacity-80"><T>Collection Impériale</T></span>
                             </motion.div>
 
-                            <h2 className="text-8xl md:text-[12rem] font-bold font-heading text-white leading-[0.8] mb-12 tracking-tighter">
+                            <h2 className="text-4xl sm:text-6xl md:text-8xl lg:text-[12rem] font-bold font-heading text-white leading-[0.8] mb-8 sm:mb-12 tracking-tighter">
                                 L&apos;ÂME <br />
                                 <span className="italic text-transparent bg-clip-text bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D] filter drop-shadow-[0_20px_60px_rgba(252,209,22,0.5)]">
                                     ÉTERNELLE
@@ -159,7 +159,7 @@ function ScrolledDiaporama({ images, containerRef }: { images: GalleryImage[], c
                                 <motion.button
                                     whileHover={{ scale: 1.05, boxShadow: "0 0 50px rgba(0, 135, 81, 0.4)" }}
                                     onClick={() => setMuseumMode(true)}
-                                    className="px-14 py-7 bg-white text-black rounded-full text-sm font-black tracking-[0.3em] flex items-center gap-5 group transition-all"
+                                    className="px-6 py-4 sm:px-10 sm:py-5 md:px-14 md:py-7 bg-white text-black rounded-full text-sm font-black tracking-[0.3em] flex items-center gap-5 group transition-all"
                                 >
                                     <Sparkles className="group-hover:rotate-180 transition-transform duration-1000" size={20} />
                                     IMMERSION TOTALE
@@ -181,13 +181,13 @@ function ScrolledDiaporama({ images, containerRef }: { images: GalleryImage[], c
                     rotateZ: wallRotateZ,
                     scale: museumMode ? 1.15 : 1
                 }}
-                className="relative z-10 flex flex-col gap-16 md:gap-32 perspective-[3000px] transition-transform duration-1000"
+                className="relative z-10 flex flex-col gap-8 sm:gap-16 md:gap-32 perspective-[3000px] transition-transform duration-1000"
             >
                 {rowConfigs.map((row, rowIndex) => (
                     <div key={rowIndex} className="flex overflow-visible whitespace-nowrap">
                         <motion.div
                             style={{ x: row.x, y: yFloating }}
-                            className="flex gap-12 md:gap-24 px-12"
+                            className="flex gap-6 sm:gap-12 md:gap-24 px-6 sm:px-12"
                         >
                             {row.items.map((img, i) => (
                                 <DreamCard
@@ -270,7 +270,7 @@ function DreamCard({ img, museumMode, onClick }: { img: GalleryImage, museumMode
             onClick={onClick}
             className={`
                 relative rounded-[5rem] overflow-hidden cursor-none group/dream transition-all duration-1000
-                ${museumMode ? 'w-[500px] h-[800px] md:w-[800px] md:h-[1100px] grayscale-0' : 'w-[400px] h-[600px] md:w-[700px] md:h-[950px] shadow-[0_80px_150px_rgba(0,0,0,1)]'}
+                ${museumMode ? 'w-[260px] h-[415px] sm:w-[500px] sm:h-[800px] md:w-[800px] md:h-[1100px] grayscale-0' : 'w-[240px] h-[360px] sm:w-[400px] sm:h-[600px] md:w-[700px] md:h-[950px] shadow-[0_80px_150px_rgba(0,0,0,1)]'}
             `}
         >
             <div className="relative w-full h-full">
