@@ -1,18 +1,23 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { getProposalById, updateProposalAndItems } from '@/app/actions/ai-proposals'
-import { motion } from 'framer-motion'
-import { ArrowLeft, Save, Loader2, Eye, Trash2, Plus, ArrowUp, ArrowDown, Copy, Check, ExternalLink } from 'lucide-react'
+import { motion, Reorder } from 'framer-motion'
+import {
+    ArrowLeft, Save, Loader2, Eye, Trash2, Plus, Copy, Check,
+    ExternalLink, Upload, Image as ImageIcon, Sparkles, GripVertical
+} from 'lucide-react'
 
 interface ProposalItem {
     id: string
     proposal_id: string
     type: string
     title: string
+    subtitle?: string
     description: string | null
     location: string | null
+    highlights?: string[]
     image_url: string | null
     original_price: number
     selling_price: number
@@ -29,6 +34,15 @@ interface Proposal {
     total_amount: number
 }
 
+const TYPE_OPTIONS = [
+    { value: 'hero', label: '✨ Accueil (Hero)', color: '#FCD116' },
+    { value: 'hotel', label: '🏨 Hébergement', color: '#38BDF8' },
+    { value: 'restaurant', label: '🍽️ Restaurant', color: '#FB923C' },
+    { value: 'activity', label: '🎯 Activité / Visite', color: '#34D399' },
+    { value: 'transport', label: '🚗 Transport', color: '#A78BFA' },
+    { value: 'pricing', label: '💰 Récapitulatif', color: '#FCD116' },
+]
+
 export default function AgentPresentationEditor({ params }: { params: Promise<{ id: string }> }) {
     const { id } = React.use(params)
     const router = useRouter()
@@ -37,46 +51,33 @@ export default function AgentPresentationEditor({ params }: { params: Promise<{ 
     const [proposal, setProposal] = useState<Proposal | null>(null)
     const [items, setItems] = useState<ProposalItem[]>([])
     const [copied, setCopied] = useState(false)
+    const [expandedSlide, setExpandedSlide] = useState<string | null>(null)
+    const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
     const fetchData = useCallback(async () => {
         setLoading(true)
         const result = await getProposalById(id)
-
         if (!result.success || !result.proposal) {
             alert('Proposition introuvable.')
             router.push('/agent/presentations')
             return
         }
-
         setProposal(result.proposal)
         setItems(result.items || [])
         setLoading(false)
     }, [id, router])
 
-    useEffect(() => {
-        fetchData()
-    }, [fetchData])
+    useEffect(() => { fetchData() }, [fetchData])
 
-    const updateItem = (index: number, field: keyof ProposalItem, value: string | number) => {
-        const newItems = [...items]
-        newItems[index] = { ...newItems[index], [field]: value }
-        setItems(newItems)
+    const updateItem = (itemId: string, field: keyof ProposalItem, value: string | number | string[]) => {
+        setItems(prev => prev.map(item =>
+            item.id === itemId ? { ...item, [field]: value } : item
+        ))
     }
 
-    const removeItem = (index: number) => {
-        const newItems = [...items]
-        newItems.splice(index, 1)
-        setItems(newItems)
-    }
-
-    const moveItem = (index: number, direction: 'up' | 'down') => {
-        if (direction === 'up' && index === 0) return
-        if (direction === 'down' && index === items.length - 1) return
-
-        const newItems = [...items]
-        const targetIndex = direction === 'up' ? index - 1 : index + 1
-        ;[newItems[index], newItems[targetIndex]] = [newItems[targetIndex], newItems[index]]
-        setItems(newItems)
+    const removeItem = (itemId: string) => {
+        if (!confirm('Supprimer cette slide ?')) return
+        setItems(prev => prev.filter(item => item.id !== itemId))
     }
 
     const addItem = () => {
@@ -85,14 +86,34 @@ export default function AgentPresentationEditor({ params }: { params: Promise<{ 
             proposal_id: proposal!.id,
             type: 'activity',
             title: 'Nouvelle Slide',
+            subtitle: '',
             description: '',
             location: proposal!.destination,
+            highlights: [],
             image_url: '',
             original_price: 0,
             selling_price: 0,
             order_index: items.length
         }
-        setItems([...items, newItem])
+        setItems(prev => [...prev, newItem])
+        setExpandedSlide(newItem.id)
+    }
+
+    const handleImageUpload = async (itemId: string, file: File) => {
+        const formData = new FormData()
+        formData.append('file', file)
+
+        try {
+            const res = await fetch('/api/upload/proposal', { method: 'POST', body: formData })
+            const data = await res.json()
+            if (data.url) {
+                updateItem(itemId, 'image_url', data.url)
+            } else {
+                alert(data.error || 'Erreur upload')
+            }
+        } catch {
+            alert('Erreur lors du téléchargement.')
+        }
     }
 
     const calculateTotal = () => {
@@ -101,8 +122,7 @@ export default function AgentPresentationEditor({ params }: { params: Promise<{ 
 
     const copyLink = () => {
         if (!proposal) return
-        const url = `${window.location.origin}/p/${proposal.secret_key}`
-        navigator.clipboard.writeText(url)
+        navigator.clipboard.writeText(`${window.location.origin}/p/${proposal.secret_key}`)
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
     }
@@ -110,17 +130,16 @@ export default function AgentPresentationEditor({ params }: { params: Promise<{ 
     const saveChanges = async () => {
         if (!proposal) return
         setSaving(true)
-        
-        const newTotal = calculateTotal()
-
         try {
-            const result = await updateProposalAndItems(proposal.id, newTotal, items as unknown as Record<string, unknown>[])
-            
+            const result = await updateProposalAndItems(
+                proposal.id,
+                calculateTotal(),
+                items as unknown as Record<string, unknown>[]
+            )
             if (result.success) {
                 await fetchData()
-                alert('Modifications sauvegardées avec succès ! Le lien client est prêt.')
             } else {
-                alert('Erreur lors de la sauvegarde: ' + (result.error || ''))
+                alert('Erreur: ' + (result.error || ''))
             }
         } catch {
             alert('Erreur lors de la sauvegarde.')
@@ -132,7 +151,7 @@ export default function AgentPresentationEditor({ params }: { params: Promise<{ 
     if (loading) {
         return (
             <div className="p-20 flex flex-col items-center justify-center gap-4">
-                <Loader2 className="w-10 h-10 animate-spin text-amber-500" />
+                <Loader2 className="w-10 h-10 animate-spin text-[#FCD116]" />
                 <p className="text-slate-400 text-sm">Chargement de la proposition...</p>
             </div>
         )
@@ -144,25 +163,27 @@ export default function AgentPresentationEditor({ params }: { params: Promise<{ 
 
     return (
         <div className="p-6 lg:p-8 max-w-5xl mx-auto pb-32">
-            {/* Header */}
+            {/* Header Bénin */}
             <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-8">
                 <button title="Retour" onClick={() => router.push('/agent/presentations')} className="p-2 hover:bg-slate-800 rounded-xl text-slate-400 self-start">
                     <ArrowLeft className="w-6 h-6" />
                 </button>
-                <div className="flex-1">
-                    <h1 className="text-2xl lg:text-3xl font-bold text-white">Éditeur de Proposition</h1>
-                    <p className="text-slate-400 text-sm">Client : <span className="text-amber-400 font-semibold">{proposal.client_name}</span> • {proposal.destination}</p>
+                <div className="flex items-center gap-3 flex-1">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#008751] via-[#FCD116] to-[#E8112D] flex items-center justify-center shadow-lg shadow-[#FCD116]/20">
+                        <Sparkles className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                        <h1 className="text-xl lg:text-2xl font-black text-white">Éditeur de Proposition</h1>
+                        <p className="text-slate-400 text-sm">
+                            Client : <span className="text-[#FCD116] font-semibold">{proposal.client_name}</span> — {proposal.destination}
+                        </p>
+                    </div>
                 </div>
-                <div className="flex items-center gap-3 flex-wrap">
-                    <a href={publicUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-medium transition-colors text-sm">
-                        <Eye className="w-4 h-4" />
-                        Aperçu
+                <div className="flex items-center gap-2 flex-wrap">
+                    <a href={publicUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-medium transition text-sm">
+                        <Eye className="w-4 h-4" /> Aperçu
                     </a>
-                    <button 
-                        onClick={saveChanges}
-                        disabled={saving}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-900 rounded-xl font-bold transition-all shadow-lg shadow-amber-900/20 text-sm"
-                    >
+                    <button onClick={saveChanges} disabled={saving} className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#008751] to-[#FCD116] hover:opacity-90 text-slate-900 rounded-xl font-black transition shadow-lg text-sm">
                         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         Sauvegarder
                     </button>
@@ -170,163 +191,211 @@ export default function AgentPresentationEditor({ params }: { params: Promise<{ 
             </div>
 
             {/* Stats bar */}
-            <div className="bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-2xl p-5 mb-8 grid grid-cols-1 md:grid-cols-3 gap-4 shadow-lg">
-                <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Total Facturé</p>
-                    <p className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">
-                        {calculateTotal().toLocaleString()} FCFA
-                    </p>
-                </div>
-                <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Statut</p>
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${proposal.status === 'draft' ? 'bg-slate-800 text-slate-300' : proposal.status === 'paid' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
-                        {proposal.status === 'draft' ? '⏳ Brouillon' : proposal.status === 'paid' ? '✅ Payé' : '📨 Prêt'}
-                    </span>
-                </div>
-                <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Lien Secret</p>
-                    <div className="flex items-center gap-2">
-                        <div className="bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-lg text-emerald-400 font-mono text-xs flex-1 truncate select-all">
-                            {publicUrl}
+            <div className="bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-2xl p-5 mb-8">
+                <div className="h-1 bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D] rounded-full mb-5" />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Total Facturé</p>
+                        <p className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#E8112D]">
+                            {calculateTotal().toLocaleString()} FCFA
+                        </p>
+                    </div>
+                    <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Statut</p>
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${proposal.status === 'paid' ? 'bg-[#008751]/20 text-[#008751]' : proposal.status === 'ready' ? 'bg-[#FCD116]/20 text-[#FCD116]' : 'bg-slate-800 text-slate-300'}`}>
+                            {proposal.status === 'paid' ? '✅ Payé' : proposal.status === 'ready' ? '📨 Prêt' : '⏳ Brouillon'}
+                        </span>
+                    </div>
+                    <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Lien Secret</p>
+                        <div className="flex items-center gap-2">
+                            <div className="bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-lg text-[#008751] font-mono text-xs flex-1 truncate select-all">{publicUrl}</div>
+                            <button title="Copier" onClick={copyLink} className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition">
+                                {copied ? <Check className="w-4 h-4 text-[#008751]" /> : <Copy className="w-4 h-4 text-slate-400" />}
+                            </button>
+                            <a title="Ouvrir" href={publicUrl} target="_blank" rel="noreferrer" className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition">
+                                <ExternalLink className="w-4 h-4 text-slate-400" />
+                            </a>
                         </div>
-                        <button title="Copier le lien" onClick={copyLink} className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors">
-                            {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                        </button>
-                        <a title="Ouvrir" href={publicUrl} target="_blank" rel="noreferrer" className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors">
-                            <ExternalLink className="w-4 h-4" />
-                        </a>
                     </div>
                 </div>
             </div>
 
-            {/* Items Editor */}
-            <div className="space-y-5">
-                {items.map((item, index) => (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        key={item.id} 
-                        className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl"
-                    >
-                        <div className="bg-slate-950 p-4 border-b border-slate-800 flex items-center gap-3 flex-wrap">
-                            <span className="bg-amber-500 text-slate-900 font-bold px-3 py-1 rounded-lg text-xs">
-                                Slide {index + 1}
-                            </span>
-                            <select 
-                                title="Type de slide"
-                                value={item.type}
-                                onChange={(e) => updateItem(index, 'type', e.target.value)}
-                                className="bg-transparent text-white font-medium focus:outline-none border-none text-sm"
+            {/* Slides Editor — Reorderable */}
+            <Reorder.Group axis="y" values={items} onReorder={setItems} className="space-y-4">
+                {items.map((item, index) => {
+                    const typeOpt = TYPE_OPTIONS.find(t => t.value === item.type)
+                    const isExpanded = expandedSlide === item.id
+
+                    return (
+                        <Reorder.Item key={item.id} value={item}>
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700 transition-all"
                             >
-                                <option value="hero">🏠 Accueil (Hero)</option>
-                                <option value="hotel">🏨 Hébergement</option>
-                                <option value="restaurant">🍽️ Restaurant</option>
-                                <option value="activity">🎯 Activité / Visite</option>
-                                <option value="transport">🚗 Transport</option>
-                                <option value="pricing">💰 Facture / Pricing</option>
-                            </select>
+                                {/* Slide Header — always visible */}
+                                <div
+                                    className="p-4 flex items-center gap-3 cursor-pointer select-none"
+                                    onClick={() => setExpandedSlide(isExpanded ? null : item.id)}
+                                >
+                                    <GripVertical className="w-4 h-4 text-slate-600 cursor-grab flex-shrink-0" />
+                                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black" style={{ background: `${typeOpt?.color}20`, color: typeOpt?.color }}>
+                                        {index + 1}
+                                    </div>
 
-                            <div className="ml-auto flex items-center gap-1">
-                                <button title="Monter" onClick={() => moveItem(index, 'up')} disabled={index === 0} className="p-1.5 text-slate-400 hover:text-white disabled:opacity-30"><ArrowUp className="w-4 h-4" /></button>
-                                <button title="Descendre" onClick={() => moveItem(index, 'down')} disabled={index === items.length - 1} className="p-1.5 text-slate-400 hover:text-white disabled:opacity-30"><ArrowDown className="w-4 h-4" /></button>
-                                <button title="Supprimer" onClick={() => removeItem(index)} className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg"><Trash2 className="w-4 h-4" /></button>
-                            </div>
-                        </div>
+                                    {item.image_url && (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={item.image_url} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                                    )}
 
-                        <div className="p-5 grid grid-cols-12 gap-5">
-                            <div className="col-span-12 md:col-span-8 space-y-4">
-                                <div>
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 block">Titre</label>
-                                    <input 
-                                        type="text" 
-                                        title="Titre"
-                                        placeholder="Le nom de ce lieu ou de cette étape"
-                                        value={item.title} 
-                                        onChange={e => updateItem(index, 'title', e.target.value)}
-                                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white font-medium focus:border-amber-500 focus:outline-none"
-                                    />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-white font-bold text-sm truncate">{item.title}</p>
+                                        <p className="text-slate-500 text-xs">{typeOpt?.label}</p>
+                                    </div>
+
+                                    {item.selling_price > 0 && (
+                                        <span className="text-[#FCD116] font-bold text-sm">{item.selling_price.toLocaleString()} FCFA</span>
+                                    )}
+
+                                    <button title="Supprimer" onClick={(e) => { e.stopPropagation(); removeItem(item.id) }} className="p-1.5 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition">
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
                                 </div>
-                                <div>
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 block">Description</label>
-                                    <textarea 
-                                        rows={3}
-                                        title="Description"
-                                        placeholder="Décrivez l'endroit avec des mots chaleureux..."
-                                        value={item.description || ''} 
-                                        onChange={e => updateItem(index, 'description', e.target.value)}
-                                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-300 focus:border-amber-500 focus:outline-none leading-relaxed"
-                                    />
-                                </div>
-                            </div>
-                            
-                            <div className="col-span-12 md:col-span-4 space-y-4">
-                                {item.type !== 'hero' && item.type !== 'pricing' && (
-                                    <>
-                                        <div>
-                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 block">Prix Indicatif (Serper)</label>
-                                            <div className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-500 font-mono text-sm">
-                                                {item.original_price.toLocaleString()} FCFA
+
+                                {/* Slide Body — expandable */}
+                                {isExpanded && (
+                                    <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        className="border-t border-slate-800 p-5"
+                                    >
+                                        <div className="grid grid-cols-12 gap-5">
+                                            {/* Left column */}
+                                            <div className="col-span-12 md:col-span-7 space-y-4">
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Type</label>
+                                                        <select title="Type" value={item.type} onChange={e => updateItem(item.id, 'type', e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white focus:border-[#FCD116] focus:outline-none text-sm">
+                                                            {TYPE_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Lieu</label>
+                                                        <input type="text" title="Lieu" value={item.location || ''} onChange={e => updateItem(item.id, 'location', e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white focus:border-[#FCD116] focus:outline-none text-sm" />
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Titre</label>
+                                                    <input type="text" title="Titre" value={item.title} onChange={e => updateItem(item.id, 'title', e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white font-bold focus:border-[#FCD116] focus:outline-none" />
+                                                </div>
+
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Sous-titre</label>
+                                                    <input type="text" title="Sous-titre" value={item.subtitle || ''} onChange={e => updateItem(item.id, 'subtitle', e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-300 focus:border-[#FCD116] focus:outline-none text-sm" placeholder="Phrase d'accroche courte..." />
+                                                </div>
+
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Description</label>
+                                                    <textarea rows={3} title="Description" value={item.description || ''} onChange={e => updateItem(item.id, 'description', e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-300 focus:border-[#FCD116] focus:outline-none leading-relaxed text-sm" placeholder="Décrivez ce lieu avec passion..." />
+                                                </div>
+
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Points forts (séparés par des virgules)</label>
+                                                    <input type="text" title="Highlights" value={(item.highlights || []).join(', ')} onChange={e => updateItem(item.id, 'highlights', e.target.value.split(',').map(s => s.trim()).filter(Boolean) as unknown as string)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-300 focus:border-[#FCD116] focus:outline-none text-sm" placeholder="WiFi, Piscine, Vue mer..." />
+                                                </div>
+                                            </div>
+
+                                            {/* Right column — Image + Price */}
+                                            <div className="col-span-12 md:col-span-5 space-y-4">
+                                                {/* Image upload zone */}
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Image</label>
+                                                    <div className="relative">
+                                                        {item.image_url ? (
+                                                            <div className="relative group rounded-xl overflow-hidden border border-slate-800">
+                                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                                <img src={item.image_url} alt={item.title} className="w-full h-32 object-cover" />
+                                                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+                                                                    <button title="Changer" onClick={() => fileInputRefs.current[item.id]?.click()} className="p-2 bg-white/20 rounded-lg hover:bg-white/30 text-white"><Upload className="w-4 h-4" /></button>
+                                                                    <button title="Supprimer" onClick={() => updateItem(item.id, 'image_url', '')} className="p-2 bg-red-500/20 rounded-lg hover:bg-red-500/30 text-red-400"><Trash2 className="w-4 h-4" /></button>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => fileInputRefs.current[item.id]?.click()}
+                                                                className="w-full h-32 border-2 border-dashed border-slate-800 hover:border-[#FCD116]/50 rounded-xl flex flex-col items-center justify-center gap-2 text-slate-500 hover:text-[#FCD116] transition group"
+                                                            >
+                                                                <div className="p-2 bg-slate-900 group-hover:bg-[#FCD116]/10 rounded-lg transition">
+                                                                    <ImageIcon className="w-5 h-5" />
+                                                                </div>
+                                                                <span className="text-xs font-medium">Importer une image</span>
+                                                            </button>
+                                                        )}
+                                                        <input
+                                                            ref={(el) => { fileInputRefs.current[item.id] = el }}
+                                                            type="file"
+                                                            accept="image/*"
+                                                            className="hidden"
+                                                            onChange={(e) => {
+                                                                const file = e.target.files?.[0]
+                                                                if (file) handleImageUpload(item.id, file)
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    {/* URL fallback */}
+                                                    <input type="text" title="URL image" value={item.image_url || ''} onChange={e => updateItem(item.id, 'image_url', e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-500 text-xs focus:border-[#FCD116] focus:outline-none mt-2" placeholder="Ou coller une URL..." />
+                                                </div>
+
+                                                {/* Prices */}
+                                                {item.type !== 'hero' && item.type !== 'pricing' && (
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Prix Indicatif</label>
+                                                            <div className="bg-slate-950/50 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-500 font-mono text-sm">
+                                                                {item.original_price.toLocaleString()}
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[10px] font-bold text-[#FCD116]/70 uppercase tracking-widest mb-1 block">Prix Client *</label>
+                                                            <input type="number" title="Prix Client" value={item.selling_price} onChange={e => updateItem(item.id, 'selling_price', parseFloat(e.target.value) || 0)} className="w-full bg-[#FCD116]/10 border border-[#FCD116]/30 rounded-xl px-3 py-2.5 text-[#FCD116] font-bold focus:border-[#FCD116] focus:outline-none text-sm" />
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
-                                        <div>
-                                            <label className="text-xs font-bold text-amber-500/70 uppercase tracking-widest mb-1 block">Prix Client Facturé *</label>
-                                            <input 
-                                                type="number" 
-                                                title="Prix Client"
-                                                placeholder="0"
-                                                value={item.selling_price} 
-                                                onChange={e => updateItem(index, 'selling_price', parseFloat(e.target.value) || 0)}
-                                                className="w-full bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-2.5 text-amber-500 font-bold focus:border-amber-500 focus:outline-none"
-                                            />
-                                        </div>
-                                    </>
+                                    </motion.div>
                                 )}
-                                <div>
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 block">Image URL</label>
-                                    <input 
-                                        type="text" 
-                                        title="Image URL"
-                                        value={item.image_url || ''} 
-                                        onChange={e => updateItem(index, 'image_url', e.target.value)}
-                                        placeholder="https://..."
-                                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-400 text-sm focus:border-amber-500 focus:outline-none"
-                                    />
-                                    {item.image_url && (
-                                        <div className="mt-2 h-20 rounded-lg overflow-hidden border border-slate-800">
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
-                ))}
+                            </motion.div>
+                        </Reorder.Item>
+                    )
+                })}
+            </Reorder.Group>
 
-                <button 
-                    onClick={addItem}
-                    className="w-full py-5 border-2 border-dashed border-slate-800 hover:border-amber-500/50 rounded-2xl text-slate-400 hover:text-amber-500 font-medium flex flex-col items-center justify-center gap-2 transition-all group"
-                >
-                    <div className="p-3 bg-slate-900 group-hover:bg-amber-500/10 rounded-full transition-colors">
-                        <Plus className="w-5 h-5" />
-                    </div>
-                    Ajouter une Slide
-                </button>
-            </div>
-            
+            {/* Add slide button */}
+            <button
+                onClick={addItem}
+                className="w-full mt-5 py-5 border-2 border-dashed border-slate-800 hover:border-[#FCD116]/50 rounded-2xl text-slate-400 hover:text-[#FCD116] font-medium flex flex-col items-center justify-center gap-2 transition group"
+            >
+                <div className="p-3 bg-slate-900 group-hover:bg-[#FCD116]/10 rounded-full transition">
+                    <Plus className="w-5 h-5" />
+                </div>
+                Ajouter une Slide
+            </button>
+
             {/* Fixed bottom bar */}
-            <div className="fixed bottom-0 left-0 lg:left-[260px] right-0 p-4 bg-slate-900/90 backdrop-blur-xl border-t border-slate-800 flex justify-between items-center px-6 lg:px-8 z-40">
-                <span className="text-slate-400 font-medium text-sm">
-                    Total : <strong className="text-white text-lg ml-1">{calculateTotal().toLocaleString()} FCFA</strong>
-                </span>
-                <button 
-                    onClick={saveChanges}
-                    disabled={saving}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-900 rounded-xl font-bold transition-all shadow-lg shadow-amber-900/20"
-                >
-                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                    Sauvegarder et Valider
-                </button>
+            <div className="fixed bottom-0 left-0 lg:left-[260px] right-0 p-4 bg-slate-950/90 backdrop-blur-xl border-t border-slate-800 z-40">
+                <div className="max-w-5xl mx-auto flex justify-between items-center">
+                    <div>
+                        <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Total</p>
+                        <p className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#E8112D]">{calculateTotal().toLocaleString()} FCFA</p>
+                    </div>
+                    <button onClick={saveChanges} disabled={saving} className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D] text-slate-900 rounded-xl font-black transition shadow-lg hover:scale-105 active:scale-95">
+                        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                        Sauvegarder et Valider
+                    </button>
+                </div>
             </div>
         </div>
     )

@@ -95,3 +95,16 @@ export async function updateProposalAndItems(proposalId: string, newTotal: numbe
         return { success: false, error: err instanceof Error ? err.message : String(err) }
     }
 }
+
+export async function deleteProposal(proposalId: string) {
+    try {
+        // Delete items first (foreign key)
+        await supabaseAdmin.from('ai_proposal_items').delete().eq('proposal_id', proposalId)
+        // Delete proposal
+        const { error } = await supabaseAdmin.from('ai_client_proposals').delete().eq('id', proposalId)
+        if (error) throw error
+        return { success: true }
+    } catch (err: unknown) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) }
+    }
+}

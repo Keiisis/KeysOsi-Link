@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Groq from 'groq-sdk'
-import axios from 'axios'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
@@ -13,12 +12,6 @@ const groqApiKeys = [
     process.env.GROQ_API_KEY_4,
     process.env.GROQ_API_KEY_5,
     process.env.GROQ_API_KEY_6
-].filter(Boolean) as string[]
-
-const serperApiKeys = [
-    process.env.SERPER_API_KEY_1,
-    process.env.SERPER_API_KEY_2,
-    process.env.SERPER_API_KEY_3,
 ].filter(Boolean) as string[]
 
 async function callGroqWithRetry(keys: string[], prompt: string): Promise<string> {
@@ -34,106 +27,104 @@ async function callGroqWithRetry(keys: string[], prompt: string): Promise<string
             })
             return completion.choices[0].message.content || '{"items": []}'
         } catch (err) {
-            console.warn(`Groq key ${i + 1} failed, trying next...`, err instanceof Error ? err.message : '')
+            console.warn(`Groq key ${i + 1} failed:`, err instanceof Error ? err.message : '')
             if (i === Math.min(shuffled.length, 3) - 1) throw err
         }
     }
     throw new Error('Toutes les clés Groq ont échoué')
 }
 
-async function callSerperWithRetry(keys: string[], query: string, type: 'search' | 'maps' = 'maps') {
-    const shuffled = [...keys].sort(() => Math.random() - 0.5)
-    for (let i = 0; i < Math.min(shuffled.length, 3); i++) {
-        try {
-            const res = await axios.post(
-                `https://google.serper.dev/${type}`,
-                { q: query, gl: 'bj', hl: 'fr' },
-                { headers: { 'X-API-KEY': shuffled[i], 'Content-Type': 'application/json' }, timeout: 15000 }
-            )
-            return type === 'maps' ? (res.data.places || []) : (res.data.organic || [])
-        } catch (err) {
-            console.warn(`Serper key ${i + 1} failed, trying next...`, err instanceof Error ? err.message : '')
-            if (i === Math.min(shuffled.length, 3) - 1) throw err
-        }
-    }
-    return []
+interface SelectedItem {
+    category: string
+    title: string
+    address?: string
+    rating?: number
+    image_url?: string | null
 }
 
 export async function POST(req: Request) {
     try {
-        if (!supabaseUrl || !supabaseKey) { return NextResponse.json({ error: 'Config Supabase manquante' }, { status: 500 }) }
+        if (!supabaseUrl || !supabaseKey) {
+            return NextResponse.json({ error: 'Config Supabase manquante' }, { status: 500 })
+        }
         const supabase = createClient(supabaseUrl, supabaseKey)
         const body = await req.json()
-        const { client_name, client_email, client_phone, destination, start_date, end_date, budget, activities, notes } = body
+        const {
+            client_name, client_email, client_phone,
+            destination, start_date, end_date,
+            budget, activities, notes,
+            selected_items // NEW: Items selected by agent from scraping results
+        } = body
 
         if (!client_name || !destination) {
             return NextResponse.json({ error: 'Nom du client et destination requis.' }, { status: 400 })
         }
 
-        // 1. Serper Searches en Parallèle
-        const [hotels, restaurants, places] = await Promise.all([
-            callSerperWithRetry(serperApiKeys, `hotel ${destination} Benin`),
-            callSerperWithRetry(serperApiKeys, `restaurant ${destination} Benin`),
-            callSerperWithRetry(serperApiKeys, `activités lieux à visiter ${destination} Benin`, 'search')
-        ])
+        const selectedHotels = (selected_items || []).filter((i: SelectedItem) => i.category === 'hotel')
+        const selectedRestaurants = (selected_items || []).filter((i: SelectedItem) => i.category === 'restaurant')
+        const selectedActivities = (selected_items || []).filter((i: SelectedItem) => i.category === 'activity')
+        const selectedTransport = (selected_items || []).filter((i: SelectedItem) => i.category === 'transport')
 
-        // 2. Prompting LLM
-        const aiPrompt = `Tu es le meilleur agent de conciergerie VIP au Bénin.
-Conçois une proposition d'itinéraire détaillée et luxueuse pour un client de Retour Gagnant.
-Voici les détails du client :
+        const aiPrompt = `Tu es le meilleur agent de conciergerie VIP au Bénin pour "Retour Gagnant".
+Conçois une proposition d'itinéraire PREMIUM pour ce client.
+
+CLIENT :
 - Nom : ${client_name}
 - Destination : ${destination}
-- Dates : ${start_date} au ${end_date}
+- Dates : ${start_date || 'Non précisé'} au ${end_date || 'Non précisé'}
 - Budget : ${budget || 'Non précisé'}
-- Préférences d'activités : ${activities || 'Non précisé'}
-- Notes additionnelles : ${notes || 'Aucune'}
+- Préférences : ${activities || 'Non précisé'}
+- Notes : ${notes || 'Aucune'}
 
-Voici les données brutes sur la destination (utilise ces données réelles pour formuler tes propositions uniques) :
-HOTELS : ${JSON.stringify(hotels.slice(0, 10))}
-RESTAURANTS : ${JSON.stringify(restaurants.slice(0, 5))}
-ACTIVITES : ${JSON.stringify(places.slice(0, 5))}
+ÉLÉMENTS SÉLECTIONNÉS PAR L'AGENT (base tes slides UNIQUEMENT sur ces choix) :
+HOTELS : ${JSON.stringify(selectedHotels)}
+RESTAURANTS : ${JSON.stringify(selectedRestaurants)}
+ACTIVITÉS : ${JSON.stringify(selectedActivities)}
+TRANSPORT : ${JSON.stringify(selectedTransport)}
 
-Génère un objet JSON structuré avec la clé "items" contenant la liste des "slides" de la proposition dans cet ordre logique.
-Chaque item doit respecter ce format :
+Génère un JSON avec la clé "items" contenant les slides dans cet ordre :
 {
   "type": "hero" | "hotel" | "restaurant" | "activity" | "transport" | "pricing",
-  "title": "Titre accrocheur",
-  "description": "Description professionnelle, immersive et chaleureuse du lieu/de l'activité (2-3 phrases).",
-  "location": "Lieu (ex: Ouidah, Bénin)",
-  "original_price": 50000, (Prix estimé par jour en FCFA. Nombre entier. Si non applicable, met 0)
-  "image_url": "Url de l'image (si disponible dans les données brutes, sinon null)"
+  "title": "Titre accrocheur en français",
+  "subtitle": "Sous-titre court et impactant (5-8 mots)",
+  "description": "Description professionnelle, immersive, chaleureuse (3-4 phrases). Parle du Bénin avec passion.",
+  "location": "Lieu précis (ex: Ouidah, Bénin)",
+  "highlights": ["Point fort 1", "Point fort 2", "Point fort 3"],
+  "original_price": 50000,
+  "image_url": "URL image si disponible dans les données, sinon null"
 }
 
-Règles :
-1. "hero" : La première slide d'accueil chaleureuse. (original_price: 0)
-2. "hotel" : Propose le meilleur hôtel des données.
-3. "restaurant" : Propose le meilleur restaurant.
-4. "activity" : Propose 1 ou 2 activités/lieux à visiter (utilise les données de recherche).
-5. "transport" : Propose un véhicule de location avec chauffeur VIP (Prix estimatif: 40000 FCFA/jour).
-6. "pricing" : Slide finale de conclusion de devis et recap (original_price: 0).
-7. Ne retourne QUE le JSON.
+Règles strictes :
+1. "hero" : Première slide d'accueil chaleureuse. Titre GRANDIOSE. (original_price: 0)
+2. Crée une slide pour CHAQUE hôtel sélectionné (type:"hotel")
+3. Crée une slide pour CHAQUE restaurant sélectionné (type:"restaurant")
+4. Crée une slide pour CHAQUE activité sélectionnée (type:"activity")
+5. Si transport sélectionné, crée une slide (type:"transport", prix par défaut 40000 FCFA/jour)
+6. "pricing" : Slide finale récapitulative. (original_price: 0)
+7. Chaque slide DOIT avoir des "highlights" (3 points forts)
+8. Chaque slide DOIT avoir un "subtitle" accrocheur
+9. Retourne UNIQUEMENT le JSON valide.
 
-Format JSON attendu :
-{
-  "items": [
-    { "type": "hero", "title": "...", "description": "...", "location": "...", "original_price": 0, "image_url": null },
-    ...
-  ]
-}`
+Format :
+{ "items": [...] }`
 
         const aiResponse = await callGroqWithRetry(groqApiKeys, aiPrompt)
         const parsed = JSON.parse(aiResponse)
+
         interface ProposalItem {
-            type: string;
-            title: string;
-            description: string;
-            location: string;
-            original_price: number;
-            image_url: string | null;
+            type: string
+            title: string
+            subtitle?: string
+            description: string
+            location: string
+            highlights?: string[]
+            original_price: number
+            image_url: string | null
         }
+
         const items: ProposalItem[] = parsed.items || []
 
-        // 3. Sauvegarde dans DB
+        // Sauvegarde dans DB
         const { data: proposal, error: proposalError } = await supabase.from('ai_client_proposals').insert({
             client_name,
             client_email,
@@ -154,8 +145,10 @@ Format JSON attendu :
             proposal_id: proposal.id,
             type: item.type,
             title: item.title,
+            subtitle: item.subtitle || '',
             description: item.description,
             location: item.location || destination,
+            highlights: item.highlights || [],
             image_url: item.image_url,
             original_price: item.original_price || 0,
             selling_price: item.original_price || 0,
