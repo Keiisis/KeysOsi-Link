@@ -64,6 +64,7 @@ function AdminLayoutContent({
         { title: 'Commandes', icon: Receipt, href: '/admin/orders' },
         { title: 'Coupons', icon: Tag, href: '/admin/coupons' },
         { title: 'Messages', icon: MessageSquare, href: '/admin/messages' },
+        { title: 'Notifications', icon: Bell, href: '/admin/notifications' },
         { title: 'Traductions', icon: Languages, href: '/admin/traductions' },
         { title: 'Utilisateurs', icon: UserCog, href: '/admin/users' },
         { title: 'Réglages', icon: Settings, href: '/admin/settings' },

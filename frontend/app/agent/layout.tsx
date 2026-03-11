@@ -338,6 +338,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
             items: [
                 { title: t('Messages'), icon: MessageSquare, href: '/agent/messages', badge: unreadMessages },
                 { title: t('Vocaux'), icon: Headphones, href: '/agent/vocaux', badge: unreadVoices },
+                { title: t('Notifications'), icon: Bell, href: '/agent/notifications' },
             ],
         },
         {
