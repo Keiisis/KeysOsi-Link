@@ -54,7 +54,7 @@ export async function POST(request: Request) {
         // FedaPay API : structure PLATE (pas de wrapper "transaction")
         // callback_url omis — vérification faite via DB (transaction_id stocké dans la commande)
         const payload: Record<string, unknown> = {
-            amount: Math.round(amount),
+            amount: Math.round(Number(amount)),
             description: description || `Commande ${order_id}`,
             currency: { iso: 'XOF' },
         }

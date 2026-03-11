@@ -604,24 +604,28 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
                                 <h2 className="text-2xl font-black mb-2">Carte bancaire</h2>
                                 <p className="text-slate-400 text-sm">Paiement sécurisé par Stripe</p>
                             </div>
-                            {/* On masque au lieu de démonter si process en cours pour garder le handle de la carte actif */}
-                            <div className={`bg-slate-900 border border-slate-800 rounded-2xl p-6 mb-6 ${step === 'processing' ? 'opacity-50 pointer-events-none' : ''}`}>
-                                <div id="stripe-card-element" className="min-h-[50px]" />
-                            </div>
                             
-                            {step === 'processing' ? (
-                                <div className="flex flex-col items-center justify-center py-6 gap-4">
+                            {/* Le container du formulaire Stripe doit TOUJOURS être présent dans le DOM et son contenu préservé.
+                                S'il est en cours de traitement, on le masque visuellement via CSS `display: none` ou équivalent 
+                                pour éviter que Stripe Element ne crashe car il perd la div parente. */}
+                            <div style={{ display: step === 'processing' ? 'none' : 'block' }}>
+                                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 mb-6">
+                                    <div id="stripe-card-element" className="min-h-[50px]" />
+                                </div>
+                                {errorMessage && <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl text-sm mb-4">{errorMessage}</div>}
+                                <button onClick={confirmStripePayment} disabled={!stripeReady} className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-900 py-4 rounded-2xl font-black transition-all flex items-center justify-center gap-2">
+                                    <Lock className="w-4 h-4" /> Payer {proposal.total_amount.toLocaleString()} FCFA
+                                </button>
+                                <button onClick={() => setStep('payment')} className="w-full text-slate-400 hover:text-white py-3 text-sm mt-2">← Autre moyen de paiement</button>
+                            </div>
+
+                            {/* Couche de chargement affichée PAR-DESSUS ou à LA PLACE visuellement, 
+                                mais sans démonter la div précédente. */}
+                            {step === 'processing' && (
+                                <div className="flex flex-col items-center justify-center py-10 gap-4">
                                     <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
                                     <p className="text-white font-bold text-sm">Traitement en cours, ne fermez pas...</p>
                                 </div>
-                            ) : (
-                                <>
-                                    {errorMessage && <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl text-sm mb-4">{errorMessage}</div>}
-                                    <button onClick={confirmStripePayment} disabled={!stripeReady} className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-900 py-4 rounded-2xl font-black transition-all flex items-center justify-center gap-2">
-                                        <Lock className="w-4 h-4" /> Payer {proposal.total_amount.toLocaleString()} FCFA
-                                    </button>
-                                    <button onClick={() => setStep('payment')} className="w-full text-slate-400 hover:text-white py-3 text-sm mt-2">← Autre moyen de paiement</button>
-                                </>
                             )}
                         </motion.div>
                     )}
