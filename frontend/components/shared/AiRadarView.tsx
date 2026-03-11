@@ -303,7 +303,7 @@ export default function AiRadarView() {
                                         <div className="grid grid-cols-2 gap-3 px-2 pb-2">
                                             <div>
                                                 <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1 block">Note minimum</label>
-                                                <select value={minRating} onChange={e => setMinRating(Number(e.target.value))}
+                                                <select title="Note minimum" value={minRating} onChange={e => setMinRating(Number(e.target.value))}
                                                     className="w-full bg-gray-50 rounded-xl px-3 py-2 text-sm border border-gray-200">
                                                     <option value={0}>Toutes les notes</option>
                                                     <option value={3}>≥ 3 étoiles</option>
@@ -367,7 +367,7 @@ export default function AiRadarView() {
                             {/* Tri */}
                             <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200 px-2 py-1.5">
                                 <ArrowUpDown className="w-3.5 h-3.5 text-gray-400" />
-                                <select value={sortBy} onChange={e => setSortBy(e.target.value)}
+                                <select title="Trier par" value={sortBy} onChange={e => setSortBy(e.target.value)}
                                     className="text-xs font-medium bg-transparent outline-none text-gray-700">
                                     <option value="relevance_score">Score IA</option>
                                     <option value="rating">Note Google</option>
@@ -378,7 +378,7 @@ export default function AiRadarView() {
 
                             {/* Statut */}
                             <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200 px-2 py-1.5">
-                                <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+                                <select title="Filtrer par statut" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
                                     className="text-xs font-medium bg-transparent outline-none text-gray-700">
                                     <option value="all">Tous statuts</option>
                                     {Object.entries(STATUS_CONFIG).map(([key, val]) => (

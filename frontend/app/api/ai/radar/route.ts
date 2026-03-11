@@ -23,9 +23,7 @@ const serperApiKeys = [
     process.env.SERPER_API_KEY
 ].filter(Boolean) as string[]
 
-function pickRandom<T>(arr: T[]): T {
-    return arr[Math.floor(Math.random() * arr.length)]
-}
+
 
 // Retry intelligent : si une clé échoue, essayer les suivantes
 async function callGroqWithRetry(keys: string[], prompt: string): Promise<string> {
@@ -282,29 +280,36 @@ export async function POST(req: Request) {
             })
         }
 
-        const topPlaces = newPlaces.slice(0, 8)
+        const topPlaces = newPlaces.slice(0, 40) // Augmenté de 8 à 40 pour tout rafler
 
         // ── ENRICHISSEMENT IA avec score de pertinence ──
         const minRating = filters?.minRating || 0
         const requirePhone = filters?.requirePhone || false
 
-        const aiPrompt = `Tu es un expert en marketing digital et prospection commerciale au Bénin.
-Voici des données brutes de lieux récupérés sur Google Maps :
+        const aiPrompt = `Tu es une IA experte en Data Mining, prospection B2B et géolocalisation stricte au Bénin.
+Voici des données brutes de lieux récupérés sur Google Maps pour une recherche ciblée sur la VILLE/ZONE de : "${city.toUpperCase()}".
+
+DONNÉES BRUTES :
 ${JSON.stringify(topPlaces)}
 
-INSTRUCTIONS STRICTES :
-1. Ne retourne QUE l'objet JSON, aucun autre texte.
-2. Pour chaque lieu :
-   - Rédige une "description" marketing percutante (3 phrases max).
-   - Attribue un "relevance_score" de 0 à 100. Critères : note Google élevée = +points, nombre d'avis élevé = +points, téléphone disponible = +20 points, description/type riche = +points, adresse précise = +points.
-   - Rédige un "whatsapp_template" : un message professionnel court (3-4 lignes) prêt à envoyer via WhatsApp pour proposer un partenariat. Commence par "Bonjour [Nom du lieu]".
-3. Si un "phoneNumber" est fourni, formate-le au format WhatsApp Bénin : "+229XXXXXXXX". Sinon, mets null.
-4. Conserve "title", "rating", "ratingCount" (en tant que "reviews_count"), "address" tels quels.
-5. Conserve "thumbnailUrl" dans "original_photo_url". S'il n'existe pas, mets null.
-${minRating > 0 ? `6. FILTRE : Exclure tout lieu avec une note inférieure à ${minRating}.` : ''}
-${requirePhone ? '7. FILTRE : Exclure tout lieu sans numéro de téléphone.' : ''}
+INSTRUCTIONS STRICTES ET IMPÉRATIVES :
+1. RIGUEUR GÉOGRAPHIQUE ABSOLUE : Rejette et exclus de ta réponse TOUT lieu dont l'adresse ou la localisation ne correspond pas strictement à "${city.toUpperCase()}". (Exemple: si la recherche est "Ganvié", ne retourne AUCUN lieu situé à "Cotonou", "Abomey-Calavi", etc.). Analyse l'adresse et le nom pour t'en assurer.
+2. INCLUSION TOTALE DES NON-NOTÉS : Tu DOIS conserver et inclure TOUS les résultats qui sont bien dans la bonne ville, MÊME S'ILS N'ONT AUCUNE NOTE (rating inexistant, null, ou 0). Ne discrimine surtout pas les lieux sans avis.
+3. Ne retourne QUE l'objet JSON, sans markdown ou texte avant/après.
+4. Pour chaque lieu validé :
+   - "title": Nom exact.
+   - "address": Adresse exacte. Si incomplète, ajoute "${city}, Bénin" si tu es certain de la localisation.
+   - "phone": Formate au format WhatsApp Bénin : "+229XXXXXXXX" (si fourni, sinon null).
+   - "rating": La note d'origine (si aucune note, mets null, ne mets pas 0).
+   - "reviews_count": Nombre d'avis (si aucun avis, mets 0).
+   - "description": Rédige une "description" marketing percutante et professionnelle (3 phrases max).
+   - "relevance_score": Attribue un score de 0 à 100. Critères : géolocalisation certifiée dans la ville = +50 points, téléphone = +30, richesses des données = +20.
+   - "whatsapp_template": Un message professionnel court (3-4 lignes) d'approche B2B pour un partenariat, prêt à envoyer WhatsApp.
+   - "original_photo_url": Conserve la valeur de "thumbnailUrl" si elle existe dans les données brutes, sinon null.
+${minRating > 0 ? `5. FILTRE ADDITIONNEL VITAL : Le client exige une note minimum de ${minRating}. Exclus STRICTEMENT tout lieu dont la note est inférieure à ${minRating}. (Note: Si la note est null/inexistante, EXCLUS le lieu aussi car il n'a pas la note minimale requise).` : ''}
+${requirePhone ? '6. FILTRE ADDITIONNEL VITAL : Exclure systématiquement tout lieu sans numéro de téléphone.' : ''}
 
-Format :
+Format de Sortie JSON strict :
 {
   "results": [
     {
@@ -313,10 +318,10 @@ Format :
       "phone": "+229XXXXXXXX",
       "rating": 4.5,
       "reviews_count": 120,
-      "description": "Description marketing...",
+      "description": "Description...",
       "original_photo_url": "https://...",
       "relevance_score": 85,
-      "whatsapp_template": "Bonjour Hotel X, nous sommes..."
+      "whatsapp_template": "Bonjour [Nom du lieu]..."
     }
   ]
 }`
@@ -359,6 +364,10 @@ Format :
                 whatsapp_template: lead.whatsapp_template || null,
                 status: 'new'
             }).select('*').single()
+
+            if (dbError) {
+                console.warn('Erreur insertion lead:', dbError.message)
+            }
 
             savedLeads.push(dbItem || { ...lead, photo_url: finalPhotoUrl || lead.original_photo_url })
         }
