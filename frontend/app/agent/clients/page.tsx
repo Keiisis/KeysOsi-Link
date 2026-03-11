@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import {
     Users, Search, Mail, Phone, Edit3, Trash2, X,
     Save, Loader2, Calendar, FileText, ChevronRight,
-    Star, Globe, MessageSquare, FolderOpen
+    Star, Globe, MessageSquare, FolderOpen, Wand2, Languages, Send
 } from 'lucide-react'
 
 type ClientSource = 'dossier' | 'message' | 'eligibilite' | 'nationalite'
@@ -57,6 +57,14 @@ export default function AgentClientsPage() {
     const [selectedClient, setSelectedClient] = useState<Client | null>(null)
     const [editMode, setEditMode] = useState(false)
     const [saving, setSaving] = useState(false)
+
+    // Email Modal states
+    const [emailModalOpen, setEmailModalOpen] = useState(false)
+    const [emailSubject, setEmailSubject] = useState('')
+    const [emailMessage, setEmailMessage] = useState('')
+    const [emailSending, setEmailSending] = useState(false)
+    const [emailEnhancing, setEmailEnhancing] = useState(false)
+    const [emailTranslating, setEmailTranslating] = useState(false)
 
     const [editNom, setEditNom] = useState('')
     const [editPrenom, setEditPrenom] = useState('')
@@ -223,6 +231,81 @@ export default function AgentClientsPage() {
         }
         setClients(prev => prev.filter(c => c.id !== selectedClient.id))
         setSelectedClient(null)
+    }
+
+    const handleOpenEmail = () => {
+        if (!selectedClient) return
+        setEmailSubject(`Retour Gagnant - Suivi de votre demande`)
+        setEmailMessage('')
+        setEmailModalOpen(true)
+    }
+
+    const handleEnhanceEmail = async () => {
+        if (!emailMessage) return
+        setEmailEnhancing(true)
+        try {
+            const res = await fetch('/api/ai/enhance-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: emailMessage })
+            })
+            const data = await res.json()
+            if (data.enhanced) setEmailMessage(data.enhanced)
+        } catch (e) {
+            console.error(e)
+        }
+        setEmailEnhancing(false)
+    }
+
+    const handleTranslateEmail = async () => {
+        if (!emailMessage || !selectedClient) return
+        setEmailTranslating(true)
+        try {
+            const res = await fetch('/api/ai/translate-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: emailMessage,
+                    clientContext: {
+                        nom: selectedClient.nom,
+                        prenom: selectedClient.prenom,
+                        telephone: selectedClient.telephone,
+                        notes: selectedClient.notes,
+                        service: selectedClient.service
+                    }
+                })
+            })
+            const data = await res.json()
+            if (data.translated) setEmailMessage(data.translated)
+        } catch (e) {
+            console.error(e)
+        }
+        setEmailTranslating(false)
+    }
+
+    const handleSendEmail = async () => {
+        if (!selectedClient || !emailMessage || !emailSubject) return
+        setEmailSending(true)
+        try {
+            const res = await fetch('/api/email/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    to: selectedClient.email,
+                    subject: emailSubject,
+                    message: emailMessage,
+                    clientName: `${selectedClient.nom} ${selectedClient.prenom}`,
+                    context: 'agent_reply',
+                    relatedId: selectedClient.id
+                })
+            })
+            if (res.ok) {
+                setEmailModalOpen(false)
+            }
+        } catch (e) {
+            console.error(e)
+        }
+        setEmailSending(false)
     }
 
     const filtered = clients.filter(c => {
@@ -448,13 +531,82 @@ export default function AgentClientsPage() {
                                     )}
 
                                     <div className="flex gap-2 pt-2">
-                                        <a href={`mailto:${selectedClient.email}`} className="flex-1 flex items-center justify-center gap-1 text-xs py-2.5 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30 font-bold hover:bg-blue-500/30 transition-all" title="Envoyer un email"><Mail size={12} /> Email</a>
+                                        <button onClick={handleOpenEmail} className="flex-1 flex items-center justify-center gap-1 text-xs py-2.5 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30 font-bold hover:bg-blue-500/30 transition-all" title="Envoyer un email"><Mail size={12} /> Email</button>
                                         {selectedClient.telephone && (
                                             <a href={`https://wa.me/${selectedClient.telephone.replace(/\s+/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1 text-xs py-2.5 rounded-xl bg-green-500/20 text-green-400 border border-green-500/30 font-bold hover:bg-green-500/30 transition-all" title="WhatsApp"><Phone size={12} /> WhatsApp</a>
                                         )}
                                     </div>
                                 </div>
                             )}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Modal Email Smart Compose */}
+            <AnimatePresence>
+                {emailModalOpen && selectedClient && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4" onClick={() => setEmailModalOpen(false)}>
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} className="bg-[#0a0f14] border border-white/10 rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] flex flex-col">
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <h3 className="text-xl font-black text-white flex items-center gap-2">
+                                        <Mail size={20} className="text-blue-400" /> NOUVEAU MESSAGE
+                                    </h3>
+                                    <p className="text-sm text-gray-400 mt-1">À : <span className="font-bold text-white">{selectedClient.email}</span></p>
+                                </div>
+                                <button onClick={() => setEmailModalOpen(false)} className="text-gray-500 hover:text-white" title="Fermer"><X size={20} /></button>
+                            </div>
+
+                            <div className="space-y-4 flex-1 overflow-y-auto pr-2 scrollbar-premium">
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Sujet de l&apos;email</label>
+                                    <input 
+                                        type="text" 
+                                        value={emailSubject} 
+                                        onChange={e => setEmailSubject(e.target.value)} 
+                                        title="Sujet de l'email"
+                                        placeholder="Sujet"
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-gray-600 focus:outline-none focus:border-blue-500/50" 
+                                    />
+                                </div>
+                                <div className="flex-1 flex flex-col">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Message (sera inséré dans le template KAGE)</label>
+                                    <textarea 
+                                        value={emailMessage} 
+                                        onChange={e => setEmailMessage(e.target.value)} 
+                                        title="Message de l'email"
+                                        placeholder="Rédigez votre réponse ici..." 
+                                        className="w-full flex-1 min-h-[250px] bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-blue-500/50 resize-y" 
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row gap-3 pt-6 mt-4 border-t border-white/10">
+                                <button 
+                                    onClick={handleEnhanceEmail} 
+                                    disabled={emailEnhancing || !emailMessage}
+                                    className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-all font-bold text-xs disabled:opacity-50"
+                                >
+                                    {emailEnhancing ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />} Améliorer le texte
+                                </button>
+                                <button 
+                                    onClick={handleTranslateEmail} 
+                                    disabled={emailTranslating || !emailMessage}
+                                    className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20 hover:bg-sky-500/20 transition-all font-bold text-xs disabled:opacity-50"
+                                >
+                                    {emailTranslating ? <Loader2 size={14} className="animate-spin" /> : <Languages size={14} />} Traduire (Auto)
+                                </button>
+                                <div className="flex-1" />
+                                <button 
+                                    onClick={handleSendEmail} 
+                                    disabled={emailSending || !emailMessage || !emailSubject}
+                                    className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold text-sm transition-all disabled:opacity-50"
+                                >
+                                    {emailSending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                                    Envoyer
+                                </button>
+                            </div>
                         </motion.div>
                     </motion.div>
                 )}
