@@ -430,9 +430,14 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
 
     const confirmStripePayment = async () => {
         if (!stripeInstanceRef.current || !cardElementRef.current || !stripeClientSecret || !orderId) return
+        
         setStep('processing')
         try {
-            const result = await stripeInstanceRef.current.confirmCardPayment(stripeClientSecret, { payment_method: { card: cardElementRef.current as unknown as Record<string, unknown> } })
+            // cardElementRef.current contains the stripe element that was mounted.
+            const result = await stripeInstanceRef.current.confirmCardPayment(stripeClientSecret, { 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                payment_method: { card: cardElementRef.current as any } 
+            })
             if (result.error) { setErrorMessage(result.error.message || 'Paiement refusé'); setStep('stripe-form') }
             else if (result.paymentIntent?.status === 'succeeded') { await verifyPayment(orderId, result.paymentIntent.id) }
             else { setErrorMessage('Paiement incomplet'); setStep('stripe-form') }
@@ -589,26 +594,35 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
                             <button onClick={() => setStep('info')} className="w-full text-slate-400 hover:text-white py-3 text-sm transition-colors">
                                 ← Retour aux informations
                             </button>
-
-                            <div id="fedapay-button" className="hidden" />
                         </motion.div>
                     )}
 
-                    {/* ─── STEP: STRIPE FORM ──────────────────────── */}
-                    {step === 'stripe-form' && (
+                    {/* ─── STEP: STRIPE FORM & PROCESSING ──────────────────────── */}
+                    {(step === 'stripe-form' || (step === 'processing' && provider === 'stripe')) && (
                         <motion.div key="stripe" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                             <div className="text-center mb-8">
                                 <h2 className="text-2xl font-black mb-2">Carte bancaire</h2>
                                 <p className="text-slate-400 text-sm">Paiement sécurisé par Stripe</p>
                             </div>
-                            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 mb-6">
+                            {/* On masque au lieu de démonter si process en cours pour garder le handle de la carte actif */}
+                            <div className={`bg-slate-900 border border-slate-800 rounded-2xl p-6 mb-6 ${step === 'processing' ? 'opacity-50 pointer-events-none' : ''}`}>
                                 <div id="stripe-card-element" className="min-h-[50px]" />
                             </div>
-                            {errorMessage && <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl text-sm mb-4">{errorMessage}</div>}
-                            <button onClick={confirmStripePayment} disabled={!stripeReady} className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-900 py-4 rounded-2xl font-black transition-all flex items-center justify-center gap-2">
-                                <Lock className="w-4 h-4" /> Payer {proposal.total_amount.toLocaleString()} FCFA
-                            </button>
-                            <button onClick={() => setStep('payment')} className="w-full text-slate-400 hover:text-white py-3 text-sm mt-2">← Autre moyen de paiement</button>
+                            
+                            {step === 'processing' ? (
+                                <div className="flex flex-col items-center justify-center py-6 gap-4">
+                                    <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+                                    <p className="text-white font-bold text-sm">Traitement en cours, ne fermez pas...</p>
+                                </div>
+                            ) : (
+                                <>
+                                    {errorMessage && <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl text-sm mb-4">{errorMessage}</div>}
+                                    <button onClick={confirmStripePayment} disabled={!stripeReady} className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-900 py-4 rounded-2xl font-black transition-all flex items-center justify-center gap-2">
+                                        <Lock className="w-4 h-4" /> Payer {proposal.total_amount.toLocaleString()} FCFA
+                                    </button>
+                                    <button onClick={() => setStep('payment')} className="w-full text-slate-400 hover:text-white py-3 text-sm mt-2">← Autre moyen de paiement</button>
+                                </>
+                            )}
                         </motion.div>
                     )}
 
@@ -624,7 +638,7 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
                     )}
 
                     {/* ─── STEP: PROCESSING ──────────────────────── */}
-                    {step === 'processing' && (
+                    {step === 'processing' && provider !== 'stripe' && (
                         <motion.div key="processing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-20 gap-6">
                             <Loader2 className="w-14 h-14 text-amber-500 animate-spin" />
                             <div className="text-center">

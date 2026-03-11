@@ -375,27 +375,15 @@ export default function PresentationView({ params }: { params: Promise<{ secret:
                                                 <BookOpen className="w-4 h-4 md:w-5 md:h-5 text-[#FCD116]" /> Réserver
                                             </button>
                                         </div>
-                                        <button
-                                            type="button"
-                                            onClick={async (e) => {
-                                                e.stopPropagation()
-                                                if (!proposal) return
-                                                try {
-                                                    const res = await fetch(`/api/proposals/${proposal.id}/devis`)
-                                                    if (!res.ok) return
-                                                    const blob = await res.blob()
-                                                    const url = URL.createObjectURL(blob)
-                                                    const a = document.createElement('a')
-                                                    a.href = url
-                                                    a.download = `DEVIS-${proposal.client_name.replace(/\s+/g, '-')}.pdf`
-                                                    a.click()
-                                                    URL.revokeObjectURL(url)
-                                                } catch { /* ignore */ }
-                                            }}
+                                        <a
+                                            href={`/api/proposals/${proposal?.id}/devis`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={(e) => e.stopPropagation()}
                                             className="w-full mt-2 bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white py-2.5 rounded-xl font-medium text-xs md:text-sm transition-all flex items-center justify-center gap-2 active:scale-95 touch-manipulation relative z-10"
                                         >
                                             <FileDown className="w-4 h-4 text-[#FCD116]" /> Télécharger Devis PDF
-                                        </button>
+                                        </a>
                                         <p className="text-center text-white/40 text-[10px] md:text-xs mt-3 flex items-center justify-center gap-1.5 relative z-10">
                                             <CheckCircle className="w-3 h-3 text-[#008751]" /> Paiement 100% sécurisé
                                         </p>
