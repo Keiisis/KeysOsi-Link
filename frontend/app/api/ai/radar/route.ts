@@ -280,7 +280,7 @@ export async function POST(req: Request) {
             })
         }
 
-        const topPlaces = newPlaces.slice(0, 40) // Augmenté de 8 à 40 pour tout rafler
+        const topPlaces = newPlaces.slice(0, 100) // Augmenté pour tout rafler au maximum
 
         // ── ENRICHISSEMENT IA avec score de pertinence ──
         const minRating = filters?.minRating || 0
