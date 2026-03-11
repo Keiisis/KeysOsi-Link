@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { RefineContext } from '@/components/admin/refine-context'
+import { supabase } from '@/lib/supabase'
 
 function AdminLayoutContent({
     children,
@@ -46,6 +47,35 @@ function AdminLayoutContent({
         setMobileMenuOpen(false)
     }, [pathname])
 
+    // Unread Counters
+    const [unreadMessages, setUnreadMessages] = useState(0)
+    const [unreadNotifications, setUnreadNotifications] = useState(0)
+
+    useEffect(() => {
+        if (isLoginPage) return
+
+        // Initial fetch
+        const fetchUnread = async () => {
+            const [msgRes, notifRes] = await Promise.all([
+                supabase.from('messages').select('id', { count: 'exact' }).eq('lu', false).neq('type', 'nationality'),
+                supabase.from('messages').select('id', { count: 'exact' }).eq('lu', false).eq('type', 'nationality'),
+            ])
+            setUnreadMessages(msgRes.count || 0)
+            setUnreadNotifications(notifRes.count || 0)
+        }
+
+        fetchUnread()
+
+        // Realtime Subscription
+        const channel = supabase.channel('admin_layout_badges')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, fetchUnread)
+            .subscribe()
+
+        return () => {
+            supabase.removeChannel(channel)
+        }
+    }, [isLoginPage])
+
     const menuItems = [
         { title: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
         { title: 'Radar IA', icon: Radar, href: '/admin/radar' },
@@ -63,8 +93,8 @@ function AdminLayoutContent({
         { title: 'Boutique', icon: ShoppingBag, href: '/admin/boutique' },
         { title: 'Commandes', icon: Receipt, href: '/admin/orders' },
         { title: 'Coupons', icon: Tag, href: '/admin/coupons' },
-        { title: 'Messages', icon: MessageSquare, href: '/admin/messages' },
-        { title: 'Notifications', icon: Bell, href: '/admin/notifications' },
+        { title: 'Messages', icon: MessageSquare, href: '/admin/messages', badge: unreadMessages },
+        { title: 'Notifications', icon: Bell, href: '/admin/notifications', badge: unreadNotifications },
         { title: 'Traductions', icon: Languages, href: '/admin/traductions' },
         { title: 'Utilisateurs', icon: UserCog, href: '/admin/users' },
         { title: 'Réglages', icon: Settings, href: '/admin/settings' },
@@ -134,8 +164,18 @@ function AdminLayoutContent({
                                 )}
                             />
                             {!compact && (
-                                <span className="text-[13px] font-semibold truncate">
+                                <span className="text-[13px] font-semibold truncate flex-1">
                                     {item.title}
+                                </span>
+                            )}
+                            
+                            {/* BADGE */}
+                            {item.badge !== undefined && item.badge > 0 && (
+                                <span className={cn(
+                                    "bg-[#E8112D] text-white text-[10px] font-bold rounded-full flex items-center justify-center",
+                                    compact ? "absolute top-1 right-1 w-4 h-4 text-[8px]" : "w-5 h-5 ml-auto"
+                                )}>
+                                    {item.badge > 99 ? '99+' : item.badge}
                                 </span>
                             )}
                         </Link>

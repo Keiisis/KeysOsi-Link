@@ -109,6 +109,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
 
     // Unread Counters
     const [unreadMessages, setUnreadMessages] = useState(0)
+    const [unreadNotifications, setUnreadNotifications] = useState(0)
     const [unreadVoices, setUnreadVoices] = useState(0)
     const [unreadPartenaires, setUnreadPartenaires] = useState(0)
 
@@ -224,12 +225,14 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
 
         // Initial fetch
         const fetchUnread = async () => {
-            const [msgRes, voiceRes, partRes] = await Promise.all([
-                supabase.from('messages').select('id', { count: 'exact' }).eq('lu', false),
+            const [msgRes, notifRes, voiceRes, partRes] = await Promise.all([
+                supabase.from('messages').select('id', { count: 'exact' }).eq('lu', false).neq('type', 'nationality'),
+                supabase.from('messages').select('id', { count: 'exact' }).eq('lu', false).eq('type', 'nationality'),
                 supabase.from('voice_messages').select('id', { count: 'exact' }).eq('is_read', false),
                 supabase.from('partner_applications').select('id', { count: 'exact' }).eq('is_read', false),
             ])
             setUnreadMessages(msgRes.count || 0)
+            setUnreadNotifications(notifRes.count || 0)
             setUnreadVoices(voiceRes.count || 0)
             setUnreadPartenaires(partRes.count || 0)
         }
@@ -338,7 +341,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
             items: [
                 { title: t('Messages'), icon: MessageSquare, href: '/agent/messages', badge: unreadMessages },
                 { title: t('Vocaux'), icon: Headphones, href: '/agent/vocaux', badge: unreadVoices },
-                { title: t('Notifications'), icon: Bell, href: '/agent/notifications' },
+                { title: t('Notifications'), icon: Bell, href: '/agent/notifications', badge: unreadNotifications },
             ],
         },
         {

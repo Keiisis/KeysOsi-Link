@@ -494,7 +494,7 @@ export default function AiRadarView() {
                                         {/* Actions */}
                                         <div className="flex gap-2">
                                             {lead.phone ? (
-                                                <a href={`https://wa.me/${lead.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer"
+                                                <a href={`https://wa.me/${lead.phone.replace(/[^0-9]/g, '')}${lead.whatsapp_template ? `?text=${encodeURIComponent(lead.whatsapp_template)}` : ''}`} target="_blank" rel="noopener noreferrer"
                                                     className="flex-1 flex items-center justify-center gap-1.5 bg-[#008751]/10 hover:bg-[#008751]/20 p-2.5 rounded-xl transition-colors">
                                                     <Phone className="w-3.5 h-3.5 text-[#008751]" />
                                                     <span className="text-[10px] font-bold text-[#008751]">{lead.phone}</span>
@@ -672,13 +672,53 @@ export default function AiRadarView() {
                                     </button>
                                 </div>
 
+                                {/* Details extra grid */}
+                                <div className="grid grid-cols-2 gap-3 mb-4">
+                                    <div className="bg-gray-50 p-3 rounded-xl">
+                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Mot clé / Secteur</p>
+                                        <p className="text-sm font-semibold text-gray-900 capitalize w-full truncate">{selectedLead.keyword || 'Inconnu'}</p>
+                                    </div>
+                                    <div className="bg-gray-50 p-3 rounded-xl">
+                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Localité</p>
+                                        <p className="text-sm font-semibold text-gray-900 capitalize w-full truncate">{selectedLead.city || 'Inconnu'}</p>
+                                    </div>
+                                    <div className="bg-gray-50 p-3 rounded-xl">
+                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Avis Google</p>
+                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                            <Star className="w-4 h-4 text-[#FCD116] fill-current" />
+                                            <span className="text-sm font-bold text-gray-900">{selectedLead.rating || 'N/A'}</span>
+                                            <span className="text-[10px] text-gray-500">({selectedLead.reviews_count || 0} avis)</span>
+                                        </div>
+                                    </div>
+                                    <div className="bg-gray-50 p-3 rounded-xl">
+                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Statut CRM</p>
+                                        {selectedLead.status && STATUS_CONFIG[selectedLead.status as StatusType] && (
+                                            <span className="px-2 py-0.5 rounded-md text-[10px] font-bold inline-block"
+                                                style={{
+                                                    color: STATUS_CONFIG[selectedLead.status as StatusType].color,
+                                                    backgroundColor: STATUS_CONFIG[selectedLead.status as StatusType].color + '20'
+                                                }}>
+                                                {STATUS_CONFIG[selectedLead.status as StatusType].label}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+
                                 {/* Score */}
                                 {selectedLead.relevance_score !== undefined && (
-                                    <div className="flex items-center gap-3 mb-4 bg-gray-50 p-3 rounded-xl">
-                                        <Sparkles className="w-5 h-5 text-[#008751]" />
-                                        <div>
-                                            <p className="text-xs font-bold text-gray-500">Score de pertinence IA</p>
-                                            <p className="text-xl font-black text-gray-900">{selectedLead.relevance_score}/100</p>
+                                    <div className="flex items-center justify-between mb-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                        <div className="flex items-center gap-3">
+                                            <Sparkles className="w-5 h-5 text-[#008751]" />
+                                            <div>
+                                                <p className="text-xs font-bold text-gray-500">Score de pertinence IA</p>
+                                                <p className="text-xl font-black text-gray-900">{selectedLead.relevance_score}/100</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end">
+                                            <p className="text-[10px] text-gray-400 font-medium">Création</p>
+                                            <p className="text-xs text-gray-600 font-semibold">
+                                                {selectedLead.created_at ? new Date(selectedLead.created_at).toLocaleDateString('fr-FR') : 'Date inconnue'}
+                                            </p>
                                         </div>
                                     </div>
                                 )}
@@ -686,10 +726,20 @@ export default function AiRadarView() {
                                 <div className="space-y-3 mb-4">
                                     <div className="flex items-start gap-2 bg-gray-50 p-3 rounded-xl">
                                         <MapPin className="w-4 h-4 text-[#E8112D] shrink-0 mt-0.5" />
-                                        <p className="text-xs font-medium text-gray-700">{selectedLead.address}</p>
+                                        <div className="flex flex-col">
+                                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">Adresse</p>
+                                            <p className="text-sm font-medium text-gray-800 leading-snug">{selectedLead.address}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-2 bg-gray-50 p-3 rounded-xl">
+                                        <Building2 className="w-4 h-4 text-[#008751] shrink-0 mt-0.5" />
+                                        <div className="flex flex-col">
+                                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">Description Marketing</p>
+                                            <p className="text-sm font-medium text-gray-800 leading-snug">{selectedLead.description}</p>
+                                        </div>
                                     </div>
                                     {selectedLead.phone && (
-                                        <a href={`https://wa.me/${selectedLead.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer"
+                                        <a href={`https://wa.me/${selectedLead.phone.replace(/[^0-9]/g, '')}${selectedLead.whatsapp_template ? `?text=${encodeURIComponent(selectedLead.whatsapp_template)}` : ''}`} target="_blank" rel="noopener noreferrer"
                                             className="flex items-center gap-2 bg-[#008751]/10 p-3 rounded-xl hover:bg-[#008751]/20 transition-colors">
                                             <Phone className="w-4 h-4 text-[#008751]" />
                                             <span className="text-sm font-bold text-[#008751]">{selectedLead.phone}</span>
