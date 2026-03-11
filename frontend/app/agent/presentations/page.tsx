@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { supabase } from '@/lib/supabase'
+import { getProposalsList } from '@/app/actions/ai-proposals'
 import { Plus, FileText, Calendar, Wallet, Globe, ArrowRight, Loader2, Play, Wand2, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
@@ -42,13 +42,10 @@ export default function AgentPresentationsPage() {
 
     const fetchProposals = async () => {
         setLoading(true)
-        const { data, error } = await supabase
-            .from('ai_client_proposals')
-            .select('id, secret_key, client_name, destination, status, total_amount, created_at')
-            .order('created_at', { ascending: false })
+        const res = await getProposalsList()
 
-        if (!error && data) {
-            setProposals(data)
+        if (res.success && res.data) {
+            setProposals(res.data)
         }
         setLoading(false)
     }
@@ -85,7 +82,7 @@ export default function AgentPresentationsPage() {
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-bold text-white mb-2">Smart Slides VIP</h1>
-                    <p className="text-slate-400">Générez et gérez des propositions de services premium propulsées par l'IA.</p>
+                    <p className="text-slate-400">Générez et gérez des propositions de services premium propulsées par l&apos;IA.</p>
                 </div>
                 <button
                     onClick={() => setNewModalOpen(true)}
@@ -182,7 +179,7 @@ export default function AgentPresentationsPage() {
                                         <Wand2 className="w-5 h-5 text-amber-500" />
                                         Générer un Devis IA
                                     </h2>
-                                    <p className="text-sm text-slate-400 mt-1">L'IA va créer une proposition complète en recherchant sur le terrain.</p>
+                                    <p className="text-sm text-slate-400 mt-1">L&apos;IA va créer une proposition complète en recherchant sur le terrain.</p>
                                 </div>
                                 <button onClick={() => setNewModalOpen(false)} className="text-slate-400 hover:text-white transition-colors" title="Fermer">
                                     <X className="w-6 h-6" />
@@ -242,7 +239,7 @@ export default function AgentPresentationsPage() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-300">Notes pour l'IA</label>
+                                        <label className="text-sm font-medium text-slate-300">Notes pour l&apos;IA</label>
                                         <textarea rows={2} value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 transition-colors" placeholder="Toute autre instruction pour générer ce devis..." />
                                     </div>
 

@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { getProposalBySecret } from '@/app/actions/ai-proposals'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, ChevronRight, ChevronLeft, MapPin, Star, CheckCircle } from 'lucide-react'
 
@@ -35,27 +35,16 @@ export default function PresentationView({ params }: { params: Promise<{ secret:
         const fetchPresentation = async () => {
             setLoading(true)
             
-            // 1. Fetch proposal by secret
-            const { data: pData, error: pError } = await supabase
-                .from('ai_client_proposals')
-                .select('*')
-                .eq('secret_key', secret)
-                .single()
+            // Fetch proposal and items by secret using the Server Action
+            const result = await getProposalBySecret(secret)
 
-            if (pError || !pData) {
+            if (!result.success || !result.proposal) {
                 setLoading(false)
                 return
             }
 
-            // 2. Fetch items
-            const { data: iData } = await supabase
-                .from('ai_proposal_items')
-                .select('*')
-                .eq('proposal_id', pData.id)
-                .order('order_index', { ascending: true })
-
-            setProposal(pData)
-            setItems(iData || [])
+            setProposal(result.proposal)
+            setItems(result.items || [])
             setLoading(false)
             
             // Note: In a real advanced app, we could trigger a view count here.
