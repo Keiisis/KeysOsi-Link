@@ -98,7 +98,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
         const { data: proposal, error: pe } = await supabase
             .from('ai_client_proposals')
-            .select('id, client_name, client_email, destination, total_amount, currency, created_at')
+            .select('id, client_name, client_email, destination, total_amount, created_at')
             .eq('id', id)
             .single()
 

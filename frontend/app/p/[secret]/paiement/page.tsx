@@ -693,6 +693,11 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
             <div className="border-t border-white/5 py-4 text-center text-slate-600 text-xs flex items-center justify-center gap-2">
                 <Shield className="w-3 h-3" /> Paiement sécurisé — Retour Gagnant © {new Date().getFullYear()}
             </div>
+
+            {/* FedaPay requires a button in the DOM to bind onto. It must not be hidden with display:none */}
+            <div className="absolute w-[1px] h-[1px] opacity-0 pointer-events-none overflow-hidden" aria-hidden="true">
+                <button id="fedapay-button" type="button" />
+            </div>
         </div>
     )
 }
