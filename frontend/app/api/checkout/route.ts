@@ -46,6 +46,7 @@ export async function POST(request: Request) {
             shipping_address,
             shipping_zone,
             shipping_fee,
+            is_proposal,
         } = body
 
         // ═══ VALIDATION STRICTE DES ENTRÉES ══════════════════════
@@ -127,16 +128,16 @@ export async function POST(request: Request) {
         const validatedShippingFee = Math.max(0, Math.min(Number(shipping_fee) || 0, 100000))
 
         // ── CAS SPÉCIAL : paiement d'une proposition IA ─────────────────────
-        // Les propositions voyages ont un product_id de la forme "proposal-<uuid>".
+        // Les propositions voyages sont signalées par le flag is_proposal.
         // Elles ne sont pas dans la table products → validation différente.
-        const isProposalPayment = typeof product_id === 'string' && product_id.startsWith('proposal-')
+        const isProposalPayment = is_proposal === true
 
         // Déclaré ici pour être accessible dans le rollback de la création d'ordre
         const reservedItems: { product_id: string, quantity: number }[] = []
 
         if (isProposalPayment) {
-            // Extraire l'UUID de la proposition et valider contre ai_client_proposals
-            const proposalUuid = product_id.replace(/^proposal-/, '')
+            // Valider l'UUID de la proposition contre ai_client_proposals
+            const proposalUuid = product_id
             const { data: proposal, error: propErr } = await supabase
                 .from('ai_client_proposals')
                 .select('id, total_amount')
@@ -290,7 +291,7 @@ export async function POST(request: Request) {
         const { data, error } = await supabase
             .from('orders')
             .insert({
-                product_id: product_id || null,
+                product_id: isProposalPayment ? null : (product_id || null),
                 product_title: product_title || '',
                 quantity: quantity || 1,
                 amount: validatedAmount, // Toujours le montant validé serveur, jamais celui du client

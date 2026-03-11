@@ -233,8 +233,9 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    product_id: `proposal-${proposal.id}`,
+                    product_id: proposal.id,
                     product_title: `Voyage ${proposal.destination} - ${proposal.client_name}`,
+                    is_proposal: true,
                     quantity: 1,
                     amount: proposal.total_amount,
                     currency: proposal.currency || 'XOF',
