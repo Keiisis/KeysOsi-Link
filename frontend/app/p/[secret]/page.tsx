@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, ChevronRight, ChevronLeft, MapPin, Star, CheckCircle } from 'lucide-react'
@@ -24,7 +24,8 @@ interface Proposal {
     total_amount: number
 }
 
-export default function PresentationView({ params }: { params: { secret: string } }) {
+export default function PresentationView({ params }: { params: Promise<{ secret: string }> }) {
+    const { secret } = React.use(params)
     const [loading, setLoading] = useState(true)
     const [proposal, setProposal] = useState<Proposal | null>(null)
     const [items, setItems] = useState<ProposalItem[]>([])
@@ -38,7 +39,7 @@ export default function PresentationView({ params }: { params: { secret: string 
             const { data: pData, error: pError } = await supabase
                 .from('ai_client_proposals')
                 .select('*')
-                .eq('secret_key', params.secret)
+                .eq('secret_key', secret)
                 .single()
 
             if (pError || !pData) {
@@ -61,7 +62,7 @@ export default function PresentationView({ params }: { params: { secret: string 
         }
 
         fetchPresentation()
-    }, [params.secret])
+    }, [secret])
 
     const nextSlide = () => {
         if (currentSlide < items.length - 1) setCurrentSlide(currentSlide + 1)

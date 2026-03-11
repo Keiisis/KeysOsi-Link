@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
-import { Plus, Search, FileText, Calendar, Wallet, Globe, ArrowRight, Loader2, Play } from 'lucide-react'
+import { Plus, FileText, Calendar, Wallet, Globe, ArrowRight, Loader2, Play, Wand2, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 interface Proposal {

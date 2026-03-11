@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { motion } from 'framer-motion'
@@ -30,7 +30,8 @@ interface Proposal {
     markup_percentage: number
 }
 
-export default function AgentPresentationEditor({ params }: { params: { id: string } }) {
+export default function AgentPresentationEditor({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = React.use(params)
     const router = useRouter()
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -40,8 +41,8 @@ export default function AgentPresentationEditor({ params }: { params: { id: stri
     const fetchData = useCallback(async () => {
         setLoading(true)
         const [{ data: pData, error: pError }, { data: iData, error: iError }] = await Promise.all([
-            supabase.from('ai_client_proposals').select('*').eq('id', params.id).single(),
-            supabase.from('ai_proposal_items').select('*').eq('proposal_id', params.id).order('order_index', { ascending: true })
+            supabase.from('ai_client_proposals').select('*').eq('id', id).single(),
+            supabase.from('ai_proposal_items').select('*').eq('proposal_id', id).order('order_index', { ascending: true })
         ])
 
         if (pError || !pData) {
@@ -56,7 +57,7 @@ export default function AgentPresentationEditor({ params }: { params: { id: stri
         setProposal(pData)
         setItems(iData || [])
         setLoading(false)
-    }, [params.id, router])
+    }, [id, router])
 
     useEffect(() => {
         fetchData()
