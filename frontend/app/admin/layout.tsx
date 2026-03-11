@@ -79,6 +79,7 @@ function AdminLayoutContent({
     const menuItems = [
         { title: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
         { title: 'Radar IA', icon: Radar, href: '/admin/radar' },
+        { title: 'Smart Slides', icon: Sparkles, href: '/admin/proposals' },
         { title: 'Événements', icon: Calendar, href: '/admin/evenements' },
         { title: 'Sponsors', icon: Star, href: '/admin/sponsors' },
         { title: 'Analytics', icon: BarChart3, href: '/admin/analytics' },
