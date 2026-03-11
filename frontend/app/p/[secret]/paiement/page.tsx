@@ -1,0 +1,631 @@
+'use client'
+
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { getProposalBySecret } from '@/app/actions/ai-proposals'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+    ArrowLeft, CreditCard, Phone, User, Mail,
+    CheckCircle2, AlertCircle, Loader2, Shield, Lock, MapPin, Sparkles
+} from 'lucide-react'
+import Link from 'next/link'
+
+// ─── Déclarations des SDK tiers ────────────────────────────────────────────────
+declare global {
+    interface Window {
+        openKkiapayWidget: (config: Record<string, unknown>) => void
+        addKkiapayListener: (event: string, callback: (data: Record<string, unknown>) => void) => void
+        FedaPay: { init: (selector: string, config: Record<string, unknown>) => void }
+        Stripe: (key: string, options?: Record<string, unknown>) => StripeInstance
+        paypal: {
+            Buttons: (config: Record<string, unknown>) => { render: (selector: string) => Promise<void> }
+        }
+    }
+}
+
+interface StripeInstance {
+    elements: (options?: Record<string, unknown>) => StripeElements
+    confirmCardPayment: (clientSecret: string, data: Record<string, unknown>) => Promise<{
+        error?: { message: string }
+        paymentIntent?: { id: string; status: string }
+    }>
+}
+
+interface StripeElements {
+    create: (type: string, options?: Record<string, unknown>) => StripeElement
+}
+
+interface StripeElement {
+    mount: (selector: string) => void
+    unmount: () => void
+    destroy: () => void
+    on: (event: string, handler: () => void) => void
+}
+
+interface ProposalItem {
+    id: string
+    type: string
+    title: string
+    selling_price: number
+}
+
+interface Proposal {
+    id: string
+    secret_key: string
+    client_name: string
+    client_email: string | null
+    destination: string
+    total_amount: number
+}
+
+type PaymentProvider = 'kkiapay' | 'fedapay' | 'zeyow' | 'stripe' | 'paypal'
+type Step = 'info' | 'payment' | 'stripe-form' | 'paypal-form' | 'processing' | 'success' | 'error'
+
+export default function ProposalPaymentPage({ params }: { params: Promise<{ secret: string }> }) {
+    const { secret } = React.use(params)
+    const [loading, setLoading] = useState(true)
+    const [proposal, setProposal] = useState<Proposal | null>(null)
+    const [items, setItems] = useState<ProposalItem[]>([])
+
+    const [step, setStep] = useState<Step>('info')
+    const [provider, setProvider] = useState<PaymentProvider | null>(null)
+    const [customerName, setCustomerName] = useState('')
+    const [customerEmail, setCustomerEmail] = useState('')
+    const [customerPhone, setCustomerPhone] = useState('')
+    const [errorMessage, setErrorMessage] = useState('')
+    const [orderId, setOrderId] = useState<string | null>(null)
+    const [settings, setSettings] = useState<Record<string, string>>({})
+
+    // Stripe
+    const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null)
+    const [stripeReady, setStripeReady] = useState(false)
+    const stripeInstanceRef = useRef<StripeInstance | null>(null)
+    const cardElementRef = useRef<StripeElement | null>(null)
+    const cardMountedRef = useRef(false)
+
+    // PayPal
+    const paypalRenderedRef = useRef(false)
+    const paypalOrderIdRef = useRef<string | null>(null)
+
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true)
+            const result = await getProposalBySecret(secret)
+            if (result.success && result.proposal) {
+                setProposal(result.proposal)
+                setItems(result.items || [])
+                setCustomerName(result.proposal.client_name || '')
+                setCustomerEmail(result.proposal.client_email || '')
+            }
+            setLoading(false)
+        }
+        fetchData()
+
+        // Charger les settings de paiement
+        fetch('/api/settings/payment')
+            .then(r => r.json())
+            .then(d => setSettings(d))
+            .catch(() => setSettings({}))
+    }, [secret])
+
+    // ─── Stripe Elements ──────────────────────────
+    useEffect(() => {
+        if (step !== 'stripe-form') {
+            if (cardElementRef.current && cardMountedRef.current) {
+                try { cardElementRef.current.unmount() } catch { /* ignore */ }
+                cardMountedRef.current = false
+            }
+            return
+        }
+        if (cardMountedRef.current) return
+        const publicKey = settings.stripe_public_key
+        if (!publicKey || !window.Stripe) return
+
+        if (!stripeInstanceRef.current) {
+            stripeInstanceRef.current = window.Stripe(publicKey)
+        }
+
+        const elements = stripeInstanceRef.current.elements({
+            appearance: {
+                theme: 'night',
+                variables: {
+                    colorPrimary: '#F59E0B',
+                    colorBackground: '#0d1520',
+                    colorText: '#ffffff',
+                    borderRadius: '12px',
+                },
+            },
+        })
+
+        const card = elements.create('card', {
+            style: { base: { color: '#ffffff', fontSize: '15px', '::placeholder': { color: '#4b5563' } } },
+            hidePostalCode: true,
+        })
+
+        setTimeout(() => {
+            const el = document.getElementById('stripe-card-element')
+            if (el) {
+                card.mount('#stripe-card-element')
+                cardElementRef.current = card
+                cardMountedRef.current = true
+                setStripeReady(true)
+            }
+        }, 100)
+    }, [step, settings.stripe_public_key])
+
+    // ─── PayPal ──────────────────────────
+    useEffect(() => {
+        if (step !== 'paypal-form') { paypalRenderedRef.current = false; return }
+        if (paypalRenderedRef.current) return
+        const clientId = settings.paypal_client_id
+        if (!clientId) return
+
+        const currency = (settings.paypal_currency || 'XOF').toUpperCase()
+
+        const initPayPal = () => {
+            if (!window.paypal || paypalRenderedRef.current) return
+            paypalRenderedRef.current = true
+
+            window.paypal.Buttons({
+                style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay', height: 48 },
+                createOrder: async (): Promise<string> => {
+                    const oid = await createOrder('paypal')
+                    if (!oid) throw new Error('Erreur')
+                    paypalOrderIdRef.current = oid
+                    const res = await fetch('/api/checkout/paypal/create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ order_id: oid }),
+                    })
+                    const data = await res.json()
+                    if (!data.paypal_order_id) throw new Error(data.error || 'PayPal error')
+                    return data.paypal_order_id
+                },
+                onApprove: async (data: { orderID: string }) => {
+                    setStep('processing')
+                    const oid = paypalOrderIdRef.current
+                    if (!oid) { setErrorMessage('Référence perdue'); setStep('error'); return }
+                    const res = await fetch('/api/checkout/paypal/capture', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paypal_order_id: data.orderID, order_id: oid }),
+                    })
+                    const result = await res.json()
+                    if (result.success) {
+                        setOrderId(oid)
+                        await markProposalAsPaid()
+                        setStep('success')
+                    } else {
+                        cancelOrder(oid)
+                        setErrorMessage(result.error || 'Capture PayPal échouée')
+                        setStep('error')
+                    }
+                },
+                onError: () => {
+                    if (paypalOrderIdRef.current) cancelOrder(paypalOrderIdRef.current)
+                    setErrorMessage('Erreur PayPal')
+                    setStep('error')
+                },
+                onCancel: () => { setStep('payment') },
+            }).render('#paypal-button-container').catch(() => {
+                setErrorMessage('Impossible d\'initialiser PayPal')
+                setStep('error')
+            })
+        }
+
+        if (window.paypal) {
+            setTimeout(initPayPal, 50)
+        } else {
+            const script = document.createElement('script')
+            script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=${currency}&locale=fr_FR&intent=capture`
+            script.onload = initPayPal
+            document.head.appendChild(script)
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [step, settings.paypal_client_id])
+
+    // ─── Helpers ──────────────────────────
+    const markProposalAsPaid = async () => {
+        if (!proposal) return
+        try {
+            await fetch('/api/ai/proposal-paid', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ proposal_id: proposal.id, client_email: customerEmail, client_name: customerName }),
+            })
+        } catch { /* fire and forget */ }
+    }
+
+    const createOrder = useCallback(async (paymentMethod: PaymentProvider): Promise<string | null> => {
+        if (!proposal) return null
+        try {
+            const res = await fetch('/api/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    product_id: `proposal-${proposal.id}`,
+                    product_title: `Voyage ${proposal.destination} - ${proposal.client_name}`,
+                    quantity: 1,
+                    amount: proposal.total_amount,
+                    currency: 'XOF',
+                    customer_name: customerName,
+                    customer_email: customerEmail,
+                    customer_phone: customerPhone,
+                    payment_method: paymentMethod,
+                    shipping_zone: 'digital',
+                    shipping_fee: 0,
+                }),
+            })
+            const data = await res.json()
+            if (data.order_id) {
+                setOrderId(data.order_id)
+                return data.order_id
+            }
+            throw new Error(data.error || 'Erreur création commande')
+        } catch (err) {
+            setErrorMessage(err instanceof Error ? err.message : 'Erreur')
+            setStep('error')
+            return null
+        }
+    }, [proposal, customerName, customerEmail, customerPhone])
+
+    const cancelOrder = useCallback(async (oid: string) => {
+        try {
+            await fetch('/api/checkout/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order_id: oid }) })
+        } catch { /* fire-and-forget */ }
+    }, [])
+
+    const verifyPayment = async (oid: string, transactionId: string) => {
+        try {
+            const res = await fetch('/api/checkout/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order_id: oid, transaction_id: transactionId, payment_method: provider }),
+            })
+            const data = await res.json()
+            if (data.success) {
+                await markProposalAsPaid()
+                setStep('success')
+            } else {
+                await cancelOrder(oid)
+                setErrorMessage(data.error || 'Vérification échouée')
+                setStep('error')
+            }
+        } catch {
+            await cancelOrder(oid)
+            setErrorMessage('Erreur de vérification')
+            setStep('error')
+        }
+    }
+
+    // ─── Handlers par provider ──────────────────────
+    const handleKkiapay = async () => {
+        setProvider('kkiapay')
+        setStep('processing')
+        const oid = await createOrder('kkiapay')
+        if (!oid || !proposal) return
+        const publicKey = settings.kkiapay_public_key
+        const sandbox = settings.kkiapay_sandbox === 'true'
+        if (!publicKey) { cancelOrder(oid); setErrorMessage('Kkiapay non configuré'); setStep('error'); return }
+        try {
+            window.openKkiapayWidget({ amount: proposal.total_amount, position: 'center', key: publicKey, sandbox, phone: customerPhone, data: { order_id: oid } })
+            window.addKkiapayListener('success', async (response) => { await verifyPayment(oid, response.transactionId as string) })
+            window.addKkiapayListener('failed', () => { cancelOrder(oid); setErrorMessage('Paiement échoué'); setStep('error') })
+        } catch { cancelOrder(oid); setErrorMessage('Erreur Kkiapay'); setStep('error') }
+    }
+
+    const handleFedapay = async () => {
+        setProvider('fedapay')
+        setStep('processing')
+        const oid = await createOrder('fedapay')
+        if (!oid || !proposal) return
+        const publicKey = settings.fedapay_public_key
+        const sandbox = settings.fedapay_sandbox === 'true'
+        if (!publicKey) { cancelOrder(oid); setErrorMessage('FedaPay non configuré'); setStep('error'); return }
+
+        const ensureFedaPay = (): Promise<void> => new Promise((resolve, reject) => {
+            if (window.FedaPay) { resolve(); return }
+            const s = document.createElement('script')
+            s.src = 'https://cdn.fedapay.com/checkout.js?v=1.1.7'
+            s.onload = () => { const t = setInterval(() => { if (window.FedaPay) { clearInterval(t); resolve() } }, 200); setTimeout(() => { clearInterval(t); reject(new Error('FedaPay timeout')) }, 8000) }
+            s.onerror = () => reject(new Error('SDK FedaPay indisponible'))
+            document.head.appendChild(s)
+        })
+
+        try { await ensureFedaPay() } catch (err) { cancelOrder(oid); setErrorMessage(err instanceof Error ? err.message : 'Erreur FedaPay'); setStep('error'); return }
+
+        let fedapayTxId: number | null = null
+        try {
+            const createRes = await fetch('/api/checkout/fedapay', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order_id: oid, amount: Math.round(proposal.total_amount), description: `Voyage ${proposal.destination}`, customer_email: customerEmail || undefined, customer_phone: customerPhone }) })
+            const createData = await createRes.json()
+            if (!createRes.ok || !createData.fedapay_transaction_id) { cancelOrder(oid); setErrorMessage(createData.error || 'FedaPay erreur'); setStep('error'); return }
+            fedapayTxId = createData.fedapay_transaction_id
+        } catch { cancelOrder(oid); setErrorMessage('Erreur FedaPay'); setStep('error'); return }
+
+        try {
+            window.FedaPay.init('#fedapay-button', { public_key: publicKey, environment: sandbox ? 'sandbox' : 'live', transaction: { id: fedapayTxId }, onComplete: async (resp: Record<string, unknown>) => { const tx = resp.transaction as Record<string, unknown> | undefined; if (resp.reason === 'APPROVED' || (tx && (tx.status === 'approved' || tx.status === 'transferred'))) { await verifyPayment(oid, String(fedapayTxId)) } else { cancelOrder(oid); setErrorMessage('Paiement non approuvé'); setStep('error') } } })
+            setTimeout(() => { document.getElementById('fedapay-button')?.click() }, 100)
+        } catch (err) { cancelOrder(oid); setErrorMessage(`Erreur FedaPay: ${err instanceof Error ? err.message : ''}`); setStep('error') }
+    }
+
+    const handleZeyow = async () => {
+        setProvider('zeyow')
+        setStep('processing')
+        const oid = await createOrder('zeyow')
+        if (!oid || !proposal) return
+        const redirectUrl = settings.zeyow_redirect_url
+        if (!redirectUrl) { setErrorMessage('Zeyow non configuré'); setStep('error'); return }
+        const returnUrl = `${window.location.origin}/boutique/payment/return`
+        const cancelUrl = `${window.location.origin}/p/${secret}`
+        window.location.href = `${redirectUrl}?amount=${proposal.total_amount}&currency=XOF&order_id=${oid}&phone=${encodeURIComponent(customerPhone)}&description=${encodeURIComponent(`Voyage ${proposal.destination}`)}&return_url=${encodeURIComponent(returnUrl)}&cancel_url=${encodeURIComponent(cancelUrl)}`
+    }
+
+    const handleStripe = async () => {
+        setProvider('stripe')
+        setStep('processing')
+        const oid = await createOrder('stripe')
+        if (!oid) return
+        const publicKey = settings.stripe_public_key
+        if (!publicKey) { cancelOrder(oid); setErrorMessage('Stripe non configuré'); setStep('error'); return }
+        try {
+            const res = await fetch('/api/checkout/stripe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order_id: oid }) })
+            const data = await res.json()
+            if (!data.client_secret) { cancelOrder(oid); setErrorMessage(data.error || 'Erreur Stripe'); setStep('error'); return }
+            setStripeClientSecret(data.client_secret)
+            setStep('stripe-form')
+        } catch { cancelOrder(oid); setErrorMessage('Erreur Stripe'); setStep('error') }
+    }
+
+    const confirmStripePayment = async () => {
+        if (!stripeInstanceRef.current || !cardElementRef.current || !stripeClientSecret || !orderId) return
+        setStep('processing')
+        try {
+            const result = await stripeInstanceRef.current.confirmCardPayment(stripeClientSecret, { payment_method: { card: cardElementRef.current as unknown as Record<string, unknown> } })
+            if (result.error) { setErrorMessage(result.error.message || 'Paiement refusé'); setStep('stripe-form') }
+            else if (result.paymentIntent?.status === 'succeeded') { await verifyPayment(orderId, result.paymentIntent.id) }
+            else { setErrorMessage('Paiement incomplet'); setStep('stripe-form') }
+        } catch (err) { if (orderId) await cancelOrder(orderId); setErrorMessage(err instanceof Error ? err.message : 'Erreur Stripe'); setStep('error') }
+    }
+
+    const handlePayPal = () => {
+        setProvider('paypal')
+        paypalRenderedRef.current = false
+        setStep('paypal-form')
+    }
+
+    // Providers disponibles
+    const allProviders = [
+        { id: 'kkiapay' as PaymentProvider, name: 'Kkiapay', subtitle: 'Mobile Money (MTN, Moov)', logo: '/assets/icones moyens de paiement/kkiapay.png', handler: handleKkiapay, isReady: settings.kkiapay_enabled === 'true' && !!settings.kkiapay_public_key },
+        { id: 'fedapay' as PaymentProvider, name: 'FedaPay', subtitle: 'Mobile Money / Carte', logo: '/assets/icones moyens de paiement/fedapay.png', handler: handleFedapay, isReady: settings.fedapay_enabled === 'true' && !!settings.fedapay_public_key },
+        { id: 'zeyow' as PaymentProvider, name: 'Zeyow', subtitle: 'Carte Virtuelle', logo: '/assets/icones moyens de paiement/zeyow.jpg', handler: handleZeyow, isReady: settings.zeyow_enabled === 'true' && !!settings.zeyow_redirect_url },
+        { id: 'stripe' as PaymentProvider, name: 'Stripe', subtitle: 'Carte bancaire internationale', logo: '/assets/icones moyens de paiement/Stripe.png', handler: handleStripe, isReady: settings.stripe_enabled === 'true' && !!settings.stripe_public_key },
+        { id: 'paypal' as PaymentProvider, name: 'PayPal', subtitle: 'Compte PayPal', logo: '/assets/icones moyens de paiement/paypal.png', handler: handlePayPal, isReady: settings.paypal_enabled === 'true' && !!settings.paypal_client_id },
+    ]
+    const providers = allProviders.filter(p => p.isReady)
+
+    // ─── LOADING ──────────────────────────
+    if (loading) {
+        return <div className="min-h-screen bg-slate-950 flex items-center justify-center"><Loader2 className="w-10 h-10 text-amber-500 animate-spin" /></div>
+    }
+    if (!proposal) {
+        return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white"><p>Proposition introuvable</p></div>
+    }
+
+    const billableItems = items.filter(i => i.type !== 'hero' && i.type !== 'pricing' && i.selling_price > 0)
+
+    // ─── RENDER ──────────────────────────
+    return (
+        <div className="min-h-screen bg-slate-950 text-white">
+            {/* Header */}
+            <div className="border-b border-white/5 bg-slate-950/80 backdrop-blur-xl sticky top-0 z-50">
+                <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
+                    <Link href={`/p/${secret}`} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm">
+                        <ArrowLeft className="w-4 h-4" /> Retour
+                    </Link>
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center font-black text-slate-900 text-sm">RG</div>
+                        <span className="text-xs font-bold text-amber-500 tracking-wider hidden sm:inline">RETOUR GAGNANT</span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="max-w-2xl mx-auto px-6 py-8">
+                <AnimatePresence mode="wait">
+                    {/* ─── STEP: INFO ──────────────────────── */}
+                    {step === 'info' && (
+                        <motion.div key="info" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                            <div className="text-center mb-8">
+                                <h1 className="text-2xl md:text-3xl font-black mb-2">Finalisez votre réservation</h1>
+                                <p className="text-slate-400 text-sm">Voyage vers <span className="text-amber-400 font-semibold">{proposal.destination}</span></p>
+                            </div>
+
+                            {/* Recap */}
+                            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-8">
+                                <div className="space-y-2 mb-4">
+                                    {billableItems.map(i => (
+                                        <div key={i.id} className="flex justify-between text-sm">
+                                            <span className="text-slate-300">{i.title}</span>
+                                            <span className="text-white font-bold">{i.selling_price.toLocaleString()} FCFA</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="border-t border-white/10 pt-3 flex justify-between items-center">
+                                    <span className="text-amber-500 font-bold text-sm">Total</span>
+                                    <span className="text-2xl font-black text-white">{proposal.total_amount.toLocaleString()} FCFA</span>
+                                </div>
+                            </div>
+
+                            {/* Form */}
+                            <div className="space-y-4 mb-6">
+                                <div>
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 block">Votre nom complet *</label>
+                                    <div className="relative">
+                                        <User className="absolute left-4 top-3.5 w-4 h-4 text-slate-500" />
+                                        <input type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Jean Dupont" className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-11 pr-4 py-3 text-white focus:border-amber-500 focus:outline-none" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 block">Email</label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-4 top-3.5 w-4 h-4 text-slate-500" />
+                                        <input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} placeholder="jean@email.com" className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-11 pr-4 py-3 text-white focus:border-amber-500 focus:outline-none" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 block">Téléphone *</label>
+                                    <div className="relative">
+                                        <Phone className="absolute left-4 top-3.5 w-4 h-4 text-slate-500" />
+                                        <input type="tel" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="+229 XX XX XX XX" className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-11 pr-4 py-3 text-white focus:border-amber-500 focus:outline-none" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {errorMessage && (
+                                <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl text-sm mb-4 flex items-center gap-2">
+                                    <AlertCircle className="w-4 h-4 flex-shrink-0" /> {errorMessage}
+                                </div>
+                            )}
+
+                            <button 
+                                onClick={() => {
+                                    if (!customerName.trim()) { setErrorMessage('Veuillez saisir votre nom'); return }
+                                    if (!customerPhone.trim()) { setErrorMessage('Veuillez saisir votre téléphone'); return }
+                                    setErrorMessage('')
+                                    setStep('payment')
+                                }}
+                                className="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 py-4 rounded-2xl font-black text-base transition-all shadow-lg shadow-amber-900/20 flex items-center justify-center gap-2"
+                            >
+                                Continuer vers le paiement <CreditCard className="w-5 h-5" />
+                            </button>
+
+                            <p className="text-center text-slate-600 text-xs mt-4 flex items-center justify-center gap-1">
+                                <Lock className="w-3 h-3" /> Vos données sont protégées et chiffrées
+                            </p>
+                        </motion.div>
+                    )}
+
+                    {/* ─── STEP: PAYMENT METHOD ──────────────────────── */}
+                    {step === 'payment' && (
+                        <motion.div key="payment" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                            <div className="text-center mb-8">
+                                <h2 className="text-2xl font-black mb-2">Choisissez votre moyen de paiement</h2>
+                                <p className="text-slate-400 text-sm">Montant : <span className="text-amber-400 font-bold">{proposal.total_amount.toLocaleString()} FCFA</span></p>
+                            </div>
+
+                            <div className="space-y-3 mb-6">
+                                {providers.map(p => (
+                                    <button key={p.id} onClick={p.handler} className="w-full bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/30 rounded-2xl p-4 flex items-center gap-4 transition-all group">
+                                        <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center overflow-hidden">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img src={p.logo} alt={p.name} className="w-8 h-8 object-contain" />
+                                        </div>
+                                        <div className="text-left flex-1">
+                                            <p className="text-white font-bold text-sm">{p.name}</p>
+                                            <p className="text-slate-500 text-xs">{p.subtitle}</p>
+                                        </div>
+                                        <CreditCard className="w-5 h-5 text-slate-600 group-hover:text-amber-500 transition-colors" />
+                                    </button>
+                                ))}
+                                {providers.length === 0 && (
+                                    <div className="text-center py-10 text-slate-500">
+                                        <p>Aucun moyen de paiement configuré.</p>
+                                        <p className="text-xs mt-1">Contactez votre agent Retour Gagnant.</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <button onClick={() => setStep('info')} className="w-full text-slate-400 hover:text-white py-3 text-sm transition-colors">
+                                ← Retour aux informations
+                            </button>
+
+                            <div id="fedapay-button" className="hidden" />
+                        </motion.div>
+                    )}
+
+                    {/* ─── STEP: STRIPE FORM ──────────────────────── */}
+                    {step === 'stripe-form' && (
+                        <motion.div key="stripe" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                            <div className="text-center mb-8">
+                                <h2 className="text-2xl font-black mb-2">Carte bancaire</h2>
+                                <p className="text-slate-400 text-sm">Paiement sécurisé par Stripe</p>
+                            </div>
+                            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 mb-6">
+                                <div id="stripe-card-element" className="min-h-[50px]" />
+                            </div>
+                            {errorMessage && <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl text-sm mb-4">{errorMessage}</div>}
+                            <button onClick={confirmStripePayment} disabled={!stripeReady} className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-900 py-4 rounded-2xl font-black transition-all flex items-center justify-center gap-2">
+                                <Lock className="w-4 h-4" /> Payer {proposal.total_amount.toLocaleString()} FCFA
+                            </button>
+                            <button onClick={() => setStep('payment')} className="w-full text-slate-400 hover:text-white py-3 text-sm mt-2">← Autre moyen de paiement</button>
+                        </motion.div>
+                    )}
+
+                    {/* ─── STEP: PAYPAL FORM ──────────────────────── */}
+                    {step === 'paypal-form' && (
+                        <motion.div key="paypal" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                            <div className="text-center mb-8">
+                                <h2 className="text-2xl font-black mb-2">PayPal</h2>
+                            </div>
+                            <div id="paypal-button-container" className="min-h-[100px] mb-6" />
+                            <button onClick={() => setStep('payment')} className="w-full text-slate-400 hover:text-white py-3 text-sm">← Autre moyen de paiement</button>
+                        </motion.div>
+                    )}
+
+                    {/* ─── STEP: PROCESSING ──────────────────────── */}
+                    {step === 'processing' && (
+                        <motion.div key="processing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-20 gap-6">
+                            <Loader2 className="w-14 h-14 text-amber-500 animate-spin" />
+                            <div className="text-center">
+                                <p className="text-white font-bold text-lg">Traitement en cours...</p>
+                                <p className="text-slate-400 text-sm mt-1">Ne fermez pas cette page</p>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* ─── STEP: SUCCESS ──────────────────────── */}
+                    {step === 'success' && (
+                        <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center py-16 gap-8">
+                            <div className="w-24 h-24 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center">
+                                <CheckCircle2 className="w-12 h-12 text-emerald-500" />
+                            </div>
+                            <div className="text-center space-y-3">
+                                <h1 className="text-3xl font-black">Réservation confirmée ! 🎉</h1>
+                                <p className="text-slate-400 max-w-md">
+                                    Votre voyage vers <span className="text-amber-400 font-semibold">{proposal.destination}</span> est en cours de préparation.
+                                    Vous recevrez un email de confirmation sous peu.
+                                </p>
+                            </div>
+                            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 w-full max-w-sm text-center">
+                                <p className="text-xs text-slate-500 mb-1">Montant payé</p>
+                                <p className="text-2xl font-black text-amber-400">{proposal.total_amount.toLocaleString()} FCFA</p>
+                            </div>
+                            <Link href="/" className="bg-amber-500 hover:bg-amber-400 text-slate-900 px-8 py-3 rounded-xl font-black transition-all">
+                                Retour à l&apos;accueil
+                            </Link>
+                        </motion.div>
+                    )}
+
+                    {/* ─── STEP: ERROR ──────────────────────── */}
+                    {step === 'error' && (
+                        <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-16 gap-8">
+                            <div className="w-24 h-24 rounded-full bg-red-500/20 border-2 border-red-500 flex items-center justify-center">
+                                <AlertCircle className="w-12 h-12 text-red-500" />
+                            </div>
+                            <div className="text-center space-y-3">
+                                <h1 className="text-3xl font-black">Paiement échoué</h1>
+                                <p className="text-slate-400 max-w-md">{errorMessage || 'Une erreur est survenue.'}</p>
+                            </div>
+                            <button onClick={() => { setErrorMessage(''); setStep('payment') }} className="bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-xl font-bold transition-all">
+                                Réessayer
+                            </button>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-white/5 py-4 text-center text-slate-600 text-xs flex items-center justify-center gap-2">
+                <Shield className="w-3 h-3" /> Paiement sécurisé — Retour Gagnant © {new Date().getFullYear()}
+            </div>
+        </div>
+    )
+}
