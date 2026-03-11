@@ -5,22 +5,12 @@ import { getProposalBySecret } from '@/app/actions/ai-proposals'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     ArrowLeft, CreditCard, Phone, User, Mail,
-    CheckCircle2, AlertCircle, Loader2, Shield, Lock, MapPin, Sparkles
+    CheckCircle2, AlertCircle, Loader2, Shield, Lock
 } from 'lucide-react'
 import Link from 'next/link'
 
-// ─── Déclarations des SDK tiers ────────────────────────────────────────────────
-declare global {
-    interface Window {
-        openKkiapayWidget: (config: Record<string, unknown>) => void
-        addKkiapayListener: (event: string, callback: (data: Record<string, unknown>) => void) => void
-        FedaPay: { init: (selector: string, config: Record<string, unknown>) => void }
-        Stripe: (key: string, options?: Record<string, unknown>) => StripeInstance
-        paypal: {
-            Buttons: (config: Record<string, unknown>) => { render: (selector: string) => Promise<void> }
-        }
-    }
-}
+// Types SDK tiers — les déclarations globales Window sont dans PaymentModal.tsx
+// On réutilise les mêmes interfaces locales pour Stripe
 
 interface StripeInstance {
     elements: (options?: Record<string, unknown>) => StripeElements
