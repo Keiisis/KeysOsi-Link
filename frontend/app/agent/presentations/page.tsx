@@ -60,7 +60,7 @@ export default function AgentPresentationsPage() {
     const [formData, setFormData] = useState({
         client_name: '', client_email: '', client_phone: '',
         destination: '', start_date: '', end_date: '',
-        budget: '', activities: '', notes: ''
+        budget: '', activities: '', notes: '', currency: 'XOF'
     })
     const [, setIsGenerating] = useState(false)
 
@@ -370,9 +370,20 @@ export default function AgentPresentationsPage() {
                                                 <input type="date" value={formData.end_date} onChange={e => setFormData({ ...formData, end_date: e.target.value })} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#FCD116] transition-colors" />
                                             </div>
                                         </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Budget indicatif</label>
-                                            <input type="text" value={formData.budget} onChange={e => setFormData({ ...formData, budget: e.target.value })} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#FCD116] transition-colors" placeholder="VIP, Confortable, Économique..." />
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Budget indicatif</label>
+                                                <input type="text" value={formData.budget} onChange={e => setFormData({ ...formData, budget: e.target.value })} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#FCD116] transition-colors" placeholder="VIP, Confortable, Économique..." />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Devise</label>
+                                                <select title="Devise de facturation" value={formData.currency} onChange={e => setFormData({ ...formData, currency: e.target.value })} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#FCD116] transition-colors">
+                                                    <option value="XOF">FCFA (XOF)</option>
+                                                    <option value="EUR">Euro (EUR)</option>
+                                                    <option value="USD">Dollar (USD)</option>
+                                                    <option value="GBP">Livre Sterling (GBP)</option>
+                                                </select>
+                                            </div>
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Activités / Préférences</label>

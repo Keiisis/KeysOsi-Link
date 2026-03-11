@@ -307,7 +307,7 @@ export default function FrontendSettingsPage() {
                                         <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-xs font-bold text-gray-500 shrink-0">
                                             {index + 1}
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4 flex-1">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
                                             <div>
                                                 <input
                                                     value={link.label}

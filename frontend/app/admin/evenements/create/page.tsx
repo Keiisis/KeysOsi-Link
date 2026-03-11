@@ -88,7 +88,7 @@ export default function CreateEventPage() {
                         <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={5} className={inputClass} placeholder={t("Description détaillée de l'événement...")} />
                     </Field>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Field label="Catégorie" icon={Tag}>
                             <select value={form.category} onChange={e => set('category', e.target.value)} className={selectClass}>
                                 {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
@@ -102,7 +102,7 @@ export default function CreateEventPage() {
                         </Field>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Field label="Date de début *" icon={Calendar}>
                             <input type="datetime-local" value={form.start_date} onChange={e => set('start_date', e.target.value)} className={inputClass} />
                         </Field>
@@ -111,7 +111,7 @@ export default function CreateEventPage() {
                         </Field>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Field label="Lieu" icon={MapPin}>
                             <input type="text" value={form.location} onChange={e => set('location', e.target.value)} className={inputClass} placeholder={t("Ex: Cotonou, Bénin")} />
                         </Field>
@@ -141,7 +141,7 @@ export default function CreateEventPage() {
                         </Field>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Field label="Capacité max (0 = illimité)" icon={Users}>
                             <input type="number" value={form.max_capacity} onChange={e => set('max_capacity', +e.target.value)} className={inputClass} min={0} />
                         </Field>

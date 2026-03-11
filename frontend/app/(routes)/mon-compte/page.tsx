@@ -159,7 +159,7 @@ export default function MonComptePage() {
                     </div>
 
                     {/* Features preview */}
-                    <div className="grid grid-cols-2 gap-3 mt-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6">
                         {[
                             { icon: FileText, label: t('Suivi de dossier') },
                             { icon: Sparkles, label: t('Résultats Oracle') },

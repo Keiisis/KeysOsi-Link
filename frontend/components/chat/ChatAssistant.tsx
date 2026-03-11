@@ -590,7 +590,7 @@ export default function ChatAssistant() {
                                     </div>
 
                                     <form onSubmit={handleSupportSubmit} className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div>
                                                 <label className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-1.5 block"><T>Nom</T></label>
                                                 <input type="text" required value={nom} onChange={e => setNom(e.target.value)} placeholder={t("Votre nom")} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#008751]" />

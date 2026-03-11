@@ -176,7 +176,7 @@ export default function PartnerProfileModal({ partner, onClose }: PartnerProfile
                                     {/* ── CONTACT CTA ── */}
                                     <div className="space-y-2.5">
                                         <p className="text-[9px] font-black text-gray-300 uppercase tracking-[0.25em]"><T>Contact direct</T></p>
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             {partner.email && (
                                                 <a
                                                     href={`mailto:${partner.email}`}

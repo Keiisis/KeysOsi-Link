@@ -91,10 +91,10 @@ export default function CreateProductPage() {
                 {/* Main form */}
                 <div className="lg:col-span-2 space-y-6">
                     <Card className="bg-[#0a0f18] border-white/5 rounded-[2rem] overflow-hidden">
-                        <CardHeader className="p-8 border-b border-white/5">
+                        <CardHeader className="p-4 md:p-8 border-b border-white/5">
                             <CardTitle className="text-lg font-black text-white"><T>Informations Produit</T></CardTitle>
                         </CardHeader>
-                        <CardContent className="p-8 space-y-6">
+                        <CardContent className="p-4 md:p-8 space-y-6">
                             <div>
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">
                                     Titre du produit *
@@ -138,10 +138,10 @@ export default function CreateProductPage() {
 
                     {/* Images */}
                     <Card className="bg-[#0a0f18] border-white/5 rounded-[2rem] overflow-hidden">
-                        <CardHeader className="p-8 border-b border-white/5">
+                        <CardHeader className="p-4 md:p-8 border-b border-white/5">
                             <CardTitle className="text-lg font-black text-white"><T>Images du produit</T></CardTitle>
                         </CardHeader>
-                        <CardContent className="p-8 space-y-4">
+                        <CardContent className="p-4 md:p-8 space-y-4">
                             {images.map((img, i) => (
                                 <div key={i} className="relative">
                                     <ImageUpload
@@ -173,10 +173,10 @@ export default function CreateProductPage() {
                 {/* Sidebar */}
                 <div className="space-y-6">
                     <Card className="bg-[#0a0f18] border-white/5 rounded-[2rem] overflow-hidden">
-                        <CardHeader className="p-8 border-b border-white/5">
+                        <CardHeader className="p-4 md:p-8 border-b border-white/5">
                             <CardTitle className="text-lg font-black text-white"><T>Tarification</T></CardTitle>
                         </CardHeader>
-                        <CardContent className="p-8 space-y-6">
+                        <CardContent className="p-4 md:p-8 space-y-6">
                             <div>
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">
                                     Prix (XOF) *
@@ -205,10 +205,10 @@ export default function CreateProductPage() {
                     </Card>
 
                     <Card className="bg-[#0a0f18] border-white/5 rounded-[2rem] overflow-hidden">
-                        <CardHeader className="p-8 border-b border-white/5">
+                        <CardHeader className="p-4 md:p-8 border-b border-white/5">
                             <CardTitle className="text-lg font-black text-white"><T>Organisation</T></CardTitle>
                         </CardHeader>
-                        <CardContent className="p-8 space-y-6">
+                        <CardContent className="p-4 md:p-8 space-y-6">
                             <div>
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">
                                     Categorie

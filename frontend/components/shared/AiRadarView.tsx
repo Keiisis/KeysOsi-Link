@@ -300,7 +300,7 @@ export default function AiRadarView() {
                                 {showFilters && (
                                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                                         className="overflow-hidden">
-                                        <div className="grid grid-cols-2 gap-3 px-2 pb-2">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 px-2 pb-2">
                                             <div>
                                                 <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1 block">Note minimum</label>
                                                 <select title="Note minimum" value={minRating} onChange={e => setMinRating(Number(e.target.value))}
@@ -673,7 +673,7 @@ export default function AiRadarView() {
                                 </div>
 
                                 {/* Details extra grid */}
-                                <div className="grid grid-cols-2 gap-3 mb-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                                     <div className="bg-gray-50 p-3 rounded-xl">
                                         <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Mot clé / Secteur</p>
                                         <p className="text-sm font-semibold text-gray-900 capitalize w-full truncate">{selectedLead.keyword || 'Inconnu'}</p>

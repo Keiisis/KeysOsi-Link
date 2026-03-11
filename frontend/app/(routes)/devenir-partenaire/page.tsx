@@ -318,7 +318,7 @@ export default function DevenirPartenairePage() {
 
                             <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5 text-left space-y-3">
                                 <p className="text-[9px] font-black text-gray-500 uppercase tracking-[0.3em]"><T>Récapitulatif</T></p>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     {[
                                         ['Structure', form.company_name],
                                         ['Catégorie', form.category],

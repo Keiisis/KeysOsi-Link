@@ -68,12 +68,13 @@ export async function getProposalBySecret(secret: string) {
     }
 }
 
-export async function updateProposalAndItems(proposalId: string, newTotal: number, items: Record<string, unknown>[]) {
+export async function updateProposalAndItems(proposalId: string, newTotal: number, items: Record<string, unknown>[], currency?: string) {
     try {
         // 1. Update proposal global
         await supabaseAdmin.from('ai_client_proposals').update({
             total_amount: newTotal,
-            status: 'ready'
+            status: 'ready',
+            ...(currency ? { currency } : {})
         }).eq('id', proposalId)
 
         // 2. Handle items (Delete old, insert new)

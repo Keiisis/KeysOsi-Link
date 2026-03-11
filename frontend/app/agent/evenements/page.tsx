@@ -166,7 +166,7 @@ function EventForm({
                         className={inputClass} placeholder="Ex: Gala de la Diaspora 2026" />
                 </Field>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Field label="Description courte" icon={AlignLeft}>
                         <input type="text" value={form.short_description} onChange={e => set('short_description', e.target.value)}
                             className={inputClass} placeholder="Résumé en une ligne" />
@@ -182,7 +182,7 @@ function EventForm({
                         rows={4} className={inputClass} placeholder="Description détaillée de l'événement..." />
                 </Field>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Field label="Date de début *" icon={Calendar}>
                         <input type="datetime-local" value={form.start_date} onChange={e => set('start_date', e.target.value)} className={inputClass} />
                     </Field>

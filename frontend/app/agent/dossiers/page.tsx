@@ -247,7 +247,7 @@ export default function AgentDossiersPage() {
                             </div>
 
                             {/* Info Grid */}
-                            <div className="grid grid-cols-2  gap-4 mb-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                                 <div className="flex items-center gap-2 text-sm text-gray-400">
                                     <Mail size={14} className="text-emerald-400" />
                                     <span className="truncate">{selectedDossier.client_email}</span>

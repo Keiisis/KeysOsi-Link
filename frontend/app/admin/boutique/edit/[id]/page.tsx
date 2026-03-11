@@ -140,10 +140,10 @@ export default function EditProductPage() {
                 {/* Main form */}
                 <div className="lg:col-span-2 space-y-6">
                     <Card className="bg-[#0a0f18] border-white/5 rounded-[2rem] overflow-hidden">
-                        <CardHeader className="p-8 border-b border-white/5">
+                        <CardHeader className="p-4 md:p-8 border-b border-white/5">
                             <CardTitle className="text-lg font-black text-white"><T>Informations Produit</T></CardTitle>
                         </CardHeader>
-                        <CardContent className="p-8 space-y-6">
+                        <CardContent className="p-4 md:p-8 space-y-6">
                             <div>
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block"><T>Titre *</T></label>
                                 <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder={t("Titre du produit")} title={t("Titre du produit")} className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30" />
@@ -160,10 +160,10 @@ export default function EditProductPage() {
                     </Card>
 
                     <Card className="bg-[#0a0f18] border-white/5 rounded-[2rem] overflow-hidden">
-                        <CardHeader className="p-8 border-b border-white/5">
+                        <CardHeader className="p-4 md:p-8 border-b border-white/5">
                             <CardTitle className="text-lg font-black text-white"><T>Images du produit</T></CardTitle>
                         </CardHeader>
-                        <CardContent className="p-8 space-y-4">
+                        <CardContent className="p-4 md:p-8 space-y-4">
                             {images.map((img, i) => (
                                 <div key={i} className="relative">
                                     <ImageUpload
@@ -195,10 +195,10 @@ export default function EditProductPage() {
                 {/* Sidebar */}
                 <div className="space-y-6">
                     <Card className="bg-[#0a0f18] border-white/5 rounded-[2rem] overflow-hidden">
-                        <CardHeader className="p-8 border-b border-white/5">
+                        <CardHeader className="p-4 md:p-8 border-b border-white/5">
                             <CardTitle className="text-lg font-black text-white"><T>Tarification</T></CardTitle>
                         </CardHeader>
-                        <CardContent className="p-8 space-y-6">
+                        <CardContent className="p-4 md:p-8 space-y-6">
                             <div>
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block"><T>Prix (XOF) *</T></label>
                                 <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder={t("Prix")} title={t("Prix")} className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30" />
@@ -211,10 +211,10 @@ export default function EditProductPage() {
                     </Card>
 
                     <Card className="bg-[#0a0f18] border-white/5 rounded-[2rem] overflow-hidden">
-                        <CardHeader className="p-8 border-b border-white/5">
+                        <CardHeader className="p-4 md:p-8 border-b border-white/5">
                             <CardTitle className="text-lg font-black text-white"><T>Organisation</T></CardTitle>
                         </CardHeader>
-                        <CardContent className="p-8 space-y-6">
+                        <CardContent className="p-4 md:p-8 space-y-6">
                             <div>
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block"><T>Categorie</T></label>
                                 <select value={category} aria-label={t("Catégorie")} title={t("Catégorie")} onChange={e => setCategory(e.target.value)} className="w-full bg-white/5 border border-white/5 rounded-xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-[#FCD116]/30">

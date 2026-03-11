@@ -514,7 +514,7 @@ export default function EventDetailPage() {
                                                 <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
                                                     <CreditCard size={10} /> <T>Moyen de paiement</T>
                                                 </label>
-                                                <div className="grid grid-cols-2 gap-2">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                                     {PAYMENT_METHODS.map(pm => (
                                                         <button type="button" key={pm.id}
                                                             onClick={() => setForm(f => ({ ...f, payment_method: pm.id }))}

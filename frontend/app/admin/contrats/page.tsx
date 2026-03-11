@@ -97,7 +97,7 @@ export default function AdminContractsPage() {
                     </div>
 
                     <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className="text-xs font-bold text-gray-400 mb-1 block"><T>Nom du client *</T></label>
                                 <div className="relative">
@@ -117,7 +117,7 @@ export default function AdminContractsPage() {
                             <label className="text-xs font-bold text-gray-400 mb-1 block"><T>Titre du contrat *</T></label>
                             <input type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t("Contrat d'accompagnement — Nationalité")} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-emerald-500/50" />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className="text-xs font-bold text-gray-400 mb-1 block"><T>Montant</T></label>
                                 <div className="relative">

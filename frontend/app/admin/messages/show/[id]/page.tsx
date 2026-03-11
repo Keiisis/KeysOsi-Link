@@ -538,7 +538,7 @@ export default function MessageShow() {
                     </Card>
 
                     {/* Quick Tools */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <ToolButton icon={Printer} label="Imprimer Dossier" />
                         <ToolButton icon={Download} label="Export JSON" />
                         <ToolButton icon={Share2} label="Relayer" />

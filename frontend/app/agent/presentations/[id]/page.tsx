@@ -6,7 +6,7 @@ import { getProposalById, updateProposalAndItems } from '@/app/actions/ai-propos
 import { motion, Reorder } from 'framer-motion'
 import {
     ArrowLeft, Save, Loader2, Eye, Trash2, Plus, Copy, Check,
-    ExternalLink, Upload, Image as ImageIcon, Sparkles, GripVertical
+    ExternalLink, Upload, Image as ImageIcon, Sparkles, GripVertical, FileDown
 } from 'lucide-react'
 
 interface ProposalItem {
@@ -32,6 +32,7 @@ interface Proposal {
     destination: string
     status: string
     total_amount: number
+    currency?: string
 }
 
 const TYPE_OPTIONS = [
@@ -48,8 +49,10 @@ export default function AgentPresentationEditor({ params }: { params: Promise<{ 
     const router = useRouter()
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
+    const [downloading, setDownloading] = useState(false)
     const [proposal, setProposal] = useState<Proposal | null>(null)
     const [items, setItems] = useState<ProposalItem[]>([])
+    const [currency, setCurrency] = useState('XOF')
     const [copied, setCopied] = useState(false)
     const [expandedSlide, setExpandedSlide] = useState<string | null>(null)
     const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
@@ -64,6 +67,7 @@ export default function AgentPresentationEditor({ params }: { params: Promise<{ 
         }
         setProposal(result.proposal)
         setItems(result.items || [])
+        setCurrency(result.proposal.currency || 'XOF')
         setLoading(false)
     }, [id, router])
 
@@ -134,7 +138,8 @@ export default function AgentPresentationEditor({ params }: { params: Promise<{ 
             const result = await updateProposalAndItems(
                 proposal.id,
                 calculateTotal(),
-                items as unknown as Record<string, unknown>[]
+                items as unknown as Record<string, unknown>[],
+                currency
             )
             if (result.success) {
                 await fetchData()
@@ -183,7 +188,31 @@ export default function AgentPresentationEditor({ params }: { params: Promise<{ 
                     <a href={publicUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-medium transition text-sm">
                         <Eye className="w-4 h-4" /> Aperçu
                     </a>
-                    <button onClick={saveChanges} disabled={saving} className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#008751] to-[#FCD116] hover:opacity-90 text-slate-900 rounded-xl font-black transition shadow-lg text-sm">
+                    <button
+                        type="button"
+                        disabled={downloading}
+                        onClick={async () => {
+                            if (!proposal) return
+                            setDownloading(true)
+                            try {
+                                const res = await fetch(`/api/proposals/${proposal.id}/devis`)
+                                if (!res.ok) throw new Error('Erreur génération PDF')
+                                const blob = await res.blob()
+                                const url = URL.createObjectURL(blob)
+                                const a = document.createElement('a')
+                                a.href = url
+                                a.download = `DEVIS-${proposal.client_name.replace(/\s+/g, '-')}.pdf`
+                                a.click()
+                                URL.revokeObjectURL(url)
+                            } catch { alert('Erreur lors de la génération du devis PDF') }
+                            finally { setDownloading(false) }
+                        }}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-medium transition text-sm disabled:opacity-50"
+                    >
+                        {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                        Devis PDF
+                    </button>
+                    <button type="button" onClick={saveChanges} disabled={saving} className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#008751] to-[#FCD116] hover:opacity-90 text-slate-900 rounded-xl font-black transition shadow-lg text-sm">
                         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         Sauvegarder
                     </button>
@@ -193,12 +222,26 @@ export default function AgentPresentationEditor({ params }: { params: Promise<{ 
             {/* Stats bar */}
             <div className="bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-2xl p-5 mb-8">
                 <div className="h-1 bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D] rounded-full mb-5" />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                         <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Total Facturé</p>
                         <p className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#E8112D]">
-                            {calculateTotal().toLocaleString()} FCFA
+                            {calculateTotal().toLocaleString()} {currency}
                         </p>
+                    </div>
+                    <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Devise</p>
+                        <select
+                            title="Devise"
+                            value={currency}
+                            onChange={e => setCurrency(e.target.value)}
+                            className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-sm focus:border-[#FCD116] focus:outline-none"
+                        >
+                            <option value="XOF">FCFA (XOF)</option>
+                            <option value="EUR">Euro (EUR)</option>
+                            <option value="USD">Dollar (USD)</option>
+                            <option value="GBP">Livre (GBP)</option>
+                        </select>
                     </div>
                     <div>
                         <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Statut</p>
@@ -273,7 +316,7 @@ export default function AgentPresentationEditor({ params }: { params: Promise<{ 
                                         <div className="grid grid-cols-12 gap-5">
                                             {/* Left column */}
                                             <div className="col-span-12 md:col-span-7 space-y-4">
-                                                <div className="grid grid-cols-2 gap-3">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                     <div>
                                                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Type</label>
                                                         <select title="Type" value={item.type} onChange={e => updateItem(item.id, 'type', e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white focus:border-[#FCD116] focus:outline-none text-sm">
@@ -350,7 +393,7 @@ export default function AgentPresentationEditor({ params }: { params: Promise<{ 
 
                                                 {/* Prices */}
                                                 {item.type !== 'hero' && item.type !== 'pricing' && (
-                                                    <div className="grid grid-cols-2 gap-3">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                         <div>
                                                             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Prix Indicatif</label>
                                                             <div className="bg-slate-950/50 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-500 font-mono text-sm">
@@ -389,7 +432,7 @@ export default function AgentPresentationEditor({ params }: { params: Promise<{ 
                 <div className="max-w-5xl mx-auto flex justify-between items-center">
                     <div>
                         <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Total</p>
-                        <p className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#E8112D]">{calculateTotal().toLocaleString()} FCFA</p>
+                        <p className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#E8112D]">{calculateTotal().toLocaleString()} {currency}</p>
                     </div>
                     <button onClick={saveChanges} disabled={saving} className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D] text-slate-900 rounded-xl font-black transition shadow-lg hover:scale-105 active:scale-95">
                         {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}

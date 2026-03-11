@@ -786,7 +786,7 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                     className="relative bg-[#0a0f18] border border-white/10 rounded-[2rem] w-full max-w-lg overflow-hidden shadow-2xl"
                 >
                     {/* Header */}
-                    <div className="flex items-center justify-between p-6 border-b border-white/5">
+                    <div className="flex items-center justify-between p-4 sm:p-6 border-b border-white/5">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-[#FCD116]/10 border border-[#FCD116]/20 flex items-center justify-center">
                                 <ShoppingBag size={20} className="text-[#FCD116]" />
@@ -820,7 +820,7 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                     </div>
 
                     {/* Contenu selon l'étape */}
-                    <div className="p-6 min-h-[240px]">
+                    <div className="p-4 sm:p-6 min-h-[200px] sm:min-h-[240px]">
 
                         {/* STEP: Info client */}
                         {step === 'info' && (

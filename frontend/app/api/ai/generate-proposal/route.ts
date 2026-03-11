@@ -52,8 +52,8 @@ export async function POST(req: Request) {
         const {
             client_name, client_email, client_phone,
             destination, start_date, end_date,
-            budget, activities, notes,
-            selected_items // NEW: Items selected by agent from scraping results
+            budget, activities, notes, currency,
+            selected_items // Items selected by agent from scraping results
         } = body
 
         if (!client_name || !destination) {
@@ -135,6 +135,7 @@ Format :
             budget,
             activities,
             notes,
+            currency: currency || 'XOF',
             status: 'draft',
             total_amount: items.reduce((acc: number, item: ProposalItem) => acc + (item.original_price || 0), 0)
         }).select().single()

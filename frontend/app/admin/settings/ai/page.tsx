@@ -295,7 +295,7 @@ export default function AIConfigPage() {
                                 </select>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">
                                         Température : {form.temperature}

@@ -45,6 +45,7 @@ interface Proposal {
     client_email: string | null
     destination: string
     total_amount: number
+    currency?: string
 }
 
 type PaymentProvider = 'kkiapay' | 'fedapay' | 'zeyow' | 'stripe' | 'paypal'
@@ -236,7 +237,7 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
                     product_title: `Voyage ${proposal.destination} - ${proposal.client_name}`,
                     quantity: 1,
                     amount: proposal.total_amount,
-                    currency: 'XOF',
+                    currency: proposal.currency || 'XOF',
                     customer_name: customerName,
                     customer_email: customerEmail,
                     customer_phone: customerPhone,

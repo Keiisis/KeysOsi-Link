@@ -125,118 +125,165 @@ export async function POST(request: Request) {
         // validatedShippingFee : clamped server-side ici (scope global) pour être utilisable
         // dans l'INSERT même si aucun produit n'est présent dans la commande.
         const validatedShippingFee = Math.max(0, Math.min(Number(shipping_fee) || 0, 100000))
-        const itemsForPriceCheck = cart_items && cart_items.length > 0
-            ? cart_items
-            : (product_id ? [{ product_id, quantity: quantity || 1 }] : [])
 
-        // Anti-épuisement de coupon : interdire l'usage d'un coupon sans produit.
-        // Sans produits, le montant n'est pas recalculé côté serveur — un attaquant
-        // pourrait créer des dizaines de commandes bidon pour épuiser les utilisations d'un coupon.
-        if (coupon_id && itemsForPriceCheck.length === 0) {
-            return NextResponse.json(
-                { error: 'Un coupon ne peut pas être appliqué sans article' },
-                { status: 400 }
-            )
-        }
+        // ── CAS SPÉCIAL : paiement d'une proposition IA ─────────────────────
+        // Les propositions voyages ont un product_id de la forme "proposal-<uuid>".
+        // Elles ne sont pas dans la table products → validation différente.
+        const isProposalPayment = typeof product_id === 'string' && product_id.startsWith('proposal-')
 
-        if (itemsForPriceCheck.length > 0) {
-            for (const item of itemsForPriceCheck) {
-                if (!item.product_id) continue
+        // Déclaré ici pour être accessible dans le rollback de la création d'ordre
+        const reservedItems: { product_id: string, quantity: number }[] = []
 
-                const { data: prod } = await supabase
-                    .from('products')
-                    .select('price, sale_price, is_active')
-                    .eq('id', item.product_id)
-                    .single()
+        if (isProposalPayment) {
+            // Extraire l'UUID de la proposition et valider contre ai_client_proposals
+            const proposalUuid = product_id.replace(/^proposal-/, '')
+            const { data: proposal, error: propErr } = await supabase
+                .from('ai_client_proposals')
+                .select('id, total_amount')
+                .eq('id', proposalUuid)
+                .maybeSingle()
 
-                if (!prod || !prod.is_active) {
-                    return NextResponse.json(
-                        { error: `Produit introuvable ou inactif: ${item.product_id}` },
-                        { status: 400 }
-                    )
-                }
-
-                const unitPrice = (prod.sale_price && prod.sale_price < prod.price)
-                    ? prod.sale_price
-                    : prod.price
-
-                expectedSubtotal += unitPrice * (item.quantity || 1)
-            }
-
-            // Recalculer le coupon côté serveur si fourni
-            let serverCouponDiscount = 0
-            if (coupon_id) {
-                const { data: coupon } = await supabase
-                    .from('coupons')
-                    .select('discount_type, discount_value, is_active, expires_at, max_uses, current_uses')
-                    .eq('id', coupon_id)
-                    .single()
-
-                if (
-                    coupon &&
-                    coupon.is_active &&
-                    (!coupon.expires_at || new Date(coupon.expires_at) >= new Date()) &&
-                    coupon.current_uses < coupon.max_uses
-                ) {
-                    if (coupon.discount_type === 'percentage') {
-                        serverCouponDiscount = Math.round(expectedSubtotal * coupon.discount_value / 100)
-                    } else {
-                        serverCouponDiscount = Math.max(0, coupon.discount_value)
-                    }
-                }
-            }
-
-            // Frais de livraison: déjà clamped au scope global (validatedShippingFee)
-
-            const expectedTotal = Math.max(0, expectedSubtotal - serverCouponDiscount + validatedShippingFee)
-
-            // Tolérance de 1 XOF pour les arrondis
-            if (Math.abs(parsedAmount - expectedTotal) > 1) {
-                console.error(
-                    `[Checkout] Montant invalide — reçu: ${parsedAmount} XOF, attendu: ${expectedTotal} XOF` +
-                    ` (sous-total: ${expectedSubtotal}, coupon: ${serverCouponDiscount}, livraison: ${validatedShippingFee})`
-                )
+            if (propErr || !proposal) {
                 return NextResponse.json(
-                    { error: 'Montant invalide. Veuillez actualiser la page et réessayer.' },
+                    { error: 'Proposition introuvable ou expirée' },
                     { status: 400 }
                 )
             }
 
-            // Stocker le montant calculé serveur (pas celui du client)
-            validatedAmount = expectedTotal
-        }
-
-        // ═══ STOCK RESERVATION (Atomic) ═══════════════════════════
-        // Reserve stock for each product before creating the order.
-        // If any reservation fails, roll back all previous ones.
-        const itemsToReserve = cart_items && cart_items.length > 0
-            ? cart_items
-            : [{ product_id, quantity: quantity || 1 }]
-
-        const reservedItems: { product_id: string, quantity: number }[] = []
-
-        for (const item of itemsToReserve) {
-            if (!item.product_id) continue
-
-            const { data: result, error: rpcError } = await supabase.rpc('reserve_stock', {
-                p_product_id: item.product_id,
-                p_quantity: item.quantity || 1,
-            })
-
-            if (rpcError || (result && !result.success)) {
-                // Rollback all previously reserved items
-                for (const reserved of reservedItems) {
-                    await supabase.rpc('release_stock', {
-                        p_product_id: reserved.product_id,
-                        p_quantity: reserved.quantity,
-                    })
-                }
-
-                const errorMsg = result?.error || rpcError?.message || 'Erreur de réservation du stock'
-                return NextResponse.json({ error: errorMsg }, { status: 409 })
+            // Validation stricte du montant : tolérance 1 XOF pour arrondis
+            if (Math.abs(parsedAmount - proposal.total_amount) > 1) {
+                console.error(
+                    `[Checkout/Proposal] Montant invalide — reçu: ${parsedAmount}, attendu: ${proposal.total_amount}`
+                )
+                return NextResponse.json(
+                    { error: 'Montant invalide pour cette proposition. Veuillez actualiser la page.' },
+                    { status: 400 }
+                )
             }
 
-            reservedItems.push({ product_id: item.product_id, quantity: item.quantity || 1 })
+            // Utiliser le montant côté serveur, jamais celui du client
+            validatedAmount = proposal.total_amount
+
+            // Les coupons boutique ne s'appliquent pas aux propositions voyage
+            if (coupon_id) {
+                return NextResponse.json(
+                    { error: 'Les codes promo boutique ne sont pas applicables aux propositions voyage' },
+                    { status: 400 }
+                )
+            }
+
+            // Pas de stock à réserver pour une proposition (service, pas produit physique)
+        } else {
+            // ── CAS NORMAL : produit boutique ────────────────────────────────
+            const itemsForPriceCheck = cart_items && cart_items.length > 0
+                ? cart_items
+                : (product_id ? [{ product_id, quantity: quantity || 1 }] : [])
+
+            // Anti-épuisement de coupon : interdire l'usage d'un coupon sans produit.
+            // Sans produits, le montant n'est pas recalculé côté serveur — un attaquant
+            // pourrait créer des dizaines de commandes bidon pour épuiser les utilisations d'un coupon.
+            if (coupon_id && itemsForPriceCheck.length === 0) {
+                return NextResponse.json(
+                    { error: 'Un coupon ne peut pas être appliqué sans article' },
+                    { status: 400 }
+                )
+            }
+
+            if (itemsForPriceCheck.length > 0) {
+                for (const item of itemsForPriceCheck) {
+                    if (!item.product_id) continue
+
+                    const { data: prod } = await supabase
+                        .from('products')
+                        .select('price, sale_price, is_active')
+                        .eq('id', item.product_id)
+                        .single()
+
+                    if (!prod || !prod.is_active) {
+                        return NextResponse.json(
+                            { error: `Produit introuvable ou inactif: ${item.product_id}` },
+                            { status: 400 }
+                        )
+                    }
+
+                    const unitPrice = (prod.sale_price && prod.sale_price < prod.price)
+                        ? prod.sale_price
+                        : prod.price
+
+                    expectedSubtotal += unitPrice * (item.quantity || 1)
+                }
+
+                // Recalculer le coupon côté serveur si fourni
+                let serverCouponDiscount = 0
+                if (coupon_id) {
+                    const { data: coupon } = await supabase
+                        .from('coupons')
+                        .select('discount_type, discount_value, is_active, expires_at, max_uses, current_uses')
+                        .eq('id', coupon_id)
+                        .single()
+
+                    if (
+                        coupon &&
+                        coupon.is_active &&
+                        (!coupon.expires_at || new Date(coupon.expires_at) >= new Date()) &&
+                        coupon.current_uses < coupon.max_uses
+                    ) {
+                        if (coupon.discount_type === 'percentage') {
+                            serverCouponDiscount = Math.round(expectedSubtotal * coupon.discount_value / 100)
+                        } else {
+                            serverCouponDiscount = Math.max(0, coupon.discount_value)
+                        }
+                    }
+                }
+
+                const expectedTotal = Math.max(0, expectedSubtotal - serverCouponDiscount + validatedShippingFee)
+
+                // Tolérance de 1 XOF pour les arrondis
+                if (Math.abs(parsedAmount - expectedTotal) > 1) {
+                    console.error(
+                        `[Checkout] Montant invalide — reçu: ${parsedAmount} XOF, attendu: ${expectedTotal} XOF` +
+                        ` (sous-total: ${expectedSubtotal}, coupon: ${serverCouponDiscount}, livraison: ${validatedShippingFee})`
+                    )
+                    return NextResponse.json(
+                        { error: 'Montant invalide. Veuillez actualiser la page et réessayer.' },
+                        { status: 400 }
+                    )
+                }
+
+                // Stocker le montant calculé serveur (pas celui du client)
+                validatedAmount = expectedTotal
+            }
+
+            // ═══ STOCK RESERVATION (Atomic) ═══════════════════════════
+            // Reserve stock for each product before creating the order.
+            // If any reservation fails, roll back all previous ones.
+            const itemsToReserve = cart_items && cart_items.length > 0
+                ? cart_items
+                : [{ product_id, quantity: quantity || 1 }]
+
+            for (const item of itemsToReserve) {
+                if (!item.product_id) continue
+
+                const { data: result, error: rpcError } = await supabase.rpc('reserve_stock', {
+                    p_product_id: item.product_id,
+                    p_quantity: item.quantity || 1,
+                })
+
+                if (rpcError || (result && !result.success)) {
+                    // Rollback all previously reserved items
+                    for (const reserved of reservedItems) {
+                        await supabase.rpc('release_stock', {
+                            p_product_id: reserved.product_id,
+                            p_quantity: reserved.quantity,
+                        })
+                    }
+
+                    const errorMsg = result?.error || rpcError?.message || 'Erreur de réservation du stock'
+                    return NextResponse.json({ error: errorMsg }, { status: 409 })
+                }
+
+                reservedItems.push({ product_id: item.product_id, quantity: item.quantity || 1 })
+            }
         }
 
         // ═══ ORDER CREATION ═══════════════════════════════════════

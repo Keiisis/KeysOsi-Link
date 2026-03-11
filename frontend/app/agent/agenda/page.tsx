@@ -372,7 +372,7 @@ export default function AgentAgendaPage() {
                             <h3 className="text-lg font-bold text-white mb-4">Nouvel Événement</h3>
                             <div className="space-y-3">
                                 <input type="text" value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Titre" title="Titre" className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50" />
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} title="Date" className="bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white text-sm focus:outline-none focus:border-emerald-500/50" />
                                     <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)} title="Heure" className="bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white text-sm focus:outline-none focus:border-emerald-500/50" />
                                 </div>

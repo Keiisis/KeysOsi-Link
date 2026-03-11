@@ -172,10 +172,10 @@ export default function AgentDevisPage() {
 
             pdf.setFontSize(7)
             pdf.setTextColor(100, 120, 140)
-            pdf.text('Agence de Services Internationaux', ml, 31)
-            pdf.text('Cotonou, République du Bénin', ml, 36)
-            pdf.text('contact@retour-gagnant.bj  |  www.retour-gagnant.bj', ml, 41)
-            pdf.text('+229 01 XX XX XX XX', ml, 46)
+            pdf.text('Agence de Conciergerie & Services Internationaux', ml, 31)
+            pdf.text('Avenue de la Marina, Cotonou — République du Bénin', ml, 36)
+            pdf.text('contact@retourgagnantbenin.bj  |  www.retourgagnantbenin.bj', ml, 41)
+            pdf.text('+229 01 94 35 50 50  |  +229 01 60 32 21 21  |  +596 696 85 36 14', ml, 46)
 
             // Document type badge (right)
             const typeLabel = doc.type === 'devis' ? 'DEVIS' : 'FACTURE'
@@ -237,10 +237,10 @@ export default function AgentDevisPage() {
             pdf.setFont('helvetica', 'normal')
             pdf.setFontSize(7.5)
             pdf.setTextColor(140, 160, 185)
-            pdf.text('RCCM : BJ-COT-2024-XXXX', ml + 4, y + 22)
-            pdf.text('NIF : XXXXXXXX-P', ml + 4, y + 27.5)
-            pdf.text('Cotonou, B\u00e9nin', ml + 4, y + 33)
-            pdf.text('contact@retour-gagnant.bj', ml + 4, y + 38.5)
+            pdf.text('RCCM : RB/COT/26 B 42001', ml + 4, y + 22)
+            pdf.text('IFU : 3202644573981', ml + 4, y + 27.5)
+            pdf.text('Avenue de la Marina, Cotonou, B\u00e9nin', ml + 4, y + 33)
+            pdf.text('contact@retourgagnantbenin.bj', ml + 4, y + 38.5)
 
             // TO box (light)
             const toX = ml + boxW + 6
@@ -462,12 +462,16 @@ export default function AgentDevisPage() {
                 pdf.setFont('helvetica', 'bold')
                 pdf.setFontSize(7)
                 pdf.setTextColor(70, 80, 170)
-                pdf.text('RETOUR GAGNANT B\u00c9NIN', sig2X + 4, y + 8)
+                pdf.text('La Présidente Directrice Générale', sig2X + 4, y + 8)
+                pdf.setFont('helvetica', 'bold')
+                pdf.setFontSize(6.5)
+                pdf.setTextColor(0, 135, 81)
+                pdf.text('RETOUR GAGNANT B\u00c9NIN', sig2X + 4, y + 14)
                 pdf.setFont('helvetica', 'normal')
                 pdf.setFontSize(6.5)
                 pdf.setTextColor(90, 95, 130)
-                pdf.text('Signature & Cachet officiel', sig2X + 4, y + 15)
-                pdf.text(`\u00c9tabli le ${new Date(doc.created_at).toLocaleDateString('fr-FR')}`, sig2X + 4, y + 22)
+                pdf.text('Signature & Cachet officiel', sig2X + 4, y + 20)
+                pdf.text(`\u00c9tabli le ${new Date(doc.created_at).toLocaleDateString('fr-FR')}`, sig2X + 4, y + 25)
             }
 
             // ── WATERMARK ──────────────────────────────────────────
@@ -490,7 +494,7 @@ export default function AgentDevisPage() {
             pdf.setFont('helvetica', 'normal')
             pdf.setFontSize(6.5)
             pdf.setTextColor(100, 120, 145)
-            pdf.text('RETOUR GAGNANT B\u00c9NIN \u2014 RCCM: BJ-COT-2024-XXXX \u2014 NIF: XXXXXXXX-P \u2014 Cotonou, B\u00e9nin', pw / 2, ph - 9, { align: 'center' })
+            pdf.text('RETOUR GAGNANT B\u00c9NIN \u2014 RCCM: RB/COT/26 B 42001 \u2014 IFU: 3202644573981 \u2014 Avenue de la Marina, Cotonou, B\u00e9nin', pw / 2, ph - 9, { align: 'center' })
             pdf.text(`Document N\u00b0 ${doc.numero} \u2014 G\u00e9n\u00e9r\u00e9 le ${new Date().toLocaleDateString('fr-FR')}`, pw / 2, ph - 5, { align: 'center' })
 
             pdf.save(`${doc.type}_${doc.numero}.pdf`)
@@ -655,7 +659,7 @@ export default function AgentDevisPage() {
 
                             <div className="overflow-y-auto flex-1 p-5 space-y-5">
                                 {/* FROM / TO */}
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="bg-[#0c1a28] border border-white/5 rounded-xl p-4">
                                         <div className="flex items-center gap-1.5 mb-2">
                                             <Building2 size={11} className="text-blue-400" />
@@ -802,7 +806,7 @@ export default function AgentDevisPage() {
                                 <User size={12} className="text-gray-500" />
                                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Informations Client</p>
                             </div>
-                            <div className="grid grid-cols-2 gap-3 mb-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                                 <input type="text" value={clientNom} onChange={e => setClientNom(e.target.value)} placeholder="Nom *" title="Nom" className="bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50" />
                                 <input type="text" value={clientPrenom} onChange={e => setClientPrenom(e.target.value)} placeholder="Prénom" title="Prénom" className="bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50" />
                                 <input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="Email" title="Email" className="bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50" />

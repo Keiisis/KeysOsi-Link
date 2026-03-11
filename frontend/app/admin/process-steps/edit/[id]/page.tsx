@@ -93,7 +93,7 @@ export default function ProcessStepEdit() {
                             ))}
                         </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div className="space-y-3">
                             <label htmlFor="order" className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]"><T>Ordre</T></label>
                             <input id="order" type="number" placeholder="1" value={formData.order ?? 1} onChange={(e) => setFormData((p) => ({ ...p, order: parseInt(e.target.value) || 1 }))} className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white font-mono focus:outline-none" />
