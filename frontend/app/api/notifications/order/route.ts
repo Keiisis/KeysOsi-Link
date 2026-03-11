@@ -233,7 +233,7 @@ function generateCustomerEmailHTML(
   }
   const payLabel = payMethodLabel[order.payment_method as string] || String(order.payment_method || '').toUpperCase()
 
-  // Lignes des produits (panier ou produit unique)
+  // ── Lignes des articles ──
   type CartItem = { title?: string; name?: string; price?: number; sale_price?: number; quantity?: number }
   const cartItems: CartItem[] = (
     Array.isArray(order.cart_items) && (order.cart_items as CartItem[]).length > 0
@@ -245,109 +245,126 @@ function generateCustomerEmailHTML(
     const price = item.sale_price && item.sale_price < (item.price || 0) ? item.sale_price : (item.price || 0)
     const total = price * (item.quantity || 1)
     return `<tr>
-      <td style="padding:12px 16px;font-size:13px;color:#1a1a1a;border-bottom:1px solid #f3f4f6;">${item.title || item.name || order.product_title}</td>
-      <td style="padding:12px 16px;font-size:13px;color:#6b7280;text-align:center;border-bottom:1px solid #f3f4f6;">${item.quantity || 1}</td>
-      <td style="padding:12px 16px;font-size:13px;color:#6b7280;text-align:right;border-bottom:1px solid #f3f4f6;">${f(price)} FCFA</td>
-      <td style="padding:12px 16px;font-size:13px;font-weight:700;color:#1a1a1a;text-align:right;border-bottom:1px solid #f3f4f6;">${f(total)} FCFA</td>
+      <td style="padding:14px 16px;font-size:13px;color:#f3f4f6;border-bottom:1px solid #1e293b;">${item.title || item.name || order.product_title}</td>
+      <td style="padding:14px 16px;font-size:13px;color:#94a3b8;text-align:center;border-bottom:1px solid #1e293b;">${item.quantity || 1}</td>
+      <td style="padding:14px 16px;font-size:13px;color:#94a3b8;text-align:right;border-bottom:1px solid #1e293b;">${f(price)} FCFA</td>
+      <td style="padding:14px 16px;font-size:13px;font-weight:700;color:#FCD116;text-align:right;border-bottom:1px solid #1e293b;">${f(total)} FCFA</td>
     </tr>`
   }).join('')
 
   const shippingFee = (order.shipping_fee as number) || 0
   const shippingRow = shippingFee > 0 ? `<tr>
-    <td colspan="3" style="padding:10px 16px;font-size:12px;color:#6b7280;text-align:right;">Frais de livraison${order.shipping_zone ? ` (${order.shipping_zone})` : ''}</td>
-    <td style="padding:10px 16px;font-size:12px;color:#1a1a1a;font-weight:600;text-align:right;">+ ${f(shippingFee)} FCFA</td>
+    <td colspan="3" style="padding:12px 16px;font-size:12px;color:#94a3b8;text-align:right;border-bottom:1px solid #1e293b;">Frais de livraison${order.shipping_zone ? ` (${order.shipping_zone})` : ''}</td>
+    <td style="padding:12px 16px;font-size:12px;color:#f3f4f6;font-weight:600;text-align:right;border-bottom:1px solid #1e293b;">+ ${f(shippingFee)} FCFA</td>
   </tr>` : ''
 
   const ticketHtml = eventTicket ? `
-  <div style="background:#1a1a1a;border-radius:12px;padding:24px;margin:24px 0;text-align:center;border:2px solid #FCD116;">
-    <p style="margin:0 0 6px;font-size:9px;color:#FCD116;text-transform:uppercase;letter-spacing:2px;font-weight:800;">Votre ticket d'accès</p>
-    <h3 style="margin:0 0 16px;font-size:16px;color:#fff;">${eventTicket.event_title || order.product_title}</h3>
-    <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(eventTicket.qr_data || eventTicket.ticket_code)}" width="140" height="140" alt="QR" style="border-radius:8px;background:#fff;padding:8px;" />
-    <p style="margin:12px 0 0;font-size:20px;font-family:monospace;font-weight:900;color:#FCD116;letter-spacing:4px;">${eventTicket.ticket_code}</p>
+  <div style="background:#0f172a;border-radius:12px;padding:24px;margin:24px 0;text-align:center;border:1px solid #FCD116;">
+    <p style="margin:0 0 6px;font-size:9px;color:#FCD116;text-transform:uppercase;letter-spacing:2px;font-weight:800;">Votre ticket d'accès (VIP)</p>
+    <h3 style="margin:0 0 16px;font-size:18px;color:#ffffff;">${eventTicket.event_title || order.product_title}</h3>
+    <div style="background:#fff;padding:12px;border-radius:8px;display:inline-block;margin-bottom:12px;">
+       <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(eventTicket.qr_data || eventTicket.ticket_code)}" width="140" height="140" alt="QR" style="display:block;" />
+    </div>
+    <p style="margin:0;font-size:22px;font-family:'Courier New',Courier,monospace;font-weight:900;color:#FCD116;letter-spacing:4px;">${eventTicket.ticket_code}</p>
   </div>` : ''
 
-  return `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;max-width:620px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
-
-  <!-- EN-TÊTE FACTURE -->
-  <div style="background:linear-gradient(135deg,#006b40,#008751);padding:0;">
-    <div style="padding:32px 40px;display:flex;align-items:center;justify-content:space-between;">
-      <div style="display:flex;align-items:center;gap:14px;">
-        <img src="${logoUrl}" alt="${siteName}" width="56" height="56" style="border-radius:12px;object-fit:cover;border:3px solid rgba(255,255,255,.3);" />
-        <div>
-          <div style="font-size:20px;font-weight:900;color:#fff;line-height:1.2;">${siteName}</div>
-          <div style="font-size:10px;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:2px;margin-top:2px;">Cotonou, République du Bénin</div>
-        </div>
-      </div>
-      <div style="text-align:right;">
-        <div style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:2px;">FACTURE</div>
-        <div style="font-size:22px;font-weight:900;color:#FCD116;letter-spacing:2px;">${ref}</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:4px;">${date}</div>
-        <div style="margin-top:6px;display:inline-block;background:#FCD116;color:#006b40;padding:4px 12px;border-radius:20px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;">✓ Payée</div>
-      </div>
+  return `
+<div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;background-color:#020617;margin:0;padding:40px 10px;">
+  <div style="max-width:640px;margin:0 auto;background:#0a0e17;border-radius:0;overflow:hidden;border:1px solid #1e293b;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
+    
+    <!-- LIGNE BÉNIN -->
+    <div style="display:flex;height:4px;width:100%;">
+      <div style="flex:1;background:#008751;"></div>
+      <div style="flex:1;background:#FCD116;"></div>
+      <div style="flex:1;background:#E8112D;"></div>
     </div>
-  </div>
 
-  <div style="padding:36px 40px;">
+    <!-- EN-TÊTE PREMIUM -->
+    <div style="padding:40px 40px 30px;text-align:center;border-bottom:1px solid #1e293b;">
+       <img src="${logoUrl}" alt="${siteName}" width="70" height="70" style="border-radius:12px;object-fit:cover;border:1px solid #334155;margin-bottom:16px;" />
+       <h1 style="margin:0;font-size:24px;font-weight:900;color:#ffffff;letter-spacing:1px;text-transform:uppercase;">${siteName}</h1>
+       <p style="margin:6px 0 0;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:3px;">Facture & Confirmation</p>
+    </div>
 
-    <!-- SALUTATION -->
-    <p style="margin:0 0 6px;font-size:16px;color:#1a1a1a;">Bonjour <strong>${order.customer_name}</strong>,</p>
-    <p style="margin:0 0 28px;font-size:14px;color:#6b7280;line-height:1.7;">
-      Nous vous confirmons la bonne réception de votre paiement. Voici votre facture officielle.
-    </p>
-
-    ${ticketHtml}
-
-    <!-- TABLEAU PRODUITS -->
-    <table style="width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;margin-bottom:4px;">
-      <thead>
-        <tr style="background:#008751;">
-          <th style="padding:11px 16px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#fff;text-align:left;">Article</th>
-          <th style="padding:11px 16px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#fff;text-align:center;">Qté</th>
-          <th style="padding:11px 16px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#fff;text-align:right;">Prix unit.</th>
-          <th style="padding:11px 16px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#fff;text-align:right;">Total</th>
+    <div style="padding:32px 40px;">
+      <!-- RÉFÉRENCES -->
+      <table style="width:100%;margin-bottom:32px;background:#0f172a;border-radius:8px;padding:20px;">
+        <tr>
+          <td style="padding:15px 20px;">
+            <p style="margin:0 0 4px;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#64748b;">Client</p>
+            <p style="margin:0;font-size:15px;font-weight:700;color:#ffffff;">${order.customer_name}</p>
+          </td>
+          <td style="padding:15px 20px;text-align:right;">
+            <p style="margin:0 0 4px;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#64748b;">N° Facture</p>
+            <p style="margin:0;font-size:15px;font-weight:900;color:#FCD116;">${ref}</p>
+          </td>
         </tr>
-      </thead>
-      <tbody>${productRows}${shippingRow}</tbody>
-    </table>
+        <tr>
+          <td style="padding:0 20px 15px;">
+            <p style="margin:0 0 4px;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#64748b;">Date</p>
+            <p style="margin:0;font-size:13px;color:#cbd5e1;">${date}</p>
+          </td>
+          <td style="padding:0 20px 15px;text-align:right;">
+            <p style="margin:0 0 4px;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#64748b;">Statut</p>
+            <div style="display:inline-block;padding:4px 10px;background:rgba(0,135,81,0.2);border:1px solid rgba(0,135,81,0.5);border-radius:4px;color:#10b981;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;">Payée</div>
+          </td>
+        </tr>
+      </table>
 
-    <!-- TOTAL -->
-    <div style="margin:0 0 28px;display:flex;justify-content:flex-end;">
-      <div style="background:#f0fdf6;border:2px solid #008751;border-radius:12px;padding:20px 24px;min-width:220px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#008751;">Total TTC</span>
-          <span style="font-size:22px;font-weight:900;color:#008751;">${f(order.amount as number)} FCFA</span>
-        </div>
+      ${ticketHtml}
+
+      <!-- TABLEAU DES DESIGNATIONS -->
+      <h2 style="font-size:12px;text-transform:uppercase;letter-spacing:2px;color:#94a3b8;margin:0 0 12px;border-bottom:1px solid #1e293b;padding-bottom:10px;">Désignations</h2>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+        <thead>
+          <tr>
+            <th style="padding:10px 16px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#64748b;text-align:left;border-bottom:1px solid #334155;">Description</th>
+            <th style="padding:10px 16px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#64748b;text-align:center;border-bottom:1px solid #334155;">Qté</th>
+            <th style="padding:10px 16px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#64748b;text-align:right;border-bottom:1px solid #334155;">P.U.</th>
+            <th style="padding:10px 16px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#FCD116;text-align:right;border-bottom:1px solid #334155;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${productRows}
+          ${shippingRow}
+        </tbody>
+      </table>
+
+      <!-- TOTAL BOX -->
+      <table style="width:100%;margin-bottom:32px;">
+        <tr>
+          <td style="width:50%;vertical-align:top;">
+            <p style="margin:0 0 4px;font-size:11px;color:#64748b;">Moyen de paiement</p>
+            <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#f3f4f6;">${payLabel}</p>
+            ${order.transaction_id ? `<p style="margin:0;font-size:10px;color:#475569;font-family:monospace;">Tx: ${order.transaction_id}</p>` : ''}
+          </td>
+          <td style="width:50%;text-align:right;">
+             <div style="background:#0f172a;border-left:4px solid #FCD116;padding:16px 20px;display:inline-block;">
+                <p style="margin:0 0 4px;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#94a3b8;">Montant Réglé (TTC)</p>
+                <p style="margin:0;font-size:24px;font-weight:900;color:#FCD116;">${f(order.amount as number)} <span style="font-size:14px;color:#94a3b8;">FCFA</span></p>
+             </div>
+          </td>
+        </tr>
+      </table>
+
+      <!-- BOUTONS D'ACTION -->
+      <div style="text-align:center;margin:40px 0 20px;">
+        <a href="${invoiceUrl}" style="display:inline-block;background:#FCD116;color:#0f172a;text-decoration:none;padding:16px 36px;border-radius:4px;font-weight:900;font-size:13px;text-transform:uppercase;letter-spacing:1px;transition:all 0.2s;">Télécharger au format PDF</a>
       </div>
+
     </div>
 
-    <!-- INFO PAIEMENT -->
-    <div style="background:#f9fafb;border-radius:10px;padding:14px 18px;margin-bottom:28px;font-size:12px;color:#6b7280;">
-      💳 <strong style="color:#1a1a1a;">${payLabel}</strong>
-      ${order.transaction_id ? ` &nbsp;·&nbsp; Réf. transaction : <code style="color:#008751;font-size:11px;">${order.transaction_id}</code>` : ''}
+    <!-- FOOTER PREMIUM -->
+    <div style="padding:32px 40px;background:#06080d;text-align:center;border-top:1px solid #1e293b;">
+      <p style="margin:0 0 12px;font-size:12px;color:#94a3b8;">
+        Besoin d'aide ? Contactez-nous à <a href="mailto:${siteEmail}" style="color:#FCD116;text-decoration:none;">${siteEmail}</a>
+        ${sitePhone ? ` ou au ${sitePhone}` : ''}
+      </p>
+      <p style="margin:0;font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:1px;">
+        <strong>${siteName}</strong> · Cotonou, Bénin
+      </p>
     </div>
 
-    <!-- BOUTON FACTURE -->
-    <div style="text-align:center;margin:32px 0;">
-      <a href="${invoiceUrl}" style="display:inline-block;background:#008751;color:#fff;text-decoration:none;padding:16px 40px;border-radius:12px;font-weight:800;font-size:14px;letter-spacing:.5px;">
-        📄 Voir &amp; télécharger la facture complète
-      </a>
-      <p style="margin:10px 0 0;font-size:11px;color:#9ca3af;">Accès direct à votre facture — imprimable en PDF depuis votre navigateur</p>
-    </div>
-
-    <!-- MESSAGE CONTACT -->
-    <p style="font-size:13px;color:#6b7280;line-height:1.7;margin:0;">
-      Pour toute question, contactez-nous :<br>
-      📧 <a href="mailto:${siteEmail}" style="color:#008751;text-decoration:none;">${siteEmail}</a>
-      ${sitePhone ? ` &nbsp;·&nbsp; 📞 ${sitePhone}` : ''}
-    </p>
-  </div>
-
-  <!-- PIED -->
-  <div style="padding:20px 40px;background:#f9fafb;text-align:center;border-top:1px solid #e5e7eb;">
-    <p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.8;">
-      ${siteName} · Haie Vive, Cotonou, République du Bénin<br>
-      <a href="${baseUrl}" style="color:#008751;text-decoration:none;">www.retourgagnant.bj</a>
-    </p>
   </div>
 </div>`
 }
