@@ -24,6 +24,175 @@ interface ServiceData {
     pricing_options: Array<{ label: string; price: string }>
 }
 
+// Contenu de référence utilisé si la DB est inaccessible ou la migration SQL non encore exécutée
+const FALLBACK_SERVICES: Record<string, ServiceData> = {
+    passeport: {
+        title: 'Passeport & Documents',
+        subtitle: 'Obtention et renouvellement de vos documents officiels',
+        description: "Obtention rapide de votre passeport biométrique, renouvellement, acte de naissance, légalisation et apostille — un accompagnement complet pour toutes vos démarches officielles au Bénin.",
+        features: [
+            'Passeport biométrique ordinaire et diplomatique',
+            'Acte de naissance et livret de famille',
+            'Légalisation et apostille de documents',
+            'Procuration et documents notariés',
+            'Suivi de dossier en temps réel',
+        ],
+        price: 'À partir de 50 000 FCFA',
+        color: '#008751',
+        icon_type: 'passport',
+        image_url: '/assets/icones/icone_Passeport_Documents.png',
+        pricing_options: [
+            { label: 'Passeport ordinaire', price: '75 000 FCFA' },
+            { label: 'Renouvellement', price: '50 000 FCFA' },
+            { label: 'Apostille / Légalisation', price: 'Nous consulter' },
+        ],
+    },
+    logement: {
+        title: 'Acheter ou Louer',
+        subtitle: 'Sécurisez vos transactions foncières et immobilières',
+        description: "Acquisition immobilière, location longue durée, sécurisation foncière et vérification juridique complète de vos biens au Bénin. Nous vous accompagnons à chaque étape, de la recherche à la signature.",
+        features: [
+            'Recherche et sélection de biens selon vos critères',
+            'Vérification des titres fonciers et purge des oppositions',
+            'Accompagnement notarial et rédaction des actes',
+            'Gestion locative et état des lieux',
+            'Conseil en fiscalité immobilière',
+        ],
+        price: 'À partir de 25 000 FCFA',
+        color: '#FCD116',
+        icon_type: 'tata',
+        image_url: '/assets/icones/icone_Acheter_ou_louer.png',
+        pricing_options: [
+            { label: 'Accompagnement achat', price: '3% du montant' },
+            { label: 'Gestion locative', price: '8% des loyers' },
+            { label: 'Consultation', price: '25 000 FCFA' },
+        ],
+    },
+    business: {
+        title: "Création d'Entreprise",
+        subtitle: "De l'idée à l'entreprise opérationnelle au Bénin",
+        description: "Immatriculation au RCCM, ouverture de compte bancaire professionnel, conseils fiscaux et accompagnement pour toutes les autorisations sectorielles. Nous transformons votre projet en entreprise viable.",
+        features: [
+            'Immatriculation au RCCM et obtention de la patente',
+            'Ouverture de compte bancaire professionnel',
+            'Conseils fiscaux et optimisation de la structure juridique',
+            'Accompagnement pour les autorisations sectorielles',
+            'Mise en relation avec experts-comptables locaux',
+        ],
+        price: 'À partir de 150 000 FCFA',
+        color: '#008751',
+        icon_type: 'cowrie',
+        image_url: '/assets/icones/icone_Creation_d_Entreprise.png',
+        pricing_options: [
+            { label: 'Création SARL', price: '150 000 FCFA' },
+            { label: 'Création SA', price: '250 000 FCFA' },
+            { label: 'Accompagnement complet', price: 'Sur devis' },
+        ],
+    },
+    culture: {
+        title: 'Tourisme & Culture',
+        subtitle: 'Découvrez le Bénin authentique et son patrimoine vivant',
+        description: "Circuits touristiques personnalisés, guides certifiés, séjours clé en main et immersion dans les traditions béninoises. Vivez le Bénin authentique, de Ouidah à Abomey en passant par Ganvié.",
+        features: [
+            'Circuits touristiques personnalisés (Ouidah, Abomey, Ganvié...)',
+            'Guides culturels certifiés et bilingues',
+            'Organisation de séjours clé en main',
+            'Visites de sites classés UNESCO',
+            'Immersion dans les traditions vodoun et royales',
+        ],
+        price: 'À partir de 120 000 FCFA/pers',
+        color: '#E8112D',
+        icon_type: 'drum',
+        image_url: '/assets/icones/icone_Guide_culturel.png',
+        pricing_options: [
+            { label: 'Circuit court (3 jours)', price: '120 000 FCFA/pers' },
+            { label: 'Circuit complet (7 jours)', price: '280 000 FCFA/pers' },
+            { label: 'Sur mesure', price: 'Nous consulter' },
+        ],
+    },
+    construction: {
+        title: 'Suivi de Chantier',
+        subtitle: "Votre chantier suivi et livré dans les règles de l'art",
+        description: "Maîtrise d'ouvrage déléguée, contrôle qualité, coordination des corps de métier et reporting régulier. Votre projet de construction au Bénin géré avec rigueur, même à distance.",
+        features: [
+            "Maîtrise d'ouvrage déléguée et coordination des corps de métier",
+            'Contrôle qualité et conformité des travaux',
+            'Reporting photographique hebdomadaire',
+            'Sélection et négociation avec les entreprises locales',
+            'Réception des travaux et gestion des réserves',
+        ],
+        price: 'À partir de 50 000 FCFA',
+        color: '#FCD116',
+        icon_type: 'assin',
+        image_url: '/assets/icones/icone_Construction.png',
+        pricing_options: [
+            { label: 'Suivi mensuel', price: '75 000 FCFA/mois' },
+            { label: 'Mission complète', price: '5% du montant travaux' },
+            { label: 'Audit ponctuel', price: '50 000 FCFA' },
+        ],
+    },
+    investissement: {
+        title: 'Investissement',
+        subtitle: "Des opportunités d'affaires concrètes et sécurisées",
+        description: "Identification d'opportunités d'investissement, mise en relation avec des partenaires locaux fiables et accompagnement stratégique pour vos projets d'affaires au Bénin.",
+        features: [
+            "Identification et analyse d'opportunités d'investissement",
+            'Mise en relation avec partenaires locaux fiables',
+            "Accompagnement pour les formalités d'installation",
+            'Veille économique et sectorielle au Bénin',
+            "Suivi post-investissement et gestion des risques",
+        ],
+        price: 'À partir de 50 000 FCFA',
+        color: '#008751',
+        icon_type: 'tree',
+        image_url: '/assets/icones/icone_Investissement.png',
+        pricing_options: [
+            { label: 'Étude de marché', price: '200 000 FCFA' },
+            { label: 'Accompagnement complet', price: 'Sur devis' },
+            { label: 'Consultation stratégique', price: '50 000 FCFA' },
+        ],
+    },
+    'nationalite-vip': {
+        title: 'Nationalité VIP',
+        subtitle: 'Obtenir la nationalité béninoise pour la diaspora afro-descendante',
+        description: "Accompagnement personnalisé pour les membres de la diaspora souhaitant obtenir la nationalité béninoise. Suivi de dossier, coordination avec les autorités compétentes et prise en charge prioritaire.",
+        features: [
+            'Constitution et vérification du dossier complet',
+            'Liaison avec le Ministère de la Justice',
+            'Suivi administratif pas à pas',
+            "Accompagnement pour l'apostille et traductions certifiées",
+            'Pack VIP : suivi prioritaire avec référent dédié',
+        ],
+        price: 'À partir de 150 000 FCFA',
+        color: '#FCD116',
+        icon_type: 'recade',
+        image_url: '',
+        pricing_options: [
+            { label: 'Accompagnement dossier standard', price: '150 000 FCFA' },
+            { label: 'Pack VIP — suivi prioritaire', price: '350 000 FCFA' },
+            { label: 'Consultation initiale', price: 'Gratuit' },
+        ],
+    },
+    autres: {
+        title: 'Autres Services',
+        subtitle: 'Transport, santé, scolarité et démarches du quotidien',
+        description: "Des solutions complémentaires pour faciliter chaque aspect de votre installation au Bénin — de l'aéroport à l'école de vos enfants, en passant par l'accès aux soins et les démarches administratives courantes.",
+        features: [
+            'Transfert aéroport et location de véhicule avec chauffeur',
+            'Mise en relation avec médecins et cliniques partenaires',
+            'Inscription scolaire et suivi pédagogique',
+            'Accompagnement démarches administratives locales',
+        ],
+        price: 'Nous contacter',
+        color: '#008751',
+        icon_type: 'standard',
+        image_url: '',
+        pricing_options: [
+            { label: 'Consultation', price: 'Nous contacter' },
+        ],
+    },
+}
+
 export default function ServiceDetailPage({ params }: { params: Promise<{ slug: string }> }) {
     const { t } = useTranslation()
     const { slug } = use(params)
@@ -43,7 +212,13 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
                     .single()
 
                 if (error || !data) {
-                    setNotFound(true)
+                    // Fallback sur le contenu de référence si la DB ne répond pas
+                    const fallback = FALLBACK_SERVICES[slug]
+                    if (fallback) {
+                        setService(fallback)
+                    } else {
+                        setNotFound(true)
+                    }
                     return
                 }
 
@@ -53,18 +228,23 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
                     description: data.description || '',
                     features: Array.isArray(data.features) && data.features.length > 0
                         ? data.features
-                        : ['Analyse experte', 'Suivi personnalisé'],
-                    price: data.price_display || 'Nous consulter',
+                        : (FALLBACK_SERVICES[slug]?.features ?? ['Analyse experte', 'Suivi personnalisé']),
+                    price: data.price_display || FALLBACK_SERVICES[slug]?.price || 'Nous consulter',
                     color: data.color || '#008751',
                     icon_type: data.icon_type || 'standard',
                     image_url: data.image_url || '',
                     pricing_options: Array.isArray(data.pricing_options) && data.pricing_options.length > 0
                         ? data.pricing_options
-                        : [{ label: 'Standard', price: 'Nous consulter' }],
+                        : (FALLBACK_SERVICES[slug]?.pricing_options ?? [{ label: 'Standard', price: 'Nous consulter' }]),
                 })
             } catch {
-                console.warn('ServiceDetailPage: Erreur chargement depuis Supabase')
-                setNotFound(true)
+                console.warn('ServiceDetailPage: Erreur DB, affichage du contenu par défaut.')
+                const fallback = FALLBACK_SERVICES[slug]
+                if (fallback) {
+                    setService(fallback)
+                } else {
+                    setNotFound(true)
+                }
             } finally {
                 setLoading(false)
             }
