@@ -11,29 +11,38 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 async function generateGroqMessage(
   customerName: string,
   productTitle: string,
-  amount: number
 ): Promise<string> {
   if (GROQ_KEYS.length === 0) return ''
   try {
     const res = await fetchWithGroqRotation({
-      model: 'llama-3.1-8b-instant',
-      max_tokens: 120,
-      temperature: 0.7,
+      model: 'llama-3.3-70b-versatile',
+      max_tokens: 100,
+      temperature: 0.6,
       messages: [
         {
           role: 'system',
-          content: `Tu es le service client de Retour Gagnant Bénin, une agence de confiance basée à Cotonou.
-Rédige un court message de remerciement (2-3 phrases) en français formel et chaleureux, à insérer dans une facture officielle.
-Ne commence pas par "Voici" ou "Bien sûr". Sois direct, sincère et élégant.`,
+          content: `Tu es le service client de Retour Gagnant Bénin, une agence basée à Cotonou.
+Ta SEULE tâche : rédiger exactement 2 phrases de remerciement en français formel et chaleureux.
+RÈGLES STRICTES — ne jamais enfreindre :
+- Exactement 2 phrases, rien de plus
+- NE PAS inclure de numéro de facture, date, montant, ni aucune donnée administrative
+- NE PAS inclure de tirets (—), de lignes séparatrices, ni de champs vides
+- NE PAS commencer par "Voici", "Bien sûr", "Facture", "Message" ou tout autre méta-commentaire
+- Répondre UNIQUEMENT avec les 2 phrases de remerciement, sans mise en forme`,
         },
         {
           role: 'user',
-          content: `Client: ${customerName} | Produit: ${productTitle} | Montant: ${new Intl.NumberFormat('fr-FR').format(amount)} FCFA`,
+          content: `Remercie le client ${customerName} pour son achat : ${productTitle}.`,
         },
       ],
     });
     const data = await res.json()
-    return data.choices?.[0]?.message?.content?.trim() || ''
+    const raw = (data.choices?.[0]?.message?.content?.trim() || '') as string
+    // Filtre de sécurité : rejeter si le modèle a quand même inclus des champs de template
+    if (!raw || raw.includes('___') || raw.includes('Facture N°') || raw.includes('Date :') || raw.length > 400) {
+      return ''
+    }
+    return raw
   } catch {
     return ''
   }
@@ -116,7 +125,7 @@ export async function GET(
         width: 130,
         margin: 1,
       }).catch(() => ''),
-      generateGroqMessage(order.customer_name || 'Client', order.product_title || 'notre produit', order.amount),
+      generateGroqMessage(order.customer_name || 'Client', order.product_title || 'notre produit'),
     ])
 
     const paymentMethodLabel: Record<string, string> = {
