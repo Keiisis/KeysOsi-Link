@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     ArrowLeft, Save, MonitorPlay, Film, Type,
-    Loader2, CheckCircle2, AlertCircle, Link as LinkIcon, Plus, Trash2, Palette
+    Loader2, CheckCircle2, AlertCircle, Link as LinkIcon, Plus, Trash2, Palette, LayoutGrid
 } from "lucide-react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
@@ -37,7 +37,9 @@ export default function FrontendSettingsPage() {
         frontend_hero_audio: "",
         frontend_hero_title: "",
         frontend_hero_subtitle: "",
-        frontend_colors_primary: "#008751"
+        frontend_colors_primary: "#008751",
+        passeport_show_calculator: "false",
+        autres_services_json: "",
     });
 
     // Navbar links managed separately as an array
@@ -272,6 +274,58 @@ export default function FrontendSettingsPage() {
                                     <video src={form.frontend_hero_video} autoPlay muted loop playsInline className="w-full h-full object-cover" />
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </Card>
+
+                {/* Services — Toggle calculateur + JSON autres services */}
+                <Card className="bg-[#0a0f18] border-white/5 overflow-hidden rounded-[3rem] shadow-2xl relative lg:col-span-2">
+                    <div className="p-10 space-y-8 relative z-10">
+                        <div className="flex items-center gap-4 border-b border-white/5 pb-8 mb-8">
+                            <div className="w-14 h-14 rounded-2xl bg-green-500/10 border border-green-500/20 flex items-center justify-center">
+                                <LayoutGrid size={24} className="text-green-500" />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-black text-white"><T>Services</T></h3>
+                                <p className="text-xs text-gray-500"><T>Calculateur de prix et services complémentaires</T></p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-8">
+                            {/* Toggle PricingCalculator */}
+                            <div className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                                <div>
+                                    <p className="text-sm font-bold text-white"><T>Afficher le calculateur de prix</T></p>
+                                    <p className="text-xs text-gray-500 mt-1"><T>Page Passeport / Nationalité Béninoise VIP</T></p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setForm(prev => ({ ...prev, passeport_show_calculator: prev.passeport_show_calculator === 'true' ? 'false' : 'true' }))}
+                                    title={form.passeport_show_calculator === 'true' ? 'Désactiver le calculateur' : 'Activer le calculateur'}
+                                    aria-label={form.passeport_show_calculator === 'true' ? 'Désactiver le calculateur' : 'Activer le calculateur'}
+                                    className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-300 focus:outline-none ${form.passeport_show_calculator === 'true' ? 'bg-green-500' : 'bg-white/10'}`}
+                                >
+                                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-300 ${form.passeport_show_calculator === 'true' ? 'translate-x-8' : 'translate-x-1'}`} />
+                                </button>
+                            </div>
+
+                            {/* JSON autres services */}
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-green-500 uppercase tracking-widest ml-1">
+                                    <T>Services complémentaires (JSON)</T>
+                                </label>
+                                <textarea
+                                    name="autres_services_json"
+                                    value={form.autres_services_json}
+                                    onChange={handleChange}
+                                    rows={8}
+                                    placeholder={`[\n  { "icon": "Car", "title": "Transport", "description": "Description..." },\n  { "icon": "HeartPulse", "title": "Santé", "description": "Description..." }\n]`}
+                                    className="w-full bg-[#131b2c] border border-green-500/30 rounded-2xl py-4 px-6 text-white focus:outline-none focus:border-green-500 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] transition-all font-mono text-xs"
+                                />
+                                <p className="text-[10px] text-gray-500 font-bold ml-1">
+                                    <T>Icônes disponibles : Car, HeartPulse, GraduationCap, FileCheck, Home, Briefcase, Star, Globe</T>
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </Card>

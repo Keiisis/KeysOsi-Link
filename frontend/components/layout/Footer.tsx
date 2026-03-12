@@ -30,7 +30,7 @@ export default function Footer() {
                                 <span className="font-heading font-bold text-2xl group-hover:text-white transition-colors duration-500">
                                     <span className="text-[#008751]">RETOUR</span> <span className="text-[#E8112D]">GAGNANT</span>
                                 </span>
-                                <span className="text-xs font-light tracking-[0.3em] text-gray-400 uppercase">
+                                <span className="text-sm font-light tracking-[0.3em] text-gray-400 uppercase">
                                     <T>BENIN</T>
                                 </span>
                             </div>

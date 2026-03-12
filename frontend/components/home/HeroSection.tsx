@@ -159,34 +159,24 @@ export default function HeroSection() {
 
             {/* === LAYER 5: Content === */}
             <div className="container relative z-10 px-4 text-center">
-                <div className="inline-block mb-6 px-5 py-2 rounded-full border border-white/20 bg-white/10 backdrop-blur-lg animate-in fade-in slide-in-from-top-10 duration-1000">
-                    <span className="text-sm font-semibold text-[#FCD116] tracking-[0.25em] uppercase">
-                        <T>Excellence & Tradition</T>
-                    </span>
-                </div>
-
                 <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold font-heading leading-[1.1] mb-6 md:mb-8 drop-shadow-2xl animate-in zoom-in-95 duration-1000 delay-200">
                     {renderTitle(content.title)}
                 </h1>
 
-                <p className="text-xl md:text-2xl text-white/85 font-medium max-w-2xl mx-auto mb-12 leading-relaxed animate-in fade-in slide-in-from-bottom-5 duration-1000 delay-500">
-                    {t(content.subtitle)}
-                </p>
-
                 <div className="flex flex-col md:flex-row gap-4 justify-center items-center animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-700 w-full max-w-4xl mx-auto flex-wrap">
                     <Link href="/nationalite">
                         <Button size="lg" className="bg-[#008751] text-white hover:bg-[#006e42] text-base md:text-lg px-8 h-14 md:h-16 rounded-full shadow-[0_8px_32px_rgba(0,135,81,0.4)] hover:shadow-lg hover:scale-105 transition-all duration-300 w-full md:w-auto">
-                            <T>Obtenir la Nationalité</T>
+                            <T>Obtenez la nationalité Béninoise</T>
+                        </Button>
+                    </Link>
+                    <Link href="/services/culture">
+                        <Button size="lg" className="bg-[#FCD116] text-[#1a2332] hover:bg-[#e5bc14] text-base md:text-lg px-8 h-14 md:h-16 rounded-full shadow-[0_8px_32px_rgba(252,209,22,0.4)] hover:shadow-lg hover:scale-105 transition-all duration-300 font-bold w-full md:w-auto border border-yellow-400/50">
+                            <T>Visitez le Bénin</T>
                         </Button>
                     </Link>
                     <Link href="/services/investissement">
-                        <Button size="lg" className="bg-[#FCD116] text-[#1a2332] hover:bg-[#e5bc14] text-base md:text-lg px-8 h-14 md:h-16 rounded-full shadow-[0_8px_32px_rgba(252,209,22,0.4)] hover:shadow-lg hover:scale-105 transition-all duration-300 font-bold w-full md:w-auto border border-yellow-400/50">
-                            <T>Investir au Bénin</T>
-                        </Button>
-                    </Link>
-                    <Link href="/services/logement">
                         <Button size="lg" className="bg-[#E8112D] text-white hover:bg-[#c40e25] text-base md:text-lg px-8 h-14 md:h-16 rounded-full shadow-[0_8px_32px_rgba(232,17,45,0.4)] hover:shadow-lg hover:scale-105 transition-all duration-300 w-full md:w-auto">
-                            <T>Visiter & S&apos;installer</T>
+                            <T>Investir &amp; S&apos;installer</T>
                         </Button>
                     </Link>
                 </div>

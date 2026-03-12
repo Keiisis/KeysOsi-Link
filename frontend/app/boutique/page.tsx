@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
-import { ShoppingBag, Search, Tag, Loader2, Sparkles, MoveRight } from 'lucide-react'
+import { ShoppingBag, Search, Tag, Loader2, MoveRight } from 'lucide-react'
 import { ProductCard, type Product } from '@/components/boutique/ProductCard'
 import { useTranslation } from '@/lib/translation'
 
@@ -68,11 +68,6 @@ export default function BoutiquePage() {
                     transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
                     className="text-center space-y-8 relative z-10 w-full max-w-4xl mx-auto"
                 >
-                    <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-md shadow-2xl shadow-[#FCD116]/5">
-                        <Sparkles size={14} className="text-[#FCD116]" />
-                        <span className="text-white text-[10px] sm:text-xs font-black tracking-[0.3em] uppercase">{t("E-Commerce Exclusif")}</span>
-                    </div>
-
                     <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-black font-heading tracking-tighter leading-none">
                         {t("Notre")}{' '}
                         <span className="relative inline-block text-transparent bg-clip-text bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D]">
@@ -87,7 +82,7 @@ export default function BoutiquePage() {
                     </h1>
 
                     <p className="text-gray-400 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed font-light mt-8">
-                        {t("L'héritage, le savoir-faire et l'élégance du Bénin réunis dans une collection soigneusement sélectionnée. Laissez-vous inspirer.")}
+                        {t("Artisanat, produits culturels et souvenirs béninois — une sélection de qualité pour porter les richesses du Bénin partout dans le monde.")}
                     </p>
                 </motion.div>
             </motion.section>

@@ -64,7 +64,7 @@ export default function Header() {
                             <span className="font-heading font-black text-2xl xl:text-3xl tracking-tighter group-hover:text-white transition-colors duration-500">
                                 <span className="text-[#008751]">RETOUR</span> <span className="text-[#E8112D]">GAGNANT</span>
                             </span>
-                            <span className="text-[10px] xl:text-[12px] font-bold tracking-[0.4em] uppercase font-sans text-white/50 group-hover:text-[#FCD116] transition-colors duration-500">
+                            <span className="text-xs xl:text-sm font-bold tracking-[0.4em] uppercase font-sans text-white/50 group-hover:text-[#FCD116] transition-colors duration-500">
                                 <T>BENIN</T>
                             </span>
                         </div>

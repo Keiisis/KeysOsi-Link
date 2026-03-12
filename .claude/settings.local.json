@@ -11,7 +11,9 @@
       "Bash(git push origin main)",
       "Bash(git add app/api/admin/users/create/route.ts app/admin/users/create/page.tsx)",
       "Bash(git add app/admin/users/page.tsx)",
-      "Bash(npx tsc --noEmit --skipLibCheck)"
+      "Bash(npx tsc --noEmit --skipLibCheck)",
+      "Bash(ls -la 'c:/Users/HP/Desktop/RETOUR GAGNANT TEMPLATE/frontend/app/\\(routes\\)/services/')",
+      "Bash(ls -la 'c:/Users/HP/Desktop/RETOUR GAGNANT TEMPLATE/frontend/app/\\(routes\\)/services/[slug]/')"
     ],
     "additionalDirectories": [
       "c:\\Users\\HP\\Desktop\\RETOUR GAGNANT TEMPLATE\\frontend\\app\\api\\admin\\users"

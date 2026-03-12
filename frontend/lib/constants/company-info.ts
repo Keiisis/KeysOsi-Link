@@ -11,7 +11,7 @@ const DEFAULT_COMPANY_INFO = {
     whatsapp2Link: 'https://wa.me/2290194355050',
     address: 'Haie-Vive Cocotiers, Carré n°1158',
     addressShort: 'Haie-Vive, Cotonou',
-    hours: 'Lun - Ven : 8h - 18h',
+    hours: 'Lun - Ven : 8h - 18h\nSamedi sur Rendez-vous : 8h - 13h',
     socials: {
         facebook: '#',
         instagram: '#',

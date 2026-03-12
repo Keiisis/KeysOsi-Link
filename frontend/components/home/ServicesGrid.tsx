@@ -27,7 +27,7 @@ const FALLBACK_SERVICES: ServiceItem[] = [
     {
         id: 1,
         title: "Passeport & Documents",
-        description: "Obtention rapide de vos documents officiels. Le Sceptre (Récade) ouvre toutes les portes.",
+        description: "Obtention rapide de vos documents officiels. Accompagnement complet pour le passeport béninois et les démarches de naturalisation.",
         iconType: "passport",
         slug: "passeport",
         imageUrl: "/assets/icones/icone_Passeport_Documents.png",
@@ -35,7 +35,7 @@ const FALLBACK_SERVICES: ServiceItem[] = [
     {
         id: 2,
         title: "Acheter ou Louer",
-        description: "Sécurisez vos transactions foncières. Votre forteresse (Tata) au Bénin.",
+        description: "Sécurisez vos transactions foncières et immobilières au Bénin. Résidence principale, investissement locatif ou local commercial.",
         iconType: "tata",
         slug: "logement",
         imageUrl: "/assets/icones/icone_Acheter_ou_louer.png",
@@ -43,7 +43,7 @@ const FALLBACK_SERVICES: ServiceItem[] = [
     {
         id: 3,
         title: "Création d'Entreprise",
-        description: "Lancez votre business. Etudes de marché, créations de sociétés et implantation, Recherche de Partenaires.",
+        description: "Lancez votre business. Études de marché, création de sociétés et implantation, recherche de partenaires locaux.",
         iconType: "drum",
         slug: "business",
         imageUrl: "/assets/icones/icone_Creation_d_Entreprise.png",
@@ -51,7 +51,7 @@ const FALLBACK_SERVICES: ServiceItem[] = [
     {
         id: 4,
         title: "Guide Culturel",
-        description: "Reconnectez-vous avec vos racines. La richesse des Cauris. Cérémonie du Nom et validation à l'état civil.",
+        description: "Reconnectez-vous avec vos racines. Circuits patrimoniaux, cérémonie du Nom, découverte de l'histoire béninoise.",
         iconType: "cowrie",
         slug: "culture",
         imageUrl: "/assets/icones/icone_Guide_culturel.png",
@@ -59,7 +59,7 @@ const FALLBACK_SERVICES: ServiceItem[] = [
     {
         id: 5,
         title: "Construction",
-        description: "Bâtissez pour la postérité. Aide aux suivis de chantiers. L'ancrage de l'Assin.",
+        description: "Bâtissez pour la postérité. Maîtrise d'ouvrage déléguée, suivi de chantier et livraison clé en main.",
         icon: undefined,
         iconType: "assin",
         slug: "construction",
@@ -68,11 +68,27 @@ const FALLBACK_SERVICES: ServiceItem[] = [
     {
         id: 6,
         title: "Investissement",
-        description: "Opportunités d'affaires rentables. Faites fructifier votre héritage.",
+        description: "Opportunités d'affaires rentables. Stratégies d'investissement immobilier et patrimonial adaptées à la diaspora.",
         icon: undefined,
         iconType: "tree",
         slug: "investissement",
         imageUrl: "/assets/icones/icone_Investissement.png",
+    },
+    {
+        id: 7,
+        title: "Nationalité Béninoise VIP",
+        description: "Accédez à la nationalité béninoise par une procédure personnalisée et accompagnée de bout en bout.",
+        iconType: "recade",
+        slug: "nationalite-vip",
+        imageUrl: "",
+    },
+    {
+        id: 8,
+        title: "Autres Services",
+        description: "Transport, santé, éducation, démarches administratives — Découvrez tous nos services complémentaires.",
+        iconType: "standard",
+        slug: "autres",
+        imageUrl: "",
     },
 ];
 
