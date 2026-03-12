@@ -22,7 +22,7 @@ declare global {
         FedaPay: {
             init: (selector: string, config: Record<string, unknown>) => void
         }
-        Stripe: (key: string, options?: Record<string, unknown>) => StripeInstance
+        // Stripe est déclaré dans CartCheckoutModal — pas redéclaré ici
         paypal: {
             Buttons: (config: {
                 createOrder: () => Promise<string>
@@ -236,39 +236,38 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
         if (cardMountedRef.current) return
 
         const publicKey = settings.stripe_public_key
-        if (!publicKey || !window.Stripe) return
+        if (!publicKey) return
 
-        if (!stripeInstanceRef.current) {
-            stripeInstanceRef.current = window.Stripe(publicKey)
-        }
+        // Cast — Stripe est déclaré dans la Window par CartCheckoutModal
+        type StripeLoader = (key: string) => StripeInstance
+        const getStripe = () => (window as unknown as { Stripe?: StripeLoader }).Stripe
 
-        const elements = stripeInstanceRef.current.elements({
-            appearance: {
-                theme: 'night',
-                variables: {
-                    colorPrimary: '#FCD116',
-                    colorBackground: '#0d1520',
-                    colorText: '#ffffff',
-                    colorDanger: '#E8112D',
-                    borderRadius: '12px',
-                    fontFamily: 'system-ui, sans-serif',
+        // Polling : Stripe.js se charge en afterInteractive — attendre jusqu'à 8s
+        const mountCard = () => {
+            const StripeJs = getStripe()
+            if (!StripeJs) return
+            if (cardMountedRef.current) return
+
+            if (!stripeInstanceRef.current) {
+                stripeInstanceRef.current = StripeJs(publicKey)
+            }
+
+            // CardElement (API classique) — pas d'appearance ni de clientSecret sur elements()
+            const elements = stripeInstanceRef.current.elements()
+            const card = elements.create('card', {
+                style: {
+                    base: {
+                        color: '#ffffff',
+                        fontSize: '15px',
+                        fontFamily: 'system-ui, sans-serif',
+                        '::placeholder': { color: '#4b5563' },
+                        backgroundColor: 'transparent',
+                    },
+                    invalid: { color: '#E8112D' },
                 },
-            },
-        })
+                hidePostalCode: true,
+            })
 
-        const card = elements.create('card', {
-            style: {
-                base: {
-                    color: '#ffffff',
-                    fontSize: '15px',
-                    '::placeholder': { color: '#4b5563' },
-                },
-            },
-            hidePostalCode: true,
-        })
-
-        // Petit délai pour s'assurer que le DOM est prêt
-        setTimeout(() => {
             const el = document.getElementById('stripe-card-element')
             if (el) {
                 card.mount('#stripe-card-element')
@@ -276,7 +275,24 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                 cardMountedRef.current = true
                 setStripeReady(true)
             }
-        }, 100)
+        }
+
+        if (getStripe()) {
+            setTimeout(mountCard, 100)
+        } else {
+            // Stripe.js pas encore chargé — polling toutes les 300ms jusqu'à 8s
+            let elapsed = 0
+            const interval = setInterval(() => {
+                elapsed += 300
+                if (getStripe()) {
+                    clearInterval(interval)
+                    setTimeout(mountCard, 100)
+                } else if (elapsed >= 8000) {
+                    clearInterval(interval)
+                    setStripeReady(false)
+                }
+            }, 300)
+        }
     }, [step, settings.stripe_public_key])
 
     // ─── PayPal Buttons — initialiser quand step === 'paypal-form' ────────────

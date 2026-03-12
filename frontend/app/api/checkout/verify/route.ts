@@ -197,12 +197,13 @@ export async function POST(request: Request) {
                             console.log('FedaPay API verify — statut:', verifiedStatus, '| id:', transaction_id)
                             if (verifiedStatus === 'approved' || verifiedStatus === 'transferred') {
                                 // ─── Vérification du montant FedaPay ─────────────────────────
-                                // FedaPay stocke le montant en centimes (1 XOF = 100 centimes).
+                                // FedaPay stocke les montants en XOF directement (pas de centimes).
+                                // Le franc CFA (XOF) n'a pas de sous-unité — 10 000 XOF = 10 000.
                                 // CRITIQUE : ne jamais sauter cette vérification — un attaquant
                                 // pourrait payer 100 XOF et valider une commande à 50 000 XOF.
                                 const txAmount = txObject?.amount
                                 if (txAmount !== undefined && txAmount !== null) {
-                                    const verifiedAmountXof = txAmount / 100
+                                    const verifiedAmountXof = txAmount  // XOF direct, pas de /100
                                     if (verifiedAmountXof < existingOrder.amount * 0.99) {
                                         console.error('[Verify/FedaPay] Montant insuffisant:', {
                                             paid: verifiedAmountXof,

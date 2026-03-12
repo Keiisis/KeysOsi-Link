@@ -236,45 +236,69 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
         if (cardMountedRef.current) return
 
         const publicKey = settings.stripe_public_key
-        if (!publicKey || !window.Stripe) return
+        if (!publicKey) return
 
-        if (!stripeInstanceRef.current) {
-            stripeInstanceRef.current = window.Stripe(publicKey)
+        type StripeLoaderCart = (key: string) => StripeInstanceCart
+        const getStripe = () => (window as unknown as { Stripe?: StripeLoaderCart }).Stripe
+
+        const mountCard = () => {
+            const StripeJs = getStripe()
+            if (!StripeJs) return
+            if (cardMountedRef.current) return
+
+            if (!stripeInstanceRef.current) {
+                stripeInstanceRef.current = StripeJs(publicKey)
+            }
+
+            // CardElement (API classique) — pas d'appearance ni de clientSecret sur elements()
+            const elements = stripeInstanceRef.current.elements()
+            const card = elements.create('card', {
+                style: {
+                    base: {
+                        color: '#ffffff',
+                        fontSize: '15px',
+                        fontFamily: 'system-ui, sans-serif',
+                        '::placeholder': { color: '#4b5563' },
+                        backgroundColor: 'transparent',
+                    },
+                    invalid: { color: '#E8112D' },
+                },
+                hidePostalCode: true,
+            })
+
+            setTimeout(() => {
+                const el = document.getElementById('cart-stripe-card-element')
+                if (el) {
+                    card.mount('#cart-stripe-card-element')
+                    cardElementRef.current = card
+                    cardMountedRef.current = true
+                    setStripeReady(true)
+                }
+            }, 100)
         }
 
-        const elements = stripeInstanceRef.current.elements({
-            appearance: {
-                theme: 'night',
-                variables: {
-                    colorPrimary: '#FCD116',
-                    colorBackground: '#0d1520',
-                    colorText: '#ffffff',
-                    colorDanger: '#E8112D',
-                    borderRadius: '12px',
-                },
-            },
-        })
+        let interval: ReturnType<typeof setInterval> | null = null
 
-        const card = elements.create('card', {
-            style: {
-                base: {
-                    color: '#ffffff',
-                    fontSize: '15px',
-                    '::placeholder': { color: '#4b5563' },
-                },
-            },
-            hidePostalCode: true,
-        })
+        if (getStripe()) {
+            setTimeout(mountCard, 100)
+        } else {
+            // Stripe.js chargé via afterInteractive — attente polling jusqu'à 8s
+            let elapsed = 0
+            interval = setInterval(() => {
+                elapsed += 300
+                if (getStripe()) {
+                    clearInterval(interval!)
+                    interval = null
+                    setTimeout(mountCard, 100)
+                } else if (elapsed >= 8000) {
+                    clearInterval(interval!)
+                    interval = null
+                    setStripeReady(false)
+                }
+            }, 300)
+        }
 
-        setTimeout(() => {
-            const el = document.getElementById('cart-stripe-card-element')
-            if (el) {
-                card.mount('#cart-stripe-card-element')
-                cardElementRef.current = card
-                cardMountedRef.current = true
-                setStripeReady(true)
-            }
-        }, 100)
+        return () => { if (interval) clearInterval(interval) }
     }, [step, settings.stripe_public_key])
 
     // ─── PayPal Buttons ────────────────────────────────────────────────────────
