@@ -3,7 +3,7 @@
 import { use, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { CheckCircle2, ChevronRight, Calendar, Loader2 } from 'lucide-react'
+import { CheckCircle2, ChevronRight, Calendar, Loader2, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { GoldenIcon } from '@/components/ui/GoldenIcon'
@@ -23,60 +23,65 @@ interface ServiceData {
     pricing_options: Array<{ label: string; price: string }>
 }
 
-// Contenu de référence utilisé si la DB est inaccessible ou la migration SQL non encore exécutée
+// Contenu de référence utilisé si la DB est inaccessible
 const FALLBACK_SERVICES: Record<string, ServiceData> = {
     passeport: {
         title: 'Passeport & Documents',
-        subtitle: 'Obtention et renouvellement de vos documents officiels',
-        description: "Obtention rapide de votre passeport biométrique, renouvellement, acte de naissance, légalisation et apostille — un accompagnement complet pour toutes vos démarches officielles au Bénin.",
+        subtitle: 'Documents officiels et accompagnement pour la diaspora béninoise',
+        description: "Nous prenons en charge l'ensemble des démarches liées à l'obtention ou au renouvellement de votre passeport biométrique béninois. Constitution du dossier, coordination avec les autorités compétentes et suivi jusqu'à la remise de votre titre — un accompagnement structuré, sans improvisation.",
         features: [
-            'Passeport biométrique ordinaire et diplomatique',
-            'Acte de naissance et livret de famille',
-            'Légalisation et apostille de documents',
-            'Procuration et documents notariés',
-            'Suivi de dossier en temps réel',
+            "Copie intégrale du passeport en cours de validité",
+            "Acte de naissance certifié conforme délivré par la mairie béninoise",
+            "Certificat de nationalité béninoise (Tribunal de Première Instance)",
+            "Carte d'Identité Personnelle (CIP A) en cours de validité",
+            "Extrait de casier judiciaire béninois — Bulletin n°3 (moins de 3 mois)",
+            "Justificatif de domicile de moins de 3 mois (quittance ou bail)",
+            "4 photos d'identité biométriques (fond blanc, 3,5 × 4,5 cm, sans lunettes)",
+            "Formulaire officiel de demande de passeport rempli et signé",
         ],
         price: 'À partir de 50 000 FCFA',
         color: '#008751',
         icon_type: 'passport',
         image_url: '/assets/icones/icone_Passeport_Documents.png',
         pricing_options: [
-            { label: 'Passeport ordinaire', price: '75 000 FCFA' },
-            { label: 'Renouvellement', price: '50 000 FCFA' },
-            { label: 'Apostille / Légalisation', price: 'Nous consulter' },
+            { label: 'Pack Standard — Passeport ordinaire', price: '75 000 FCFA' },
+            { label: 'Pack VIP — Traitement express jour-J', price: '350 000 FCFA' },
+            { label: 'Renouvellement accompagné', price: '50 000 FCFA' },
         ],
     },
     logement: {
         title: 'Acheter ou Louer',
-        subtitle: 'Sécurisez vos transactions foncières et immobilières',
-        description: "Acquisition immobilière, location longue durée, sécurisation foncière et vérification juridique complète de vos biens au Bénin. Nous vous accompagnons à chaque étape, de la recherche à la signature.",
+        subtitle: 'Vérifiez, informez-vous et Sécurisez vos transactions foncières et immobilières',
+        description: "L'immobilier au Bénin offre de réelles opportunités — à condition de savoir naviguer dans un marché foncier qui requiert vigilance et expertise juridique. Nous vous accompagnons de la sélection du bien à la signature de l'acte notarié, en veillant à chaque étape à la solidité juridique de votre acquisition.",
         features: [
-            'Recherche et sélection de biens selon vos critères',
-            'Vérification des titres fonciers et purge des oppositions',
-            'Accompagnement notarial et rédaction des actes',
-            'Gestion locative et état des lieux',
-            'Conseil en fiscalité immobilière',
+            "Vérification du Titre Foncier (TF) et purge des oppositions cadastrales",
+            "Bornage et identification parcellaire auprès de l'ANDF",
+            "Due diligence juridique sur la chaîne de propriété",
+            "Accompagnement notarial et rédaction des actes de vente ou de bail",
+            "Gestion locative et suivi des relations bailleurs-locataires",
+            "Conseil en fiscalité immobilière (droits de mutation, impôts fonciers)",
         ],
         price: 'À partir de 25 000 FCFA',
         color: '#FCD116',
         icon_type: 'tata',
         image_url: '/assets/icones/icone_Acheter_ou_louer.png',
         pricing_options: [
-            { label: 'Accompagnement achat', price: '3% du montant' },
-            { label: 'Gestion locative', price: '8% des loyers' },
-            { label: 'Consultation', price: '25 000 FCFA' },
+            { label: 'Accompagnement en Acquisition Foncière', price: '3% du montant' },
+            { label: 'Gestion locative mensuelle', price: '8% des loyers' },
+            { label: 'Consultation juridique', price: '25 000 FCFA' },
         ],
     },
     business: {
         title: "Création d'Entreprise",
-        subtitle: "De l'idée à l'entreprise opérationnelle au Bénin",
-        description: "Immatriculation au RCCM, ouverture de compte bancaire professionnel, conseils fiscaux et accompagnement pour toutes les autorisations sectorielles. Nous transformons votre projet en entreprise viable.",
+        subtitle: "Lancez votre business. Études de marché, créations de sociétés et implantation, Recherche de Partenaires.",
+        description: "Pendant que le monde hésite, le Bénin avance à pas de géant. Ne soyez pas spectateur de l'émergence du Bénin : devenez-en un acteur. Créer une entreprise ici peut sembler complexe, mais avec le bon partenaire, c'est une démarche maîtrisée. De la formalisation de votre idée à votre premier client, nous balisons chaque étape du parcours. Le Bénin est une terre d'opportunités pour les afro-descendants qui souhaitent investir et s'impliquer. Le gouvernement accompagne les créateurs d'entreprises et favorise le développement d'activités à fort potentiel. Votre projet commence aujourd'hui — nous en posons les fondations juridiques et fiscales solides.",
         features: [
-            'Immatriculation au RCCM et obtention de la patente',
-            'Ouverture de compte bancaire professionnel',
-            'Conseils fiscaux et optimisation de la structure juridique',
-            'Accompagnement pour les autorisations sectorielles',
-            'Mise en relation avec experts-comptables locaux',
+            "Création de Société Clé-en-main (72h chrono)",
+            "Fiscalité Optimisée & Conseil Comptable Stratégique",
+            "Ouverture de Compte Bancaire Professionnel",
+            "Domiciliation Temporaire et Prestigieuse au Cœur de Cotonou",
+            "Cabinet de recrutement — Sélection de talents locaux",
+            "Mise en relation privilégiée avec des personnes influentes",
         ],
         price: 'À partir de 150 000 FCFA',
         color: '#008751',
@@ -192,19 +197,39 @@ const FALLBACK_SERVICES: Record<string, ServiceData> = {
     },
 }
 
+// Étapes du Pack VIP Passeport (affichées uniquement sur /services/passeport)
+const PACK_VIP_STEPS = [
+    {
+        num: '01',
+        title: 'Enrôlement État Civil',
+        desc: "Obtention de votre extrait de naissance certifié conforme auprès des autorités de l'état civil béninois.",
+    },
+    {
+        num: '02',
+        title: "Carte d'Identité Personnelle (CIP A)",
+        desc: "Constitution du dossier et enrôlement biométrique pour votre titre d'identité officiel béninois.",
+    },
+    {
+        num: '03',
+        title: 'Passeport Express Jour-J',
+        desc: "Prise en charge prioritaire de votre demande de passeport biométrique — déposée et traitée le jour même.",
+    },
+]
+
 export default function ServiceDetailPage({ params }: { params: Promise<{ slug: string }> }) {
     const { t } = useTranslation()
     const { slug } = use(params)
     const [service, setService] = useState<ServiceData | null>(null)
     const [loading, setLoading] = useState(true)
     const [notFound, setNotFound] = useState(false)
+    const [showCalculator, setShowCalculator] = useState(true)
 
+    // Chargement du service depuis l'API serveur (service role key — bypass RLS)
     useEffect(() => {
         const fetchService = async () => {
             if (!slug) return
 
             try {
-                // Appel via l'API serveur (service role key) — contourne le RLS Supabase
                 const res = await fetch(`/api/services/${slug}`)
                 const json = await res.json()
                 const data = json.service
@@ -240,6 +265,19 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
         }
 
         fetchService()
+    }, [slug])
+
+    // Chargement du paramètre calculateur (pages passeport et nationalite-vip uniquement)
+    useEffect(() => {
+        if (slug !== 'passeport' && slug !== 'nationalite-vip') return
+
+        fetch('/api/settings/frontend')
+            .then(r => r.json())
+            .then(json => {
+                const val = json.settings?.passeport_show_calculator
+                if (val === 'false') setShowCalculator(false)
+            })
+            .catch(() => { /* défaut : calculateur visible */ })
     }, [slug])
 
     const [showIntro, setShowIntro] = useState(slug === 'passeport')
@@ -351,8 +389,14 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
                                     <p className="text-gray-600 leading-relaxed text-lg">{t(service.description)}</p>
                                 </div>
 
+                                {/* Features — renommé "Pièces à fournir" pour le passeport */}
                                 <div>
-                                    <h2 className="text-2xl font-bold text-[#1a2332] mb-6"><T>Ce que nous proposons</T></h2>
+                                    <h2 className="text-2xl font-bold text-[#1a2332] mb-6">
+                                        {slug === 'passeport'
+                                            ? <T>Pièces à fournir pour les afro-descendants</T>
+                                            : <T>Ce que nous proposons</T>
+                                        }
+                                    </h2>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {service.features.map((item, i) => (
                                             <motion.div
@@ -368,6 +412,38 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
                                         ))}
                                     </div>
                                 </div>
+
+                                {/* Section Pack VIP — uniquement pour le passeport */}
+                                {slug === 'passeport' && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.5 }}
+                                        className="rounded-2xl border border-[#FCD116]/40 bg-gradient-to-br from-[#FCD116]/5 to-[#008751]/5 p-6 md:p-8"
+                                    >
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <Sparkles className="text-[#FCD116]" size={22} />
+                                            <h2 className="text-xl font-bold text-[#1a2332]">
+                                                <T>Pack VIP Retour Gagnant</T>
+                                            </h2>
+                                        </div>
+                                        <p className="text-gray-500 text-sm mb-6">
+                                            <T>Un accompagnement intégral en une seule journée — de l&apos;état civil à la délivrance de votre passeport.</T>
+                                        </p>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            {PACK_VIP_STEPS.map((step) => (
+                                                <div
+                                                    key={step.num}
+                                                    className="bg-white rounded-xl p-5 shadow-sm border border-[#FCD116]/20 flex flex-col gap-2"
+                                                >
+                                                    <span className="text-4xl font-black text-[#FCD116]/30 leading-none">{step.num}</span>
+                                                    <h4 className="text-sm font-bold text-[#1a2332]">{step.title}</h4>
+                                                    <p className="text-xs text-gray-500 leading-relaxed">{step.desc}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
                             </motion.div>
 
                             {/* Sidebar */}
@@ -378,11 +454,13 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
                                 className="lg:col-span-1"
                             >
                                 <div className="sticky top-24 space-y-6">
-                                    <PricingCalculator3D
-                                        options={service.pricing_options}
-                                        baseColor={service.color}
-                                        serviceName={service.title}
-                                    />
+                                    {showCalculator && (
+                                        <PricingCalculator3D
+                                            options={service.pricing_options}
+                                            baseColor={service.color}
+                                            serviceName={service.title}
+                                        />
+                                    )}
 
                                     <Card className="border-0 shadow-lg overflow-hidden bg-white/80 backdrop-blur-sm">
                                         <div className="h-1 w-full" style={{ background: `linear-gradient(to right, ${service.color}, #FCD116)` }} />
