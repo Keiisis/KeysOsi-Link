@@ -188,12 +188,15 @@ export async function middleware(request: NextRequest) {
             return supabaseResponse
         }
 
-        // STRICT ROLE CHECK : Agent ≠ Admin
-        if (isAgentRoute && profile.role !== 'agent' && profile.role !== 'admin') {
+        // STRICT ROLE CHECK : Agent ≠ Admin — super_admin a accès à tout
+        const ADMIN_ROLES = ['admin', 'super_admin']
+        const AGENT_ROLES = ['agent', 'admin', 'super_admin']
+
+        if (isAgentRoute && !AGENT_ROLES.includes(profile.role)) {
             return redirectTo(new URL('/agent/login?error=unauthorized', request.url))
         }
 
-        if (isAdminRoute && profile.role !== 'admin') {
+        if (isAdminRoute && !ADMIN_ROLES.includes(profile.role)) {
             return redirectTo(new URL('/admin/login?error=unauthorized', request.url))
         }
 
