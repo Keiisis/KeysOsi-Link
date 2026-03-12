@@ -29,6 +29,8 @@ const IMG_BY_SLUG: Record<string, string> = {
     culture: '/assets/icones/icone_Guide_culturel.png',
     construction: '/assets/icones/icone_Construction.png',
     investissement: '/assets/icones/icone_Investissement.png',
+    'nationalite-vip': '/assets/icones/Nationalité Béninoise VIP.png',
+    autres: '/assets/icones/Autres Services.png',
 }
 
 // Contenu de référence affiché si la DB est inaccessible ou vide
@@ -73,13 +75,13 @@ const FALLBACK_SERVICES: ServiceItem[] = [
         id: 'f-7', slug: 'nationalite-vip', iconType: 'recade',
         title: 'Nationalité VIP',
         description: "Accompagnement personnalisé pour l'obtention de la nationalité béninoise — dossier complet, suivi administratif et prise en charge prioritaire.",
-        imageUrl: '',
+        imageUrl: '/assets/icones/Nationalité Béninoise VIP.png',
     },
     {
         id: 'f-8', slug: 'autres', iconType: 'standard',
         title: 'Autres Services',
         description: 'Transport, santé, scolarité et démarches administratives — des solutions complémentaires pour faciliter votre installation au Bénin.',
-        imageUrl: '',
+        imageUrl: '/assets/icones/Autres Services.png',
     },
 ]
 
