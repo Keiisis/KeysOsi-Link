@@ -176,7 +176,7 @@ export default function HeroSection() {
                     </Link>
                     <Link href="/services/investissement">
                         <Button size="lg" className="bg-[#E8112D] text-white hover:bg-[#c40e25] text-base md:text-lg px-8 h-14 md:h-16 rounded-full shadow-[0_8px_32px_rgba(232,17,45,0.4)] hover:shadow-lg hover:scale-105 transition-all duration-300 w-full md:w-auto">
-                            <T>Investir &amp; S&apos;installer</T>
+                            <T>Investir &amp; S&apos;installer au Bénin</T>
                         </Button>
                     </Link>
                 </div>

@@ -55,33 +55,68 @@ export default function ContactPage() {
             <div className="container mx-auto px-4 py-8 md:py-16">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 max-w-5xl mx-auto">
                     {/* Contact Info */}
-                    <div className="space-y-6">
-                        {[
-                            { icon: MapPin, title: t("Nos Bureaux"), content: `${COMPANY_INFO.address}\n${t('République du Bénin')}`, color: "#008751" },
-                            { icon: Phone, title: t("Téléphone / WhatsApp"), content: `${COMPANY_INFO.phoneDisplay}\n${t(COMPANY_INFO.hours)}`, color: "#FCD116", link: COMPANY_INFO.whatsappLink },
-                            { icon: Mail, title: t("Email"), content: COMPANY_INFO.email, color: "#E8112D", link: `mailto:${COMPANY_INFO.email}` },
-                        ].map((item, i) => (
-                            <motion.div
-                                key={i}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: i * 0.1 }}
-                            >
-                                <Card className={`border-0 shadow-md hover:shadow-lg transition-shadow ${item.link ? 'cursor-pointer hover:bg-gray-50' : ''}`} onClick={() => item.link && window.open(item.link, '_blank')}>
-                                    <CardContent className="p-6 flex items-start gap-4">
-                                        <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${item.color}15` }}>
-                                            <item.icon style={{ color: item.color }} size={22} />
+                    <div className="flex flex-col gap-5">
+                        {/* Adresse */}
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0 }}>
+                            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                                <CardContent className="p-5 flex items-start gap-4">
+                                    <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 bg-[#00875115]">
+                                        <MapPin className="text-[#008751]" size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-[#1a2332] mb-1.5 text-sm"><T>Nos Bureaux</T></h3>
+                                        <p className="text-gray-500 text-sm leading-relaxed">{COMPANY_INFO.address}</p>
+                                        <p className="text-gray-500 text-sm"><T>République du Bénin</T></p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+
+                        {/* Téléphones */}
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
+                            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                                <CardContent className="p-5 flex items-start gap-4">
+                                    <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 bg-[#FCD11615]">
+                                        <Phone className="text-[#c9a800]" size={20} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="font-bold text-[#1a2332] mb-2 text-sm"><T>Téléphone / WhatsApp</T></h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <a
+                                                href={COMPANY_INFO.whatsappLink}
+                                                target="_blank" rel="noopener noreferrer"
+                                                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#008751]/8 hover:bg-[#008751]/15 transition-colors group"
+                                            >
+                                                <span className="text-sm font-medium text-gray-700 group-hover:text-[#008751] transition-colors">{COMPANY_INFO.phoneDisplay}</span>
+                                            </a>
+                                            <a
+                                                href={COMPANY_INFO.whatsapp2Link}
+                                                target="_blank" rel="noopener noreferrer"
+                                                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#008751]/8 hover:bg-[#008751]/15 transition-colors group"
+                                            >
+                                                <span className="text-sm font-medium text-gray-700 group-hover:text-[#008751] transition-colors">{COMPANY_INFO.phone2Display}</span>
+                                            </a>
                                         </div>
-                                        <div>
-                                            <h3 className="font-bold text-[#1a2332] mb-1">{item.title}</h3>
-                                            {item.content.split('\n').map((line, j) => (
-                                                <p key={j} className="text-gray-500 text-sm">{line}</p>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </motion.div>
-                        ))}
+                                        <p className="text-gray-400 text-xs mt-2 leading-snug">{COMPANY_INFO.hours.split('\n').map((line, i) => <span key={i} className="block">{line}</span>)}</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+
+                        {/* Email */}
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
+                            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.open(`mailto:${COMPANY_INFO.email}`, '_blank')}>
+                                <CardContent className="p-5 flex items-start gap-4">
+                                    <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 bg-[#E8112D15]">
+                                        <Mail className="text-[#E8112D]" size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-[#1a2332] mb-1.5 text-sm"><T>Email</T></h3>
+                                        <p className="text-gray-500 text-sm break-all">{COMPANY_INFO.email}</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
                     </div>
 
                     {/* Contact Form */}

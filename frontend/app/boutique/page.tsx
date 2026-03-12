@@ -82,7 +82,7 @@ export default function BoutiquePage() {
                     </h1>
 
                     <p className="text-gray-400 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed font-light mt-8">
-                        {t("Artisanat, produits culturels et souvenirs béninois — une sélection de qualité pour porter les richesses du Bénin partout dans le monde.")}
+                        {t("L'héritage, l'art, le savoir-faire, l'élégance — Bénin est un tableau unique réuni dans une collection soigneusement sélectionnée. Laissez-vous inspirer.")}
                     </p>
                 </motion.div>
             </motion.section>

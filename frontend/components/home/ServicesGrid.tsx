@@ -7,7 +7,6 @@ import Link from "next/link"
 import Image from "next/image"
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
-
 import { LucideIcon } from "lucide-react"
 import { useTranslation, T } from "@/lib/translation"
 
@@ -33,6 +32,58 @@ const IMG_BY_SLUG: Record<string, string> = {
     investissement: '/assets/icones/icone_Investissement.png',
 }
 
+// Contenu de référence affiché si la DB est inaccessible ou vide
+const FALLBACK_SERVICES: ServiceItem[] = [
+    {
+        id: 'f-1', slug: 'passeport', iconType: 'passport',
+        title: 'Passeport & Documents',
+        description: 'Obtention et renouvellement de passeport, acte de naissance, légalisation et apostille — accompagnement complet pour vos démarches officielles.',
+        imageUrl: '/assets/icones/icone_Passeport_Documents.png',
+    },
+    {
+        id: 'f-2', slug: 'logement', iconType: 'tata',
+        title: 'Acheter ou Louer',
+        description: 'Acquisition immobilière, location longue durée, sécurisation foncière et vérification juridique de vos biens au Bénin.',
+        imageUrl: '/assets/icones/icone_Acheter_ou_louer.png',
+    },
+    {
+        id: 'f-3', slug: 'business', iconType: 'cowrie',
+        title: "Création d'Entreprise",
+        description: "Immatriculation RCCM, ouverture de compte professionnel, conseils fiscaux et accompagnement des formalités de création.",
+        imageUrl: '/assets/icones/icone_Creation_d_Entreprise.png',
+    },
+    {
+        id: 'f-4', slug: 'culture', iconType: 'drum',
+        title: 'Tourisme & Culture',
+        description: 'Circuits touristiques, visites patrimoniales, organisation de séjours et découverte du Bénin authentique.',
+        imageUrl: '/assets/icones/icone_Guide_culturel.png',
+    },
+    {
+        id: 'f-5', slug: 'construction', iconType: 'assin',
+        title: 'Suivi de Chantier',
+        description: "Maîtrise d'ouvrage déléguée, contrôle des travaux et coordination des entreprises locales pour votre construction.",
+        imageUrl: '/assets/icones/icone_Construction.png',
+    },
+    {
+        id: 'f-6', slug: 'investissement', iconType: 'tree',
+        title: 'Investissement',
+        description: "Identification d'opportunités d'affaires, partenariats locaux et accompagnement stratégique pour vos projets d'investissement au Bénin.",
+        imageUrl: '/assets/icones/icone_Investissement.png',
+    },
+    {
+        id: 'f-7', slug: 'nationalite-vip', iconType: 'recade',
+        title: 'Nationalité VIP',
+        description: "Accompagnement personnalisé pour l'obtention de la nationalité béninoise — dossier complet, suivi administratif et prise en charge prioritaire.",
+        imageUrl: '',
+    },
+    {
+        id: 'f-8', slug: 'autres', iconType: 'standard',
+        title: 'Autres Services',
+        description: 'Transport, santé, scolarité et démarches administratives — des solutions complémentaires pour faciliter votre installation au Bénin.',
+        imageUrl: '',
+    },
+]
+
 export default function ServicesGrid() {
     const { t } = useTranslation()
     const [servicesList, setServicesList] = useState<ServiceItem[]>([])
@@ -41,30 +92,38 @@ export default function ServicesGrid() {
     useEffect(() => {
         const fetchServices = async () => {
             try {
+                // select('*') pour éviter les erreurs sur colonnes manquantes selon la version du schéma
                 const { data, error } = await supabase
                     .from('services')
-                    .select('id, title, slug, description, icon_type, image_url, is_active, order_index')
-                    .eq('is_active', true)
-                    .order('order_index', { ascending: true })
+                    .select('*')
 
                 if (error) throw error
 
                 if (data && data.length > 0) {
-                    const mappedServices: ServiceItem[] = data.map((item) => {
-                        const slug = item.slug || String(item.title).toLowerCase().replace(/\s+/g, '-')
-                        return {
-                            id: item.id,
-                            title: item.title,
-                            description: item.description || 'Découvrez ce service',
-                            iconType: (item.icon_type || 'standard') as GoldenIconType,
-                            slug,
-                            imageUrl: item.image_url || IMG_BY_SLUG[slug] || '',
-                        }
-                    })
+                    const mappedServices: ServiceItem[] = data
+                        // Filtre côté JS : is_active si la colonne existe, sinon tout afficher
+                        .filter((item) => item.is_active !== false)
+                        // Tri côté JS : order_index (nouveau schéma) ou order (ancien schéma)
+                        .sort((a, b) => (a.order_index ?? a.order ?? 0) - (b.order_index ?? b.order ?? 0))
+                        .map((item) => {
+                            const slug = item.slug || String(item.title).toLowerCase().replace(/\s+/g, '-')
+                            return {
+                                id: item.id,
+                                title: item.title,
+                                description: item.description || 'Découvrez ce service',
+                                iconType: (item.icon_type || 'standard') as GoldenIconType,
+                                slug,
+                                imageUrl: item.image_url || IMG_BY_SLUG[slug] || '',
+                            }
+                        })
                     setServicesList(mappedServices)
+                } else {
+                    // Table vide : afficher le contenu de référence
+                    setServicesList(FALLBACK_SERVICES)
                 }
             } catch (err) {
-                console.warn('ServicesGrid: Erreur chargement depuis Supabase, aucun fallback.', err)
+                console.warn('ServicesGrid: Erreur DB, affichage du contenu par défaut.', err)
+                setServicesList(FALLBACK_SERVICES)
             } finally {
                 setLoading(false)
             }
@@ -77,14 +136,6 @@ export default function ServicesGrid() {
         return (
             <div className="flex justify-center py-20">
                 <Loader2 className="animate-spin text-[#008751]" size={36} />
-            </div>
-        )
-    }
-
-    if (servicesList.length === 0) {
-        return (
-            <div className="text-center py-16">
-                <p className="text-gray-500 text-sm">Aucun service disponible pour le moment.</p>
             </div>
         )
     }

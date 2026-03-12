@@ -15,13 +15,19 @@ function getSupabase() {
 export async function GET() {
     try {
         const supabase = getSupabase()
-        const { data, error } = await supabase
+
+        // Essai avec order_index (schéma migré), fallback sans ordre si colonne absente
+        let result = await supabase
             .from('services')
             .select('*')
             .order('order_index', { ascending: true })
 
-        if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-        return NextResponse.json({ services: data || [] })
+        if (result.error && result.error.message.includes('order_index')) {
+            result = await supabase.from('services').select('*')
+        }
+
+        if (result.error) return NextResponse.json({ error: result.error.message }, { status: 500 })
+        return NextResponse.json({ services: result.data || [] })
     } catch (e) {
         return NextResponse.json({ error: e instanceof Error ? e.message : 'Erreur serveur' }, { status: 500 })
     }

@@ -61,12 +61,12 @@ export default function Header() {
                                 className="object-cover"
                             />
                         </div>
-                        <div className="hidden sm:flex flex-col">
-                            <span className="font-heading font-black text-2xl xl:text-3xl tracking-tighter group-hover:text-white transition-colors duration-500">
+                        <div className="flex flex-col">
+                            <span className="font-heading font-black text-sm sm:text-2xl xl:text-3xl tracking-tighter group-hover:text-white transition-colors duration-500">
                                 <span className="text-[#008751]">RETOUR</span> <span className="text-[#E8112D]">GAGNANT</span>
                             </span>
-                            <span className="text-xs xl:text-sm font-bold tracking-[0.4em] uppercase font-sans text-white/50 group-hover:text-[#FCD116] transition-colors duration-500">
-                                <T>BENIN</T>
+                            <span className="text-[9px] sm:text-xs xl:text-base font-extrabold tracking-[0.35em] sm:tracking-[0.5em] uppercase font-sans text-white/60 group-hover:text-[#FCD116] transition-colors duration-500">
+                                <T>BÉNIN</T>
                             </span>
                         </div>
                     </Link>
@@ -193,7 +193,16 @@ export default function Header() {
                                 </motion.div>
                             ))}
                             <motion.div
-                                className="pt-6 w-full max-w-sm"
+                                className="pt-2 w-full max-w-sm flex justify-center"
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.35 }}
+                            >
+                                <LanguageSwitcher />
+                            </motion.div>
+
+                            <motion.div
+                                className="pt-4 w-full max-w-sm"
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: 0.4 }}

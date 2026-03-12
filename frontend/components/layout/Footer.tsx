@@ -30,8 +30,8 @@ export default function Footer() {
                                 <span className="font-heading font-bold text-2xl group-hover:text-white transition-colors duration-500">
                                     <span className="text-[#008751]">RETOUR</span> <span className="text-[#E8112D]">GAGNANT</span>
                                 </span>
-                                <span className="text-sm font-light tracking-[0.3em] text-gray-400 uppercase">
-                                    <T>BENIN</T>
+                                <span className="text-base font-extrabold tracking-[0.5em] text-white/70 uppercase">
+                                    <T>BÉNIN</T>
                                 </span>
                             </div>
                         </Link>
@@ -104,11 +104,16 @@ export default function Footer() {
                                 <MapPin className="text-[#008751] mt-1 shrink-0" size={20} />
                                 <span>{COMPANY_INFO.address.split(',').map((line, i) => <span key={i}>{line}<br /></span>)} <T>République du Bénin</T></span>
                             </li>
-                            <li className="flex gap-4 items-center">
-                                <Phone className="text-[#008751] shrink-0" size={20} />
-                                <a href={COMPANY_INFO.whatsappLink} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
-                                    {COMPANY_INFO.phoneDisplay}
-                                </a>
+                            <li className="flex gap-4 items-start">
+                                <Phone className="text-[#008751] shrink-0 mt-0.5" size={20} />
+                                <div className="flex flex-col gap-1">
+                                    <a href={COMPANY_INFO.whatsappLink} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                                        {COMPANY_INFO.phoneDisplay}
+                                    </a>
+                                    <a href={COMPANY_INFO.whatsapp2Link} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                                        {COMPANY_INFO.phone2Display}
+                                    </a>
+                                </div>
                             </li>
                             <li className="flex gap-4 items-center">
                                 <Mail className="text-[#008751] shrink-0" size={20} />
