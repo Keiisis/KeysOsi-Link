@@ -16,17 +16,22 @@ export async function GET() {
         const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
         // Essai 1 : schéma migré (avec is_active + order_index)
-        let { data, error } = await supabase
+        let data: Array<Record<string, unknown>> | null = null
+        let error: unknown = null
+
+        const result1 = await supabase
             .from('services')
             .select('id, title, slug, description, icon_type, image_url, color, is_active, order_index')
 
-        // Essai 2 : ancien schéma (sans is_active ni order_index)
-        if (error) {
-            const fallback = await supabase
+        if (!result1.error) {
+            data = result1.data as Array<Record<string, unknown>>
+        } else {
+            // Essai 2 : ancien schéma (sans is_active ni order_index)
+            const result2 = await supabase
                 .from('services')
                 .select('id, title, slug, description, icon_type, image_url, color, "order"')
-            data = fallback.data
-            error = fallback.error
+            data = result2.data as Array<Record<string, unknown>>
+            error = result2.error
         }
 
         if (error || !data) {
@@ -35,7 +40,7 @@ export async function GET() {
 
         const services = data
             .filter((s) => s.is_active !== false)
-            .sort((a, b) => (a.order_index ?? a.order ?? 0) - (b.order_index ?? b.order ?? 0))
+            .sort((a, b) => ((a.order_index ?? a.order ?? 0) as number) - ((b.order_index ?? b.order ?? 0) as number))
 
         return NextResponse.json({ services })
     } catch {
