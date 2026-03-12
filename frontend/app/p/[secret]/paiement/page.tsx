@@ -69,6 +69,7 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
     // Stripe
     const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null)
     const [stripeReady, setStripeReady] = useState(false)
+    const [stripeSubmitting, setStripeSubmitting] = useState(false)
     const stripeInstanceRef = useRef<StripeInstance | null>(null)
     const cardElementRef = useRef<StripeElement | null>(null)
     const cardMountedRef = useRef(false)
@@ -395,7 +396,33 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
         } catch { cancelOrder(oid); setErrorMessage('Erreur FedaPay'); setStep('error'); return }
 
         try {
-            win.FedaPay.init('#fedapay-button', { public_key: publicKey, environment: sandbox ? 'sandbox' : 'live', transaction: { id: fedapayTxId }, onComplete: async (resp: Record<string, unknown>) => { const tx = resp.transaction as Record<string, unknown> | undefined; if (resp.reason === 'APPROVED' || (tx && (tx.status === 'approved' || tx.status === 'transferred'))) { await verifyPayment(oid, String(fedapayTxId)) } else { cancelOrder(oid); setErrorMessage('Paiement non approuvé'); setStep('error') } } })
+            win.FedaPay.init('#fedapay-button', {
+                public_key: publicKey,
+                environment: sandbox ? 'sandbox' : 'live',
+                // On passe id ET amount/description comme fallback : si le widget ne peut pas
+                // charger la transaction par ID (ex: erreur réseau, mismatch d'environnement),
+                // il dispose quand même des valeurs pour créer la transaction côté widget.
+                transaction: {
+                    id: fedapayTxId,
+                    amount: Math.round(proposal.total_amount),
+                    description: `Voyage ${proposal.destination} — ${proposal.client_name}`,
+                    currency: { iso: proposal.currency || 'XOF' },
+                },
+                onComplete: async (resp: Record<string, unknown>) => {
+                    const tx = resp.transaction as Record<string, unknown> | undefined
+                    if (resp.reason === 'APPROVED' || (tx && (tx.status === 'approved' || tx.status === 'transferred'))) {
+                        await verifyPayment(oid, String(fedapayTxId))
+                    } else if (resp.reason === 'CLOSE' || resp.reason === 'CANCEL') {
+                        // Utilisateur a fermé le widget sans payer
+                        await cancelOrder(oid)
+                        setStep('payment')
+                    } else {
+                        await cancelOrder(oid)
+                        setErrorMessage('Paiement non approuvé')
+                        setStep('error')
+                    }
+                },
+            })
             setTimeout(() => { document.getElementById('fedapay-button')?.click() }, 100)
         } catch (err) { cancelOrder(oid); setErrorMessage(`Erreur FedaPay: ${err instanceof Error ? err.message : ''}`); setStep('error') }
     }
@@ -430,18 +457,33 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
 
     const confirmStripePayment = async () => {
         if (!stripeInstanceRef.current || !cardElementRef.current || !stripeClientSecret || !orderId) return
-        
-        setStep('processing')
+        if (!stripeReady) { setErrorMessage('Stripe non prêt, veuillez patienter…'); return }
+
+        // On utilise stripeSubmitting au lieu de setStep('processing') pour NE PAS
+        // déclencher le useEffect qui unmount le card element pendant confirmCardPayment.
+        setStripeSubmitting(true)
+        setErrorMessage('')
         try {
-            // cardElementRef.current contains the stripe element that was mounted.
-            const result = await stripeInstanceRef.current.confirmCardPayment(stripeClientSecret, { 
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                payment_method: { card: cardElementRef.current as any } 
+            const result = await stripeInstanceRef.current.confirmCardPayment(stripeClientSecret, {
+                payment_method: { card: cardElementRef.current as unknown as Record<string, unknown> }
             })
-            if (result.error) { setErrorMessage(result.error.message || 'Paiement refusé'); setStep('stripe-form') }
-            else if (result.paymentIntent?.status === 'succeeded') { await verifyPayment(orderId, result.paymentIntent.id) }
-            else { setErrorMessage('Paiement incomplet'); setStep('stripe-form') }
-        } catch (err) { if (orderId) await cancelOrder(orderId); setErrorMessage(err instanceof Error ? err.message : 'Erreur Stripe'); setStep('error') }
+            if (result.error) {
+                setErrorMessage(result.error.message || 'Paiement refusé')
+                setStripeSubmitting(false)
+            } else if (result.paymentIntent?.status === 'succeeded') {
+                setStripeSubmitting(false)
+                setStep('processing') // Maintenant on peut changer l'étape (card element non requis)
+                await verifyPayment(orderId, result.paymentIntent.id)
+            } else {
+                setErrorMessage('Paiement incomplet. Veuillez réessayer.')
+                setStripeSubmitting(false)
+            }
+        } catch (err) {
+            setStripeSubmitting(false)
+            if (orderId) await cancelOrder(orderId)
+            setErrorMessage(err instanceof Error ? err.message : 'Erreur Stripe')
+            setStep('error')
+        }
     }
 
     const handlePayPal = () => {
@@ -597,31 +639,28 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
                         </motion.div>
                     )}
 
-                    {/* ─── STEP: STRIPE FORM & PROCESSING ──────────────────────── */}
-                    {(step === 'stripe-form' || (step === 'processing' && provider === 'stripe')) && (
+                    {/* ─── STEP: STRIPE FORM ──────────────────────── */}
+                    {step === 'stripe-form' && (
                         <motion.div key="stripe" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                             <div className="text-center mb-8">
                                 <h2 className="text-2xl font-black mb-2">Carte bancaire</h2>
                                 <p className="text-slate-400 text-sm">Paiement sécurisé par Stripe</p>
                             </div>
-                            
-                            {/* Le container du formulaire Stripe doit TOUJOURS être présent dans le DOM et son contenu préservé.
-                                S'il est en cours de traitement, on le masque visuellement via CSS `display: none` ou équivalent 
-                                pour éviter que Stripe Element ne crashe car il perd la div parente. */}
-                            <div style={{ display: step === 'processing' ? 'none' : 'block' }}>
+
+                            {/* stripeSubmitting masque le formulaire visuellement SANS changer l'étape,
+                                ce qui évite que le useEffect unmount le card element pendant confirmCardPayment. */}
+                            <div className={stripeSubmitting ? 'hidden' : ''}>
                                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 mb-6">
                                     <div id="stripe-card-element" className="min-h-[50px]" />
                                 </div>
                                 {errorMessage && <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl text-sm mb-4">{errorMessage}</div>}
-                                <button onClick={confirmStripePayment} disabled={!stripeReady} className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-900 py-4 rounded-2xl font-black transition-all flex items-center justify-center gap-2">
-                                    <Lock className="w-4 h-4" /> Payer {proposal.total_amount.toLocaleString()} FCFA
+                                <button type="button" onClick={confirmStripePayment} disabled={!stripeReady || stripeSubmitting} className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-900 py-4 rounded-2xl font-black transition-all flex items-center justify-center gap-2">
+                                    <Lock className="w-4 h-4" /> Payer {proposal.total_amount.toLocaleString()} {proposal.currency || 'FCFA'}
                                 </button>
-                                <button onClick={() => setStep('payment')} className="w-full text-slate-400 hover:text-white py-3 text-sm mt-2">← Autre moyen de paiement</button>
+                                <button type="button" onClick={() => setStep('payment')} className="w-full text-slate-400 hover:text-white py-3 text-sm mt-2">← Autre moyen de paiement</button>
                             </div>
 
-                            {/* Couche de chargement affichée PAR-DESSUS ou à LA PLACE visuellement, 
-                                mais sans démonter la div précédente. */}
-                            {step === 'processing' && (
+                            {stripeSubmitting && (
                                 <div className="flex flex-col items-center justify-center py-10 gap-4">
                                     <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
                                     <p className="text-white font-bold text-sm">Traitement en cours, ne fermez pas...</p>
@@ -642,7 +681,7 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
                     )}
 
                     {/* ─── STEP: PROCESSING ──────────────────────── */}
-                    {step === 'processing' && provider !== 'stripe' && (
+                    {step === 'processing' && (
                         <motion.div key="processing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-20 gap-6">
                             <Loader2 className="w-14 h-14 text-amber-500 animate-spin" />
                             <div className="text-center">
