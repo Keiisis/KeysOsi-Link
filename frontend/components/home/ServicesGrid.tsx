@@ -1,109 +1,29 @@
-"use client";
+"use client"
 
-import { GoldenIcon } from "@/components/ui/GoldenIcon";
-import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
-import Link from "next/link";
-import Image from "next/image";
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { GoldenIcon } from "@/components/ui/GoldenIcon"
+import { Button } from "@/components/ui/button"
+import { ArrowRight, Loader2 } from "lucide-react"
+import Link from "next/link"
+import Image from "next/image"
+import { useEffect, useState } from "react"
+import { supabase } from "@/lib/supabase"
 
-import { LucideIcon } from "lucide-react";
-import { useTranslation, T } from "@/lib/translation";
+import { LucideIcon } from "lucide-react"
+import { useTranslation, T } from "@/lib/translation"
 
-type GoldenIconType = "passport" | "tata" | "drum" | "cowrie" | "assin" | "tree" | "recade" | "standard";
+type GoldenIconType = "passport" | "tata" | "drum" | "cowrie" | "assin" | "tree" | "recade" | "standard"
 
 interface ServiceItem {
-    id: number;
-    title: string;
-    description: string;
-    icon?: LucideIcon;
-    iconType?: GoldenIconType;
-    slug: string;
-    imageUrl: string;
+    id: string | number
+    title: string
+    description: string
+    icon?: LucideIcon
+    iconType?: GoldenIconType
+    slug: string
+    imageUrl: string
 }
 
-const FALLBACK_SERVICES: ServiceItem[] = [
-    {
-        id: 1,
-        title: "Passeport & Documents",
-        description: "Obtention rapide de vos documents officiels. Accompagnement complet pour le passeport béninois et les démarches de naturalisation.",
-        iconType: "passport",
-        slug: "passeport",
-        imageUrl: "/assets/icones/icone_Passeport_Documents.png",
-    },
-    {
-        id: 2,
-        title: "Acheter ou Louer",
-        description: "Sécurisez vos transactions foncières et immobilières au Bénin. Résidence principale, investissement locatif ou local commercial.",
-        iconType: "tata",
-        slug: "logement",
-        imageUrl: "/assets/icones/icone_Acheter_ou_louer.png",
-    },
-    {
-        id: 3,
-        title: "Création d'Entreprise",
-        description: "Lancez votre business. Études de marché, création de sociétés et implantation, recherche de partenaires locaux.",
-        iconType: "drum",
-        slug: "business",
-        imageUrl: "/assets/icones/icone_Creation_d_Entreprise.png",
-    },
-    {
-        id: 4,
-        title: "Guide Culturel",
-        description: "Reconnectez-vous avec vos racines. Circuits patrimoniaux, cérémonie du Nom, découverte de l'histoire béninoise.",
-        iconType: "cowrie",
-        slug: "culture",
-        imageUrl: "/assets/icones/icone_Guide_culturel.png",
-    },
-    {
-        id: 5,
-        title: "Construction",
-        description: "Bâtissez pour la postérité. Maîtrise d'ouvrage déléguée, suivi de chantier et livraison clé en main.",
-        icon: undefined,
-        iconType: "assin",
-        slug: "construction",
-        imageUrl: "/assets/icones/icone_Construction.png",
-    },
-    {
-        id: 6,
-        title: "Investissement",
-        description: "Opportunités d'affaires rentables. Stratégies d'investissement immobilier et patrimonial adaptées à la diaspora.",
-        icon: undefined,
-        iconType: "tree",
-        slug: "investissement",
-        imageUrl: "/assets/icones/icone_Investissement.png",
-    },
-    {
-        id: 7,
-        title: "Nationalité Béninoise VIP",
-        description: "Accédez à la nationalité béninoise par une procédure personnalisée et accompagnée de bout en bout.",
-        iconType: "recade",
-        slug: "nationalite-vip",
-        imageUrl: "",
-    },
-    {
-        id: 8,
-        title: "Autres Services",
-        description: "Transport, santé, éducation, démarches administratives — Découvrez tous nos services complémentaires.",
-        iconType: "standard",
-        slug: "autres",
-        imageUrl: "",
-    },
-];
-
-// Map DB icon names to fallback slugs for image lookup
-const SLUG_BY_TITLE: Record<string, string> = {
-    'Construction Immobilière': 'construction',
-    'Gestion de Patrimoine': 'investissement',
-    'Conciergerie Diaspora': 'culture',
-    'Passeport & Documents': 'passeport',
-    'Acheter ou Louer': 'logement',
-    'Création d\'Entreprise': 'business',
-    'Guide Culturel': 'culture',
-    'Investissement': 'investissement',
-    'Construction': 'construction',
-}
+// Fallback images par slug (si la DB n'a pas d'image)
 const IMG_BY_SLUG: Record<string, string> = {
     passeport: '/assets/icones/icone_Passeport_Documents.png',
     logement: '/assets/icones/icone_Acheter_ou_louer.png',
@@ -114,40 +34,60 @@ const IMG_BY_SLUG: Record<string, string> = {
 }
 
 export default function ServicesGrid() {
-    const { t } = useTranslation();
-    const [servicesList, setServicesList] = useState<ServiceItem[]>(FALLBACK_SERVICES);
+    const { t } = useTranslation()
+    const [servicesList, setServicesList] = useState<ServiceItem[]>([])
+    const [loading, setLoading] = useState(true)
 
     useEffect(() => {
         const fetchServices = async () => {
             try {
                 const { data, error } = await supabase
                     .from('services')
-                    .select('*')
-                    .order('order', { ascending: true });
+                    .select('id, title, slug, description, icon_type, image_url, is_active, order_index')
+                    .eq('is_active', true)
+                    .order('order_index', { ascending: true })
 
-                if (error) throw error;
+                if (error) throw error
 
                 if (data && data.length > 0) {
-                    const mappedServices = data.map((item: Record<string, unknown>) => {
-                        const slug = String(item.slug || SLUG_BY_TITLE[String(item.title)] || String(item.title).toLowerCase().replace(/\s+/g, '-'));
+                    const mappedServices: ServiceItem[] = data.map((item) => {
+                        const slug = item.slug || String(item.title).toLowerCase().replace(/\s+/g, '-')
                         return {
-                            id: Number(item.id),
-                            title: String(item.title),
-                            description: item.description ? String(item.description) : "Découvrez ce service",
-                            iconType: (item.icon_type ? String(item.icon_type) : "passport") as GoldenIconType,
+                            id: item.id,
+                            title: item.title,
+                            description: item.description || 'Découvrez ce service',
+                            iconType: (item.icon_type || 'standard') as GoldenIconType,
                             slug,
-                            imageUrl: item.image_url ? String(item.image_url) : (IMG_BY_SLUG[slug] || ''),
-                        };
-                    });
-                    setServicesList(mappedServices);
+                            imageUrl: item.image_url || IMG_BY_SLUG[slug] || '',
+                        }
+                    })
+                    setServicesList(mappedServices)
                 }
-            } catch (error) {
-                console.log("Using fallback services grid (Supabase fetch failed or empty)");
+            } catch (err) {
+                console.warn('ServicesGrid: Erreur chargement depuis Supabase, aucun fallback.', err)
+            } finally {
+                setLoading(false)
             }
-        };
+        }
 
-        fetchServices();
-    }, []);
+        fetchServices()
+    }, [])
+
+    if (loading) {
+        return (
+            <div className="flex justify-center py-20">
+                <Loader2 className="animate-spin text-[#008751]" size={36} />
+            </div>
+        )
+    }
+
+    if (servicesList.length === 0) {
+        return (
+            <div className="text-center py-16">
+                <p className="text-gray-500 text-sm">Aucun service disponible pour le moment.</p>
+            </div>
+        )
+    }
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -196,5 +136,5 @@ export default function ServicesGrid() {
                 </div>
             ))}
         </div>
-    );
+    )
 }
