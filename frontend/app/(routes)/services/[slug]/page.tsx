@@ -1,223 +1,97 @@
-'use client';
+'use client'
 
-import { use, useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { CheckCircle2, ChevronRight, Calendar } from 'lucide-react';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { GoldenIcon } from '@/components/ui/GoldenIcon';
-import PricingCalculator3D from '@/components/services/PricingCalculator3D';
-import CinematicIntro from '@/components/services/CinematicIntro';
-import { useTranslation, T } from '@/lib/translation';
+import { use, useEffect, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { CheckCircle2, ChevronRight, Calendar, Loader2 } from 'lucide-react'
+import Link from 'next/link'
+import { motion } from 'framer-motion'
+import { GoldenIcon } from '@/components/ui/GoldenIcon'
+import PricingCalculator3D from '@/components/services/PricingCalculator3D'
+import CinematicIntro from '@/components/services/CinematicIntro'
+import { useTranslation, T } from '@/lib/translation'
+import { supabase } from '@/lib/supabase'
 
-// Fallback service data — user can override this via Supabase Admin
-const FALLBACK_SERVICES: Record<string, {
-    title: string;
-    subtitle: string;
-    description: string;
-    features: string[];
-    price: string;
-    color: string;
-    icon_type: string;
-    image_url?: string;
-    pricing_options: Array<{ label: string; price: string }>;
-}> = {
-    passeport: {
-        title: "Passeport & Nationalité",
-        subtitle: "Accompagnement complet pour vos démarches d'identité et de naturalisation",
-        description: "Nos experts vous guident pas à pas dans vos démarches d'obtention du passeport béninois ou de reconnaissance de la nationalité. Nous prenons en charge la constitution du dossier, les rendez-vous auprès des autorités compétentes et le suivi jusqu'à l'aboutissement de votre demande.",
-        features: [
-            "Dossier de naturalisation",
-            "Passeport biométrique (1re demande & renouvellement)",
-            "Acte de naissance & état civil",
-            "Extrait de casier judiciaire",
-            "Légalisation Apostille (valable à l'international)",
-            "Suivi administratif complet",
-        ],
-        price: "À partir de 50.000 FCFA",
-        color: "#008751",
-        icon_type: "passport",
-        image_url: "/assets/icones/icone_Passeport_Documents.png",
-        pricing_options: [
-            { label: "Dossier passeport simple", price: "50.000 FCFA" },
-            { label: "Pack gestion complète", price: "85.000 FCFA" },
-            { label: "Pack urgence (délai accéléré)", price: "150.000 FCFA" },
-        ]
-    },
-    logement: {
-        title: "Acheter ou Louer",
-        subtitle: "Acquisition, location et gestion de biens immobiliers au Bénin",
-        description: "Notre équipe vous accompagne dans la recherche et l'acquisition de biens immobiliers adaptés à votre projet. Résidence principale, investissement locatif ou local commercial — nous vous offrons un accompagnement juridique et technique complet, avec vérification des titres fonciers.",
-        features: [
-            "Recherche de biens sur mesure",
-            "Visites accompagnées (vidéo disponible à distance)",
-            "Vérification et audit des titres fonciers",
-            "Conseil juridique immobilier",
-            "Négociation et finalisation des transactions",
-            "Gestion locative en votre absence",
-        ],
-        price: "À partir de 75.000 FCFA",
-        color: "#FCD116",
-        icon_type: "tata",
-        image_url: "/assets/icones/icone_Acheter_ou_louer.png",
-        pricing_options: [
-            { label: "Recherche & location meublée", price: "75.000 FCFA" },
-            { label: "Acquisition terrain ou maison", price: "250.000 FCFA" },
-            { label: "Audit juridique titre foncier", price: "100.000 FCFA" },
-        ]
-    },
-    business: {
-        title: "Création d'Entreprise",
-        subtitle: "Création, immatriculation et développement commercial au Bénin",
-        description: "Nous facilitons l'implantation économique des entrepreneurs de la diaspora au Bénin. De la création juridique de votre structure à l'ouverture de votre compte bancaire professionnel, en passant par les démarches fiscales, notre équipe vous accompagne à chaque étape.",
-        features: [
-            "Création SARL, SA, SASU ou association",
-            "Immatriculation RCCM (Registre du Commerce)",
-            "Ouverture compte bancaire professionnel",
-            "Conseil fiscal et juridique",
-            "Domiciliation d'entreprise à Cotonou",
-            "Réseau de partenaires locaux de confiance",
-        ],
-        price: "À partir de 150.000 FCFA",
-        color: "#E8112D",
-        icon_type: "drum",
-        image_url: "/assets/icones/icone_Creation_d_Entreprise.png",
-        pricing_options: [
-            { label: "Création d'entreprise simple", price: "150.000 FCFA" },
-            { label: "Pack Business (banque + siège)", price: "350.000 FCFA" },
-            { label: "Accompagnement stratégique", price: "500.000 FCFA" },
-        ]
-    },
-    culture: {
-        title: "Tourisme & Culture",
-        subtitle: "Séjours culturels, visites patrimoniales et circuits au Bénin",
-        description: "Explorez le Bénin à travers des séjours soigneusement organisés : Ouidah et la Route de l'Esclave, Abomey et ses palais royaux, les marchés de Cotonou, les parcs naturels du Nord. Chaque circuit est adapté à vos attentes et accompagné par des guides expérimentés.",
-        features: [
-            "Circuits personnalisés selon vos centres d'intérêt",
-            "Hébergement sélectionné",
-            "Guides culturels certifiés",
-            "Visites de sites classés (Ouidah, Abomey, Ganvié)",
-            "Ateliers artisanaux et rencontres communautaires",
-            "Transfert aéroport et logistique sur place",
-        ],
-        price: "À partir de 100.000 FCFA",
-        color: "#008751",
-        icon_type: "cowrie",
-        image_url: "/assets/icones/icone_Guide_culturel.png",
-        pricing_options: [
-            { label: "Journée circuit patrimonial", price: "100.000 FCFA" },
-            { label: "Week-end découverte", price: "250.000 FCFA" },
-            { label: "Séjour 7 jours tout compris", price: "1.200.000 FCFA" },
-        ]
-    },
-    construction: {
-        title: "Construction & Rénovation",
-        subtitle: "Maîtrise d'ouvrage déléguée et suivi de chantier au Bénin",
-        description: "Confiez la construction ou la rénovation de votre bien à notre équipe de maîtrise d'ouvrage déléguée. Nous sélectionnons les artisans et entreprises locaux qualifiés, supervisons l'avancement des travaux et vous rendons compte régulièrement, où que vous soyez dans le monde.",
-        features: [
-            "Conception architecturale et plans 3D",
-            "Sélection et coordination des prestataires",
-            "Suivi de chantier avec rapports réguliers",
-            "Achats matériaux au meilleur rapport qualité-prix",
-            "Contrôle qualité et respect des délais",
-            "Livraison clé en main",
-        ],
-        price: "Sur Devis",
-        color: "#FCD116",
-        icon_type: "assin",
-        image_url: "/assets/icones/icone_Construction.png",
-        pricing_options: [
-            { label: "Suivi de chantier (mensuel)", price: "150.000 FCFA" },
-            { label: "Étude architecturale 3D", price: "300.000 FCFA" },
-            { label: "Gestion projet clé en main", price: "Sur Devis" },
-        ]
-    },
-    investissement: {
-        title: "Investissement & Patrimoine",
-        subtitle: "Stratégies d'investissement immobilier et patrimonial au Bénin",
-        description: "Structurez votre patrimoine au Bénin avec le conseil de nos experts en investissement. Nous identifions les opportunités à fort potentiel, évaluons la rentabilité et gérons vos actifs dans la durée. Une approche rigoureuse pour sécuriser et valoriser votre capital.",
-        features: [
-            "Analyse rendement locatif et rentabilité",
-            "Sourcing d'opportunités foncières et immobilières",
-            "Diversification patrimoniale",
-            "Due diligence et audit de risque",
-            "Accompagnement fiscal sur les revenus locaux",
-            "Reporting investisseur régulier",
-        ],
-        price: "Consultation gratuite",
-        color: "#E8112D",
-        icon_type: "tree",
-        image_url: "/assets/icones/icone_Investissement.png",
-        pricing_options: [
-            { label: "Consultation initiale", price: "Gratuit" },
-            { label: "Étude d'opportunité", price: "200.000 FCFA" },
-            { label: "Accompagnement deal flow", price: "Commission" },
-        ]
-    },
-};
-
-import { createClient } from '@supabase/supabase-js';
-
-// ... other imports stay the same ...
+interface ServiceData {
+    title: string
+    subtitle: string
+    description: string
+    features: string[]
+    price: string
+    color: string
+    icon_type: string
+    image_url?: string
+    pricing_options: Array<{ label: string; price: string }>
+}
 
 export default function ServiceDetailPage({ params }: { params: Promise<{ slug: string }> }) {
-    const { t } = useTranslation();
-    const { slug } = use(params);
-    const [service, setService] = useState(FALLBACK_SERVICES[slug] || null);
+    const { t } = useTranslation()
+    const { slug } = use(params)
+    const [service, setService] = useState<ServiceData | null>(null)
+    const [loading, setLoading] = useState(true)
+    const [notFound, setNotFound] = useState(false)
 
     useEffect(() => {
         const fetchService = async () => {
-            if (!slug) return;
+            if (!slug) return
 
             try {
-                const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-                const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+                const { data, error } = await supabase
+                    .from('services')
+                    .select('*')
+                    .eq('slug', slug)
+                    .single()
 
-                if (supabaseUrl && supabaseKey) {
-                    const supabase = createClient(supabaseUrl, supabaseKey);
-
-                    const { data, error } = await supabase
-                        .from('services')
-                        .select('*')
-                        .eq('slug', slug);
-
-                    if (!error && data && data.length > 0) {
-                        const db = data[0];
-                        const fallback = FALLBACK_SERVICES[slug];
-
-                        // DB fields take priority; fallback only fills what's missing
-                        setService({
-                            title: db.title || fallback?.title || '',
-                            subtitle: db.subtitle || fallback?.subtitle || '',
-                            description: db.description || fallback?.description || '',
-                            features: (db.features?.length ? db.features : null) ?? fallback?.features ?? ['Analyse experte', 'Suivi personnalisé'],
-                            price: db.price_display || fallback?.price || 'Nous consulter',
-                            color: db.color || fallback?.color || '#008751',
-                            icon_type: db.icon_type || fallback?.icon_type || 'passport',
-                            image_url: db.image_url || fallback?.image_url || '',
-                            pricing_options: (db.pricing_options?.length ? db.pricing_options : null) ?? fallback?.pricing_options ?? [{ label: 'Standard', price: 'Nous consulter' }],
-                        });
-                        return;
-                    }
+                if (error || !data) {
+                    setNotFound(true)
+                    return
                 }
+
+                setService({
+                    title: data.title || '',
+                    subtitle: data.subtitle || '',
+                    description: data.description || '',
+                    features: Array.isArray(data.features) && data.features.length > 0
+                        ? data.features
+                        : ['Analyse experte', 'Suivi personnalisé'],
+                    price: data.price_display || 'Nous consulter',
+                    color: data.color || '#008751',
+                    icon_type: data.icon_type || 'standard',
+                    image_url: data.image_url || '',
+                    pricing_options: Array.isArray(data.pricing_options) && data.pricing_options.length > 0
+                        ? data.pricing_options
+                        : [{ label: 'Standard', price: 'Nous consulter' }],
+                })
             } catch {
-                console.log("Using fallback content (Supabase not ready or empty for this service)");
+                console.warn('ServiceDetailPage: Erreur chargement depuis Supabase')
+                setNotFound(true)
+            } finally {
+                setLoading(false)
             }
+        }
 
-            // Fallback if Supabase fails
-            if (FALLBACK_SERVICES[slug]) {
-                setService(FALLBACK_SERVICES[slug]);
-            }
-        };
+        fetchService()
+    }, [slug])
 
-        fetchService();
-    }, [slug]);
+    const [showIntro, setShowIntro] = useState(slug === 'passeport')
 
-    const [showIntro, setShowIntro] = useState(slug === 'passeport');
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <Loader2 className="animate-spin text-[#008751]" size={36} />
+            </div>
+        )
+    }
 
-    if (!service) {
-        return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><T>Chargement...</T></div>;
+    if (notFound || !service) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4">
+                <p className="text-gray-500 text-lg font-semibold"><T>Service introuvable</T></p>
+                <Link href="/services">
+                    <Button variant="outline"><T>Retour aux services</T></Button>
+                </Link>
+            </div>
+        )
     }
 
     return (
@@ -264,6 +138,7 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
                                             ease: "easeInOut"
                                         }}
                                     >
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img
                                             src={service.image_url}
                                             alt={service.title}
@@ -367,5 +242,5 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
                 </section>
             </div>
         </>
-    );
+    )
 }
