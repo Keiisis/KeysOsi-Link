@@ -13,7 +13,13 @@
       "Bash(git add app/admin/users/page.tsx)",
       "Bash(npx tsc --noEmit --skipLibCheck)",
       "Bash(ls -la 'c:/Users/HP/Desktop/RETOUR GAGNANT TEMPLATE/frontend/app/\\(routes\\)/services/')",
-      "Bash(ls -la 'c:/Users/HP/Desktop/RETOUR GAGNANT TEMPLATE/frontend/app/\\(routes\\)/services/[slug]/')"
+      "Bash(ls -la 'c:/Users/HP/Desktop/RETOUR GAGNANT TEMPLATE/frontend/app/\\(routes\\)/services/[slug]/')",
+      "Bash(git add frontend/app/\\\\\\(routes\\\\\\)/contact/page.tsx frontend/app/api/admin/services/route.ts frontend/app/boutique/page.tsx frontend/components/home/HeroSection.tsx frontend/components/home/ServicesGrid.tsx frontend/components/layout/Footer.tsx frontend/components/layout/Header.tsx supabase_migration_services.sql)",
+      "Bash(git add frontend/app/\\\\\\(routes\\\\\\)/services/[slug]/page.tsx)",
+      "Bash(git add frontend/app/api/services/route.ts \"frontend/app/api/services/[slug]/route.ts\" frontend/components/home/ServicesGrid.tsx \"frontend/app/\\(routes\\)/services/[slug]/page.tsx\" frontend/app/api/admin/services/route.ts supabase_migration_services.sql)",
+      "Bash(git add frontend/app/api/services/route.ts)",
+      "Bash(git add frontend/app/api/settings/frontend/route.ts frontend/app/\\\\\\(routes\\\\\\)/services/[slug]/page.tsx supabase_update_services_v2.sql)",
+      "Bash(git add frontend/app/\\\\\\(routes\\\\\\)/services/[slug]/page.tsx supabase_update_services_v3.sql)"
     ],
     "additionalDirectories": [
       "c:\\Users\\HP\\Desktop\\RETOUR GAGNANT TEMPLATE\\frontend\\app\\api\\admin\\users"

@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     ArrowLeft, Save, MonitorPlay, Film, Type,
-    Loader2, CheckCircle2, AlertCircle, Link as LinkIcon, Plus, Trash2, Palette, LayoutGrid
+    Loader2, CheckCircle2, AlertCircle, Link as LinkIcon, Plus, Trash2, Palette, LayoutGrid, Info
 } from "lucide-react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
@@ -40,6 +40,9 @@ export default function FrontendSettingsPage() {
         frontend_colors_primary: "#008751",
         passeport_show_calculator: "false",
         autres_services_json: "",
+        about_us_title: "",
+        about_us_video: "",
+        about_us_text: "",
     });
 
     // Navbar links managed separately as an array
@@ -236,8 +239,8 @@ export default function FrontendSettingsPage() {
                                 <Film size={24} className="text-blue-500" />
                             </div>
                             <div>
-                                <h3 className="text-xl font-black text-white"><T>Création d'Ambiance</T></h3>
-                                <p className="text-xs text-gray-500"><T>Multimédia d'arrière-plan interactif</T></p>
+                                <h3 className="text-xl font-black text-white"><T>Création d&apos;Ambiance</T></h3>
+                                <p className="text-xs text-gray-500"><T>Multimédia d&apos;arrière-plan interactif</T></p>
                             </div>
                         </div>
 
@@ -274,6 +277,61 @@ export default function FrontendSettingsPage() {
                                     <video src={form.frontend_hero_video} autoPlay muted loop playsInline className="w-full h-full object-cover" />
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </Card>
+
+                {/* Qui Sommes-Nous */}
+                <Card className="bg-[#0a0f18] border-white/5 overflow-hidden rounded-[3rem] shadow-2xl relative lg:col-span-2">
+                    <div className="p-10 space-y-8 relative z-10">
+                        <div className="flex items-center gap-4 border-b border-white/5 pb-8 mb-8">
+                            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                                <Info size={24} className="text-amber-500" />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-black text-white"><T>Section : Qui Sommes-Nous</T></h3>
+                                <p className="text-xs text-gray-500"><T>La section décrivant la mission et les objectifs (présentée avec vidéo)</T></p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                            <div className="space-y-6">
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-amber-500 uppercase tracking-widest ml-1"><T>Titre de la section</T></label>
+                                    <input
+                                        name="about_us_title"
+                                        value={form.about_us_title}
+                                        onChange={handleChange}
+                                        placeholder={t("L'Excellence au Service de vos Racines")}
+                                        className="w-full bg-[#131b2c] border border-amber-500/30 rounded-2xl py-4 px-6 text-white focus:outline-none focus:border-amber-500 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] transition-all font-bold text-sm"
+                                    />
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-amber-500 uppercase tracking-widest ml-1"><T>URL Vidéo Centrale (Ex: Logo Animé MP4)</T></label>
+                                    <input
+                                        name="about_us_video"
+                                        value={form.about_us_video}
+                                        onChange={handleChange}
+                                        placeholder={t("/videos/logo animé.mp4")}
+                                        className="w-full bg-[#131b2c] border border-amber-500/30 rounded-2xl py-4 px-6 text-white focus:outline-none focus:border-amber-500 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] transition-all font-mono text-sm"
+                                    />
+                                    <p className="text-[10px] text-gray-500 font-bold ml-1"><T>La vidéo joue en boucle (autoplay, muted).</T></p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-amber-500 uppercase tracking-widest ml-1"><T>Copywriting Expert (L&apos;histoire)</T></label>
+                                <textarea
+                                    name="about_us_text"
+                                    value={form.about_us_text}
+                                    onChange={handleChange}
+                                    rows={10}
+                                    placeholder={t("Depuis la création...")}
+                                    className="w-full bg-[#131b2c] border border-amber-500/30 rounded-2xl py-4 px-6 text-white focus:outline-none focus:border-amber-500 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] transition-all font-medium text-sm leading-relaxed"
+                                />
+                                <p className="text-[10px] text-gray-500 font-bold ml-1"><T>Séparez vos paragraphes par un saut de ligne. Affichage de prestige automatique.</T></p>
+                            </div>
                         </div>
                     </div>
                 </Card>

@@ -7,7 +7,7 @@ import HeroSection from "@/components/home/HeroSection";
 import ProcessSteps from "@/components/home/ProcessSteps";
 import HeritageCarousel from "@/components/home/HeritageCarousel";
 import ImmersiveGallery from "@/components/home/ImmersiveGallery";
-import NationalitySection from "@/components/home/NationalitySection";
+import AboutUsSection from "@/components/home/AboutUsSection";
 import PartnersSection from "@/components/home/PartnersSection";
 import { T } from "@/lib/translation";
 
@@ -41,8 +41,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Nationality Section (New) */}
-      <NationalitySection />
+      {/* About Us Section (Qui sommes-nous) */}
+      <AboutUsSection />
 
       {/* Heritage Section (Infinite Scroll) */}
       <HeritageCarousel />
