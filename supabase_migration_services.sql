@@ -128,7 +128,29 @@ UPDATE public.services SET
 WHERE slug = 'investissement' AND (features = '[]'::jsonb OR features IS NULL);
 
 -- ============================================================
--- 10. Vérification finale
+-- 10. Politique RLS — lecture publique des services actifs
+-- ============================================================
+
+-- Activer RLS sur la table services (si pas encore activé)
+ALTER TABLE public.services ENABLE ROW LEVEL SECURITY;
+
+-- Supprimer les anciennes politiques si elles existent
+DROP POLICY IF EXISTS "Public can read active services" ON public.services;
+DROP POLICY IF EXISTS "Authenticated users can manage services" ON public.services;
+
+-- Politique : visiteurs anonymes peuvent lire les services actifs
+CREATE POLICY "Public can read active services"
+    ON public.services FOR SELECT
+    USING (is_active = true OR is_active IS NULL);
+
+-- Politique : utilisateurs authentifiés peuvent tout faire (admin)
+CREATE POLICY "Authenticated users can manage services"
+    ON public.services FOR ALL
+    USING (auth.role() = 'authenticated' OR auth.role() = 'service_role')
+    WITH CHECK (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+
+-- ============================================================
+-- 11. Vérification finale
 -- ============================================================
 SELECT id, title, slug, is_active, order_index, price_display,
        jsonb_array_length(features) AS nb_features,

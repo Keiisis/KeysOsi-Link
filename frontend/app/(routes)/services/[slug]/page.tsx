@@ -10,7 +10,6 @@ import { GoldenIcon } from '@/components/ui/GoldenIcon'
 import PricingCalculator3D from '@/components/services/PricingCalculator3D'
 import CinematicIntro from '@/components/services/CinematicIntro'
 import { useTranslation, T } from '@/lib/translation'
-import { supabase } from '@/lib/supabase'
 
 interface ServiceData {
     title: string
@@ -205,20 +204,14 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
             if (!slug) return
 
             try {
-                const { data, error } = await supabase
-                    .from('services')
-                    .select('*')
-                    .eq('slug', slug)
-                    .single()
+                // Appel via l'API serveur (service role key) — contourne le RLS Supabase
+                const res = await fetch(`/api/services/${slug}`)
+                const json = await res.json()
+                const data = json.service
 
-                if (error || !data) {
-                    // Fallback sur le contenu de référence si la DB ne répond pas
+                if (!data) {
                     const fallback = FALLBACK_SERVICES[slug]
-                    if (fallback) {
-                        setService(fallback)
-                    } else {
-                        setNotFound(true)
-                    }
+                    if (fallback) { setService(fallback) } else { setNotFound(true) }
                     return
                 }
 
@@ -238,13 +231,9 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
                         : (FALLBACK_SERVICES[slug]?.pricing_options ?? [{ label: 'Standard', price: 'Nous consulter' }]),
                 })
             } catch {
-                console.warn('ServiceDetailPage: Erreur DB, affichage du contenu par défaut.')
+                console.warn('ServiceDetailPage: Erreur API, affichage du contenu par défaut.')
                 const fallback = FALLBACK_SERVICES[slug]
-                if (fallback) {
-                    setService(fallback)
-                } else {
-                    setNotFound(true)
-                }
+                if (fallback) { setService(fallback) } else { setNotFound(true) }
             } finally {
                 setLoading(false)
             }

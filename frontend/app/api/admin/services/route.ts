@@ -16,18 +16,26 @@ export async function GET() {
     try {
         const supabase = getSupabase()
 
-        // Essai avec order_index (schéma migré), fallback sans ordre si colonne absente
-        let result = await supabase
-            .from('services')
-            .select('*')
-            .order('order_index', { ascending: true })
+        // Essai 1 : schéma migré avec order_index
+        let result = await supabase.from('services').select('*').order('order_index', { ascending: true })
 
-        if (result.error && result.error.message.includes('order_index')) {
+        // Essai 2 : ancien schéma avec "order"
+        if (result.error) {
+            result = await supabase.from('services').select('*').order('order' as never, { ascending: true })
+        }
+
+        // Essai 3 : sans tri du tout (toujours récupérer les données)
+        if (result.error) {
             result = await supabase.from('services').select('*')
         }
 
         if (result.error) return NextResponse.json({ error: result.error.message }, { status: 500 })
-        return NextResponse.json({ services: result.data || [] })
+
+        // Tri côté serveur selon le champ disponible
+        const sorted = (result.data || []).sort(
+            (a, b) => (a.order_index ?? a.order ?? 0) - (b.order_index ?? b.order ?? 0)
+        )
+        return NextResponse.json({ services: sorted })
     } catch (e) {
         return NextResponse.json({ error: e instanceof Error ? e.message : 'Erreur serveur' }, { status: 500 })
     }

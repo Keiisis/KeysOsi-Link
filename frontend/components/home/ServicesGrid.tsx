@@ -6,7 +6,6 @@ import { ArrowRight, Loader2 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabase"
 import { LucideIcon } from "lucide-react"
 import { useTranslation, T } from "@/lib/translation"
 
@@ -92,37 +91,29 @@ export default function ServicesGrid() {
     useEffect(() => {
         const fetchServices = async () => {
             try {
-                // select('*') pour éviter les erreurs sur colonnes manquantes selon la version du schéma
-                const { data, error } = await supabase
-                    .from('services')
-                    .select('*')
+                // Appel via l'API serveur (service role key) — contourne le RLS Supabase
+                const res = await fetch('/api/services')
+                const json = await res.json()
 
-                if (error) throw error
-
-                if (data && data.length > 0) {
-                    const mappedServices: ServiceItem[] = data
-                        // Filtre côté JS : is_active si la colonne existe, sinon tout afficher
-                        .filter((item) => item.is_active !== false)
-                        // Tri côté JS : order_index (nouveau schéma) ou order (ancien schéma)
-                        .sort((a, b) => (a.order_index ?? a.order ?? 0) - (b.order_index ?? b.order ?? 0))
-                        .map((item) => {
-                            const slug = item.slug || String(item.title).toLowerCase().replace(/\s+/g, '-')
-                            return {
-                                id: item.id,
-                                title: item.title,
-                                description: item.description || 'Découvrez ce service',
-                                iconType: (item.icon_type || 'standard') as GoldenIconType,
-                                slug,
-                                imageUrl: item.image_url || IMG_BY_SLUG[slug] || '',
-                            }
-                        })
+                if (json.services && json.services.length > 0) {
+                    const mappedServices: ServiceItem[] = json.services.map((item: Record<string, unknown>) => {
+                        const slug = (item.slug as string) || String(item.title).toLowerCase().replace(/\s+/g, '-')
+                        return {
+                            id: item.id,
+                            title: item.title as string,
+                            description: (item.description as string) || 'Découvrez ce service',
+                            iconType: ((item.icon_type as string) || 'standard') as GoldenIconType,
+                            slug,
+                            imageUrl: (item.image_url as string) || IMG_BY_SLUG[slug] || '',
+                        }
+                    })
                     setServicesList(mappedServices)
                 } else {
-                    // Table vide : afficher le contenu de référence
+                    // API retourne vide : afficher le contenu de référence
                     setServicesList(FALLBACK_SERVICES)
                 }
             } catch (err) {
-                console.warn('ServicesGrid: Erreur DB, affichage du contenu par défaut.', err)
+                console.warn('ServicesGrid: Erreur API, affichage du contenu par défaut.', err)
                 setServicesList(FALLBACK_SERVICES)
             } finally {
                 setLoading(false)
