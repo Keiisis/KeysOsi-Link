@@ -189,8 +189,8 @@ export async function middleware(request: NextRequest) {
         }
 
         // STRICT ROLE CHECK : Agent ≠ Admin — super_admin a accès à tout
-        const ADMIN_ROLES = ['admin', 'super_admin']
-        const AGENT_ROLES = ['agent', 'admin', 'super_admin']
+        const ADMIN_ROLES = ['admin', 'super_admin', 'superadmin']
+        const AGENT_ROLES = ['agent', 'admin', 'super_admin', 'superadmin']
 
         if (isAgentRoute && !AGENT_ROLES.includes(profile.role)) {
             return redirectTo(new URL('/agent/login?error=unauthorized', request.url))
