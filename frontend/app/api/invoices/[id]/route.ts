@@ -7,39 +7,50 @@ import { fetchWithGroqRotation, GROQ_KEYS } from '@/lib/groq'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-// Appel Groq pour générer un message de remerciement personnalisé
+// Appel Groq pour générer un message de facture personnalisé (PNL + psychologie de fidélisation)
 async function generateGroqMessage(
   customerName: string,
   productTitle: string,
+  invoiceRef: string,
+  date: string,
 ): Promise<string> {
   if (GROQ_KEYS.length === 0) return ''
   try {
     const res = await fetchWithGroqRotation({
       model: 'llama-3.3-70b-versatile',
-      max_tokens: 100,
-      temperature: 0.6,
+      max_tokens: 220,
+      temperature: 0.72,
       messages: [
         {
           role: 'system',
-          content: `Tu es le service client de Retour Gagnant Bénin, une agence basée à Cotonou.
-Ta SEULE tâche : rédiger exactement 2 phrases de remerciement en français formel et chaleureux.
-RÈGLES STRICTES — ne jamais enfreindre :
-- Exactement 2 phrases, rien de plus
-- NE PAS inclure de numéro de facture, date, montant, ni aucune donnée administrative
-- NE PAS inclure de tirets (—), de lignes séparatrices, ni de champs vides
-- NE PAS commencer par "Voici", "Bien sûr", "Facture", "Message" ou tout autre méta-commentaire
-- Répondre UNIQUEMENT avec les 2 phrases de remerciement, sans mise en forme`,
+          content: `Tu es le directeur de la relation client de Retour Gagnant Bénin, expert en communication persuasive et fidélisation.
+
+Rédige un message de facture (3 à 4 phrases) qui sera affiché directement dans la facture officielle du client.
+
+OBJECTIFS PSYCHOLOGIQUES :
+1. Ancrer la décision d'achat comme un choix intelligent et stratégique (biais de cohérence)
+2. Créer un sentiment d'appartenance à une communauté de personnes qui réussissent (appartenance sociale)
+3. Ouvrir la porte à une prochaine interaction sans quémander ni promettre ce qui n'est pas garanti
+4. Laisser une empreinte émotionnelle positive et durable — le client doit se souvenir de ce message
+
+RÈGLES ABSOLUES :
+- Mentionner naturellement le numéro de facture et la date dans la première phrase
+- Ton : confiant, chaleureux, jamais servile ni excessif
+- Pas de superlatifs creux ("excellent", "remarquable", "exceptionnel")
+- Pas de promesses non vérifiables
+- Pas de champs vides, pas de tirets de remplissage (---, ___)
+- Répondre UNIQUEMENT avec le texte du message, sans titre ni méta-commentaire`,
         },
         {
           role: 'user',
-          content: `Remercie le client ${customerName} pour son achat : ${productTitle}.`,
+          content: `Client : ${customerName} | Service : ${productTitle} | Facture : ${invoiceRef} | Date : ${date}`,
         },
       ],
     });
     const data = await res.json()
     const raw = (data.choices?.[0]?.message?.content?.trim() || '') as string
-    // Filtre de sécurité : rejeter si le modèle a quand même inclus des champs de template
-    if (!raw || raw.includes('___') || raw.includes('Facture N°') || raw.includes('Date :') || raw.length > 400) {
+    // Filtre de sécurité : rejeter si le modèle a inclus des champs de template vides
+    if (!raw || raw.includes('___') || raw.includes('[ ') || raw.length > 800 || raw.length < 80) {
       return ''
     }
     return raw
@@ -125,7 +136,7 @@ export async function GET(
         width: 130,
         margin: 1,
       }).catch(() => ''),
-      generateGroqMessage(order.customer_name || 'Client', order.product_title || 'notre produit'),
+      generateGroqMessage(order.customer_name || 'Client', order.product_title || 'notre service', invoiceRef, date),
     ])
 
     const paymentMethodLabel: Record<string, string> = {
