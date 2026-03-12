@@ -6,7 +6,7 @@ import { motion, AnimatePresence, PanInfo } from 'framer-motion'
 import {
     Loader2, ChevronRight, ChevronLeft, MapPin, Star,
     CreditCard, Calendar, CheckCircle, Sparkles, BookOpen,
-    HandIcon, FileDown
+    HandIcon, FileDown, MessageCircle
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
@@ -19,6 +19,7 @@ interface ProposalItem {
     location: string | null
     highlights?: string[]
     image_url: string | null
+    original_price: number
     selling_price: number
     order_index: number
 }
@@ -155,6 +156,17 @@ export default function PresentationView({ params }: { params: Promise<{ secret:
     const typeInfo = TYPE_ICONS[currentItem.type] || TYPE_ICONS.activity
     const progress = ((currentSlide + 1) / items.length) * 100
     const billableItems = items.filter(i => i.type !== 'hero' && i.type !== 'pricing' && i.selling_price > 0)
+
+    // Stats pour hero slide
+    const durationDays = proposal.start_date && proposal.end_date
+        ? Math.ceil((new Date(proposal.end_date).getTime() - new Date(proposal.start_date).getTime()) / (1000 * 60 * 60 * 24))
+        : 0
+    const hotelCount = items.filter(i => i.type === 'hotel').length
+    const activityCount = items.filter(i => i.type === 'activity').length
+
+    // Calcul économies pour slide pricing
+    const totalOriginal = billableItems.reduce((acc, i) => acc + (i.original_price || 0), 0)
+    const savings = totalOriginal > proposal.total_amount ? totalOriginal - proposal.total_amount : 0
 
     return (
         <div className="h-[100dvh] w-screen bg-[#0a0e17] text-white overflow-hidden relative select-none flex flex-col" style={{ perspective: '1200px' }}>
@@ -353,13 +365,24 @@ export default function PresentationView({ params }: { params: Promise<{ secret:
                                             ))}
                                         </div>
 
-                                        <div className="border-t border-white/10 pt-4 md:pt-5 mb-5 md:mb-6 flex justify-between items-end relative z-10">
+                                        <div className="border-t border-white/10 pt-4 md:pt-5 mb-4 md:mb-5 flex justify-between items-end relative z-10">
                                             <div>
-                                                <p className="text-[9px] md:text-[10px] font-black text-[#FCD116] uppercase tracking-[0.2em] mb-0.5 md:mb-1">Total Estimé</p>
+                                                <p className="text-[9px] md:text-[10px] font-black text-[#FCD116] uppercase tracking-[0.2em] mb-0.5 md:mb-1">Votre Tarif VIP</p>
+                                                {totalOriginal > proposal.total_amount && (
+                                                    <p className="text-xs text-white/30 line-through mb-0.5">{totalOriginal.toLocaleString()} FCFA</p>
+                                                )}
                                                 <p className="text-2xl md:text-4xl font-black text-white drop-shadow-md">{proposal.total_amount.toLocaleString()} <span className="text-sm md:text-lg text-white/50">FCFA</span></p>
                                             </div>
                                             <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-[#FCD116]/30 hidden sm:block" />
                                         </div>
+
+                                        {/* Économies */}
+                                        {savings > 0 && (
+                                            <div className="bg-[#008751]/10 border border-[#008751]/25 rounded-xl px-4 py-2 mb-4 flex items-center justify-between relative z-10">
+                                                <span className="text-[10px] font-black text-[#008751] uppercase tracking-wider">Vous économisez</span>
+                                                <span className="text-[#008751] font-black text-sm">{savings.toLocaleString()} FCFA 🎁</span>
+                                            </div>
+                                        )}
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 md:gap-3 relative z-10">
                                             <button
@@ -384,9 +407,14 @@ export default function PresentationView({ params }: { params: Promise<{ secret:
                                         >
                                             <FileDown className="w-4 h-4 text-[#FCD116]" /> Télécharger Devis PDF
                                         </a>
-                                        <p className="text-center text-white/40 text-[10px] md:text-xs mt-3 flex items-center justify-center gap-1.5 relative z-10">
-                                            <CheckCircle className="w-3 h-3 text-[#008751]" /> Paiement 100% sécurisé
-                                        </p>
+                                        <div className="mt-3 flex flex-col items-center gap-1.5 relative z-10">
+                                            <p className="text-white/40 text-[10px] md:text-xs flex items-center gap-1.5">
+                                                <CheckCircle className="w-3 h-3 text-[#008751]" /> Paiement 100% sécurisé — Retour Gagnant Bénin
+                                            </p>
+                                            <p className="text-[#FCD116]/40 text-[10px]">
+                                                ⏳ Offre personnalisée · Valable 14 jours
+                                            </p>
+                                        </div>
                                     </div>
                                 </motion.div>
                             )}
@@ -396,6 +424,33 @@ export default function PresentationView({ params }: { params: Promise<{ secret:
                                 <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }} className="inline-block mt-2 bg-black/60 backdrop-blur-2xl border border-[#FCD116]/30 px-4 py-2 md:px-5 md:py-3 rounded-[1.25rem] shadow-xl">
                                     <p className="text-[8px] md:text-[9px] text-white/50 mb-0.5 font-black uppercase tracking-widest">Tarif inclus</p>
                                     <p className="text-lg md:text-xl font-black text-[#FCD116]">{currentItem.selling_price.toLocaleString()} FCFA</p>
+                                </motion.div>
+                            )}
+
+                            {/* Hero — Stats du voyage */}
+                            {currentItem.type === 'hero' && (durationDays > 0 || hotelCount > 0 || activityCount > 0) && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+                                    className="flex flex-wrap gap-2 mt-4 md:mt-5"
+                                >
+                                    {durationDays > 0 && (
+                                        <span className="px-3 py-1.5 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full text-[10px] md:text-xs font-bold text-white/90 flex items-center gap-1.5">
+                                            <Calendar className="w-3 h-3 text-[#FCD116]" /> {durationDays} jour{durationDays > 1 ? 's' : ''}
+                                        </span>
+                                    )}
+                                    {hotelCount > 0 && (
+                                        <span className="px-3 py-1.5 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full text-[10px] md:text-xs font-bold text-white/90">
+                                            🏨 {hotelCount} hôtel{hotelCount > 1 ? 's' : ''}
+                                        </span>
+                                    )}
+                                    {activityCount > 0 && (
+                                        <span className="px-3 py-1.5 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full text-[10px] md:text-xs font-bold text-white/90">
+                                            🎯 {activityCount} activité{activityCount > 1 ? 's' : ''}
+                                        </span>
+                                    )}
+                                    <span className="px-3 py-1.5 bg-[#008751]/30 backdrop-blur-xl border border-[#008751]/40 rounded-full text-[10px] md:text-xs font-bold text-[#008751]">
+                                        ✓ Offre Personnalisée
+                                    </span>
                                 </motion.div>
                             )}
 
@@ -437,6 +492,17 @@ export default function PresentationView({ params }: { params: Promise<{ secret:
                     </button>
                 </div>
             </div>
+
+            {/* ═══ FLOATING WHATSAPP ═══ */}
+            <a
+                href="https://wa.me/2290160322121"
+                target="_blank" rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="fixed bottom-24 right-4 md:bottom-20 md:right-8 z-[60] w-13 h-13 md:w-14 md:h-14 bg-[#25D366] hover:bg-[#20bd5a] rounded-full flex items-center justify-center shadow-[0_0_25px_rgba(37,211,102,0.5)] transition-all hover:scale-110 active:scale-95 touch-manipulation"
+                title="Nous contacter sur WhatsApp"
+            >
+                <MessageCircle className="w-6 h-6 md:w-7 md:h-7 text-white" />
+            </a>
 
             {/* Ambient particles (Reduced on mobile for perf) */}
             <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden md:block hidden">

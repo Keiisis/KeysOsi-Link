@@ -36,20 +36,22 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Destination requise' }, { status: 400 })
         }
 
-        const activityQuery = activities ? `${activities} ${destination} Benin` : `activités tourisme ${destination} Benin`
+        // Pour les activités, construire une requête qui cible les lieux touristiques enregistrés sur Maps
+        const activityQuery = activities
+            ? `${activities} sites touristiques attractions ${destination} Bénin`
+            : `sites touristiques monuments musées parcs loisirs attractions visites ${destination} Bénin`
 
         // Scraping en parallèle — 5 catégories
         const [hotels, restaurants, activities_results, transport, images] = await Promise.all([
             callSerperWithRetry(serperApiKeys, `meilleur hotel hébergement ${destination} Benin`, 'maps'),
             callSerperWithRetry(serperApiKeys, `restaurant gastronomie ${destination} Benin`, 'maps'),
-            callSerperWithRetry(serperApiKeys, activityQuery, 'search'),
+            callSerperWithRetry(serperApiKeys, activityQuery, 'maps'),
             callSerperWithRetry(serperApiKeys, `location voiture chauffeur VIP ${destination} Benin`, 'maps'),
             callSerperWithRetry(serperApiKeys, `${destination} Benin tourisme paysage`, 'images'),
         ])
 
         // Normaliser chaque résultat
         interface SerperPlace { title?: string; address?: string; rating?: number; ratingCount?: number; thumbnailUrl?: string; position?: number }
-        interface SerperOrganic { title?: string; snippet?: string; link?: string; imageUrl?: string; position?: number }
         interface SerperImage { title?: string; imageUrl?: string; thumbnailUrl?: string; link?: string }
 
         const normalize = (items: SerperPlace[], category: string) => items.slice(0, 12).map((item: SerperPlace, i: number) => ({
@@ -60,18 +62,6 @@ export async function POST(req: Request) {
             rating: item.rating || 0,
             reviews: item.ratingCount || 0,
             image_url: item.thumbnailUrl || null,
-            selected: false,
-        }))
-
-        const normalizeOrganic = (items: SerperOrganic[], category: string) => items.slice(0, 10).map((item: SerperOrganic, i: number) => ({
-            id: `${category}-${i}`,
-            category,
-            title: item.title || 'Sans titre',
-            address: item.snippet || '',
-            rating: 0,
-            reviews: 0,
-            image_url: item.imageUrl || null,
-            url: item.link || null,
             selected: false,
         }))
 
@@ -89,7 +79,7 @@ export async function POST(req: Request) {
             categories: {
                 hotels: normalize(hotels, 'hotel'),
                 restaurants: normalize(restaurants, 'restaurant'),
-                activities: normalizeOrganic(activities_results, 'activity'),
+                activities: normalize(activities_results, 'activity'),
                 transport: normalize(transport, 'transport'),
             },
             images: normalizeImages(images),
