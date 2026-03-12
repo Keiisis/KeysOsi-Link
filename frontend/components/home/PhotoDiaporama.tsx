@@ -100,13 +100,14 @@ function ScrolledDiaporama({ images, containerRef }: { images: GalleryImage[], c
     return (
         <div onMouseMove={handleMouseMove} className={`relative w-full transition-all duration-1000 ${museumMode ? 'z-[500]' : ''}`}>
             {/* Hidden Audio for Museum Mode */}
-            <audio ref={audioRef} src="/audio/benin-ambiance.mp3" loop />
+            <audio ref={audioRef} src="/audio/benin-ambiance.mp3" loop preload="none" />
 
             {/* Museum Mode Trigger Button */}
             <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setMuseumMode(!museumMode)}
+                aria-label={museumMode ? t('Quitter le Mode Musée') : t('Activer le Mode Musée')}
                 className="fixed bottom-10 right-10 z-[600] p-5 rounded-full bg-white/10 backdrop-blur-2xl border border-white/20 text-white shadow-2xl overflow-hidden group"
             >
                 <div className="absolute inset-0 bg-gradient-to-tr from-[#008751] via-[#FCD116] to-[#E8112D] opacity-0 group-hover:opacity-20 transition-opacity" />
@@ -241,18 +242,19 @@ function ScrolledDiaporama({ images, containerRef }: { images: GalleryImage[], c
                             {/* UI Controls */}
                             <button
                                 onClick={() => setLightboxIndex(null)}
+                                aria-label={t('Fermer la galerie')}
                                 className="absolute top-12 right-12 text-white/20 hover:text-white bg-white/5 p-6 rounded-full transition-all"
                             >
                                 <X size={28} />
                             </button>
 
                             <div className="absolute bottom-20 flex items-center gap-16 bg-white/5 backdrop-blur-3xl px-12 py-8 rounded-full border border-white/10">
-                                <button onClick={() => setLightboxIndex(prev => (prev! - 1 + images.length) % images.length)} className="text-white/30 hover:text-[#FCD116] transition-all"><ChevronLeft size={50} /></button>
+                                <button aria-label={t('Photo précédente')} onClick={() => setLightboxIndex(prev => (prev! - 1 + images.length) % images.length)} className="text-white/30 hover:text-[#FCD116] transition-all"><ChevronLeft size={50} /></button>
                                 <div className="text-center min-w-[200px]">
                                     <p className="text-[#FCD116] font-black tracking-[0.5em] text-[12px] mb-2 uppercase"><T>Relique du Bénin</T></p>
                                     <h3 className="text-white font-heading font-black text-3xl tracking-tighter uppercase">{images[lightboxIndex].filename.split('.')[0].slice(-8)}</h3>
                                 </div>
-                                <button onClick={() => setLightboxIndex(next => (next! + 1) % images.length)} className="text-white/30 hover:text-[#008751] transition-all"><ChevronRight size={50} /></button>
+                                <button aria-label={t('Photo suivante')} onClick={() => setLightboxIndex(next => (next! + 1) % images.length)} className="text-white/30 hover:text-[#008751] transition-all"><ChevronRight size={50} /></button>
                             </div>
                         </div>
                     </div>

@@ -168,7 +168,7 @@ export default function ServicesGrid() {
                                     alt={t(service.title)}
                                     fill
                                     className="object-contain bg-transparent group-hover:scale-110 group-hover:-translate-y-2 group-hover:drop-shadow-[0_12px_25px_rgba(252,209,22,0.4)] drop-shadow-[0_8px_20px_rgba(0,0,0,0.15)] transition-all duration-500"
-                                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                    sizes="96px"
                                 />
                             </div>
                         ) : (

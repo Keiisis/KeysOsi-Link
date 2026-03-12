@@ -128,7 +128,7 @@ export default function HeroSection() {
                     loop
                     muted
                     playsInline
-                    preload="auto"
+                    preload="none"
                     poster="/images/hero-bg.jpg"
                     className="w-full h-full object-cover"
                 >

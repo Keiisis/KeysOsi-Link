@@ -54,7 +54,7 @@ export default function ProcessSteps() {
     return (
         <section className="py-24 relative overflow-hidden bg-[#151b26]">
             {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/black-scales.png')]"></div>
+            <div className="absolute inset-0 opacity-5"></div>
 
             <div className="container mx-auto px-4 relative z-10">
                 <div className="text-center mb-20 space-y-4">

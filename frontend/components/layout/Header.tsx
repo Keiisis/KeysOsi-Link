@@ -57,6 +57,7 @@ export default function Header() {
                                 src="/images/logo.jpg"
                                 alt={t("Retour Gagnant Logo")}
                                 fill
+                                sizes="(max-width: 1280px) 56px, 80px"
                                 className="object-cover"
                             />
                         </div>

@@ -157,6 +157,7 @@ export default function ImmersiveGallery() {
                 <div className="absolute bottom-10 left-0 right-0 z-10 flex items-center justify-center gap-6 px-4">
                     <button
                         onClick={() => goTo(-1)}
+                        aria-label={t('Image précédente')}
                         className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-all border border-white/10"
                     >
                         <ChevronLeft size={22} />
@@ -183,6 +184,7 @@ export default function ImmersiveGallery() {
 
                     <button
                         onClick={() => setIsPaused((p) => !p)}
+                        aria-label={isPaused ? t('Reprendre le diaporama') : t('Mettre en pause le diaporama')}
                         className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-all border border-white/10"
                     >
                         {isPaused ? <Play size={16} /> : <Pause size={16} />}
@@ -190,6 +192,7 @@ export default function ImmersiveGallery() {
 
                     <button
                         onClick={() => goTo(1)}
+                        aria-label={t('Image suivante')}
                         className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-all border border-white/10"
                     >
                         <ChevronRight size={22} />
@@ -202,6 +205,8 @@ export default function ImmersiveGallery() {
                         <button
                             key={img.id}
                             onClick={() => setHeroIndex(i)}
+                            aria-label={t('Voir image') + ' ' + (i + 1)}
+                            aria-current={heroIndex === i ? 'true' : undefined}
                             className={`w-12 h-8 rounded overflow-hidden border-2 transition-all ${heroIndex === i
                                 ? "border-[#FCD116] scale-110 shadow-lg"
                                 : "border-white/20 opacity-50 hover:opacity-80"
@@ -334,6 +339,7 @@ export default function ImmersiveGallery() {
                         {/* Close */}
                         <button
                             onClick={() => setLightboxIndex(null)}
+                            aria-label={t('Fermer la galerie')}
                             className="absolute top-6 right-6 z-50 w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-all"
                         >
                             <X size={22} />
@@ -348,6 +354,7 @@ export default function ImmersiveGallery() {
                                         ((prev ?? 0) - 1 + images.length) % images.length
                                 );
                             }}
+                            aria-label={t('Photo précédente')}
                             className="absolute left-4 md:left-8 z-50 w-14 h-14 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-all"
                         >
                             <ChevronLeft size={28} />
@@ -381,6 +388,7 @@ export default function ImmersiveGallery() {
                                     (prev) => ((prev ?? 0) + 1) % images.length
                                 );
                             }}
+                            aria-label={t('Photo suivante')}
                             className="absolute right-4 md:right-8 z-50 w-14 h-14 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-all"
                         >
                             <ChevronRight size={28} />

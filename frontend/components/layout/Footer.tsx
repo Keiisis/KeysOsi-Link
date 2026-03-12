@@ -9,7 +9,7 @@ export default function Footer() {
     return (
         <footer className="bg-[#0f141e] text-white pt-20 pb-10 relative overflow-hidden">
             {/* Cultural Pattern Overlay */}
-            <div className="absolute inset-0 opacity-5 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay"></div>
+            <div className="absolute inset-0 opacity-5 pointer-events-none mix-blend-overlay"></div>
             {/* Flag Accent Top Border */}
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D]"></div>
 
@@ -39,8 +39,13 @@ export default function Footer() {
                             <T>Votre partenaire de confiance pour un retour réussi et des investissements sécurisés au Bénin. Tradition, Modernité, Et Excellence.</T>
                         </p>
                         <div className="flex gap-4">
-                            {[Facebook, Instagram, Linkedin, Twitter].map((Icon, i) => (
-                                <a key={i} href="#" className="w-10 h-10 rounded-full bg-[#1a2332] flex items-center justify-center hover:bg-[#FCD116] hover:text-[#1a2332] transition-all duration-300 border border-white/5 group">
+                            {[
+                                { Icon: Facebook, label: 'Facebook', href: COMPANY_INFO.socials.facebook },
+                                { Icon: Instagram, label: 'Instagram', href: COMPANY_INFO.socials.instagram },
+                                { Icon: Linkedin, label: 'LinkedIn', href: COMPANY_INFO.socials.linkedin },
+                                { Icon: Twitter, label: 'X (Twitter)', href: COMPANY_INFO.socials.twitter },
+                            ].map(({ Icon, label, href }) => (
+                                <a key={label} href={href} aria-label={label} className="w-10 h-10 rounded-full bg-[#1a2332] flex items-center justify-center hover:bg-[#FCD116] hover:text-[#1a2332] transition-all duration-300 border border-white/5 group">
                                     <Icon size={18} className="group-hover:scale-110 transition-transform" />
                                 </a>
                             ))}
