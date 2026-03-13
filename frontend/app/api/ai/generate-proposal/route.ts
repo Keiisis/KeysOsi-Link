@@ -165,9 +165,10 @@ Format :
         }
 
         if (proposalError) throw new Error(proposalError.message || 'Erreur création proposition')
+        if (!proposal) throw new Error('Proposition non créée')
 
         const proposalItemsToInsert = items.map((item: ProposalItem, index: number) => ({
-            proposal_id: proposal.id,
+            proposal_id: proposal!.id,
             type: item.type,
             title: item.title,
             subtitle: item.subtitle || '',
