@@ -9,7 +9,7 @@ import {
     LayoutDashboard, Settings, MessageSquare,
     ShieldCheck, LogOut, Bell,
     Menu, Globe, Sparkles, User, HelpCircle,
-    ShoppingBag, Receipt, UserCog, Tag,
+    ShoppingBag, Receipt, UserCog, Tag, Calculator,
     Mail, FileText, Compass, X, PanelLeftClose, PanelLeft,
     BarChart3, FileSignature, FolderOpen, Palette, Calendar, Star,
     Languages, Radar
@@ -91,6 +91,7 @@ function AdminLayoutContent({
         { title: 'Demandes Nat.', icon: Globe, href: '/admin/nationalite' },
         { title: 'FAQ Nationalité', icon: HelpCircle, href: '/admin/nationalite/faq' },
         { title: 'Emails', icon: Mail, href: '/admin/email-templates' },
+        { title: 'Facturation (ERP)', icon: Calculator, href: '/admin/facturation' },
         { title: 'Boutique', icon: ShoppingBag, href: '/admin/boutique' },
         { title: 'Commandes', icon: Receipt, href: '/admin/orders' },
         { title: 'Coupons', icon: Tag, href: '/admin/coupons' },
