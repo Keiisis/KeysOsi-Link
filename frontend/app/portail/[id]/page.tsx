@@ -226,185 +226,216 @@ export default function ClientPortalPage() {
             const ph = 297
             const ml = 14
             const mr = 14
-            const cw = pw - ml - mr 
+            const cw = pw - ml - mr
+
+            // Helper: safe text (remplace les caracteres problematiques pour jsPDF)
+            const safe = (s: string) => s
+                .replace(/\u2014/g, '-')   // em dash
+                .replace(/\u2013/g, '-')   // en dash
+                .replace(/\u2019/g, "'")   // smart quote
+                .replace(/\u2018/g, "'")
+                .replace(/\u201c/g, '"')
+                .replace(/\u201d/g, '"')
+                .replace(/\u2713/g, '[OK]') // checkmark
+                .replace(/\u2714/g, '[OK]')
+                .replace(/\u2022/g, '-')    // bullet
 
             // ── BENIN FLAG STRIPE ──────────────────────────────────
             pdf.setFillColor(0, 135, 81)
-            pdf.rect(0, 0, pw / 3, 4, 'F')
+            pdf.rect(0, 0, pw / 3, 3.5, 'F')
             pdf.setFillColor(252, 209, 22)
-            pdf.rect(pw / 3, 0, pw / 3, 4, 'F')
+            pdf.rect(pw / 3, 0, pw / 3, 3.5, 'F')
             pdf.setFillColor(232, 17, 45)
-            pdf.rect((pw * 2) / 3, 0, pw / 3, 4, 'F')
+            pdf.rect((pw * 2) / 3, 0, pw / 3, 3.5, 'F')
 
-            // ── WHITE HEADER (style navbar) ────────────────────────
+            // ── WHITE HEADER ──────────────────────────────────────
+            const headerH = 32
+            const headerTop = 3.5
             pdf.setFillColor(255, 255, 255)
-            pdf.rect(0, 4, pw, 46, 'F')
-            pdf.setDrawColor(220, 220, 220)
-            pdf.setLineWidth(0.4)
-            pdf.line(0, 50, pw, 50)
+            pdf.rect(0, headerTop, pw, headerH, 'F')
+            // Fine border bottom
+            pdf.setDrawColor(210, 210, 210)
+            pdf.setLineWidth(0.3)
+            pdf.line(0, headerTop + headerH, pw, headerTop + headerH)
 
+            // Logo with white circular background (pour cacher le fond noir du JPEG)
+            const logoSize = 14
+            const logoCenterX = ml + logoSize / 2
+            const logoCenterY = headerTop + headerH / 2
+            pdf.setFillColor(255, 255, 255)
+            pdf.circle(logoCenterX, logoCenterY, logoSize / 2 + 1, 'F')
             try {
-                pdf.addImage(LOGO_BASE64, 'JPEG', ml, 9, 18, 18)
+                pdf.addImage(LOGO_BASE64, 'JPEG', ml, logoCenterY - logoSize / 2, logoSize, logoSize)
             } catch (e) {
-                console.error('Erreur ajout logo:', e)
+                console.error('Logo error:', e)
             }
 
-            // "RETOUR" vert + "GAGNANT" rouge — identique navbar
+            // Company name: RETOUR (vert) GAGNANT (rouge) - aligne verticalement au centre
+            const textLeft = ml + logoSize + 4
+            const nameY = headerTop + 12
             pdf.setFont('helvetica', 'bold')
-            pdf.setFontSize(22)
+            pdf.setFontSize(16)
             pdf.setTextColor(0, 135, 81)
-            pdf.text('RETOUR', ml + 22, 22)
-            const retourW = pdf.getTextWidth('RETOUR ')
+            pdf.text('RETOUR ', textLeft, nameY)
+            const rW = pdf.getTextWidth('RETOUR ')
             pdf.setTextColor(232, 17, 45)
-            pdf.text('GAGNANT', ml + 22 + retourW, 22)
+            pdf.text('GAGNANT', textLeft + rW, nameY)
 
-            // "BÉNIN" — tracking large, gris
+            // BENIN subtitle
             pdf.setFont('helvetica', 'bold')
-            pdf.setFontSize(8.5)
-            pdf.setTextColor(90, 90, 90)
-            pdf.setCharSpace(2.5)
-            pdf.text('BÉNIN', ml + 22, 30)
-            pdf.setCharSpace(0)
+            pdf.setFontSize(7)
+            pdf.setTextColor(100, 100, 100)
+            pdf.text('B E N I N', textLeft, nameY + 6)
 
             // Tagline
             pdf.setFont('helvetica', 'normal')
-            pdf.setFontSize(6)
-            pdf.setTextColor(130, 130, 130)
-            pdf.text("L'agence d'accompagnement à la Nationalité Béninoise et au retour des Afro-descendants.", ml + 22, 37)
+            pdf.setFontSize(5.5)
+            pdf.setTextColor(140, 140, 140)
+            pdf.text(safe("L'agence d'accompagnement - Nationalite Beninoise"), textLeft, nameY + 11)
 
-            // Type document (droite)
+            // ── TYPE DOCUMENT (droite, bien aligne) ──────────────
             const typeLabel = doc.type === 'devis' ? 'DEVIS' : 'FACTURE'
             pdf.setFont('helvetica', 'bold')
-            pdf.setFontSize(30)
+            pdf.setFontSize(24)
             if (doc.type === 'devis') {
-                pdf.setTextColor(180, 120, 0) // amber foncé lisible sur blanc
+                pdf.setTextColor(180, 120, 0)
             } else {
                 pdf.setTextColor(0, 135, 81)
             }
-            pdf.text(typeLabel, pw - mr, 24, { align: 'right' })
+            pdf.text(typeLabel, pw - mr, headerTop + 14, { align: 'right' })
 
+            // Numero + date (sous le type, aligne a droite)
             pdf.setFont('helvetica', 'normal')
-            pdf.setFontSize(9)
+            pdf.setFontSize(8)
             pdf.setTextColor(80, 80, 80)
-            pdf.text(`N° ${doc.numero}`, pw - mr, 32, { align: 'right' })
-            pdf.text(`Date : ${new Date(doc.created_at).toLocaleDateString('fr-FR')}`, pw - mr, 38, { align: 'right' })
-            pdf.text(doc.type === 'facture' ? `Délai : ${doc.validite}` : `Validité : ${doc.validite}`, pw - mr, 44, { align: 'right' })
+            pdf.text('N. ' + doc.numero, pw - mr, headerTop + 21, { align: 'right' })
+            pdf.text('Date : ' + new Date(doc.created_at).toLocaleDateString('fr-FR'), pw - mr, headerTop + 26, { align: 'right' })
+            if (doc.validite) {
+                const validLabel = doc.type === 'facture' ? 'Delai : ' : 'Validite : '
+                pdf.text(safe(validLabel + doc.validite), pw - mr, headerTop + 31, { align: 'right' })
+            }
 
+            // ── STATUS BADGE (juste sous le header, bien positionne) ──
+            let y = headerTop + headerH + 4
+            const statusLabels: Record<string, string> = {
+                brouillon: 'BROUILLON', envoye: 'ENVOYE', accepte: 'ACCEPTE',
+                refuse: 'REFUSE', paye: 'PAYE', en_retard: 'EN RETARD', annule: 'ANNULE'
+            }
             const statusColorMap: Record<string, [number, number, number]> = {
-                brouillon: [90, 90, 90],
-                envoye: [59, 130, 246],
-                accepte: [0, 175, 100],
-                refuse: [230, 60, 60],
-                paye: [16, 200, 120],
-                en_retard: [230, 60, 60],
-                annule: [90, 90, 90],
+                brouillon: [120, 120, 120], envoye: [59, 130, 246], accepte: [0, 160, 90],
+                refuse: [220, 50, 50], paye: [16, 185, 110], en_retard: [220, 120, 20], annule: [90, 90, 90],
             }
             const sc = statusColorMap[doc.status] || [90, 90, 90]
+            const statusText = statusLabels[doc.status] || doc.status.toUpperCase()
+            const badgeW = pdf.getTextWidth(statusText) * 0.35 + 12
             pdf.setFillColor(sc[0], sc[1], sc[2])
-            pdf.roundedRect(pw - mr - 26, 47, 26, 6, 1.5, 1.5, 'F')
+            pdf.roundedRect(pw - mr - badgeW, y, badgeW, 6, 1.5, 1.5, 'F')
             pdf.setFont('helvetica', 'bold')
             pdf.setFontSize(6)
             pdf.setTextColor(255, 255, 255)
-            const statusLabels: Record<string, string> = { brouillon: 'BROUILLON', envoye: 'ENVOYÉ', accepte: 'ACCEPTÉ', refuse: 'REFUSÉ', paye: 'PAYÉ', en_retard: 'EN RETARD', annule: 'ANNULÉ' }
-            pdf.text(statusLabels[doc.status] || doc.status.toUpperCase(), pw - mr - 13, 51.3, { align: 'center' })
+            pdf.text(statusText, pw - mr - badgeW / 2, y + 4.2, { align: 'center' })
 
-            let y = 64
+            y += 10
+
+            // ── EMETTEUR / DESTINATAIRE ──────────────────────────
             const boxW = (cw - 6) / 2
-            const boxH = 50
+            const boxH = 46
 
+            // Emetteur (dark box)
             pdf.setFillColor(18, 28, 42)
             pdf.setDrawColor(40, 60, 90)
-            pdf.setLineWidth(0.4)
+            pdf.setLineWidth(0.3)
             pdf.roundedRect(ml, y, boxW, boxH, 2, 2, 'FD')
 
             pdf.setFont('helvetica', 'bold')
-            pdf.setFontSize(6.5)
+            pdf.setFontSize(6)
             pdf.setTextColor(80, 120, 180)
-            pdf.text('ÉMETTEUR', ml + 4, y + 7)
-
-            pdf.setFont('helvetica', 'bold')
-            pdf.setFontSize(9.5)
+            pdf.text('EMETTEUR', ml + 4, y + 6)
+            pdf.setFontSize(9)
             pdf.setTextColor(220, 230, 245)
-            pdf.text('RETOUR GAGNANT BÉNIN', ml + 4, y + 15)
-
+            pdf.text('RETOUR GAGNANT BENIN', ml + 4, y + 13)
             pdf.setFont('helvetica', 'normal')
-            pdf.setFontSize(7)
+            pdf.setFontSize(6.5)
             pdf.setTextColor(140, 160, 185)
-            pdf.text('RCCM : RB/COT/26 B 42001  |  IFU : 3202644573981', ml + 4, y + 22)
-            pdf.text('Haie-Vive Cocotiers, Carré n°1158, Cotonou — Rép. du Bénin', ml + 4, y + 28.5)
-            pdf.text('+229 01 60 32 21 21  |  +229 01 94 35 50 50', ml + 4, y + 35)
-            pdf.text('contact@retourgagnantbenin.bj  |  www.retourgagnantbenin.bj', ml + 4, y + 41.5)
+            pdf.text('RCCM : RB/COT/26 B 42001  |  IFU : 3202644573981', ml + 4, y + 19)
+            pdf.text(safe('Haie-Vive Cocotiers, Carre n.1158, Cotonou - Rep. du Benin'), ml + 4, y + 25)
+            pdf.text('+229 01 60 32 21 21  |  +229 01 94 35 50 50', ml + 4, y + 31)
+            pdf.text('contact@retourgagnantbenin.bj', ml + 4, y + 37)
+            pdf.text('www.retourgagnantbenin.bj', ml + 4, y + 42)
 
+            // Destinataire (light box)
             const toX = ml + boxW + 6
             pdf.setFillColor(248, 250, 255)
             pdf.setDrawColor(200, 215, 240)
             pdf.roundedRect(toX, y, boxW, boxH, 2, 2, 'FD')
 
             pdf.setFont('helvetica', 'bold')
-            pdf.setFontSize(6.5)
+            pdf.setFontSize(6)
             pdf.setTextColor(100, 110, 160)
-            pdf.text('DESTINATAIRE', toX + 4, y + 7)
-
-            pdf.setFont('helvetica', 'bold')
-            pdf.setFontSize(9.5)
+            pdf.text('DESTINATAIRE', toX + 4, y + 6)
+            pdf.setFontSize(9)
             pdf.setTextColor(30, 40, 70)
             const clientFullName = `${doc.client_nom} ${doc.client_prenom}`.trim() || 'Client'
-            pdf.text(clientFullName, toX + 4, y + 15)
-
+            pdf.text(clientFullName, toX + 4, y + 13)
             pdf.setFont('helvetica', 'normal')
-            pdf.setFontSize(7.5)
+            pdf.setFontSize(7)
             pdf.setTextColor(70, 80, 110)
-            if (doc.client_email) pdf.text(doc.client_email, toX + 4, y + 22)
-            if (doc.client_phone) pdf.text(doc.client_phone, toX + 4, y + 27.5)
+            let clientY = y + 19
+            if (doc.client_email) { pdf.text(doc.client_email, toX + 4, clientY); clientY += 5.5 }
+            if (doc.client_phone) { pdf.text(doc.client_phone, toX + 4, clientY); clientY += 5.5 }
             if (doc.client_adresse) {
                 const addrLines = pdf.splitTextToSize(doc.client_adresse, boxW - 8)
-                addrLines.slice(0, 2).forEach((line: string, li: number) => {
-                    pdf.text(line, toX + 4, y + 33 + li * 5.5)
+                addrLines.slice(0, 3).forEach((line: string) => {
+                    pdf.text(line, toX + 4, clientY)
+                    clientY += 5
                 })
             }
 
-            y += boxH + 10
+            y += boxH + 8
+
+            // ── TABLE DES ITEMS ──────────────────────────────────
             const cols = [
-                { header: 'DESCRIPTION DU SERVICE', w: 68, align: 'left' as const },
-                { header: 'QTÉ', w: 14, align: 'center' as const },
-                { header: 'PU HT (XOF)', w: 28, align: 'right' as const },
+                { header: 'DESCRIPTION', w: 70, align: 'left' as const },
+                { header: 'QTE', w: 14, align: 'center' as const },
+                { header: 'PU HT', w: 26, align: 'right' as const },
                 { header: 'TVA %', w: 15, align: 'center' as const },
-                { header: 'TVA MNT', w: 22, align: 'right' as const },
+                { header: 'TVA', w: 22, align: 'right' as const },
                 { header: 'TOTAL HT', w: 35, align: 'right' as const },
             ]
 
+            // Table header (dark)
             pdf.setFillColor(10, 16, 24)
-            pdf.rect(ml, y, cw, 10, 'F')
-
+            pdf.rect(ml, y, cw, 9, 'F')
             let colX = ml
             cols.forEach(col => {
                 pdf.setFont('helvetica', 'bold')
-                pdf.setFontSize(6.5)
+                pdf.setFontSize(6)
                 pdf.setTextColor(200, 215, 230)
                 if (col.align === 'right') {
-                    pdf.text(col.header, colX + col.w - 2, y + 6.5, { align: 'right' })
+                    pdf.text(col.header, colX + col.w - 2, y + 6, { align: 'right' })
                 } else if (col.align === 'center') {
-                    pdf.text(col.header, colX + col.w / 2, y + 6.5, { align: 'center' })
+                    pdf.text(col.header, colX + col.w / 2, y + 6, { align: 'center' })
                 } else {
-                    pdf.text(col.header, colX + 3, y + 6.5)
+                    pdf.text(col.header, colX + 3, y + 6)
                 }
                 colX += col.w
             })
-            y += 10
+            y += 9
 
+            // Table rows
             doc.items.forEach((item: any, i: number) => {
-                const rowH = 9.5
+                const rowH = 9
                 const even = i % 2 === 0
-                pdf.setFillColor(even ? 252 : 247, even ? 253 : 249, even ? 254 : 252)
+                pdf.setFillColor(even ? 252 : 245, even ? 253 : 247, even ? 255 : 250)
                 pdf.rect(ml, y, cw, rowH, 'F')
                 pdf.setDrawColor(220, 228, 238)
-                pdf.setLineWidth(0.2)
+                pdf.setLineWidth(0.15)
                 pdf.line(ml, y + rowH, ml + cw, y + rowH)
 
                 const tvaMnt = item.quantity * item.unit_price * item.tva / 100
                 const lineTotal = item.quantity * item.unit_price
                 const rowData = [
-                    { text: item.description || '—', w: cols[0].w, align: 'left' },
+                    { text: safe(item.description || '-'), w: cols[0].w, align: 'left' },
                     { text: String(item.quantity), w: cols[1].w, align: 'center' },
                     { text: fmtN(item.unit_price), w: cols[2].w, align: 'right' },
                     { text: item.tva + '%', w: cols[3].w, align: 'center' },
@@ -413,92 +444,96 @@ export default function ClientPortalPage() {
                 ]
                 colX = ml
                 pdf.setFont('helvetica', 'normal')
-                pdf.setFontSize(8)
+                pdf.setFontSize(7.5)
                 pdf.setTextColor(40, 55, 75)
                 rowData.forEach(cell => {
                     if (cell.align === 'right') {
-                        pdf.text(cell.text, colX + cell.w - 2, y + 6.5, { align: 'right' })
+                        pdf.text(cell.text, colX + cell.w - 2, y + 6, { align: 'right' })
                     } else if (cell.align === 'center') {
-                        pdf.text(cell.text, colX + cell.w / 2, y + 6.5, { align: 'center' })
+                        pdf.text(cell.text, colX + cell.w / 2, y + 6, { align: 'center' })
                     } else {
-                        const lines = pdf.splitTextToSize(cell.text ?? '', cell.w - 5)
-                        pdf.text(lines[0] ?? '', colX + 3, y + 6.5)
+                        const lines = pdf.splitTextToSize(cell.text, cell.w - 4)
+                        pdf.text(lines[0] || '', colX + 3, y + 6)
                     }
                     colX += cell.w
                 })
                 y += rowH
             })
 
-            pdf.setDrawColor(150, 170, 200)
-            pdf.setLineWidth(0.6)
+            // Table bottom line
+            pdf.setDrawColor(100, 120, 160)
+            pdf.setLineWidth(0.5)
             pdf.line(ml, y, ml + cw, y)
-            y += 8
+            y += 6
 
-            const totW = 85
+            // ── TOTAUX ──────────────────────────────────────────
+            const totW = 80
             const totX2 = pw - mr - totW
+            const cur = doc.currency || 'XOF'
 
-            const drawRow = (label: string, value: string, bold = false, red = false) => {
+            const drawTotRow = (label: string, value: string, bold = false, red = false) => {
                 pdf.setFont('helvetica', bold ? 'bold' : 'normal')
-                pdf.setFontSize(bold ? 9 : 8)
+                pdf.setFontSize(bold ? 8.5 : 7.5)
                 pdf.setTextColor(red ? 200 : 70, red ? 50 : 85, red ? 50 : 105)
-                pdf.text(label, totX2, y + 5)
+                pdf.text(label, totX2, y + 4.5)
                 pdf.setTextColor(red ? 200 : 25, red ? 50 : 35, red ? 50 : 60)
-                pdf.text(value, pw - mr, y + 5, { align: 'right' })
-                y += 8
+                pdf.text(value, pw - mr, y + 4.5, { align: 'right' })
+                y += 7
             }
 
-            drawRow('Sous-total HT', `${fmtN(doc.sous_total)} ${doc.currency}`)
-            drawRow('TVA (18%)', `+ ${fmtN(doc.total_tva)} ${doc.currency}`)
-            if (doc.remise > 0) drawRow('Remise', `- ${fmtN(doc.remise)} ${doc.currency}`, false, true)
+            drawTotRow('Sous-total HT', fmtN(doc.sous_total) + ' ' + cur)
+            drawTotRow('TVA (18%)', '+ ' + fmtN(doc.total_tva) + ' ' + cur)
+            if (doc.remise > 0) drawTotRow('Remise', '- ' + fmtN(doc.remise) + ' ' + cur, false, true)
 
             pdf.setDrawColor(150, 175, 210)
-            pdf.setLineWidth(0.5)
-            pdf.line(totX2 - 2, y - 2, pw - mr, y - 2)
+            pdf.setLineWidth(0.4)
+            pdf.line(totX2 - 2, y - 1, pw - mr, y - 1)
 
+            // TOTAL TTC green box
             pdf.setFillColor(0, 135, 81)
-            pdf.roundedRect(totX2 - 4, y - 1, totW + 4, 12, 2, 2, 'F')
+            pdf.roundedRect(totX2 - 3, y, totW + 3, 11, 2, 2, 'F')
             pdf.setFont('helvetica', 'bold')
-            pdf.setFontSize(10)
+            pdf.setFontSize(9)
             pdf.setTextColor(255, 255, 255)
             pdf.text('TOTAL TTC', totX2, y + 7.5)
-            pdf.text(`${fmtN(doc.total)} ${doc.currency}`, pw - mr, y + 7.5, { align: 'right' })
-            y += 18
+            pdf.text(fmtN(doc.total) + ' ' + cur, pw - mr, y + 7.5, { align: 'right' })
+            y += 16
 
-            if (doc.type === 'devis' && y + 36 < ph - 20) {
+            // ── ZONE DE SIGNATURE (devis uniquement) ────────────
+            if (doc.type === 'devis' && y + 34 < ph - 18) {
                 const sigW = (cw - 8) / 2
-                const sigBoxH = 36
+                const sigBoxH = 34
 
-                // ── Boîte client (BON POUR ACCORD) ──
+                // Client box
                 pdf.setFillColor(doc.signature_url ? 235 : 242, 255, doc.signature_url ? 245 : 248)
                 pdf.setDrawColor(0, 135, 81)
-                pdf.setLineWidth(0.4)
+                pdf.setLineWidth(0.3)
                 pdf.roundedRect(ml, y, sigW, sigBoxH, 2, 2, 'FD')
                 pdf.setFont('helvetica', 'bold')
                 pdf.setFontSize(7)
                 pdf.setTextColor(0, 100, 60)
-                pdf.text('BON POUR ACCORD — Signature du client', ml + 4, y + 7)
+                pdf.text('BON POUR ACCORD', ml + 4, y + 7)
 
                 if (doc.signature_url) {
-                    // Afficher la vraie signature du client
                     try {
-                        pdf.addImage(doc.signature_url, 'PNG', ml + 4, y + 10, sigW - 20, 18)
-                    } catch { /* image invalide, on ignore */ }
+                        pdf.addImage(doc.signature_url, 'PNG', ml + 4, y + 9, sigW - 20, 16)
+                    } catch { /* skip */ }
                     pdf.setFont('helvetica', 'bold')
-                    pdf.setFontSize(6.5)
+                    pdf.setFontSize(6)
                     pdf.setTextColor(0, 140, 70)
                     const signedDate = doc.signed_at
                         ? new Date(doc.signed_at).toLocaleDateString('fr-FR')
                         : new Date(doc.created_at).toLocaleDateString('fr-FR')
-                    pdf.text(`✓ Accepté & signé le ${signedDate}`, ml + 4, y + 32)
+                    pdf.text('[OK] Accepte et signe le ' + signedDate, ml + 4, y + 30)
                 } else {
                     pdf.setFont('helvetica', 'normal')
                     pdf.setFontSize(6.5)
                     pdf.setTextColor(90, 100, 95)
-                    pdf.text('Signature & Cachet du client :', ml + 4, y + 18)
-                    pdf.text('Date :  ____/____/________', ml + 4, y + 30)
+                    pdf.text('Signature et Cachet du client :', ml + 4, y + 16)
+                    pdf.text('Date :  ____/____/________', ml + 4, y + 28)
                 }
 
-                // ── Boîte Présidente ──
+                // PDG box
                 const sig2X = ml + sigW + 8
                 pdf.setFillColor(242, 245, 255)
                 pdf.setDrawColor(100, 110, 200)
@@ -506,38 +541,39 @@ export default function ClientPortalPage() {
                 pdf.setFont('helvetica', 'bold')
                 pdf.setFontSize(7)
                 pdf.setTextColor(70, 80, 170)
-                pdf.text('La Présidente Directrice Générale', sig2X + 4, y + 7)
-                pdf.setFont('helvetica', 'bold')
+                pdf.text('La Presidente Directrice Generale', sig2X + 4, y + 7)
                 pdf.setFontSize(6.5)
                 pdf.setTextColor(0, 135, 81)
-                pdf.text('RETOUR GAGNANT BÉNIN', sig2X + 4, y + 14)
+                pdf.text('RETOUR GAGNANT BENIN', sig2X + 4, y + 13)
                 pdf.setFont('helvetica', 'normal')
                 pdf.setFontSize(6.5)
                 pdf.setTextColor(90, 95, 130)
-                pdf.text('Signature & Cachet officiel', sig2X + 4, y + 21)
-                pdf.text(`Établi le ${new Date(doc.created_at).toLocaleDateString('fr-FR')}`, sig2X + 4, y + 28)
+                pdf.text('Signature et Cachet officiel', sig2X + 4, y + 20)
+                pdf.text('Etabli le ' + new Date(doc.created_at).toLocaleDateString('fr-FR'), sig2X + 4, y + 27)
             }
 
+            // ── FILIGRANE (brouillon / paye) ────────────────────
             if (doc.status === 'brouillon') {
                 pdf.setFont('helvetica', 'bold')
-                pdf.setFontSize(75)
-                pdf.setTextColor(210, 215, 222)
+                pdf.setFontSize(70)
+                pdf.setTextColor(215, 220, 225)
                 pdf.text('BROUILLON', pw / 2, ph / 2, { align: 'center', angle: 40 })
             }
             if (doc.status === 'paye') {
                 pdf.setFont('helvetica', 'bold')
-                pdf.setFontSize(80)
+                pdf.setFontSize(75)
                 pdf.setTextColor(195, 240, 215)
-                pdf.text('PAYÉ', pw / 2, ph / 2, { align: 'center', angle: 40 })
+                pdf.text('PAYE', pw / 2, ph / 2, { align: 'center', angle: 40 })
             }
 
+            // ── FOOTER ──────────────────────────────────────────
             pdf.setFillColor(10, 16, 24)
-            pdf.rect(0, ph - 15, pw, 15, 'F')
+            pdf.rect(0, ph - 14, pw, 14, 'F')
             pdf.setFont('helvetica', 'normal')
-            pdf.setFontSize(6.5)
-            pdf.setTextColor(100, 120, 145)
-            pdf.text('RETOUR GAGNANT BÉNIN — RCCM: RB/COT/26 B 42001 — IFU: 3202644573981 — Haie-Vive Cocotiers, Carré n°1158, Cotonou — contact@retourgagnantbenin.bj', pw / 2, ph - 9, { align: 'center' })
-            pdf.text(`Document N° ${doc.numero} — Généré le ${new Date().toLocaleDateString('fr-FR')}`, pw / 2, ph - 5, { align: 'center' })
+            pdf.setFontSize(5.5)
+            pdf.setTextColor(120, 140, 160)
+            pdf.text('RETOUR GAGNANT BENIN - RCCM: RB/COT/26 B 42001 - IFU: 3202644573981 - Haie-Vive Cocotiers, Cotonou - contact@retourgagnantbenin.bj', pw / 2, ph - 8, { align: 'center' })
+            pdf.text('Document N. ' + doc.numero + ' - Genere le ' + new Date().toLocaleDateString('fr-FR'), pw / 2, ph - 4, { align: 'center' })
 
             pdf.save(`${doc.type}_${doc.numero}.pdf`)
         } catch (err) {
