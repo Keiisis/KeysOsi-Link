@@ -5,10 +5,11 @@ import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import {
     FileText, Plus, Trash2, X, Loader2, Send, Save, ArrowLeft,
-    CheckCircle2, Calculator, Receipt, User
+    CheckCircle2, Calculator, Receipt, User, Eye, AlertCircle
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { AnimatePresence } from 'framer-motion'
 
 interface DevisItem {
     description: string
@@ -25,6 +26,7 @@ const defaultConditions = `• Validité : 30 jours à compter de la date d'émi
 export default function AgentCreateDocumentPage() {
     const router = useRouter()
     const [saving, setSaving] = useState(false)
+    const [showPreview, setShowPreview] = useState(false)
     const [formType, setFormType] = useState<'devis' | 'facture'>('devis')
     const [currency, setCurrency] = useState<'XOF' | 'EUR' | 'USD'>('XOF')
 
@@ -115,7 +117,7 @@ export default function AgentCreateDocumentPage() {
 
         if (error) {
             console.error('Erreur SQL:', error)
-            alert('Erreur lors de la sauvegarde du document.')
+            alert(`Erreur SQL (${error.code}) : ${error.message} \n\nDetails: ${error.details}`)
             setSaving(false)
         } else {
             router.push('/agent/devis')
@@ -283,6 +285,10 @@ export default function AgentCreateDocumentPage() {
                 <div className="mt-8 pt-8 border-t border-white/5 flex flex-wrap items-center justify-end gap-3">
                     <Link href="/agent/devis" className="px-6 py-3.5 text-sm font-bold text-gray-400 hover:text-white mr-auto">Annuler</Link>
                     
+                    <button type="button" onClick={() => setShowPreview(true)} className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border border-blue-500/20 font-bold text-sm transition-colors">
+                        <Eye size={16} /> Aperçu avant sauvegarde
+                    </button>
+
                     <button type="button" onClick={() => handleSave('brouillon')} disabled={saving} className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-white/5 text-gray-300 hover:bg-white/10 font-bold text-sm transition-colors border border-white/5">
                         <Save size={16} /> Enregistrer Brouillon
                     </button>
@@ -295,6 +301,77 @@ export default function AgentCreateDocumentPage() {
                 </div>
 
             </div>
+
+            {/* PREVIEW MODAL */}
+            <AnimatePresence>
+                {showPreview && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowPreview(false)}>
+                        <motion.div initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 10 }} onClick={e => e.stopPropagation()} className="bg-[#080e15] border border-white/10 rounded-2xl w-full max-w-3xl max-h-[92vh] overflow-hidden flex flex-col">
+                            {/* Flag stripe */}
+                            <div className="h-1 flex flex-shrink-0">
+                                <div className="flex-1 bg-emerald-600" />
+                                <div className="flex-1 bg-amber-400" />
+                                <div className="flex-1 bg-red-600" />
+                            </div>
+
+                            {/* Header */}
+                            <div className="bg-[#0c1420] border-b border-white/5 p-5 flex items-start justify-between flex-shrink-0">
+                                <div>
+                                    <p className="text-emerald-400 text-xl font-black tracking-wider">RETOUR GAGNANT B\u00c9NIN</p>
+                                    <p className="text-gray-600 text-xs mt-0.5">Agence de Services Internationaux</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className={`text-3xl font-black ${formType === 'devis' ? 'text-amber-400' : 'text-emerald-400'}`}>
+                                        {formType === 'devis' ? 'DEVIS' : 'FACTURE'}
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-1 font-mono">N° {generateNumero(formType)}</p>
+                                </div>
+                            </div>
+
+                            <div className="overflow-y-auto flex-1 p-5 space-y-5">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-white/5 p-4 rounded-xl">
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Client</p>
+                                        <p className="text-white font-bold">{clientNom || 'Nom du Client'} {clientPrenom}</p>
+                                        <p className="text-gray-400 text-xs mt-1">{clientEmail}</p>
+                                        <p className="text-gray-400 text-xs">{clientPhone}</p>
+                                        <p className="text-gray-400 text-xs">{clientAdresse}</p>
+                                    </div>
+                                    <div className="bg-white/5 p-4 rounded-xl">
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">R\u00e9capitulatif Total</p>
+                                        <p className="text-2xl text-emerald-400 font-black font-mono mt-1">{totalFinal.toLocaleString('fr-Fr')} {currency}</p>
+                                    </div>
+                                </div>
+
+                                <div className="border border-white/5 rounded-xl overflow-hidden">
+                                    <table className="w-full text-xs">
+                                        <thead className="bg-white/5 text-gray-400 text-left">
+                                            <tr>
+                                                <th className="p-3">Description</th>
+                                                <th className="p-3 text-center">Qt\u00e9</th>
+                                                <th className="p-3 text-right">PU</th>
+                                                <th className="p-3 text-right">TVA</th>
+                                                <th className="p-3 text-right">Total HT</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {items.map((it, i) => (
+                                                <tr key={i} className="border-t border-white/5">
+                                                    <td className="p-3 text-gray-300">{it.description || '...'}</td>
+                                                    <td className="p-3 text-gray-400 text-center">{it.quantity}</td>
+                                                    <td className="p-3 text-gray-400 text-right font-mono">{it.unit_price.toLocaleString('fr-FR')}</td>
+                                                    <td className="p-3 text-gray-400 text-right">{it.tva}%</td>
+                                                    <td className="p-3 text-white font-medium text-right font-mono">{(it.quantity * it.unit_price).toLocaleString('fr-FR')}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     )
 }
