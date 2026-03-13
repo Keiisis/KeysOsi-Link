@@ -414,12 +414,16 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
         // ─── Retourner le buffer .pptx ────────────────────────
         const buf = await pptx.write({ outputType: 'nodebuffer' }) as Buffer
-        const safeName = p.client_name.replace(/[^a-zA-Z0-9\-]/g, '_')
+        const safeName = p.client_name.replace(/[^a-zA-Z0-9-]/g, '_')
+        const mimeType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
 
-        return new NextResponse(buf, {
+        // Copier dans un Uint8Array plain (ArrayBuffer garanti) pour satisfaire BodyInit
+        const blob = new Blob([new Uint8Array(buf)], { type: mimeType })
+
+        return new NextResponse(blob, {
             status: 200,
             headers: {
-                'Content-Type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'Content-Type': mimeType,
                 'Content-Disposition': `attachment; filename="Voyage-${p.destination}-${safeName}.pptx"`,
             },
         })
