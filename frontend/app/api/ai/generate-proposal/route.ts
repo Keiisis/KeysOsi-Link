@@ -65,7 +65,7 @@ export async function POST(req: Request) {
         const selectedActivities = (selected_items || []).filter((i: SelectedItem) => i.category === 'activity')
         const selectedTransport = (selected_items || []).filter((i: SelectedItem) => i.category === 'transport')
 
-        const aiPrompt = `Tu es le meilleur agent de conciergerie VIP au Bénin pour "Retour Gagnant".
+        const aiPrompt = `Tu es le meilleur agent de conciergerie VIP au Bénin pour "Retour Gagnant Bénin".
 Conçois une proposition d'itinéraire PREMIUM pour ce client.
 
 CLIENT :

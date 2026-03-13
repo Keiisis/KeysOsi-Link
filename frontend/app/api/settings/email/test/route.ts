@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
             }
         });
 
-        const fromString = `"${settings.smtp_from_name || 'Retour Gagnant'}" <${settings.smtp_from_email || settings.smtp_user}>`;
+        const fromString = `"${settings.smtp_from_name || 'Retour Gagnant Bénin'}" <${settings.smtp_from_email || settings.smtp_user}>`;
 
         // 3. Send test email
         const info = await transporter.sendMail({
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
                         <strong>Compte d'envoi :</strong> ${settings.smtp_user}
                     </p>
                     <p style="font-size: 12px; color: #999; margin-top: 30px; text-align: center;">
-                        Ceci est un message automatisé généré par Retour Gagnant Dashboard.
+                        Ceci est un message automatisé généré par Retour Gagnant Bénin.
                     </p>
                 </div>
             </div>`

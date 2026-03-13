@@ -59,7 +59,7 @@ RÈGLES ABSOLUES :
                 <p>Votre dossier porte la référence officielle : <strong>${data.refId}</strong>.</p>
                 <p>Notre service juridique a d’ores et déjà entamé l’examen de vos pièces. Nous vous tiendrons informé(e) des prochaines étapes.</p>
                 <p>La terre de vos ancêtres vous attend. Soyez le ou la bienvenu(e) au Bénin.</p>
-                <p>Très respectueusement,<br>L'équipe Retour Gagnant</p>
+                <p>Très respectueusement,<br>L'équipe Retour Gagnant Bénin</p>
             `
         }
 
@@ -83,7 +83,7 @@ RÈGLES ABSOLUES :
         const logoUrl = `${data.baseUrl}/logo.jpg`
         const agencyEmail = settings.contact_email || settings.smtp_from_email || 'contact@retourgagnantbenin.bj'
         const agencyPhone = settings.contact_phone || ''
-        const agencyAddress = settings.contact_address || 'Haie Vive, Cotonou, République du Bénin'
+        const agencyAddress = settings.contact_address || 'Haie-Vive Cocotiers, Carré n°1158, Cotonou — République du Bénin'
         const trackingUrl = `${data.baseUrl}/suivi-dossier`
 
         // Email HTML professionnel avec infos agence complètes

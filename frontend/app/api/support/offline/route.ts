@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     let smtpPort = 587;
     let smtpUser = process.env.SMTP_USER || '';
     let smtpPass = process.env.SMTP_PASS || '';
-    let fromName = 'Retour Gagnant Assistance';
+    let fromName = 'Retour Gagnant Bénin';
     let fromEmail = process.env.SMTP_FROM || '';
 
     if (settingsData && settingsData.length > 0) {

@@ -98,7 +98,7 @@ export async function POST(request: Request) {
     }
 
     const adminEmail = settings.contact_email || ''
-    const siteName = settings.hero_title || 'Retour Gagnant'
+    const siteName = settings.hero_title || 'Retour Gagnant Bénin'
 
     const formatPrice = (amount: number) => new Intl.NumberFormat('fr-FR').format(amount)
 
@@ -226,7 +226,7 @@ function generateCustomerEmailHTML(
   const ref = `RG-${(order.id as string).slice(0, 8).toUpperCase()}`
   const date = new Date().toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })
   const siteEmail = settings.contact_email || 'contact@retourgagnantbenin.bj'
-  const sitePhone = settings.contact_phone || ''
+  const sitePhone = settings.contact_phone || '+229 01 60 32 21 21  ·  +229 01 94 35 50 50'
   const payMethodLabel: Record<string, string> = {
     kkiapay: 'Mobile Money — Kkiapay', fedapay: 'Mobile Money — FedaPay',
     stripe: 'Carte bancaire — Stripe', paypal: 'PayPal Business', zeyow: 'Zeyow',
@@ -361,7 +361,7 @@ function generateCustomerEmailHTML(
         ${sitePhone ? ` ou au ${sitePhone}` : ''}
       </p>
       <p style="margin:0;font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:1px;">
-        <strong>${siteName}</strong> · Cotonou, Bénin
+        <strong>${siteName}</strong> · Haie-Vive Cocotiers, Carré n°1158, Cotonou — République du Bénin
       </p>
     </div>
 
