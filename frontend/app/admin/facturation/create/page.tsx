@@ -1,11 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import {
-    FileText, Plus, Trash2, X, Loader2, Send, Save, ArrowLeft,
-    CheckCircle2, Calculator, Receipt, User
+    FileText, Plus, Trash2, Loader2, ArrowLeft, User, Save, CheckCircle2,
+    Calculator, Receipt
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -17,10 +16,19 @@ interface DevisItem {
     tva: number
 }
 
-const defaultConditions = `• Validit\u00e9 : 30 jours \u00e0 compter de la date d'\u00e9mission
-• Paiement : 50% \u00e0 la commande, solde \u00e0 la livraison
-• Les tarifs sont exprim\u00e9s en FCFA (XOF)
-• TVA applicable selon la l\u00e9gislation b\u00e9ninoise en vigueur`
+const defaultConditions = `• Validité : 30 jours à compter de la date d'émission
+• Paiement : 50% à la commande, solde à la livraison
+• Les tarifs sont exprimés en FCFA (XOF)
+• TVA applicable selon la législation béninoise en vigueur`
+
+const generateNumero = (type: 'devis' | 'facture') => {
+    const prefix = type === 'devis' ? 'DEV' : 'FAC'
+    const date = new Date()
+    const yr = date.getFullYear()
+    const mn = String(date.getMonth() + 1).padStart(2, '0')
+    const rand = String(Date.now() % 10000).padStart(4, '0')
+    return `${prefix}-${yr}${mn}-${rand}`
+}
 
 export default function CreateDocumentPage() {
     const router = useRouter()
@@ -51,15 +59,6 @@ export default function CreateDocumentPage() {
         }
         fetchServices()
     }, [])
-
-    const generateNumero = (type: 'devis' | 'facture') => {
-        const prefix = type === 'devis' ? 'DEV' : 'FAC'
-        const date = new Date()
-        const yr = date.getFullYear()
-        const mn = String(date.getMonth() + 1).padStart(2, '0')
-        const rand = String(Math.floor(Math.random() * 9999)).padStart(4, '0')
-        return `${prefix}-${yr}${mn}-${rand}`
-    }
 
     const sousTotal = items.reduce((sum, it) => sum + (it.quantity * it.unit_price), 0)
     const totalTVA = items.reduce((sum, it) => sum + (it.quantity * it.unit_price * it.tva / 100), 0)
@@ -133,7 +132,7 @@ export default function CreateDocumentPage() {
                 </Link>
                 <div>
                     <h1 className="text-2xl font-black text-white">Nouveau Document</h1>
-                    <p className="text-gray-500 text-sm mt-1">G\u00e9n\u00e9rez un devis ou une facture officielle B\u00e9ninoise.</p>
+                    <p className="text-gray-500 text-sm mt-1">Générez un devis ou une facture officielle Béninoise.</p>
                 </div>
             </div>
 
@@ -153,10 +152,10 @@ export default function CreateDocumentPage() {
                     </div>
                     <div>
                         <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Devise du client</label>
-                        <select value={currency} onChange={e => setCurrency(e.target.value as any)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white text-sm focus:outline-none focus:border-emerald-500/50 appearance-none font-mono">
+                        <select title="Devise du client" value={currency} onChange={e => setCurrency(e.target.value as 'XOF' | 'EUR' | 'USD')} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white text-sm focus:outline-none focus:border-emerald-500/50 appearance-none font-mono">
                             <option value="XOF">XOF — Francs CFA (Afrique de l'Ouest)</option>
                             <option value="EUR">EUR — Euro (€)</option>
-                            <option value="USD">USD — Dollar Am\u00e9ricain ($)</option>
+                            <option value="USD">USD — Dollar Am&eacute;ricain ($)</option>
                         </select>
                     </div>
                 </div>
@@ -169,11 +168,11 @@ export default function CreateDocumentPage() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <input type="text" placeholder="Nom du client *" value={clientNom} onChange={e => setClientNom(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50 text-sm font-bold" />
-                        <input type="text" placeholder="Pr\u00e9nom" value={clientPrenom} onChange={e => setClientPrenom(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50 text-sm" />
+                        <input type="text" placeholder="Prénom" value={clientPrenom} onChange={e => setClientPrenom(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50 text-sm" />
                         <input type="email" placeholder="Adresse Email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50 text-sm" />
-                        <input type="tel" placeholder="Num\u00e9ro de t\u00e9l\u00e9phone (avec code pays)" value={clientPhone} onChange={e => setClientPhone(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50 text-sm" />
+                        <input type="tel" placeholder="Numéro de téléphone (avec code pays)" value={clientPhone} onChange={e => setClientPhone(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50 text-sm" />
                         <div className="md:col-span-2">
-                            <input type="text" placeholder="Adresse compl\u00e8te, Ville, Pays" value={clientAdresse} onChange={e => setClientAdresse(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50 text-sm" />
+                            <input type="text" placeholder="Adresse complète, Ville, Pays" value={clientAdresse} onChange={e => setClientAdresse(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50 text-sm" />
                         </div>
                     </div>
                 </div>
@@ -183,9 +182,9 @@ export default function CreateDocumentPage() {
                      <div className="flex flex-col sm:flex-row items-baseline justify-between mb-4 gap-2">
                         <div className="flex items-center gap-2">
                             <Calculator size={16} className="text-emerald-400" />
-                            <h2 className="text-sm font-bold text-white uppercase tracking-widest">D\u00e9tail des prestations</h2>
+                            <h2 className="text-sm font-bold text-white uppercase tracking-widest">Détail des prestations</h2>
                         </div>
-                        <p className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-md">DEV. BASE : TAPEZ POUR AUTO-COMP\u00c9TION</p>
+                        <p className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-md">DEV. BASE : TAPEZ POUR AUTO-COMPÉTION</p>
                     </div>
 
                     <div className="space-y-3">
@@ -206,22 +205,22 @@ export default function CreateDocumentPage() {
                                 </div>
                                 <div className="flex gap-3 w-full sm:w-auto">
                                     <div className="w-20">
-                                        <label className="text-[9px] text-gray-500 uppercase font-bold block mb-1">Qt\u00e9</label>
-                                        <input type="number" min="1" value={item.quantity} onChange={e => updateItem(i, 'quantity', Number(e.target.value))} className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-2 text-white outline-none font-mono text-sm text-center" />
+                                        <label className="text-[9px] text-gray-500 uppercase font-bold block mb-1">Qté</label>
+                                        <input title="Quantité" placeholder="1" type="number" min="1" value={item.quantity} onChange={e => updateItem(i, 'quantity', Number(e.target.value))} className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-2 text-white outline-none font-mono text-sm text-center" />
                                     </div>
                                     <div className="w-32">
                                         <label className="text-[9px] text-gray-500 uppercase font-bold block mb-1">PU (HT)</label>
-                                        <input type="number" min="0" value={item.unit_price} onChange={e => updateItem(i, 'unit_price', Number(e.target.value))} className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-2 text-white outline-none font-mono text-sm text-right" />
+                                        <input title="Prix Unitaire HT" placeholder="0" type="number" min="0" value={item.unit_price} onChange={e => updateItem(i, 'unit_price', Number(e.target.value))} className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-2 text-white outline-none font-mono text-sm text-right" />
                                     </div>
                                     <div className="w-20">
                                         <label className="text-[9px] text-gray-500 uppercase font-bold block mb-1">TVA %</label>
-                                        <select value={item.tva} onChange={e => updateItem(i, 'tva', Number(e.target.value))} className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-2 text-white outline-none font-mono text-sm appearance-none text-center">
+                                        <select title="Taux TVA" value={item.tva} onChange={e => updateItem(i, 'tva', Number(e.target.value))} className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-2 text-white outline-none font-mono text-sm appearance-none text-center">
                                             <option value={18}>18%</option>
                                             <option value={0}>0%</option>
                                         </select>
                                     </div>
                                     <div className="w-10 flex items-end">
-                                        <button type="button" onClick={() => removeItem(i)} disabled={items.length === 1} className="w-10 h-[38px] flex items-center justify-center text-gray-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent"><Trash2 size={16} /></button>
+                                        <button title="Supprimer la ligne" type="button" onClick={() => removeItem(i)} disabled={items.length === 1} className="w-10 h-[38px] flex items-center justify-center text-gray-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent"><Trash2 size={16} /></button>
                                     </div>
                                 </div>
                             </div>
@@ -237,26 +236,26 @@ export default function CreateDocumentPage() {
                     <div className="space-y-4">
                          <div>
                             <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Notes clien <span className="text-gray-600 lowercase">(ex: RIB, recommandations...)</span></label>
-                            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-amber-500/50 text-sm resize-none" />
+                            <textarea title="Notes client" placeholder="Notes (Optionnel)" value={notes} onChange={e => setNotes(e.target.value)} rows={2} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-amber-500/50 text-sm resize-none" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Validit\u00e9 / D\u00e9lai</label>
-                                <input type="text" value={validite} onChange={e => setValidite(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white outline-none text-sm" />
+                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Validité / Délai</label>
+                                <input title="Validité" placeholder="ex: 15 jours" type="text" value={validite} onChange={e => setValidite(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white outline-none text-sm" />
                             </div>
                             <div>
                                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Remise globale</label>
-                                <input type="number" min="0" value={remise || ''} onChange={e => setRemise(Number(e.target.value))} className="w-full bg-white/5 border border-emerald-500/30 rounded-xl px-4 py-2 text-white outline-none text-sm font-mono text-right focus:border-emerald-500 focus:bg-emerald-500/5 transition-all" placeholder="0" />
+                                <input title="Remise" type="number" min="0" value={remise || ''} onChange={e => setRemise(Number(e.target.value))} className="w-full bg-white/5 border border-emerald-500/30 rounded-xl px-4 py-2 text-white outline-none text-sm font-mono text-right focus:border-emerald-500 focus:bg-emerald-500/5 transition-all" placeholder="0" />
                             </div>
                         </div>
                         <div>
-                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Conditions g\u00e9n\u00e9rales</label>
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Conditions générales</label>
                             <textarea value={conditions} onChange={e => setConditions(e.target.value)} rows={4} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50 text-sm resize-none" />
                         </div>
                     </div>
                     
                     <div className="bg-white/5 border border-white/10 rounded-2xl p-6 self-start">
-                        <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-4">R\u00e9capitulatif TTC</p>
+                        <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-4">Récapitulatif TTC</p>
                         <div className="space-y-3 font-mono text-sm text-gray-300">
                             <div className="flex justify-between pb-3 border-b border-white/5">
                                 <span>Total HT</span>
@@ -273,7 +272,7 @@ export default function CreateDocumentPage() {
                                 </div>
                             )}
                             <div className="flex justify-between items-center pt-2">
-                                <span className="text-gray-400 font-sans font-bold uppercase tracking-wider text-xs">Total g\u00e9n\u00e9ral</span>
+                                <span className="text-gray-400 font-sans font-bold uppercase tracking-wider text-xs">Total général</span>
                                 <span className="text-2xl font-black text-emerald-400">{totalFinal.toLocaleString('fr-FR')} {currency}</span>
                             </div>
                         </div>
@@ -290,7 +289,7 @@ export default function CreateDocumentPage() {
 
                     <button type="button" onClick={() => handleSave('accepte')} disabled={saving} className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/20 font-bold text-sm transition-colors shadow-lg">
                         {saving ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                        Enregistrer en {formType === 'devis' ? 'Devis Actif' : 'Facture \u00c0 Payer'}
+                        Enregistrer en {formType === 'devis' ? 'Devis Actif' : 'Facture À Payer'}
                     </button>
                     
                 </div>

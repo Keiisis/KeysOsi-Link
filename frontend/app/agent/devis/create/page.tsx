@@ -316,9 +316,12 @@ export default function AgentCreateDocumentPage() {
 
                             {/* Header */}
                             <div className="bg-[#0c1420] border-b border-white/5 p-5 flex items-start justify-between flex-shrink-0">
-                                <div>
-                                    <p className="text-emerald-400 text-xl font-black tracking-wider">RETOUR GAGNANT B\u00c9NIN</p>
-                                    <p className="text-gray-600 text-xs mt-0.5">Agence de Services Internationaux</p>
+                                <div className="flex items-center gap-3">
+                                    <img src="/logo.jpg" alt="Logo" className="w-12 h-12 rounded-lg object-cover" />
+                                    <div>
+                                        <p className="text-emerald-400 text-xl font-black tracking-wider">RETOUR GAGNANT BÉNIN</p>
+                                        <p className="text-gray-600 text-xs mt-0.5">Agence de Services Internationaux</p>
+                                    </div>
                                 </div>
                                 <div className="text-right">
                                     <p className={`text-3xl font-black ${formType === 'devis' ? 'text-amber-400' : 'text-emerald-400'}`}>
@@ -338,7 +341,7 @@ export default function AgentCreateDocumentPage() {
                                         <p className="text-gray-400 text-xs">{clientAdresse}</p>
                                     </div>
                                     <div className="bg-white/5 p-4 rounded-xl">
-                                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">R\u00e9capitulatif Total</p>
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Récapitulatif Total</p>
                                         <p className="text-2xl text-emerald-400 font-black font-mono mt-1">{totalFinal.toLocaleString('fr-Fr')} {currency}</p>
                                     </div>
                                 </div>
@@ -348,7 +351,7 @@ export default function AgentCreateDocumentPage() {
                                         <thead className="bg-white/5 text-gray-400 text-left">
                                             <tr>
                                                 <th className="p-3">Description</th>
-                                                <th className="p-3 text-center">Qt\u00e9</th>
+                                                <th className="p-3 text-center">Qté</th>
                                                 <th className="p-3 text-right">PU</th>
                                                 <th className="p-3 text-right">TVA</th>
                                                 <th className="p-3 text-right">Total HT</th>

@@ -9,6 +9,7 @@ import {
     Phone, Mail, CheckCircle2, AlertCircle, Link as LinkIcon
 } from 'lucide-react'
 import Link from 'next/link'
+import { LOGO_BASE64 } from '@/lib/logoBase64'
 
 interface DevisItem {
     description: string
@@ -47,10 +48,13 @@ export default function AgentDevisPage() {
     const [generating, setGenerating] = useState(false)
 
     const fetchDocuments = useCallback(async () => {
-        // La politique RLS de Supabase s'assure que cet appel ne retourne QUE les documents de cet agent précis.
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
         const { data } = await supabase
             .from('documents_financiers')
             .select(`*`)
+            .eq('agent_id', user.id)
             .order('created_at', { ascending: false })
             
         setDocuments(data as DocumentFinancier[] || [])
@@ -95,23 +99,29 @@ export default function AgentDevisPage() {
             pdf.setFillColor(10, 16, 24)
             pdf.rect(0, 4, pw, 50, 'F')
 
+            try {
+                pdf.addImage(LOGO_BASE64, 'JPEG', ml, 10, 16, 16)
+            } catch (e) {
+                console.error('Erreur ajout logo:', e)
+            }
+
             // Company name (left)
             pdf.setFont('helvetica', 'bold')
             pdf.setFontSize(22)
             pdf.setTextColor(0, 185, 100)
-            pdf.text('RETOUR GAGNANT', ml, 20)
+            pdf.text('RETOUR GAGNANT', ml + 20, 20)
 
             pdf.setFont('helvetica', 'normal')
             pdf.setFontSize(7.5)
             pdf.setTextColor(140, 160, 180)
-            pdf.text('BÉNIN', ml, 25)
+            pdf.text('BÉNIN', ml + 20, 25)
 
             pdf.setFontSize(7)
             pdf.setTextColor(100, 120, 140)
-            pdf.text('Agence de Conciergerie & Services Internationaux', ml, 31)
-            pdf.text('Avenue de la Marina, Cotonou — République du Bénin', ml, 36)
-            pdf.text('contact@retourgagnantbenin.bj  |  www.retourgagnantbenin.bj', ml, 41)
-            pdf.text('+229 01 94 35 50 50  |  +229 01 60 32 21 21', ml, 46)
+            pdf.text('Agence de Conciergerie & Services Internationaux', ml + 20, 31)
+            pdf.text('Avenue de la Marina, Cotonou — République du Bénin', ml + 20, 36)
+            pdf.text('contact@retourgagnantbenin.bj  |  www.retourgagnantbenin.bj', ml + 20, 41)
+            pdf.text('+229 01 94 35 50 50  |  +229 01 60 32 21 21', ml + 20, 46)
 
             // Document type badge (right)
             const typeLabel = doc.type === 'devis' ? 'DEVIS' : 'FACTURE'
@@ -127,9 +137,9 @@ export default function AgentDevisPage() {
             pdf.setFont('helvetica', 'normal')
             pdf.setFontSize(9)
             pdf.setTextColor(160, 175, 190)
-            pdf.text(`N\u00b0 ${doc.numero}`, pw - mr, 32, { align: 'right' })
+            pdf.text(`N° ${doc.numero}`, pw - mr, 32, { align: 'right' })
             pdf.text(`Date : ${new Date(doc.created_at).toLocaleDateString('fr-FR')}`, pw - mr, 38, { align: 'right' })
-            pdf.text(doc.type === 'facture' ? `D\u00e9lai : ${doc.validite}` : `Validit\u00e9 : ${doc.validite}`, pw - mr, 44, { align: 'right' })
+            pdf.text(doc.type === 'facture' ? `Délai : ${doc.validite}` : `Validité : ${doc.validite}`, pw - mr, 44, { align: 'right' })
 
             // Status badge
             const statusColorMap: Record<string, [number, number, number]> = {
@@ -147,7 +157,7 @@ export default function AgentDevisPage() {
             pdf.setFont('helvetica', 'bold')
             pdf.setFontSize(6)
             pdf.setTextColor(255, 255, 255)
-            const statusLabels: Record<string, string> = { brouillon: 'BROUILLON', envoye: 'ENVOY\u00c9', accepte: 'ACCEPT\u00c9', refuse: 'REFUS\u00c9', paye: 'PAY\u00c9', en_retard: 'EN RETARD', annule: 'ANNUL\u00c9' }
+            const statusLabels: Record<string, string> = { brouillon: 'BROUILLON', envoye: 'ENVOYÉ', accepte: 'ACCEPTÉ', refuse: 'REFUSÉ', paye: 'PAYÉ', en_retard: 'EN RETARD', annule: 'ANNULÉ' }
             pdf.text(statusLabels[doc.status] || doc.status.toUpperCase(), pw - mr - 13, 51.3, { align: 'center' })
 
             let y = 64
@@ -164,19 +174,19 @@ export default function AgentDevisPage() {
             pdf.setFont('helvetica', 'bold')
             pdf.setFontSize(6.5)
             pdf.setTextColor(80, 120, 180)
-            pdf.text('\u00c9METTEUR (AGENT)', ml + 4, y + 7)
+            pdf.text('ÉMETTEUR (AGENT)', ml + 4, y + 7)
 
             pdf.setFont('helvetica', 'bold')
             pdf.setFontSize(9.5)
             pdf.setTextColor(220, 230, 245)
-            pdf.text('RETOUR GAGNANT B\u00c9NIN', ml + 4, y + 15)
+            pdf.text('RETOUR GAGNANT BÉNIN', ml + 4, y + 15)
 
             pdf.setFont('helvetica', 'normal')
             pdf.setFontSize(7.5)
             pdf.setTextColor(140, 160, 185)
             pdf.text('RCCM : RB/COT/26 B 42001', ml + 4, y + 22)
             pdf.text('IFU : 3202644573981', ml + 4, y + 27.5)
-            pdf.text('Avenue de la Marina, Cotonou, B\u00e9nin', ml + 4, y + 33)
+            pdf.text('Avenue de la Marina, Cotonou, Bénin', ml + 4, y + 33)
             pdf.text('contact@retourgagnantbenin.bj', ml + 4, y + 38.5)
 
             // TO box
@@ -213,7 +223,7 @@ export default function AgentDevisPage() {
             // ── ITEMS TABLE ────────────────────────────────────────
             const cols = [
                 { header: 'DESCRIPTION DU SERVICE', w: 68, align: 'left' as const },
-                { header: 'QT\u00c9', w: 14, align: 'center' as const },
+                { header: 'QTÉ', w: 14, align: 'center' as const },
                 { header: 'PU HT', w: 28, align: 'right' as const },
                 { header: 'TVA %', w: 15, align: 'center' as const },
                 { header: 'TVA MNT', w: 22, align: 'right' as const },
@@ -251,7 +261,7 @@ export default function AgentDevisPage() {
                 const tvaMnt = item.quantity * item.unit_price * item.tva / 100
                 const lineTotal = item.quantity * item.unit_price
                 const rowData = [
-                    { text: item.description || '\u2014', w: cols[0].w, align: 'left' },
+                    { text: item.description || '—', w: cols[0].w, align: 'left' },
                     { text: String(item.quantity), w: cols[1].w, align: 'center' },
                     { text: item.unit_price.toLocaleString('fr-FR'), w: cols[2].w, align: 'right' },
                     { text: item.tva + '%', w: cols[3].w, align: 'center' },
@@ -340,11 +350,11 @@ export default function AgentDevisPage() {
                 pdf.setFont('helvetica', 'bold')
                 pdf.setFontSize(6.5)
                 pdf.setTextColor(0, 135, 81)
-                pdf.text('RETOUR GAGNANT B\u00c9NIN', sig2X + 4, y + 14)
+                pdf.text('RETOUR GAGNANT BÉNIN', sig2X + 4, y + 14)
                 pdf.setFont('helvetica', 'normal')
                 pdf.setFontSize(6.5)
                 pdf.setTextColor(90, 95, 130)
-                pdf.text(`\u00c9tabli le ${new Date(doc.created_at).toLocaleDateString('fr-FR')}`, sig2X + 4, y + 25)
+                pdf.text(`Établi le ${new Date(doc.created_at).toLocaleDateString('fr-FR')}`, sig2X + 4, y + 25)
             }
 
             // ── WATERMARK ──────────────────────────────────────────
@@ -358,7 +368,7 @@ export default function AgentDevisPage() {
                 pdf.setFont('helvetica', 'bold')
                 pdf.setFontSize(80)
                 pdf.setTextColor(195, 240, 215)
-                pdf.text('PAY\u00c9', pw / 2, ph / 2, { align: 'center', angle: 40 })
+                pdf.text('PAYÉ', pw / 2, ph / 2, { align: 'center', angle: 40 })
             }
 
             // ── LEGAL FOOTER ───────────────────────────────────────
@@ -367,8 +377,8 @@ export default function AgentDevisPage() {
             pdf.setFont('helvetica', 'normal')
             pdf.setFontSize(6.5)
             pdf.setTextColor(100, 120, 145)
-            pdf.text('RETOUR GAGNANT B\u00c9NIN \u2014 RCCM: RB/COT/26 B 42001 \u2014 IFU: 3202644573981 \u2014 Avenue de la Marina, Cotonou, B\u00e9nin', pw / 2, ph - 9, { align: 'center' })
-            pdf.text(`Document N\u00b0 ${doc.numero} \u2014 G\u00e9n\u00e9r\u00e9 le ${new Date().toLocaleDateString('fr-FR')}`, pw / 2, ph - 5, { align: 'center' })
+            pdf.text('RETOUR GAGNANT BÉNIN — RCCM: RB/COT/26 B 42001 — IFU: 3202644573981 — Avenue de la Marina, Cotonou, Bénin', pw / 2, ph - 9, { align: 'center' })
+            pdf.text(`Document N° ${doc.numero} — Généré le ${new Date().toLocaleDateString('fr-FR')}`, pw / 2, ph - 5, { align: 'center' })
 
             pdf.save(`${doc.type}_${doc.numero}.pdf`)
         } catch (err) {
@@ -386,12 +396,12 @@ export default function AgentDevisPage() {
 
     const statusConfig: Record<string, { color: string; label: string }> = {
         brouillon: { color: 'bg-gray-500/20 text-gray-400', label: 'Brouillon' },
-        envoye: { color: 'bg-blue-500/20 text-blue-400', label: 'Envoy\u00e9' },
-        accepte: { color: 'bg-emerald-500/20 text-emerald-400', label: 'Accept\u00e9' },
-        refuse: { color: 'bg-red-500/20 text-red-400', label: 'Refus\u00e9' },
-        paye: { color: 'bg-green-500/20 text-green-400', label: 'Pay\u00e9' },
+        envoye: { color: 'bg-blue-500/20 text-blue-400', label: 'Envoyé' },
+        accepte: { color: 'bg-emerald-500/20 text-emerald-400', label: 'Accepté' },
+        refuse: { color: 'bg-red-500/20 text-red-400', label: 'Refusé' },
+        paye: { color: 'bg-green-500/20 text-green-400', label: 'Payé' },
         en_retard: { color: 'bg-orange-500/20 text-orange-400', label: 'En retard' },
-        annule: { color: 'bg-zinc-500/20 text-zinc-400', label: 'Annul\u00e9' },
+        annule: { color: 'bg-zinc-500/20 text-zinc-400', label: 'Annulé' },
     }
 
     if (loading) {
@@ -411,10 +421,10 @@ export default function AgentDevisPage() {
                         <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.3em]">Mon Espace Facturation</span>
                     </div>
                     <h1 className="text-2xl font-black text-white">Mes Documents Financiers</h1>
-                    <p className="text-gray-500 text-sm mt-1">G\u00e9rez vos propals techniques et factures clients.</p>
+                    <p className="text-gray-500 text-sm mt-1">Gérez vos propals techniques et factures clients.</p>
                 </div>
                 <Link href="/agent/devis/create" className="flex items-center gap-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-500/30 transition-all">
-                    <Plus size={16} /> Cr\u00e9er une Facture / Devis
+                    <Plus size={16} /> Créer une Facture / Devis
                 </Link>
             </div>
 
@@ -426,7 +436,7 @@ export default function AgentDevisPage() {
                     </div>
                     <div>
                         <p className="text-3xl font-black text-white font-mono">{myCA.toLocaleString('fr-FR')} XOF</p>
-                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">Mes Ventes Converties (Pay\u00e9es)</p>
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">Mes Ventes Converties (Payées)</p>
                     </div>
                 </div>
                 <div className="bg-[#0c1420] border border-white/5 rounded-xl p-5 shadow-lg flex items-center gap-5">
@@ -435,7 +445,7 @@ export default function AgentDevisPage() {
                     </div>
                     <div>
                         <p className="text-3xl font-black text-white font-mono">{activeDevis}</p>
-                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">Devis Actifs (En n\u00e9gociation)</p>
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">Devis Actifs (En négociation)</p>
                     </div>
                 </div>
             </div>
@@ -444,7 +454,7 @@ export default function AgentDevisPage() {
             <div className="flex flex-col sm:flex-row items-center gap-3">
                 <div className="relative flex-1 w-full">
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                    <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher par Num\u00e9ro ou Client..." className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50 text-sm" />
+                    <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher par Numéro ou Client..." className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50 text-sm" />
                 </div>
                 <div className="flex gap-1 bg-white/5 rounded-xl p-1 w-full sm:w-auto">
                     {[{ k: 'all', l: 'Tous' }, { k: 'devis', l: 'Devis' }, { k: 'facture', l: 'Factures' }].map(f => (
@@ -471,7 +481,7 @@ export default function AgentDevisPage() {
                                 <tr>
                                     <td colSpan={5} className="py-12 text-center text-gray-500">
                                         <Receipt size={32} className="mx-auto mb-3 opacity-50" />
-                                        <p className="text-sm font-semibold">Aucun document cr\u00e9\u00e9</p>
+                                        <p className="text-sm font-semibold">Aucun document créé</p>
                                     </td>
                                 </tr>
                             ) : filtered.map(doc => (
@@ -503,14 +513,14 @@ export default function AgentDevisPage() {
                                                 onClick={() => {
                                                     const url = `${window.location.origin}/portail/${doc.id}`
                                                     navigator.clipboard.writeText(url)
-                                                    alert('Lien Magique Client copi\u00e9 dans le presse-papier !')
+                                                    alert('Lien Magique Client copié dans le presse-papier !')
                                                 }} 
                                                 className="p-2 text-gray-400 hover:text-amber-400 hover:bg-white/5 rounded-lg transition-all" 
                                                 title="Copier le Lien Client (WhatsApp)"
                                             >
                                                 <LinkIcon size={16} />
                                             </button>
-                                            <button onClick={() => setShowPreview(doc)} className="p-2 text-gray-400 hover:text-emerald-400 hover:bg-white/5 rounded-lg transition-all" title="Aper\u00e7u / Modifier"><Eye size={16} /></button>
+                                            <button onClick={() => setShowPreview(doc)} className="p-2 text-gray-400 hover:text-emerald-400 hover:bg-white/5 rounded-lg transition-all" title="Aperçu / Modifier"><Eye size={16} /></button>
                                             <button onClick={() => generatePDF(doc)} disabled={generating} className="p-2 text-gray-400 hover:text-blue-400 hover:bg-white/5 rounded-lg transition-all" title="PDF">
                                                 {generating ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
                                             </button>
@@ -538,9 +548,12 @@ export default function AgentDevisPage() {
 
                             {/* Header */}
                             <div className="bg-[#0c1420] border-b border-white/5 p-5 flex items-start justify-between flex-shrink-0">
-                                <div>
-                                    <p className="text-emerald-400 text-xl font-black tracking-wider">RETOUR GAGNANT B\u00c9NIN</p>
-                                    <p className="text-gray-600 text-xs mt-0.5">Agence de Services Internationaux</p>
+                                <div className="flex items-center gap-4">
+                                    <img src="/logo.jpg" alt="Logo" className="w-12 h-12 rounded-lg object-cover" />
+                                    <div>
+                                        <p className="text-emerald-400 text-xl font-black tracking-wider">RETOUR GAGNANT BÉNIN</p>
+                                        <p className="text-gray-600 text-xs mt-0.5">Agence de Services Internationaux</p>
+                                    </div>
                                 </div>
                                 <div className="text-right">
                                     <p className={`text-3xl font-black ${showPreview.type === 'devis' ? 'text-amber-400' : 'text-emerald-400'}`}>
@@ -559,7 +572,7 @@ export default function AgentDevisPage() {
                                         <p className="text-gray-400 text-xs">{showPreview.client_phone}</p>
                                     </div>
                                     <div className="bg-white/5 p-4 rounded-xl">
-                                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">R\u00e9capitulatif Total</p>
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Récapitulatif Total</p>
                                         <p className="text-2xl text-emerald-400 font-black font-mono mt-1">{showPreview.total.toLocaleString('fr-Fr')} XOF</p>
                                     </div>
                                 </div>
@@ -569,7 +582,7 @@ export default function AgentDevisPage() {
                                         <thead className="bg-white/5 text-gray-400 text-left">
                                             <tr>
                                                 <th className="p-3">Description</th>
-                                                <th className="p-3 text-center">Qt\u00e9</th>
+                                                <th className="p-3 text-center">Qté</th>
                                                 <th className="p-3 text-right">PU</th>
                                                 <th className="p-3 text-right">TVA</th>
                                                 <th className="p-3 text-right">Total HT</th>

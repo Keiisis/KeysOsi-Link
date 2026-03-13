@@ -163,7 +163,7 @@ RÈGLES ABSOLUES :
                 from: fromString,
                 to: data.email,
                 replyTo: settings.smtp_from_email || settings.smtp_user,
-                subject: `Confirmation de reception - Dossier N\u00b0 ${data.refId}`,
+                subject: `Confirmation de reception - Dossier N° ${data.refId}`,
                 html: htmlBody,
             })
 

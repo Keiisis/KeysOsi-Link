@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { jsPDF } from 'jspdf'
+import { LOGO_BASE64 } from '@/lib/logoBase64'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
@@ -147,22 +148,28 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         pdf.setFillColor(255, 255, 255)
         pdf.rect(0, 3, PW, 50, 'F')
 
+        try {
+            pdf.addImage(LOGO_BASE64, 'JPEG', ML, 9, 16, 16)
+        } catch (e) {
+            console.error('Erreur ajout logo:', e)
+        }
+
         // Nom société gauche
         pdf.setFont('helvetica', 'bold')
         pdf.setFontSize(18)
         pdf.setTextColor(0, 135, 81)
-        pdf.text('RETOUR GAGNANT', ML, 18)
+        pdf.text('RETOUR GAGNANT', ML + 20, 18)
 
         pdf.setFont('helvetica', 'bold')
         pdf.setFontSize(9)
         pdf.setTextColor(232, 17, 45)
-        pdf.text('BÉNIN', ML, 24)
+        pdf.text('BÉNIN', ML + 20, 24)
 
         pdf.setFont('helvetica', 'normal')
         pdf.setFontSize(7)
         pdf.setTextColor(100, 100, 100)
-        pdf.text('Agence de Conciergerie & Services Internationaux', ML, 29)
-        pdf.text('Haie-Vive Cocotiers, Carré n°1158, Cotonou — République du Bénin', ML, 34)
+        pdf.text('Agence de Conciergerie & Services Internationaux', ML + 20, 29)
+        pdf.text('Haie-Vive Cocotiers, Carré n°1158, Cotonou — République du Bénin', ML + 20, 34)
 
         // "DEVIS" titre droit
         pdf.setFont('helvetica', 'bold')
