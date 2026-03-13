@@ -79,13 +79,13 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
         const { data: proposal, error: pe } = await supabase
             .from('ai_client_proposals')
-            .select('id, client_name, client_email, destination, total_amount, currency, start_date, end_date, created_at')
+            .select('id, client_name, client_email, destination, total_amount, start_date, end_date, created_at')
             .eq('id', id)
             .single()
 
         if (pe || !proposal) {
-            console.error('PPTX: proposal lookup failed', { id, pe })
-            return NextResponse.json({ error: 'Proposition introuvable', detail: pe?.message ?? null, id }, { status: 404 })
+                console.error('PPTX: proposal lookup failed', { id, pe })
+            return NextResponse.json({ error: 'Proposition introuvable' }, { status: 404 })
         }
 
         const { data: rawItems } = await supabase
