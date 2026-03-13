@@ -41,6 +41,9 @@ interface DocumentFinancier {
     created_at: string
     agent_id: string
     agent_email?: string
+    currency?: string
+    signature_url?: string
+    signed_at?: string
 }
 
 export default function AdminFacturationPage() {
@@ -82,6 +85,8 @@ export default function AdminFacturationPage() {
         if (showPreview?.id === id) setShowPreview(prev => prev ? { ...prev, status } : null)
     }
 
+    const fmtN = (n: number) => Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+
     const generatePDF = async (doc: DocumentFinancier) => {
         setGenerating(true)
         try {
@@ -115,19 +120,12 @@ export default function AdminFacturationPage() {
             pdf.setFont('helvetica', 'bold')
             pdf.setFontSize(22)
             pdf.setTextColor(0, 185, 100)
-            pdf.text('RETOUR GAGNANT', ml + 20, 20)
+            pdf.text('RETOUR GAGNANT BÉNIN', ml + 20, 22)
 
             pdf.setFont('helvetica', 'normal')
-            pdf.setFontSize(7.5)
+            pdf.setFontSize(6.5)
             pdf.setTextColor(140, 160, 180)
-            pdf.text('BÉNIN', ml + 20, 25)
-
-            pdf.setFontSize(7)
-            pdf.setTextColor(100, 120, 140)
-            pdf.text('Agence de Conciergerie & Services Internationaux', ml + 20, 31)
-            pdf.text('Avenue de la Marina, Cotonou — République du Bénin', ml + 20, 36)
-            pdf.text('contact@retourgagnantbenin.bj  |  www.retourgagnantbenin.bj', ml + 20, 41)
-            pdf.text('+229 01 94 35 50 50  |  +229 01 60 32 21 21', ml + 20, 46)
+            pdf.text("L'agence d'accompagnement à la Nationalité Béninoise et au retour des Afro-descendants.", ml + 20, 30)
 
             // Document type badge (right)
             const typeLabel = doc.type === 'devis' ? 'DEVIS' : 'FACTURE'
@@ -170,7 +168,7 @@ export default function AdminFacturationPage() {
 
             // FROM box 
             const boxW = (cw - 6) / 2
-            const boxH = 42
+            const boxH = 50
 
             pdf.setFillColor(18, 28, 42)
             pdf.setDrawColor(40, 60, 90)
@@ -188,12 +186,12 @@ export default function AdminFacturationPage() {
             pdf.text('RETOUR GAGNANT BÉNIN', ml + 4, y + 15)
 
             pdf.setFont('helvetica', 'normal')
-            pdf.setFontSize(7.5)
+            pdf.setFontSize(7)
             pdf.setTextColor(140, 160, 185)
-            pdf.text('RCCM : RB/COT/26 B 42001', ml + 4, y + 22)
-            pdf.text('IFU : 3202644573981', ml + 4, y + 27.5)
-            pdf.text('Avenue de la Marina, Cotonou, Bénin', ml + 4, y + 33)
-            pdf.text('contact@retourgagnantbenin.bj', ml + 4, y + 38.5)
+            pdf.text('RCCM : RB/COT/26 B 42001  |  IFU : 3202644573981', ml + 4, y + 22)
+            pdf.text('Haie-Vive Cocotiers, Carré n°1158, Cotonou — Rép. du Bénin', ml + 4, y + 28.5)
+            pdf.text('+229 01 60 32 21 21  |  +229 01 94 35 50 50', ml + 4, y + 35)
+            pdf.text('contact@retourgagnantbenin.bj  |  www.retourgagnantbenin.bj', ml + 4, y + 41.5)
 
             // TO box
             const toX = ml + boxW + 6
@@ -269,10 +267,10 @@ export default function AdminFacturationPage() {
                 const rowData = [
                     { text: item.description || '—', w: cols[0].w, align: 'left' },
                     { text: String(item.quantity), w: cols[1].w, align: 'center' },
-                    { text: item.unit_price.toLocaleString('fr-FR'), w: cols[2].w, align: 'right' },
+                    { text: fmtN(item.unit_price), w: cols[2].w, align: 'right' },
                     { text: item.tva + '%', w: cols[3].w, align: 'center' },
-                    { text: tvaMnt.toLocaleString('fr-FR'), w: cols[4].w, align: 'right' },
-                    { text: lineTotal.toLocaleString('fr-FR'), w: cols[5].w, align: 'right' },
+                    { text: fmtN(tvaMnt), w: cols[4].w, align: 'right' },
+                    { text: fmtN(lineTotal), w: cols[5].w, align: 'right' },
                 ]
                 colX = ml
                 pdf.setFont('helvetica', 'normal')
@@ -311,9 +309,10 @@ export default function AdminFacturationPage() {
                 y += 8
             }
 
-            drawRow('Sous-total HT', `${doc.sous_total.toLocaleString('fr-FR')} XOF`)
-            drawRow('TVA (18%)', `+ ${doc.total_tva.toLocaleString('fr-FR')} XOF`)
-            if (doc.remise > 0) drawRow('Remise', `- ${doc.remise.toLocaleString('fr-FR')} XOF`, false, true)
+            const cur = doc.currency || 'XOF'
+            drawRow('Sous-total HT', `${fmtN(doc.sous_total)} ${cur}`)
+            drawRow('TVA (18%)', `+ ${fmtN(doc.total_tva)} ${cur}`)
+            if (doc.remise > 0) drawRow('Remise', `- ${fmtN(doc.remise)} ${cur}`, false, true)
 
             pdf.setDrawColor(150, 175, 210)
             pdf.setLineWidth(0.5)
@@ -325,16 +324,17 @@ export default function AdminFacturationPage() {
             pdf.setFontSize(10)
             pdf.setTextColor(255, 255, 255)
             pdf.text('TOTAL TTC', totX2, y + 7.5)
-            pdf.text(`${doc.total.toLocaleString('fr-FR')} XOF`, pw - mr, y + 7.5, { align: 'right' })
+            pdf.text(`${fmtN(doc.total)} ${cur}`, pw - mr, y + 7.5, { align: 'right' })
             y += 18
 
             // ── SIGNATURE ZONE (devis) ─────────────────────────────
-            if (doc.type === 'devis' && y + 28 < ph - 20) {
+            if (doc.type === 'devis' && y + 36 < ph - 20) {
                 const sigW = (cw - 8) / 2
+                const sigBoxH = 36
                 pdf.setFillColor(242, 255, 248)
                 pdf.setDrawColor(0, 135, 81)
                 pdf.setLineWidth(0.4)
-                pdf.roundedRect(ml, y, sigW, 26, 2, 2, 'FD')
+                pdf.roundedRect(ml, y, sigW, sigBoxH, 2, 2, 'FD')
                 pdf.setFont('helvetica', 'bold')
                 pdf.setFontSize(7)
                 pdf.setTextColor(0, 100, 60)
@@ -343,12 +343,24 @@ export default function AdminFacturationPage() {
                 pdf.setFontSize(6.5)
                 pdf.setTextColor(90, 100, 95)
                 pdf.text('Signature & Cachet du client :', ml + 4, y + 15)
-                pdf.text('Date :  ____/____/________', ml + 4, y + 22)
+                if (doc.signature_url) {
+                    try { pdf.addImage(doc.signature_url, 'PNG', ml + 4, y + 17, sigW - 20, 13) } catch {}
+                    const signedDate = doc.signed_at
+                        ? new Date(doc.signed_at).toLocaleDateString('fr-FR')
+                        : new Date(doc.created_at).toLocaleDateString('fr-FR')
+                    pdf.setFont('helvetica', 'bold')
+                    pdf.setFontSize(6)
+                    pdf.setTextColor(0, 135, 81)
+                    pdf.text(`✓ Accepté & signé le ${signedDate}`, ml + 4, y + 33)
+                } else {
+                    pdf.text('____________________________', ml + 4, y + 24)
+                    pdf.text('Date :  ____/____/________', ml + 4, y + 31)
+                }
 
                 const sig2X = ml + sigW + 8
                 pdf.setFillColor(242, 245, 255)
                 pdf.setDrawColor(100, 110, 200)
-                pdf.roundedRect(sig2X, y, sigW, 26, 2, 2, 'FD')
+                pdf.roundedRect(sig2X, y, sigW, sigBoxH, 2, 2, 'FD')
                 pdf.setFont('helvetica', 'bold')
                 pdf.setFontSize(7)
                 pdf.setTextColor(70, 80, 170)
@@ -361,7 +373,7 @@ export default function AdminFacturationPage() {
                 pdf.setFontSize(6.5)
                 pdf.setTextColor(90, 95, 130)
                 pdf.text('Signature & Cachet officiel', sig2X + 4, y + 20)
-                pdf.text(`Établi le ${new Date(doc.created_at).toLocaleDateString('fr-FR')}`, sig2X + 4, y + 25)
+                pdf.text(`Établi le ${new Date(doc.created_at).toLocaleDateString('fr-FR')}`, sig2X + 4, y + 26)
             }
 
             // ── WATERMARK ──────────────────────────────────────────
@@ -384,7 +396,7 @@ export default function AdminFacturationPage() {
             pdf.setFont('helvetica', 'normal')
             pdf.setFontSize(6.5)
             pdf.setTextColor(100, 120, 145)
-            pdf.text('RETOUR GAGNANT BÉNIN — RCCM: RB/COT/26 B 42001 — IFU: 3202644573981 — Avenue de la Marina, Cotonou, Bénin', pw / 2, ph - 9, { align: 'center' })
+            pdf.text('RETOUR GAGNANT BÉNIN — RCCM: RB/COT/26 B 42001 — IFU: 3202644573981 — Haie-Vive Cocotiers, Carré n°1158, Cotonou — République du Bénin', pw / 2, ph - 9, { align: 'center' })
             pdf.text(`Document N° ${doc.numero} — Généré le ${new Date().toLocaleDateString('fr-FR')}`, pw / 2, ph - 5, { align: 'center' })
 
             pdf.save(`${doc.type}_${doc.numero}.pdf`)
