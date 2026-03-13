@@ -125,7 +125,7 @@ Format :
         const items: ProposalItem[] = parsed.items || []
 
         // Sauvegarde dans DB
-        const { data: proposal, error: proposalError } = await supabase.from('ai_client_proposals').insert({
+        const proposalData: Record<string, unknown> = {
             client_name,
             client_email,
             client_phone,
@@ -135,12 +135,36 @@ Format :
             budget,
             activities,
             notes,
-            currency: currency || 'XOF',
             status: 'draft',
             total_amount: items.reduce((acc: number, item: ProposalItem) => acc + (item.original_price || 0), 0)
+        }
+        // currency est optionnel selon la version du schéma DB — on l'insère de façon conditionnelle
+        // Exécuter d'abord sans currency, si ça plante par son absence c'est qu'elle n'existe pas encore
+        let proposal: Record<string, unknown> | null = null
+        let proposalError: { message: string; code?: string } | null = null
+
+        // Tentative 1 : avec currency (si la colonne existe)
+        const res1 = await supabase.from('ai_client_proposals').insert({
+            ...proposalData,
+            currency: currency || 'XOF'
         }).select().single()
 
-        if (proposalError) throw proposalError
+        if (res1.error) {
+            // Si l'erreur est liée à la colonne currency inexistante, réessayer sans
+            const isColumnError = res1.error.message?.includes('currency') || res1.error.code === '42703'
+            const isCheckError = res1.error.code === '23514' // CHECK constraint violation
+            if (isColumnError || isCheckError) {
+                const res2 = await supabase.from('ai_client_proposals').insert(proposalData).select().single()
+                proposal = res2.data
+                proposalError = res2.error
+            } else {
+                proposalError = res1.error
+            }
+        } else {
+            proposal = res1.data
+        }
+
+        if (proposalError) throw new Error(proposalError.message || 'Erreur création proposition')
 
         const proposalItemsToInsert = items.map((item: ProposalItem, index: number) => ({
             proposal_id: proposal.id,
@@ -157,13 +181,17 @@ Format :
         }))
 
         const { error: itemsError } = await supabase.from('ai_proposal_items').insert(proposalItemsToInsert)
-        if (itemsError) throw itemsError
+        if (itemsError) throw new Error(itemsError.message || 'Erreur insertion items')
 
-        return NextResponse.json({ success: true, proposalId: proposal.id, secretKey: proposal.secret_key })
+        return NextResponse.json({ success: true, proposalId: (proposal as Record<string, unknown>).id, secretKey: (proposal as Record<string, unknown>).secret_key })
 
     } catch (err) {
         console.error('Erreur API Generate Proposal:', err)
-        const message = err instanceof Error ? err.message : 'Erreur interne'
+        const message = err instanceof Error
+            ? err.message
+            : (typeof err === 'object' && err !== null && 'message' in err)
+                ? String((err as { message: unknown }).message)
+                : 'Erreur interne'
         return NextResponse.json({ error: message }, { status: 500 })
     }
 }

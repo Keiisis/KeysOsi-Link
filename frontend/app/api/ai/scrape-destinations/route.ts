@@ -7,13 +7,13 @@ const serperApiKeys = [
     process.env.SERPER_API_KEY_3,
 ].filter(Boolean) as string[]
 
-async function callSerperWithRetry(keys: string[], query: string, type: 'search' | 'maps' | 'images' = 'maps') {
+async function callSerperWithRetry(keys: string[], query: string, type: 'search' | 'maps' | 'images' = 'maps', num = 20) {
     const shuffled = [...keys].sort(() => Math.random() - 0.5)
     for (let i = 0; i < Math.min(shuffled.length, 3); i++) {
         try {
             const res = await axios.post(
                 `https://google.serper.dev/${type}`,
-                { q: query, gl: 'bj', hl: 'fr', num: 15 },
+                { q: query, gl: 'bj', hl: 'fr', num },
                 { headers: { 'X-API-KEY': shuffled[i], 'Content-Type': 'application/json' }, timeout: 15000 }
             )
             if (type === 'maps') return res.data.places || []
@@ -36,19 +36,36 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Destination requise' }, { status: 400 })
         }
 
-        // Pour les activités, construire une requête qui cible les lieux touristiques enregistrés sur Maps
-        const activityQuery = activities
-            ? `${activities} sites touristiques attractions ${destination} Bénin`
-            : `sites touristiques monuments musées parcs loisirs attractions visites ${destination} Bénin`
+        // Requête activités : double requête parallèle pour maximiser les résultats Maps
+        const activityQuery1 = activities
+            ? `${activities} tourisme visite ${destination} Bénin`
+            : `musée monument palais temple plage ${destination} Bénin`
+        const activityQuery2 = activities
+            ? `excursion loisirs ${activities} ${destination} Bénin`
+            : `parc attraction loisirs artisanat marché visite ${destination} Bénin`
 
-        // Scraping en parallèle — 5 catégories
-        const [hotels, restaurants, activities_results, transport, images] = await Promise.all([
-            callSerperWithRetry(serperApiKeys, `meilleur hotel hébergement ${destination} Benin`, 'maps'),
-            callSerperWithRetry(serperApiKeys, `restaurant gastronomie ${destination} Benin`, 'maps'),
-            callSerperWithRetry(serperApiKeys, activityQuery, 'maps'),
-            callSerperWithRetry(serperApiKeys, `location voiture chauffeur VIP ${destination} Benin`, 'maps'),
-            callSerperWithRetry(serperApiKeys, `${destination} Benin tourisme paysage`, 'images'),
+        // Requête transport : plus générique pour matcher les agences locales
+        const transportQuery = `taxi moto transport agence voyage location voiture ${destination} Bénin`
+
+        // Scraping en parallèle — 6 requêtes (activités doublées pour plus de résultats)
+        const [hotels, restaurants, act1, act2, transport, images] = await Promise.all([
+            callSerperWithRetry(serperApiKeys, `hôtel hébergement auberge ${destination} Bénin`, 'maps'),
+            callSerperWithRetry(serperApiKeys, `restaurant maquis brasserie gastronomie ${destination} Bénin`, 'maps'),
+            callSerperWithRetry(serperApiKeys, activityQuery1, 'maps'),
+            callSerperWithRetry(serperApiKeys, activityQuery2, 'maps'),
+            callSerperWithRetry(serperApiKeys, transportQuery, 'maps'),
+            callSerperWithRetry(serperApiKeys, `${destination} Bénin tourisme paysage nature`, 'images'),
         ])
+
+        // Fusion et déduplication des activités par titre
+        interface SerperPlaceRaw { title?: string }
+        const seenTitles = new Set<string>()
+        const activities_results = [...act1, ...act2].filter((p: SerperPlaceRaw) => {
+            const t = (p.title || '').toLowerCase()
+            if (seenTitles.has(t)) return false
+            seenTitles.add(t)
+            return true
+        })
 
         // Normaliser chaque résultat
         interface SerperPlace { title?: string; address?: string; rating?: number; ratingCount?: number; thumbnailUrl?: string; position?: number }
