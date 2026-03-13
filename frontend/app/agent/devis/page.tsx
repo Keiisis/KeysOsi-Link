@@ -54,13 +54,32 @@ export default function AgentDevisPage() {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
 
-        const { data } = await supabase
+        // Requête 1 : documents directement assignés à cet agent
+        const { data: ownDocs } = await supabase
             .from('documents_financiers')
-            .select(`*`)
+            .select('*')
             .eq('agent_id', user.id)
             .order('created_at', { ascending: false })
-            
-        setDocuments(data as DocumentFinancier[] || [])
+
+        const owned = (ownDocs || []) as DocumentFinancier[]
+        const ownedIds = new Set(owned.map(d => d.id))
+
+        // Requête 2 : factures liées via parent_devis_id aux devis de cet agent
+        // (couvre le cas où agent_id était NULL au moment de la création par la route /sign)
+        const myDevisIds = owned.filter(d => d.type === 'devis').map(d => d.id)
+        let linkedFactures: DocumentFinancier[] = []
+        if (myDevisIds.length > 0) {
+            const { data: linked } = await supabase
+                .from('documents_financiers')
+                .select('*')
+                .in('parent_devis_id', myDevisIds)
+            linkedFactures = ((linked || []) as DocumentFinancier[]).filter(d => !ownedIds.has(d.id))
+        }
+
+        const allDocs = [...owned, ...linkedFactures]
+        allDocs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
+        setDocuments(allDocs)
         setLoading(false)
     }, [])
 

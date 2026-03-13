@@ -28,6 +28,24 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Devis introuvable ou déjà traité' }, { status: 404 })
         }
 
+        // Guard: if devis is already signed, check for existing facture and return it
+        if (devis.status === 'accepte') {
+            const { data: existingFacture } = await supabase
+                .from('documents_financiers')
+                .select('id, numero')
+                .eq('parent_devis_id', document_id)
+                .eq('type', 'facture')
+                .maybeSingle()
+
+            return NextResponse.json({
+                success: true,
+                signed_at: devis.signed_at || new Date().toISOString(),
+                numeroFacture: existingFacture?.numero || null,
+                factureId: existingFacture?.id || null,
+                alreadyExists: true,
+            })
+        }
+
         const signed_at = new Date().toISOString()
 
         // 2. Mettre à jour le statut + signature du devis
@@ -42,11 +60,30 @@ export async function POST(req: NextRequest) {
 
         if (updateError) throw new Error(updateError.message)
 
-        // 3. Générer la facture liée (avec agent_id pour visibilité côté agent/admin)
-        const now = new Date()
-        const numeroFacture = `FAC-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 9999)).padStart(4, '0')}`
+        // 3. Vérifier si une facture existe déjà pour éviter les doublons
+        const { data: existingFacture } = await supabase
+            .from('documents_financiers')
+            .select('id, numero')
+            .eq('parent_devis_id', document_id)
+            .eq('type', 'facture')
+            .maybeSingle()
 
-        const { error: insertError } = await supabase
+        if (existingFacture) {
+            // Facture déjà créée (re-signature) — retourner la facture existante
+            return NextResponse.json({
+                success: true,
+                signed_at,
+                numeroFacture: existingFacture.numero,
+                factureId: existingFacture.id,
+                alreadyExists: true,
+            })
+        }
+
+        // 4. Générer la facture liée (avec agent_id pour visibilité côté agent/admin)
+        const now = new Date()
+        const numeroFacture = `FAC-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}-${String(Date.now() % 10000).padStart(4, '0')}`
+
+        const { data: newFacture, error: insertError } = await supabase
             .from('documents_financiers')
             .insert({
                 type: 'facture',
@@ -69,13 +106,16 @@ export async function POST(req: NextRequest) {
                 conditions: devis.conditions,
                 validite: 'À réception',
             })
+            .select('id')
+            .single()
 
-        if (insertError) throw new Error(insertError.message)
+        if (insertError) throw new Error(`Erreur création facture: ${insertError.message} (code: ${insertError.code})`)
 
         return NextResponse.json({
             success: true,
             signed_at,
             numeroFacture,
+            factureId: newFacture?.id,
         })
 
     } catch (err) {

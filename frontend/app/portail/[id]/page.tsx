@@ -47,6 +47,7 @@ export default function ClientPortalPage() {
     const [signatureUrl, setSignatureUrl] = useState<string | null>(null)
     const [isProcessing, setIsProcessing] = useState(false)
     const [error, setError] = useState('')
+    const [factureNumero, setFactureNumero] = useState<string | null>(null)
 
     // Canvas Refs for Signature
     const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -132,7 +133,7 @@ export default function ClientPortalPage() {
         const isCanvasBlank = !pixelBuffer.some(color => color !== 0)
 
         if (isCanvasBlank) {
-            alert("Veuillez apposer votre signature avant de valider.")
+            alert('Veuillez apposer votre signature avant de valider.')
             return
         }
 
@@ -140,7 +141,6 @@ export default function ClientPortalPage() {
         const dataUrl = canvas.toDataURL('image/png')
 
         try {
-            // API server-side (service role) — contourne le RLS pour le portail client non authentifié
             const res = await fetch('/api/documents/sign', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -151,7 +151,9 @@ export default function ClientPortalPage() {
             if (json.success) {
                 const signedAt = json.signed_at || new Date().toISOString()
                 setSignatureUrl(dataUrl)
-                // Mettre à jour TOUT le doc state (signature_url + signed_at indispensables pour le PDF)
+                if (json.numeroFacture) {
+                    setFactureNumero(json.numeroFacture)
+                }
                 setDoc(prev => prev ? {
                     ...prev,
                     status: 'accepte',
@@ -159,12 +161,11 @@ export default function ClientPortalPage() {
                     signed_at: signedAt,
                 } : null)
                 setSigning(false)
-                alert("Devis signé avec succès ! Une facture vient d'être générée pour votre paiement.")
             } else {
-                alert("Erreur lors de la sauvegarde : " + (json.error || 'Erreur inconnue'))
+                alert('Erreur lors de la sauvegarde : ' + (json.error || 'Erreur inconnue'))
             }
         } catch {
-            alert("Erreur réseau. Vérifiez votre connexion et réessayez.")
+            alert('Erreur réseau. Vérifiez votre connexion et réessayez.')
         }
         setIsProcessing(false)
     }
@@ -710,16 +711,29 @@ export default function ClientPortalPage() {
 
                         {/* SIGNATURE VISUALIZATION */}
                         {signatureUrl && doc.type === 'devis' && (
-                            <div className="mt-12 bg-emerald-500/5 border border-emerald-500/20 p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6">
-                                <div>
-                                    <p className="text-sm font-bold text-emerald-400 flex items-center gap-2 mb-1">
-                                        <CheckCircle2 size={16} /> Devis signé et accepté
-                                    </p>
-                                    <p className="text-xs text-gray-500">Document validé légalement par vos soins.</p>
+                            <div className="mt-12 bg-emerald-500/5 border border-emerald-500/20 p-6 rounded-2xl space-y-4">
+                                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                                    <div>
+                                        <p className="text-sm font-bold text-emerald-400 flex items-center gap-2 mb-1">
+                                            <CheckCircle2 size={16} /> Devis signé et accepté
+                                        </p>
+                                        <p className="text-xs text-gray-500">Document validé légalement par vos soins.</p>
+                                    </div>
+                                    <div className="bg-white px-8 py-2 rounded-xl flex items-center justify-center">
+                                        <img src={signatureUrl} alt="Signature Client" className="h-16 object-contain pointer-events-none filter drop-shadow-sm" />
+                                    </div>
                                 </div>
-                                <div className="bg-white px-8 py-2 rounded-xl flex items-center justify-center">
-                                    <img src={signatureUrl} alt="Signature Client" className="h-16 object-contain pointer-events-none filter drop-shadow-sm" />
-                                </div>
+                                {factureNumero && (
+                                    <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-xl flex items-center gap-3">
+                                        <Receipt size={20} className="text-amber-400 flex-shrink-0" />
+                                        <div>
+                                            <p className="text-sm font-bold text-amber-400">Facture générée automatiquement</p>
+                                            <p className="text-xs text-gray-400 mt-0.5">
+                                                Numéro de facture : <span className="font-mono text-white font-bold">{factureNumero}</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
                         
