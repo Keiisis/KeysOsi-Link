@@ -162,7 +162,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         pdf.setFontSize(7)
         pdf.setTextColor(100, 100, 100)
         pdf.text('Agence de Conciergerie & Services Internationaux', ML, 29)
-        pdf.text('Avenue de la Marina, Cotonou — République du Bénin', ML, 34)
+        pdf.text('Haie-Vive Cocotiers, Carré n°1158, Cotonou — République du Bénin', ML, 34)
 
         // "DEVIS" titre droit
         pdf.setFont('helvetica', 'bold')
@@ -385,7 +385,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         pdf.setFont('helvetica', 'normal')
         pdf.setFontSize(6.5)
         pdf.setTextColor(180, 220, 190)
-        pdf.text('Avenue de la Marina, Cotonou — République du Bénin', PW / 2, PH - 13, { align: 'center' })
+        pdf.text('Haie-Vive Cocotiers, Carré n°1158, Cotonou — République du Bénin', PW / 2, PH - 13, { align: 'center' })
 
         pdf.setTextColor(252, 209, 22)
         pdf.text('+229 01 94 35 50 50  /  +229 01 60 32 21 21  /  +596 696 85 36 14', PW / 2, PH - 9, { align: 'center' })

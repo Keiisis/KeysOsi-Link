@@ -92,8 +92,8 @@ export async function GET(
 
     const siteName = settings.hero_title || 'Retour Gagnant Bénin'
     const siteEmail = settings.contact_email || 'contact@retourgagnantbenin.bj'
-    const sitePhone = settings.contact_phone || '+229 XX XX XX XX'
-    const siteAddress = settings.contact_address || 'Haie Vive, Cotonou, République du Bénin'
+    const sitePhone = settings.contact_phone || '+229 01 60 32 21 21  ·  +229 01 94 35 50 50'
+    const siteAddress = settings.contact_address || 'Haie-Vive Cocotiers, Carré n°1158, Cotonou — République du Bénin'
 
     const formatPrice = (n: number) =>
       new Intl.NumberFormat('fr-FR').format(n) + ' FCFA'
