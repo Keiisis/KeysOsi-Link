@@ -511,7 +511,7 @@ export default function AdminFacturationPage() {
                                         <div className="flex justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                             <button 
                                                 onClick={() => {
-                                                    const url = `${window.location.origin}/p/${doc.id}`
+                                                    const url = `${window.location.origin}/portail/${doc.id}`
                                                     navigator.clipboard.writeText(url)
                                                     alert('Lien Magique Client copié dans le presse-papier ! Envoye-le via WhatsApp.')
                                                 }} 
