@@ -113,7 +113,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
         const addTopBar = (slide: pptxgen.Slide, label: string, accentColor: string) => {
             // Barre supérieure colorée
-            slide.addShape(pptxgen.ShapeType.rect, {
+            slide.addShape('rect', {
                 x: 0, y: 0, w: '100%', h: 0.08,
                 fill: { color: accentColor },
                 line: { color: accentColor, width: 0 },
@@ -128,7 +128,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         }
 
         const addBottomBar = (slide: pptxgen.Slide) => {
-            slide.addShape(pptxgen.ShapeType.rect, {
+            slide.addShape('rect', {
                 x: 0, y: 5.2, w: '100%', h: 0.3,
                 fill: { color: '00000044' },
                 line: { color: '00000000', width: 0 },
@@ -148,9 +148,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
             addBg(slide, C.dark)
 
             // Barre tricolore Bénin (3 bandes)
-            slide.addShape(pptxgen.ShapeType.rect, { x: 0, y: 0, w: '100%', h: 0.12, fill: { color: C.green }, line: { width: 0 } })
-            slide.addShape(pptxgen.ShapeType.rect, { x: 0, y: 0.12, w: '100%', h: 0.12, fill: { color: C.yellow }, line: { width: 0 } })
-            slide.addShape(pptxgen.ShapeType.rect, { x: 0, y: 0.24, w: '100%', h: 0.12, fill: { color: C.red }, line: { width: 0 } })
+            slide.addShape('rect', { x: 0, y: 0, w: '100%', h: 0.12, fill: { color: C.green }, line: { width: 0 } })
+            slide.addShape('rect', { x: 0, y: 0.12, w: '100%', h: 0.12, fill: { color: C.yellow }, line: { width: 0 } })
+            slide.addShape('rect', { x: 0, y: 0.24, w: '100%', h: 0.12, fill: { color: C.red }, line: { width: 0 } })
 
             // Logo texte
             slide.addText('RETOUR  GAGNANT  BÉNIN', {
@@ -161,7 +161,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
             })
 
             // Ligne décorative
-            slide.addShape(pptxgen.ShapeType.rect, {
+            slide.addShape('rect', {
                 x: 3, y: 1.15, w: 4, h: 0.03,
                 fill: { color: C.yellow + '60' }, line: { width: 0 },
             })
@@ -202,7 +202,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
                 const startX = (10 - statItems.length * colW) / 2
                 statItems.forEach((s, i) => {
                     const x = startX + i * colW
-                    slide.addShape(pptxgen.ShapeType.roundRect, {
+                    slide.addShape('roundRect', {
                         x, y: 3.6, w: colW - 0.2, h: 0.7,
                         fill: { color: C.green + '30' },
                         line: { color: C.green, width: 1 },
@@ -236,7 +236,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
             addBg(slide, bg)
 
             // Barre accent haut
-            slide.addShape(pptxgen.ShapeType.rect, {
+            slide.addShape('rect', {
                 x: 0, y: 0, w: '100%', h: 0.08,
                 fill: { color: accent }, line: { width: 0 },
             })
@@ -250,7 +250,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
             // Prix (haut droite)
             if (item.selling_price > 0) {
-                slide.addShape(pptxgen.ShapeType.roundRect, {
+                slide.addShape('roundRect', {
                     x: 7.5, y: 0.12, w: 2.2, h: 0.45,
                     fill: { color: accent + '25' },
                     line: { color: accent, width: 1 },
@@ -302,7 +302,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
                 highlights.slice(0, 4).forEach((h, idx) => {
                     const x = 0.4 + (idx % 2) * 4.8
                     const y = hY + Math.floor(idx / 2) * 0.42
-                    slide.addShape(pptxgen.ShapeType.roundRect, {
+                    slide.addShape('roundRect', {
                         x, y, w: 4.5, h: 0.36,
                         fill: { color: accent + '18' },
                         line: { color: accent + '50', width: 0.5 },
@@ -327,7 +327,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
             addBg(slide, CATEGORY_COLORS.pricing)
 
             // Barre verte
-            slide.addShape(pptxgen.ShapeType.rect, {
+            slide.addShape('rect', {
                 x: 0, y: 0, w: '100%', h: 0.08,
                 fill: { color: C.green }, line: { width: 0 },
             })
@@ -342,7 +342,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
             // En-tête tableau
             const tY = 0.9
             const colX = [0.4, 1.2, 7.2, 8.6]
-            slide.addShape(pptxgen.ShapeType.rect, {
+            slide.addShape('rect', {
                 x: 0.4, y: tY, w: 9.2, h: 0.38,
                 fill: { color: C.green + '40' }, line: { width: 0 },
             })
@@ -361,7 +361,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
             billable.slice(0, 10).forEach((item, idx) => {
                 const rowY = tY + 0.38 + idx * 0.38
                 if (idx % 2 === 0) {
-                    slide.addShape(pptxgen.ShapeType.rect, {
+                    slide.addShape('rect', {
                         x: 0.4, y: rowY, w: 9.2, h: 0.38,
                         fill: { color: 'FFFFFF08' }, line: { width: 0 },
                     })
@@ -383,7 +383,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
             // Ligne total
             const totalY = tY + 0.38 + Math.min(billable.length, 10) * 0.38 + 0.15
-            slide.addShape(pptxgen.ShapeType.rect, {
+            slide.addShape('rect', {
                 x: 0.4, y: totalY, w: 9.2, h: 0.5,
                 fill: { color: C.green + '30' },
                 line: { color: C.green, width: 1 },
