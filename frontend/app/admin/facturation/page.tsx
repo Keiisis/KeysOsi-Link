@@ -106,41 +106,56 @@ export default function AdminFacturationPage() {
             pdf.setFillColor(232, 17, 45)
             pdf.rect((pw * 2) / 3, 0, pw / 3, 4, 'F')
 
-            // ── DARK HEADER ────────────────────────────────────────
-            pdf.setFillColor(10, 16, 24)
-            pdf.rect(0, 4, pw, 50, 'F')
+            // ── WHITE HEADER (style navbar) ────────────────────────
+            pdf.setFillColor(255, 255, 255)
+            pdf.rect(0, 4, pw, 46, 'F')
+            pdf.setDrawColor(220, 220, 220)
+            pdf.setLineWidth(0.4)
+            pdf.line(0, 50, pw, 50)
 
             try {
-                pdf.addImage(LOGO_BASE64, 'JPEG', ml, 10, 16, 16)
+                pdf.addImage(LOGO_BASE64, 'JPEG', ml, 9, 18, 18)
             } catch (e) {
                 console.error('Erreur ajout logo:', e)
             }
 
-            // Company name (left)
+            // "RETOUR" vert + "GAGNANT" rouge — identique navbar
             pdf.setFont('helvetica', 'bold')
             pdf.setFontSize(22)
-            pdf.setTextColor(0, 185, 100)
-            pdf.text('RETOUR GAGNANT BÉNIN', ml + 20, 22)
+            pdf.setTextColor(0, 135, 81)
+            pdf.text('RETOUR', ml + 22, 22)
+            const retourW = pdf.getTextWidth('RETOUR ')
+            pdf.setTextColor(232, 17, 45)
+            pdf.text('GAGNANT', ml + 22 + retourW, 22)
 
+            // "BÉNIN" tracking large
+            pdf.setFont('helvetica', 'bold')
+            pdf.setFontSize(8.5)
+            pdf.setTextColor(90, 90, 90)
+            pdf.setCharSpace(2.5)
+            pdf.text('BÉNIN', ml + 22, 30)
+            pdf.setCharSpace(0)
+
+            // Tagline
             pdf.setFont('helvetica', 'normal')
-            pdf.setFontSize(6.5)
-            pdf.setTextColor(140, 160, 180)
-            pdf.text("L'agence d'accompagnement à la Nationalité Béninoise et au retour des Afro-descendants.", ml + 20, 30)
+            pdf.setFontSize(6)
+            pdf.setTextColor(130, 130, 130)
+            pdf.text("L'agence d'accompagnement à la Nationalité Béninoise et au retour des Afro-descendants.", ml + 22, 37)
 
             // Document type badge (right)
             const typeLabel = doc.type === 'devis' ? 'DEVIS' : 'FACTURE'
             pdf.setFont('helvetica', 'bold')
             pdf.setFontSize(30)
             if (doc.type === 'devis') {
-                pdf.setTextColor(252, 209, 22)
+                pdf.setTextColor(180, 120, 0)
             } else {
-                pdf.setTextColor(0, 185, 100)
+                pdf.setTextColor(0, 135, 81)
             }
             pdf.text(typeLabel, pw - mr, 24, { align: 'right' })
 
             pdf.setFont('helvetica', 'normal')
             pdf.setFontSize(9)
-            pdf.setTextColor(160, 175, 190)
+            pdf.setTextColor(80, 80, 80)
             pdf.text(`N° ${doc.numero}`, pw - mr, 32, { align: 'right' })
             pdf.text(`Date : ${new Date(doc.created_at).toLocaleDateString('fr-FR')}`, pw - mr, 38, { align: 'right' })
             pdf.text(doc.type === 'facture' ? `Délai : ${doc.validite}` : `Validité : ${doc.validite}`, pw - mr, 44, { align: 'right' })

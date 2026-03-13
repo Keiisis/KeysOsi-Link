@@ -126,12 +126,11 @@ export default function ClientPortalPage() {
     const saveSignature = async () => {
         const canvas = canvasRef.current
         if (!canvas) return
-        
-        // Vérifier si le canvas est vide (très basique)
+
         const ctx = canvas.getContext('2d')
         const pixelBuffer = new Uint32Array(ctx!.getImageData(0, 0, canvas.width, canvas.height).data.buffer)
         const isCanvasBlank = !pixelBuffer.some(color => color !== 0)
-        
+
         if (isCanvasBlank) {
             alert("Veuillez apposer votre signature avant de valider.")
             return
@@ -139,50 +138,33 @@ export default function ClientPortalPage() {
 
         setIsProcessing(true)
         const dataUrl = canvas.toDataURL('image/png')
-        
-        // Mettre à jour la BDD
-        const { error } = await supabase
-            .from('documents_financiers')
-            .update({ 
-                status: 'accepte', 
-                signature_url: dataUrl,
-                signed_at: new Date().toISOString()
-            })
-            .eq('id', id)
 
-        if (!error && doc) {
-            setSignatureUrl(dataUrl)
-            setDoc(prev => prev ? { ...prev, status: 'accepte' } : null)
-            setSigning(false)
-
-            // AUTOMATISATION ERP (Tueur de Odoo) :
-            // Créer instantanément la Facture liée au Devis
-            const numeroFacture = `FAC-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 9999)).padStart(4, '0')}`
-            
-            await supabase.from('documents_financiers').insert({
-                type: 'facture',
-                numero: numeroFacture,
-                parent_devis_id: id,
-                client_nom: doc.client_nom,
-                client_prenom: doc.client_prenom,
-                client_email: doc.client_email,
-                client_phone: doc.client_phone,
-                client_adresse: doc.client_adresse,
-                items: doc.items,
-                currency: doc.currency,
-                sous_total: doc.sous_total,
-                total_tva: doc.total_tva,
-                remise: doc.remise,
-                total: doc.total,
-                status: 'envoye', // La facture attend le paiement
-                notes: 'Facture générée automatiquement suite à la validation du devis.',
-                conditions: doc.conditions,
-                validite: 'A réception',
+        try {
+            // API server-side (service role) — contourne le RLS pour le portail client non authentifié
+            const res = await fetch('/api/documents/sign', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ document_id: id, signature_url: dataUrl })
             })
-            
-            alert("Devis signé avec succès ! Une facture vient d'être générée pour votre paiement.")
-        } else {
-            alert("Erreur lors de la sauvegarde.")
+            const json = await res.json()
+
+            if (json.success) {
+                const signedAt = json.signed_at || new Date().toISOString()
+                setSignatureUrl(dataUrl)
+                // Mettre à jour TOUT le doc state (signature_url + signed_at indispensables pour le PDF)
+                setDoc(prev => prev ? {
+                    ...prev,
+                    status: 'accepte',
+                    signature_url: dataUrl,
+                    signed_at: signedAt,
+                } : null)
+                setSigning(false)
+                alert("Devis signé avec succès ! Une facture vient d'être générée pour votre paiement.")
+            } else {
+                alert("Erreur lors de la sauvegarde : " + (json.error || 'Erreur inconnue'))
+            }
+        } catch {
+            alert("Erreur réseau. Vérifiez votre connexion et réessayez.")
         }
         setIsProcessing(false)
     }
@@ -253,39 +235,56 @@ export default function ClientPortalPage() {
             pdf.setFillColor(232, 17, 45)
             pdf.rect((pw * 2) / 3, 0, pw / 3, 4, 'F')
 
-            // ── DARK HEADER ────────────────────────────────────────
-            pdf.setFillColor(10, 16, 24)
-            pdf.rect(0, 4, pw, 50, 'F')
+            // ── WHITE HEADER (style navbar) ────────────────────────
+            pdf.setFillColor(255, 255, 255)
+            pdf.rect(0, 4, pw, 46, 'F')
+            pdf.setDrawColor(220, 220, 220)
+            pdf.setLineWidth(0.4)
+            pdf.line(0, 50, pw, 50)
 
             try {
-                pdf.addImage(LOGO_BASE64, 'JPEG', ml, 10, 16, 16)
+                pdf.addImage(LOGO_BASE64, 'JPEG', ml, 9, 18, 18)
             } catch (e) {
                 console.error('Erreur ajout logo:', e)
             }
 
+            // "RETOUR" vert + "GAGNANT" rouge — identique navbar
             pdf.setFont('helvetica', 'bold')
             pdf.setFontSize(22)
-            pdf.setTextColor(0, 185, 100)
-            pdf.text('RETOUR GAGNANT BÉNIN', ml + 20, 22)
+            pdf.setTextColor(0, 135, 81)
+            pdf.text('RETOUR', ml + 22, 22)
+            const retourW = pdf.getTextWidth('RETOUR ')
+            pdf.setTextColor(232, 17, 45)
+            pdf.text('GAGNANT', ml + 22 + retourW, 22)
 
+            // "BÉNIN" — tracking large, gris
+            pdf.setFont('helvetica', 'bold')
+            pdf.setFontSize(8.5)
+            pdf.setTextColor(90, 90, 90)
+            pdf.setCharSpace(2.5)
+            pdf.text('BÉNIN', ml + 22, 30)
+            pdf.setCharSpace(0)
+
+            // Tagline
             pdf.setFont('helvetica', 'normal')
-            pdf.setFontSize(6.5)
-            pdf.setTextColor(140, 160, 180)
-            pdf.text("L'agence d'accompagnement à la Nationalité Béninoise et au retour des Afro-descendants.", ml + 20, 30)
+            pdf.setFontSize(6)
+            pdf.setTextColor(130, 130, 130)
+            pdf.text("L'agence d'accompagnement à la Nationalité Béninoise et au retour des Afro-descendants.", ml + 22, 37)
 
+            // Type document (droite)
             const typeLabel = doc.type === 'devis' ? 'DEVIS' : 'FACTURE'
             pdf.setFont('helvetica', 'bold')
             pdf.setFontSize(30)
             if (doc.type === 'devis') {
-                pdf.setTextColor(252, 209, 22)
+                pdf.setTextColor(180, 120, 0) // amber foncé lisible sur blanc
             } else {
-                pdf.setTextColor(0, 185, 100)
+                pdf.setTextColor(0, 135, 81)
             }
             pdf.text(typeLabel, pw - mr, 24, { align: 'right' })
 
             pdf.setFont('helvetica', 'normal')
             pdf.setFontSize(9)
-            pdf.setTextColor(160, 175, 190)
+            pdf.setTextColor(80, 80, 80)
             pdf.text(`N° ${doc.numero}`, pw - mr, 32, { align: 'right' })
             pdf.text(`Date : ${new Date(doc.created_at).toLocaleDateString('fr-FR')}`, pw - mr, 38, { align: 'right' })
             pdf.text(doc.type === 'facture' ? `Délai : ${doc.validite}` : `Validité : ${doc.validite}`, pw - mr, 44, { align: 'right' })
