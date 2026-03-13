@@ -84,7 +84,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
             .single()
 
         if (pe || !proposal) {
-            return NextResponse.json({ error: 'Proposition introuvable' }, { status: 404 })
+            console.error('PPTX: proposal lookup failed', { id, pe })
+            return NextResponse.json({ error: 'Proposition introuvable', detail: pe?.message ?? null, id }, { status: 404 })
         }
 
         const { data: rawItems } = await supabase
