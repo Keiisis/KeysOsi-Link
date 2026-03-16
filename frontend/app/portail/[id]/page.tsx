@@ -4,13 +4,15 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { useParams } from 'next/navigation'
+import Image from 'next/image'
 import Script from 'next/script'
 import { 
-    CheckCircle2, FileText, Receipt, Download, Loader2, 
-    PenTool, ShieldCheck, Mail, Phone, Calendar, ArrowRight,
-    CreditCard, X
+    CheckCircle2, Receipt, Download, Loader2, 
+    PenTool, ShieldCheck, Mail, Phone, Calendar,
+    CreditCard, X, ChevronRight, AlertCircle, Shield
 } from 'lucide-react'
-import { LOGO_BASE64 } from '@/lib/logoBase64'
+import { LOGO_BASE64, STAMP_BASE64 } from '@/lib/logoBase64'
+import { convertCurrency } from '@/lib/currency'
 
 interface DocumentFinancier {
     id: string
@@ -53,7 +55,21 @@ export default function ClientPortalPage() {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const [isDrawing, setIsDrawing] = useState(false)
 
+    const [paymentSettings, setPaymentSettings] = useState<any>({})
+    const [showPaymentMethods, setShowPaymentMethods] = useState(false)
+    const [paymentError, setPaymentError] = useState('')
+
     useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const res = await fetch('/api/settings/payment')
+                const data = await res.json()
+                setPaymentSettings(data)
+            } catch (e) {
+                console.error('Settings fetch error:', e)
+            }
+        }
+
         const fetchDoc = async () => {
             if (!id) return
             const { data, error } = await supabase
@@ -70,6 +86,7 @@ export default function ClientPortalPage() {
             }
             setLoading(false)
         }
+        fetchSettings()
         fetchDoc()
     }, [id])
 
@@ -170,18 +187,45 @@ export default function ClientPortalPage() {
         setIsProcessing(false)
     }
 
-    // ─── Paiement FedaPay Logic ────────────────────────────────────
-    const processPayment = () => {
+    // ─── Paiement multi-provider Logic ────────────────────────────────────
+    const activeProviders = [
+        { 
+            id: 'fedapay', 
+            name: 'FedaPay', 
+            subtitle: 'Mobile Money / Carte', 
+            color: 'bg-[#2ECC71]/20 border-[#2ECC71]/40 text-[#2ECC71]', 
+            isReady: (paymentSettings.fedapay_enabled === 'true' || paymentSettings.fedapay_enabled === true) && !!paymentSettings.fedapay_public_key 
+        },
+        { 
+            id: 'kkiapay', 
+            name: 'Kkiapay', 
+            subtitle: 'Mobile Money / Carte', 
+            color: 'bg-[#4A90D9]/20 border-[#4A90D9]/40 text-[#4A90D9]', 
+            isReady: (paymentSettings.kkiapay_enabled === 'true' || paymentSettings.kkiapay_enabled === true) && !!paymentSettings.kkiapay_public_key 
+        },
+        { 
+            id: 'zeyow', 
+            name: 'Zeyow', 
+            subtitle: 'Carte Virtuelle', 
+            color: 'bg-[#FF6B35]/20 border-[#FF6B35]/40 text-[#FF6B35]', 
+            isReady: (paymentSettings.zeyow_enabled === 'true' || paymentSettings.zeyow_enabled === true) && !!paymentSettings.zeyow_redirect_url 
+        },
+    ].filter(p => p.isReady)
+
+    const handleFedaPay = () => {
         if (!doc) return
+        setIsProcessing(true)
+        setPaymentError('')
         
-        // Vérifier si FedaPay est chargé via le script
-        if (typeof window !== 'undefined' && (window as any).FedaPay) {
-            (window as any).FedaPay.init({
-                public_key: process.env.NEXT_PUBLIC_FEDAPAY_PUBLIC_KEY || 'pk_live_XXXXX', // Remplacer par la vraie clé
+        try {
+            const amountXOF = doc.currency === 'XOF' ? doc.total : convertCurrency(doc.total, doc.currency as any, 'XOF')
+            
+            ;(window as any).FedaPay.init({
+                public_key: paymentSettings.fedapay_public_key || process.env.NEXT_PUBLIC_FEDAPAY_PUBLIC_KEY,
+                environment: paymentSettings.fedapay_sandbox === 'true' ? 'sandbox' : 'live',
                 transaction: {
-                    amount: doc.total,
+                    amount: amountXOF,
                     description: `Paiement ${doc.type === 'facture' ? 'Facture' : 'Devis'} N° ${doc.numero}`,
-                    currency: doc.currency || 'XOF'
                 },
                 customer: {
                     email: doc.client_email,
@@ -189,28 +233,97 @@ export default function ClientPortalPage() {
                     firstname: doc.client_prenom || 'Client'
                 },
                 onComplete: async function(resp: any) {
-                    const reason = resp.reason;
-                    if (reason === 'checkout complete') {
-                        setIsProcessing(true)
-                        // Mettre à jour le statut en base de données
-                        await supabase
-                            .from('documents_financiers')
-                            .update({ 
-                                status: 'paye',
-                                payment_method: 'FedaPay'
-                            })
-                            .eq('id', id)
-                            
-                        setDoc(prev => prev ? { ...prev, status: 'paye' } : null)
+                    if (resp.reason === 'checkout complete' || resp.reason === 'APPROVED') {
+                        await finalizePayment('FedaPay', resp.transaction?.id || resp.id)
+                    } else {
+                        setPaymentError("Le paiement n'a pas été finalisé.")
                         setIsProcessing(false)
-                        alert("Paiement confirmé ! Merci de votre confiance.")
                     }
                 }
             }).open()
-        } else {
-            alert("Le système de paiement est en cours d'initialisation, veuillez patienter ou rafraîchir la page.")
+        } catch (e) {
+            console.error('FedaPay error:', e)
+            setPaymentError("Erreur lors de l'initialisation de FedaPay.")
+            setIsProcessing(false)
         }
     }
+
+    const handleKkiapay = () => {
+        if (!doc) return
+        setIsProcessing(true)
+        setPaymentError('')
+
+        try {
+            const amountXOF = doc.currency === 'XOF' ? doc.total : convertCurrency(doc.total, doc.currency as any, 'XOF')
+            
+            ;(window as any).openKkiapayWidget({
+                amount: amountXOF,
+                position: 'center',
+                key: paymentSettings.kkiapay_public_key,
+                sandbox: paymentSettings.kkiapay_sandbox === 'true',
+                data: { doc_id: id, type: doc.type },
+            })
+
+            ;(window as any).addKkiapayListener('success', async (response: any) => {
+                await finalizePayment('Kkiapay', response.transactionId)
+            })
+
+            ;(window as any).addKkiapayListener('failed', () => {
+                setPaymentError("Le paiement Kkiapay a échoué.")
+                setIsProcessing(false)
+            })
+        } catch (e) {
+            console.error('Kkiapay error:', e)
+            setPaymentError("Erreur lors de l'initialisation de Kkiapay.")
+            setIsProcessing(false)
+        }
+    }
+
+    const handleZeyow = () => {
+        if (!doc) return
+        const redirectUrl = paymentSettings.zeyow_redirect_url
+        if (!redirectUrl) { setPaymentError('Zeyow non configuré.'); return }
+        const amountXOF = doc.currency === 'XOF' ? doc.total : convertCurrency(doc.total, doc.currency as any, 'XOF')
+        window.location.href = `${redirectUrl}?amount=${amountXOF}&email=${doc.client_email}&doc_id=${id}`
+    }
+
+    const finalizePayment = async (method: string, txId: string) => {
+        try {
+            await supabase
+                .from('documents_financiers')
+                .update({ 
+                    status: 'paye',
+                    payment_method: method,
+                    payment_id: txId,
+                    paid_at: new Date().toISOString()
+                })
+                .eq('id', id)
+                
+            setDoc(prev => prev ? { ...prev, status: 'paye' } : null)
+            setShowPaymentMethods(false)
+            alert("Paiement confirmé ! Merci de votre confiance.")
+        } catch (e) {
+            console.error('Finalize error:', e)
+            alert("Paiement reçu mais erreur lors de la mise à jour. Notre équipe va régulariser cela.")
+        }
+        setIsProcessing(false)
+    }
+
+    const processPayment = () => {
+        if (activeProviders.length === 1) {
+            const p = activeProviders[0]
+            if (p.id === 'fedapay') handleFedaPay()
+            else if (p.id === 'kkiapay') handleKkiapay()
+            else if (p.id === 'zeyow') handleZeyow()
+        } else if (activeProviders.length > 1) {
+            setShowPaymentMethods(true)
+        } else {
+            alert("Aucun moyen de paiement n'est disponible pour le moment. Veuillez nous contacter.")
+        }
+    }
+
+
+    // ─── Formatting Logic ──────────────────────────────────────────
 
 
     // Formateur montants : 180000 → "180.000" (sans espaces insécables du fr-FR)
@@ -259,84 +372,17 @@ export default function ClientPortalPage() {
             pdf.setLineWidth(0.4)
             pdf.line(0, headerTop + headerH, pw, headerTop + headerH)
 
-            // ── LOGO CIRCULAIRE (masque les coins noirs du JPEG) ──
+            // ── LOGO ──────────────────────────────────────────────
             const logoSize = 24
             const logoX = ml
             const logoY = headerTop + 12
-            const logoCX = logoX + logoSize / 2
-            const logoCY = logoY + logoSize / 2
-            const logoR = logoSize / 2
 
-            // 1. Draw the JPEG image
             try {
-                pdf.addImage(LOGO_BASE64, 'JPEG', logoX, logoY, logoSize, logoSize)
+                // Le logo fourni est désormais transparent, donc on utilise 'PNG'
+                pdf.addImage(LOGO_BASE64, 'PNG', logoX, logoY, logoSize, logoSize)
             } catch (e) {
                 console.error('Logo error:', e)
             }
-
-            // 2. Cover the 4 corners with white shapes to create circular clip effect
-            // This creates a visual circle by hiding the black corners of the square JPEG
-            const bgColor: [number, number, number] = [255, 255, 255]
-            pdf.setFillColor(bgColor[0], bgColor[1], bgColor[2])
-
-            // Top-left corner mask
-            pdf.moveTo(logoX, logoY)
-            pdf.lineTo(logoX + logoR, logoY)
-            // Arc approximation using small triangles
-            const steps = 20
-            for (let i = 0; i <= steps; i++) {
-                const angle = Math.PI / 2 - (i / steps) * (Math.PI / 2)
-                const px = logoCX + logoR * Math.cos(angle + Math.PI)
-                const py = logoCY + logoR * Math.sin(angle + Math.PI)
-                pdf.lineTo(px, py)
-            }
-            pdf.lineTo(logoX, logoY + logoR)
-            pdf.lineTo(logoX, logoY)
-            pdf.fill()
-
-            // Top-right corner mask
-            pdf.moveTo(logoX + logoSize, logoY)
-            pdf.lineTo(logoX + logoR, logoY)
-            for (let i = 0; i <= steps; i++) {
-                const angle = (i / steps) * (Math.PI / 2)
-                const px = logoCX + logoR * Math.cos(angle + Math.PI + Math.PI / 2)
-                const py = logoCY + logoR * Math.sin(angle + Math.PI + Math.PI / 2)
-                pdf.lineTo(px, py)
-            }
-            pdf.lineTo(logoX + logoSize, logoY + logoR)
-            pdf.lineTo(logoX + logoSize, logoY)
-            pdf.fill()
-
-            // Bottom-right corner mask
-            pdf.moveTo(logoX + logoSize, logoY + logoSize)
-            pdf.lineTo(logoX + logoR, logoY + logoSize)
-            for (let i = 0; i <= steps; i++) {
-                const angle = (i / steps) * (Math.PI / 2)
-                const px = logoCX + logoR * Math.cos(angle)
-                const py = logoCY + logoR * Math.sin(angle)
-                pdf.lineTo(px, py)
-            }
-            pdf.lineTo(logoX + logoSize, logoY + logoR)
-            pdf.lineTo(logoX + logoSize, logoY + logoSize)
-            pdf.fill()
-
-            // Bottom-left corner mask
-            pdf.moveTo(logoX, logoY + logoSize)
-            pdf.lineTo(logoX + logoR, logoY + logoSize)
-            for (let i = 0; i <= steps; i++) {
-                const angle = Math.PI / 2 - (i / steps) * (Math.PI / 2)
-                const px = logoCX + logoR * Math.cos(angle + Math.PI / 2)
-                const py = logoCY + logoR * Math.sin(angle + Math.PI / 2)
-                pdf.lineTo(px, py)
-            }
-            pdf.lineTo(logoX, logoY + logoR)
-            pdf.lineTo(logoX, logoY + logoSize)
-            pdf.fill()
-
-            // 3. Fine circle border around logo (like navbar border-white/10)
-            pdf.setDrawColor(200, 200, 200)
-            pdf.setLineWidth(0.3)
-            pdf.circle(logoCX, logoCY, logoR + 0.2, 'S')
 
             // ── NOM : RETOUR GAGNANT + BENIN + SLOGAN ────────────
             const textLeft = logoX + logoSize + 5
@@ -576,8 +622,13 @@ export default function ClientPortalPage() {
             pdf.text(fmtN(doc.total) + ' ' + cur, pw - mr, y + 7.5, { align: 'right' })
             y += 16
 
-            // ── ZONE DE SIGNATURE (devis uniquement) ────────────
-            if (doc.type === 'devis' && y + 34 < ph - 18) {
+            // ── ZONE DE SIGNATURE (Facture ou Devis) ────────────
+            if (y + 40 > ph - 18) {
+                pdf.addPage()
+                y = 15 // Reset y for new page
+            }
+
+            if (true) {
                 const sigW = (cw - 8) / 2
                 const sigBoxH = 34
 
@@ -622,6 +673,16 @@ export default function ClientPortalPage() {
                 pdf.setFontSize(6.5)
                 pdf.setTextColor(0, 135, 81)
                 pdf.text('RETOUR GAGNANT BENIN', sig2X + 4, y + 13)
+                
+                // Add Stamp if available
+                if (STAMP_BASE64) {
+                    try {
+                        pdf.addImage(STAMP_BASE64, 'PNG', sig2X + sigW - 25, y + 5, 20, 20)
+                    } catch (e) {
+                        console.error('Error adding stamp:', e)
+                    }
+                }
+
                 pdf.setFont('helvetica', 'normal')
                 pdf.setFontSize(6.5)
                 pdf.setTextColor(90, 95, 130)
@@ -697,7 +758,9 @@ export default function ClientPortalPage() {
                 {/* Header Portail */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
                     <div className="flex items-center gap-4">
-                        <img src="/logo.jpg" alt="Logo Retour Gagnant" className="w-16 h-16 object-cover rounded-xl border border-white/10" />
+                        <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center border border-white/10 shadow-lg overflow-hidden relative">
+                            <Image src="/images/logo-transparent.png" alt="Logo Retour Gagnant" width={48} height={48} className="object-contain" />
+                        </div>
                         <div>
                             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2 mb-2">
                                 <ShieldCheck size={16} className="text-emerald-500" />
@@ -743,9 +806,12 @@ export default function ClientPortalPage() {
                         {/* Client Info */}
                         <div className="flex flex-col md:flex-row justify-between gap-8 mb-12">
                             <div>
-                                <img src="/logo.jpg" alt="Retour Gagnant Logo" className="h-16 w-auto mb-4 object-contain rounded-lg border border-white/10" />
-                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Émetteur</p>
-                                <p className="text-white font-bold">RETOUR GAGNANT BÉNIN</p>
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-white/5 overflow-hidden relative">
+                                        <Image src="/images/logo-transparent.png" alt="Logo" width={36} height={36} className="object-contain" />
+                                    </div>
+                                    <p className="text-white font-bold leading-tight">RETOUR GAGNANT <br/><span className="text-xs text-gray-400 font-normal">BÉNIN</span></p>
+                                </div>
                                 <div className="text-sm text-gray-400 mt-2 space-y-1">
                                     <p>RCCM: RB/COT/26 B 42001</p>
                                     <p>IFU: 3202644573981</p>
@@ -822,21 +888,49 @@ export default function ClientPortalPage() {
                             </div>
                         </div>
 
-                        {/* SIGNATURE VISUALIZATION */}
-                        {signatureUrl && doc.type === 'devis' && (
-                            <div className="mt-12 bg-emerald-500/5 border border-emerald-500/20 p-6 rounded-2xl space-y-4">
-                                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                                    <div>
-                                        <p className="text-sm font-bold text-emerald-400 flex items-center gap-2 mb-1">
-                                            <CheckCircle2 size={16} /> Devis signé et accepté
-                                        </p>
-                                        <p className="text-xs text-gray-500">Document validé légalement par vos soins.</p>
+                        {/* SIGNATURE & STAMP BLOCK */}
+                        {(signatureUrl || STAMP_BASE64) && (
+                            <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Side A: Client Signature */}
+                                <div className="bg-emerald-500/5 border border-emerald-500/20 p-5 rounded-2xl">
+                                    <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-3">Signature du Client (Approbation)</p>
+                                    <div className="bg-white/90 h-24 rounded-xl flex items-center justify-center p-2">
+                                        {signatureUrl ? (
+                                            <img src={signatureUrl} alt="Signature Client" className="h-full object-contain pointer-events-none" />
+                                        ) : (
+                                            <p className="text-xs text-gray-400 italic">Signature en attente</p>
+                                        )}
                                     </div>
-                                    <div className="bg-white px-8 py-2 rounded-xl flex items-center justify-center">
-                                        <img src={signatureUrl} alt="Signature Client" className="h-16 object-contain pointer-events-none filter drop-shadow-sm" />
-                                    </div>
+                                    {signatureUrl && (
+                                        <p className="text-[10px] text-emerald-500/60 mt-2 text-center font-medium">Document validé numériquement le {doc?.signed_at ? new Date(doc.signed_at).toLocaleDateString() : new Date().toLocaleDateString()}</p>
+                                    )}
                                 </div>
-                                {factureNumero && (
+
+                                {/* Side B: PDG Stamp & Sign */}
+                                <div className="bg-blue-500/5 border border-blue-500/20 p-5 rounded-2xl relative">
+                                    <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-3">Cachet & Signature Direction</p>
+                                    <div className="bg-white/90 h-24 rounded-xl flex items-center justify-center p-2 relative">
+                                        <div className="text-center">
+                                            <p className="text-[9px] text-gray-400 font-bold mb-1">RETOUR GAGNANT BÉNIN</p>
+                                            <p className="text-[8px] text-emerald-600 font-black">La Présidente Directrice Générale</p>
+                                        </div>
+                                        {STAMP_BASE64 && (
+                                            <Image 
+                                                src={`data:image/png;base64,${STAMP_BASE64}`} 
+                                                alt="Cachet PDG" 
+                                                width={80} 
+                                                height={80} 
+                                                className="absolute inset-0 m-auto object-contain opacity-90 rotate-[-5deg]"
+                                            />
+                                        )}
+                                    </div>
+                                    <p className="text-[10px] text-blue-500/60 mt-2 text-center font-medium">Validité officielle garantie</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Extra Info (Auto Facture) */}
+                        {signatureUrl && doc.type === 'devis' && factureNumero && (
                                     <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-xl flex items-center gap-3">
                                         <Receipt size={20} className="text-amber-400 flex-shrink-0" />
                                         <div>
@@ -847,8 +941,6 @@ export default function ClientPortalPage() {
                                         </div>
                                     </div>
                                 )}
-                            </div>
-                        )}
                         
                     </div>
                 </motion.div>
@@ -909,7 +1001,7 @@ export default function ClientPortalPage() {
                                     <h3 className="text-xl font-black text-white">Signature Numérique</h3>
                                     <p className="text-xs text-gray-400 mt-1">Dessinez votre signature dans le cadre ci-dessous.</p>
                                 </div>
-                                <button onClick={() => setSigning(false)} className="text-gray-500 hover:text-white bg-white/5 p-2 rounded-xl">
+                                <button onClick={() => setSigning(false)} title="Fermer" className="text-gray-500 hover:text-white bg-white/5 p-2 rounded-xl">
                                     <X size={20} />
                                 </button>
                             </div>
@@ -955,7 +1047,71 @@ export default function ClientPortalPage() {
                     </motion.div>
                 )}
             </AnimatePresence>
+            
+            {/* ─── PAYMENT METHODS MODAL ─── */}
+            <AnimatePresence>
+                {showPaymentMethods && (
+                    <motion.div 
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+                            className="bg-[#0f172a] border border-white/10 w-full max-w-md rounded-3xl overflow-hidden shadow-2xl"
+                        >
+                            <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                                <h3 className="text-xl font-black text-white flex items-center gap-3">
+                                    <CreditCard className="text-amber-400" />
+                                    Moyen de paiement
+                                </h3>
+                                <button onClick={() => setShowPaymentMethods(false)} title="Fermer" className="p-2 text-gray-500 hover:text-white transition-colors">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="p-6 space-y-4">
+                                {activeProviders.map(p => (
+                                    <button 
+                                        key={p.id}
+                                        onClick={() => {
+                                            if (p.id === 'fedapay') handleFedaPay()
+                                            else if (p.id === 'kkiapay') handleKkiapay()
+                                            else if (p.id === 'zeyow') handleZeyow()
+                                        }}
+                                        className="w-full flex items-center gap-4 p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-amber-500/50 hover:bg-amber-500/5 transition-all group text-left"
+                                    >
+                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg border ${p.color}`}>
+                                            <CreditCard size={22} />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-sm font-bold text-white group-hover:text-amber-400 transition-colors">{p.name}</p>
+                                            <p className="text-[10px] text-gray-500 uppercase tracking-widest">{p.subtitle}</p>
+                                        </div>
+                                        <ChevronRight size={18} className="text-gray-600 group-hover:text-white transition-colors" />
+                                    </button>
+                                ))}
+
+                                {paymentError && (
+                                    <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl flex items-center gap-3 text-red-400 text-xs">
+                                        <AlertCircle size={14} className="flex-shrink-0" />
+                                        {paymentError}
+                                    </div>
+                                )}
+
+                                <div className="flex items-center gap-2 text-gray-600 justify-center mt-2">
+                                    <Shield size={14} />
+                                    <span className="text-[10px] font-bold uppercase tracking-widest">Transaction 100% sécurisée</span>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Scripts de paiement - Uniquement Kkiapay ici car Fedapay est géré au chargement */}
+            <Script src="https://cdn.kkiapay.me/k.js" strategy="lazyOnload" />
 
         </div>
     )
 }
+

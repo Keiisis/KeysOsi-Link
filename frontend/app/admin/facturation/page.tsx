@@ -375,8 +375,8 @@ export default function AdminFacturationPage() {
             pdf.text(`${fmtN(doc.total)} ${cur}`, pw - mr, y + 7.5, { align: 'right' })
             y += 18
 
-            // ── SIGNATURE ZONE (devis) ─────────────────────────────
-            if (doc.type === 'devis' && y + 36 < ph - 20) {
+            // ── SIGNATURE ZONE ─────────────────────────────
+            if (y + 36 < ph - 20) {
                 const sigW = (cw - 8) / 2
                 const sigBoxH = 36
                 pdf.setFillColor(242, 255, 248)
