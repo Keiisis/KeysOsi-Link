@@ -133,6 +133,20 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         // ── Génération PDF ──────────────────────────────────────────────
         const pdf = new jsPDF('p', 'mm', 'a4')
 
+        // Helper pour les caractères spéciaux (accents, tirets longs, etc.)
+        const safe = (txt: string) => {
+            if (!txt) return ''
+            return txt
+                .replace(/—/g, '-')      // Em dash
+                .replace(/–/g, '-')      // En dash
+                .replace(/’/g, "'")      // Smart quote
+                .replace(/✓/g, 'OK ')   // Checkmark
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, (match) => {
+                    const map: Record<string, string> = { 'é': 'e', 'è': 'e', 'ê': 'e', 'à': 'a', 'â': 'a', 'î': 'i', 'ï': 'i', 'ô': 'o', 'û': 'u', 'ç': 'c', 'É': 'E' }
+                    return map[match] || match
+                })
+        }
+
         const PW = 210, PH = 297
         const ML = 14, MR = 14, CW = PW - ML - MR  // 182mm
 
@@ -144,51 +158,130 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         pdf.setFillColor(232, 17, 45)
         pdf.rect((PW * 2) / 3, 0, PW / 3, 3, 'F')
 
-        // ── HEADER BLANC ───────────────────────────────────────────────
+        // ── WHITE HEADER ───────────────────────────────────────────────
+        const headerTop = 3
+        const headerH = 43
         pdf.setFillColor(255, 255, 255)
-        pdf.rect(0, 3, PW, 50, 'F')
+        pdf.rect(0, headerTop, PW, headerH, 'F')
 
+        // Ligne de separation en bas du header
+        pdf.setDrawColor(215, 215, 215)
+        pdf.setLineWidth(0.4)
+        pdf.line(0, headerTop + headerH, PW, headerTop + headerH)
+
+        // ── LOGO CIRCULAIRE ─────────────────────────────────────────────
+        const logoSize = 20
+        const logoX = ML
+        const logoY = headerTop + (headerH - logoSize) / 2
+        const logoCX = logoX + logoSize / 2
+        const logoCY = logoY + logoSize / 2
+        const logoR = logoSize / 2
+
+        // 1. Draw the JPEG image
         try {
-            pdf.addImage(LOGO_BASE64, 'JPEG', ML, 9, 16, 16)
+            pdf.addImage(LOGO_BASE64, 'JPEG', logoX, logoY, logoSize, logoSize)
         } catch (e) {
-            console.error('Erreur ajout logo:', e)
+            console.error('Logo error:', e)
         }
 
-        // Nom société gauche
+        // 2. Cover 4 corners
+        pdf.setFillColor(255, 255, 255)
+        const steps = 20
+        // Top-left
+        pdf.moveTo(logoX, logoY)
+        pdf.lineTo(logoX + logoR, logoY)
+        for (let i = 0; i <= steps; i++) {
+            const angle = Math.PI / 2 - (i / steps) * (Math.PI / 2)
+            const px = logoCX + logoR * Math.cos(angle + Math.PI)
+            const py = logoCY + logoR * Math.sin(angle + Math.PI)
+            pdf.lineTo(px, py)
+        }
+        pdf.lineTo(logoX, logoY + logoR)
+        pdf.lineTo(logoX, logoY)
+        pdf.fill()
+
+        // Top-right
+        pdf.moveTo(logoX + logoSize, logoY)
+        pdf.lineTo(logoX + logoR, logoY)
+        for (let i = 0; i <= steps; i++) {
+            const angle = (i / steps) * (Math.PI / 2)
+            const px = logoCX + logoR * Math.cos(angle + Math.PI + Math.PI / 2)
+            const py = logoCY + logoR * Math.sin(angle + Math.PI + Math.PI / 2)
+            pdf.lineTo(px, py)
+        }
+        pdf.lineTo(logoX + logoSize, logoY + logoR)
+        pdf.lineTo(logoX + logoSize, logoY)
+        pdf.fill()
+
+        // Bottom-right
+        pdf.moveTo(logoX + logoSize, logoY + logoSize)
+        pdf.lineTo(logoX + logoR, logoY + logoSize)
+        for (let i = 0; i <= steps; i++) {
+            const angle = (i / steps) * (Math.PI / 2)
+            const px = logoCX + logoR * Math.cos(angle)
+            const py = logoCY + logoR * Math.sin(angle)
+            pdf.lineTo(px, py)
+        }
+        pdf.lineTo(logoX + logoSize, logoY + logoR)
+        pdf.lineTo(logoX + logoSize, logoY + logoSize)
+        pdf.fill()
+
+        // Bottom-left
+        pdf.moveTo(logoX, logoY + logoSize)
+        pdf.lineTo(logoX + logoR, logoY + logoSize)
+        for (let i = 0; i <= steps; i++) {
+            const angle = Math.PI / 2 - (i / steps) * (Math.PI / 2)
+            const px = logoCX + logoR * Math.cos(angle + Math.PI / 2)
+            const py = logoCY + logoR * Math.sin(angle + Math.PI / 2)
+            pdf.lineTo(px, py)
+        }
+        pdf.lineTo(logoX, logoY + logoR)
+        pdf.lineTo(logoX, logoY + logoSize)
+        pdf.fill()
+
+        // 3. Circle border
+        pdf.setDrawColor(200, 200, 200)
+        pdf.setLineWidth(0.3)
+        pdf.circle(logoCX, logoCY, logoR + 0.2, 'S')
+
+        // ── NOM : RETOUR GAGNANT + BENIN + SLOGAN ────────────────────
+        const textLeft = logoX + logoSize + 5
+        const nameY = headerTop + 14
         pdf.setFont('helvetica', 'bold')
-        pdf.setFontSize(18)
+        pdf.setFontSize(22)
         pdf.setTextColor(0, 135, 81)
-        pdf.text('RETOUR GAGNANT', ML + 20, 18)
-
-        pdf.setFont('helvetica', 'bold')
-        pdf.setFontSize(9)
+        pdf.text('RETOUR', textLeft, nameY)
+        const retourW = pdf.getTextWidth('RETOUR ')
         pdf.setTextColor(232, 17, 45)
-        pdf.text('BÉNIN', ML + 20, 24)
+        pdf.text('GAGNANT', textLeft + retourW, nameY)
 
-        pdf.setFont('helvetica', 'normal')
-        pdf.setFontSize(7)
-        pdf.setTextColor(100, 100, 100)
-        pdf.text('Agence de Conciergerie & Services Internationaux', ML + 20, 29)
-        pdf.text('Haie-Vive Cocotiers, Carré n°1158, Cotonou — République du Bénin', ML + 20, 34)
-
-        // "DEVIS" titre droit
+        // BÉNIN tracking large
         pdf.setFont('helvetica', 'bold')
-        pdf.setFontSize(32)
+        pdf.setFontSize(8.5)
+        pdf.setTextColor(90, 90, 90)
+        pdf.setCharSpace(2.5)
+        pdf.text('BENIN', textLeft, nameY + 7.5)
+        pdf.setCharSpace(0)
+
+        // Slogan original
+        pdf.setFont('helvetica', 'normal')
+        pdf.setFontSize(6)
+        pdf.setTextColor(130, 130, 130)
+        pdf.text(safe("L'agence d'accompagnement a la Nationalite Beninoise et au retour des Afro-descendants."), textLeft, nameY + 14)
+
+        // ── TYPE DOCUMENT (droite) ────────────────────────────────────
+        pdf.setFont('helvetica', 'bold')
+        pdf.setFontSize(28)
         pdf.setTextColor(30, 30, 30)
-        pdf.text('DEVIS', PW - MR, 22, { align: 'right' })
+        pdf.text('DEVIS', PW - MR, headerTop + 16, { align: 'right' })
 
         pdf.setFont('helvetica', 'normal')
-        pdf.setFontSize(8)
-        pdf.setTextColor(90, 90, 90)
-        pdf.text(`Réf. : ${ref}`, PW - MR, 30, { align: 'right' })
-        pdf.text(`Date : Cotonou, le ${dateFr(p.created_at)}`, PW - MR, 36, { align: 'right' })
+        pdf.setFontSize(8.5)
+        pdf.setTextColor(80, 80, 80)
+        pdf.text(`Réf. : ${ref}`, PW - MR, headerTop + 24, { align: 'right' })
+        pdf.text(`Date : Cotonou, le ${safe(dateFr(p.created_at))}`, PW - MR, headerTop + 30, { align: 'right' })
 
-        // Ligne séparatrice
-        pdf.setDrawColor(0, 135, 81)
-        pdf.setLineWidth(0.8)
-        pdf.line(ML, 53, PW - MR, 53)
-
-        let y = 60
+        let y = headerTop + headerH + 10
 
         // ── BLOC CLIENT ─────────────────────────────────────────────────
         pdf.setFont('helvetica', 'bold')

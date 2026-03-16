@@ -120,79 +120,165 @@ export default function AgentDevisPage() {
             pdf.rect((pw * 2) / 3, 0, pw / 3, 4, 'F')
 
             // ── WHITE HEADER (style navbar) ────────────────────────
+            const headerTop = 4
+            const headerH = 42
             pdf.setFillColor(255, 255, 255)
-            pdf.rect(0, 4, pw, 46, 'F')
-            pdf.setDrawColor(220, 220, 220)
-            pdf.setLineWidth(0.4)
-            pdf.line(0, 50, pw, 50)
+            pdf.rect(0, headerTop, pw, headerH, 'F')
 
+            // Ligne de separation en bas du header
+            pdf.setDrawColor(215, 215, 215)
+            pdf.setLineWidth(0.4)
+            pdf.line(0, headerTop + headerH, pw, headerTop + headerH)
+
+            // ── LOGO CIRCULAIRE ───────────────────────────────────
+            const logoSize = 20
+            const logoX = ml
+            const logoY = headerTop + (headerH - logoSize) / 2
+            const logoCX = logoX + logoSize / 2
+            const logoCY = logoY + logoSize / 2
+            const logoR = logoSize / 2
+
+            // 1. Draw the JPEG image
             try {
-                pdf.addImage(LOGO_BASE64, 'JPEG', ml, 9, 18, 18)
+                pdf.addImage(LOGO_BASE64, 'JPEG', logoX, logoY, logoSize, logoSize)
             } catch (e) {
-                console.error('Erreur ajout logo:', e)
+                console.error('Logo error:', e)
             }
 
-            // "RETOUR" vert + "GAGNANT" rouge — identique navbar
+            // 2. Cover the 4 corners with white shapes to create circular clip effect
+            pdf.setFillColor(255, 255, 255)
+            const steps = 20
+            // Top-left corner mask
+            pdf.moveTo(logoX, logoY)
+            pdf.lineTo(logoX + logoR, logoY)
+            for (let i = 0; i <= steps; i++) {
+                const angle = Math.PI / 2 - (i / steps) * (Math.PI / 2)
+                const px = logoCX + logoR * Math.cos(angle + Math.PI)
+                const py = logoCY + logoR * Math.sin(angle + Math.PI)
+                pdf.lineTo(px, py)
+            }
+            pdf.lineTo(logoX, logoY + logoR)
+            pdf.lineTo(logoX, logoY)
+            pdf.fill()
+
+            // Top-right corner mask
+            pdf.moveTo(logoX + logoSize, logoY)
+            pdf.lineTo(logoX + logoR, logoY)
+            for (let i = 0; i <= steps; i++) {
+                const angle = (i / steps) * (Math.PI / 2)
+                const px = logoCX + logoR * Math.cos(angle + Math.PI + Math.PI / 2)
+                const py = logoCY + logoR * Math.sin(angle + Math.PI + Math.PI / 2)
+                pdf.lineTo(px, py)
+            }
+            pdf.lineTo(logoX + logoSize, logoY + logoR)
+            pdf.lineTo(logoX + logoSize, logoY)
+            pdf.fill()
+
+            // Bottom-right corner mask
+            pdf.moveTo(logoX + logoSize, logoY + logoSize)
+            pdf.lineTo(logoX + logoR, logoY + logoSize)
+            for (let i = 0; i <= steps; i++) {
+                const angle = (i / steps) * (Math.PI / 2)
+                const px = logoCX + logoR * Math.cos(angle)
+                const py = logoCY + logoR * Math.sin(angle)
+                pdf.lineTo(px, py)
+            }
+            pdf.lineTo(logoX + logoSize, logoY + logoR)
+            pdf.lineTo(logoX + logoSize, logoY + logoSize)
+            pdf.fill()
+
+            // Bottom-left corner mask
+            pdf.moveTo(logoX, logoY + logoSize)
+            pdf.lineTo(logoX + logoR, logoY + logoSize)
+            for (let i = 0; i <= steps; i++) {
+                const angle = Math.PI / 2 - (i / steps) * (Math.PI / 2)
+                const px = logoCX + logoR * Math.cos(angle + Math.PI / 2)
+                const py = logoCY + logoR * Math.sin(angle + Math.PI / 2)
+                pdf.lineTo(px, py)
+            }
+            pdf.lineTo(logoX, logoY + logoR)
+            pdf.lineTo(logoX, logoY + logoSize)
+            pdf.fill()
+
+            // 3. Fine circle border around logo
+            pdf.setDrawColor(200, 200, 200)
+            pdf.setLineWidth(0.3)
+            pdf.circle(logoCX, logoCY, logoR + 0.2, 'S')
+
+            // ── NOM : RETOUR GAGNANT + BENIN + SLOGAN ───────────
+            const textLeft = logoX + logoSize + 5
+            const nameY = headerTop + 14
             pdf.setFont('helvetica', 'bold')
             pdf.setFontSize(22)
             pdf.setTextColor(0, 135, 81)
-            pdf.text('RETOUR', ml + 22, 22)
+            pdf.text('RETOUR', textLeft, nameY)
             const retourW = pdf.getTextWidth('RETOUR ')
             pdf.setTextColor(232, 17, 45)
-            pdf.text('GAGNANT', ml + 22 + retourW, 22)
+            pdf.text('GAGNANT', textLeft + retourW, nameY)
 
-            // "BÉNIN" tracking large
+            // BENIN avec tracking large
             pdf.setFont('helvetica', 'bold')
             pdf.setFontSize(8.5)
             pdf.setTextColor(90, 90, 90)
             pdf.setCharSpace(2.5)
-            pdf.text('BÉNIN', ml + 22, 30)
+            pdf.text('BÉNIN', textLeft, nameY + 7.5)
             pdf.setCharSpace(0)
 
-            // Tagline
+            // Slogan original
             pdf.setFont('helvetica', 'normal')
             pdf.setFontSize(6)
             pdf.setTextColor(130, 130, 130)
-            pdf.text("L'agence d'accompagnement à la Nationalité Béninoise et au retour des Afro-descendants.", ml + 22, 37)
+            pdf.text("L'agence d'accompagnement à la Nationalité Béninoise et au retour des Afro-descendants.", textLeft, nameY + 14)
 
-            // Document type badge (right)
+            // ── TYPE DOCUMENT (droite, en haut du header) ───────
             const typeLabel = doc.type === 'devis' ? 'DEVIS' : 'FACTURE'
             pdf.setFont('helvetica', 'bold')
-            pdf.setFontSize(30)
+            pdf.setFontSize(28)
             if (doc.type === 'devis') {
                 pdf.setTextColor(180, 120, 0)
             } else {
                 pdf.setTextColor(0, 135, 81)
             }
-            pdf.text(typeLabel, pw - mr, 24, { align: 'right' })
+            pdf.text(typeLabel, pw - mr, headerTop + 16, { align: 'right' })
 
+            // Numero + Date + Validite
             pdf.setFont('helvetica', 'normal')
-            pdf.setFontSize(9)
+            pdf.setFontSize(8.5)
             pdf.setTextColor(80, 80, 80)
-            pdf.text(`N° ${doc.numero}`, pw - mr, 32, { align: 'right' })
-            pdf.text(`Date : ${new Date(doc.created_at).toLocaleDateString('fr-FR')}`, pw - mr, 38, { align: 'right' })
-            pdf.text(doc.type === 'facture' ? `Délai : ${doc.validite}` : `Validité : ${doc.validite}`, pw - mr, 44, { align: 'right' })
+            pdf.text(`N° ${doc.numero}`, pw - mr, headerTop + 24, { align: 'right' })
+            pdf.text(`Date : ${new Date(doc.created_at).toLocaleDateString('fr-FR')}`, pw - mr, headerTop + 30, { align: 'right' })
+            pdf.text(doc.type === 'facture' ? `Délai : ${doc.validite}` : `Validité : ${doc.validite}`, pw - mr, headerTop + 36, { align: 'right' })
 
-            // Status badge
+            // ── STATUS BADGE (sous la ligne, avec espacement) ───
+            const badgeY = headerTop + headerH + 4
+            const statusLabels: Record<string, string> = { 
+                brouillon: 'BROUILLON', 
+                envoye: 'ENVOYÉ', 
+                accepte: 'ACCEPTÉ', 
+                refuse: 'REFUSÉ', 
+                paye: 'PAYÉ', 
+                en_retard: 'EN RETARD', 
+                annule: 'ANNULÉ' 
+            }
             const statusColorMap: Record<string, [number, number, number]> = {
                 brouillon: [90, 90, 90],
                 envoye: [59, 130, 246],
-                accepte: [0, 175, 100],
+                accepte: [0, 160, 90], // synchronized with others
                 refuse: [230, 60, 60],
                 paye: [16, 200, 120],
                 en_retard: [230, 60, 60],
                 annule: [90, 90, 90],
             }
             const sc = statusColorMap[doc.status] || [90, 90, 90]
+            const badgeW = 28
             pdf.setFillColor(sc[0], sc[1], sc[2])
-            pdf.roundedRect(pw - mr - 26, 47, 26, 6, 1.5, 1.5, 'F')
+            pdf.roundedRect(pw - mr - badgeW, badgeY, badgeW, 7, 2, 2, 'F')
             pdf.setFont('helvetica', 'bold')
-            pdf.setFontSize(6)
+            pdf.setFontSize(6.5)
             pdf.setTextColor(255, 255, 255)
-            const statusLabels: Record<string, string> = { brouillon: 'BROUILLON', envoye: 'ENVOYÉ', accepte: 'ACCEPTÉ', refuse: 'REFUSÉ', paye: 'PAYÉ', en_retard: 'EN RETARD', annule: 'ANNULÉ' }
-            pdf.text(statusLabels[doc.status] || doc.status.toUpperCase(), pw - mr - 13, 51.3, { align: 'center' })
+            pdf.text(statusLabels[doc.status] || doc.status.toUpperCase(), pw - mr - badgeW / 2, badgeY + 4.8, { align: 'center' })
 
-            let y = 64
+            let y = badgeY + 12
 
             // FROM box 
             const boxW = (cw - 6) / 2
