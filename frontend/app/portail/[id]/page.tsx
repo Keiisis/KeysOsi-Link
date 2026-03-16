@@ -392,9 +392,9 @@ export default function ClientPortalPage() {
             pdf.line(0, headerTop + headerH, pw, headerTop + headerH)
 
             // ── LOGO ──────────────────────────────────────────────
-            const logoSize = 24
-            const logoX = ml
-            const logoY = headerTop + 12
+            const logoSize = 32
+            const logoX = 7 // Plus à gauche que ml (14)
+            const logoY = headerTop + 8
 
             try {
                 // Background blanc pour le logo transparent
@@ -409,8 +409,8 @@ export default function ClientPortalPage() {
             }
 
             // ── NOM : RETOUR GAGNANT + BENIN + SLOGAN ────────────
-            const textLeft = logoX + logoSize + 5
-            const nameY = logoY + 7
+            const textLeft = logoX + logoSize + 3
+            const nameY = logoY + 10
 
             pdf.setFont('helvetica', 'bold')
             pdf.setFontSize(16)
@@ -654,7 +654,7 @@ export default function ClientPortalPage() {
 
             if (true) {
                 const sigW = (cw - 8) / 2
-                const sigBoxH = 38
+                const sigBoxH = 48
 
                 // Client box
                 pdf.setFillColor(signatureUrl ? 235 : 242, 255, signatureUrl ? 245 : 248)
@@ -668,7 +668,7 @@ export default function ClientPortalPage() {
 
                 if (signatureUrl) {
                     try {
-                        pdf.addImage(signatureUrl, 'PNG', ml + 4, y + 10, sigW - 10, 18)
+                        pdf.addImage(signatureUrl, 'PNG', ml + 4, y + 10, sigW - 10, 22)
                     } catch { /* skip */ }
                     pdf.setFont('helvetica', 'bold')
                     pdf.setFontSize(6)
@@ -676,14 +676,19 @@ export default function ClientPortalPage() {
                     const signedDate = doc.signed_at
                         ? new Date(doc.signed_at).toLocaleDateString('fr-FR')
                         : new Date().toLocaleDateString('fr-FR')
-                    pdf.text('[OK] Validé numériquement le ' + signedDate, ml + 4, y + 33)
+                    pdf.text('[OK] Validé numériquement le ' + signedDate, ml + 4, y + 43)
                 } else {
                     pdf.setFont('helvetica', 'italic')
                     pdf.setFontSize(6.5)
                     pdf.setTextColor(90, 100, 95)
                     pdf.text('Signature en attente ...', ml + 10, y + 20)
-                    pdf.text('Date de la facture : ' + new Date(doc.created_at).toLocaleDateString('fr-FR'), ml + 4, y + 33)
+                    pdf.text('Date de la facture : ' + new Date(doc.created_at).toLocaleDateString('fr-FR'), ml + 4, y + 43)
                 }
+
+                pdf.setFont('helvetica', 'bold')
+                pdf.setFontSize(7.5)
+                pdf.setTextColor(0, 0, 0)
+                pdf.text(doc.client_prenom + ' ' + doc.client_nom, ml + 4, y + 36)
 
                 // PDG box
                 const sig2X = ml + sigW + 8
@@ -707,20 +712,20 @@ export default function ClientPortalPage() {
                 pdf.setFontSize(7)
                 pdf.text('Nathalie Rosine RIFFERT GERMANY', sig2X + 4, y + 23)
 
-                // Add Stamp if available (larger)
+                // Add Stamp if available (much larger)
                 if (STAMP_BASE64) {
                     try {
                         const stampData = STAMP_BASE64.startsWith('data:') ? STAMP_BASE64 : `data:image/png;base64,${STAMP_BASE64}`
-                        pdf.addImage(stampData, 'PNG', sig2X + sigW - 36, y + 2, 34, 34)
+                        pdf.addImage(stampData, 'PNG', sig2X + sigW - 46, y + 1, 45, 45)
                     } catch (e) {
                         console.error('Error adding stamp:', e)
                     }
                 }
 
                 pdf.setFont('helvetica', 'normal')
-                pdf.setFontSize(5.5)
+                pdf.setFontSize(6)
                 pdf.setTextColor(120, 130, 150)
-                pdf.text('Validité officielle garantie', sig2X + 4, y + 33)
+                pdf.text('Validité officielle garantie', sig2X + 4, y + 43)
             }
 
             // ── FILIGRANE (brouillon / paye) ────────────────────
@@ -927,11 +932,17 @@ export default function ClientPortalPage() {
                                 {/* Side A: Client Signature */}
                                 <div className="bg-emerald-500/5 border border-emerald-500/20 p-5 rounded-2xl">
                                     <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-3">Signature du Client (Approbation)</p>
-                                    <div className="bg-white/90 h-40 rounded-xl flex items-center justify-center p-2 border border-emerald-500/10">
+                                    <div className="bg-white/90 h-56 rounded-xl flex flex-col items-center justify-center p-4 border border-emerald-500/10">
                                         {signatureUrl ? (
-                                            <Image src={signatureUrl} alt="Signature Client" width={200} height={100} className="h-full w-auto object-contain pointer-events-none" />
+                                            <>
+                                                <Image src={signatureUrl} alt="Signature Client" width={250} height={120} className="h-4/5 w-auto object-contain pointer-events-none mb-2" />
+                                                <p className="text-gray-900 font-bold text-sm uppercase tracking-tight">{doc.client_prenom} {doc.client_nom}</p>
+                                            </>
                                         ) : (
-                                            <p className="text-xs text-gray-400 italic">Signature en attente</p>
+                                            <div className="text-center">
+                                                <p className="text-xs text-gray-400 italic mb-2">Signature en attente</p>
+                                                <p className="text-gray-900 font-bold text-sm uppercase opacity-50">{doc.client_prenom} {doc.client_nom}</p>
+                                            </div>
                                         )}
                                     </div>
                                     {signatureUrl && (
@@ -945,7 +956,7 @@ export default function ClientPortalPage() {
                                 {/* Side B: PDG Stamp & Sign */}
                                 <div className="bg-blue-500/5 border border-blue-500/20 p-5 rounded-2xl relative text-gray-900">
                                     <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-3">Cachet & Signature Direction</p>
-                                    <div className="bg-white/90 h-40 rounded-xl flex items-center justify-center p-4 relative">
+                                    <div className="bg-white/90 h-56 rounded-xl flex items-center justify-center p-4 relative">
                                         <div className="text-center z-10">
                                             <p className="text-[10px] text-gray-400 font-bold mb-1">RETOUR GAGNANT BÉNIN</p>
                                             <p className="text-[9px] text-emerald-600 font-black uppercase">La Présidente Directrice Générale</p>
@@ -955,9 +966,9 @@ export default function ClientPortalPage() {
                                             <Image 
                                                 src={`data:image/png;base64,${STAMP_BASE64}`} 
                                                 alt="Cachet PDG" 
-                                                width={160} 
-                                                height={160} 
-                                                className="absolute inset-0 m-auto object-contain opacity-80 rotate-[-5deg] z-0"
+                                                width={220} 
+                                                height={220} 
+                                                className="absolute inset-0 m-auto object-contain opacity-90 rotate-[-5deg] z-0"
                                             />
                                         )}
                                     </div>
