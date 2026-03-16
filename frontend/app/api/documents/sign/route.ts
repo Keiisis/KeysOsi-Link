@@ -101,6 +101,8 @@ export async function POST(req: NextRequest) {
                 total_tva: devis.total_tva,
                 remise: devis.remise,
                 total: devis.total,
+                signature_url: signature_url,
+                signed_at: signed_at,
                 status: 'envoye',
                 notes: `Facture générée automatiquement suite à la validation du devis N° ${devis.numero}.`,
                 conditions: devis.conditions,

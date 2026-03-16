@@ -36,6 +36,7 @@ interface DocumentFinancier {
     created_at: string
     signature_url?: string
     signed_at?: string
+    parent_devis_id?: string
 }
 
 export default function ClientPortalPage() {
@@ -82,7 +83,25 @@ export default function ClientPortalPage() {
                 setError("Document introuvable ou lien invalide.")
             } else {
                 setDoc(data as DocumentFinancier)
-                if (data.signature_url) setSignatureUrl(data.signature_url)
+                if (data.signature_url) {
+                    setSignatureUrl(data.signature_url)
+                } else if (data.type === 'facture' && data.parent_devis_id) {
+                    // Héritage de la signature du devis parent
+                    const { data: parentData } = await supabase
+                        .from('documents_financiers')
+                        .select('signature_url, signed_at')
+                        .eq('id', data.parent_devis_id)
+                        .single()
+                    
+                    if (parentData?.signature_url) {
+                        setSignatureUrl(parentData.signature_url)
+                        setDoc(prev => prev ? { 
+                            ...prev, 
+                            signature_url: parentData.signature_url,
+                            signed_at: parentData.signed_at 
+                        } : null)
+                    }
+                }
             }
             setLoading(false)
         }
@@ -378,6 +397,10 @@ export default function ClientPortalPage() {
             const logoY = headerTop + 12
 
             try {
+                // Background blanc pour le logo transparent
+                pdf.setFillColor(255, 255, 255)
+                pdf.circle(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2 + 1, 'F')
+                
                 // Le logo fourni est désormais transparent, donc on utilise 'PNG'
                 pdf.addImage(LOGO_BASE64, 'PNG', logoX, logoY, logoSize, logoSize)
             } catch (e) {
@@ -623,42 +646,42 @@ export default function ClientPortalPage() {
             y += 16
 
             // ── ZONE DE SIGNATURE (Facture ou Devis) ────────────
-            if (y + 40 > ph - 18) {
+            if (y + 45 > ph - 18) {
                 pdf.addPage()
                 y = 15 // Reset y for new page
             }
 
             if (true) {
                 const sigW = (cw - 8) / 2
-                const sigBoxH = 34
+                const sigBoxH = 38
 
                 // Client box
-                pdf.setFillColor(doc.signature_url ? 235 : 242, 255, doc.signature_url ? 245 : 248)
+                pdf.setFillColor(signatureUrl ? 235 : 242, 255, signatureUrl ? 245 : 248)
                 pdf.setDrawColor(0, 135, 81)
                 pdf.setLineWidth(0.3)
                 pdf.roundedRect(ml, y, sigW, sigBoxH, 2, 2, 'FD')
                 pdf.setFont('helvetica', 'bold')
                 pdf.setFontSize(7)
                 pdf.setTextColor(0, 100, 60)
-                pdf.text('BON POUR ACCORD', ml + 4, y + 7)
+                pdf.text('BON POUR ACCORD (CLIENT)', ml + 4, y + 7)
 
-                if (doc.signature_url) {
+                if (signatureUrl) {
                     try {
-                        pdf.addImage(doc.signature_url, 'PNG', ml + 4, y + 9, sigW - 20, 16)
+                        pdf.addImage(signatureUrl, 'PNG', ml + 4, y + 10, sigW - 10, 18)
                     } catch { /* skip */ }
                     pdf.setFont('helvetica', 'bold')
                     pdf.setFontSize(6)
                     pdf.setTextColor(0, 140, 70)
                     const signedDate = doc.signed_at
                         ? new Date(doc.signed_at).toLocaleDateString('fr-FR')
-                        : new Date(doc.created_at).toLocaleDateString('fr-FR')
-                    pdf.text('[OK] Accepte et signe le ' + signedDate, ml + 4, y + 30)
+                        : new Date().toLocaleDateString('fr-FR')
+                    pdf.text('[OK] Validé numériquement le ' + signedDate, ml + 4, y + 33)
                 } else {
-                    pdf.setFont('helvetica', 'normal')
+                    pdf.setFont('helvetica', 'italic')
                     pdf.setFontSize(6.5)
                     pdf.setTextColor(90, 100, 95)
-                    pdf.text('Signature et Cachet du client :', ml + 4, y + 16)
-                    pdf.text('Date :  ____/____/________', ml + 4, y + 28)
+                    pdf.text('Signature en attente ...', ml + 10, y + 20)
+                    pdf.text('Date de la facture : ' + new Date(doc.created_at).toLocaleDateString('fr-FR'), ml + 4, y + 33)
                 }
 
                 // PDG box
@@ -666,28 +689,36 @@ export default function ClientPortalPage() {
                 pdf.setFillColor(242, 245, 255)
                 pdf.setDrawColor(100, 110, 200)
                 pdf.roundedRect(sig2X, y, sigW, sigBoxH, 2, 2, 'FD')
+                
                 pdf.setFont('helvetica', 'bold')
-                pdf.setFontSize(7)
+                pdf.setFontSize(6.5)
                 pdf.setTextColor(70, 80, 170)
-                pdf.text('La Presidente Directrice Generale', sig2X + 4, y + 7)
+                pdf.text('DIRECTION GÉNÉRALE', sig2X + 4, y + 7)
+                
                 pdf.setFontSize(6.5)
                 pdf.setTextColor(0, 135, 81)
-                pdf.text('RETOUR GAGNANT BENIN', sig2X + 4, y + 13)
+                pdf.text('RETOUR GAGNANT BÉNIN', sig2X + 4, y + 13)
                 
-                // Add Stamp if available
+                pdf.setFontSize(5.5)
+                pdf.setTextColor(0, 0, 0)
+                pdf.text('La Présidente Directrice Générale :', sig2X + 4, y + 18)
+                pdf.setFont('helvetica', 'bold')
+                pdf.setFontSize(7)
+                pdf.text('Nathalie Rosine RIFFERT GERMANY', sig2X + 4, y + 23)
+
+                // Add Stamp if available (larger)
                 if (STAMP_BASE64) {
                     try {
-                        pdf.addImage(STAMP_BASE64, 'PNG', sig2X + sigW - 25, y + 5, 20, 20)
+                        pdf.addImage(STAMP_BASE64, 'PNG', sig2X + sigW - 35, y + 5, 28, 28)
                     } catch (e) {
                         console.error('Error adding stamp:', e)
                     }
                 }
 
                 pdf.setFont('helvetica', 'normal')
-                pdf.setFontSize(6.5)
-                pdf.setTextColor(90, 95, 130)
-                pdf.text('Signature et Cachet officiel', sig2X + 4, y + 20)
-                pdf.text('Etabli le ' + new Date(doc.created_at).toLocaleDateString('fr-FR'), sig2X + 4, y + 27)
+                pdf.setFontSize(5.5)
+                pdf.setTextColor(120, 130, 150)
+                pdf.text('Validité officielle garantie', sig2X + 4, y + 33)
             }
 
             // ── FILIGRANE (brouillon / paye) ────────────────────
@@ -806,11 +837,11 @@ export default function ClientPortalPage() {
                         {/* Client Info */}
                         <div className="flex flex-col md:flex-row justify-between gap-8 mb-12">
                             <div>
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-white/5 overflow-hidden relative">
-                                        <Image src="/images/logo-transparent.png" alt="Logo" width={36} height={36} className="object-contain" />
+                                <div className="flex items-center gap-4 mb-4">
+                                    <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center border border-gray-200 shadow-sm overflow-hidden relative">
+                                        <Image src="/images/logo-transparent.png" alt="Logo" width={48} height={48} className="object-contain" />
                                     </div>
-                                    <p className="text-white font-bold leading-tight">RETOUR GAGNANT <br/><span className="text-xs text-gray-400 font-normal">BÉNIN</span></p>
+                                    <p className="text-white font-bold text-xl leading-tight">RETOUR GAGNANT <br/><span className="text-xs text-emerald-400 font-normal tracking-[0.2em]">BÉNIN</span></p>
                                 </div>
                                 <div className="text-sm text-gray-400 mt-2 space-y-1">
                                     <p>RCCM: RB/COT/26 B 42001</p>
@@ -894,33 +925,37 @@ export default function ClientPortalPage() {
                                 {/* Side A: Client Signature */}
                                 <div className="bg-emerald-500/5 border border-emerald-500/20 p-5 rounded-2xl">
                                     <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-3">Signature du Client (Approbation)</p>
-                                    <div className="bg-white/90 h-24 rounded-xl flex items-center justify-center p-2">
+                                    <div className="bg-white/90 h-32 rounded-xl flex items-center justify-center p-2 border border-emerald-500/10">
                                         {signatureUrl ? (
-                                            <img src={signatureUrl} alt="Signature Client" className="h-full object-contain pointer-events-none" />
+                                            <Image src={signatureUrl} alt="Signature Client" width={200} height={100} className="h-full w-auto object-contain pointer-events-none" />
                                         ) : (
                                             <p className="text-xs text-gray-400 italic">Signature en attente</p>
                                         )}
                                     </div>
                                     {signatureUrl && (
-                                        <p className="text-[10px] text-emerald-500/60 mt-2 text-center font-medium">Document validé numériquement le {doc?.signed_at ? new Date(doc.signed_at).toLocaleDateString() : new Date().toLocaleDateString()}</p>
+                                        <div className="mt-3 space-y-1 text-center">
+                                            <p className="text-[10px] text-emerald-500/80 font-bold">ÉMISSION : {new Date(doc?.created_at || '').toLocaleDateString('fr-FR')}</p>
+                                            <p className="text-[9px] text-emerald-500/60 font-medium italic">Validé numériquement le {doc?.signed_at ? new Date(doc.signed_at).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR')}</p>
+                                        </div>
                                     )}
                                 </div>
 
                                 {/* Side B: PDG Stamp & Sign */}
                                 <div className="bg-blue-500/5 border border-blue-500/20 p-5 rounded-2xl relative">
                                     <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-3">Cachet & Signature Direction</p>
-                                    <div className="bg-white/90 h-24 rounded-xl flex items-center justify-center p-2 relative">
-                                        <div className="text-center">
-                                            <p className="text-[9px] text-gray-400 font-bold mb-1">RETOUR GAGNANT BÉNIN</p>
-                                            <p className="text-[8px] text-emerald-600 font-black">La Présidente Directrice Générale</p>
+                                    <div className="bg-white/90 h-32 rounded-xl flex items-center justify-center p-4 relative">
+                                        <div className="text-center z-10">
+                                            <p className="text-[10px] text-gray-400 font-bold mb-1">RETOUR GAGNANT BÉNIN</p>
+                                            <p className="text-[9px] text-emerald-600 font-black uppercase">La Présidente Directrice Générale</p>
+                                            <p className="text-sm text-gray-900 font-bold mt-1">Nathalie Rosine RIFFERT GERMANY</p>
                                         </div>
                                         {STAMP_BASE64 && (
                                             <Image 
                                                 src={`data:image/png;base64,${STAMP_BASE64}`} 
                                                 alt="Cachet PDG" 
-                                                width={80} 
-                                                height={80} 
-                                                className="absolute inset-0 m-auto object-contain opacity-90 rotate-[-5deg]"
+                                                width={130} 
+                                                height={130} 
+                                                className="absolute inset-0 m-auto object-contain opacity-80 rotate-[-5deg]"
                                             />
                                         )}
                                     </div>
