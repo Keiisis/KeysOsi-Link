@@ -764,12 +764,12 @@ export default function ClientPortalPage() {
             pdf.setFont('helvetica', 'normal')
             pdf.setFontSize(6)
             pdf.setTextColor(180, 190, 210) // Plus clair pour l'impression sur fond noir
-            pdf.text('RETOUR GAGNANT BENIN - RCCM: RB/COT/26 B 42001 - IFU: 3202644573981 - Haie-Vive Cocotiers, Cotonou - contact@retourgagnantbenin.bj', pw / 2, footerY + 7, { align: 'center' })
+            pdf.text('RETOUR GAGNANT BENIN - RCCM: RB/COT/26 B 42001 - IFU: 3202644573981 - Haie-Vive Cocotiers, Cotonou - contact@retourgagnantbenin.bj', pw / 2, footerY + 6, { align: 'center' })
             
             pdf.setFont('helvetica', 'bold')
             pdf.setFontSize(6.5)
             pdf.setTextColor(255, 255, 255)
-            pdf.text('Document N° ' + doc.numero + ' - Généré le ' + new Date().toLocaleDateString('fr-FR') + ' à ' + new Date().toLocaleTimeString('fr-FR'), pw / 2, footerY + 12, { align: 'center' })
+            pdf.text('Document N° ' + doc.numero + ' - Généré le ' + new Date().toLocaleDateString('fr-FR') + ' à ' + new Date().toLocaleTimeString('fr-FR'), pw / 2, footerY + 11, { align: 'center' })
 
             pdf.save(`${doc.type}_${doc.numero}.pdf`)
         } catch (err) {

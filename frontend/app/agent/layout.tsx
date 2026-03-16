@@ -12,7 +12,7 @@ import {
     Menu, Bell, Search, Headphones, X,
     TrendingUp, BookOpen, CircleDot, ChevronRight,
     Shield, PanelLeftClose, PanelLeft,
-    Command, UserCog, Globe, Handshake, Radar, MonitorPlay
+    Command, UserCog, Globe, Handshake, Radar, MonitorPlay, Landmark
 } from 'lucide-react'
 import { useTranslation, T } from '@/lib/translation'
 
@@ -360,6 +360,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                 { title: t('Radar IA'), icon: Radar, href: '/agent/radar' },
                 { title: t('Smart Slides'), icon: MonitorPlay, href: '/agent/presentations' },
                 { title: t('Devis & Paiements'), icon: Send, href: '/agent/devis' },
+                { title: t('Comptabilité'), icon: Landmark, href: '/agent/comptabilite' },
                 { title: t('Performances'), icon: TrendingUp, href: '/agent/performances' },
                 { title: t('Base de Connaissance'), icon: BookOpen, href: '/agent/wiki' },
             ],
