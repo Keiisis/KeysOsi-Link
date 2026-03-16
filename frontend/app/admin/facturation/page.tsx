@@ -4,10 +4,10 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import {
-    FileText, Plus, Trash2, X, Loader2, Search,
-    Send, Download, Eye, Calculator, Receipt,
-    Phone, Mail, CheckCircle2, Building2, User, Hash,
-    Calendar, CreditCard, ArrowRight, BarChart3, TrendingUp,
+    FileText, Plus, Trash2, Loader2, Search,
+    Download, Eye, Calculator, Receipt,
+    Building2, User, Hash,
+    Calendar, CreditCard, BarChart3, TrendingUp,
     AlertCircle, Link as LinkIcon
 } from 'lucide-react'
 import Link from 'next/link'
@@ -120,7 +120,7 @@ export default function AdminFacturationPage() {
 
             // ── WHITE HEADER (identique navbar) ──────────────────
             const headerTop = 4
-            const headerH = 42
+            const headerH = 70
             pdf.setFillColor(255, 255, 255)
             pdf.rect(0, headerTop, pw, headerH, 'F')
 
@@ -129,107 +129,51 @@ export default function AdminFacturationPage() {
             pdf.setLineWidth(0.4)
             pdf.line(0, headerTop + headerH, pw, headerTop + headerH)
 
-            // ── LOGO CIRCULAIRE (masque les coins noirs du JPEG) ──
-            const logoSize = 20
+            // ── LOGO & BRANDING (Stacké et Centré à gauche) ─────────
+            const logoSize = 35
             const logoX = ml
-            const logoY = headerTop + (headerH - logoSize) / 2
-            const logoCX = logoX + logoSize / 2
-            const logoCY = logoY + logoSize / 2
-            const logoR = logoSize / 2
+            const logoY = headerTop + 4
+            const midPoint = logoX + logoSize / 2
 
-            // 1. Draw the JPEG image
+            // Logo Transparent
             try {
-                pdf.addImage(LOGO_BASE64, 'JPEG', logoX, logoY, logoSize, logoSize)
+                pdf.addImage(LOGO_BASE64, 'PNG', logoX, logoY, logoSize, logoSize)
             } catch (e) {
                 console.error('Logo error:', e)
             }
 
-            // 2. Cover the 4 corners with white shapes to create circular clip effect
-            const bgColor: [number, number, number] = [255, 255, 255]
-            pdf.setFillColor(bgColor[0], bgColor[1], bgColor[2])
-
-            // Top-left corner mask
-            pdf.moveTo(logoX, logoY)
-            pdf.lineTo(logoX + logoR, logoY)
-            const steps = 20
-            for (let i = 0; i <= steps; i++) {
-                const angle = Math.PI / 2 - (i / steps) * (Math.PI / 2)
-                const px = logoCX + logoR * Math.cos(angle + Math.PI)
-                const py = logoCY + logoR * Math.sin(angle + Math.PI)
-                pdf.lineTo(px, py)
-            }
-            pdf.lineTo(logoX, logoY + logoR)
-            pdf.lineTo(logoX, logoY)
-            pdf.fill()
-
-            // Top-right corner mask
-            pdf.moveTo(logoX + logoSize, logoY)
-            pdf.lineTo(logoX + logoR, logoY)
-            for (let i = 0; i <= steps; i++) {
-                const angle = (i / steps) * (Math.PI / 2)
-                const px = logoCX + logoR * Math.cos(angle + Math.PI + Math.PI / 2)
-                const py = logoCY + logoR * Math.sin(angle + Math.PI + Math.PI / 2)
-                pdf.lineTo(px, py)
-            }
-            pdf.lineTo(logoX + logoSize, logoY + logoR)
-            pdf.lineTo(logoX + logoSize, logoY)
-            pdf.fill()
-
-            // Bottom-right corner mask
-            pdf.moveTo(logoX + logoSize, logoY + logoSize)
-            pdf.lineTo(logoX + logoR, logoY + logoSize)
-            for (let i = 0; i <= steps; i++) {
-                const angle = (i / steps) * (Math.PI / 2)
-                const px = logoCX + logoR * Math.cos(angle)
-                const py = logoCY + logoR * Math.sin(angle)
-                pdf.lineTo(px, py)
-            }
-            pdf.lineTo(logoX + logoSize, logoY + logoR)
-            pdf.lineTo(logoX + logoSize, logoY + logoSize)
-            pdf.fill()
-
-            // Bottom-left corner mask
-            pdf.moveTo(logoX, logoY + logoSize)
-            pdf.lineTo(logoX + logoR, logoY + logoSize)
-            for (let i = 0; i <= steps; i++) {
-                const angle = Math.PI / 2 - (i / steps) * (Math.PI / 2)
-                const px = logoCX + logoR * Math.cos(angle + Math.PI / 2)
-                const py = logoCY + logoR * Math.sin(angle + Math.PI / 2)
-                pdf.lineTo(px, py)
-            }
-            pdf.lineTo(logoX, logoY + logoR)
-            pdf.lineTo(logoX, logoY + logoSize)
-            pdf.fill()
-
-            // 3. Fine circle border around logo
-            pdf.setDrawColor(200, 200, 200)
-            pdf.setLineWidth(0.3)
-            pdf.circle(logoCX, logoCY, logoR + 0.2, 'S')
-
-            // ── NOM : RETOUR GAGNANT + BENIN + SLOGAN ────────────
-            const textLeft = logoX + logoSize + 5
-            const nameY = headerTop + 14
+            // RETOUR GAGNANT (Sous le logo, centré)
+            const nameY = logoY + logoSize + 4
             pdf.setFont('helvetica', 'bold')
-            pdf.setFontSize(22)
+            pdf.setFontSize(14)
             pdf.setTextColor(0, 135, 81)
-            pdf.text('RETOUR', textLeft, nameY)
-            const retourW = pdf.getTextWidth('RETOUR ')
+            const text1 = 'RETOUR '
+            const text2 = 'GAGNANT'
+            const fullW = pdf.getTextWidth(text1 + text2)
+            
+            pdf.text(text1, midPoint - fullW/2, nameY)
             pdf.setTextColor(232, 17, 45)
-            pdf.text('GAGNANT', textLeft + retourW, nameY)
+            pdf.text(text2, midPoint - fullW/2 + pdf.getTextWidth(text1), nameY)
 
-            // BENIN avec tracking large
+            // BÉNIN (Tracking large)
             pdf.setFont('helvetica', 'bold')
-            pdf.setFontSize(8.5)
+            pdf.setFontSize(7)
             pdf.setTextColor(90, 90, 90)
             pdf.setCharSpace(2.5)
-            pdf.text('BENIN', textLeft, nameY + 7.5)
+            const beninW = pdf.getTextWidth('BENIN')
+            pdf.text('BENIN', midPoint - beninW/2 + 1.25, nameY + 5) // +1.25 to offset charspace
             pdf.setCharSpace(0)
 
-            // Slogan original
+            // Slogan (Petit, centré, wrapé à la largeur du logo)
             pdf.setFont('helvetica', 'normal')
-            pdf.setFontSize(6)
+            pdf.setFontSize(5.5)
             pdf.setTextColor(130, 130, 130)
-            pdf.text(safe("L'agence d'accompagnement a la Nationalite Beninoise et au retour des Afro-descendants."), textLeft, nameY + 14)
+            const sloganText = safe("L'agence d'accompagnement a la Nationalite Beninoise et au retour des Afro-descendants.")
+            const sloganLines = pdf.splitTextToSize(sloganText, logoSize + 10)
+            sloganLines.forEach((line: string, i: number) => {
+                const lineW = pdf.getTextWidth(line)
+                pdf.text(line, midPoint - lineW/2, nameY + 9 + i * 2.5)
+            })
 
             // ── TYPE DOCUMENT (droite, en haut du header) ────────
             const typeLabel = doc.type === 'devis' ? 'DEVIS' : 'FACTURE'
@@ -240,21 +184,20 @@ export default function AdminFacturationPage() {
             } else {
                 pdf.setTextColor(0, 135, 81)
             }
-            pdf.text(typeLabel, pw - mr, headerTop + 16, { align: 'right' })
+            pdf.text(typeLabel, pw - mr, headerTop + 13, { align: 'right' })
 
             // Numero + Date + Validite
             pdf.setFont('helvetica', 'normal')
-            pdf.setFontSize(8.5)
+            pdf.setFontSize(8)
             pdf.setTextColor(80, 80, 80)
-            pdf.text('N. ' + doc.numero, pw - mr, headerTop + 24, { align: 'right' })
-            pdf.text('Date : ' + new Date(doc.created_at).toLocaleDateString('fr-FR'), pw - mr, headerTop + 30, { align: 'right' })
+            pdf.text('N. ' + doc.numero, pw - mr, headerTop + 20, { align: 'right' })
+            pdf.text('Date : ' + new Date(doc.created_at).toLocaleDateString('fr-FR'), pw - mr, headerTop + 25, { align: 'right' })
             if (doc.validite) {
                 const validLabel = doc.type === 'facture' ? 'Delai : ' : 'Validite : '
-                pdf.text(safe(validLabel + doc.validite), pw - mr, headerTop + 36, { align: 'right' })
+                pdf.text(safe(validLabel + doc.validite), pw - mr, headerTop + 30, { align: 'right' })
             }
 
-            // ── STATUS BADGE (sous la ligne, avec espacement) ────
-            const badgeY = headerTop + headerH + 4
+            // ── STATUS BADGE (Dans le header, à droite) ──────────────────
             const statusLabels: Record<string, string> = {
                 brouillon: 'BROUILLON', envoye: 'ENVOYE', accepte: 'ACCEPTE',
                 refuse: 'REFUSE', paye: 'PAYE', en_retard: 'EN RETARD', annule: 'ANNULE'
@@ -265,13 +208,16 @@ export default function AdminFacturationPage() {
             }
             const sc = statusColorMap[doc.status] || [90, 90, 90]
             const statusText = statusLabels[doc.status] || doc.status.toUpperCase()
-            const badgeW = 28
+            
+            const badgeY = headerTop + 35
+            const badgeW = 32
+            const badgeH = 8
             pdf.setFillColor(sc[0], sc[1], sc[2])
-            pdf.roundedRect(pw - mr - badgeW, badgeY, badgeW, 7, 2, 2, 'F')
+            pdf.roundedRect(pw - mr - badgeW, badgeY, badgeW, badgeH, 1.5, 1.5, 'F')
             pdf.setFont('helvetica', 'bold')
-            pdf.setFontSize(6.5)
+            pdf.setFontSize(7.5)
             pdf.setTextColor(255, 255, 255)
-            pdf.text(statusText, pw - mr - badgeW / 2, badgeY + 4.8, { align: 'center' })
+            pdf.text(statusText, pw - mr - badgeW / 2, badgeY + 5.5, { align: 'center' })
 
             let y = badgeY + 12
 
@@ -546,7 +492,7 @@ export default function AdminFacturationPage() {
                         <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.3em]">ERP & Comptabilité</span>
                     </div>
                     <h1 className="text-2xl font-black text-white">Centre de Facturation</h1>
-                    <p className="text-gray-500 text-sm mt-1">Supervision globale des finances de l'agence.</p>
+                    <p className="text-gray-500 text-sm mt-1">Supervision globale des finances de l&apos;agence.</p>
                 </div>
                 <Link href="/admin/facturation/create" className="flex items-center gap-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-500/30 transition-all">
                     <Plus size={16} /> Créer une Facture / Devis
