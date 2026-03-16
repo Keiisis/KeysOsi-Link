@@ -373,6 +373,7 @@ export default function ClientPortalPage() {
                 .replace(/\u2022/g, '-')    // bullet
 
             // ── BENIN FLAG STRIPE ──────────────────────────────────
+            // On force le mode de rendu pour l'impression
             pdf.setFillColor(0, 135, 81)
             pdf.rect(0, 0, pw / 3, 4, 'F')
             pdf.setFillColor(252, 209, 22)
@@ -743,13 +744,21 @@ export default function ClientPortalPage() {
             }
 
             // ── FOOTER ──────────────────────────────────────────
+            // Augmentation de la marge de sécurité (Remonté à 18mm du bord)
+            const footH = 18
+            const footerY = ph - footH
             pdf.setFillColor(10, 16, 24)
-            pdf.rect(0, ph - 14, pw, 14, 'F')
+            pdf.rect(0, footerY, pw, footH, 'F')
+            
             pdf.setFont('helvetica', 'normal')
-            pdf.setFontSize(5.5)
-            pdf.setTextColor(120, 140, 160)
-            pdf.text('RETOUR GAGNANT BENIN - RCCM: RB/COT/26 B 42001 - IFU: 3202644573981 - Haie-Vive Cocotiers, Cotonou - contact@retourgagnantbenin.bj', pw / 2, ph - 8, { align: 'center' })
-            pdf.text('Document N. ' + doc.numero + ' - Genere le ' + new Date().toLocaleDateString('fr-FR'), pw / 2, ph - 4, { align: 'center' })
+            pdf.setFontSize(6)
+            pdf.setTextColor(180, 190, 210) // Plus clair pour l'impression sur fond noir
+            pdf.text('RETOUR GAGNANT BENIN - RCCM: RB/COT/26 B 42001 - IFU: 3202644573981 - Haie-Vive Cocotiers, Cotonou - contact@retourgagnantbenin.bj', pw / 2, footerY + 7, { align: 'center' })
+            
+            pdf.setFont('helvetica', 'bold')
+            pdf.setFontSize(6.5)
+            pdf.setTextColor(255, 255, 255)
+            pdf.text('Document N° ' + doc.numero + ' - Généré le ' + new Date().toLocaleDateString('fr-FR') + ' à ' + new Date().toLocaleTimeString('fr-FR'), pw / 2, footerY + 12, { align: 'center' })
 
             pdf.save(`${doc.type}_${doc.numero}.pdf`)
         } catch (err) {
