@@ -250,7 +250,7 @@ export default function ClientPortalPage() {
 
             // ── WHITE HEADER (identique navbar) ──────────────────
             const headerTop = 4
-            const headerH = 42
+            const headerH = 48
             pdf.setFillColor(255, 255, 255)
             pdf.rect(0, headerTop, pw, headerH, 'F')
 
@@ -260,9 +260,9 @@ export default function ClientPortalPage() {
             pdf.line(0, headerTop + headerH, pw, headerTop + headerH)
 
             // ── LOGO CIRCULAIRE (masque les coins noirs du JPEG) ──
-            const logoSize = 20
+            const logoSize = 24
             const logoX = ml
-            const logoY = headerTop + (headerH - logoSize) / 2
+            const logoY = headerTop + 12
             const logoCX = logoX + logoSize / 2
             const logoCY = logoY + logoSize / 2
             const logoR = logoSize / 2
@@ -340,9 +340,10 @@ export default function ClientPortalPage() {
 
             // ── NOM : RETOUR GAGNANT + BENIN + SLOGAN ────────────
             const textLeft = logoX + logoSize + 5
-            const nameY = headerTop + 14
+            const nameY = logoY + 7
+
             pdf.setFont('helvetica', 'bold')
-            pdf.setFontSize(22)
+            pdf.setFontSize(16)
             pdf.setTextColor(0, 135, 81) // #008751
             pdf.text('RETOUR', textLeft, nameY)
             const rW = pdf.getTextWidth('RETOUR ')
@@ -351,42 +352,45 @@ export default function ClientPortalPage() {
 
             // BENIN avec tracking large
             pdf.setFont('helvetica', 'bold')
-            pdf.setFontSize(8.5)
+            pdf.setFontSize(8)
             pdf.setTextColor(90, 90, 90)
-            pdf.setCharSpace(2.5)
-            pdf.text('BENIN', textLeft, nameY + 7.5)
+            pdf.setCharSpace(2)
+            pdf.text('BENIN', textLeft, nameY + 6)
             pdf.setCharSpace(0)
 
             // Slogan original
             pdf.setFont('helvetica', 'normal')
-            pdf.setFontSize(6)
+            pdf.setFontSize(6.5)
             pdf.setTextColor(130, 130, 130)
-            pdf.text(safe("L'agence d'accompagnement a la Nationalite Beninoise et au retour des Afro-descendants."), textLeft, nameY + 14)
+            const sloganText = safe("L'agence d'accompagnement a la Nationalite Beninoise et au retour des Afro-descendants.")
+            const sloganLines = pdf.splitTextToSize(sloganText, 80)
+            sloganLines.forEach((line: string, i: number) => {
+                pdf.text(line, textLeft, nameY + 11.5 + i * 3.5)
+            })
 
             // ── TYPE DOCUMENT (droite, en haut du header) ────────
             const typeLabel = doc.type === 'devis' ? 'DEVIS' : 'FACTURE'
             pdf.setFont('helvetica', 'bold')
-            pdf.setFontSize(28)
+            pdf.setFontSize(24)
             if (doc.type === 'devis') {
                 pdf.setTextColor(180, 120, 0)
             } else {
                 pdf.setTextColor(0, 135, 81)
             }
-            pdf.text(typeLabel, pw - mr, headerTop + 16, { align: 'right' })
+            pdf.text(typeLabel, pw - mr, headerTop + 14, { align: 'right' })
 
             // Numero + Date + Validite
             pdf.setFont('helvetica', 'normal')
-            pdf.setFontSize(8.5)
+            pdf.setFontSize(8)
             pdf.setTextColor(80, 80, 80)
-            pdf.text('N. ' + doc.numero, pw - mr, headerTop + 24, { align: 'right' })
-            pdf.text('Date : ' + new Date(doc.created_at).toLocaleDateString('fr-FR'), pw - mr, headerTop + 30, { align: 'right' })
+            pdf.text('N. ' + doc.numero, pw - mr, headerTop + 22, { align: 'right' })
+            pdf.text('Date : ' + new Date(doc.created_at).toLocaleDateString('fr-FR'), pw - mr, headerTop + 27, { align: 'right' })
             if (doc.validite) {
                 const validLabel = doc.type === 'facture' ? 'Delai : ' : 'Validite : '
-                pdf.text(safe(validLabel + doc.validite), pw - mr, headerTop + 36, { align: 'right' })
+                pdf.text(safe(validLabel + doc.validite), pw - mr, headerTop + 32, { align: 'right' })
             }
 
-            // ── STATUS BADGE (sous la ligne, avec espacement) ────
-            const badgeY = headerTop + headerH + 4
+            // ── STATUS BADGE (Dans le header, à droite en bas) ──────────────────
             const statusLabels: Record<string, string> = {
                 brouillon: 'BROUILLON', envoye: 'ENVOYE', accepte: 'ACCEPTE',
                 refuse: 'REFUSE', paye: 'PAYE', en_retard: 'EN RETARD', annule: 'ANNULE'
@@ -397,15 +401,18 @@ export default function ClientPortalPage() {
             }
             const sc = statusColorMap[doc.status] || [90, 90, 90]
             const statusText = statusLabels[doc.status] || doc.status.toUpperCase()
-            const badgeW = 28
+            
+            const badgeY = headerTop + 37
+            const badgeW = 32
+            const badgeH = 8
             pdf.setFillColor(sc[0], sc[1], sc[2])
-            pdf.roundedRect(pw - mr - badgeW, badgeY, badgeW, 7, 2, 2, 'F')
+            pdf.roundedRect(pw - mr - badgeW, badgeY, badgeW, badgeH, 1.5, 1.5, 'F')
             pdf.setFont('helvetica', 'bold')
-            pdf.setFontSize(6.5)
+            pdf.setFontSize(7.5)
             pdf.setTextColor(255, 255, 255)
-            pdf.text(statusText, pw - mr - badgeW / 2, badgeY + 4.8, { align: 'center' })
+            pdf.text(statusText, pw - mr - badgeW / 2, badgeY + 5.5, { align: 'center' })
 
-            let y = badgeY + 12
+            let y = headerTop + headerH + 8
 
             // ── EMETTEUR / DESTINATAIRE ──────────────────────────
             const boxW = (cw - 6) / 2

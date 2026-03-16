@@ -160,7 +160,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
         // ── WHITE HEADER ───────────────────────────────────────────────
         const headerTop = 3
-        const headerH = 70
+        const headerH = 48
         pdf.setFillColor(255, 255, 255)
         pdf.rect(0, headerTop, PW, headerH, 'F')
 
@@ -169,11 +169,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         pdf.setLineWidth(0.4)
         pdf.line(0, headerTop + headerH, PW, headerTop + headerH)
 
-        // ── LOGO & BRANDING (Stacké et Centré à gauche) ─────────
-        const logoSize = 35
+        // ── LOGO & BRANDING (Alignés horizontalement) ─────────
+        const logoSize = 26
         const logoX = ML
-        const logoY = headerTop + 4
-        const midPoint = logoX + logoSize / 2
+        const logoY = headerTop + 10
 
         // Logo Transparent
         try {
@@ -182,53 +181,51 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
             console.error('Logo error:', e)
         }
 
-        // RETOUR GAGNANT (Sous le logo, centré)
-        const nameY = logoY + logoSize + 4
+        // TEXTES : A côté du logo, centrés verticalement avec le logo
+        const textStartX = logoX + logoSize + 5
+        const nameY = logoY + 8
         pdf.setFont('helvetica', 'bold')
-        pdf.setFontSize(14)
+        pdf.setFontSize(16)
         pdf.setTextColor(0, 135, 81)
         const text1 = 'RETOUR '
         const text2 = 'GAGNANT'
-        const fullW = pdf.getTextWidth(text1 + text2)
         
-        pdf.text(text1, midPoint - fullW/2, nameY)
+        pdf.text(text1, textStartX, nameY)
         pdf.setTextColor(232, 17, 45)
-        pdf.text(text2, midPoint - fullW/2 + pdf.getTextWidth(text1), nameY)
+        pdf.text(text2, textStartX + pdf.getTextWidth(text1), nameY)
 
-        // BÉNIN (Tracking large)
+        // BÉNIN
         pdf.setFont('helvetica', 'bold')
-        pdf.setFontSize(7)
+        pdf.setFontSize(8)
         pdf.setTextColor(90, 90, 90)
-        pdf.setCharSpace(2.5)
-        const beninW = pdf.getTextWidth('BENIN')
-        pdf.text('BENIN', midPoint - beninW/2 + 1.25, nameY + 5) // +1.25 to offset charspace
+        pdf.setCharSpace(2)
+        pdf.text('BENIN', textStartX, nameY + 6)
         pdf.setCharSpace(0)
 
-        // Slogan (Petit, centré, wrapé à la largeur du logo)
+        // Slogan
         pdf.setFont('helvetica', 'normal')
-        pdf.setFontSize(5.5)
+        pdf.setFontSize(6.5)
         pdf.setTextColor(130, 130, 130)
         const slogan = safe("L'agence d'accompagnement a la Nationalite Beninoise et au retour des Afro-descendants.")
-        const sloganLines = pdf.splitTextToSize(slogan, logoSize + 10)
+        const sloganLines = pdf.splitTextToSize(slogan, 80)
         sloganLines.forEach((line: string, i: number) => {
-            const lineW = pdf.getTextWidth(line)
-            pdf.text(line, midPoint - lineW/2, nameY + 9 + i * 2.5)
+            pdf.text(line, textStartX, nameY + 11.5 + i * 3.5)
         })
 
         // ── TYPE DOCUMENT (droite) ────────────────────────────────────
         pdf.setFont('helvetica', 'bold')
-        pdf.setFontSize(28)
+        pdf.setFontSize(24)
         pdf.setTextColor(30, 30, 30)
-        pdf.text('DEVIS', PW - MR, headerTop + 13, { align: 'right' })
+        pdf.text('DEVIS', PW - MR, headerTop + 14, { align: 'right' })
 
         pdf.setFont('helvetica', 'normal')
         pdf.setFontSize(8)
         pdf.setTextColor(80, 80, 80)
-        pdf.text(`Réf. : ${ref}`, PW - MR, headerTop + 20, { align: 'right' })
-        pdf.text(`Date : Cotonou, le ${safe(dateFr(p.created_at))}`, PW - MR, headerTop + 25, { align: 'right' })
+        pdf.text(`Réf. : ${ref}`, PW - MR, headerTop + 22, { align: 'right' })
+        pdf.text(`Date : Cotonou, le ${safe(dateFr(p.created_at))}`, PW - MR, headerTop + 27, { align: 'right' })
 
-        // ── STATUS BADGE (Dans le header, à droite) ──────────────────
-        const badgeY = headerTop + 32
+        // ── STATUS BADGE (Dans le header, à droite en bas) ──────────────────
+        const badgeY = headerTop + 37
         const badgeW = 32
         const badgeH = 8
         pdf.setFillColor(0, 135, 81) // Couleur "Accepté"
