@@ -242,81 +242,83 @@ export default function ClientPortalPage() {
 
             // ── BENIN FLAG STRIPE ──────────────────────────────────
             pdf.setFillColor(0, 135, 81)
-            pdf.rect(0, 0, pw / 3, 3.5, 'F')
+            pdf.rect(0, 0, pw / 3, 4, 'F')
             pdf.setFillColor(252, 209, 22)
-            pdf.rect(pw / 3, 0, pw / 3, 3.5, 'F')
+            pdf.rect(pw / 3, 0, pw / 3, 4, 'F')
             pdf.setFillColor(232, 17, 45)
-            pdf.rect((pw * 2) / 3, 0, pw / 3, 3.5, 'F')
+            pdf.rect((pw * 2) / 3, 0, pw / 3, 4, 'F')
 
-            // ── WHITE HEADER ──────────────────────────────────────
-            const headerH = 32
-            const headerTop = 3.5
+            // ── WHITE HEADER (identique navbar) ──────────────────
+            const headerTop = 4
+            const headerH = 46
             pdf.setFillColor(255, 255, 255)
             pdf.rect(0, headerTop, pw, headerH, 'F')
-            // Fine border bottom
-            pdf.setDrawColor(210, 210, 210)
-            pdf.setLineWidth(0.3)
-            pdf.line(0, headerTop + headerH, pw, headerTop + headerH)
 
-            // Logo with white circular background (pour cacher le fond noir du JPEG)
-            const logoSize = 14
+            // Logo : cercle blanc avec bordure fine (comme la navbar bg-white rounded-full border)
+            const logoSize = 18
             const logoCenterX = ml + logoSize / 2
             const logoCenterY = headerTop + headerH / 2
+            // White circle background (masque le fond noir du JPEG)
             pdf.setFillColor(255, 255, 255)
-            pdf.circle(logoCenterX, logoCenterY, logoSize / 2 + 1, 'F')
+            pdf.circle(logoCenterX, logoCenterY, logoSize / 2 + 1.5, 'F')
+            // Fine border around circle
+            pdf.setDrawColor(220, 220, 220)
+            pdf.setLineWidth(0.3)
+            pdf.circle(logoCenterX, logoCenterY, logoSize / 2 + 1.5, 'S')
             try {
                 pdf.addImage(LOGO_BASE64, 'JPEG', ml, logoCenterY - logoSize / 2, logoSize, logoSize)
             } catch (e) {
                 console.error('Logo error:', e)
             }
 
-            // Company name: RETOUR (vert) GAGNANT (rouge) - aligne verticalement au centre
-            const textLeft = ml + logoSize + 4
-            const nameY = headerTop + 12
+            // Company name: RETOUR (vert #008751) GAGNANT (rouge #E8112D) - comme la navbar
+            const textLeft = ml + logoSize + 5
+            const nameY = headerTop + 18
             pdf.setFont('helvetica', 'bold')
-            pdf.setFontSize(16)
+            pdf.setFontSize(22)
             pdf.setTextColor(0, 135, 81)
-            pdf.text('RETOUR ', textLeft, nameY)
+            pdf.text('RETOUR', textLeft, nameY)
             const rW = pdf.getTextWidth('RETOUR ')
             pdf.setTextColor(232, 17, 45)
             pdf.text('GAGNANT', textLeft + rW, nameY)
 
-            // BENIN subtitle
+            // BENIN - tracking large comme la navbar (tracking-[0.5em])
             pdf.setFont('helvetica', 'bold')
-            pdf.setFontSize(7)
-            pdf.setTextColor(100, 100, 100)
-            pdf.text('B E N I N', textLeft, nameY + 6)
+            pdf.setFontSize(8.5)
+            pdf.setTextColor(90, 90, 90)
+            pdf.setCharSpace(2.5)
+            pdf.text('BENIN', textLeft, nameY + 8)
+            pdf.setCharSpace(0)
 
-            // Tagline
+            // Tagline (slogan original)
             pdf.setFont('helvetica', 'normal')
-            pdf.setFontSize(5.5)
-            pdf.setTextColor(140, 140, 140)
-            pdf.text(safe("L'agence d'accompagnement - Nationalite Beninoise"), textLeft, nameY + 11)
+            pdf.setFontSize(6)
+            pdf.setTextColor(130, 130, 130)
+            pdf.text(safe("L'agence d'accompagnement a la Nationalite Beninoise et au retour des Afro-descendants."), textLeft, nameY + 14)
 
-            // ── TYPE DOCUMENT (droite, bien aligne) ──────────────
+            // ── TYPE DOCUMENT (droite) + STATUS BADGE ────────────
             const typeLabel = doc.type === 'devis' ? 'DEVIS' : 'FACTURE'
             pdf.setFont('helvetica', 'bold')
-            pdf.setFontSize(24)
+            pdf.setFontSize(30)
             if (doc.type === 'devis') {
                 pdf.setTextColor(180, 120, 0)
             } else {
                 pdf.setTextColor(0, 135, 81)
             }
-            pdf.text(typeLabel, pw - mr, headerTop + 14, { align: 'right' })
+            pdf.text(typeLabel, pw - mr, headerTop + 18, { align: 'right' })
 
-            // Numero + date (sous le type, aligne a droite)
+            // Numero + date
             pdf.setFont('helvetica', 'normal')
-            pdf.setFontSize(8)
+            pdf.setFontSize(9)
             pdf.setTextColor(80, 80, 80)
-            pdf.text('N. ' + doc.numero, pw - mr, headerTop + 21, { align: 'right' })
-            pdf.text('Date : ' + new Date(doc.created_at).toLocaleDateString('fr-FR'), pw - mr, headerTop + 26, { align: 'right' })
+            pdf.text('N. ' + doc.numero, pw - mr, headerTop + 26, { align: 'right' })
+            pdf.text('Date : ' + new Date(doc.created_at).toLocaleDateString('fr-FR'), pw - mr, headerTop + 32, { align: 'right' })
             if (doc.validite) {
                 const validLabel = doc.type === 'facture' ? 'Delai : ' : 'Validite : '
-                pdf.text(safe(validLabel + doc.validite), pw - mr, headerTop + 31, { align: 'right' })
+                pdf.text(safe(validLabel + doc.validite), pw - mr, headerTop + 38, { align: 'right' })
             }
 
-            // ── STATUS BADGE (juste sous le header, bien positionne) ──
-            let y = headerTop + headerH + 4
+            // Status badge INSIDE header, juste avant la ligne de separation
             const statusLabels: Record<string, string> = {
                 brouillon: 'BROUILLON', envoye: 'ENVOYE', accepte: 'ACCEPTE',
                 refuse: 'REFUSE', paye: 'PAYE', en_retard: 'EN RETARD', annule: 'ANNULE'
@@ -327,15 +329,21 @@ export default function ClientPortalPage() {
             }
             const sc = statusColorMap[doc.status] || [90, 90, 90]
             const statusText = statusLabels[doc.status] || doc.status.toUpperCase()
-            const badgeW = pdf.getTextWidth(statusText) * 0.35 + 12
+            const badgeW = 26
+            // Badge positionne juste avant la ligne du bas du header
             pdf.setFillColor(sc[0], sc[1], sc[2])
-            pdf.roundedRect(pw - mr - badgeW, y, badgeW, 6, 1.5, 1.5, 'F')
+            pdf.roundedRect(pw - mr - badgeW, headerTop + headerH - 8, badgeW, 6, 1.5, 1.5, 'F')
             pdf.setFont('helvetica', 'bold')
             pdf.setFontSize(6)
             pdf.setTextColor(255, 255, 255)
-            pdf.text(statusText, pw - mr - badgeW / 2, y + 4.2, { align: 'center' })
+            pdf.text(statusText, pw - mr - badgeW / 2, headerTop + headerH - 3.8, { align: 'center' })
 
-            y += 10
+            // Line de separation sous le header
+            pdf.setDrawColor(220, 220, 220)
+            pdf.setLineWidth(0.4)
+            pdf.line(0, headerTop + headerH, pw, headerTop + headerH)
+
+            let y = headerTop + headerH + 6
 
             // ── EMETTEUR / DESTINATAIRE ──────────────────────────
             const boxW = (cw - 6) / 2
