@@ -234,7 +234,7 @@ Example format: ["Insight 1.", "Insight 2.", "Insight 3."]`
                     await sendEmail({
                         to: email,
                         subject: `Retour Gagnant — Les résultats de l'Oracle`,
-                        html: (await getEmailTemplates('fr')).autoReply(clientName || 'Cher client', aiReply),
+                        html: await (await getEmailTemplates('fr')).autoReply(clientName || 'Cher client', aiReply),
                         context: 'auto_reply',
                         relatedId: leadId,
                     });
@@ -245,7 +245,7 @@ Example format: ["Insight 1.", "Insight 2.", "Insight 3."]`
                     await sendEmail({
                         to: config.adminEmail,
                         subject: `🔮 Nouveau Lead Oracle — ${clientName || email}`,
-                        html: (await getEmailTemplates('fr')).newLeadNotification(clientName || 'Inconnu', email || 'Inconnu', finalScore, rec.service, 'L\'Oracle'),
+                        html: await (await getEmailTemplates('fr')).newLeadNotification(clientName || 'Inconnu', email || 'Inconnu', finalScore, rec.service, 'L\'Oracle'),
                         context: 'lead_notification',
                         relatedId: leadId,
                     });

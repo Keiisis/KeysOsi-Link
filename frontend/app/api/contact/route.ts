@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
                 await sendEmail({
                     to: email,
                     subject: `Retour Gagnant — Nous avons reçu votre message`,
-                    html: (await getEmailTemplates('fr')).autoReply(clientName, aiReply),
+                    html: await (await getEmailTemplates('fr')).autoReply(clientName, aiReply),
                     context: 'auto_reply',
                     relatedId: msgId,
                 });
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
                     await sendEmail({
                         to: config.adminEmail,
                         subject: `🔔 Nouveau Contact — ${clientName} (${sujet || 'Contact'})`,
-                        html: (await getEmailTemplates('fr')).newLeadNotification(clientName, email, 0, sujet || 'Contact', 'Formulaire de Contact'),
+                        html: await (await getEmailTemplates('fr')).newLeadNotification(clientName, email, 0, sujet || 'Contact', 'Formulaire de Contact'),
                         context: 'admin_notification',
                         relatedId: msgId,
                     });

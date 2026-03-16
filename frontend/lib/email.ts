@@ -248,14 +248,62 @@ function getI18n(lang: string): EmailTranslations {
 // ═══════════════════════════════════════════════════════
 // 🎨 PREMIUM EMAIL WRAPPER — Ultra-shine, with logo, multilingual
 // Unified design for ALL emails across the entire site
+// Now dynamic: reads from document_templates (official_email)
 // ═══════════════════════════════════════════════════════
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.retourgagnantbenin.bj'
 const LOGO_URL = `${SITE_URL}/logo.jpg`
 const CONTACT_EMAIL = 'contact@retourgagnantbenin.bj'
 
-const EMAIL_WRAPPER = (content: string, lang: string = 'fr') => {
+// Cache to avoid fetching on every email call
+let _cachedEmailTemplate: { header: string; footer: string } | null = null
+let _cacheTimestamp = 0
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+async function getEmailTemplate(): Promise<{ header: string; footer: string }> {
+    const now = Date.now()
+    if (_cachedEmailTemplate && (now - _cacheTimestamp) < CACHE_TTL) {
+        return _cachedEmailTemplate
+    }
+
+    try {
+        const supabase = createClient(supabaseUrl, supabaseKey)
+        const { data } = await supabase
+            .from('document_templates')
+            .select('content')
+            .eq('id', 'official_email')
+            .single()
+
+        if (data?.content) {
+            _cachedEmailTemplate = {
+                header: data.content.header || '',
+                footer: data.content.footer || '',
+            }
+            _cacheTimestamp = now
+            return _cachedEmailTemplate
+        }
+    } catch (err) {
+        console.error('[EMAIL] Failed to fetch email template:', err)
+    }
+
+    return { header: '', footer: '' }
+}
+
+const EMAIL_WRAPPER = async (content: string, lang: string = 'fr') => {
     const t = getI18n(lang)
     const isRtl = resolveLocale(lang) === 'ar'
+
+    // Fetch dynamic email template from ERP settings
+    const emailTpl = await getEmailTemplate()
+
+    // Build dynamic header subtitle from ERP template (replaces hardcoded "BÉNIN")
+    const headerSubtitle = emailTpl.header
+        ? `<p style="margin:2px 0 0;font-size:9px;color:rgba(252,209,22,0.8);letter-spacing:2px;text-transform:uppercase;font-weight:700;">${emailTpl.header.split('\n')[0]}</p>`
+        : `<p style="margin:2px 0 0;font-size:9px;color:rgba(252,209,22,0.8);letter-spacing:4px;text-transform:uppercase;font-weight:700;">BÉNIN</p>`
+
+    // Build dynamic footer from ERP template
+    const footerContent = emailTpl.footer
+        ? `<p style="margin:0 0 6px;font-size:11px;color:rgba(255,255,255,0.25);font-weight:600;letter-spacing:0.5px;">${emailTpl.footer.replace(/\n/g, '<br/>')}</p>`
+        : `<p style="margin:0 0 6px;font-size:11px;color:rgba(255,255,255,0.25);font-weight:600;letter-spacing:0.5px;">${t.sentBy}</p>`
 
     return `<!DOCTYPE html>
 <html lang="${resolveLocale(lang)}" ${isRtl ? 'dir="rtl"' : ''}>
@@ -283,7 +331,7 @@ const EMAIL_WRAPPER = (content: string, lang: string = 'fr') => {
                 <h1 style="margin:0;font-size:20px;font-weight:900;letter-spacing:1px;">
                   <span style="color:#008751;">RETOUR</span> <span style="color:#E8112D;">GAGNANT</span>
                 </h1>
-                <p style="margin:2px 0 0;font-size:9px;color:rgba(252,209,22,0.8);letter-spacing:4px;text-transform:uppercase;font-weight:700;">BÉNIN</p>
+                ${headerSubtitle}
               </td>
             </tr>
           </table>
@@ -304,9 +352,7 @@ const EMAIL_WRAPPER = (content: string, lang: string = 'fr') => {
           <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent);"></div>
         </td></tr>
         <tr><td style="padding:24px 40px;text-align:center;">
-          <p style="margin:0 0 6px;font-size:11px;color:rgba(255,255,255,0.25);font-weight:600;letter-spacing:0.5px;">
-            ${t.sentBy}
-          </p>
+          ${footerContent}
           <p style="margin:0 0 12px;font-size:11px;color:rgba(255,255,255,0.2);">
             ${t.replyTo} <a href="mailto:${CONTACT_EMAIL}" style="color:#008751;text-decoration:none;font-weight:600;">${CONTACT_EMAIL}</a>
           </p>
@@ -392,5 +438,92 @@ export const getEmailTemplates = async (locale: string = 'fr') => {
         <h2 style="margin:0 0 20px;font-size:20px;color:#FCD116;font-weight:800;">${getI18n(language).hello} ${clientName},</h2>
         <div style="color:rgba(255,255,255,0.75);font-size:14px;line-height:1.9;margin:0 0 24px;white-space:pre-wrap;">${agentMessage}</div>
     `, language),
+
+        /** Invoice payment reminder — tone escalates with delay */
+        invoiceReminder: (
+            clientName: string,
+            invoiceNumero: string,
+            montant: string,
+            currency: string,
+            daysOverdue: number,
+            portalUrl: string,
+        ) => {
+            // Déterminer le niveau de rappel et adapter le ton
+            let level: 'friendly' | 'firm' | 'formal' = 'friendly'
+            let emoji = '📋'
+            let accentColor = '#FCD116'
+            let title = 'Rappel de paiement'
+            let intro = ''
+            let closing = ''
+
+            if (daysOverdue <= 10) {
+                level = 'friendly'
+                emoji = '📋'
+                accentColor = '#FCD116'
+                title = 'Petit rappel concernant votre facture'
+                intro = `Nous espérons que tout va bien de votre côté ! Nous souhaitons simplement vous rappeler que la facture <strong>${invoiceNumero}</strong> d'un montant de <strong>${montant} ${currency}</strong> est en attente de règlement.`
+                closing = 'N\'hésitez pas à nous contacter si vous avez la moindre question. Nous restons entièrement à votre disposition !'
+            } else if (daysOverdue <= 25) {
+                level = 'firm'
+                emoji = '⏳'
+                accentColor = '#f59e0b'
+                title = 'Rappel — Facture en attente de règlement'
+                intro = `Nous nous permettons de revenir vers vous concernant la facture <strong>${invoiceNumero}</strong> d'un montant de <strong>${montant} ${currency}</strong>, émise il y a ${daysOverdue} jours et toujours en attente de règlement.`
+                closing = 'Nous vous serions reconnaissants de procéder au règlement dans les meilleurs délais, ou de nous contacter si un arrangement est nécessaire.'
+            } else {
+                level = 'formal'
+                emoji = '🔴'
+                accentColor = '#ef4444'
+                title = 'Dernier rappel — Facture impayée'
+                intro = `Malgré nos précédents rappels, la facture <strong>${invoiceNumero}</strong> d'un montant de <strong>${montant} ${currency}</strong> reste impayée depuis ${daysOverdue} jours. Nous vous prions de bien vouloir procéder au règlement dans les plus brefs délais.`
+                closing = 'Sans règlement de votre part sous 7 jours, nous serons contraints d\'envisager des mesures complémentaires. Nous restons disponibles pour toute discussion amiable.'
+            }
+
+            const urgencyBadge = level === 'formal'
+                ? `<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:12px 16px;margin:0 0 20px;text-align:center;">
+                     <span style="color:#ef4444;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;">⚠️ DERNIER RAPPEL — ACTION REQUISE</span>
+                   </div>`
+                : ''
+
+            return EMAIL_WRAPPER(`
+        <h2 style="margin:0 0 16px;font-size:20px;color:${accentColor};font-weight:800;">${emoji} ${title}</h2>
+        ${urgencyBadge}
+        <p style="color:rgba(255,255,255,0.7);font-size:14px;line-height:1.8;margin:0 0 8px;">
+            Bonjour <strong style="color:#fff;">${clientName}</strong>,
+        </p>
+        <p style="color:rgba(255,255,255,0.6);font-size:14px;line-height:1.8;margin:0 0 24px;">
+            ${intro}
+        </p>
+
+        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;margin:0 0 24px;">
+            <table style="width:100%;border-collapse:collapse;">
+                <tr>
+                    <td style="padding:8px 0;color:rgba(255,255,255,0.4);font-size:12px;text-transform:uppercase;letter-spacing:1px;">N° Facture</td>
+                    <td style="padding:8px 0;text-align:right;color:#fff;font-size:14px;font-weight:700;font-family:monospace;">${invoiceNumero}</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:rgba(255,255,255,0.4);font-size:12px;text-transform:uppercase;letter-spacing:1px;border-top:1px solid rgba(255,255,255,0.05);">Montant dû</td>
+                    <td style="padding:8px 0;text-align:right;color:${accentColor};font-size:20px;font-weight:900;border-top:1px solid rgba(255,255,255,0.05);">${montant} ${currency}</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:rgba(255,255,255,0.4);font-size:12px;text-transform:uppercase;letter-spacing:1px;border-top:1px solid rgba(255,255,255,0.05);">Retard</td>
+                    <td style="padding:8px 0;text-align:right;color:${level === 'formal' ? '#ef4444' : 'rgba(255,255,255,0.6)'};font-size:13px;font-weight:600;border-top:1px solid rgba(255,255,255,0.05);">${daysOverdue} jours</td>
+                </tr>
+            </table>
+        </div>
+
+        <p style="color:rgba(255,255,255,0.5);font-size:13px;line-height:1.7;margin:0 0 24px;">
+            ${closing}
+        </p>
+
+        ${portalUrl ? `<table cellpadding="0" cellspacing="0" style="margin:0 auto;">
+          <tr><td>
+            <a href="${portalUrl}" style="display:inline-block;background:linear-gradient(135deg,${accentColor},${level === 'formal' ? '#dc2626' : (level === 'firm' ? '#d97706' : '#f5c518')});color:${level === 'friendly' ? '#111827' : '#fff'};text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:800;font-size:13px;letter-spacing:0.5px;box-shadow:0 4px 15px rgba(0,0,0,0.2);">
+              Consulter ma facture →
+            </a>
+          </td></tr>
+        </table>` : ''}
+    `, 'fr')
+        },
     }
 }

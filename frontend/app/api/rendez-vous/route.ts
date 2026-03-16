@@ -77,22 +77,22 @@ export async function POST(req: NextRequest) {
                 // Generate AI reply
                 const aiReply = await generateAutoReply(clientName, service || 'Consultation');
 
-                // Send auto-reply to client
+                // Auto-reply context
                 await sendEmail({
                     to: email,
-                    subject: `Retour Gagnant — Votre demande de rendez-vous`,
-                    html: (await getEmailTemplates('fr')).autoReply(clientName, aiReply),
+                    subject: `Retour Gagnant — Confirmation de Demande de Rendez-vous`,
+                    html: await (await getEmailTemplates('fr')).autoReply(clientName, aiReply),
                     context: 'auto_reply',
                     relatedId: msgId,
                 });
 
-                // Send notification to admin/agents
+                // Notify admin with lead context
                 const config = await getEmailConfig();
                 if (config.adminEmail) {
                     await sendEmail({
                         to: config.adminEmail,
-                        subject: `📅 Nouvelle Demande de RDV — ${clientName} (${service})`,
-                        html: (await getEmailTemplates('fr')).newLeadNotification(clientName, email, 0, service || 'Consultation', 'Formulaire de Rendez-vous'),
+                        subject: `📅 Nouvelle demande de Rendez-vous — ${clientName}`,
+                        html: await (await getEmailTemplates('fr')).newLeadNotification(clientName, email, 0, service || 'Consultation', 'Formulaire de Rendez-vous'),
                         context: 'admin_notification',
                         relatedId: msgId,
                     });

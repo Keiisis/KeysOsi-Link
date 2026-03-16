@@ -130,6 +130,19 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
         const ref = generateRef(p.client_name, p.created_at)
 
+        // ── Fetch ERP Templates (aligned with admin/settings/erp) ────────
+        const { data: templateData } = await supabase
+            .from('document_templates')
+            .select('content')
+            .eq('id', 'official_devis_facture')
+            .single()
+
+        const tpl = templateData?.content || {}
+        const devisHeader = tpl.header || "RETOUR GAGNANT BÉNIN\nRCCM : RB/COT/26 B 42001 | IFU : 3202644573981\nHaie-Vive Cocotiers, Cotonou, Bénin\n+229 01 60 32 21 21 / +229 01 94 35 50 50\ncontact@retourgagnantbenin.bj"
+        const devisFooter = tpl.footer || "Haie-Vive Cocotiers, Carré n°1158, Cotonou — République du Bénin\n+229 01 94 35 50 50  /  +229 01 60 32 21 21  /  +596 696 85 36 14\nIFU : 3202644573981   |   RCCM : RB/COT/26 B 42001   |   contact@retourgagnantbenin.bj"
+        const presidentName = tpl.signature_name || "N. R. G"
+        const presidentTitle = tpl.signature_title || "LA DIRECTION GÉNÉRALE"
+
         // ── Génération PDF ──────────────────────────────────────────────
         const pdf = new jsPDF('p', 'mm', 'a4')
 
@@ -194,22 +207,22 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         pdf.setTextColor(232, 17, 45)
         pdf.text(text2, textStartX + pdf.getTextWidth(text1), nameY)
 
-        // BÉNIN
-        pdf.setFont('helvetica', 'bold')
         pdf.setFontSize(8)
-        pdf.setTextColor(90, 90, 90)
-        pdf.setCharSpace(2)
-        pdf.text('BENIN', textStartX, nameY + 6)
-        pdf.setCharSpace(0)
-
-        // Slogan
-        pdf.setFont('helvetica', 'normal')
-        pdf.setFontSize(6.5)
-        pdf.setTextColor(130, 130, 130)
-        const slogan = safe("L'agence d'accompagnement a la Nationalite Beninoise et au retour des Afro-descendants.")
-        const sloganLines = pdf.splitTextToSize(slogan, 80)
-        sloganLines.forEach((line: string, i: number) => {
-            pdf.text(line, textStartX, nameY + 11.5 + i * 3.5)
+        pdf.setTextColor(80, 80, 80)
+        const headerLines = pdf.splitTextToSize(devisHeader, 80)
+        headerLines.forEach((l: string, i: number) => {
+            const isFirst = i === 0
+            if (isFirst) {
+                pdf.setFont('helvetica', 'bold')
+                pdf.setFontSize(10)
+                pdf.setTextColor(0, 135, 81)
+            } else {
+                pdf.setFont('helvetica', 'normal')
+                pdf.setFontSize(7)
+                pdf.setTextColor(130, 130, 130)
+            }
+            const offset = isFirst ? 11.5 : (16 + (i - 1) * 3.5)
+            pdf.text(safe(l), textStartX, nameY + offset)
         })
 
         // ── TYPE DOCUMENT (droite) ────────────────────────────────────
@@ -421,7 +434,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
             pdf.setFont('helvetica', 'bold')
             pdf.setFontSize(7.5)
             pdf.setTextColor(0, 100, 60)
-            pdf.text('La Présidente Directrice Générale', sig2X + 4, y + 8)
+            pdf.text(presidentTitle.toUpperCase(), sig2X + 4, y + 8)
             pdf.setFont('helvetica', 'bold')
             pdf.setFontSize(7)
             pdf.setTextColor(0, 135, 81)
@@ -429,10 +442,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
             pdf.setFontSize(5.5)
             pdf.setTextColor(0, 0, 0)
-            pdf.text('La Présidente Directrice Générale :', sig2X + 4, y + 19)
+            pdf.text('La Responsable de Signature :', sig2X + 4, y + 19)
             pdf.setFont('helvetica', 'bold')
             pdf.setFontSize(7)
-            pdf.text('N. R. G', sig2X + 4, y + 24)
+            pdf.text(safe(presidentName), sig2X + 4, y + 24)
 
             // Add Stamp (cachet) enlarged
             if (STAMP_BASE64) {
@@ -457,13 +470,17 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         pdf.setFont('helvetica', 'normal')
         pdf.setFontSize(6.5)
         pdf.setTextColor(180, 220, 190)
-        pdf.text('Haie-Vive Cocotiers, Carré n°1158, Cotonou — République du Bénin', PW / 2, PH - 13, { align: 'center' })
-
+        
+        const footerLines = devisFooter.split('\n')
+        if (footerLines.length > 0) pdf.text(safe(footerLines[0]), PW / 2, PH - 13, { align: 'center' })
+        
         pdf.setTextColor(252, 209, 22)
-        pdf.text('+229 01 94 35 50 50  /  +229 01 60 32 21 21  /  +596 696 85 36 14', PW / 2, PH - 9, { align: 'center' })
-
+        if (footerLines.length > 1) pdf.text(safe(footerLines[1]), PW / 2, PH - 9, { align: 'center' })
+        
         pdf.setTextColor(150, 200, 165)
-        pdf.text('IFU : 3202644573981   |   RCCM : RB/COT/26 B 42001   |   contact@retourgagnantbenin.bj', PW / 2, PH - 4.5, { align: 'center' })
+        if (footerLines.length > 2) {
+            pdf.text(safe(footerLines.slice(2).join(' | ')), PW / 2, PH - 4.5, { align: 'center' })
+        }
 
         // ── OUTPUT ───────────────────────────────────────────────────────
         const pdfBuffer = Buffer.from(pdf.output('arraybuffer'))

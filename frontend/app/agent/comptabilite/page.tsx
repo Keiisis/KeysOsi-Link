@@ -35,7 +35,7 @@ interface Depense {
     date_depense: string
 }
 
-const COMMISSION_RATE = 0.10 // 10% par défaut
+// Taux de commission par défaut supprimé (sera récupéré en BDD)
 
 // ── Helpers de Périodes ──────────────────────────────────────────
 type Period = 'ce_mois' | '3_mois' | 'tous'
@@ -88,6 +88,8 @@ export default function AgentComptabilitePage() {
     const [currentPage, setCurrentPage] = useState(1)
     const ITEMS_PER_PAGE = 8
 
+    const [commissionRate, setCommissionRate] = useState(0.10)
+
     const fetchAllData = async () => {
         setLoading(true)
         const { data: { user } } = await supabase.auth.getUser()
@@ -106,6 +108,17 @@ export default function AgentComptabilitePage() {
             .select('*')
             .eq('agent_id', user.id)
             .order('date_depense', { ascending: false })
+
+        // Fetch Settings
+        const { data: settings } = await supabase
+            .from('system_settings')
+            .select('*')
+            .eq('id', 'comptabilite_erp')
+            .single()
+
+        if (settings?.value?.commission_rate) {
+            setCommissionRate(settings.value.commission_rate)
+        }
 
         if (docs) setAllDocs(docs)
         if (exp) setExpenses(exp)
@@ -145,7 +158,7 @@ export default function AgentComptabilitePage() {
             const beneficeNet = encaisse - totalDepenses
             return { 
                 encaisse, facture, attente, 
-                commission: Math.round(encaisse * COMMISSION_RATE),
+                commission: Math.round(encaisse * commissionRate),
                 depenses: totalDepenses,
                 beneficeNet
             }
@@ -176,7 +189,7 @@ export default function AgentComptabilitePage() {
                 benefice: selectedPeriod === 'tous' ? null : calcTrend(curr.beneficeNet, prev.beneficeNet)
             }
         }
-    }, [periodDocs, prevDocs, expenses, selectedPeriod, pStart, pEnd, prevStart, prevEnd])
+    }, [periodDocs, prevDocs, expenses, selectedPeriod, pStart, pEnd, prevStart, prevEnd, commissionRate])
 
     // Data for Recharts
     const chartData = useMemo(() => {

@@ -103,6 +103,19 @@ export default function AgentDevisPage() {
     const generatePDF = async (doc: DocumentFinancier) => {
         setGenerating(true)
         try {
+            // Fetch ERP Templates (aligned with admin/settings/erp)
+            const { data: templateData } = await supabase
+                .from('document_templates')
+                .select('content')
+                .eq('id', 'official_devis_facture')
+                .single()
+
+            const tpl = templateData?.content || {}
+            const devisHeader = tpl.header || "RETOUR GAGNANT BÉNIN\nRCCM : RB/COT/26 B 42001 | IFU : 3202644573981\nHaie-Vive Cocotiers, Cotonou, Bénin\n+229 01 60 32 21 21 / +229 01 94 35 50 50\ncontact@retourgagnantbenin.bj"
+            const devisFooter = tpl.footer || "RETOUR GAGNANT BÉNIN — RCCM : RB/COT/26 B 42001 — IFU : 3202644573981\nSiège : Haie-Vive Cocotiers, Cotonou. Email : contact@retourgagnantbenin.bj"
+            const presidentName = tpl.signature_name || "N. R. G"
+            const presidentTitle = tpl.signature_title || "LA DIRECTION GÉNÉRALE"
+
             const jsPDF = (await import('jspdf')).default
             const pdf = new jsPDF('p', 'mm', 'a4')
             const pw = 210
@@ -221,15 +234,22 @@ export default function AgentDevisPage() {
             pdf.setFontSize(6.5)
             pdf.setTextColor(110, 150, 200)
             pdf.text('ÉMETTEUR', ml + 4, y + 7)
-            pdf.setFontSize(10)
+            pdf.setFontSize(8)
             pdf.setTextColor(255, 255, 255)
-            pdf.text('RETOUR GAGNANT BÉNIN', ml + 4, y + 15)
-            pdf.setFontSize(7)
-            pdf.setTextColor(160, 180, 210)
-            pdf.text('RCCM : RB/COT/26 B 42001 | IFU : 3202644573981', ml + 4, y + 22)
-            pdf.text('Haie-Vive Cocotiers, Cotonou, Bénin', ml + 4, y + 28)
-            pdf.text('+229 01 60 32 21 21 / +229 01 94 35 50 50', ml + 4, y + 34)
-            pdf.text('contact@retourgagnantbenin.bj', ml + 4, y + 40)
+            const headerLines = pdf.splitTextToSize(devisHeader, boxW - 8)
+            headerLines.forEach((l: string, i: number) => {
+                const isFirst = i === 0
+                if (isFirst) {
+                    pdf.setFont('helvetica', 'bold')
+                    pdf.setFontSize(10)
+                } else {
+                    pdf.setFont('helvetica', 'normal')
+                    pdf.setFontSize(7)
+                    if (i === 1) pdf.setTextColor(160, 180, 210)
+                }
+                const offset = isFirst ? 15 : (22 + (i - 1) * 6)
+                pdf.text(l, ml + 4, y + offset)
+            })
 
             // DESTINATAIRE
             pdf.setFillColor(248, 250, 255)
@@ -352,7 +372,7 @@ export default function AgentDevisPage() {
             pdf.setDrawColor(20, 40, 80)
             pdf.roundedRect(sig2X, y, sigW, sigH, 2, 2, 'D')
             pdf.setTextColor(20, 40, 80)
-            pdf.text('LA DIRECTION GÉNÉRALE', sig2X + 4, y + 6)
+            pdf.text(presidentTitle.toUpperCase(), sig2X + 4, y + 6)
 
             try {
                 // Increased stamp size from 48 to 65 for better visibility
@@ -363,17 +383,16 @@ export default function AgentDevisPage() {
             pdf.setFont('helvetica', 'bold')
             pdf.setFontSize(8)
             pdf.setTextColor(0, 100, 60)
-            pdf.text('N. R. G', sig2X + 4, y + 33)
+            pdf.text(presidentName, sig2X + 4, y + 33)
 
             // ── FOOTER ────────────────────────────────────────────
             pdf.setFillColor(12, 20, 32)
             pdf.rect(0, ph - 16, pw, 16, 'F')
             pdf.setFontSize(6)
             pdf.setTextColor(150, 170, 200)
-            const foot1 = 'RETOUR GAGNANT BÉNIN — RCCM : RB/COT/26 B 42001 — IFU : 3202644573981'
-            const foot2 = 'Siège : Haie-Vive Cocotiers, Cotonou. Email : contact@retourgagnantbenin.bj'
-            pdf.text(foot1, pw / 2, ph - 11, { align: 'center' })
-            pdf.text(foot2, pw / 2, ph - 7, { align: 'center' })
+            const footerLines = devisFooter.split('\n')
+            if (footerLines.length > 0) pdf.text(footerLines[0], pw / 2, ph - 11, { align: 'center' })
+            if (footerLines.length > 1) pdf.text(footerLines[1], pw / 2, ph - 7, { align: 'center' })
             pdf.text(`Doc N° ${doc.numero} — Page 1/1`, pw / 2, ph - 4, { align: 'center' })
 
             pdf.save(`${doc.type}_${doc.numero}.pdf`)

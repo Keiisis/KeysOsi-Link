@@ -6,12 +6,13 @@ import { supabase } from '@/lib/supabase'
 import {
     FileText, Plus, Trash2, Loader2, Search,
     Download, Eye, Calculator, Receipt,
-    Building2, User, Hash,
-    Calendar, CreditCard, BarChart3, TrendingUp,
-    AlertCircle, Link as LinkIcon
+    Link as LinkIcon
 } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { LOGO_BASE64, STAMP_BASE64 } from '@/lib/logoBase64'
+
+import { FinancialAnalytics } from '@/components/dashboard/FinancialAnalytics'
 
 interface DevisItem {
     description: string
@@ -90,6 +91,19 @@ export default function AdminFacturationPage() {
     const generatePDF = async (doc: DocumentFinancier) => {
         setGenerating(true)
         try {
+            // Fetch ERP Templates (aligned with admin/settings/erp)
+            const { data: templateData } = await supabase
+                .from('document_templates')
+                .select('content')
+                .eq('id', 'official_devis_facture')
+                .single()
+
+            const tpl = templateData?.content || {}
+            const devisHeader = tpl.header || "RETOUR GAGNANT BÉNIN\nRCCM : RB/COT/26 B 42001 | IFU : 3202644573981\nHaie-Vive Cocotiers, Cotonou, Bénin\n+229 01 60 32 21 21 / +229 01 94 35 50 50\ncontact@retourgagnantbenin.bj"
+            const devisFooter = tpl.footer || "RETOUR GAGNANT BÉNIN — RCCM : RB/COT/26 B 42001 — IFU : 3202644573981\nSiège : Haie-Vive Cocotiers, Cotonou. Email : contact@retourgagnantbenin.bj"
+            const presidentName = tpl.signature_name || "N. R. G"
+            const presidentTitle = tpl.signature_title || "LA DIRECTION GÉNÉRALE"
+
             const jsPDF = (await import('jspdf')).default
             const pdf = new jsPDF('p', 'mm', 'a4')
             const pw = 210
@@ -230,17 +244,22 @@ export default function AdminFacturationPage() {
             pdf.setFontSize(6)
             pdf.setTextColor(80, 120, 180)
             pdf.text('EMETTEUR', ml + 4, y + 6)
-            pdf.setFontSize(9)
+            pdf.setFontSize(8)
             pdf.setTextColor(220, 230, 245)
-            pdf.text('RETOUR GAGNANT BENIN', ml + 4, y + 13)
-            pdf.setFont('helvetica', 'normal')
-            pdf.setFontSize(6.5)
-            pdf.setTextColor(140, 160, 185)
-            pdf.text('RCCM : RB/COT/26 B 42001  |  IFU : 3202644573981', ml + 4, y + 19)
-            pdf.text(safe('Haie-Vive Cocotiers, Carre n.1158, Cotonou - Rep. du Benin'), ml + 4, y + 25)
-            pdf.text('+229 01 60 32 21 21  |  +229 01 94 35 50 50', ml + 4, y + 31)
-            pdf.text('contact@retourgagnantbenin.bj', ml + 4, y + 37)
-            pdf.text('www.retourgagnantbenin.bj', ml + 4, y + 42)
+            const headerLines = pdf.splitTextToSize(devisHeader, boxW - 8)
+            headerLines.forEach((l: string, i: number) => {
+                const isFirst = i === 0
+                if (isFirst) {
+                    pdf.setFont('helvetica', 'bold')
+                    pdf.setFontSize(9)
+                } else {
+                    pdf.setFont('helvetica', 'normal')
+                    pdf.setFontSize(6.5)
+                    if (i === 1) pdf.setTextColor(140, 160, 185)
+                }
+                const offset = isFirst ? 13 : (19 + (i - 1) * 6)
+                pdf.text(safe(l), ml + 4, y + offset)
+            })
 
             // Destinataire (light box)
             const toX = ml + boxW + 6
@@ -412,10 +431,10 @@ export default function AdminFacturationPage() {
                 pdf.setFont('helvetica', 'bold')
                 pdf.setFontSize(7)
                 pdf.setTextColor(70, 80, 170)
-                pdf.text('La Présidente Directrice Générale :', sig2X + 4, y + 12)
+                pdf.text(presidentTitle.toUpperCase(), sig2X + 4, y + 12)
                 pdf.setFont('helvetica', 'bold')
                 pdf.setFontSize(7.5)
-                pdf.text('N. R. G', sig2X + 4, y + 18)
+                pdf.text(safe(presidentName), sig2X + 4, y + 18)
 
                 // Add Stamp (cachet) enlarged
                 if (STAMP_BASE64) {
@@ -454,8 +473,10 @@ export default function AdminFacturationPage() {
             pdf.setFont('helvetica', 'normal')
             pdf.setFontSize(5.5)
             pdf.setTextColor(120, 140, 160)
-            pdf.text('RETOUR GAGNANT BENIN - RCCM: RB/COT/26 B 42001 - IFU: 3202644573981 - Haie-Vive Cocotiers, Cotonou - contact@retourgagnantbenin.bj', pw / 2, ph - 8, { align: 'center' })
-            pdf.text('Document N. ' + doc.numero + ' - Genere le ' + new Date().toLocaleDateString('fr-FR'), pw / 2, ph - 4, { align: 'center' })
+            const footerLines = devisFooter.split('\n')
+            if (footerLines.length > 0) pdf.text(safe(footerLines[0]), pw / 2, ph - 9, { align: 'center' })
+            if (footerLines.length > 1) pdf.text(safe(footerLines[1]), pw / 2, ph - 6.5, { align: 'center' })
+            pdf.text('Document N. ' + doc.numero + ' - Genere le ' + new Date().toLocaleDateString('fr-FR'), pw / 2, ph - 3, { align: 'center' })
 
             pdf.save(`${doc.type}_${doc.numero}.pdf`)
         } catch (err) {
@@ -485,9 +506,6 @@ export default function AdminFacturationPage() {
         return <div className="flex items-center justify-center h-96"><div className="w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" /></div>
     }
 
-    const totalCA = documents.filter(d => d.status === 'paye').reduce((s, d) => s + d.total, 0)
-    const unpaidCA = documents.filter(d => d.type === 'facture' && (d.status === 'envoye' || d.status === 'en_retard')).reduce((s, d) => s + d.total, 0)
-
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -505,23 +523,8 @@ export default function AdminFacturationPage() {
                 </Link>
             </div>
 
-            {/* Stats Ultra Puissantes (Dashboard Financier) */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                {[
-                    { label: 'CA Encaissé (Total)', value: `${totalCA.toLocaleString('fr-FR')} XOF`, icon: BarChart3, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-                    { label: 'En Attente de Paiement', value: `${unpaidCA.toLocaleString('fr-FR')} XOF`, icon: AlertCircle, color: 'text-orange-400', bg: 'bg-orange-500/10' },
-                    { label: 'Devis Actifs', value: documents.filter(d => d.type === 'devis' && d.status !== 'refuse').length, icon: FileText, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-                    { label: 'TVA Collectée', value: `${documents.filter(d => d.status === 'paye').reduce((s, d) => s + d.total_tva, 0).toLocaleString('fr-FR')} XOF`, icon: TrendingUp, color: 'text-purple-400', bg: 'bg-purple-500/10' },
-                ].map(stat => (
-                    <div key={stat.label} className="bg-[#0c1420] border border-white/5 rounded-xl p-5 shadow-lg">
-                        <div className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center mb-3`}>
-                            <stat.icon size={18} className={stat.color} />
-                        </div>
-                        <p className="text-2xl font-black text-white font-mono">{stat.value}</p>
-                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">{stat.label}</p>
-                    </div>
-                ))}
-            </div>
+            {/* Dashboard Financier */}
+            <FinancialAnalytics />
 
             {/* Search + Filter */}
             <div className="flex flex-col sm:flex-row items-center gap-3">
@@ -626,7 +629,7 @@ export default function AdminFacturationPage() {
                             {/* Header */}
                             <div className="bg-[#0c1420] border-b border-white/5 p-5 flex items-start justify-between flex-shrink-0">
                                 <div className="flex items-center gap-4">
-                                    <img src="/logo.jpg" alt="Logo" className="w-12 h-12 rounded-lg object-cover" />
+                                    <Image src="/logo.jpg" alt="Logo" width={48} height={48} className="w-12 h-12 rounded-lg object-cover" />
                                     <div>
                                         <p className="text-emerald-400 text-xl font-black tracking-wider">RETOUR GAGNANT BÉNIN</p>
                                         <p className="text-gray-600 text-xs mt-0.5">Agence de Services Internationaux</p>
@@ -648,7 +651,7 @@ export default function AdminFacturationPage() {
                                             <FileText size={20} />
                                             <div>
                                                 <p className="text-sm font-bold">Ce client a-t-il validé ce devis ?</p>
-                                                <p className="text-xs text-amber-500/70">Passez-le en "Accepté" pour générer automatiquement la facture correspondante.</p>
+                                                <p className="text-xs text-amber-500/70">Passez-le en &quot;Accepté&quot; pour générer automatiquement la facture correspondante.</p>
                                             </div>
                                         </div>
                                         <button onClick={() => handleUpdateStatus(showPreview.id, 'accepte')} className="bg-amber-500 text-black px-4 py-2 rounded-xl text-sm font-bold hover:bg-amber-400">Marquer Accepté</button>

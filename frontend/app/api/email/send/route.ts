@@ -24,11 +24,11 @@ export async function POST(req: NextRequest) {
         
         let html: string
         if (context === 'agent_reply') {
-            html = templates.agentReply(clientName || 'Client', message, emailLang)
+            html = await templates.agentReply(clientName || 'Client', message, emailLang)
         } else if (context === 'auto_reply') {
-            html = templates.autoReply(clientName || 'Client', message)
+            html = await templates.autoReply(clientName || 'Client', message)
         } else {
-            html = templates.agentReply(clientName || 'Client', message, emailLang)
+            html = await templates.agentReply(clientName || 'Client', message, emailLang)
         }
 
         const result = await sendEmail({

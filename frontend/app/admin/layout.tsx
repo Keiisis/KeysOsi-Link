@@ -42,10 +42,8 @@ function AdminLayoutContent({
         return () => window.removeEventListener('scroll', handleScroll)
     }, [])
 
-    // Close mobile menu on route change
-    useEffect(() => {
-        setMobileMenuOpen(false)
-    }, [pathname])
+    // (Removed useEffect that was closing menu to avoid cascading render warning. 
+    // Now Handled directly in menu onClick below).
 
     // Unread Counters
     const [unreadMessages, setUnreadMessages] = useState(0)
@@ -100,6 +98,7 @@ function AdminLayoutContent({
         { title: 'Traductions', icon: Languages, href: '/admin/traductions' },
         { title: 'Utilisateurs', icon: UserCog, href: '/admin/users' },
         { title: 'Réglages', icon: Settings, href: '/admin/settings' },
+        { title: 'Réglages ERP', icon: ShieldCheck, href: '/admin/settings/erp' },
     ]
 
     if (isLoginPage) {
@@ -143,6 +142,7 @@ function AdminLayoutContent({
                         <Link
                             key={item.href}
                             href={item.href}
+                            onClick={() => setMobileMenuOpen(false)}
                             className={cn(
                                 'group relative flex items-center gap-3 rounded-xl transition-all duration-200',
                                 compact ? 'justify-center p-3' : 'px-3 py-2.5',
@@ -377,7 +377,6 @@ export default function AdminLayout({
 }: {
     children: React.ReactNode
 }) {
-    const { t } = useTranslation();
     return (
         <Suspense fallback={null}>
             <RefineContext>

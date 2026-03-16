@@ -352,6 +352,30 @@ export default function ClientPortalPage() {
         if (!doc) return
         setGenerating(true)
         try {
+            // Fetch ERP Templates
+            let devisHeader = "RETOUR GAGNANT BÉNIN\nRCCM : RB/COT/26 B 42001 | IFU : 3202644573981\nHaie-Vive Cocotiers, Cotonou, Bénin\n+229 01 60 32 21 21 / +229 01 94 35 50 50\ncontact@retourgagnantbenin.bj"
+            let devisFooter = "RETOUR GAGNANT BÉNIN - RCCM: RB/COT/26 B 42001 - IFU: 3202644573981 - Haie-Vive Cocotiers, Cotonou - contact@retourgagnantbenin.bj\nDocument N° - Généré le"
+            let presidentName = "N. R. G"
+            let presidentTitle = "LA DIRECTION GÉNÉRALE"
+
+            try {
+                const { data: templateData } = await supabase
+                    .from('document_templates')
+                    .select('content')
+                    .eq('id', 'official_devis_facture')
+                    .single()
+
+                if (templateData?.content) {
+                    const tpl = templateData.content
+                    if (tpl.header) devisHeader = tpl.header
+                    if (tpl.footer) devisFooter = tpl.footer
+                    if (tpl.signature_name) presidentName = tpl.signature_name
+                    if (tpl.signature_title) presidentTitle = tpl.signature_title
+                }
+            } catch (err) {
+                console.error("Failed to load official template", err)
+            }
+
             const jsPDF = (await import('jspdf')).default
             const pdf = new jsPDF('p', 'mm', 'a4')
             const pw = 210
@@ -510,17 +534,22 @@ export default function ClientPortalPage() {
             pdf.setFontSize(6)
             pdf.setTextColor(80, 120, 180)
             pdf.text('EMETTEUR', ml + 4, y + 6)
-            pdf.setFontSize(9)
+            pdf.setFontSize(8)
             pdf.setTextColor(220, 230, 245)
-            pdf.text('RETOUR GAGNANT BENIN', ml + 4, y + 13)
-            pdf.setFont('helvetica', 'normal')
-            pdf.setFontSize(6.5)
-            pdf.setTextColor(140, 160, 185)
-            pdf.text('RCCM : RB/COT/26 B 42001  |  IFU : 3202644573981', ml + 4, y + 19)
-            pdf.text(safe('Haie-Vive Cocotiers, Carre n.1158, Cotonou - Rep. du Benin'), ml + 4, y + 25)
-            pdf.text('+229 01 60 32 21 21  |  +229 01 94 35 50 50', ml + 4, y + 31)
-            pdf.text('contact@retourgagnantbenin.bj', ml + 4, y + 37)
-            pdf.text('www.retourgagnantbenin.bj', ml + 4, y + 42)
+            const headerLines = pdf.splitTextToSize(devisHeader, boxW - 8)
+            headerLines.forEach((l: string, i: number) => {
+                const isFirst = i === 0
+                if (isFirst) {
+                    pdf.setFont('helvetica', 'bold')
+                    pdf.setFontSize(9)
+                } else {
+                    pdf.setFont('helvetica', 'normal')
+                    pdf.setFontSize(6.5)
+                    if (i === 1) pdf.setTextColor(140, 160, 185)
+                }
+                const offset = isFirst ? 13 : (19 + (i - 1) * 6)
+                pdf.text(safe(l), ml + 4, y + offset)
+            })
 
             // Destinataire (light box)
             const toX = ml + boxW + 6
@@ -711,18 +740,14 @@ export default function ClientPortalPage() {
                 pdf.setFont('helvetica', 'bold')
                 pdf.setFontSize(6.5)
                 pdf.setTextColor(70, 80, 170)
-                pdf.text('DIRECTION GÉNÉRALE', sig2X + 4, y + 7)
-                
-                pdf.setFontSize(6.5)
-                pdf.setTextColor(0, 135, 81)
-                pdf.text('RETOUR GAGNANT BÉNIN', sig2X + 4, y + 13)
+                pdf.text(presidentTitle.toUpperCase(), sig2X + 4, y + 7)
                 
                 pdf.setFontSize(5.5)
                 pdf.setTextColor(0, 0, 0)
-                pdf.text('La Présidente Directrice Générale :', sig2X + 4, y + 18)
+                pdf.text('La Responsable de Signature :', sig2X + 4, y + 18)
                 pdf.setFont('helvetica', 'bold')
                 pdf.setFontSize(7)
-                pdf.text('N. R. G', sig2X + 4, y + 23)
+                pdf.text(safe(presidentName), sig2X + 4, y + 23)
 
                 // Add Stamp if available (much larger)
                 if (STAMP_BASE64) {
@@ -761,16 +786,18 @@ export default function ClientPortalPage() {
             const footerY = ph - footH
             pdf.setFillColor(10, 16, 24)
             pdf.rect(0, footerY, pw, footH, 'F')
+            const footerLines = devisFooter.split('\n')
             
             pdf.setFont('helvetica', 'normal')
             pdf.setFontSize(6)
             pdf.setTextColor(180, 190, 210) // Plus clair pour l'impression sur fond noir
-            pdf.text('RETOUR GAGNANT BENIN - RCCM: RB/COT/26 B 42001 - IFU: 3202644573981 - Haie-Vive Cocotiers, Cotonou - contact@retourgagnantbenin.bj', pw / 2, footerY + 6, { align: 'center' })
+            if (footerLines.length > 0) pdf.text(safe(footerLines[0]), pw / 2, footerY + 6, { align: 'center' })
             
             pdf.setFont('helvetica', 'bold')
             pdf.setFontSize(6.5)
             pdf.setTextColor(255, 255, 255)
-            pdf.text('Document N° ' + doc.numero + ' - Généré le ' + new Date().toLocaleDateString('fr-FR') + ' à ' + new Date().toLocaleTimeString('fr-FR'), pw / 2, footerY + 11, { align: 'center' })
+            const secondLine = footerLines.length > 1 ? safe(footerLines[1]) + ' - ' : ''
+            pdf.text(secondLine + 'Document N° ' + doc.numero + ' - Généré le ' + new Date().toLocaleDateString('fr-FR') + ' à ' + new Date().toLocaleTimeString('fr-FR'), pw / 2, footerY + 11, { align: 'center' })
 
             pdf.save(`${doc.type}_${doc.numero}.pdf`)
         } catch (err) {

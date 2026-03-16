@@ -451,6 +451,118 @@ export async function POST(request: Request) {
             })
         }
 
+        // ─── Auto-génération Facture ERP ─────────────────────────────────────
+        // Après paiement vérifié, on crée automatiquement un document financier
+        // de type "facture" avec statut "paye" dans la table documents_financiers.
+        // Cela relie la boutique/événements au système de facturation ERP.
+        try {
+            // Garde d'idempotence : vérifier si une facture existe déjà pour cette commande
+            const orderRef = order_id.slice(0, 8).toUpperCase()
+            const { data: existingInvoice } = await supabase
+                .from('documents_financiers')
+                .select('id')
+                .ilike('notes', `%${orderRef}%`)
+                .maybeSingle()
+
+            if (existingInvoice) {
+                console.log(`[ERP] Facture déjà existante pour commande ${orderRef} — skip`)
+            } else {
+                // Récupérer les détails complets de la commande pour la facture
+                const { data: fullOrder } = await supabase
+                    .from('orders')
+                    .select('*')
+                    .eq('id', order_id)
+                    .single()
+
+                if (fullOrder) {
+                    // Déterminer la source (boutique ou événement)
+                    const { data: eventReg } = await supabase
+                        .from('event_registrations')
+                        .select('id, events(title)')
+                        .eq('order_id', order_id)
+                        .maybeSingle()
+
+                    const isEvent = !!eventReg
+                    const sourceLabel = isEvent ? 'Événement' : 'Boutique en ligne'
+
+                    // Construire les items de la facture depuis le panier
+                    type CartItemRaw = {
+                        title?: string
+                        name?: string
+                        price?: number
+                        sale_price?: number
+                        quantity?: number
+                    }
+                    const cartItems: CartItemRaw[] =
+                        Array.isArray(fullOrder.cart_items) && fullOrder.cart_items.length > 0
+                            ? fullOrder.cart_items
+                            : [{
+                                title: fullOrder.product_title || sourceLabel,
+                                price: fullOrder.amount / (fullOrder.quantity || 1),
+                                quantity: fullOrder.quantity || 1,
+                            }]
+
+                    const invoiceItems = cartItems.map((item: CartItemRaw) => ({
+                        description: item.title || item.name || 'Article',
+                        quantity: item.quantity || 1,
+                        unit_price: (item.sale_price && item.sale_price < (item.price || 0))
+                            ? item.sale_price
+                            : (item.price || 0),
+                        tva: 0,
+                    }))
+
+                    const sousTotal = invoiceItems.reduce(
+                        (sum: number, it: { quantity: number; unit_price: number }) =>
+                            sum + it.quantity * it.unit_price, 0
+                    )
+
+                    // Frais de livraison en ligne séparée si > 0
+                    const shippingFee = fullOrder.shipping_fee || 0
+                    if (shippingFee > 0) {
+                        invoiceItems.push({
+                            description: `Frais de livraison${fullOrder.shipping_zone ? ` (${fullOrder.shipping_zone})` : ''}`,
+                            quantity: 1,
+                            unit_price: shippingFee,
+                            tva: 0,
+                        })
+                    }
+
+                    // Générer le numéro de facture
+                    const now = new Date()
+                    const yr = now.getFullYear()
+                    const mn = String(now.getMonth() + 1).padStart(2, '0')
+                    const rand = String(Date.now() % 10000).padStart(4, '0')
+                    const invoiceNumero = `FAC-${yr}${mn}-${rand}`
+
+                    // Insérer la facture ERP
+                    await supabase.from('documents_financiers').insert({
+                        type: 'facture',
+                        numero: invoiceNumero,
+                        client_nom: fullOrder.customer_name || 'Client',
+                        client_prenom: '',
+                        client_email: fullOrder.customer_email || '',
+                        client_phone: fullOrder.customer_phone || '',
+                        client_adresse: fullOrder.shipping_address || '',
+                        currency: (fullOrder.currency || 'XOF').toUpperCase(),
+                        items: invoiceItems,
+                        sous_total: sousTotal + shippingFee,
+                        total_tva: 0,
+                        remise: 0,
+                        total: fullOrder.amount,
+                        status: 'paye',
+                        notes: `Facture auto-générée — ${sourceLabel}\nCommande: ${orderRef}\nMéthode: ${method}\nTransaction: ${transaction_id}`,
+                        conditions: 'Document généré automatiquement après paiement vérifié.',
+                        validite: 'Acquittée',
+                    })
+
+                    console.log(`[ERP] Facture auto-générée: ${invoiceNumero} pour commande ${orderRef}`)
+                }
+            }
+        } catch (erpErr) {
+            // Non-bloquant : on ne veut pas faire échouer le verify si la facture échoue
+            console.error('[ERP] Erreur auto-génération facture:', erpErr)
+        }
+
         // ─── Notification email ──────────────────────────────────────────────
         try {
             const origin = new URL(request.url).origin
