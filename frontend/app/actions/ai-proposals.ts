@@ -10,7 +10,7 @@ export async function getProposalsList() {
     try {
         const { data, error } = await supabaseAdmin
             .from('ai_client_proposals')
-            .select('id, secret_key, client_name, destination, status, total_amount, created_at')
+            .select('id, secret_key, client_name, destination, status, total_amount, created_at, currency')
             .order('created_at', { ascending: false })
             
         if (error) throw error

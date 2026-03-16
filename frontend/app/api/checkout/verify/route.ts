@@ -50,7 +50,7 @@ export async function POST(request: Request) {
         // ─── Récupérer la commande ───────────────────────────────────────────
         const { data: existingOrder, error: fetchError } = await supabase
             .from('orders')
-            .select('payment_status, transaction_id, amount, payment_method, product_id, quantity, currency')
+            .select('payment_status, transaction_id, amount, payment_method, product_id, quantity, currency, cart_items')
             .eq('id', order_id)
             .single()
 
@@ -443,12 +443,53 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: true, message: 'Already verified' })
         }
 
-        // ─── Décrémenter le stock ────────────────────────────────────────────
-        if (existingOrder.product_id) {
-            await supabase.rpc('decrement_stock', {
-                p_id: existingOrder.product_id,
-                qty: existingOrder.quantity || 1,
-            })
+        // ─── Décrémenter le stock (Système Unifié + Héritage) ─────────────────
+        const cartToProcess = Array.isArray(existingOrder.cart_items) && existingOrder.cart_items.length > 0
+            ? existingOrder.cart_items
+            : [{ id: existingOrder.product_id, quantity: existingOrder.quantity || 1 }];
+
+        for (const item of cartToProcess) {
+            const targetId = item.id || existingOrder.product_id;
+            const targetQty = item.quantity || existingOrder.quantity || 1;
+
+            if (!targetId) continue;
+
+            // 1. Décrémentation Legacy (Ancienne table products, "silencieux" si échoue)
+            try {
+                await supabase.rpc('decrement_stock', {
+                    p_id: targetId,
+                    qty: targetQty,
+                });
+            } catch (e) {
+                // Ignorer les erreurs (peut-être pas un produit legacy)
+            }
+
+            // 2. Décrémentation Nouveau Système (inventory_items + traceability)
+            const { data: invItem } = await supabase
+                .from('inventory_items')
+                .select('id, track_inventory, current_stock')
+                .eq('id', targetId)
+                .maybeSingle();
+
+            if (invItem && invItem.track_inventory) {
+                const finalStock = Math.max(0, (invItem.current_stock || 0) - targetQty);
+                
+                // Mettre à jour la quantité
+                await supabase
+                    .from('inventory_items')
+                    .update({ current_stock: finalStock })
+                    .eq('id', invItem.id);
+                
+                // Écrire le mouvement immuable (audit)
+                await supabase.from('inventory_movements').insert({
+                    item_id: invItem.id,
+                    type: 'sale',
+                    quantity_change: -targetQty,
+                    stock_after: finalStock,
+                    reference_id: order_id,
+                    notes: `Vente E-Commerce (Ref: ${order_id.slice(0, 8).toUpperCase()}, Pmt: ${method})`
+                });
+            }
         }
 
         // ─── Auto-génération Facture ERP ─────────────────────────────────────

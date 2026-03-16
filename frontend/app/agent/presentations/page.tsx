@@ -10,6 +10,7 @@ import {
     Trash2, Copy, Sparkles
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { formatCurrencySync, type CurrencyCode } from '@/lib/currency'
 
 interface Proposal {
     id: string
@@ -19,6 +20,7 @@ interface Proposal {
     status: string
     total_amount: number
     created_at: string
+    currency?: string
 }
 
 interface ScrapedItem {
@@ -241,7 +243,7 @@ export default function AgentPresentationsPage() {
                                     </div>
                                     <div className="flex justify-between">
                                         <span>Montant</span>
-                                        <span className="text-white font-bold text-sm">{prop.total_amount?.toLocaleString()} FCFA</span>
+                                        <span className="text-white font-bold text-sm">{formatCurrencySync(prop.total_amount || 0, (prop.currency as CurrencyCode) || 'XOF')}</span>
                                     </div>
                                 </div>
 

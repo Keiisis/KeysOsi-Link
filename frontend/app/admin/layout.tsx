@@ -12,7 +12,7 @@ import {
     ShoppingBag, Receipt, UserCog, Tag, Calculator,
     Mail, FileText, Compass, X, PanelLeftClose, PanelLeft,
     BarChart3, FileSignature, FolderOpen, Palette, Calendar, Star,
-    Languages, Radar
+    Languages, Radar, Box, Coins
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -90,6 +90,7 @@ function AdminLayoutContent({
         { title: 'FAQ Nationalité', icon: HelpCircle, href: '/admin/nationalite/faq' },
         { title: 'Emails', icon: Mail, href: '/admin/email-templates' },
         { title: 'Facturation (ERP)', icon: Calculator, href: '/admin/facturation' },
+        { title: 'Inventaire', icon: Box, href: '/admin/inventory' },
         { title: 'Boutique', icon: ShoppingBag, href: '/admin/boutique' },
         { title: 'Commandes', icon: Receipt, href: '/admin/orders' },
         { title: 'Coupons', icon: Tag, href: '/admin/coupons' },
@@ -98,6 +99,7 @@ function AdminLayoutContent({
         { title: 'Traductions', icon: Languages, href: '/admin/traductions' },
         { title: 'Utilisateurs', icon: UserCog, href: '/admin/users' },
         { title: 'Réglages', icon: Settings, href: '/admin/settings' },
+        { title: 'Devises (ERP)', icon: Coins, href: '/admin/settings/currency' },
         { title: 'Réglages ERP', icon: ShieldCheck, href: '/admin/settings/erp' },
     ]
 

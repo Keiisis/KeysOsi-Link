@@ -8,11 +8,13 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { convertFromBaseSync, getCurrentRates, formatCurrencySync } from '@/lib/currency'
 
 interface DevisItem {
     description: string
     quantity: number
-    unit_price: number
+    unit_price: number // in the selected currency
+    unit_cost: number  // in the selected currency
     tva: number
 }
 
@@ -42,19 +44,22 @@ export default function CreateDocumentPage() {
     const [clientPhone, setClientPhone] = useState('')
     const [clientAdresse, setClientAdresse] = useState('')
 
-    const [items, setItems] = useState<DevisItem[]>([{ description: '', quantity: 1, unit_price: 0, tva: 18 }])
+    const [items, setItems] = useState<DevisItem[]>([{ description: '', quantity: 1, unit_price: 0, unit_cost: 0, tva: 18 }])
     const [remise, setRemise] = useState(0)
     const [notes, setNotes] = useState('')
     const [conditions, setConditions] = useState(defaultConditions)
     const [validite, setValidite] = useState('30 jours')
 
     // Suggestions de catalogue
-    const [services, setServices] = useState<{ id: string, title: string, price: number }[]>([])
+    const [services, setServices] = useState<{ id: string, title: string, base_price: number, cost_price: number }[]>([])
+
+    // Load available current exchange rates from DB
+    const rates = getCurrentRates()
 
     useEffect(() => {
         const fetchServices = async () => {
-            // Load base products
-            const { data } = await supabase.from('products').select('id, title, price')
+            // Load base products from our new unified inventory
+            const { data } = await supabase.from('inventory_items').select('id, title, base_price, cost_price')
             if (data) setServices(data)
         }
         fetchServices()
@@ -64,7 +69,11 @@ export default function CreateDocumentPage() {
     const totalTVA = items.reduce((sum, it) => sum + (it.quantity * it.unit_price * it.tva / 100), 0)
     const totalFinal = sousTotal + totalTVA - remise
 
-    const addItem = () => setItems(prev => [...prev, { description: '', quantity: 1, unit_price: 0, tva: 18 }])
+    // Total Cost (for margin calculation)
+    const totalCost = items.reduce((sum, it) => sum + (it.quantity * it.unit_cost), 0)
+    const margeNette = sousTotal - totalCost
+
+    const addItem = () => setItems(prev => [...prev, { description: '', quantity: 1, unit_price: 0, unit_cost: 0, tva: 18 }])
     const removeItem = (i: number) => setItems(prev => prev.filter((_, idx) => idx !== i))
     const updateItem = (i: number, field: keyof DevisItem, value: string | number) => {
         setItems(prev => prev.map((it, idx) => idx === i ? { ...it, [field]: value } : it))
@@ -73,8 +82,16 @@ export default function CreateDocumentPage() {
     const handleProductSelect = (i: number, title: string) => {
         const service = services.find(s => s.title === title)
         if (service) {
-            updateItem(i, 'description', service.title)
-            updateItem(i, 'unit_price', service.price)
+            // Converts from DB Base (XOF) to selected currency
+            const convertedPrice = convertFromBaseSync(service.base_price, currency)
+            const convertedCost = convertFromBaseSync(service.cost_price, currency)
+            
+            setItems(prev => prev.map((it, idx) => idx === i ? { 
+                ...it, 
+                description: service.title, 
+                unit_price: convertedPrice,
+                unit_cost: convertedCost
+            } : it))
         } else {
             updateItem(i, 'description', title)
         }
@@ -93,6 +110,9 @@ export default function CreateDocumentPage() {
             return
         }
 
+        // Snapshot the current exchange rate for immutability
+        const currentRate = rates[currency] || 1
+
         const { error } = await supabase.from('documents_financiers').insert({
             agent_id: user.id, 
             type: formType, 
@@ -103,7 +123,8 @@ export default function CreateDocumentPage() {
             client_phone: clientPhone, 
             client_adresse: clientAdresse,
             currency: currency,
-            items, 
+            exchange_rate_applied: currentRate,
+            items: items.map(it => ({ description: it.description, quantity: it.quantity, unit_price: it.unit_price, tva: it.tva, unit_cost: it.unit_cost })), 
             sous_total: sousTotal, 
             total_tva: totalTVA, 
             remise, 
@@ -200,7 +221,7 @@ export default function CreateDocumentPage() {
                                         list="services-list"
                                     />
                                     <datalist id="services-list">
-                                        {services.map(s => <option key={s.id} value={s.title}>{s.price} XOF</option>)}
+                                        {services.map(s => <option key={s.id} value={s.title}>{formatCurrencySync(convertFromBaseSync(s.base_price, currency), currency)}</option>)}
                                     </datalist>
                                 </div>
                                 <div className="flex gap-3 w-full sm:w-auto">
@@ -235,7 +256,7 @@ export default function CreateDocumentPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div className="space-y-4">
                          <div>
-                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Notes clien <span className="text-gray-600 lowercase">(ex: RIB, recommandations...)</span></label>
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Notes client <span className="text-gray-600 lowercase">(ex: RIB, recommandations...)</span></label>
                             <textarea title="Notes client" placeholder="Notes (Optionnel)" value={notes} onChange={e => setNotes(e.target.value)} rows={2} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-amber-500/50 text-sm resize-none" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -259,22 +280,30 @@ export default function CreateDocumentPage() {
                         <div className="space-y-3 font-mono text-sm text-gray-300">
                             <div className="flex justify-between pb-3 border-b border-white/5">
                                 <span>Total HT</span>
-                                <span>{sousTotal.toLocaleString('fr-FR')} {currency}</span>
+                                <span>{formatCurrencySync(sousTotal, currency)}</span>
                             </div>
                             <div className="flex justify-between pb-3 border-b border-white/5">
                                 <span>TVA Totale</span>
-                                <span>+ {totalTVA.toLocaleString('fr-FR')} {currency}</span>
+                                <span>+ {formatCurrencySync(totalTVA, currency)}</span>
                             </div>
                             {remise > 0 && (
                                 <div className="flex justify-between pb-3 border-b border-white/5 text-amber-400">
                                     <span>Remise Exceptionnelle</span>
-                                    <span>- {remise.toLocaleString('fr-FR')} {currency}</span>
+                                    <span>- {formatCurrencySync(remise, currency)}</span>
                                 </div>
                             )}
                             <div className="flex justify-between items-center pt-2">
                                 <span className="text-gray-400 font-sans font-bold uppercase tracking-wider text-xs">Total général</span>
-                                <span className="text-2xl font-black text-emerald-400">{totalFinal.toLocaleString('fr-FR')} {currency}</span>
+                                <span className="text-2xl font-black text-emerald-400">{formatCurrencySync(totalFinal, currency)}</span>
                             </div>
+                            
+                            {/* Marge Commerciale UI */}
+                            {margeNette > 0 && (
+                                <div className="flex justify-between items-center pt-4 mt-4 border-t border-dashed border-white/10">
+                                    <span className="text-purple-400/70 font-sans font-bold uppercase tracking-wider text-[10px]">Marge Commerciale (Est.)</span>
+                                    <span className="text-sm font-bold text-purple-400">{formatCurrencySync(margeNette, currency)} ({Math.round((margeNette/sousTotal)*100)}%)</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

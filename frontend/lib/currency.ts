@@ -1,6 +1,8 @@
+import { supabase } from '@/lib/supabase'
+
 // ═══════════════════════════════════════════════════════════
-// SYSTÈME DE DEVISES — XOF (FCFA), EUR (€), USD ($)
-// Conversion automatique selon la localisation
+// SYSTÈME DE DEVISES ERP (DB-BACKED) — XOF (FCFA), EUR (€), USD ($)
+// Conversion automatique synchronisée avec l'ERP
 // ═══════════════════════════════════════════════════════════
 
 export type CurrencyCode = 'XOF' | 'EUR' | 'USD'
@@ -19,51 +21,62 @@ export const CURRENCIES: Record<CurrencyCode, CurrencyInfo> = {
     USD: { code: 'USD', symbol: '$', name: 'Dollar US', locale: 'en-US', decimals: 2 },
 }
 
-// Taux de conversion de base (1 EUR = ...)
-// Le FCFA est arrimé à l'Euro : 1 EUR = 655.957 XOF (taux fixe)
-const BASE_RATES: Record<CurrencyCode, number> = {
-    EUR: 1,
-    XOF: 655.957,
-    USD: 1.08, // approximation — sera mis à jour
+// Taux de conversion de base (1 XOF = ... XOF, 1 EUR = 655.957 XOF) 
+// Ces taux sont des fallbacks si la BD est indisponible.
+// Tout est calculé par rapport à la devise de BASE (XOF).
+const BASE_RATES_TO_XOF: Record<CurrencyCode, number> = {
+    XOF: 1,
+    EUR: 655.957,
+    USD: 600.00, // Sera remplacé par la DB
 }
 
-const cachedRates: Record<CurrencyCode, number> = { ...BASE_RATES }
+const cachedRates: Record<CurrencyCode, number> = { ...BASE_RATES_TO_XOF }
 let lastFetch = 0
 
 /**
- * Met à jour les taux depuis une API gratuite (fallback aux taux fixes)
+ * Met à jour les taux depuis la table Supabase `currencies`
  */
 export const refreshRates = async (): Promise<void> => {
-    // Refresh max toutes les 6h
-    if (Date.now() - lastFetch < 6 * 3600 * 1000) return
+    // Refresh max toutes les heures
+    if (Date.now() - lastFetch < 3600 * 1000) return
     try {
-        const res = await fetch('https://open.er-api.com/v6/latest/EUR', { next: { revalidate: 21600 } })
-        if (res.ok) {
-            const data = await res.json()
-            if (data.rates) {
-                cachedRates.USD = data.rates.USD || BASE_RATES.USD
-                cachedRates.XOF = data.rates.XOF || BASE_RATES.XOF
-                lastFetch = Date.now()
+        const { data, error } = await supabase
+            .from('currencies')
+            .select('code, exchange_rate_to_base')
+
+        if (!error && data && data.length > 0) {
+            for (const row of data) {
+                if (row.code in cachedRates) {
+                    cachedRates[row.code as CurrencyCode] = Number(row.exchange_rate_to_base)
+                }
             }
+            lastFetch = Date.now()
         }
     } catch {
-        // fallback silencieux aux taux fixes
+        // fallback silencieux aux taux par défaut
+        console.warn('Erreur chargement devises DB, utilisation du cache/fallback.')
     }
 }
 
 /**
- * Convertit un montant d'une devise à une autre
+ * Convertit un montant d'une devise à une autre en passant par le XOF.
+ * 
+ * Ex: EUR -> USD => (EUR * Taux_EUR_to_XOF) / Taux_USD_to_XOF
  */
 export const convertCurrency = (amount: number, from: CurrencyCode, to: CurrencyCode): number => {
     if (from === to) return amount
-    // Convertir en EUR d'abord (base), puis vers la devise cible
-    const inEur = amount / cachedRates[from]
-    const result = inEur * cachedRates[to]
-    return CURRENCIES[to].decimals === 0 ? Math.round(result) : Math.round(result * 100) / 100
+    
+    // Convertir de "from" vers "XOF"
+    const amountInXOF = amount * cachedRates[from]
+    
+    // Convertir de "XOF" vers "to"
+    const result = amountInXOF / cachedRates[to]
+
+    return CURRENCIES[to].decimals === 0 ? Math.round(result) : Number(Math.round(Number(result + 'e2')) + 'e-2')
 }
 
 /**
- * Formate un prix avec le symbole de sa devise
+ * Formate un prix avec le symbole de sa devise locale.
  */
 export const formatPrice = (amount: number, currency: CurrencyCode = 'XOF'): string => {
     const info = CURRENCIES[currency]
@@ -80,7 +93,6 @@ export const formatPrice = (amount: number, currency: CurrencyCode = 'XOF'): str
 
 /**
  * Formate un prix avec conversion + affichage multi-devises
- * Ex: "164 000 FCFA" ou "$250" selon la devise de l'utilisateur
  */
 export const formatPriceConverted = (
     amount: number,
@@ -125,6 +137,26 @@ export const detectUserCurrency = (): CurrencyCode => {
 }
 
 /**
- * Retourne les taux actuels pour affichage
+ * Retourne les taux actuels (exprimés en multiplicateur vers le XOF)
  */
 export const getCurrentRates = () => ({ ...cachedRates })
+
+/**
+ * Version synchrone pour le rendu immédiat (Utilise le cache local s'il existe, ou le fallback)
+ * À utiliser dans des composants React où l'async n'est pas idéal.
+ */
+export function formatCurrencySync(amount: number, currencyCode: CurrencyCode): string {
+    const symbol = CURRENCIES[currencyCode]?.symbol || currencyCode
+    
+    if (currencyCode === 'XOF') {
+        return `${Math.round(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} ${symbol}`
+    }
+    return `${amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$& ')} ${symbol}`
+}
+
+export function convertFromBaseSync(amountBase: number, targetCurrency: CurrencyCode): number {
+    const rate = cachedRates[targetCurrency] || 1
+
+    if (targetCurrency === 'XOF') return Math.round(amountBase)
+    return Number((amountBase / rate).toFixed(2))
+}
