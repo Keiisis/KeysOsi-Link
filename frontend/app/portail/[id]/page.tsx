@@ -373,13 +373,22 @@ export default function ClientPortalPage() {
                 .replace(/\u2022/g, '-')    // bullet
 
             // ── BENIN FLAG STRIPE ──────────────────────────────────
-            // On force le mode de rendu pour l'impression
+            // On force le mode de rendu et on ajoute un contour 'D' (Draw) 
+            // de la même couleur pour garantir l'impression sur toutes les imprimantes.
+            const stripeH = 4.5 // Légèrement plus épais
+            const stripeY = 0.2 // Très léger décalage pour éviter la coupure bord perdu
+            
             pdf.setFillColor(0, 135, 81)
-            pdf.rect(0, 0, pw / 3, 4, 'F')
+            pdf.setDrawColor(0, 135, 81)
+            pdf.rect(0, stripeY, pw / 3, stripeH, 'FD')
+            
             pdf.setFillColor(252, 209, 22)
-            pdf.rect(pw / 3, 0, pw / 3, 4, 'F')
+            pdf.setDrawColor(252, 209, 22)
+            pdf.rect(pw / 3, stripeY, pw / 3, stripeH, 'FD')
+            
             pdf.setFillColor(232, 17, 45)
-            pdf.rect((pw * 2) / 3, 0, pw / 3, 4, 'F')
+            pdf.setDrawColor(232, 17, 45)
+            pdf.rect((pw * 2) / 3, stripeY, pw / 3, stripeH, 'FD')
 
             // ── WHITE HEADER (identique navbar) ──────────────────
             const headerTop = 4
