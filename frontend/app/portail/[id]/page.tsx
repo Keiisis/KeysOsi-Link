@@ -722,13 +722,13 @@ export default function ClientPortalPage() {
                 pdf.text('La Présidente Directrice Générale :', sig2X + 4, y + 18)
                 pdf.setFont('helvetica', 'bold')
                 pdf.setFontSize(7)
-                pdf.text('Nathalie Rosine RIFFERT GERMANY', sig2X + 4, y + 23)
+                pdf.text('N. R. G', sig2X + 4, y + 23)
 
                 // Add Stamp if available (much larger)
                 if (STAMP_BASE64) {
                     try {
                         const stampData = STAMP_BASE64.startsWith('data:') ? STAMP_BASE64 : `data:image/png;base64,${STAMP_BASE64}`
-                        pdf.addImage(stampData, 'PNG', sig2X + sigW - 46, y + 1, 45, 45)
+                        pdf.addImage(stampData, 'PNG', sig2X + sigW - 48, y - 1, 48, 48)
                     } catch (e) {
                         console.error('Error adding stamp:', e)
                     }
@@ -980,15 +980,15 @@ export default function ClientPortalPage() {
                                         <div className="text-center z-10">
                                             <p className="text-[10px] text-gray-400 font-bold mb-1">RETOUR GAGNANT BÉNIN</p>
                                             <p className="text-[9px] text-emerald-600 font-black uppercase">La Présidente Directrice Générale</p>
-                                            <p className="text-sm text-gray-900 font-bold mt-1">Nathalie Rosine RIFFERT GERMANY</p>
+                                            <p className="text-sm text-gray-900 font-bold mt-1">N. R. G</p>
                                         </div>
                                         {STAMP_BASE64 && (
                                             <Image 
                                                 src={`data:image/png;base64,${STAMP_BASE64}`} 
                                                 alt="Cachet PDG" 
-                                                width={220} 
-                                                height={220} 
-                                                className="absolute inset-0 m-auto object-contain opacity-90 rotate-[-5deg] z-0"
+                                                width={260} 
+                                                height={260} 
+                                                className="absolute inset-0 m-auto object-contain opacity-95 rotate-[-5deg] z-0"
                                             />
                                         )}
                                     </div>
