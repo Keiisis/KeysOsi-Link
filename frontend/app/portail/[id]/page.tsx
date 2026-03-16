@@ -402,7 +402,8 @@ export default function ClientPortalPage() {
                 pdf.circle(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2 + 1, 'F')
                 
                 // Le logo fourni est désormais transparent, donc on utilise 'PNG'
-                pdf.addImage(LOGO_BASE64, 'PNG', logoX, logoY, logoSize, logoSize)
+                const logoData = LOGO_BASE64.startsWith('data:') ? LOGO_BASE64 : `data:image/png;base64,${LOGO_BASE64}`
+                pdf.addImage(logoData, 'PNG', logoX, logoY, logoSize, logoSize)
             } catch (e) {
                 console.error('Logo error:', e)
             }
@@ -709,7 +710,8 @@ export default function ClientPortalPage() {
                 // Add Stamp if available (larger)
                 if (STAMP_BASE64) {
                     try {
-                        pdf.addImage(STAMP_BASE64, 'PNG', sig2X + sigW - 35, y + 5, 28, 28)
+                        const stampData = STAMP_BASE64.startsWith('data:') ? STAMP_BASE64 : `data:image/png;base64,${STAMP_BASE64}`
+                        pdf.addImage(stampData, 'PNG', sig2X + sigW - 36, y + 2, 34, 34)
                     } catch (e) {
                         console.error('Error adding stamp:', e)
                     }
@@ -925,7 +927,7 @@ export default function ClientPortalPage() {
                                 {/* Side A: Client Signature */}
                                 <div className="bg-emerald-500/5 border border-emerald-500/20 p-5 rounded-2xl">
                                     <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-3">Signature du Client (Approbation)</p>
-                                    <div className="bg-white/90 h-32 rounded-xl flex items-center justify-center p-2 border border-emerald-500/10">
+                                    <div className="bg-white/90 h-40 rounded-xl flex items-center justify-center p-2 border border-emerald-500/10">
                                         {signatureUrl ? (
                                             <Image src={signatureUrl} alt="Signature Client" width={200} height={100} className="h-full w-auto object-contain pointer-events-none" />
                                         ) : (
@@ -941,9 +943,9 @@ export default function ClientPortalPage() {
                                 </div>
 
                                 {/* Side B: PDG Stamp & Sign */}
-                                <div className="bg-blue-500/5 border border-blue-500/20 p-5 rounded-2xl relative">
+                                <div className="bg-blue-500/5 border border-blue-500/20 p-5 rounded-2xl relative text-gray-900">
                                     <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-3">Cachet & Signature Direction</p>
-                                    <div className="bg-white/90 h-32 rounded-xl flex items-center justify-center p-4 relative">
+                                    <div className="bg-white/90 h-40 rounded-xl flex items-center justify-center p-4 relative">
                                         <div className="text-center z-10">
                                             <p className="text-[10px] text-gray-400 font-bold mb-1">RETOUR GAGNANT BÉNIN</p>
                                             <p className="text-[9px] text-emerald-600 font-black uppercase">La Présidente Directrice Générale</p>
@@ -953,9 +955,9 @@ export default function ClientPortalPage() {
                                             <Image 
                                                 src={`data:image/png;base64,${STAMP_BASE64}`} 
                                                 alt="Cachet PDG" 
-                                                width={130} 
-                                                height={130} 
-                                                className="absolute inset-0 m-auto object-contain opacity-80 rotate-[-5deg]"
+                                                width={160} 
+                                                height={160} 
+                                                className="absolute inset-0 m-auto object-contain opacity-80 rotate-[-5deg] z-0"
                                             />
                                         )}
                                     </div>
