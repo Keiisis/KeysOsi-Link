@@ -372,26 +372,28 @@ export default function ClientPortalPage() {
                 .replace(/\u2714/g, '[OK]')
                 .replace(/\u2022/g, '-')    // bullet
 
-            // ── BENIN FLAG STRIPE ──────────────────────────────────
-            // On force le mode de rendu et on ajoute un contour 'D' (Draw) 
-            // de la même couleur pour garantir l'impression sur toutes les imprimantes.
-            const stripeH = 4.5 // Légèrement plus épais
-            const stripeY = 0.2 // Très léger décalage pour éviter la coupure bord perdu
+            // ── BENIN FLAG STRIPE (PRINT-OPTIMIZED) ───────────────
+            // Pour garantir l'impression sur toutes les imprimantes, on utilise des lignes 
+            // très épaisses au lieu de rectangles (souvent ignorés comme "background").
+            const stripeThickness = 6
+            const stripeYPos = 3 // Milieu de la ligne
             
-            pdf.setFillColor(0, 135, 81)
+            pdf.setLineWidth(stripeThickness)
+            
+            // Vert
             pdf.setDrawColor(0, 135, 81)
-            pdf.rect(0, stripeY, pw / 3, stripeH, 'FD')
+            pdf.line(0, stripeYPos, pw / 3, stripeYPos)
             
-            pdf.setFillColor(252, 209, 22)
+            // Jaune
             pdf.setDrawColor(252, 209, 22)
-            pdf.rect(pw / 3, stripeY, pw / 3, stripeH, 'FD')
+            pdf.line(pw / 3, stripeYPos, (pw * 2) / 3, stripeYPos)
             
-            pdf.setFillColor(232, 17, 45)
+            // Rouge
             pdf.setDrawColor(232, 17, 45)
-            pdf.rect((pw * 2) / 3, stripeY, pw / 3, stripeH, 'FD')
+            pdf.line((pw * 2) / 3, stripeYPos, pw, stripeYPos)
 
             // ── WHITE HEADER (identique navbar) ──────────────────
-            const headerTop = 4
+            const headerTop = 6 // Descendu légèrement pour laisser la bande respirer
             const headerH = 48
             pdf.setFillColor(255, 255, 255)
             pdf.rect(0, headerTop, pw, headerH, 'F')
