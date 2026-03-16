@@ -728,7 +728,8 @@ export default function ClientPortalPage() {
                 if (STAMP_BASE64) {
                     try {
                         const stampData = STAMP_BASE64.startsWith('data:') ? STAMP_BASE64 : `data:image/png;base64,${STAMP_BASE64}`
-                        pdf.addImage(stampData, 'PNG', sig2X + sigW - 48, y - 1, 48, 48)
+                        // Increased size from 48 to 65
+                        pdf.addImage(stampData, 'PNG', sig2X + sigW - 65, y - 5, 65, 65)
                     } catch (e) {
                         console.error('Error adding stamp:', e)
                     }

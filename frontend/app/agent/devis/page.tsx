@@ -355,14 +355,15 @@ export default function AgentDevisPage() {
             pdf.text('LA DIRECTION GÉNÉRALE', sig2X + 4, y + 6)
 
             try {
-                const sSz = 48
-                pdf.addImage(STAMP_BASE64, 'PNG', sig2X + (sigW - sSz) / 2, y + (sigH - sSz) / 2 + 2, sSz, sSz)
+                // Increased stamp size from 48 to 65 for better visibility
+                const sSz = 65
+                pdf.addImage(STAMP_BASE64, 'PNG', sig2X + (sigW - sSz) / 2, y + (sigH - sSz) / 2 - 2, sSz, sSz)
             } catch {}
 
             pdf.setFont('helvetica', 'bold')
             pdf.setFontSize(8)
             pdf.setTextColor(0, 100, 60)
-            pdf.text('N. R. G', sig2X + 4, y + 25)
+            pdf.text('N. R. G', sig2X + 4, y + 33)
 
             // ── FOOTER ────────────────────────────────────────────
             pdf.setFillColor(12, 20, 32)

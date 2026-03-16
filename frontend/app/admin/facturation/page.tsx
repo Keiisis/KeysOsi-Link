@@ -11,7 +11,7 @@ import {
     AlertCircle, Link as LinkIcon
 } from 'lucide-react'
 import Link from 'next/link'
-import { LOGO_BASE64 } from '@/lib/logoBase64'
+import { LOGO_BASE64, STAMP_BASE64 } from '@/lib/logoBase64'
 
 interface DevisItem {
     description: string
@@ -412,16 +412,26 @@ export default function AdminFacturationPage() {
                 pdf.setFont('helvetica', 'bold')
                 pdf.setFontSize(7)
                 pdf.setTextColor(70, 80, 170)
-                pdf.text('La Presidente Directrice Generale', sig2X + 4, y + 8)
+                pdf.text('La Présidente Directrice Générale :', sig2X + 4, y + 12)
                 pdf.setFont('helvetica', 'bold')
-                pdf.setFontSize(6.5)
-                pdf.setTextColor(0, 135, 81)
-                pdf.text('RETOUR GAGNANT BENIN', sig2X + 4, y + 14)
+                pdf.setFontSize(7.5)
+                pdf.text('N. R. G', sig2X + 4, y + 18)
+
+                // Add Stamp (cachet) enlarged
+                if (STAMP_BASE64) {
+                    try {
+                        const stampData = STAMP_BASE64.startsWith('data:') ? STAMP_BASE64 : `data:image/png;base64,${STAMP_BASE64}`
+                        pdf.addImage(stampData, 'PNG', sig2X + sigW - 65, y - 5, 65, 65)
+                    } catch (e) {
+                        console.error('Error adding stamp:', e)
+                    }
+                }
+
                 pdf.setFont('helvetica', 'normal')
                 pdf.setFontSize(6.5)
                 pdf.setTextColor(90, 95, 130)
-                pdf.text('Signature et Cachet officiel', sig2X + 4, y + 20)
-                pdf.text('Etabli le ' + new Date(doc.created_at).toLocaleDateString('fr-FR'), sig2X + 4, y + 26)
+                pdf.text('Signature et Cachet officiel', sig2X + 4, y + 23)
+                pdf.text('Etabli le ' + new Date(doc.created_at).toLocaleDateString('fr-FR'), sig2X + 4, y + 28)
             }
 
             // ── WATERMARK ──────────────────────────────────────────

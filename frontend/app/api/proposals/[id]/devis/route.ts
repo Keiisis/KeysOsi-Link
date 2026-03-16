@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { jsPDF } from 'jspdf'
-import { LOGO_BASE64 } from '@/lib/logoBase64'
+import { LOGO_BASE64, STAMP_BASE64 } from '@/lib/logoBase64'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
@@ -426,10 +426,28 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
             pdf.setFontSize(7)
             pdf.setTextColor(0, 135, 81)
             pdf.text('RETOUR GAGNANT BÉNIN', sig2X + 4, y + 14)
+
+            pdf.setFontSize(5.5)
+            pdf.setTextColor(0, 0, 0)
+            pdf.text('La Présidente Directrice Générale :', sig2X + 4, y + 19)
+            pdf.setFont('helvetica', 'bold')
+            pdf.setFontSize(7)
+            pdf.text('N. R. G', sig2X + 4, y + 24)
+
+            // Add Stamp (cachet) enlarged
+            if (STAMP_BASE64) {
+                try {
+                    const stampData = STAMP_BASE64.startsWith('data:') ? STAMP_BASE64 : `data:image/png;base64,${STAMP_BASE64}`
+                    pdf.addImage(stampData, 'PNG', sig2X + sigW - 65, y - 5, 65, 65)
+                } catch (e) {
+                    console.error('Error adding stamp:', e)
+                }
+            }
+
             pdf.setFont('helvetica', 'normal')
             pdf.setFontSize(6.5)
             pdf.setTextColor(80, 120, 90)
-            pdf.text(`Établi le ${dateFr(p.created_at)}`, sig2X + 4, y + 22)
+            pdf.text(`Établi le ${dateFr(p.created_at)}`, sig2X + 4, y + 27)
         }
 
         // ── FOOTER ───────────────────────────────────────────────────────
