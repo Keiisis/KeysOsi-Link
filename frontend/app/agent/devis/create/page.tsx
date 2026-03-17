@@ -217,7 +217,7 @@ export default function AgentCreateDocumentPage() {
                                         list="services-list"
                                     />
                                     <datalist id="services-list">
-                                        {services.map(s => <option key={s.id} value={s.title}>{s.price} XOF</option>)}
+                                        {services.map(s => <option key={s.id} value={s.title}>{s.base_price} XOF</option>)}
                                     </datalist>
                                 </div>
                                 <div className="flex gap-3 w-full sm:w-auto">
