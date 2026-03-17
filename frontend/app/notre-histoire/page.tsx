@@ -211,7 +211,7 @@ function HeroSection() {
                     transition={{ duration: 1, delay: 5 }}
                     className="text-xl md:text-2xl text-gray-900 max-w-3xl mx-auto leading-relaxed font-semibold mb-12"
                 >
-                    Retour GAGNANT B&eacute;nin n&apos;est pas qu&apos;une agence. C&apos;est le pont d&apos;or jet&eacute; entre un pass&eacute; retrouv&eacute; et un avenir &agrave; construire.
+                    RETOUR GAGNANT BENIN n&apos;est pas qu&apos;une agence. C&apos;est le pont d&apos;or jet&eacute; entre un pass&eacute; retrouv&eacute; et un avenir &agrave; construire.
                 </motion.p>
 
                 <motion.div
@@ -386,7 +386,7 @@ function ChapitreFondatrice() {
                         className="max-w-lg"
                     >
                         <h3 className="text-4xl md:text-5xl font-black font-heading text-gray-900 mb-12 leading-tight">
-                            Le Mot de la<br />Fondatrice
+                            Les Mots de la<br />Fondatrice
                         </h3>
 
                         <div className="relative">
