@@ -176,6 +176,7 @@ export default function TestimonialsEdit() {
                                                 key={s}
                                                 type="button"
                                                 onClick={() => setFormData((prev) => ({ ...prev, rating: s }))}
+                                                title={`Note ${s} étoile${s > 1 ? 's' : ''}`}
                                                 className={cn(
                                                     "transition-all transform hover:scale-125",
                                                     (formData.rating ?? 5) >= s ? "text-[#FCD116]" : "text-gray-800"

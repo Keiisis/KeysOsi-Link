@@ -115,6 +115,7 @@ export default function PatrimonioEdit() {
                 <div className="flex items-center gap-6">
                     <button
                         onClick={() => list("patrimoine")}
+                        title="Retour au patrimoine"
                         className="p-4 bg-white/5 border border-white/5 rounded-2xl text-gray-400 hover:text-[#FCD116] hover:bg-white/10 transition-all shadow-2xl group"
                     >
                         <ArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
@@ -232,6 +233,7 @@ export default function PatrimonioEdit() {
                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                             <button
                                                 onClick={() => toggleGalleryImage(url)}
+                                                title="Retirer cette image"
                                                 className="p-2 bg-red-500 text-white rounded-lg hover:scale-110 transition-transform"
                                             >
                                                 <Trash2 size={16} />
@@ -347,6 +349,7 @@ export default function PatrimonioEdit() {
                                 </div>
                                 <button
                                     onClick={() => setIsGalleryModalOpen(false)}
+                                    title="Fermer la galerie"
                                     className="p-4 bg-white/5 rounded-2xl text-gray-500 hover:text-white transition-colors"
                                 >
                                     <X size={24} />

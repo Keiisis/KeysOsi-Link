@@ -148,6 +148,7 @@ export default function PatrimonioList() {
                                         <div className="flex gap-2">
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); edit("patrimoine", item.id); }}
+                                                title="Modifier cette archive"
                                                 className="w-12 h-12 bg-white/10 backdrop-blur-xl border border-white/10 rounded-2xl flex items-center justify-center text-white hover:bg-white hover:text-black transition-all"
                                             >
                                                 <Edit2 size={18} />
@@ -158,6 +159,7 @@ export default function PatrimonioList() {
                                                     if (confirm("Défendre cette archive ou la supprimer ?")) deleteItem({ resource: "patrimoine", id: item.id });
                                                 }}
                                                 className="w-12 h-12 bg-red-500/20 backdrop-blur-xl border border-red-500/20 rounded-2xl flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                                                title="Supprimer cette archive"
                                             >
                                                 <Trash2 size={18} />
                                             </button>

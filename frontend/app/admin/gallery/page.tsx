@@ -3,10 +3,10 @@
 import { useTranslation, T } from '@/lib/translation';
 import { useList, useNavigation, useDelete, useUpdate } from "@refinedev/core";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, Edit2, Maximize2, Filter, Grid, List as ListIcon, Image as ImageIcon, Loader2, Search, CheckCircle2 } from "lucide-react";
+import { Plus, Trash2, Edit2, Maximize2, Grid, Image as ImageIcon, Loader2, Search, CheckCircle2 } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -153,6 +153,7 @@ export default function GalleryList() {
                                                     onClick={() => {
                                                         if (confirm("Confirmer la suppression ?")) deleteItem({ resource: "gallery", id: item.id });
                                                     }}
+                                                    title="Supprimer cette image"
                                                     className="p-2 bg-red-500/20 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-lg"
                                                 >
                                                     <Trash2 size={16} />

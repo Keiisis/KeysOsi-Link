@@ -80,7 +80,7 @@ export default function ClientDashboardLayout({
                         <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-white/10 to-transparent border border-white/10 flex items-center justify-center shadow-inner group cursor-pointer hover:border-[#FCD116]/50 transition-all">
                             <span className="font-heading font-bold text-[#FCD116] text-sm md:text-base">K</span>
                         </div>
-                        <button className="text-gray-500 hover:text-red-400 transition-colors p-2 rounded-lg hover:bg-red-400/10">
+                        <button title="Déconnexion" className="text-gray-500 hover:text-red-400 transition-colors p-2 rounded-lg hover:bg-red-400/10">
                             <LogOut size={18} />
                         </button>
                     </div>
@@ -117,6 +117,7 @@ export default function ClientDashboardLayout({
                                         </span>
                                         <button
                                             onClick={() => setMobileMenuOpen(false)}
+                                            title="Fermer le menu"
                                             className="p-2 rounded-lg hover:bg-white/5 text-gray-400"
                                         >
                                             <X size={18} />

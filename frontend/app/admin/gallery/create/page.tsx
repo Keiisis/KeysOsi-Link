@@ -2,7 +2,7 @@
 
 import { useTranslation, T } from '@/lib/translation';
 import { useForm, useNavigation } from "@refinedev/core";
-import { motion, AnimatePresence } from "framer-motion";
+
 import { ArrowLeft, Save, ImageIcon, CloudUpload, Tag, Type, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
@@ -43,6 +43,7 @@ export default function GalleryCreate() {
                 <div className="flex items-center gap-6">
                     <button
                         onClick={() => list("gallery")}
+                        title="Retour à la galerie"
                         className="p-4 bg-white/5 border border-white/5 rounded-2xl text-gray-500 hover:text-[#FCD116] transition-all"
                     >
                         <ArrowLeft size={24} />
@@ -100,6 +101,7 @@ export default function GalleryCreate() {
                                 </label>
                                 <select
                                     name="category"
+                                    title="Sélectionner une catégorie"
                                     value={formData.category}
                                     onChange={handleChange}
                                     className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white text-sm font-bold focus:outline-none appearance-none"

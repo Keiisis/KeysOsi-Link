@@ -77,6 +77,7 @@ export default function TestimonialsCreate() {
                 <div className="flex items-center gap-6">
                     <button
                         onClick={() => list("testimonials")}
+                        title="Retour aux témoignages"
                         className="p-4 bg-[#0a0f18] border border-white/5 rounded-2xl text-gray-500 hover:text-white hover:border-[#3b82f6]/30 transition-all shadow-2xl group"
                     >
                         <ArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
@@ -148,6 +149,7 @@ export default function TestimonialsCreate() {
                                                 key={s}
                                                 type="button"
                                                 onClick={() => setFormData((prev) => ({ ...prev, rating: s }))}
+                                                title={`Note ${s} étoile${s > 1 ? 's' : ''}`}
                                                 className={cn(
                                                     "transition-all transform hover:scale-125",
                                                     (formData.rating ?? 5) >= s ? "text-[#FCD116]" : "text-gray-800"

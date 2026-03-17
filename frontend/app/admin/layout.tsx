@@ -312,10 +312,10 @@ function AdminLayoutContent({
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <button className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-all">
+                            <button title="Notifications" className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-all">
                                 <Bell size={17} />
                             </button>
-                            <button className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-all hidden sm:flex">
+                            <button title="Aide" className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-all hidden sm:flex">
                                 <HelpCircle size={17} />
                             </button>
 

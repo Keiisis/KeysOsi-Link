@@ -81,6 +81,7 @@ export default function SettingsEdit() {
                 <div className="flex items-center gap-6">
                     <button
                         onClick={() => list("settings")}
+                        title="Retour aux réglages"
                         className="p-4 bg-white/5 border border-white/5 rounded-2xl text-gray-500 hover:text-[#FCD116] transition-all"
                     >
                         <ArrowLeft size={24} />

@@ -203,6 +203,7 @@ export default function MessagesList() {
                                                     e.stopPropagation();
                                                     if (confirm("Confirmer la suppression archivée ?")) deleteItem({ resource: "messages", id: item.id });
                                                 }}
+                                                title="Supprimer ce message"
                                                 className="p-3 rounded-xl bg-white/5 text-gray-600 hover:bg-red-500/10 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
                                             >
                                                 <Trash2 size={16} />

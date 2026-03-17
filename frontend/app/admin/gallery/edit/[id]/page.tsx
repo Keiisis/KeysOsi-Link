@@ -40,7 +40,6 @@ export default function GalleryEdit() {
 
     useEffect(() => {
         if (itemData) {
-            // eslint-disable-next-line react-hooks/exhaustive-deps
             setFormData({
                 url: itemData.url || itemData.image || itemData.image_url || "",
                 title: itemData.title || "",
@@ -82,6 +81,7 @@ export default function GalleryEdit() {
                 <div className="flex items-center gap-6">
                     <button
                         onClick={() => list("gallery")}
+                        title="Retour à la galerie"
                         className="p-4 bg-white/5 border border-white/5 rounded-2xl text-gray-500 hover:text-[#FCD116] transition-all"
                     >
                         <ArrowLeft size={24} />
@@ -139,6 +139,7 @@ export default function GalleryEdit() {
                                 </label>
                                 <select
                                     name="category"
+                                    title="Sélectionner une catégorie"
                                     value={formData.category}
                                     onChange={handleChange}
                                     className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white text-sm font-bold focus:outline-none appearance-none"
