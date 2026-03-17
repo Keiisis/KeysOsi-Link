@@ -4,9 +4,7 @@ import { motion, useScroll, useTransform, useInView, useMotionValue, useSpring }
 import { useRef, useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import {
-    ArrowRight, Quote, Sparkles, TreePine, DoorOpen, ChevronDown, BadgeCheck
-} from 'lucide-react'
+import { ArrowRight, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { T } from '@/lib/translation'
 
@@ -17,7 +15,7 @@ import { T } from '@/lib/translation'
 const IMG = {
     trio: '/images/histoire/trio.jpeg',
     martinique: '/images/histoire/rencontre-martinique.jpeg',
-    nathalie: '/images/histoire/nathalie-social.jpeg',
+    nathalie: '/images/histoire/nathalie-new.jpg',
     georges: '/images/histoire/georges-1.jpeg',
     talon: '/images/histoire/talon.jpeg',
     georgesPresident: '/images/histoire/georges-president.jpeg',
@@ -30,52 +28,6 @@ const IMG = {
     attestation4: '/images/histoire/attestation-4.jpeg',
     attestation5: '/images/histoire/attestation-5.jpeg',
     benin: '/images/histoire/rencontre-benin.jpeg',
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   COMPOSANT — PARTICULES DORÉES FLOTTANTES
-   ═══════════════════════════════════════════════════════════════ */
-
-function GoldenParticles() {
-    const particles = Array.from({ length: 30 }, (_, i) => ({
-        id: i,
-        left: `${Math.random() * 100}%`,
-        top: `${Math.random() * 100}%`,
-        size: Math.random() * 4 + 1,
-        duration: Math.random() * 15 + 10,
-        delay: Math.random() * 10,
-        opacity: Math.random() * 0.3 + 0.1,
-    }))
-
-    return (
-        <div className="fixed inset-0 pointer-events-none z-[5] overflow-hidden">
-            {particles.map((p) => (
-                <motion.div
-                    key={p.id}
-                    className="absolute rounded-full"
-                    style={{
-                        left: p.left,
-                        top: p.top,
-                        width: p.size,
-                        height: p.size,
-                        background: 'radial-gradient(circle, #D4A017 0%, transparent 70%)',
-                        opacity: p.opacity,
-                    }}
-                    animate={{
-                        y: [0, -80, -160, -80, 0],
-                        x: [0, 20, -10, 30, 0],
-                        opacity: [p.opacity, p.opacity * 1.5, p.opacity, p.opacity * 0.5, p.opacity],
-                    }}
-                    transition={{
-                        duration: p.duration,
-                        repeat: Infinity,
-                        delay: p.delay,
-                        ease: 'linear' as const,
-                    }}
-                />
-            ))}
-        </div>
-    )
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -271,8 +223,8 @@ function HeroSection() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 1, delay: 1.5 }}
                 >
-                    <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-[#008751]/10 text-[#008751] font-black text-xs uppercase tracking-[0.3em] mb-8">
-                        <Sparkles className="w-4 h-4" /> Notre Histoire
+                    <span className="inline-flex items-center justify-center px-5 py-2 rounded-full border border-gray-200 bg-white/50 backdrop-blur-sm text-gray-500 font-bold text-xs uppercase tracking-[0.3em] mb-8">
+                        Notre Histoire
                     </span>
                 </motion.div>
 
@@ -287,7 +239,7 @@ function HeroSection() {
                         delay={2200}
                     />
                     <br />
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] via-[#D4A017] to-[#E8112D]">
+                    <span className="text-[#008751]">
                         <TypewriterText
                             text="nous réécrivons l'avenir."
                             delay={3800}
@@ -363,7 +315,7 @@ function ChapitreRencontre() {
                                 whileInView={{ opacity: 1, scale: 1 }}
                                 viewport={{ once: true }}
                                 transition={{ duration: 1.2, ease: 'easeOut' as const }}
-                                className="relative w-full h-[80vh] rounded-[2rem] overflow-hidden shadow-2xl shadow-gray-300/40"
+                                className="relative w-full h-[80vh] overflow-hidden shadow-2xl shadow-gray-300/40 border border-gray-100"
                             >
                                 <Image
                                     src={IMG.martinique}
@@ -371,9 +323,9 @@ function ChapitreRencontre() {
                                     fill
                                     className="object-cover"
                                 />
-                                <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-white/90 to-transparent">
-                                    <p className="text-gray-900 text-sm font-black uppercase tracking-widest">Martinique &bull; D&eacute;cembre 2023</p>
-                                    <p className="text-gray-500 text-xs mt-1">L&agrave; o&ugrave; tout a commenc&eacute;</p>
+                                <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-gray-900/90 to-transparent">
+                                    <p className="text-white text-sm font-black uppercase tracking-widest">Martinique &bull; D&eacute;cembre 2023</p>
+                                    <p className="text-white/70 text-xs mt-1">L&agrave; o&ugrave; tout a commenc&eacute;</p>
                                 </div>
                             </motion.div>
                         </div>
@@ -383,15 +335,15 @@ function ChapitreRencontre() {
                     <div className="relative py-32 lg:py-48 flex flex-col gap-24">
 
                         {/* Ligne dor&eacute;e anim&eacute;e */}
-                        <div className="absolute left-0 lg:left-8 top-0 bottom-0 w-[2px] bg-gray-100 overflow-hidden">
+                        <div className="absolute left-0 lg:left-8 top-0 bottom-0 w-[1px] bg-gray-200 overflow-hidden">
                             <motion.div
                                 style={{ height: lineHeight }}
-                                className="w-full bg-gradient-to-b from-[#D4A017] to-[#008751]"
+                                className="w-full bg-[#D4A017]"
                             />
                         </div>
 
                         {/* Image mobile seulement */}
-                        <div className="block lg:hidden relative h-72 rounded-2xl overflow-hidden shadow-xl ml-8">
+                        <div className="block lg:hidden relative h-72 overflow-hidden shadow-xl border border-gray-100 ml-8">
                             <Image src={IMG.martinique} alt="Martinique" fill className="object-cover" />
                         </div>
 
@@ -401,7 +353,7 @@ function ChapitreRencontre() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true, margin: '-100px' }}
                             transition={{ duration: 0.8, ease: 'easeOut' as const }}
-                            className="ml-8 lg:ml-16 p-8 md:p-12 rounded-3xl bg-white/80 backdrop-blur-xl border border-gray-100 shadow-xl shadow-gray-200/30"
+                            className="ml-8 lg:ml-16 p-8 md:p-12 bg-white border border-gray-100 shadow-xl shadow-gray-200/30"
                         >
                             <span className="text-[#D4A017] font-black uppercase tracking-[0.3em] text-xs">Chapitre I</span>
                             <h2 className="text-3xl md:text-5xl font-black font-heading text-gray-900 leading-tight mt-4 mb-8">
@@ -409,7 +361,7 @@ function ChapitreRencontre() {
                                 <span className="text-[#008751]">une loi historique.</span>
                             </h2>
                             <p className="text-lg text-gray-600 leading-relaxed">
-                                Tout commence par une d&eacute;termination in&eacute;branlable. <strong className="text-gray-900">Nathalie RIFFERT GERMANY</strong>, femme engag&eacute;e et passionn&eacute;e, a port&eacute; en elle le r&ecirc;ve d&apos;un retour au pays apr&egrave;s 400 ans d&apos;absence. Ce r&ecirc;ve est devenu r&eacute;alit&eacute; gr&acirc;ce &agrave; une rencontre d&eacute;cisive.
+                                Tout commence par une d&eacute;termination in&eacute;branlable. <strong className="text-gray-900">Mme NATHALIE RIFFERT GERMANY</strong>, femme engag&eacute;e et passionn&eacute;e, a port&eacute; en elle le r&ecirc;ve d&apos;un retour au pays apr&egrave;s 400 ans d&apos;absence. Ce r&ecirc;ve est devenu r&eacute;alit&eacute; gr&acirc;ce &agrave; une rencontre d&eacute;cisive.
                             </p>
                         </motion.div>
 
@@ -419,11 +371,10 @@ function ChapitreRencontre() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true, margin: '-100px' }}
                             transition={{ duration: 0.8, ease: 'easeOut' as const }}
-                            className="ml-8 lg:ml-16 p-8 md:p-12 rounded-3xl bg-gradient-to-br from-[#008751]/5 to-[#D4A017]/5 border border-[#D4A017]/20 shadow-xl shadow-[#D4A017]/5"
+                            className="ml-8 lg:ml-16 p-8 md:p-12 bg-gray-50 border-l-[3px] border-[#D4A017] shadow-xl shadow-gray-200/30"
                         >
-                            <div className="w-16 h-1 bg-gradient-to-r from-[#008751] to-[#D4A017] rounded-full mb-6" />
-                            <p className="text-xl text-gray-800 leading-relaxed">
-                                <strong className="text-[#008751] text-2xl">Le 13 d&eacute;cembre 2023, en Martinique</strong> — un dialogue historique s&apos;est nou&eacute; entre trois acteurs majeurs : Georges-Emmanuel GERMANY, Nathalie RIFFERT GERMANY et le Chef de l&apos;&Eacute;tat b&eacute;ninois, <strong>S.E.M. Patrice TALON</strong>.
+                            <p className="text-xl text-gray-800 leading-relaxed font-serif italic">
+                                Le 13 d&eacute;cembre 2023, en Martinique — un dialogue historique s&apos;est nou&eacute; entre trois acteurs majeurs : Mr GEORGES GERMANY, Mme NATHALIE RIFFERT GERMANY et le Chef de l&apos;&Eacute;tat b&eacute;ninois, <strong className="not-italic text-gray-900">S.E.M. PATRICE TALON</strong>.
                             </p>
                         </motion.div>
 
@@ -433,12 +384,12 @@ function ChapitreRencontre() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true, margin: '-100px' }}
                             transition={{ duration: 0.8, ease: 'easeOut' as const }}
-                            className="ml-8 lg:ml-16 p-8 md:p-12 rounded-3xl bg-white/80 backdrop-blur-xl border border-gray-100 shadow-xl shadow-gray-200/30"
+                            className="ml-8 lg:ml-16 p-8 md:p-12 bg-white border border-gray-100 shadow-xl shadow-gray-200/30"
                         >
                             <p className="text-lg text-gray-600 leading-relaxed mb-6">
                                 C&apos;est lors de cet &eacute;change que l&apos;id&eacute;e de rendre &agrave; tous les afro-descendants leur identit&eacute; originelle a pris corps. &Agrave; la demande de Nathalie, cette vision s&apos;est &eacute;largie &agrave; l&apos;ensemble des Cara&iuml;bes.
                             </p>
-                            <p className="text-xl text-gray-900 font-semibold leading-snug border-l-4 border-[#D4A017] pl-6">
+                            <p className="text-xl text-gray-900 font-semibold leading-snug">
                                 Aujourd&apos;hui, le Pr&eacute;sident Patrice Talon entre dans l&apos;histoire de l&apos;humanit&eacute; en ouvrant les bras &agrave; des milliers de fr&egrave;res et s&oelig;urs. Une nouvelle page s&apos;&eacute;crit — avec lui, avec nous, et avec vous.
                             </p>
                         </motion.div>
@@ -455,33 +406,30 @@ function ChapitreRencontre() {
 
 function ChapitreFondatrice() {
     return (
-        <section className="relative bg-white">
+        <section className="relative bg-white border-y border-gray-100">
             <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen">
 
                 {/* Photo Nathalie — Ken Burns Effect */}
-                <div className="relative h-[60vh] lg:h-auto w-full lg:sticky lg:top-0 overflow-hidden">
+                <div className="relative h-[60vh] lg:h-auto w-full lg:sticky lg:top-0 overflow-hidden border-r border-gray-100">
                     <motion.div
                         animate={{ scale: [1, 1.08, 1.04] }}
-                        transition={{ duration: 20, repeat: Infinity, ease: 'linear' as const }}
+                        transition={{ duration: 24, repeat: Infinity, ease: 'linear' as const }}
                         className="absolute inset-0"
                     >
                         <Image
                             src={IMG.nathalie}
-                            alt="Nathalie RIFFERT GERMANY, Fondatrice"
+                            alt="Mme NATHALIE RIFFERT GERMANY, Fondatrice"
                             fill
                             className="object-cover object-center"
                         />
                     </motion.div>
-                    <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-white/50 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-gray-900/60 to-transparent" />
 
                     {/* Badge */}
                     <div className="absolute bottom-8 left-8 lg:bottom-12 lg:left-12">
-                        <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-white/80 backdrop-blur-xl shadow-lg border border-white/50">
-                            <div className="w-3 h-3 rounded-full bg-[#008751] animate-pulse" />
-                            <div>
-                                <p className="text-gray-900 font-black text-sm">Nathalie RIFFERT GERMANY</p>
-                                <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">Fondatrice</p>
-                            </div>
+                        <div className="text-white">
+                            <p className="font-black text-2xl font-heading mb-1">Mme NATHALIE RIFFERT GERMANY</p>
+                            <p className="text-[#D4A017] text-xs font-bold uppercase tracking-widest">Fondatrice</p>
                         </div>
                     </div>
                 </div>
@@ -496,14 +444,13 @@ function ChapitreFondatrice() {
                         className="max-w-lg"
                     >
                         <span className="text-[#D4A017] font-black uppercase tracking-[0.3em] text-xs mb-6 block">Chapitre II</span>
-                        <h3 className="text-4xl md:text-5xl font-black font-heading text-gray-900 mb-10 leading-tight">
+                        <h3 className="text-4xl md:text-5xl font-black font-heading text-gray-900 mb-12 leading-tight">
                             Le Mot de la<br />Fondatrice
                         </h3>
 
                         <div className="relative">
-                            <Quote className="absolute -top-6 -left-6 w-16 h-16 text-[#D4A017]/15" />
-                            <blockquote className="text-xl md:text-2xl text-gray-700 leading-relaxed font-serif italic pl-6 border-l-4 border-[#D4A017]/30">
-                                Mon souhait le plus cher est que ce retour soit une empreinte ind&eacute;l&eacute;bile de r&eacute;ussite. Je me suis pleinement investie pour que chaque afro-descendant retrouve non seulement sa terre, mais aussi <strong className="text-gray-900 not-italic">sa place et sa dignit&eacute;</strong>, dans le respect du &lsquo;vivre ensemble&rsquo;.
+                            <blockquote className="text-2xl text-gray-800 leading-relaxed font-serif italic border-l-[3px] border-gray-300 pl-8">
+                                Mon souhait le plus cher est que ce retour soit une empreinte ind&eacute;l&eacute;bile de r&eacute;ussite. Je me suis pleinement investie pour que chaque afro-descendant retrouve non seulement sa terre, mais aussi <strong className="text-gray-900 not-italic">sa place et sa dignit&eacute;</strong>, dans le respect du vivre ensemble.
                             </blockquote>
                         </div>
 
@@ -512,15 +459,10 @@ function ChapitreFondatrice() {
                             whileInView={{ opacity: 1, x: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.8, delay: 0.5, ease: 'easeOut' as const }}
-                            className="mt-10 text-2xl font-black text-[#008751]"
+                            className="mt-12 text-2xl font-black text-[#008751] font-heading"
                         >
                             Bonne arriv&eacute;e &agrave; tous !
                         </motion.p>
-
-                        <div className="mt-8 flex items-center gap-4">
-                            <div className="h-[1px] flex-1 bg-gray-200" />
-                            <span className="text-gray-400 text-xs font-bold uppercase tracking-widest">— Nathalie R.G.</span>
-                        </div>
                     </motion.div>
                 </div>
             </div>
@@ -535,28 +477,28 @@ function ChapitreFondatrice() {
 function ChapitreArchitectes() {
     const portraits = [
         {
-            src: IMG.nathalie,
-            name: 'Nathalie RIFFERT GERMANY',
-            title: 'Fondatrice',
-            phrase: 'La flamme qui a tout allum&eacute;',
+            src: IMG.talon,
+            name: 'S.E.M. PATRICE TALON',
+            title: 'Pr&eacute;sident de la R&eacute;publique du B&eacute;nin',
+            phrase: 'Le visionnaire de l&apos;accueil',
         },
         {
             src: IMG.georges,
-            name: 'Georges-Emmanuel GERMANY',
+            name: 'Mr GEORGES GERMANY',
             title: 'Cofondateur',
             phrase: 'Le b&acirc;tisseur de ponts',
         },
         {
-            src: IMG.talon,
-            name: 'S.E.M. Patrice TALON',
-            title: 'Pr&eacute;sident de la R&eacute;publique du B&eacute;nin',
-            phrase: 'Le visionnaire de l&apos;accueil',
+            src: IMG.nathalie,
+            name: 'Mme NATHALIE RIFFERT GERMANY',
+            title: 'Fondatrice',
+            phrase: 'La flamme qui a tout allum&eacute;',
         },
     ]
 
     return (
-        <section className="relative bg-white py-32 overflow-hidden">
-            <div className="container mx-auto px-6 max-w-7xl">
+        <section className="relative bg-[#FAFBFC] py-32 overflow-hidden">
+            <div className="container mx-auto px-6 max-w-[1400px]">
 
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
@@ -572,43 +514,38 @@ function ChapitreArchitectes() {
                 </motion.div>
 
                 {/* 3 Portraits Pleine Hauteur avec hover reveals */}
-                <div className="flex flex-col lg:flex-row gap-[2px] lg:h-[85vh] rounded-[2rem] overflow-hidden shadow-2xl shadow-gray-300/30">
+                <div className="flex flex-col lg:flex-row gap-[1px] lg:h-[85vh] bg-gray-200 border border-gray-200">
                     {portraits.map((p, i) => (
                         <motion.div
                             key={p.name}
-                            initial={{ opacity: 0, y: 60 }}
-                            whileInView={{ opacity: 1, y: 0 }}
+                            initial={{ opacity: 0 }}
+                            whileInView={{ opacity: 1 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.8, delay: i * 0.2, ease: 'easeOut' as const }}
-                            className="relative flex-1 h-[50vh] lg:h-full overflow-hidden group cursor-pointer"
+                            className="relative flex-1 h-[60vh] lg:h-full overflow-hidden group cursor-pointer bg-white"
                         >
                             {/* Photo avec parallax individuel au hover */}
                             <Image
                                 src={p.src}
                                 alt={p.name}
                                 fill
-                                className="object-cover object-top group-hover:scale-110 transition-transform duration-[1200ms] ease-out"
+                                className="object-cover object-top filter contrast-[1.05] group-hover:scale-105 transition-all duration-[1500ms] ease-out"
                             />
 
                             {/* Overlay qui slide depuis le bas au hover */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
                             {/* Info qui glisse de bas en haut */}
-                            <div className="absolute bottom-0 left-0 right-0 p-8 translate-y-full group-hover:translate-y-0 transition-transform duration-700 ease-out">
-                                <p className="text-[#D4A017] text-xs font-black uppercase tracking-widest mb-2" dangerouslySetInnerHTML={{ __html: p.phrase }} />
-                                <p className="text-white text-2xl font-black font-heading">{p.name}</p>
-                                <p className="text-white/70 text-sm mt-1" dangerouslySetInnerHTML={{ __html: p.title }} />
+                            <div className="absolute bottom-0 left-0 right-0 p-10 translate-y-[20%] opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700 ease-out z-20">
+                                <p className="text-[#D4A017] text-xs font-bold uppercase tracking-[0.2em] mb-3" dangerouslySetInnerHTML={{ __html: p.phrase }} />
+                                <p className="text-white text-3xl font-black font-heading leading-tight mb-1">{p.name}</p>
+                                <p className="text-white/80 text-sm font-medium" dangerouslySetInnerHTML={{ __html: p.title }} />
                             </div>
 
-                            {/* Nom discret visible par d&eacute;faut */}
-                            <div className="absolute bottom-6 left-6 group-hover:opacity-0 transition-opacity duration-300">
-                                <p className="text-white font-black text-lg drop-shadow-lg">{p.name.split(' ')[0]}</p>
+                            {/* Nom visible par d&eacute;faut en bas */}
+                            <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/70 to-transparent group-hover:opacity-0 transition-opacity duration-300 z-10 flex flex-col justify-end">
+                                <p className="text-white font-black text-xl drop-shadow-lg font-heading">{p.name}</p>
                             </div>
-
-                            {/* S&eacute;parateur dor&eacute; */}
-                            {i < portraits.length - 1 && (
-                                <div className="absolute right-0 top-[15%] bottom-[15%] w-[1px] bg-[#D4A017]/30 hidden lg:block z-10" />
-                            )}
                         </motion.div>
                     ))}
                 </div>
@@ -618,34 +555,28 @@ function ChapitreArchitectes() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SECTION 5 — LE LOGO (Glow Pulsation + Appear one by one)
+   SECTION 5 — LE LOGO (Logo massivement grand sans bordures)
    ═══════════════════════════════════════════════════════════════ */
 
 function ChapitreLogo() {
     const symbols = [
         {
-            icon: <DoorOpen className="text-[#E8112D] w-7 h-7" />,
-            color: 'bg-[#E8112D]/8',
             title: 'La Porte Sculpt&eacute;e',
             text: "L&apos;acc&egrave;s s&eacute;curis&eacute; et facilit&eacute; au B&eacute;nin d&apos;aujourd&apos;hui. Elle symbolise l&apos;Accueil, la Protection et l&apos;Authenticit&eacute; — des lignes rappelant l&apos;artisanat local, signe de respect pour nos traditions s&eacute;culaires.",
         },
         {
-            icon: <TreePine className="text-[#008751] w-7 h-7" />,
-            color: 'bg-[#008751]/8',
             title: "L&apos;Arbre de Vie",
             text: "La transformation de &laquo;l&apos;Arbre de l&apos;Oubli&raquo; en un Arbre de Vie. Il incarne la Solidit&eacute;, la Prosp&eacute;rit&eacute; et la Renaissance — la reconnexion spirituelle et physique avec la terre nourricière.",
         },
         {
-            icon: <BadgeCheck className="text-[#D4A017] w-7 h-7" />,
-            color: 'bg-[#D4A017]/10',
             title: 'Notre Signature',
             text: "L&apos;harmonie de ces symboles forme une image puissante : celle de la maison retrouv&eacute;e. Choisir Retour GAGNANT, c&apos;est choisir la stabilit&eacute;, la r&eacute;ussite et la fiert&eacute; de b&acirc;tir le B&eacute;nin moderne.",
         },
     ]
 
     return (
-        <section className="relative bg-[#FAFBFC] py-32 overflow-hidden">
-            <div className="container mx-auto px-6 max-w-6xl">
+        <section className="relative bg-white py-32 overflow-hidden border-y border-gray-100">
+            <div className="container mx-auto px-6 max-w-7xl">
 
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
@@ -656,62 +587,41 @@ function ChapitreLogo() {
                 >
                     <span className="text-[#D4A017] font-black uppercase tracking-[0.3em] text-xs">Chapitre III</span>
                     <h2 className="text-4xl md:text-6xl font-black font-heading text-gray-900 mt-4 leading-tight">
-                        L&apos;&Eacute;nigme du{' '}
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] to-[#D4A017]">Symbole</span>
+                        L&apos;&Eacute;nigme du <span className="text-[#008751]">Symbole</span>
                     </h2>
                 </motion.div>
 
-                <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
+                <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24 relative z-10">
 
-                    {/* Logo avec Glow Pulsation */}
+                    {/* Logo Grand Format sans bordure */}
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
+                        initial={{ opacity: 0, scale: 0.95 }}
                         whileInView={{ opacity: 1, scale: 1 }}
                         viewport={{ once: true }}
-                        transition={{ duration: 1, ease: 'easeOut' as const }}
-                        className="w-full lg:w-2/5 flex justify-center"
+                        transition={{ duration: 1.5, ease: 'easeOut' as const }}
+                        className="w-full lg:w-1/2 flex justify-center relative min-h-[400px]"
                     >
-                        <div className="relative">
-                            {/* Halo dor&eacute; pulsant */}
-                            <motion.div
-                                animate={{
-                                    boxShadow: [
-                                        '0 0 40px rgba(212, 160, 23, 0.1)',
-                                        '0 0 80px rgba(212, 160, 23, 0.25)',
-                                        '0 0 40px rgba(212, 160, 23, 0.1)',
-                                    ]
-                                }}
-                                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' as const }}
-                                className="w-64 h-64 md:w-80 md:h-80 rounded-[3rem] overflow-hidden border border-gray-100 bg-white p-6 relative"
-                            >
-                                <Image
-                                    src={IMG.logo}
-                                    alt="Logo Retour Gagnant B&eacute;nin"
-                                    fill
-                                    className="object-contain p-4"
-                                />
-                            </motion.div>
-                        </div>
+                        <Image
+                            src={IMG.logo}
+                            alt="Logo Retour Gagnant B&eacute;nin"
+                            fill
+                            className="object-contain"
+                        />
                     </motion.div>
 
-                    {/* Explications une par une */}
-                    <div className="w-full lg:w-3/5 space-y-8">
+                    {/* Explications Textes Épurés */}
+                    <div className="w-full lg:w-1/2 space-y-12">
                         {symbols.map((s, i) => (
                             <motion.div
                                 key={i}
-                                initial={{ opacity: 0, x: 60 }}
+                                initial={{ opacity: 0, x: 40 }}
                                 whileInView={{ opacity: 1, x: 0 }}
                                 viewport={{ once: true, margin: '-50px' }}
-                                transition={{ duration: 0.8, delay: i * 0.3, ease: 'easeOut' as const }}
-                                className="flex gap-6 p-8 rounded-3xl bg-white border border-gray-100 hover:shadow-xl hover:shadow-gray-100/50 transition-all duration-500"
+                                transition={{ duration: 0.8, delay: i * 0.2, ease: 'easeOut' as const }}
+                                className="pl-6 border-l-[3px] border-gray-200 hover:border-[#D4A017] transition-colors duration-500"
                             >
-                                <div className={`w-14 h-14 rounded-2xl ${s.color} flex items-center justify-center flex-shrink-0`}>
-                                    {s.icon}
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-black text-gray-900 mb-2" dangerouslySetInnerHTML={{ __html: s.title }} />
-                                    <p className="text-gray-500 leading-relaxed" dangerouslySetInnerHTML={{ __html: s.text }} />
-                                </div>
+                                <h3 className="text-2xl font-black text-gray-900 mb-3 font-heading" dangerouslySetInnerHTML={{ __html: s.title }} />
+                                <p className="text-gray-600 text-lg leading-relaxed" dangerouslySetInnerHTML={{ __html: s.text }} />
                             </motion.div>
                         ))}
                     </div>
@@ -729,7 +639,7 @@ function ChapitreConfiance() {
     const scrollRef = useRef<HTMLDivElement>(null)
 
     return (
-        <section className="relative bg-white py-32 overflow-hidden">
+        <section className="relative bg-[#FAFBFC] py-32 overflow-hidden">
             <div className="container mx-auto px-6 max-w-7xl">
 
                 <motion.div
@@ -743,30 +653,26 @@ function ChapitreConfiance() {
                     <h2 className="text-4xl md:text-5xl font-black font-heading text-gray-900 mt-4">
                         L&apos;appui des <span className="text-[#008751]">institutions</span>
                     </h2>
-                    <p className="text-gray-500 max-w-2xl mx-auto mt-6 leading-relaxed">
+                    <p className="text-gray-500 max-w-2xl mx-auto mt-6 text-lg leading-relaxed">
                         Une mission reconnue et soutenue. Chaque document est une pierre pos&eacute;e dans l&apos;&eacute;difice de la confiance.
                     </p>
                 </motion.div>
 
                 {/* Grande Photo Engagement */}
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
+                    initial={{ opacity: 0, scale: 0.98 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
                     transition={{ duration: 1, ease: 'easeOut' as const }}
-                    className="relative h-80 md:h-[500px] rounded-[2rem] overflow-hidden shadow-2xl shadow-gray-300/30 mb-12"
+                    className="relative h-[60vh] md:h-[70vh] w-full overflow-hidden mb-16"
                 >
-                    <Image src={IMG.integreCauses} alt="Int&eacute;gr&eacute; dans les causes du pays" fill className="object-cover" />
-                    <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-white/95 to-transparent">
-                        <p className="text-gray-900 font-black text-lg uppercase tracking-wider">Int&eacute;gr&eacute; dans les causes du pays</p>
-                        <p className="text-gray-500 text-sm mt-1">Un engagement valid&eacute; au plus haut niveau</p>
-                    </div>
+                    <Image src={IMG.integreCauses} alt="Int&eacute;gr&eacute; dans les causes du pays" fill className="object-cover object-center" />
                 </motion.div>
 
                 {/* Carrousel horizontal avec Tilt 3D */}
                 <div
                     ref={scrollRef}
-                    className="flex gap-6 overflow-x-auto pb-6 snap-x snap-mandatory scrollbar-hide"
+                    className="flex gap-8 overflow-x-auto pb-6 snap-x snap-mandatory scrollbar-hide items-center justify-start xl:justify-center"
                     style={{ scrollbarWidth: 'none' }}
                 >
                     {[
@@ -783,15 +689,15 @@ function ChapitreConfiance() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.6, delay: i * 0.1, ease: 'easeOut' as const }}
-                            className="flex-shrink-0 w-48 md:w-56 snap-center"
+                            className="flex-shrink-0 w-64 md:w-80 snap-center"
                         >
                             <TiltCard src={src} />
                         </motion.div>
                     ))}
                 </div>
 
-                <p className="text-center text-gray-400 text-sm mt-6 font-medium">
-                    ← Glissez pour d&eacute;couvrir →
+                <p className="text-center text-gray-400 text-sm mt-10 font-bold tracking-widest uppercase">
+                    Glissez pour d&eacute;couvrir les documents officiels
                 </p>
             </div>
         </section>
@@ -804,38 +710,32 @@ function ChapitreConfiance() {
 
 function CTAFinal() {
     return (
-        <section className="relative bg-[#FAFBFC] py-32 overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#D4A017]/30 to-transparent" />
-
-            <div className="container mx-auto px-6 text-center max-w-3xl relative z-10">
+        <section className="relative bg-white py-32 overflow-hidden border-t border-gray-100">
+            <div className="container mx-auto px-6 text-center max-w-4xl relative z-10">
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 1, ease: 'easeOut' as const }}
                 >
-                    <Sparkles className="w-10 h-10 text-[#D4A017] mx-auto mb-8" />
-
                     <h2 className="text-4xl md:text-6xl font-black font-heading text-gray-900 leading-tight mb-8">
                         Une page s&apos;&eacute;crit<br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] via-[#D4A017] to-[#E8112D]">
-                            avec vous.
-                        </span>
+                        <span className="text-[#008751]">avec vous.</span>
                     </h2>
 
-                    <p className="text-gray-500 text-lg md:text-xl leading-relaxed max-w-xl mx-auto mb-12">
-                        Choisir Retour Gagnant, c&apos;est choisir la maison retrouv&eacute;e. Rejoignez les centaines de familles qui ont fait le voyage du retour.
+                    <p className="text-gray-500 text-lg md:text-xl leading-relaxed max-w-2xl mx-auto mb-16">
+                        Choisir Retour Gagnant, c&apos;est choisir la maison retrouv&eacute;e. Rejoignez les centaines de familles qui ont fait le voyage du retour en toute s&eacute;curit&eacute;.
                     </p>
 
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
                         <Link href="/rendez-vous">
-                            <Button className="h-16 px-10 text-lg font-black rounded-full bg-[#008751] text-white hover:bg-[#006B41] transition-all shadow-xl shadow-[#008751]/20 hover:shadow-[#008751]/30 hover:scale-105 duration-300">
+                            <Button className="h-16 px-10 text-lg font-black rounded-none bg-[#008751] text-white hover:bg-[#006B41] transition-all">
                                 <T>Je demande un Rendez-vous</T>
-                                <ArrowRight className="ml-2 w-5 h-5" />
+                                <ArrowRight className="ml-3 w-6 h-6" />
                             </Button>
                         </Link>
                         <Link href="/contact">
-                            <Button variant="outline" className="h-16 px-10 text-lg font-bold rounded-full border-gray-200 text-gray-700 hover:bg-gray-50 transition-all">
+                            <Button variant="outline" className="h-16 px-10 text-lg font-black rounded-none border-gray-900 text-gray-900 hover:bg-gray-100 transition-all">
                                 <T>Nous contacter</T>
                             </Button>
                         </Link>
@@ -852,8 +752,7 @@ function CTAFinal() {
 
 export default function NotreHistoirePage() {
     return (
-        <main className="bg-white text-gray-900 min-h-screen relative">
-            <GoldenParticles />
+        <main className="bg-[#FAFBFC] text-gray-900 min-h-screen relative font-sans">
             <HeroSection />
             <GoldenDivider />
             <ChapitreRencontre />
