@@ -77,7 +77,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             const { count } = await supabase
                 .from('messages')
                 .select('id', { count: 'exact', head: true })
-                .eq('email', client.email)
+                .or(`client_id.eq.${client.id},email.eq.${client.email}`)
                 .eq('lu', false)
             setUnreadMessages(count || 0)
         }

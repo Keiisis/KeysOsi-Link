@@ -31,29 +31,54 @@ const STATUS = {
 
 const fmtN = (n: number) => Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
 
+const PAGE_SIZE = 20
+
 export default function ClientDocumentsPage() {
     const [docs, setDocs] = useState<Doc[]>([])
     const [loading, setLoading] = useState(true)
+    const [loadingMore, setLoadingMore] = useState(false)
+    const [hasMore, setHasMore] = useState(false)
+    const [page, setPage] = useState(0)
     const [search, setSearch] = useState('')
     const [filter, setFilter] = useState<'all' | 'devis' | 'facture'>('all')
+    const [userId, setUserId] = useState('')
+    const [userEmail, setUserEmail] = useState('')
+
+    const fetchDocs = async (userId: string, email: string, pageNum: number, append = false) => {
+        const { data } = await supabase
+            .from('documents_financiers')
+            .select('id, type, numero, total, status, currency, created_at, signed_at, signature_url, items')
+            .or(`client_id.eq.${userId},client_email.eq.${email}`)
+            .order('created_at', { ascending: false })
+            .range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1)
+
+        const results = data as Doc[] || []
+        setHasMore(results.length === PAGE_SIZE)
+        if (append) setDocs(prev => [...prev, ...results])
+        else setDocs(results)
+    }
 
     useEffect(() => {
         const load = async () => {
             const { data: { session } } = await supabase.auth.getSession()
             if (!session?.user) return
             const email = session.user.email || ''
-
-            const { data } = await supabase
-                .from('documents_financiers')
-                .select('id, type, numero, total, status, currency, created_at, signed_at, signature_url, items')
-                .or(`client_id.eq.${session.user.id},client_email.eq.${email}`)
-                .order('created_at', { ascending: false })
-
-            setDocs(data as Doc[] || [])
+            setUserId(session.user.id)
+            setUserEmail(email)
+            await fetchDocs(session.user.id, email, 0)
             setLoading(false)
         }
         load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
+
+    const loadMore = async () => {
+        setLoadingMore(true)
+        const nextPage = page + 1
+        await fetchDocs(userId, userEmail, nextPage, true)
+        setPage(nextPage)
+        setLoadingMore(false)
+    }
 
     const filtered = docs.filter(d => {
         const matchSearch = d.numero?.toLowerCase().includes(search.toLowerCase())
@@ -157,6 +182,15 @@ export default function ClientDocumentsPage() {
                                 </motion.div>
                             )
                         })}
+                        {hasMore && !search && filter === 'all' && (
+                            <div className="p-4 text-center border-t border-white/[0.04]">
+                                <button type="button" onClick={loadMore} disabled={loadingMore}
+                                    className="text-sm text-blue-400 font-bold hover:text-blue-300 transition-colors disabled:opacity-50 flex items-center gap-2 mx-auto">
+                                    {loadingMore ? <span className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin inline-block" /> : null}
+                                    {loadingMore ? 'Chargement...' : 'Charger plus de documents'}
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

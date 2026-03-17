@@ -23,7 +23,7 @@ export default function ClientMessagesPage() {
     const [sending, setSending] = useState(false)
     const [sent, setSent] = useState(false)
     const [error, setError] = useState('')
-    const [clientInfo, setClientInfo] = useState({ nom: '', prenom: '', email: '', phone: '' })
+    const [clientInfo, setClientInfo] = useState({ nom: '', prenom: '', email: '', phone: '', id: '' })
     const bottomRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
@@ -38,12 +38,12 @@ export default function ClientMessagesPage() {
                 .eq('id', session.user.id)
                 .single()
 
-            setClientInfo({ email, nom: profile?.nom || '', prenom: profile?.prenom || '', phone: profile?.phone || '' })
+            setClientInfo({ email, nom: profile?.nom || '', prenom: profile?.prenom || '', phone: profile?.phone || '', id: session.user.id })
 
             const { data } = await supabase
                 .from('messages')
                 .select('id, sujet, message, type, lu, created_at, reponse, reponse_at')
-                .eq('email', email)
+                .or(`client_id.eq.${session.user.id},email.eq.${email}`)
                 .order('created_at', { ascending: false })
 
             setMessages(data as Message[] || [])
@@ -62,6 +62,7 @@ export default function ClientMessagesPage() {
             const { error: insertErr } = await supabase
                 .from('messages')
                 .insert({
+                    client_id: clientInfo.id || null,
                     nom: clientInfo.nom || clientInfo.email.split('@')[0],
                     prenom: clientInfo.prenom || '',
                     email: clientInfo.email,
@@ -78,7 +79,7 @@ export default function ClientMessagesPage() {
             const { data } = await supabase
                 .from('messages')
                 .select('id, sujet, message, type, lu, created_at, reponse, reponse_at')
-                .eq('email', clientInfo.email)
+                .or(`client_id.eq.${clientInfo.id},email.eq.${clientInfo.email}`)
                 .order('created_at', { ascending: false })
 
             setMessages(data as Message[] || [])

@@ -87,13 +87,24 @@ export default function ClientProfilPage() {
     const handlePasswordChange = async (e: React.FormEvent) => {
         e.preventDefault()
         setPwdError('')
-        if (pwdForm.new !== pwdForm.confirm) { setPwdError('Les mots de passe ne correspondent pas.'); return }
-        if (pwdForm.new.length < 8) { setPwdError('Le mot de passe doit faire au moins 8 caractères.'); return }
+        if (!pwdForm.current) { setPwdError('Veuillez saisir votre mot de passe actuel.'); return }
+        if (pwdForm.new !== pwdForm.confirm) { setPwdError('Les nouveaux mots de passe ne correspondent pas.'); return }
+        if (pwdForm.new.length < 8) { setPwdError('Le nouveau mot de passe doit faire au moins 8 caractères.'); return }
+        if (pwdForm.current === pwdForm.new) { setPwdError('Le nouveau mot de passe doit être différent de l\'actuel.'); return }
 
         setSavingPwd(true)
         try {
+            // Vérifie le mot de passe actuel via signInWithPassword
+            const { error: verifyError } = await supabase.auth.signInWithPassword({
+                email: profile?.email || '',
+                password: pwdForm.current,
+            })
+            if (verifyError) throw new Error('Mot de passe actuel incorrect.')
+
+            // Change le mot de passe
             const { error: authError } = await supabase.auth.updateUser({ password: pwdForm.new })
             if (authError) throw new Error(authError.message)
+
             setPwdForm({ current: '', new: '', confirm: '' })
             setPwdSuccess(true)
             setTimeout(() => setPwdSuccess(false), 3000)
@@ -265,10 +276,10 @@ export default function ClientProfilPage() {
                 </AnimatePresence>
 
                 <form onSubmit={handlePasswordChange} className="space-y-3">
-                    {(['new', 'confirm'] as const).map(field => (
+                    {(['current', 'new', 'confirm'] as const).map(field => (
                         <div key={field}>
                             <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.15em] block mb-1.5">
-                                {field === 'new' ? 'Nouveau mot de passe' : 'Confirmer le mot de passe'}
+                                {field === 'current' ? 'Mot de passe actuel' : field === 'new' ? 'Nouveau mot de passe' : 'Confirmer le nouveau'}
                             </label>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" size={14} />
@@ -278,7 +289,7 @@ export default function ClientProfilPage() {
                                     value={pwdForm[field]}
                                     onChange={e => setPwdForm(f => ({ ...f, [field]: e.target.value }))}
                                     placeholder="••••••••"
-                                    minLength={8}
+                                    minLength={field === 'new' ? 8 : undefined}
                                     className="w-full bg-white/[0.04] border border-white/[0.08] focus:border-blue-500/40 rounded-xl py-2.5 pl-9 pr-10 text-white placeholder:text-gray-600 focus:outline-none text-sm transition-colors"
                                 />
                                 <button type="button" onClick={() => setShowPwd(s => ({ ...s, [field]: !s[field] }))}

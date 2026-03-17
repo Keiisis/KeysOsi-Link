@@ -26,7 +26,6 @@ interface RecentDoc {
     status: string
     currency: string
     created_at: string
-    client_nom: string
 }
 
 const statusLabel: Record<string, { label: string; color: string }> = {
@@ -67,7 +66,7 @@ export default function ClientDashboardPage() {
             // Documents (via client_id OU client_email)
             const { data: docs } = await supabase
                 .from('documents_financiers')
-                .select('id, type, numero, total, status, currency, created_at, client_nom')
+                .select('id, type, numero, total, status, currency, created_at')
                 .or(`client_id.eq.${session.user.id},client_email.eq.${email}`)
                 .order('created_at', { ascending: false })
                 .limit(5)
@@ -88,7 +87,7 @@ export default function ClientDashboardPage() {
             const { count: msgCount } = await supabase
                 .from('messages')
                 .select('id', { count: 'exact', head: true })
-                .eq('email', email)
+                .or(`client_id.eq.${session.user.id},email.eq.${email}`)
                 .eq('lu', false)
 
             // Stats
