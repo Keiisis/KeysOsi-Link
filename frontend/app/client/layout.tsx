@@ -58,7 +58,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
             if (!profile) { window.location.href = '/client/login?error=no-profile'; return }
 
-            setClient({ id: session.user.id, email: session.user.email || '', ...profile })
+            setClient({ ...profile, email: session.user.email || profile.email || '' })
             setLoading(false)
         }
 
