@@ -13,6 +13,7 @@ export default function ClientRegisterPage() {
     const [error, setError] = useState('')
     const [success, setSuccess] = useState(false)
     const [linkedDocs, setLinkedDocs] = useState(0)
+    const [needsEmailConfirm, setNeedsEmailConfirm] = useState(false)
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -70,20 +71,19 @@ export default function ClientRegisterPage() {
             setLinkedDocs(json.linked?.documents || 0)
             setSuccess(true)
 
-            // Si email confirmation non requise, rediriger directement
             if (authData.session) {
+                // Email confirmation désactivée → redirection directe
                 const from = new URLSearchParams(window.location.search).get('from')
                 setTimeout(() => { window.location.href = from || '/client/dashboard' }, 1800)
+            } else {
+                // Email confirmation requise → informer l'utilisateur
+                setNeedsEmailConfirm(true)
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Erreur lors de l\'inscription.')
         } finally {
             setIsLoading(false)
         }
-    }
-
-    if (success && !supabase) {
-        return null
     }
 
     return (
@@ -127,10 +127,22 @@ export default function ClientRegisterPage() {
                                     </p>
                                 </div>
                             )}
-                            <p className="text-gray-500 text-xs">Redirection vers votre espace...</p>
-                            <div className="mt-4">
-                                <Loader2 className="animate-spin text-blue-400 mx-auto" size={20} />
-                            </div>
+                            {needsEmailConfirm ? (
+                                <div className="mt-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                                    <p className="text-blue-300 text-sm font-bold mb-1">Vérifiez votre email</p>
+                                    <p className="text-gray-400 text-xs">Un lien de confirmation a été envoyé à <strong className="text-white">{form.email}</strong>. Cliquez dessus pour activer votre compte.</p>
+                                    <Link href="/client/login" className="inline-flex items-center gap-1 mt-3 text-blue-400 text-xs font-bold hover:text-blue-300 transition-colors">
+                                        <ArrowRight size={12} /> Aller à la connexion
+                                    </Link>
+                                </div>
+                            ) : (
+                                <>
+                                    <p className="text-gray-500 text-xs">Redirection vers votre espace...</p>
+                                    <div className="mt-4">
+                                        <Loader2 className="animate-spin text-blue-400 mx-auto" size={20} />
+                                    </div>
+                                </>
+                            )}
                         </motion.div>
                     ) : (
                         <motion.div key="form" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
