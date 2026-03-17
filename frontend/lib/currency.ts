@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 // Conversion automatique synchronisée avec l'ERP
 // ═══════════════════════════════════════════════════════════
 
-export type CurrencyCode = 'XOF' | 'EUR' | 'USD'
+export type CurrencyCode = 'XOF' | 'EUR' | 'USD' | 'GBP'
 
 export interface CurrencyInfo {
     code: CurrencyCode
@@ -19,6 +19,7 @@ export const CURRENCIES: Record<CurrencyCode, CurrencyInfo> = {
     XOF: { code: 'XOF', symbol: 'FCFA', name: 'Franc CFA', locale: 'fr-FR', decimals: 0 },
     EUR: { code: 'EUR', symbol: '€', name: 'Euro', locale: 'fr-FR', decimals: 2 },
     USD: { code: 'USD', symbol: '$', name: 'Dollar US', locale: 'en-US', decimals: 2 },
+    GBP: { code: 'GBP', symbol: '£', name: 'Livre Sterling', locale: 'en-GB', decimals: 2 },
 }
 
 // Taux de conversion de base (1 XOF = ... XOF, 1 EUR = 655.957 XOF) 
@@ -28,6 +29,7 @@ const BASE_RATES_TO_XOF: Record<CurrencyCode, number> = {
     XOF: 1,
     EUR: 655.957,
     USD: 600.00, // Sera remplacé par la DB
+    GBP: 760.00, // Sera remplacé par la DB
 }
 
 const cachedRates: Record<CurrencyCode, number> = { ...BASE_RATES_TO_XOF }
@@ -88,6 +90,7 @@ export const formatPrice = (amount: number, currency: CurrencyCode = 'XOF'): str
     if (currency === 'XOF') return `${formatted} FCFA`
     if (currency === 'EUR') return `${formatted} €`
     if (currency === 'USD') return `$${formatted}`
+    if (currency === 'GBP') return `£${formatted}`
     return `${formatted} ${currency}`
 }
 

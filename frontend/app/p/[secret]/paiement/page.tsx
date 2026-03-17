@@ -8,6 +8,8 @@ import {
     CheckCircle2, AlertCircle, Loader2, Shield, Lock
 } from 'lucide-react'
 import Link from 'next/link'
+import { Price } from '@/components/ui/Price'
+import { CurrencyCode } from '@/lib/currency'
 
 // Types SDK tiers — les déclarations globales Window sont dans PaymentModal.tsx
 // On réutilise les mêmes interfaces locales pour Stripe
@@ -544,13 +546,17 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
                                     {billableItems.map(i => (
                                         <div key={i.id} className="flex justify-between text-sm">
                                             <span className="text-slate-300">{i.title}</span>
-                                            <span className="text-white font-bold">{i.selling_price.toLocaleString()} FCFA</span>
+                                            <span className="text-white font-bold">
+                                                <Price amount={i.selling_price} currency="XOF" forceDisplayCurrency={(proposal.currency as CurrencyCode) || 'XOF'} />
+                                            </span>
                                         </div>
                                     ))}
                                 </div>
                                 <div className="border-t border-white/10 pt-3 flex justify-between items-center">
                                     <span className="text-amber-500 font-bold text-sm">Total</span>
-                                    <span className="text-2xl font-black text-white">{proposal.total_amount.toLocaleString()} FCFA</span>
+                                    <span className="text-2xl font-black text-white">
+                                        <Price amount={proposal.total_amount} currency="XOF" forceDisplayCurrency={(proposal.currency as CurrencyCode) || 'XOF'} />
+                                    </span>
                                 </div>
                             </div>
 
@@ -608,7 +614,9 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
                         <motion.div key="payment" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                             <div className="text-center mb-8">
                                 <h2 className="text-2xl font-black mb-2">Choisissez votre moyen de paiement</h2>
-                                <p className="text-slate-400 text-sm">Montant : <span className="text-amber-400 font-bold">{proposal.total_amount.toLocaleString()} FCFA</span></p>
+                                <p className="text-slate-400 text-sm">Montant : <span className="text-amber-400 font-bold">
+                                    <Price amount={proposal.total_amount} currency="XOF" forceDisplayCurrency={(proposal.currency as CurrencyCode) || 'XOF'} />
+                                </span></p>
                             </div>
 
                             <div className="space-y-3 mb-6">
@@ -655,7 +663,7 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
                                 </div>
                                 {errorMessage && <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl text-sm mb-4">{errorMessage}</div>}
                                 <button type="button" onClick={confirmStripePayment} disabled={!stripeReady || stripeSubmitting} className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-900 py-4 rounded-2xl font-black transition-all flex items-center justify-center gap-2">
-                                    <Lock className="w-4 h-4" /> Payer {proposal.total_amount.toLocaleString()} {proposal.currency || 'FCFA'}
+                                    <Lock className="w-4 h-4" /> Payer <Price amount={proposal.total_amount} currency="XOF" forceDisplayCurrency={(proposal.currency as CurrencyCode) || 'XOF'} />
                                 </button>
                                 <button type="button" onClick={() => setStep('payment')} className="w-full text-slate-400 hover:text-white py-3 text-sm mt-2">← Autre moyen de paiement</button>
                             </div>
@@ -706,7 +714,9 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
                             </div>
                             <div className="bg-white/5 border border-white/10 rounded-2xl p-6 w-full max-w-sm text-center">
                                 <p className="text-xs text-slate-500 mb-1">Montant payé</p>
-                                <p className="text-2xl font-black text-amber-400">{proposal.total_amount.toLocaleString()} FCFA</p>
+                                <p className="text-2xl font-black text-amber-400">
+                                    <Price amount={proposal.total_amount} currency="XOF" forceDisplayCurrency={(proposal.currency as CurrencyCode) || 'XOF'} />
+                                </p>
                             </div>
                             <Link href="/" className="bg-amber-500 hover:bg-amber-400 text-slate-900 px-8 py-3 rounded-xl font-black transition-all">
                                 Retour à l&apos;accueil

@@ -15,6 +15,8 @@ interface PriceProps {
     showSelector?: boolean
     /** Si true, affiche toujours dans la devise passée sans auto-conversion (utile pour le checkout) */
     noConvert?: boolean
+    /** Force une devise d'affichage spécifique au lieu de détecter celle de l'utilisateur */
+    forceDisplayCurrency?: CurrencyCode
 }
 
 export function Price({
@@ -24,21 +26,22 @@ export function Price({
     showOriginal = false,
     showSelector = false,
     noConvert = false,
+    forceDisplayCurrency,
 }: PriceProps) {
-    const [displayCurrency, setDisplayCurrency] = useState<CurrencyCode>(currency)
+    const [displayCurrency, setDisplayCurrency] = useState<CurrencyCode>(forceDisplayCurrency || currency)
     const { t } = useTranslation();
-    const [ready, setReady] = useState(noConvert)
+    const [ready, setReady] = useState(noConvert && !forceDisplayCurrency)
 
     useEffect(() => {
-        if (noConvert) return
+        if (noConvert && !forceDisplayCurrency) return
         const init = async () => {
             await refreshRates()
-            const detected = detectUserCurrency()
+            const detected = forceDisplayCurrency || detectUserCurrency()
             setDisplayCurrency(detected)
             setReady(true)
         }
         init()
-    }, [noConvert])
+    }, [noConvert, forceDisplayCurrency])
 
     if (!ready) return <span className={className}>{formatPrice(amount, currency)}</span>
 
@@ -62,6 +65,7 @@ export function Price({
                     <option value="XOF"><T>🇧🇯 FCFA</T></option>
                     <option value="EUR"><T>🇪🇺 EUR €</T></option>
                     <option value="USD"><T>🇺🇸 USD $</T></option>
+                    <option value="GBP"><T>🇬🇧 GBP £</T></option>
                 </select>
             )}
         </span>

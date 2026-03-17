@@ -10,6 +10,8 @@ import {
     Mountain, UtensilsCrossed, Shield, Landmark, Download, Hotel
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { Price } from '@/components/ui/Price'
+import { CurrencyCode } from '@/lib/currency'
 
 // ─── Types ────────────────────────────────────────────────────
 interface ProposalItem {
@@ -35,6 +37,7 @@ interface Proposal {
     total_amount: number
     start_date: string | null
     end_date: string | null
+    currency?: string
 }
 
 // ─── Constants ────────────────────────────────────────────────
@@ -299,7 +302,7 @@ export default function PresentationView({ params }: { params: Promise<{ secret:
                         {currentItem.selling_price > 0 && (
                             <div className="absolute bottom-3 right-3 px-3 py-1.5 rounded-xl backdrop-blur-xl border text-xs font-black"
                                 style={{ background: meta.accent + '20', borderColor: meta.accent + '50', color: meta.accent }}>
-                                {currentItem.selling_price.toLocaleString()} FCFA
+                                <Price amount={currentItem.selling_price} currency="XOF" forceDisplayCurrency={(proposal.currency as CurrencyCode) || 'XOF'} />
                             </div>
                         )}
                     </motion.div>
@@ -413,7 +416,9 @@ export default function PresentationView({ params }: { params: Promise<{ secret:
                                         className="inline-flex items-center gap-2 px-4 py-2 bg-black/50 backdrop-blur-xl border border-[#FCD116]/20 rounded-full mb-6"
                                     >
                                         <span className="text-[10px] text-white/40 uppercase tracking-widest">Total</span>
-                                        <span className="text-[#FCD116] font-black text-base md:text-lg">{proposal.total_amount.toLocaleString()} FCFA</span>
+                                        <span className="text-[#FCD116] font-black text-base md:text-lg">
+                                            <Price amount={proposal.total_amount} currency="XOF" forceDisplayCurrency={(proposal.currency as CurrencyCode) || 'XOF'} />
+                                        </span>
                                     </motion.div>
 
                                     {/* CTA */}
@@ -496,9 +501,8 @@ export default function PresentationView({ params }: { params: Promise<{ secret:
                                                 style={{ background: meta.accent + '12', borderColor: meta.accent + '35' }}>
                                                 <p className="text-[8px] md:text-[9px] uppercase tracking-[0.15em] font-bold mb-1" style={{ color: meta.accent + '99' }}>Tarif inclus</p>
                                                 <p className="font-black text-xs md:text-sm whitespace-nowrap" style={{ color: meta.accent }}>
-                                                    {currentItem.selling_price.toLocaleString()}
+                                                    <Price amount={currentItem.selling_price} currency="XOF" forceDisplayCurrency={(proposal.currency as CurrencyCode) || 'XOF'} />
                                                 </p>
-                                                <p className="text-[8px] font-bold" style={{ color: meta.accent + '70' }}>FCFA</p>
                                             </div>
                                         )}
                                     </motion.div>
@@ -543,11 +547,12 @@ export default function PresentationView({ params }: { params: Promise<{ secret:
                                             <div>
                                                 <p className="text-[9px] md:text-[10px] font-black text-[#FCD116] uppercase tracking-[0.2em] mb-1">Votre Tarif VIP</p>
                                                 {totalOriginal > proposal.total_amount && (
-                                                    <p className="text-xs text-white/25 line-through mb-0.5">{totalOriginal.toLocaleString()} FCFA</p>
+                                                    <p className="text-xs text-white/25 line-through mb-0.5">
+                                                        <Price amount={totalOriginal} currency="XOF" forceDisplayCurrency={(proposal.currency as CurrencyCode) || 'XOF'} />
+                                                    </p>
                                                 )}
                                                 <p className="text-2xl md:text-4xl font-black text-white">
-                                                    {proposal.total_amount.toLocaleString()}
-                                                    <span className="text-sm md:text-lg text-white/40 ml-2">FCFA</span>
+                                                    <Price amount={proposal.total_amount} currency="XOF" forceDisplayCurrency={(proposal.currency as CurrencyCode) || 'XOF'} />
                                                 </p>
                                             </div>
                                             <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-[#FCD116]/25 hidden sm:block" />
@@ -565,7 +570,9 @@ export default function PresentationView({ params }: { params: Promise<{ secret:
                                                                 <span className="text-sm flex-shrink-0">{m.emoji}</span>
                                                                 <span className="truncate">{item.title}</span>
                                                             </span>
-                                                            <span className="text-white font-bold text-[11px] md:text-sm whitespace-nowrap">{item.selling_price.toLocaleString()} FCFA</span>
+                                                            <span className="text-white font-bold text-[11px] md:text-sm whitespace-nowrap">
+                                                                <Price amount={item.selling_price} currency="XOF" forceDisplayCurrency={(proposal.currency as CurrencyCode) || 'XOF'} />
+                                                            </span>
                                                         </div>
                                                         {/* Progress bar */}
                                                         <div className="h-1 bg-white/8 rounded-full overflow-hidden">
@@ -586,7 +593,9 @@ export default function PresentationView({ params }: { params: Promise<{ secret:
                                         {savings > 0 && (
                                             <div className="bg-[#008751]/12 border border-[#008751]/25 rounded-xl px-4 py-2.5 mb-4 flex items-center justify-between relative z-10">
                                                 <span className="text-[10px] font-black text-[#008751] uppercase tracking-wider">Vous économisez</span>
-                                                <span className="text-[#008751] font-black text-sm">{savings.toLocaleString()} FCFA 🎁</span>
+                                                <span className="text-[#008751] font-black text-sm">
+                                                    <Price amount={savings} currency="XOF" forceDisplayCurrency={(proposal.currency as CurrencyCode) || 'XOF'} /> 🎁
+                                                </span>
                                             </div>
                                         )}
 

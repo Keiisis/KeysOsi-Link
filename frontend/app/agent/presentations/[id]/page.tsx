@@ -8,6 +8,7 @@ import {
     ArrowLeft, Save, Loader2, Eye, Trash2, Plus, Copy, Check,
     ExternalLink, Upload, Image as ImageIcon, Sparkles, GripVertical, FileDown
 } from 'lucide-react'
+import { Price } from '@/components/ui/Price'
 
 interface ProposalItem {
     id: string
@@ -226,7 +227,7 @@ export default function AgentPresentationEditor({ params }: { params: Promise<{ 
                     <div>
                         <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Total Facturé</p>
                         <p className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#E8112D]">
-                            {calculateTotal().toLocaleString()} {currency}
+                            <Price amount={calculateTotal()} currency="XOF" forceDisplayCurrency={currency as any} />
                         </p>
                     </div>
                     <div>
@@ -298,7 +299,9 @@ export default function AgentPresentationEditor({ params }: { params: Promise<{ 
                                     </div>
 
                                     {item.selling_price > 0 && (
-                                        <span className="text-[#FCD116] font-bold text-sm">{item.selling_price.toLocaleString()} FCFA</span>
+                                        <span className="text-[#FCD116] font-bold text-sm">
+                                            <Price amount={item.selling_price} currency="XOF" forceDisplayCurrency={currency as any} />
+                                        </span>
                                     )}
 
                                     <button title="Supprimer" onClick={(e) => { e.stopPropagation(); removeItem(item.id) }} className="p-1.5 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition">
@@ -432,7 +435,9 @@ export default function AgentPresentationEditor({ params }: { params: Promise<{ 
                 <div className="max-w-5xl mx-auto flex justify-between items-center">
                     <div>
                         <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Total</p>
-                        <p className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#E8112D]">{calculateTotal().toLocaleString()} {currency}</p>
+                        <p className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#E8112D]">
+                            <Price amount={calculateTotal()} currency="XOF" forceDisplayCurrency={currency as any} />
+                        </p>
                     </div>
                     <button onClick={saveChanges} disabled={saving} className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D] text-slate-900 rounded-xl font-black transition shadow-lg hover:scale-105 active:scale-95">
                         {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
