@@ -19,7 +19,8 @@ const IMG = {
     georges: '/images/histoire/georges-1.jpeg',
     talon: '/images/histoire/talon.jpeg',
     georgesPresident: '/images/histoire/georges-president.jpeg',
-    logo: '/images/histoire/logo.jpeg',
+    logoTransparent: '/images/logo-transparent.png',
+    logoScene: '/images/histoire/logo.jpeg',
     integreCauses: '/images/histoire/integre-causes.jpeg',
     attestationDebut: '/images/histoire/attestation-debut.jpeg',
     attestation1: '/images/histoire/attestation-1.jpeg',
@@ -31,7 +32,7 @@ const IMG = {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   COMPOSANT — LIGNE DE VIE DORÉE (entre les sections)
+   COMPOSANT — LIGNE DE VIE DORÉE
    ═══════════════════════════════════════════════════════════════ */
 
 function GoldenDivider() {
@@ -91,41 +92,6 @@ function TypewriterText({ text, className, delay = 0 }: { text: string, classNam
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   COMPOSANT — COMPTEUR ANIMÉ
-   ═══════════════════════════════════════════════════════════════ */
-
-function AnimatedCounter({ target, suffix = '', label }: { target: number, suffix?: string, label: string }) {
-    const [count, setCount] = useState(0)
-    const ref = useRef<HTMLDivElement>(null)
-    const isInView = useInView(ref, { once: true })
-
-    useEffect(() => {
-        if (!isInView) return
-        let current = 0
-        const step = target / 60
-        const timer = setInterval(() => {
-            current += step
-            if (current >= target) {
-                setCount(target)
-                clearInterval(timer)
-            } else {
-                setCount(Math.floor(current))
-            }
-        }, 25)
-        return () => clearInterval(timer)
-    }, [isInView, target])
-
-    return (
-        <div ref={ref} className="text-center">
-            <div className="text-3xl md:text-4xl font-black text-[#D4A017] font-heading">
-                {count}{suffix}
-            </div>
-            <div className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">{label}</div>
-        </div>
-    )
-}
-
-/* ═══════════════════════════════════════════════════════════════
    COMPOSANT — TILT 3D CARD (pour attestations)
    ═══════════════════════════════════════════════════════════════ */
 
@@ -163,7 +129,7 @@ function TiltCard({ src, children }: { src: string, children?: React.ReactNode }
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SECTION 1 — HERO CINÉMATIQUE (Reveal + Typewriter + Compteurs)
+   SECTION 1 — HERO (Photo visible + Texte clair)
    ═══════════════════════════════════════════════════════════════ */
 
 function HeroSection() {
@@ -183,7 +149,7 @@ function HeroSection() {
     }, [])
 
     return (
-        <section ref={ref} className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-white">
+        <section ref={ref} className="relative min-h-screen flex flex-col items-center justify-end overflow-hidden bg-white">
             {/* Rideau blanc qui se lève */}
             <motion.div
                 initial={{ opacity: 1 }}
@@ -192,15 +158,16 @@ function HeroSection() {
                 className="absolute inset-0 bg-white z-30 pointer-events-none"
             />
 
-            {/* Image en Parallax derrière */}
+            {/* Image en Parallax — TRÈS VISIBLE */}
             <motion.div
                 style={{ y: yImage }}
                 className="absolute inset-0 z-0"
             >
                 <motion.div
-                    initial={{ scale: 1.1, opacity: 0 }}
+                    initial={{ scale: 1.05, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 2.5, ease: 'easeOut' as const }}
+                    className="absolute inset-0"
                 >
                     <Image
                         src={IMG.trio}
@@ -210,39 +177,30 @@ function HeroSection() {
                         priority
                     />
                 </motion.div>
-                <div className="absolute inset-0 bg-gradient-to-b from-white/80 via-white/40 to-white" />
+                {/* Overlay subtil en bas uniquement pour la lisibilité du texte */}
+                <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
             </motion.div>
 
-            {/* Contenu Central */}
+            {/* Contenu en bas */}
             <motion.div
                 style={{ opacity: opacityContent }}
-                className="relative z-10 text-center px-6 max-w-5xl mx-auto pt-32"
+                className="relative z-10 text-center px-6 max-w-5xl mx-auto pb-20"
             >
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 1, delay: 1.5 }}
-                >
-                    <span className="inline-flex items-center justify-center px-5 py-2 rounded-full border border-gray-200 bg-white/50 backdrop-blur-sm text-gray-500 font-bold text-xs uppercase tracking-[0.3em] mb-8">
-                        Notre Histoire
-                    </span>
-                </motion.div>
-
                 <motion.h1
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ duration: 0.5, delay: 2 }}
+                    transition={{ duration: 0.5, delay: 1.5 }}
                     className="text-4xl sm:text-5xl md:text-7xl font-black font-heading tracking-tight leading-[1.05] text-gray-900 mb-8"
                 >
                     <TypewriterText
                         text="Là où l'histoire s'est interrompue,"
-                        delay={2200}
+                        delay={1800}
                     />
                     <br />
                     <span className="text-[#008751]">
                         <TypewriterText
                             text="nous réécrivons l'avenir."
-                            delay={3800}
+                            delay={3400}
                         />
                     </span>
                 </motion.h1>
@@ -250,33 +208,19 @@ function HeroSection() {
                 <motion.p
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 1, delay: 5.5 }}
-                    className="text-lg md:text-xl text-gray-500 max-w-2xl mx-auto leading-relaxed font-light mb-12"
+                    transition={{ duration: 1, delay: 5 }}
+                    className="text-xl md:text-2xl text-gray-900 max-w-3xl mx-auto leading-relaxed font-semibold mb-12"
                 >
                     Retour GAGNANT B&eacute;nin n&apos;est pas qu&apos;une agence. C&apos;est le pont d&apos;or jet&eacute; entre un pass&eacute; retrouv&eacute; et un avenir &agrave; construire.
                 </motion.p>
 
-                {/* Compteurs animés */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 1, delay: 6 }}
-                    className="flex items-center justify-center gap-12 md:gap-20 mb-16"
-                >
-                    <AnimatedCounter target={2023} label="Depuis" />
-                    <div className="w-[1px] h-12 bg-gray-200" />
-                    <AnimatedCounter target={500} suffix="+" label="Familles" />
-                    <div className="w-[1px] h-12 bg-gray-200" />
-                    <AnimatedCounter target={12} label="Pays" />
-                </motion.div>
-
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ duration: 1, delay: 6.5 }}
+                    transition={{ duration: 1, delay: 5.5 }}
                 >
                     <motion.a
-                        href="#chapitre-1"
+                        href="#suite"
                         animate={{ y: [0, 8, 0] }}
                         transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' as const }}
                         className="inline-flex flex-col items-center gap-2 text-gray-400 hover:text-[#008751] transition-colors"
@@ -291,7 +235,7 @@ function HeroSection() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SECTION 2 — LA RENCONTRE (Sticky Scroll + Timeline dor&eacute;e)
+   SECTION 2 — LA RENCONTRE (Sticky Scroll + Timeline)
    ═══════════════════════════════════════════════════════════════ */
 
 function ChapitreRencontre() {
@@ -303,7 +247,7 @@ function ChapitreRencontre() {
     const lineHeight = useTransform(scrollYProgress, [0, 1], ['0%', '100%'])
 
     return (
-        <section id="chapitre-1" className="relative bg-[#FAFBFC] overflow-hidden">
+        <section id="suite" className="relative bg-[#FAFBFC] overflow-hidden">
             <div ref={containerRef} className="container mx-auto px-6 max-w-7xl">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 min-h-[200vh] relative">
 
@@ -331,10 +275,10 @@ function ChapitreRencontre() {
                         </div>
                     </div>
 
-                    {/* Texte qui d&eacute;file + Timeline dor&eacute;e */}
+                    {/* Texte qui d&eacute;file + Timeline */}
                     <div className="relative py-32 lg:py-48 flex flex-col gap-24">
 
-                        {/* Ligne dor&eacute;e anim&eacute;e */}
+                        {/* Ligne dor&eacute;e */}
                         <div className="absolute left-0 lg:left-8 top-0 bottom-0 w-[1px] bg-gray-200 overflow-hidden">
                             <motion.div
                                 style={{ height: lineHeight }}
@@ -355,8 +299,7 @@ function ChapitreRencontre() {
                             transition={{ duration: 0.8, ease: 'easeOut' as const }}
                             className="ml-8 lg:ml-16 p-8 md:p-12 bg-white border border-gray-100 shadow-xl shadow-gray-200/30"
                         >
-                            <span className="text-[#D4A017] font-black uppercase tracking-[0.3em] text-xs">Chapitre I</span>
-                            <h2 className="text-3xl md:text-5xl font-black font-heading text-gray-900 leading-tight mt-4 mb-8">
+                            <h2 className="text-3xl md:text-5xl font-black font-heading text-gray-900 leading-tight mb-8">
                                 Une rencontre,<br />une vision,<br />
                                 <span className="text-[#008751]">une loi historique.</span>
                             </h2>
@@ -365,7 +308,7 @@ function ChapitreRencontre() {
                             </p>
                         </motion.div>
 
-                        {/* Bloc texte 2 — L&#39;encart dor&eacute; */}
+                        {/* Bloc texte 2 */}
                         <motion.div
                             initial={{ opacity: 0, y: 50 }}
                             whileInView={{ opacity: 1, y: 0 }}
@@ -401,7 +344,7 @@ function ChapitreRencontre() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SECTION 3 — MOT DE LA FONDATRICE (Ken Burns + Typewriter)
+   SECTION 3 — MOT DE LA FONDATRICE
    ═══════════════════════════════════════════════════════════════ */
 
 function ChapitreFondatrice() {
@@ -425,7 +368,6 @@ function ChapitreFondatrice() {
                     </motion.div>
                     <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-gray-900/60 to-transparent" />
 
-                    {/* Badge */}
                     <div className="absolute bottom-8 left-8 lg:bottom-12 lg:left-12">
                         <div className="text-white">
                             <p className="font-black text-2xl font-heading mb-1">Mme NATHALIE RIFFERT GERMANY</p>
@@ -443,7 +385,6 @@ function ChapitreFondatrice() {
                         transition={{ duration: 1, ease: 'easeOut' as const }}
                         className="max-w-lg"
                     >
-                        <span className="text-[#D4A017] font-black uppercase tracking-[0.3em] text-xs mb-6 block">Chapitre II</span>
                         <h3 className="text-4xl md:text-5xl font-black font-heading text-gray-900 mb-12 leading-tight">
                             Le Mot de la<br />Fondatrice
                         </h3>
@@ -471,7 +412,7 @@ function ChapitreFondatrice() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SECTION 4 — LES ARCHITECTES (3 portraits "Magazine de Luxe")
+   SECTION 4 — LES ARCHITECTES (3 portraits)
    ═══════════════════════════════════════════════════════════════ */
 
 function ChapitreArchitectes() {
@@ -507,13 +448,11 @@ function ChapitreArchitectes() {
                     transition={{ duration: 0.8, ease: 'easeOut' as const }}
                     className="text-center mb-20"
                 >
-                    <span className="text-[#D4A017] font-black uppercase tracking-[0.3em] text-xs">Les Visages</span>
-                    <h2 className="text-4xl md:text-6xl font-black font-heading text-gray-900 mt-4">
+                    <h2 className="text-4xl md:text-6xl font-black font-heading text-gray-900">
                         Les architectes du <span className="text-[#008751]">changement</span>
                     </h2>
                 </motion.div>
 
-                {/* 3 Portraits Pleine Hauteur avec hover reveals */}
                 <div className="flex flex-col lg:flex-row gap-[1px] lg:h-[85vh] bg-gray-200 border border-gray-200">
                     {portraits.map((p, i) => (
                         <motion.div
@@ -524,25 +463,20 @@ function ChapitreArchitectes() {
                             transition={{ duration: 0.8, delay: i * 0.2, ease: 'easeOut' as const }}
                             className="relative flex-1 h-[60vh] lg:h-full overflow-hidden group cursor-pointer bg-white"
                         >
-                            {/* Photo avec parallax individuel au hover */}
                             <Image
                                 src={p.src}
                                 alt={p.name}
                                 fill
                                 className="object-cover object-top filter contrast-[1.05] group-hover:scale-105 transition-all duration-[1500ms] ease-out"
                             />
-
-                            {/* Overlay qui slide depuis le bas au hover */}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
-                            {/* Info qui glisse de bas en haut */}
                             <div className="absolute bottom-0 left-0 right-0 p-10 translate-y-[20%] opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700 ease-out z-20">
                                 <p className="text-[#D4A017] text-xs font-bold uppercase tracking-[0.2em] mb-3" dangerouslySetInnerHTML={{ __html: p.phrase }} />
                                 <p className="text-white text-3xl font-black font-heading leading-tight mb-1">{p.name}</p>
                                 <p className="text-white/80 text-sm font-medium" dangerouslySetInnerHTML={{ __html: p.title }} />
                             </div>
 
-                            {/* Nom visible par d&eacute;faut en bas */}
                             <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/70 to-transparent group-hover:opacity-0 transition-opacity duration-300 z-10 flex flex-col justify-end">
                                 <p className="text-white font-black text-xl drop-shadow-lg font-heading">{p.name}</p>
                             </div>
@@ -555,7 +489,7 @@ function ChapitreArchitectes() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SECTION 5 — LE LOGO (Logo massivement grand sans bordures)
+   SECTION 5 — LE LOGO (VRAI logo transparent en grand)
    ═══════════════════════════════════════════════════════════════ */
 
 function ChapitreLogo() {
@@ -585,31 +519,31 @@ function ChapitreLogo() {
                     transition={{ duration: 0.8, ease: 'easeOut' as const }}
                     className="text-center mb-24"
                 >
-                    <span className="text-[#D4A017] font-black uppercase tracking-[0.3em] text-xs">Chapitre III</span>
-                    <h2 className="text-4xl md:text-6xl font-black font-heading text-gray-900 mt-4 leading-tight">
+                    <h2 className="text-4xl md:text-6xl font-black font-heading text-gray-900 leading-tight">
                         L&apos;&Eacute;nigme du <span className="text-[#008751]">Symbole</span>
                     </h2>
                 </motion.div>
 
                 <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24 relative z-10">
 
-                    {/* Logo Grand Format sans bordure */}
+                    {/* VRAI Logo transparent en grand */}
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         whileInView={{ opacity: 1, scale: 1 }}
                         viewport={{ once: true }}
                         transition={{ duration: 1.5, ease: 'easeOut' as const }}
-                        className="w-full lg:w-1/2 flex justify-center relative min-h-[400px]"
+                        className="w-full lg:w-1/2 flex justify-center relative"
                     >
                         <Image
-                            src={IMG.logo}
+                            src={IMG.logoTransparent}
                             alt="Logo Retour Gagnant B&eacute;nin"
-                            fill
-                            className="object-contain"
+                            width={500}
+                            height={500}
+                            className="object-contain w-full max-w-[500px] h-auto"
                         />
                     </motion.div>
 
-                    {/* Explications Textes Épurés */}
+                    {/* Explications */}
                     <div className="w-full lg:w-1/2 space-y-12">
                         {symbols.map((s, i) => (
                             <motion.div
@@ -632,7 +566,7 @@ function ChapitreLogo() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SECTION 6 — CONFIANCE (Carrousel Tilt 3D, pas de texte "Attestation")
+   SECTION 6 — CONFIANCE + TEXTE ÉMOTIF + GALERIE
    ═══════════════════════════════════════════════════════════════ */
 
 function ChapitreConfiance() {
@@ -649,13 +583,39 @@ function ChapitreConfiance() {
                     transition={{ duration: 0.8, ease: 'easeOut' as const }}
                     className="text-center mb-20"
                 >
-                    <span className="text-[#D4A017] font-black uppercase tracking-[0.3em] text-xs">Chapitre IV</span>
-                    <h2 className="text-4xl md:text-5xl font-black font-heading text-gray-900 mt-4">
+                    <h2 className="text-4xl md:text-5xl font-black font-heading text-gray-900">
                         L&apos;appui des <span className="text-[#008751]">institutions</span>
                     </h2>
                     <p className="text-gray-500 max-w-2xl mx-auto mt-6 text-lg leading-relaxed">
                         Une mission reconnue et soutenue. Chaque document est une pierre pos&eacute;e dans l&apos;&eacute;difice de la confiance.
                     </p>
+                </motion.div>
+
+                {/* Texte émotif avec image d'attestation */}
+                <motion.div
+                    initial={{ opacity: 0, y: 40 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1, ease: 'easeOut' as const }}
+                    className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20"
+                >
+                    <div className="relative h-[500px] overflow-hidden shadow-xl border border-gray-100">
+                        <Image src={IMG.attestation1} alt="Document officiel" fill className="object-cover" />
+                    </div>
+                    <div>
+                        <p className="text-2xl md:text-3xl text-gray-900 font-heading font-black leading-snug mb-6">
+                            Ce document, c&apos;est bien plus que du papier.
+                        </p>
+                        <p className="text-lg text-gray-600 leading-relaxed mb-6">
+                            Il porte en lui des ann&eacute;es de d&eacute;marches, de doutes, de nuits blanches et de conversations qui n&apos;en finissaient pas. Il porte surtout la preuve que quand on croit profond&eacute;ment en quelque chose, les murs finissent par c&eacute;der.
+                        </p>
+                        <p className="text-lg text-gray-600 leading-relaxed mb-6">
+                            Chaque tampon, chaque signature raconte une porte qui s&apos;est ouverte. Chaque page est le t&eacute;moignage silencieux d&apos;un combat men&eacute; avec patience, avec c&oelig;ur, sans jamais baisser les bras.
+                        </p>
+                        <p className="text-xl text-gray-900 font-semibold leading-relaxed">
+                            Voir ce r&ecirc;ve inscrit dans le marbre officiel, c&apos;est la plus belle des r&eacute;compenses. Pas pour nous — pour toutes les familles qui, demain, pourront dire : <em className="text-[#008751]">je suis rentr&eacute; chez moi</em>.
+                        </p>
+                    </div>
                 </motion.div>
 
                 {/* Grande Photo Engagement */}
@@ -669,7 +629,7 @@ function ChapitreConfiance() {
                     <Image src={IMG.integreCauses} alt="Int&eacute;gr&eacute; dans les causes du pays" fill className="object-cover object-center" />
                 </motion.div>
 
-                {/* Carrousel horizontal avec Tilt 3D */}
+                {/* Carrousel horizontal avec Tilt 3D — inclut l'ancienne image "logo.jpeg" (scène de plage) */}
                 <div
                     ref={scrollRef}
                     className="flex gap-8 overflow-x-auto pb-6 snap-x snap-mandatory scrollbar-hide items-center justify-start xl:justify-center"
@@ -677,11 +637,11 @@ function ChapitreConfiance() {
                 >
                     {[
                         IMG.attestationDebut,
-                        IMG.attestation1,
                         IMG.attestation2,
                         IMG.attestation3,
                         IMG.attestation4,
                         IMG.attestation5,
+                        IMG.logoScene,
                     ].map((src, i) => (
                         <motion.div
                             key={src}
@@ -697,7 +657,7 @@ function ChapitreConfiance() {
                 </div>
 
                 <p className="text-center text-gray-400 text-sm mt-10 font-bold tracking-widest uppercase">
-                    Glissez pour d&eacute;couvrir les documents officiels
+                    Glissez pour d&eacute;couvrir
                 </p>
             </div>
         </section>
