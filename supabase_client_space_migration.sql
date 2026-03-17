@@ -169,64 +169,61 @@ BEGIN
     END IF;
 END $$;
 
--- ─── 9. Colonne client_id sur rdv_requests ──────────────────────────
+-- ─── 9. Table rdv_requests (créer si absente) + RLS ─────────────────
+CREATE TABLE IF NOT EXISTS public.rdv_requests (
+    id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id    UUID        REFERENCES public.client_profiles(id),
+    client_email TEXT        NOT NULL,
+    date         DATE        NOT NULL,
+    heure        TIME        NOT NULL,
+    type         TEXT        NOT NULL DEFAULT 'visio',
+    motif        TEXT        NOT NULL,
+    notes        TEXT,
+    statut       TEXT        NOT NULL DEFAULT 'en_attente',
+    created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_rdv_client_id    ON public.rdv_requests(client_id);
+CREATE INDEX IF NOT EXISTS idx_rdv_client_email ON public.rdv_requests(client_email);
+
+ALTER TABLE public.rdv_requests ENABLE ROW LEVEL SECURITY;
+
 DO $$
 BEGIN
-    IF EXISTS (
-        SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'rdv_requests'
-    ) THEN
-        IF NOT EXISTS (
-            SELECT 1 FROM information_schema.columns
-            WHERE table_name = 'rdv_requests' AND column_name = 'client_id'
-        ) THEN
-            EXECUTE 'ALTER TABLE public.rdv_requests ADD COLUMN client_id UUID REFERENCES public.client_profiles(id)';
-            EXECUTE 'CREATE INDEX IF NOT EXISTS idx_rdv_client_id ON public.rdv_requests(client_id)';
-        END IF;
-
-        IF NOT EXISTS (
-            SELECT 1 FROM pg_policies
-            WHERE tablename = 'rdv_requests' AND policyname = 'client_read_own_rdv'
-        ) THEN
-            EXECUTE '
-                CREATE POLICY "client_read_own_rdv" ON public.rdv_requests
-                FOR SELECT USING (
-                    client_id = auth.uid()
-                    OR client_email IN (
-                        SELECT email FROM public.client_profiles WHERE id = auth.uid()
-                    )
-                )
-            ';
-        END IF;
-
-        IF NOT EXISTS (
-            SELECT 1 FROM pg_policies
-            WHERE tablename = 'rdv_requests' AND policyname = 'client_insert_own_rdv'
-        ) THEN
-            EXECUTE '
-                CREATE POLICY "client_insert_own_rdv" ON public.rdv_requests
-                FOR INSERT WITH CHECK (
-                    client_id = auth.uid()
-                    OR client_email IN (
-                        SELECT email FROM public.client_profiles WHERE id = auth.uid()
-                    )
-                )
-            ';
-        END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'rdv_requests' AND policyname = 'client_read_own_rdv') THEN
+        CREATE POLICY "client_read_own_rdv" ON public.rdv_requests
+            FOR SELECT USING (
+                client_id = auth.uid()
+                OR client_email IN (SELECT email FROM public.client_profiles WHERE id = auth.uid())
+            );
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'rdv_requests' AND policyname = 'client_insert_own_rdv') THEN
+        CREATE POLICY "client_insert_own_rdv" ON public.rdv_requests
+            FOR INSERT WITH CHECK (
+                client_id = auth.uid()
+                OR client_email IN (SELECT email FROM public.client_profiles WHERE id = auth.uid())
+            );
     END IF;
 END $$;
 
 -- ─── 10. Backfill client_id sur messages et rdv_requests existants ──
--- Lie les enregistrements existants aux profils clients via l'email
-UPDATE public.messages m
-SET client_id = cp.id
-FROM public.client_profiles cp
-WHERE m.email = cp.email
-  AND m.client_id IS NULL;
+DO $$
+BEGIN
+    -- Backfill messages
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'messages') THEN
+        UPDATE public.messages m
+        SET client_id = cp.id
+        FROM public.client_profiles cp
+        WHERE m.email = cp.email
+          AND m.client_id IS NULL;
+    END IF;
 
-UPDATE public.rdv_requests r
-SET client_id = cp.id
-FROM public.client_profiles cp
-WHERE r.client_email = cp.email
-  AND r.client_id IS NULL;
+    -- Backfill rdv_requests
+    UPDATE public.rdv_requests r
+    SET client_id = cp.id
+    FROM public.client_profiles cp
+    WHERE r.client_email = cp.email
+      AND r.client_id IS NULL;
+END $$;
 
 SELECT 'Migration Espace Client OK ✅' AS status;
