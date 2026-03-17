@@ -1081,6 +1081,31 @@ export default function ClientPortalPage() {
                 </div>
             </div>
 
+            {/* ─── BANNIÈRE ESPACE CLIENT ─── */}
+            <div className="max-w-4xl mx-auto px-4 mt-6 mb-2">
+                <div className="bg-gradient-to-r from-blue-500/10 to-indigo-600/10 border border-blue-500/20 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/25 flex items-center justify-center flex-shrink-0">
+                            <ShieldCheck size={18} className="text-blue-400" />
+                        </div>
+                        <div>
+                            <p className="font-black text-white text-sm">Accédez à votre espace client</p>
+                            <p className="text-gray-400 text-[12px]">Suivez tous vos dossiers, documents et rendez-vous depuis un seul espace sécurisé.</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                        <a href={`/client/login?email=${encodeURIComponent(doc?.client_email || '')}&from=/portail/${id}`}
+                            className="px-4 h-9 rounded-xl bg-white/[0.06] border border-white/[0.1] hover:border-blue-500/30 text-white text-sm font-bold flex items-center transition-colors">
+                            Se connecter
+                        </a>
+                        <a href={`/client/register?email=${encodeURIComponent(doc?.client_email || '')}&from=/portail/${id}`}
+                            className="px-4 h-9 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-bold flex items-center gap-1.5 shadow-[0_4px_15px_rgba(59,130,246,0.25)] hover:shadow-[0_4px_20px_rgba(59,130,246,0.4)] transition-all">
+                            Créer mon compte
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             {/* ─── SIGNATURE MODAL OVERLAY ─── */}
             <AnimatePresence>
                 {signing && (

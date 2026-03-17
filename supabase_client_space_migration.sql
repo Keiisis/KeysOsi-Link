@@ -1,0 +1,116 @@
+-- ═══════════════════════════════════════════════════════════════════
+-- MIGRATION : Espace Client Authentifié — Retour Gagnant Bénin
+-- Date: 2026-03-17
+-- Exécuter dans Supabase SQL Editor
+-- ═══════════════════════════════════════════════════════════════════
+
+-- ─── 1. Table profils clients ───────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.client_profiles (
+    id         UUID        PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    email      TEXT        NOT NULL,
+    nom        TEXT,
+    prenom     TEXT,
+    phone      TEXT,
+    adresse    TEXT,
+    ville      TEXT,
+    pays       TEXT        DEFAULT 'France',
+    avatar_url TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_client_profiles_email ON public.client_profiles(email);
+
+-- ─── 2. Colonnes client_id sur documents_financiers ─────────────────
+ALTER TABLE public.documents_financiers
+    ADD COLUMN IF NOT EXISTS client_id UUID REFERENCES public.client_profiles(id);
+
+CREATE INDEX IF NOT EXISTS idx_docs_client_id ON public.documents_financiers(client_id);
+CREATE INDEX IF NOT EXISTS idx_docs_client_email ON public.documents_financiers(client_email);
+
+-- ─── 3. Colonnes client_id sur dossier_tracking ─────────────────────
+ALTER TABLE public.dossier_tracking
+    ADD COLUMN IF NOT EXISTS client_id UUID REFERENCES public.client_profiles(id);
+
+CREATE INDEX IF NOT EXISTS idx_dossier_client_id ON public.dossier_tracking(client_id);
+
+-- ─── 4. RLS client_profiles ─────────────────────────────────────────
+ALTER TABLE public.client_profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "client_select_own_profile" ON public.client_profiles
+    FOR SELECT USING (id = auth.uid());
+
+CREATE POLICY "client_insert_own_profile" ON public.client_profiles
+    FOR INSERT WITH CHECK (id = auth.uid());
+
+CREATE POLICY "client_update_own_profile" ON public.client_profiles
+    FOR UPDATE USING (id = auth.uid()) WITH CHECK (id = auth.uid());
+
+-- ─── 5. Trigger updated_at ──────────────────────────────────────────
+CREATE OR REPLACE FUNCTION update_client_profiles_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_client_profiles_updated_at ON public.client_profiles;
+CREATE TRIGGER trg_client_profiles_updated_at
+    BEFORE UPDATE ON public.client_profiles
+    FOR EACH ROW EXECUTE FUNCTION update_client_profiles_updated_at();
+
+-- ─── 6. Politique lecture documents pour clients ─────────────────────
+-- IMPORTANT: Vérifier que la table a déjà une politique SELECT existante.
+-- Si RLS est activé sur documents_financiers, ajouter la politique client.
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_tables
+        WHERE schemaname = 'public' AND tablename = 'documents_financiers'
+    ) THEN
+        -- Politique : le client voit ses docs via client_id OU via client_email
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_policies
+            WHERE tablename = 'documents_financiers'
+            AND policyname = 'client_read_own_documents'
+        ) THEN
+            EXECUTE '
+                CREATE POLICY "client_read_own_documents" ON public.documents_financiers
+                FOR SELECT USING (
+                    client_id = auth.uid()
+                    OR client_email IN (
+                        SELECT email FROM public.client_profiles WHERE id = auth.uid()
+                    )
+                )
+            ';
+        END IF;
+    END IF;
+END $$;
+
+-- ─── 7. Politique lecture dossier pour clients ───────────────────────
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_tables
+        WHERE schemaname = 'public' AND tablename = 'dossier_tracking'
+    ) THEN
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_policies
+            WHERE tablename = 'dossier_tracking'
+            AND policyname = 'client_read_own_dossier'
+        ) THEN
+            EXECUTE '
+                CREATE POLICY "client_read_own_dossier" ON public.dossier_tracking
+                FOR SELECT USING (
+                    client_id = auth.uid()
+                    OR client_email IN (
+                        SELECT email FROM public.client_profiles WHERE id = auth.uid()
+                    )
+                )
+            ';
+        END IF;
+    END IF;
+END $$;
+
+SELECT 'Migration Espace Client OK ✅' AS status;

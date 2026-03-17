@@ -46,7 +46,7 @@ export async function middleware(request: NextRequest) {
 
     // ─── Rate Limiting on Login POST requests ───
     if (
-        (pathname === '/agent/login' || pathname === '/admin/login') &&
+        (pathname === '/agent/login' || pathname === '/admin/login' || pathname === '/client/login' || pathname === '/client/register') &&
         request.method === 'POST'
     ) {
         const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
@@ -61,20 +61,24 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    // ─── Skip login and reset-password pages (no auth needed) ───
+    // ─── Skip login and public auth pages (no auth needed) ───
     if (
         pathname === '/agent/login' ||
         pathname === '/admin/login' ||
-        pathname === '/admin/reset-password'
+        pathname === '/admin/reset-password' ||
+        pathname === '/client/login' ||
+        pathname === '/client/register' ||
+        pathname === '/client/reset-password'
     ) {
         return response
     }
 
-    // ─── Only protect /agent/* and /admin/* routes ───
+    // ─── Only protect /agent/*, /admin/*, /client/* routes ───
     const isAgentRoute = pathname.startsWith('/agent')
     const isAdminRoute = pathname.startsWith('/admin')
+    const isClientRoute = pathname.startsWith('/client')
 
-    if (!isAgentRoute && !isAdminRoute) {
+    if (!isAgentRoute && !isAdminRoute && !isClientRoute) {
         return response
     }
 
@@ -137,7 +141,7 @@ export async function middleware(request: NextRequest) {
 
         if (userError || !user) {
             // Pas d'utilisateur authentifié → rediriger vers login
-            const loginUrl = isAdminRoute ? '/admin/login' : '/agent/login'
+            const loginUrl = isAdminRoute ? '/admin/login' : isClientRoute ? '/client/login' : '/agent/login'
             return redirectTo(new URL(loginUrl, request.url))
         }
 
@@ -176,6 +180,21 @@ export async function middleware(request: NextRequest) {
             serviceKey
         )
 
+        // ─── Espace Client : vérifier client_profiles ───────────────
+        if (isClientRoute) {
+            const { data: clientProfile } = await adminSupabase
+                .from('client_profiles')
+                .select('id')
+                .eq('id', userId)
+                .maybeSingle()
+
+            if (!clientProfile) {
+                return redirectTo(new URL('/client/login?error=no-profile', request.url))
+            }
+            return supabaseResponse
+        }
+
+        // ─── Espace Agent/Admin : vérifier user_profiles ────────────
         const { data: profile, error: profileError } = await adminSupabase
             .from('user_profiles')
             .select('role')
@@ -216,5 +235,6 @@ export const config = {
     matcher: [
         '/agent/:path*',
         '/admin/:path*',
+        '/client/:path*',
     ],
 }
