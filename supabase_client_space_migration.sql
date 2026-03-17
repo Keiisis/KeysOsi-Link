@@ -37,14 +37,21 @@ CREATE INDEX IF NOT EXISTS idx_dossier_client_id ON public.dossier_tracking(clie
 -- ─── 4. RLS client_profiles ─────────────────────────────────────────
 ALTER TABLE public.client_profiles ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "client_select_own_profile" ON public.client_profiles
-    FOR SELECT USING (id = auth.uid());
-
-CREATE POLICY "client_insert_own_profile" ON public.client_profiles
-    FOR INSERT WITH CHECK (id = auth.uid());
-
-CREATE POLICY "client_update_own_profile" ON public.client_profiles
-    FOR UPDATE USING (id = auth.uid()) WITH CHECK (id = auth.uid());
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'client_profiles' AND policyname = 'client_select_own_profile') THEN
+        CREATE POLICY "client_select_own_profile" ON public.client_profiles
+            FOR SELECT USING (id = auth.uid());
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'client_profiles' AND policyname = 'client_insert_own_profile') THEN
+        CREATE POLICY "client_insert_own_profile" ON public.client_profiles
+            FOR INSERT WITH CHECK (id = auth.uid());
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'client_profiles' AND policyname = 'client_update_own_profile') THEN
+        CREATE POLICY "client_update_own_profile" ON public.client_profiles
+            FOR UPDATE USING (id = auth.uid()) WITH CHECK (id = auth.uid());
+    END IF;
+END $$;
 
 -- ─── 5. Trigger updated_at ──────────────────────────────────────────
 CREATE OR REPLACE FUNCTION update_client_profiles_updated_at()
