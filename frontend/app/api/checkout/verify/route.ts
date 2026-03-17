@@ -575,6 +575,18 @@ export async function POST(request: Request) {
                     const rand = String(Date.now() % 10000).padStart(4, '0')
                     const invoiceNumero = `FAC-${yr}${mn}-${rand}`
 
+                    // Récupérer le taux de change actuel pour le verrouillage
+                    const orderCurrency = (fullOrder.currency || 'XOF').toUpperCase()
+                    let invoiceExchangeRate = 1
+                    if (orderCurrency !== 'XOF') {
+                        const { data: curData } = await supabase
+                            .from('currencies')
+                            .select('exchange_rate_to_base')
+                            .eq('code', orderCurrency)
+                            .single()
+                        if (curData) invoiceExchangeRate = Number(curData.exchange_rate_to_base)
+                    }
+
                     // Insérer la facture ERP
                     await supabase.from('documents_financiers').insert({
                         type: 'facture',
@@ -584,7 +596,8 @@ export async function POST(request: Request) {
                         client_email: fullOrder.customer_email || '',
                         client_phone: fullOrder.customer_phone || '',
                         client_adresse: fullOrder.shipping_address || '',
-                        currency: (fullOrder.currency || 'XOF').toUpperCase(),
+                        currency: orderCurrency,
+                        exchange_rate_applied: invoiceExchangeRate,
                         items: invoiceItems,
                         sous_total: sousTotal + shippingFee,
                         total_tva: 0,

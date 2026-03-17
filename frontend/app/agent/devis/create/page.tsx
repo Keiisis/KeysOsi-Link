@@ -4,17 +4,19 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import {
-    FileText, Plus, Trash2, X, Loader2, Send, Save, ArrowLeft,
-    CheckCircle2, Calculator, Receipt, User, Eye, AlertCircle
+    FileText, Plus, Trash2, Loader2, Send, Save, ArrowLeft,
+    Calculator, Receipt, User, Eye
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AnimatePresence } from 'framer-motion'
+import { convertFromBaseSync, getCurrentRates, type CurrencyCode } from '@/lib/currency'
 
 interface DevisItem {
     description: string
     quantity: number
     unit_price: number
+    unit_cost: number
     tva: number
 }
 
@@ -36,18 +38,20 @@ export default function AgentCreateDocumentPage() {
     const [clientPhone, setClientPhone] = useState('')
     const [clientAdresse, setClientAdresse] = useState('')
 
-    const [items, setItems] = useState<DevisItem[]>([{ description: '', quantity: 1, unit_price: 0, tva: 18 }])
+    const [items, setItems] = useState<DevisItem[]>([{ description: '', quantity: 1, unit_price: 0, unit_cost: 0, tva: 18 }])
     const [remise, setRemise] = useState(0)
     const [notes, setNotes] = useState('')
     const [conditions, setConditions] = useState(defaultConditions)
     const [validite, setValidite] = useState('30 jours')
+    const [rates, setRates] = useState<Record<string, number>>(getCurrentRates())
 
-    const [services, setServices] = useState<{ id: string, title: string, price: number }[]>([])
+    const [services, setServices] = useState<{ id: string, title: string, base_price: number, cost_price: number }[]>([])
 
     useEffect(() => {
         const fetchServices = async () => {
-            const { data } = await supabase.from('products').select('id, title, price')
-            if (data) setServices(data)
+            const { data } = await supabase.from('inventory_items').select('id, title, base_price, cost_price').eq('is_published', true)
+            if (data) setServices(data as { id: string, title: string, base_price: number, cost_price: number }[])
+            setRates(getCurrentRates())
         }
         fetchServices()
     }, [])
@@ -64,8 +68,10 @@ export default function AgentCreateDocumentPage() {
     const sousTotal = items.reduce((sum, it) => sum + (it.quantity * it.unit_price), 0)
     const totalTVA = items.reduce((sum, it) => sum + (it.quantity * it.unit_price * it.tva / 100), 0)
     const totalFinal = sousTotal + totalTVA - remise
+    const totalCost = items.reduce((sum, it) => sum + (it.quantity * (it.unit_cost || 0)), 0)
+    const margeNette = totalFinal - totalCost
 
-    const addItem = () => setItems(prev => [...prev, { description: '', quantity: 1, unit_price: 0, tva: 18 }])
+    const addItem = () => setItems(prev => [...prev, { description: '', quantity: 1, unit_price: 0, unit_cost: 0, tva: 18 }])
     const removeItem = (i: number) => setItems(prev => prev.filter((_, idx) => idx !== i))
     const updateItem = (i: number, field: keyof DevisItem, value: string | number) => {
         setItems(prev => prev.map((it, idx) => idx === i ? { ...it, [field]: value } : it))
@@ -74,8 +80,14 @@ export default function AgentCreateDocumentPage() {
     const handleProductSelect = (i: number, title: string) => {
         const service = services.find(s => s.title === title)
         if (service) {
-            updateItem(i, 'description', service.title)
-            updateItem(i, 'unit_price', service.price)
+            const convertedPrice = convertFromBaseSync(service.base_price, currency as CurrencyCode)
+            const convertedCost = convertFromBaseSync(service.cost_price, currency as CurrencyCode)
+            setItems(prev => prev.map((it, idx) => idx === i ? {
+                ...it,
+                description: service.title,
+                unit_price: convertedPrice,
+                unit_cost: convertedCost
+            } : it))
         } else {
             updateItem(i, 'description', title)
         }
@@ -94,6 +106,8 @@ export default function AgentCreateDocumentPage() {
             return
         }
 
+        const currentRate = rates[currency] || 1
+
         const { error } = await supabase.from('documents_financiers').insert({
             agent_id: user.id, 
             type: formType, 
@@ -104,7 +118,8 @@ export default function AgentCreateDocumentPage() {
             client_phone: clientPhone, 
             client_adresse: clientAdresse,
             currency: currency,
-            items, 
+            exchange_rate_applied: currentRate,
+            items: items.map(it => ({ description: it.description, quantity: it.quantity, unit_price: it.unit_price, tva: it.tva, unit_cost: it.unit_cost })), 
             sous_total: sousTotal, 
             total_tva: totalTVA, 
             remise, 
