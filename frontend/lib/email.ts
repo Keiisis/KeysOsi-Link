@@ -525,5 +525,64 @@ export const getEmailTemplates = async (locale: string = 'fr') => {
         </table>` : ''}
     `, 'fr')
         },
+
+        /** Dossier status update & Document Request */
+        dossierUpdate: (
+            clientName: string,
+            dossierNumero: string,
+            message: string,
+            documentsManquants: string[] = [],
+            trackerUrl: string,
+            progression: number
+        ) => {
+            const hasMissingDocs = documentsManquants.length > 0;
+            const title = hasMissingDocs ? 'Action Requise : Documents manquants' : 'Mise à jour de votre dossier';
+            const accentColor = hasMissingDocs ? '#ef4444' : '#008751';
+            const icon = hasMissingDocs ? '⚠️' : '🔄';
+
+            let docsHtml = '';
+            if (hasMissingDocs) {
+                docsHtml = `
+                <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+                    <h3 style="margin:0 0 12px;color:#ef4444;font-size:14px;text-transform:uppercase;letter-spacing:1px;">Documents Requis d'Urgence</h3>
+                    <ul style="margin:0;padding-left:20px;color:rgba(255,255,255,0.8);font-size:14px;line-height:1.6;">
+                        ${documentsManquants.map(doc => `<li style="margin-bottom:6px;"><strong>${doc}</strong></li>`).join('')}
+                    </ul>
+                </div>`;
+            }
+
+            return EMAIL_WRAPPER(`
+        <h2 style="margin:0 0 16px;font-size:20px;color:${accentColor};font-weight:800;">${icon} ${title}</h2>
+        <p style="color:rgba(255,255,255,0.7);font-size:14px;line-height:1.8;margin:0 0 20px;">
+            Bonjour <strong style="color:#fff;">${clientName}</strong>,
+        </p>
+        <p style="color:rgba(255,255,255,0.7);font-size:14px;line-height:1.8;margin:0 0 20px;">
+            ${message}
+        </p>
+
+        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;margin:0 0 16px;">
+            <table style="width:100%;border-collapse:collapse;">
+                <tr>
+                    <td style="padding:8px 0;color:rgba(255,255,255,0.4);font-size:12px;text-transform:uppercase;letter-spacing:1px;">N° Dossier</td>
+                    <td style="padding:8px 0;text-align:right;color:#fff;font-size:14px;font-weight:700;font-family:monospace;">${dossierNumero}</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:rgba(255,255,255,0.4);font-size:12px;text-transform:uppercase;letter-spacing:1px;border-top:1px solid rgba(255,255,255,0.05);">Progression</td>
+                    <td style="padding:8px 0;text-align:right;color:#FCD116;font-size:16px;font-weight:900;border-top:1px solid rgba(255,255,255,0.05);">${progression}%</td>
+                </tr>
+            </table>
+        </div>
+
+        ${docsHtml}
+
+        <table cellpadding="0" cellspacing="0" style="margin:30px auto 0;">
+          <tr><td>
+            <a href="${trackerUrl}" style="display:inline-block;background:linear-gradient(135deg,${accentColor},${hasMissingDocs ? '#dc2626' : '#00a664'});color:white;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:800;font-size:13px;letter-spacing:0.5px;box-shadow:0 4px 15px rgba(${hasMissingDocs ? '239,68,68' : '0,135,81'},0.3);">
+              ${hasMissingDocs ? 'Fournir les documents →' : 'Suivre mon dossier →'}
+            </a>
+          </td></tr>
+        </table>
+    `, 'fr')
+        },
     }
 }

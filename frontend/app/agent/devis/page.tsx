@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import {
     FileText, Plus, Trash2, X, Loader2, Search,
-    Download, Eye, Calculator, Receipt,
+    Download, Eye, Calculator, Receipt, Send,
     Phone, Mail, CheckCircle2, AlertCircle, Link as LinkIcon
 } from 'lucide-react'
 import Link from 'next/link'
@@ -49,6 +49,7 @@ export default function AgentDevisPage() {
     const [filterType, setFilterType] = useState<'all' | 'devis' | 'facture'>('all')
     const [showPreview, setShowPreview] = useState<DocumentFinancier | null>(null)
     const [generating, setGenerating] = useState(false)
+    const [sendingEmail, setSendingEmail] = useState<string | null>(null)
 
     const fetchDocuments = useCallback(async () => {
         const { data: { user } } = await supabase.auth.getUser()
@@ -402,6 +403,48 @@ export default function AgentDevisPage() {
         setGenerating(false)
     }
 
+    const sendPDFByEmail = async (doc: DocumentFinancier) => {
+        if (!doc.client_email) {
+            alert('Ce client n\'a pas d\'adresse email renseignée.')
+            return
+        }
+
+        setSendingEmail(doc.id)
+        try {
+            const typeLabel = doc.type === 'devis' ? 'Devis' : 'Facture'
+            const statusLabel = doc.status === 'paye' ? ' ✅ PAYÉ' : doc.status === 'accepte' ? ' ✅ ACCEPTÉ' : ''
+
+            await fetch('/api/email/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    to: doc.client_email,
+                    subject: `${typeLabel} N° ${doc.numero}${statusLabel} — Retour Gagnant Bénin`,
+                    message: `Bonjour ${doc.client_prenom || ''} ${doc.client_nom || ''},\n\nVeuillez trouver ci-joint votre ${typeLabel.toLowerCase()} N° ${doc.numero} d'un montant de ${doc.total.toLocaleString('fr-FR')} XOF.\n\n📋 Détails :\n${doc.items?.map(i => `  • ${i.description} — ${i.quantity} x ${i.unit_price.toLocaleString('fr-FR')} XOF`).join('\n') || ''}\n\n💰 Total : ${doc.total.toLocaleString('fr-FR')} XOF\n${doc.notes ? `\n📝 Notes : ${doc.notes}` : ''}\n${doc.conditions ? `\n⚖️ Conditions : ${doc.conditions}` : ''}\n\nCordialement,\nL'équipe Retour Gagnant Bénin`,
+                    clientName: `${doc.client_prenom || ''} ${doc.client_nom || ''}`.trim(),
+                    context: 'document_financier',
+                    relatedId: doc.id,
+                }),
+            })
+
+            // Update status to 'envoye' if still brouillon
+            if (doc.status === 'brouillon') {
+                await supabase
+                    .from('documents_financiers')
+                    .update({ status: 'envoye' })
+                    .eq('id', doc.id)
+                fetchDocuments()
+            }
+
+            alert(`✅ ${typeLabel} envoyé(e) par email à ${doc.client_email}`)
+        } catch (err) {
+            console.error('Email error:', err)
+            alert('Erreur lors de l\'envoi du mail.')
+        } finally {
+            setSendingEmail(null)
+        }
+    }
+
     const filtered = documents.filter(d => {
         const matchSearch = d.numero?.toLowerCase().includes(search.toLowerCase()) ||
             d.client_nom?.toLowerCase().includes(search.toLowerCase())
@@ -536,8 +579,11 @@ export default function AgentDevisPage() {
                                                 <LinkIcon size={16} />
                                             </button>
                                             <button onClick={() => setShowPreview(doc)} className="p-2 text-gray-400 hover:text-emerald-400 hover:bg-white/5 rounded-lg transition-all" title="Aperçu / Modifier"><Eye size={16} /></button>
-                                            <button onClick={() => generatePDF(doc)} disabled={generating} className="p-2 text-gray-400 hover:text-blue-400 hover:bg-white/5 rounded-lg transition-all" title="PDF">
+                                            <button onClick={() => generatePDF(doc)} disabled={generating} className="p-2 text-gray-400 hover:text-blue-400 hover:bg-white/5 rounded-lg transition-all" title="Télécharger PDF">
                                                 {generating ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                                            </button>
+                                            <button onClick={() => sendPDFByEmail(doc)} disabled={sendingEmail === doc.id || !doc.client_email} className="p-2 text-gray-400 hover:text-amber-400 hover:bg-white/5 rounded-lg transition-all disabled:opacity-30" title={doc.client_email ? `Envoyer par email à ${doc.client_email}` : 'Email client manquant'}>
+                                                {sendingEmail === doc.id ? <Loader2 size={16} className="animate-spin text-amber-400" /> : <Send size={16} />}
                                             </button>
                                             <button onClick={() => handleDelete(doc.id)} className="p-2 text-gray-400 hover:text-red-400 hover:bg-white/5 rounded-lg transition-all" title="Supprimer"><Trash2 size={16} /></button>
                                         </div>

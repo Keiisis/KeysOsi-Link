@@ -40,6 +40,8 @@ export default function AgentMessagesPage() {
     const [translations, setTranslations] = useState<Record<string, { translated?: string, sourceLanguage?: string, translating?: boolean }>>({});
     const [detectedClientLanguage, setDetectedClientLanguage] = useState<string>("Français");
     const [translatingOwn, setTranslatingOwn] = useState(false);
+    const [clientTyping, setClientTyping] = useState(false);
+    const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const fetchMessages = async () => {
         const { data } = await supabase
@@ -126,8 +128,22 @@ export default function AgentMessagesPage() {
             )
             .subscribe()
 
+        // Typing presence channel
+        const typingChannel = supabase
+            .channel(`typing_${selected.id}`)
+            .on('broadcast', { event: 'typing' }, (payload) => {
+                if (payload.payload?.role === 'client') {
+                    setClientTyping(true)
+                    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+                    typingTimeoutRef.current = setTimeout(() => setClientTyping(false), 3000)
+                }
+            })
+            .subscribe()
+
         return () => {
             supabase.removeChannel(chatChannel)
+            supabase.removeChannel(typingChannel)
+            setClientTyping(false)
         }
     }, [selected?.id])
 
@@ -422,6 +438,21 @@ export default function AgentMessagesPage() {
                                 ))}
 
                                 <div ref={messagesEndRef} />
+
+                                {/* Typing indicator */}
+                                {clientTyping && (
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
+                                            <User size={14} className="text-gray-400" />
+                                        </div>
+                                        <div className="bg-white/10 border border-white/5 rounded-2xl rounded-tl-sm px-5 py-3 flex items-center gap-1">
+                                            <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                            <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                            <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                        </div>
+                                        <span className="text-[10px] text-gray-500 self-center ml-1">écrit...</span>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Chat Input */}

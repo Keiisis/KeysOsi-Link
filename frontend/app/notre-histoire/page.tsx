@@ -1,447 +1,408 @@
 'use client'
 
-import { motion, useScroll, useTransform } from 'framer-motion'
-import { useRef } from 'react'
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
+import { useRef, useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
-    Target, Users, Heart, Shield, Compass,
-    ArrowRight, Lightbulb, Star,
-    Globe, Handshake, Award, LucideIcon
+    Heart, Shield, Anchor, Leaf, Key, MapPin, CheckCircle, Handshake, ArrowRight, Star
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { TimelineSection, TimelineItem } from '@/components/histoire/TimelineSection'
-import { FounderCard, FounderData } from '@/components/histoire/FounderCard'
-import { usePageSections } from '@/lib/hooks/usePageSections'
 import { useTranslation, T } from '@/lib/translation'
 
-const iconMap: Record<string, LucideIcon> = {
-    Target, Users, Heart, Shield, Compass, Star, Globe, Award, Handshake, Lightbulb
+// ——————————————————————————————————————————————————————————————————————————
+// COMPOSANTS SCROLLYTELLING & PARALLAX
+// ——————————————————————————————————————————————————————————————————————————
+
+function CinematicHero() {
+    const ref = useRef(null)
+    const { scrollYProgress } = useScroll({
+        target: ref,
+        offset: ['start start', 'end start']
+    })
+    
+    const yText = useTransform(scrollYProgress, [0, 1], [0, 300])
+    const opacityText = useTransform(scrollYProgress, [0, 0.8], [1, 0])
+    const scaleBg = useTransform(scrollYProgress, [0, 1], [1, 1.1])
+    
+    return (
+        <section ref={ref} className="relative h-screen flex items-center justify-center overflow-hidden bg-black">
+            {/* Image de fond en parallaxe */}
+            <motion.div 
+                style={{ scale: scaleBg }}
+                className="absolute inset-0 z-0"
+            >
+                <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black z-10" />
+                <Image 
+                    src="/images/histoire/trio.jpeg" 
+                    alt="Fond Histoire Retour Gagnant" 
+                    fill 
+                    className="object-cover object-top opacity-50"
+                    priority
+                />
+            </motion.div>
+            
+            {/* Contenu principal */}
+            <motion.div 
+                style={{ y: yText, opacity: opacityText }}
+                className="relative z-20 container mx-auto px-6 text-center pt-20"
+            >
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 1.5, ease: "easeOut" }}
+                >
+                    <div className="flex items-center justify-center gap-3 mb-8">
+                        <span className="w-12 md:w-24 h-[1px] bg-gradient-to-r from-transparent to-[#FCD116]" />
+                        <span className="text-[#FCD116] font-black tracking-[0.5em] uppercase text-xs md:text-sm">
+                            <T>Qui sommes-nous ?</T>
+                        </span>
+                        <span className="w-12 md:w-24 h-[1px] bg-gradient-to-l from-transparent to-[#FCD116]" />
+                    </div>
+                    
+                    <h1 className="text-4xl md:text-6xl lg:text-7xl font-black font-heading tracking-tighter leading-[1.1] mb-8 text-white">
+                        <T>L'Histoire de Retour GAGNANT :</T><br/>
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D]">
+                            <T>La Réussite de Tous</T>
+                        </span>
+                    </h1>
+                    
+                    <p className="text-gray-300 max-w-3xl mx-auto text-lg md:text-2xl leading-relaxed font-light mb-12 drop-shadow-lg">
+                        <T>Retour GAGNANT Bénin n'est pas qu'une simple agence d'accompagnement ; c'est le pont d'or jeté entre un passé retrouvé et un avenir à construire.</T>
+                    </p>
+                    
+                    <motion.div
+                        animate={{ y: [0, 10, 0] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        className="flex flex-col items-center gap-3 text-white/50"
+                    >
+                        <span className="text-xs uppercase tracking-widest font-black"><T>Découvrir notre épopée</T></span>
+                        <div className="w-[1px] h-12 bg-gradient-to-b from-white/50 to-transparent" />
+                    </motion.div>
+                </motion.div>
+            </motion.div>
+        </section>
+    )
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   DONNÉES ÉDITABLES — Remplacez par le vrai contenu des promoteurs
-   ═══════════════════════════════════════════════════════════════ */
-
-const founders: FounderData[] = [
-    {
-        name: 'Fondateur Principal',
-        role: 'Directeur Général',
-        quote: 'Le Bénin est une terre de promesses. Nous avons créé Retour Gagnant pour transformer ces promesses en réalité, un retour à la fois.',
-    },
-    {
-        name: 'Co-Fondateur',
-        role: 'Directeur des Opérations',
-        quote: 'Chaque membre de la diaspora qui revient enrichit notre nation. Notre mission est de rendre ce retour aussi fluide qu\'un rêve.',
-    },
-    {
-        name: 'Co-Fondatrice',
-        role: 'Directrice Clientèle',
-        quote: 'L\'accompagnement humain est au cœur de tout. Derrière chaque dossier, il y a une famille, une histoire, un espoir.',
-    },
-]
-
-const timelineItems: TimelineItem[] = [
-    {
-        year: '2019',
-        title: 'L\'Idée Germe',
-        description: 'Confrontés aux difficultés administratives du retour, les fondateurs identifient un besoin criant : un accompagnement professionnel pour la diaspora béninoise.',
-    },
-    {
-        year: '2020',
-        title: 'La Fondation',
-        description: 'Retour Gagnant Bénin est officiellement créé à Cotonou. Les premiers clients font confiance à cette vision audacieuse malgré un contexte mondial incertain.',
-        highlight: true,
-    },
-    {
-        year: '2021',
-        title: 'Les Premiers Succès',
-        description: 'Plus de 50 familles accompagnées avec succès. L\'agence étend ses services à l\'investissement immobilier et à la création d\'entreprise.',
-    },
-    {
-        year: '2022',
-        title: 'L\'Expansion',
-        description: 'Ouverture de partenariats stratégiques en France, en Belgique et au Canada. L\'équipe passe de 3 à 12 collaborateurs dédiés.',
-    },
-    {
-        year: '2023',
-        title: 'La Reconnaissance',
-        description: 'Retour Gagnant devient une référence incontournable. Les témoignages affluent, et le bouche-à-oreille propulse la réputation de l\'agence.',
-        highlight: true,
-    },
-    {
-        year: '2024',
-        title: 'L\'Innovation Digitale',
-        description: 'Lancement de la plateforme numérique pour digitaliser l\'accompagnement. Intégration de l\'IA pour personnaliser chaque parcours de retour.',
-    },
-    {
-        year: 'Aujourd\'hui',
-        title: 'La Vision Continue',
-        description: 'Des centaines de retours réussis, une communauté grandissante, et une ambition intacte : faire du retour au Bénin une expérience gagnante pour tous.',
-        highlight: true,
-    },
-]
-
-const values = [
-    {
-        icon: Heart,
-        title: 'Humanité',
-        description: 'Chaque client est unique. Nous plaçons l\'humain au centre de chaque décision et de chaque action.',
-    },
-    {
-        icon: Shield,
-        title: 'Intégrité',
-        description: 'Transparence totale, honnêteté absolue. Nous construisons la confiance par nos actes, pas nos mots.',
-    },
-    {
-        icon: Target,
-        title: 'Excellence',
-        description: 'Nous visons la perfection dans chaque accompagnement. Le détail fait la différence.',
-    },
-    {
-        icon: Compass,
-        title: 'Innovation',
-        description: 'Nous repoussons les limites pour offrir des solutions toujours plus efficaces et modernes.',
-    },
-]
-
-const stats = [
-    { value: '500+', label: 'Familles Accompagnées', icon: Users },
-    { value: '12', label: 'Pays Couverts', icon: Globe },
-    { value: '98%', label: 'Taux de Satisfaction', icon: Star },
-    { value: '5', label: 'Années d\'Expertise', icon: Award },
-]
-
-/* ═══════════════════════════════════════════════════════════════ */
-
-export default function NotreHistoirePage() {
-    const { t } = useTranslation()
-    const { sections } = usePageSections('notre-histoire')
-    const dynFounders = (sections.founders || founders) as unknown as FounderData[]
-    const dynTimeline = (sections.timeline || timelineItems) as unknown as TimelineItem[]
-    const dynStats = (sections.stats || stats) as unknown as typeof stats
-    const dynValues = (sections.values || values) as unknown as typeof values
-
-    const heroRef = useRef<HTMLDivElement>(null)
-    const { scrollYProgress } = useScroll({
-        target: heroRef,
-        offset: ['start start', 'end start'],
-    })
-    const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])
-    const heroScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.95])
-
+function HistoricalMeeting() {
     return (
-        <main className="bg-[#05080a] text-white overflow-hidden">
+        <section className="relative bg-[#05080a] py-32 overflow-hidden">
+            {/* Glow décoratif */}
+            <div className="absolute top-0 left-0 w-[800px] h-[800px] bg-[#008751]/5 rounded-full blur-[150px] pointer-events-none" />
+            <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-[#E8112D]/5 rounded-full blur-[150px] pointer-events-none" />
 
-            {/* ═══════════════════════════════════════════ */}
-            {/* SECTION 1 — HERO CINÉMATIQUE */}
-            {/* ═══════════════════════════════════════════ */}
-            <motion.section
-                ref={heroRef}
-                style={{ opacity: heroOpacity, scale: heroScale }}
-                className="relative min-h-screen flex items-center justify-center overflow-hidden"
-            >
-                {/* Background layers */}
-                <div className="absolute inset-0 z-0">
-                    <div className="absolute inset-0 bg-gradient-to-b from-[#05080a] via-[#05080a]/80 to-[#05080a]" />
-                    <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-[#008751]/10 rounded-full blur-[150px]" />
-                    <div className="absolute bottom-1/4 right-1/3 w-[500px] h-[500px] bg-[#FCD116]/8 rounded-full blur-[120px]" />
-                    <div className="absolute top-1/2 right-1/4 w-[400px] h-[400px] bg-[#E8112D]/5 rounded-full blur-[100px]" />
-                </div>
-
-                <div className="relative z-10 container mx-auto px-6 text-center py-32">
+            <div className="container mx-auto px-6 max-w-7xl relative z-10">
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
+                    
+                    {/* Bloc Texte */}
                     <motion.div
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 1, delay: 0.2 }}
+                        initial={{ opacity: 0, x: -50 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true, margin: "-100px" }}
+                        transition={{ duration: 1 }}
+                        className="space-y-10"
                     >
-                        <div className="flex items-center justify-center gap-3 mb-8">
-                            <span className="w-16 h-[2px] bg-[#FCD116]" />
-                            <span className="text-[#FCD116] font-black tracking-[0.5em] uppercase text-[10px]"><T>Notre Histoire</T></span>
-                            <span className="w-16 h-[2px] bg-[#FCD116]" />
+                        <div>
+                            <span className="text-[#008751] font-black uppercase tracking-[0.3em] text-xs mb-4 block">Chapitre I</span>
+                            <h2 className="text-4xl md:text-5xl font-black font-heading text-white leading-tight">
+                                <T>Une Rencontre,</T><br/>
+                                <T>Une Vision,</T><br/>
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#E8112D]">
+                                    <T>Une Loi Historique</T>
+                                </span>
+                            </h2>
                         </div>
-
-                        <h1 className="text-5xl sm:text-6xl md:text-8xl font-black font-heading tracking-tighter leading-[0.9] mb-8">
-                            {t("Nés d'une")}{' '}
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D]">
-                                {t("Vision")}
-                            </span>
-                            <br />
-                            <span className="text-gray-400 text-3xl sm:text-4xl md:text-5xl font-light italic tracking-normal">
-                                {t("Portés par une Mission")}
-                            </span>
-                        </h1>
-
-                        <p className="text-gray-400 max-w-2xl mx-auto text-base md:text-lg leading-relaxed font-light mb-12">
-                            {t("Derrière Retour Gagnant, il y a des visionnaires qui ont transformé un rêve en réalité. Découvrez le parcours de ceux qui œuvrent chaque jour pour rendre votre retour au Bénin inoubliable.")}
-                        </p>
-
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.8, delay: 0.8 }}
-                            className="flex items-center justify-center gap-6"
-                        >
-                            <a href="#origine" className="group flex items-center gap-3 text-[#FCD116] font-bold text-sm uppercase tracking-widest hover:gap-5 transition-all">
-                                <T>Découvrir notre parcours</T>
-                                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                            </a>
-                        </motion.div>
-                    </motion.div>
-                </div>
-
-                {/* Scroll indicator */}
-                <motion.div
-                    animate={{ y: [0, 10, 0] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
-                >
-                    <div className="w-6 h-10 rounded-full border-2 border-white/20 flex items-start justify-center p-1.5">
-                        <motion.div
-                            animate={{ y: [0, 12, 0] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                            className="w-1.5 h-1.5 rounded-full bg-[#FCD116]"
-                        />
-                    </div>
-                </motion.div>
-            </motion.section>
-
-            {/* ═══════════════════════════════════════════ */}
-            {/* SECTION 2 — LE MONDE AVANT (Origin Story 1) */}
-            {/* ═══════════════════════════════════════════ */}
-            <section id="origine" className="py-24 md:py-32 relative">
-                <div className="container mx-auto px-6 max-w-4xl">
-                    <motion.div
-                        initial={{ opacity: 0, y: 30 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.8 }}
-                        className="space-y-8"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-2xl bg-[#E8112D]/10 border border-[#E8112D]/20 flex items-center justify-center">
-                                <Lightbulb size={22} className="text-[#E8112D]" />
-                            </div>
-                            <div>
-                                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#E8112D]"><T>Le Constat</T></span>
-                                <h2 className="text-3xl md:text-4xl font-black font-heading tracking-tight">
-                                    <T>Le Monde Avant Retour Gagnant</T>
-                                </h2>
-                            </div>
-                        </div>
-
-                        <div className="space-y-6 text-gray-400 text-base md:text-lg leading-relaxed pl-0 md:pl-16">
+                        
+                        <div className="space-y-6 text-gray-400 text-lg leading-relaxed font-light">
                             <p>
-                                <T>Pendant des décennies, les membres de la diaspora béninoise faisaient face à un paradoxe cruel : le désir profond de revenir enrichir leur terre natale, confronté à un mur de complexités administratives, juridiques et logistiques.</T>
+                                <T>Tout commence par une détermination inébranlable. Nathalie RIFFERT GERMANY, femme engagée et passionnée, a porté en elle le rêve d'un retour au pays après 400 ans d'absence. Ce rêve est devenu réalité grâce à une rencontre décisive.</T>
                             </p>
-                            <p>
-                                <T>Les démarches étaient opaques, les interlocuteurs dispersés, et les arnaques fréquentes. Combien de projets de retour ont été abandonnés faute d&apos;accompagnement ? Combien de rêves ont été brisés par la bureaucratie ?</T>
-                            </p>
-                            <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 border-l-2 border-l-[#FCD116]">
-                                <p className="text-white/80 italic font-medium">
-                                    <T>&quot;Il fallait que quelqu'un se lève et dise : plus jamais un retour ne sera un parcours du combattant. C'est cette conviction qui a tout déclenché.&quot;</T>
+                            
+                            <div className="p-8 rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-md relative overflow-hidden group">
+                                <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#008751] via-[#FCD116] to-[#E8112D]" />
+                                <p className="text-white">
+                                    <strong className="text-[#FCD116] font-black tracking-wide">Le 13 décembre 2023, en Martinique</strong><br/><br/>
+                                    <T>Un dialogue historique s'est noué entre trois acteurs majeurs : Georges-Emmanuel GERMANY, Nathalie RIFFERT GERMANY et le Chef de l'État béninois, S.E.M. Patrice TALON.</T>
                                 </p>
                             </div>
+                            
+                            <p>
+                                <T>C'est lors de cet échange que l'idée de rendre à tous les afro-descendants leur identité originelle a pris corps. À la demande de Nathalie, cette vision s'est élargie à l'ensemble des Caraïbes. Aujourd'hui, le Président Patrice Talon entre dans l'histoire de l'humanité en ouvrant les bras à des milliers de frères et sœurs. Une nouvelle page s'écrit avec lui, avec nous, et avec vous.</T>
+                            </p>
                         </div>
                     </motion.div>
-                </div>
-            </section>
-
-            {/* ═══════════════════════════════════════════ */}
-            {/* SECTION 3 — TIMELINE INTERACTIVE (Origin 2-4) */}
-            {/* ═══════════════════════════════════════════ */}
-            <section className="py-24 md:py-32 relative">
-                <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute top-0 left-1/3 w-[500px] h-[500px] bg-[#008751]/5 rounded-full blur-[120px]" />
-                </div>
-
-                <div className="container mx-auto px-6 max-w-5xl relative z-10">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.7 }}
-                        className="text-center mb-20"
-                    >
-                        <div className="flex items-center justify-center gap-3 mb-4">
-                            <span className="w-12 h-[2px] bg-[#008751]" />
-                            <span className="text-[#008751] font-black tracking-[0.5em] uppercase text-[10px]"><T>Notre Parcours</T></span>
-                            <span className="w-12 h-[2px] bg-[#008751]" />
-                        </div>
-                        <h2 className="text-4xl md:text-5xl font-black font-heading tracking-tighter">
-                            {t("De l'Idée à la")}{' '}
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] to-[#FCD116]">
-                                {t("Réalité")}
-                            </span>
-                        </h2>
-                    </motion.div>
-
-                    <TimelineSection items={dynTimeline} />
-                </div>
-            </section>
-
-            {/* ═══════════════════════════════════════════ */}
-            {/* SECTION 4 — CHIFFRES CLÉS ANIMÉS (Origin 5) */}
-            {/* ═══════════════════════════════════════════ */}
-            <section className="py-20 relative">
-                <div className="container mx-auto px-6">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        {dynStats.map((stat: (typeof stats)[number], i: number) => {
-                            const IconComp = typeof stat.icon === 'string' ? (iconMap[stat.icon] || Target) : (stat.icon || Target)
-                            return (
-                                <motion.div
-                                    key={stat.label}
-                                    initial={{ opacity: 0, y: 30 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true }}
-                                    transition={{ duration: 0.5, delay: i * 0.1 }}
-                                    className="text-center p-8 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-[#FCD116]/20 transition-all group"
-                                >
-                                    <div className="w-14 h-14 rounded-2xl bg-[#FCD116]/10 border border-[#FCD116]/20 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                                        <IconComp size={24} className="text-[#FCD116]" />
-                                    </div>
-                                    <div className="text-4xl md:text-5xl font-black text-white font-heading tracking-tighter mb-2">
-                                        {stat.value}
-                                    </div>
-                                    <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">
-                                        {t(stat.label)}
-                                    </div>
-                                </motion.div>
-                            )
-                        })}
+                    
+                    {/* Colonne Images avec Parallax Soft */}
+                    <div className="relative h-[600px] md:h-[800px] w-full">
+                        <motion.div 
+                            initial={{ opacity: 0, y: 50 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 1, delay: 0.2 }}
+                            className="absolute top-0 right-0 w-[80%] h-[60%] rounded-3xl overflow-hidden shadow-2xl border border-white/10"
+                        >
+                            <Image 
+                                src="/images/histoire/rencontre-martinique.jpeg" 
+                                alt="Rencontre en Martinique"
+                                fill
+                                className="object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#05080a]/80 to-transparent" />
+                            <p className="absolute bottom-4 left-6 text-white/70 text-sm font-bold tracking-widest uppercase">Martinique, 2023</p>
+                        </motion.div>
+                        
+                        <motion.div 
+                            initial={{ opacity: 0, y: 50 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 1, delay: 0.5 }}
+                            className="absolute bottom-10 left-0 w-[70%] h-[50%] rounded-3xl overflow-hidden shadow-2xl shadow-black/50 border border-white/10"
+                        >
+                            <Image 
+                                src="/images/histoire/trio.jpeg" 
+                                alt="Georges, Nathalie et le Président Talon"
+                                fill
+                                className="object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#05080a]/90 via-[#05080a]/20 to-transparent" />
+                            <div className="absolute bottom-6 left-6 right-6">
+                                <p className="text-[#FCD116] text-xs font-black tracking-widest uppercase mb-1">Acteurs Majeurs</p>
+                                <p className="text-white text-sm font-medium leading-snug">S.E.M Patrice Talon, Nathalie Riffert Germany & Georges-Emmanuel Germany</p>
+                            </div>
+                        </motion.div>
                     </div>
                 </div>
-            </section>
+            </div>
+        </section>
+    )
+}
 
-            {/* ═══════════════════════════════════════════ */}
-            {/* SECTION 5 — LES VISIONNAIRES */}
-            {/* ═══════════════════════════════════════════ */}
-            <section className="py-24 md:py-32 relative">
-                <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-[#E8112D]/5 rounded-full blur-[150px]" />
-                </div>
-
-                <div className="container mx-auto px-6 max-w-6xl relative z-10">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.7 }}
-                        className="text-center mb-16"
-                    >
-                        <div className="flex items-center justify-center gap-3 mb-4">
-                            <span className="w-12 h-[2px] bg-[#FCD116]" />
-                            <span className="text-[#FCD116] font-black tracking-[0.5em] uppercase text-[10px]"><T>Les Visionnaires</T></span>
-                            <span className="w-12 h-[2px] bg-[#FCD116]" />
-                        </div>
-                        <h2 className="text-4xl md:text-5xl font-black font-heading tracking-tighter mb-4">
-                            <T>Les Architectes du</T>{' '}
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FCD116] to-[#008751]">
-                                <T>Changement</T>
-                            </span>
-                        </h2>
-                        <p className="text-gray-400 max-w-xl mx-auto text-sm leading-relaxed">
-                            <T>Rencontrez les promoteurs qui ont donné vie à cette vision et qui continuent de porter l&apos;ambition de Retour Gagnant chaque jour.</T>
-                        </p>
-                    </motion.div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {dynFounders.map((founder: FounderData, i: number) => (
-                            <FounderCard key={founder.name} founder={founder} index={i} />
-                        ))}
+function FounderWord() {
+    return (
+        <section className="relative bg-black py-0">
+            {/* Effet Cinémascope (Image Fixe, texte scroll par-dessus) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2">
+                
+                <div className="relative h-[50vh] lg:h-screen w-full lg:sticky lg:top-0">
+                    <Image 
+                        src="/images/histoire/nathalie-social.jpeg" 
+                        alt="Nathalie RIFFERT GERMANY"
+                        fill
+                        className="object-cover object-center"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-black via-black/50 to-transparent" />
+                    
+                    <div className="absolute bottom-10 left-10 hidden lg:block">
+                        <p className="text-white font-black text-4xl mb-2">Nathalie RIFFERT GERMANY</p>
+                        <p className="text-[#FCD116] font-bold uppercase tracking-widest text-sm">Fondatrice</p>
                     </div>
                 </div>
-            </section>
-
-            {/* ═══════════════════════════════════════════ */}
-            {/* SECTION 6 — NOS VALEURS */}
-            {/* ═══════════════════════════════════════════ */}
-            <section className="py-24 md:py-32 relative">
-                <div className="container mx-auto px-6 max-w-5xl">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
+                
+                <div className="flex items-center justify-center p-10 py-32 lg:p-32 bg-black relative z-10">
+                    <motion.div 
+                        initial={{ opacity: 0, y: 40 }}
                         whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.7 }}
-                        className="text-center mb-16"
+                        viewport={{ once: true, margin: "-100px" }}
+                        transition={{ duration: 1 }}
+                        className="max-w-xl"
                     >
-                        <div className="flex items-center justify-center gap-3 mb-4">
-                            <span className="w-12 h-[2px] bg-[#008751]" />
-                            <span className="text-[#008751] font-black tracking-[0.5em] uppercase text-[10px]">ADN</span>
-                            <span className="w-12 h-[2px] bg-[#008751]" />
+                        <span className="text-[#E8112D] font-black uppercase tracking-[0.3em] text-xs mb-8 block">Chapitre II</span>
+                        <h3 className="text-4xl md:text-5xl font-black font-heading text-white mb-12">Le Mot de la Fondatrice</h3>
+                        
+                        <div className="relative">
+                            <span className="absolute -top-16 -left-12 text-[#333] text-[150px] font-serif leading-none select-none">"</span>
+                            <p className="text-2xl md:text-3xl font-serif text-gray-200 leading-snug italic relative z-10">
+                                Mon souhait le plus cher est que ce retour soit une empreinte indélébile de réussite. Je me suis pleinement investie pour que chaque afro-descendant retrouve non seulement sa terre, mais aussi sa place et sa dignité, dans le respect du 'vivre ensemble'.<br/><br/>
+                                <strong className="text-[#FCD116] not-italic">Bonne arrivée à tous !</strong>
+                            </p>
                         </div>
-                        <h2 className="text-4xl md:text-5xl font-black font-heading tracking-tighter">
-                            <T>Nos</T>{' '}
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] to-[#FCD116]">
-                                <T>Valeurs</T>
-                            </span>
-                        </h2>
                     </motion.div>
+                </div>
+            </div>
+        </section>
+    )
+}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {dynValues.map((val: (typeof values)[number], i: number) => {
-                            const IconComp = typeof val.icon === 'string' ? (iconMap[val.icon] || Target) : (val.icon || Target)
-                            return (
-                                <motion.div
-                                    key={val.title}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true }}
-                                    transition={{ duration: 0.5, delay: i * 0.1 }}
-                                    className="flex gap-6 p-8 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-[#008751]/20 transition-all group"
-                                >
-                                    <div className="w-14 h-14 rounded-2xl bg-[#008751]/10 border border-[#008751]/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                                        <IconComp size={24} className="text-[#008751]" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-xl font-black text-white font-heading tracking-tight mb-2">
-                                            {t(val.title)}
-                                        </h3>
-                                        <p className="text-sm text-gray-400 leading-relaxed">
-                                            {t(val.description)}
-                                        </p>
-                                    </div>
-                                </motion.div>
-                            )
-                        })}
+function LogoSymbolism() {
+    return (
+        <section className="relative bg-[#0a0f18] py-32 overflow-hidden">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#FCD116]/5 rounded-full blur-[200px] pointer-events-none" />
+            
+            <div className="container mx-auto px-6 max-w-7xl relative z-10 text-center mb-20">
+                <span className="text-[#FCD116] font-black uppercase tracking-[0.3em] text-xs mb-4 block">Chapitre III</span>
+                <h2 className="text-4xl md:text-6xl font-black font-heading text-white mb-6">
+                    <T>Identité & Symbolisme</T>
+                </h2>
+                <p className="text-gray-400 max-w-2xl mx-auto text-lg">
+                    Le logo de Retour GAGNANT Bénin est bien plus qu'une image ; c'est un emblème de confiance et d'ancrage profond. Inspiré par la ville historique de Ouidah, il raconte une force puisée dans les racines du Bénin.
+                </p>
+            </div>
+
+            <div className="container mx-auto px-6 max-w-6xl relative z-10">
+                <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
+                    
+                    {/* Le Logo en Grand au centre/gauche */}
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 1 }}
+                        className="w-full lg:w-1/2 flex justify-center"
+                    >
+                        <div className="relative w-64 h-64 md:w-96 md:h-96 rounded-full overflow-hidden shadow-[0_0_100px_rgba(252,209,22,0.15)] border-4 border-[#FCD116]/20 bg-white">
+                            <Image 
+                                src="/images/histoire/logo.jpeg" 
+                                alt="Logo Retour Gagnant"
+                                fill
+                                className="object-contain p-8"
+                            />
+                        </div>
+                    </motion.div>
+                    
+                    {/* Explications qui défilent */}
+                    <div className="w-full lg:w-1/2 space-y-12">
+                        
+                        <motion.div 
+                            initial={{ opacity: 0, x: 50 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true, margin: "-50px" }}
+                            transition={{ duration: 0.8, delay: 0.1 }}
+                            className="bg-white/[0.03] border border-white/5 p-8 rounded-3xl"
+                        >
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="w-12 h-12 rounded-full bg-[#E8112D]/10 flex items-center justify-center">
+                                    <Key className="text-[#E8112D] w-6 h-6" />
+                                </div>
+                                <h3 className="text-2xl font-black text-white font-heading">1. La Porte Sculptée</h3>
+                            </div>
+                            <p className="text-gray-400 leading-relaxed">
+                                Contrairement à la porte du passé, celle-ci représente l’accès sécurisé et facilité au Bénin d'aujourd'hui. Elle symbolise <strong>L’Accueil</strong>, <strong>La Protection</strong>, et <strong>L’Authenticité</strong> de notre artisanat local, signe de respect pour nos traditions séculaires.
+                            </p>
+                        </motion.div>
+
+                        <motion.div 
+                            initial={{ opacity: 0, x: 50 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true, margin: "-50px" }}
+                            transition={{ duration: 0.8, delay: 0.3 }}
+                            className="bg-white/[0.03] border border-white/5 p-8 rounded-3xl"
+                        >
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="w-12 h-12 rounded-full bg-[#008751]/10 flex items-center justify-center">
+                                    <Leaf className="text-[#008751] w-6 h-6" />
+                                </div>
+                                <h3 className="text-2xl font-black text-white font-heading">2. L’Arbre de Vie</h3>
+                            </div>
+                            <p className="text-gray-400 leading-relaxed">
+                                Près de la porte se dresse un arbre majestueux, symbole de la transformation de "l'Arbre de l'Oubli" en un Arbre de Vie. Il incarne <strong>La Solidité</strong>, <strong>La Prospérité</strong> et <strong>La Renaissance</strong> physique et spirituelle.
+                            </p>
+                        </motion.div>
+
+                        <motion.div 
+                            initial={{ opacity: 0, x: 50 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true, margin: "-50px" }}
+                            transition={{ duration: 0.8, delay: 0.5 }}
+                            className="bg-white/[0.03] border border-white/5 p-8 rounded-3xl"
+                        >
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="w-12 h-12 rounded-full bg-[#FCD116]/10 flex items-center justify-center">
+                                    <Stamp className="text-[#FCD116] w-6 h-6" />
+                                </div>
+                                <h3 className="text-2xl font-black text-white font-heading">3. Notre Signature</h3>
+                            </div>
+                            <p className="text-gray-400 leading-relaxed">
+                                L'harmonie de ces symboles forme une image puissante : celle de la maison retrouvée. Choisir Retour GAGNANT, c'est choisir la stabilité, la réussite et la fierté de participer à la construction du Bénin moderne.
+                            </p>
+                        </motion.div>
+
                     </div>
                 </div>
-            </section>
+            </div>
+        </section>
+    )
+}
 
-            {/* ═══════════════════════════════════════════ */}
-            {/* SECTION 7 — CTA FINAL */}
-            {/* ═══════════════════════════════════════════ */}
-            <section className="py-24 md:py-32 relative overflow-hidden">
-                <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#FCD116]/5 rounded-full blur-[200px]" />
+function Stamp({ className }: { className?: string }) {
+    return <CheckCircle className={className} />
+}
+
+function TrustGallery() {
+    return (
+        <section className="relative bg-black py-32 overflow-hidden border-t border-white/5">
+            <div className="container mx-auto px-6 max-w-7xl text-center mb-16 relative z-10">
+                <span className="text-white/50 font-black uppercase tracking-[0.3em] text-xs mb-4 block">Chapitre IV</span>
+                <h2 className="text-4xl md:text-5xl font-black font-heading text-white mb-6">
+                    L'Appui des <span className="text-[#008751]">Institutions</span>
+                </h2>
+                <p className="text-gray-400 max-w-2xl mx-auto text-lg mb-16">
+                    Une intégration profondément validée et reconnue par l'État pour garantir votre sécurité.
+                </p>
+
+                {/* Grille Mosaïque de Confiance */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 auto-rows-max">
+                    <motion.div initial={{opacity:0, scale:0.9}} whileInView={{opacity:1, scale:1}} viewport={{once:true}} transition={{duration:0.5}} className="col-span-2 row-span-2 relative h-64 md:h-96 rounded-3xl overflow-hidden group">
+                        <Image src="/images/histoire/integre-causes.jpeg" alt="Intégré dans les causes" fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
+                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors" />
+                    </motion.div>
+                    <motion.div initial={{opacity:0, scale:0.9}} whileInView={{opacity:1, scale:1}} viewport={{once:true}} transition={{duration:0.5, delay:0.1}} className="relative h-32 md:h-48 rounded-3xl overflow-hidden">
+                        <Image src="/images/histoire/attestation-debut.jpeg" alt="Attestation" fill className="object-cover" />
+                    </motion.div>
+                    <motion.div initial={{opacity:0, scale:0.9}} whileInView={{opacity:1, scale:1}} viewport={{once:true}} transition={{duration:0.5, delay:0.2}} className="relative h-32 md:h-48 rounded-3xl overflow-hidden">
+                        <Image src="/images/histoire/attestation-1.jpeg" alt="Attestation" fill className="object-cover" />
+                    </motion.div>
+                    <motion.div initial={{opacity:0, scale:0.9}} whileInView={{opacity:1, scale:1}} viewport={{once:true}} transition={{duration:0.5, delay:0.3}} className="relative h-32 md:h-48 rounded-3xl overflow-hidden">
+                        <Image src="/images/histoire/georges-1.jpeg" alt="Georges-Emmanuel" fill className="object-cover object-top" />
+                    </motion.div>
+                    <motion.div initial={{opacity:0, scale:0.9}} whileInView={{opacity:1, scale:1}} viewport={{once:true}} transition={{duration:0.5, delay:0.4}} className="relative h-32 md:h-48 rounded-3xl overflow-hidden">
+                        <Image src="/images/histoire/rencontre-benin.jpeg" alt="Rencontre au Bénin" fill className="object-cover" />
+                    </motion.div>
                 </div>
+            </div>
+        </section>
+    )
+}
 
+// ——————————————————————————————————————————————————————————————————————————
+// MAIN PAGE EXPORT
+// ——————————————————————————————————————————————————————————————————————————
+
+export default function NotreHistoirePage() {
+    return (
+        <main className="bg-black text-white min-h-screen">
+            <CinematicHero />
+            <HistoricalMeeting />
+            <FounderWord />
+            <LogoSymbolism />
+            <TrustGallery />
+            
+            {/* CTA Final */}
+            <section className="py-32 relative overflow-hidden bg-gradient-to-b from-black to-[#05080a]">
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-50">
+                    <div className="w-full max-w-5xl h-[1px] bg-gradient-to-r from-transparent via-[#FCD116]/30 to-transparent" />
+                </div>
+                
                 <div className="container mx-auto px-6 text-center relative z-10">
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        transition={{ duration: 0.8 }}
-                        className="max-w-3xl mx-auto space-y-8"
+                        transition={{ duration: 1 }}
+                        className="max-w-3xl mx-auto"
                     >
-                        <Handshake size={48} className="text-[#FCD116] mx-auto" />
-                        <h2 className="text-4xl md:text-6xl font-black font-heading tracking-tighter">
-                            <T>Votre Retour Gagnant</T>{' '}
+                        <h2 className="text-4xl md:text-6xl font-black font-heading tracking-tighter mb-8 leading-tight">
+                            Une page s'écrit avec nous...<br/>
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D]">
-                                <T>Commence Ici</T>
+                                et avec vous.
                             </span>
                         </h2>
-                        <p className="text-gray-400 text-base md:text-lg leading-relaxed max-w-xl mx-auto">
-                            <T>Rejoignez les centaines de familles qui ont fait confiance à notre expertise. Prenons 15 minutes pour discuter de votre projet de retour.</T>
-                        </p>
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                        
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mt-12">
                             <Link href="/rendez-vous">
-                                <Button className="h-16 px-10 text-lg font-black rounded-full bg-[#FCD116] text-[#0f141e] hover:bg-[#008751] hover:text-white transition-all shadow-xl shadow-[#FCD116]/20 hover:shadow-[#008751]/20">
-                                    <T>Prendre Rendez-vous</T>
-                                </Button>
-                            </Link>
-                            <Link href="/contact">
-                                <Button variant="outline" className="h-16 px-10 text-lg font-bold rounded-full border-white/10 text-white hover:bg-white/5 transition-all">
-                                    <T>Nous Contacter</T>
+                                <Button className="h-16 px-10 text-lg font-black rounded-full bg-[#FCD116] text-[#0f141e] hover:bg-white transition-all shadow-xl shadow-[#FCD116]/20 hover:scale-105">
+                                    <T>Je demande un Rendez-vous</T> <ArrowRight className="ml-2 w-5 h-5" />
                                 </Button>
                             </Link>
                         </div>

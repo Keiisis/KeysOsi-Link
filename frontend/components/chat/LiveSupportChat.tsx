@@ -27,6 +27,7 @@ export default function LiveSupportChat({ email, clientName }: LiveSupportChatPr
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
     // Initial check for an active session
     useEffect(() => {
@@ -90,6 +91,24 @@ export default function LiveSupportChat({ email, clientName }: LiveSupportChatPr
 
         return () => { supabase.removeChannel(channel); };
     }, [sessionId]);
+
+    // Setup typing broadcast channel
+    useEffect(() => {
+        if (!sessionId) return
+        typingChannelRef.current = supabase.channel(`typing_${sessionId}`)
+        typingChannelRef.current.subscribe()
+        return () => {
+            if (typingChannelRef.current) supabase.removeChannel(typingChannelRef.current)
+        }
+    }, [sessionId])
+
+    const broadcastTyping = () => {
+        typingChannelRef.current?.send({
+            type: 'broadcast',
+            event: 'typing',
+            payload: { role: 'client' },
+        })
+    }
 
     const scrollToBottom = () => {
         setTimeout(() => {
@@ -233,7 +252,7 @@ export default function LiveSupportChat({ email, clientName }: LiveSupportChatPr
                     <input
                         type="text"
                         value={input}
-                        onChange={(e) => setInput(e.target.value)}
+                        onChange={(e) => { setInput(e.target.value); broadcastTyping() }}
                         placeholder={t("Écrivez votre message ici...")}
                         className="flex-1 bg-white/5 border border-white/10 rounded-2xl py-4 pl-6 pr-14 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 focus:bg-white/10 text-sm transition-all"
                         disabled={isSubmitting}

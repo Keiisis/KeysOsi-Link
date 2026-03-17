@@ -7,7 +7,7 @@ import {
     FileText, Search, Plus, Clock,
     CheckCircle2, Loader2, Eye,
     X, Calendar, Mail, Phone, StickyNote,
-    ArrowRight
+    ArrowRight, AlertCircle, FileWarning, Send
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
@@ -25,7 +25,10 @@ interface Dossier {
     statut: DossierStatus
     etapes: Record<string, unknown>[]
     created_at: string
+    updated_at?: string
     notes?: string
+    progression?: number
+    documents_manquants?: string[]
 }
 
 const columns: { id: DossierStatus; label: string; color: string; icon: LucideIcon }[] = [
@@ -43,6 +46,47 @@ export default function AgentDossiersPage() {
     const [search, setSearch] = useState('')
     const [selectedDossier, setSelectedDossier] = useState<Dossier | null>(null)
     const [noteText, setNoteText] = useState('')
+    const [docRequest, setDocRequest] = useState('')
+
+    const addMissingDocument = async () => {
+        if (!docRequest.trim() || !selectedDossier) return
+        const newDocs = [...(selectedDossier.documents_manquants || []), docRequest.trim()]
+        
+        setDossiers(prev => prev.map(d => d.id === selectedDossier.id ? { ...d, documents_manquants: newDocs } : d))
+        setSelectedDossier({ ...selectedDossier, documents_manquants: newDocs })
+        setDocRequest('')
+        
+        await supabase.from('dossier_tracking').update({ documents_manquants: newDocs }).eq('id', selectedDossier.id)
+
+        // Envoi Email
+        try {
+            await fetch('/api/email/send', {
+                method: 'POST',
+                body: JSON.stringify({
+                    to: selectedDossier.client_email,
+                    subject: 'Action Requise : Document manquant pour votre dossier',
+                    clientName: selectedDossier.client_prenom + ' ' + selectedDossier.client_nom,
+                    context: 'dossierUpdate',
+                    relatedId: selectedDossier.num_dossier,
+                    dossierNumero: selectedDossier.num_dossier,
+                    progression: selectedDossier.progression || 0,
+                    message: "Afin de poursuivre le traitement de votre dossier, veuillez nous fournir de toute urgence le(s) document(s) bloquant(s).",
+                    documentsManquants: newDocs,
+                    trackerUrl: `${window.location.origin}/suivi-dossier`
+                })
+            })
+        } catch (e) { console.error('Erreur send email doc:', e) }
+    }
+    
+    const removeMissingDocument = async (docToRemove: string) => {
+        if (!selectedDossier) return
+        const newDocs = (selectedDossier.documents_manquants || []).filter(d => d !== docToRemove)
+        
+        setDossiers(prev => prev.map(d => d.id === selectedDossier.id ? { ...d, documents_manquants: newDocs } : d))
+        setSelectedDossier({ ...selectedDossier, documents_manquants: newDocs })
+        
+        await supabase.from('dossier_tracking').update({ documents_manquants: newDocs }).eq('id', selectedDossier.id)
+    }
 
     useEffect(() => {
         const fetchDossiers = async () => {
@@ -58,11 +102,46 @@ export default function AgentDossiersPage() {
     }, [])
 
     const updateStatus = async (dossierId: string, newStatus: DossierStatus) => {
-        setDossiers(prev => prev.map(d => d.id === dossierId ? { ...d, statut: newStatus } : d))
+        const statusProgressionMap: Record<DossierStatus, number> = {
+            reception: 10,
+            verification: 30,
+            traitement: 60,
+            validation: 80,
+            finalisation: 95,
+            termine: 100
+        }
+        const progression = statusProgressionMap[newStatus];
+        const updated_at = new Date().toISOString();
+
+        setDossiers(prev => prev.map(d => d.id === dossierId ? { ...d, statut: newStatus, progression, updated_at } : d))
+        
         await supabase
             .from('dossier_tracking')
-            .update({ statut: newStatus })
+            .update({ statut: newStatus, progression, updated_at })
             .eq('id', dossierId)
+
+        const d = dossiers.find(x => x.id === dossierId);
+        if (d && d.client_email) {
+            try {
+                await fetch('/api/email/send', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        to: d.client_email,
+                        subject: 'Mise à jour de votre dossier : ' + newStatus.toUpperCase(),
+                        clientName: d.client_prenom + ' ' + d.client_nom,
+                        context: 'dossierUpdate',
+                        relatedId: d.num_dossier,
+                        dossierNumero: d.num_dossier,
+                        progression: progression,
+                        message: `Votre dossier a avancé d'une étape et est actuellement en phase de **${newStatus.toUpperCase()}**.`,
+                        documentsManquants: d.documents_manquants || [],
+                        trackerUrl: `${window.location.origin}/suivi-dossier`
+                    })
+                })
+            } catch (e) {
+                console.error('Erreur send email status:', e);
+            }
+        }
     }
 
     const onDragEnd = (result: DropResult) => {
@@ -166,13 +245,31 @@ export default function AgentDossiersPage() {
                                                         >
                                                             <div className="flex items-start justify-between mb-2">
                                                                 <span className="text-xs font-mono text-emerald-400 font-bold">{d.num_dossier}</span>
-                                                                <Eye size={14} className="text-gray-600 group-hover:text-emerald-400 transition-colors" />
+                                                                <div className="flex items-center gap-2">
+                                                                    {(d.documents_manquants?.length ?? 0) > 0 && (
+                                                                        <span title="Vérification requise : Documents manquants">
+                                                                            <FileWarning size={14} className="text-red-400 animate-pulse" />
+                                                                        </span>
+                                                                    )}
+                                                                    {new Date().getTime() - new Date(d.updated_at || d.created_at).getTime() > 3 * 24 * 60 * 60 * 1000 && d.statut !== 'termine' && (
+                                                                        <span title="Dossier stagnant : Aucune avancée depuis 3 jours">
+                                                                            <AlertCircle size={14} className="text-amber-500" />
+                                                                        </span>
+                                                                    )}
+                                                                    <Eye size={14} className="text-gray-600 group-hover:text-emerald-400 transition-colors" />
+                                                                </div>
                                                             </div>
                                                             <p className="text-sm font-semibold text-white mb-1">{d.client_nom} {d.client_prenom}</p>
                                                             <p className="text-[11px] text-gray-500">{d.service_type}</p>
-                                                            <div className="flex items-center gap-1 mt-3 text-[10px] text-gray-600">
-                                                                <Calendar size={10} />
-                                                                {new Date(d.created_at).toLocaleDateString('fr-FR')}
+                                                            
+                                                            <div className="flex items-center justify-between mt-3">
+                                                                <div className="flex items-center gap-1 text-[10px] text-gray-600">
+                                                                    <Calendar size={10} />
+                                                                    {new Date(d.created_at).toLocaleDateString('fr-FR')}
+                                                                </div>
+                                                                <span className="text-[10px] font-mono text-emerald-500/80 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
+                                                                    {d.progression || 0}%
+                                                                </span>
                                                             </div>
 
                                                             {/* Quick Status Change */}
@@ -285,6 +382,50 @@ export default function AgentDossiersPage() {
                                             {col.label}
                                         </button>
                                     ))}
+                                </div>
+                            </div>
+
+                            {/* Documents Manquants */}
+                            <div className="mb-6">
+                                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                    <FileWarning size={12} className={selectedDossier.documents_manquants?.length ? 'text-red-400' : ''} />
+                                    Vérifications & Documents Requis
+                                </p>
+                                <div className="space-y-2 mb-3">
+                                    {(selectedDossier.documents_manquants || []).map((doc, idx) => (
+                                        <div key={idx} className="flex items-center justify-between bg-red-500/5 border border-red-500/20 rounded-lg px-3 py-2 text-sm">
+                                            <span className="text-red-300/90 font-medium">{doc}</span>
+                                            <button 
+                                                onClick={() => removeMissingDocument(doc)} 
+                                                title="Marquer comme reçu"
+                                                className="text-red-400/50 hover:text-green-400 hover:bg-green-500/10 p-1 rounded transition-colors"
+                                            >
+                                                <CheckCircle2 size={16} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {(!selectedDossier.documents_manquants || selectedDossier.documents_manquants.length === 0) && (
+                                        <p className="text-xs text-emerald-400/70 bg-emerald-500/5 px-3 py-2 rounded-lg border border-emerald-500/10">
+                                            Tous les documents sont en ordre.
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={docRequest}
+                                        onChange={(e) => setDocRequest(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && addMissingDocument()}
+                                        placeholder="Réclamer un document au client (Ex: Scan Passeport)"
+                                        className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white placeholder:text-gray-600 focus:outline-none focus:border-red-500/50 text-sm"
+                                    />
+                                    <button
+                                        onClick={addMissingDocument}
+                                        title="Notifier le client"
+                                        className="bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-400 px-3 py-2 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold"
+                                    >
+                                        <Send size={14} /> Relancer
+                                    </button>
                                 </div>
                             </div>
 

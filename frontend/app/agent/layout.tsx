@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -112,6 +112,42 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
     const [unreadNotifications, setUnreadNotifications] = useState(0)
     const [unreadVoices, setUnreadVoices] = useState(0)
     const [unreadPartenaires, setUnreadPartenaires] = useState(0)
+
+    // Sound notification refs
+    const prevUnreadRef = useRef<number | null>(null)
+    const notifAudioRef = useRef<HTMLAudioElement | null>(null)
+
+    // ─── Initialize notification audio ───
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            notifAudioRef.current = new Audio('data:audio/wav;base64,UklGRigBAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQBAABkAHgAjACgALQAyADcAPAABAEYASwBQAFUAWgBfAGQAbABiAFgATABCAHgALgAkABoAEAAGADw/8j/oP+A/2D/QP8g/wD/4P7A/qD+gP5g/kD+IP4A/uD9wP2g/YD9YP1A/SD9IP0A/eD84Pzg/KD8YPwg/GD8oPyA/ID8oP2A/cD9IP5g/sD/AP8g/0D/YP+A/6D/wP/g/wAAAAIABAAGAAgACgAMAA4AEAASABQAFgAYABoAHAAeACAAIgAkACYAKAAaAAwA/v/w/+L/1P/G/7j/qv+c/47/gP9y/2T/Vv9I/zr/LP8e/xD/')
+            notifAudioRef.current.volume = 0.4
+
+            // Request browser notification permission
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission()
+            }
+        }
+    }, [])
+
+    // ─── Play sound on new messages ───
+    useEffect(() => {
+        if (prevUnreadRef.current !== null && unreadMessages > prevUnreadRef.current) {
+            // Play notification sound
+            notifAudioRef.current?.play().catch(() => {})
+
+            // Browser desktop notification
+            if ('Notification' in window && Notification.permission === 'granted') {
+                const notif = new Notification('💬 Nouveau message — Retour Gagnant', {
+                    body: `Vous avez ${unreadMessages} message(s) en attente.`,
+                    icon: '/logo.jpg',
+                    tag: 'rg-new-message',
+                })
+                setTimeout(() => notif.close(), 5000)
+            }
+        }
+        prevUnreadRef.current = unreadMessages
+    }, [unreadMessages])
 
     // ─── Scroll detection ───
     useEffect(() => {

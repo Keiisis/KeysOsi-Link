@@ -4,7 +4,8 @@ import { useTranslation, T } from '@/lib/translation';
 import { useList, useUpdate } from '@refinedev/core'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, FileText, Clock, CheckCircle2, Zap, AlertTriangle, ChevronDown, ChevronUp, Save, Plus, X } from 'lucide-react'
+import { Search, FileText, Clock, CheckCircle2, Zap, AlertTriangle, ChevronDown, ChevronUp, Save, Plus, X, Download } from 'lucide-react'
+import { exportToExcel } from '@/lib/exportExcel'
 import { cn } from '@/lib/utils'
 
 const statutColors: Record<string, string> = {
@@ -114,6 +115,39 @@ export default function AdminDossiersPage() {
         }
     }
 
+    const handleExportExcel = async () => {
+        const columns = [
+            { header: 'N° Dossier', key: 'num_dossier', width: 20 },
+            { header: 'Passager / Client', key: 'client_nom', width: 30 },
+            { header: 'Email', key: 'client_email', width: 30 },
+            { header: 'WhatsApp', key: 'client_whatsapp', width: 20 },
+            { header: 'Type de Service', key: 'service_type', width: 25 },
+            { header: 'Statut', key: 'statut', width: 20, type: 'status' as const },
+            { header: 'Progression (%)', key: 'progression', width: 20, type: 'percent' as const },
+            { header: 'Créé le', key: 'created_at', width: 20, type: 'date' as const }
+        ];
+
+        const exportData = filtered.map((d: Record<string, unknown>) => ({
+            num_dossier: d.num_dossier,
+            client_nom: `${d.client_prenom || ''} ${d.client_nom || ''}`.trim(),
+            client_email: d.client_email,
+            client_whatsapp: d.client_whatsapp || 'Non renseigné',
+            service_type: d.service_type,
+            statut: statutLabels[d.statut as string] || d.statut,
+            progression: d.progression,
+            created_at: new Date(d.created_at as string)
+        }));
+
+        await exportToExcel({
+            filename: `RG_Export_Dossiers_${new Date().toISOString().split('T')[0]}`,
+            sheetName: 'Suivi Dossiers',
+            title: 'RAPPORT DE SUIVI DES DOSSIERS — RETOUR GAGNANT',
+            subtitle: `Synthèse générée le ${new Date().toLocaleDateString('fr-FR')} - Confidentiel`,
+            columns,
+            data: exportData
+        });
+    }
+
     return (
         <div className="space-y-8">
             {/* Header */}
@@ -125,13 +159,23 @@ export default function AdminDossiersPage() {
                     </h1>
                     <p className="text-gray-500 text-sm mt-1"><T>Gérez le suivi des dossiers clients en temps réel</T></p>
                 </div>
-                <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#008751] text-white font-bold text-sm hover:bg-[#006a41] transition-colors"
-                >
-                    <Plus size={16} />
-                    Nouveau dossier
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={handleExportExcel}
+                        className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-bold text-sm hover:bg-white/10 transition-colors"
+                        title="Télécharger le rapport Excel pour la comptabilité"
+                    >
+                        <Download size={16} />
+                        Export Excel
+                    </button>
+                    <button
+                        onClick={() => setShowCreateModal(true)}
+                        className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#008751] text-white font-bold text-sm hover:bg-[#006a41] transition-colors shadow-[0_4px_20px_rgba(0,135,81,0.3)]"
+                    >
+                        <Plus size={16} />
+                        Nouveau dossier
+                    </button>
+                </div>
             </div>
 
             {/* Search */}

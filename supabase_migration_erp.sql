@@ -92,3 +92,39 @@ CREATE TRIGGER trg_documents_financiers_updated_at
 BEFORE UPDATE ON public.documents_financiers
 FOR EACH ROW
 EXECUTE FUNCTION update_documents_financiers_updated_at();
+
+-- ═══════════════════════════════════════════════════════════════
+-- PROPOSAL VIEW ANALYTICS
+-- ═══════════════════════════════════════════════════════════════
+
+-- Add tracking columns to ai_proposals
+ALTER TABLE IF EXISTS public.ai_client_proposals
+  ADD COLUMN IF NOT EXISTS view_count integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS last_viewed_at timestamptz;
+
+-- Detailed view log table
+CREATE TABLE IF NOT EXISTS public.proposal_views (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  proposal_id uuid REFERENCES public.ai_client_proposals(id) ON DELETE CASCADE,
+  secret_key text,
+  viewed_at timestamptz DEFAULT now(),
+  user_agent text,
+  referrer text,
+  ip_hint text,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_proposal_views_proposal_id ON public.proposal_views(proposal_id);
+
+-- Open RLS for inserts (public tracking — no auth needed)
+ALTER TABLE public.proposal_views ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public insert on proposal_views" ON public.proposal_views;
+CREATE POLICY "Allow public insert on proposal_views"
+  ON public.proposal_views FOR INSERT
+  WITH CHECK (true);
+
+-- Agents can read analytics
+DROP POLICY IF EXISTS "Agents can read proposal_views" ON public.proposal_views;
+CREATE POLICY "Agents can read proposal_views"
+  ON public.proposal_views FOR SELECT
+  USING (true);

@@ -9,6 +9,7 @@ import {
     RefreshCw, Plus, AlertTriangle
 } from 'lucide-react'
 import { useTranslation } from '@/lib/translation'
+import { exportToExcel } from '@/lib/exportExcel'
 import { 
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
     AreaChart, Area
@@ -247,24 +248,44 @@ export default function AgentComptabilitePage() {
         setSavingExpense(false)
     }
 
-    const handleExport = () => {
-        const headers = ['Numero', 'Client', 'Total', 'Date', 'Statut']
-        const csv = [
-            headers.join(';'),
-            ...displayedDocs.map(d => [
-                d.numero,
-                `${d.client_nom} ${d.client_prenom}`.replace(';', ' '),
-                d.total,
-                new Date(d.created_at).toLocaleDateString(),
-                d.status
-            ].join(';'))
-        ].join('\n')
-        
-        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
-        const link = document.createElement('a')
-        link.href = URL.createObjectURL(blob)
-        link.download = `compta_retour_gagnant_${new Date().toISOString().slice(0,10)}.csv`
-        link.click()
+    const handleExport = async () => {
+        const statusLabels: Record<string, string> = {
+            brouillon: 'Brouillon', envoye: 'Envoyé', accepte: 'Accepté',
+            refuse: 'Refusé', paye: 'Payé', en_retard: 'En retard', annule: 'Annulé'
+        }
+
+        const columns = [
+            { header: 'N° Document', key: 'numero', width: 22 },
+            { header: 'Type', key: 'type', width: 12, type: 'status' as const },
+            { header: 'Client', key: 'client', width: 30 },
+            { header: 'Email', key: 'email', width: 28 },
+            { header: 'Téléphone', key: 'phone', width: 18 },
+            { header: 'Montant (XOF)', key: 'total', width: 20, type: 'currency' as const },
+            { header: 'Statut', key: 'status', width: 16, type: 'status' as const },
+            { header: 'Date', key: 'created_at', width: 18, type: 'date' as const },
+        ]
+
+        const exportData = displayedDocs.map(d => ({
+            numero: d.numero,
+            type: d.type === 'facture' ? 'Facture' : 'Devis',
+            client: `${d.client_nom} ${d.client_prenom}`.trim(),
+            email: d.client_email || '',
+            phone: d.client_phone || '',
+            total: d.total,
+            status: statusLabels[d.status] || d.status,
+            created_at: new Date(d.created_at),
+        }))
+
+        const periodLabel = selectedPeriod === 'ce_mois' ? 'Ce Mois' : selectedPeriod === '3_mois' ? '3 Derniers Mois' : 'Global'
+
+        await exportToExcel({
+            filename: `RG_Tresorerie_${periodLabel.replace(/\s/g, '_')}_${new Date().toISOString().split('T')[0]}`,
+            sheetName: 'Trésorerie',
+            title: 'RAPPORT DE TRÉSORERIE — RETOUR GAGNANT BÉNIN',
+            subtitle: `Période : ${periodLabel} — Généré le ${new Date().toLocaleDateString('fr-FR')} — Confidentiel`,
+            columns,
+            data: exportData,
+        })
     }
 
     if (loading) {

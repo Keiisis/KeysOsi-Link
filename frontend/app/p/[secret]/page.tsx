@@ -37,6 +37,8 @@ interface Proposal {
     total_amount: number
     start_date: string | null
     end_date: string | null
+    valid_until?: string | null
+    created_at?: string
     currency?: string
 }
 
@@ -104,6 +106,7 @@ export default function PresentationView({ params }: { params: Promise<{ secret:
     const { secret } = React.use(params)
     const router = useRouter()
     const [loading, setLoading] = useState(true)
+    const [now] = useState(() => Date.now())
     const [proposal, setProposal] = useState<Proposal | null>(null)
     const [items, setItems] = useState<ProposalItem[]>([])
     const [currentSlide, setCurrentSlide] = useState(0)
@@ -117,6 +120,21 @@ export default function PresentationView({ params }: { params: Promise<{ secret:
             if (result.success && result.proposal) {
                 setProposal(result.proposal)
                 setItems(result.items || [])
+
+                // ── Analytics: Track proposal view ──
+                try {
+                    fetch('/api/proposals/track-view', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            proposalId: result.proposal.id,
+                            secretKey: secret,
+                            viewedAt: new Date().toISOString(),
+                            userAgent: navigator.userAgent,
+                            referrer: document.referrer || null,
+                        }),
+                    }).catch(() => {})
+                } catch {}
             }
             setLoading(false)
             setTimeout(() => setShowSwipeHint(false), 4000)
@@ -640,7 +658,17 @@ export default function PresentationView({ params }: { params: Promise<{ secret:
                                             <p className="text-white/35 text-[9px] md:text-[10px] flex items-center gap-1.5">
                                                 <CheckCircle className="w-3 h-3 text-[#008751]" /> Paiement 100% sécurisé — Retour Gagnant Bénin
                                             </p>
-                                            <p className="text-[#FCD116]/35 text-[9px]">⏳ Offre personnalisée · Valable 14 jours</p>
+                                            <p className="text-[#FCD116]/35 text-[9px]">
+                                                {(() => {
+                                                    const validUntil = proposal?.valid_until 
+                                                        ? new Date(proposal.valid_until) 
+                                                        : new Date(new Date(proposal?.created_at || now).getTime() + 14 * 24 * 60 * 60 * 1000)
+                                                    const diffDays = Math.ceil((validUntil.getTime() - now) / (1000 * 60 * 60 * 24))
+                                                    return diffDays > 0 
+                                                        ? `⏳ Offre personnalisée · Expire dans ${diffDays} jour${diffDays > 1 ? 's' : ''}` 
+                                                        : `⏳ Offre personnalisée · Expirée`
+                                                })()}
+                                            </p>
                                         </div>
                                     </div>
                                 </motion.div>
