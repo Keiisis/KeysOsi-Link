@@ -115,26 +115,32 @@ function CornerBrackets({ s, arm = 16 }: { s: number; arm?: number }) {
 ══════════════════════════════════════════════════════════════ */
 
 function QRCodeDisplay({ size }: { size: number }) {
-    const [error, setError] = useState(false)
-    return error ? (
-        <QRCode
-            value="https://www.retourgagnantbenin.bj"
-            size={size}
-            fgColor="#030810"
-            bgColor="#ffffff"
-            level="M"
-        />
-    ) : (
+    const [qrSrc, setQrSrc] = useState<string | null>(null)
+
+    useEffect(() => {
+        const img = new window.Image()
+        img.onload = () => {
+            try {
+                const canvas = document.createElement('canvas')
+                canvas.width = img.naturalWidth || img.width
+                canvas.height = img.naturalHeight || img.height
+                const ctx = canvas.getContext('2d')
+                if (!ctx) { setQrSrc(null); return }
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+                setQrSrc(canvas.toDataURL('image/png'))
+            } catch {
+                setQrSrc(null)
+            }
+        }
+        img.onerror = () => setQrSrc(null)
+        img.src = '/images/qr-code.png'
+    }, [])
+
+    if (qrSrc) {
         // eslint-disable-next-line @next/next/no-img-element
-        <img
-            src="/images/qr-code.png"
-            alt="QR Code Retour Gagnant Bénin"
-            width={size}
-            height={size}
-            style={{ objectFit: 'contain', display: 'block' }}
-            onError={() => setError(true)}
-        />
-    )
+        return <img src={qrSrc} alt="QR Code Retour Gagnant Bénin" width={size} height={size} style={{ objectFit: 'contain', display: 'block' }} />
+    }
+    return <QRCode value="https://www.retourgagnantbenin.bj" size={size} fgColor="#030810" bgColor="#ffffff" level="M" />
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -251,7 +257,7 @@ export const CardVerso = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
                 <CornerBrackets s={s} />
 
                 {/* ── CONTENU PRINCIPAL ── */}
-                <div style={{ position: 'absolute', top: 14 * s, left: 18 * s, right: 14 * s, bottom: 34 * s, display: 'flex', gap: 12 * s }}>
+                <div style={{ position: 'absolute', top: 14 * s, left: 18 * s, right: 14 * s, bottom: 44 * s, display: 'flex', gap: 12 * s }}>
 
                     {/* Colonne gauche : identité + contacts */}
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
@@ -289,13 +295,13 @@ export const CardVerso = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
                 </div>
 
                 {/* ── BANDE BAS — org info ── */}
-                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 34 * s, background: 'rgba(0,0,0,0.18)', borderTop: `0.8px solid ${GOLD}30`, paddingLeft: 18 * s, paddingRight: 14 * s, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2.5 * s }}>
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 44 * s, background: 'rgba(0,0,0,0.45)', borderTop: `0.8px solid ${GOLD}50`, paddingLeft: 18 * s, paddingRight: 14 * s, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 3 * s }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 * s }}>
-                        <span style={{ color: 'rgba(255,255,255,0.32)', fontSize: 5 * s }}>W. www.retourgagnantbenin.bj</span>
-                        <span style={{ color: `${GOLD}30`, fontSize: 5 * s }}>·</span>
-                        <span style={{ color: 'rgba(255,255,255,0.32)', fontSize: 5 * s }}>T. +229 01 60 32 21 21</span>
+                        <span style={{ color: 'rgba(255,255,255,0.65)', fontSize: 6 * s }}>W. www.retourgagnantbenin.bj</span>
+                        <span style={{ color: `${GOLD}80`, fontSize: 6 * s }}>·</span>
+                        <span style={{ color: 'rgba(255,255,255,0.65)', fontSize: 6 * s }}>T. +229 01 60 32 21 21</span>
                     </div>
-                    <div style={{ color: GOLD, fontSize: 6 * s, fontWeight: 700, letterSpacing: '0.25em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif" }}>
+                    <div style={{ color: GOLD, fontSize: 6.5 * s, fontWeight: 700, letterSpacing: '0.25em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif" }}>
                         VOTRE RETOUR, NOTRE MISSION
                     </div>
                 </div>

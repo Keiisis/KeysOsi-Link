@@ -65,6 +65,7 @@ export default function MaCarteDeVisite() {
         if (!ref.current || !card) return
         setDownloading(side + '-png')
         try {
+            await new Promise(r => setTimeout(r, 300))
             const dataUrl = await toPng(ref.current, { pixelRatio: 4, cacheBust: true })
             const link = document.createElement('a')
             link.download = `ma-carte-${side}-${card.prenom}-${card.nom}.png`
@@ -79,6 +80,7 @@ export default function MaCarteDeVisite() {
         if (!rectoRef.current || !versoRef.current || !card) return
         setDownloading('pdf')
         try {
+            await new Promise(r => setTimeout(r, 300))
             const [rectoUrl, versoUrl] = await Promise.all([
                 toPng(rectoRef.current, { pixelRatio: 4, cacheBust: true }),
                 toPng(versoRef.current, { pixelRatio: 4, cacheBust: true }),
@@ -209,8 +211,8 @@ export default function MaCarteDeVisite() {
                 </div>
             </motion.div>
 
-            {/* Hidden full-size refs for download */}
-            <div className="hidden" aria-hidden>
+            {/* Full-size refs for download — off-screen to allow image loading */}
+            <div style={{ position: 'fixed', left: '-9999px', top: 0, pointerEvents: 'none', zIndex: -1 }} aria-hidden>
                 <CardRecto ref={rectoRef} data={card} scale={1} />
                 <CardVerso ref={versoRef} data={card} scale={1} />
             </div>

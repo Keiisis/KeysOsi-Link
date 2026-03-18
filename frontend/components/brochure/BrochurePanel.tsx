@@ -1,6 +1,6 @@
 'use client'
 
-import React, { forwardRef, useState } from 'react'
+import React, { forwardRef, useState, useEffect } from 'react'
 import QRCode from 'react-qr-code'
 
 /* ══════════════════════════════════════════════════════════════
@@ -114,15 +114,32 @@ function HRule({ s, opacity = 0.35, w = '100%' }: { s: number; opacity?: number;
 }
 
 function QRDisplay({ size }: { size: number }) {
-    const [err, setErr] = useState(false)
-    return err ? (
-        <QRCode value="https://www.retourgagnantbenin.bj" size={size} fgColor={DARK} bgColor="#ffffff" level="M" />
-    ) : (
+    const [qrSrc, setQrSrc] = useState<string | null>(null)
+
+    useEffect(() => {
+        const img = new window.Image()
+        img.onload = () => {
+            try {
+                const canvas = document.createElement('canvas')
+                canvas.width = img.naturalWidth || img.width
+                canvas.height = img.naturalHeight || img.height
+                const ctx = canvas.getContext('2d')
+                if (!ctx) { setQrSrc(null); return }
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+                setQrSrc(canvas.toDataURL('image/png'))
+            } catch {
+                setQrSrc(null)
+            }
+        }
+        img.onerror = () => setQrSrc(null)
+        img.src = '/images/qr-code.png'
+    }, [])
+
+    if (qrSrc) {
         // eslint-disable-next-line @next/next/no-img-element
-        <img src="/images/qr-code.png" alt="QR Code RGB" width={size} height={size}
-            style={{ objectFit: 'contain', display: 'block' }}
-            onError={() => setErr(true)} />
-    )
+        return <img src={qrSrc} alt="QR Code RGB" width={size} height={size} style={{ objectFit: 'contain', display: 'block' }} />
+    }
+    return <QRCode value="https://www.retourgagnantbenin.bj" size={size} fgColor={DARK} bgColor="#ffffff" level="M" />
 }
 
 /* ══════════════════════════════════════════════════════════════

@@ -20,6 +20,7 @@ import {
 
 async function capturePng(ref: React.RefObject<HTMLDivElement | null>): Promise<string> {
     if (!ref.current) throw new Error('Élément non trouvé')
+    await new Promise(r => setTimeout(r, 300))
     return toPng(ref.current, { pixelRatio: 4, cacheBust: true, skipFonts: false })
 }
 
@@ -264,8 +265,8 @@ export default function DepliantPage() {
                 </div>
             </motion.div>
 
-            {/* Refs cachées pour capture haute résolution */}
-            <div className="hidden" aria-hidden>
+            {/* Refs pour capture haute résolution — off-screen pour permettre le chargement des images */}
+            <div style={{ position: 'fixed', left: '-9999px', top: 0, pointerEvents: 'none', zIndex: -1 }} aria-hidden>
                 <Panel1Recto ref={r1rRef} scale={1} />
                 <Panel1Verso ref={r1vRef} scale={1} />
                 <Panel2Verso ref={r2vRef} scale={1} />

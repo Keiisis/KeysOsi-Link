@@ -41,6 +41,7 @@ interface SavedCard {
 
 async function captureCard(ref: React.RefObject<HTMLDivElement | null>, pixelRatio = 3): Promise<string> {
     if (!ref.current) throw new Error('Élément non trouvé')
+    await new Promise(r => setTimeout(r, 300))
     return toPng(ref.current, { pixelRatio, cacheBust: true, skipFonts: false })
 }
 
@@ -521,8 +522,8 @@ CREATE POLICY "Admins full access" ON public.business_cards
                         </p>
                     </div>
 
-                    {/* Refs cachées pour export */}
-                    <div className="hidden" aria-hidden>
+                    {/* Refs pour export — off-screen pour permettre le chargement des images */}
+                    <div style={{ position: 'fixed', left: '-9999px', top: 0, pointerEvents: 'none', zIndex: -1 }} aria-hidden>
                         <CardRecto ref={rectoRef} data={form} scale={1} />
                         <CardVerso ref={versoRef} data={form} scale={1} />
                     </div>
