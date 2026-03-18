@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import {
     Save, ExternalLink, ChevronRight, Image as ImageIcon, Plus, Trash2,
-    Film, Users, Quote, Layers, Star, Shield, ArrowRight, CheckCircle, AlertCircle, Loader2
+    Film, Users, Quote, Layers, Star, Shield, ArrowRight, CheckCircle, AlertCircle, Loader2,
+    type LucideIcon
 } from 'lucide-react'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -89,7 +90,7 @@ const DEFAULTS = {
 
 type TabKey = keyof typeof DEFAULTS
 
-const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
+const TABS: { key: TabKey; label: string; icon: LucideIcon }[] = [
     { key: 'hero', label: 'Héros', icon: Film },
     { key: 'rencontre', label: 'La Rencontre', icon: Quote },
     { key: 'fondatrice', label: 'Fondatrice', icon: Users },
@@ -157,6 +158,7 @@ function ImageField({ label, value, onChange }: { label: string; value: string; 
 function SaveButton({ saving, saved, error, onClick }: { saving: boolean; saved: boolean; error: string; onClick: () => void }) {
     return (
         <button
+            type="button"
             onClick={onClick}
             disabled={saving}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${saved ? 'bg-green-600/20 border border-green-500/30 text-green-400' :
@@ -251,7 +253,7 @@ function ArchitectesForm({ data, onChange }: { data: typeof DEFAULTS.architectes
                     <div key={i} className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-3">
                         <div className="flex items-center justify-between mb-1">
                             <span className="text-xs font-bold text-gray-400">Portrait #{i + 1}</span>
-                            <button onClick={() => removePortrait(i)} className="text-red-400/60 hover:text-red-400 transition-colors p-1">
+                            <button type="button" aria-label="Supprimer ce portrait" onClick={() => removePortrait(i)} className="text-red-400/60 hover:text-red-400 transition-colors p-1">
                                 <Trash2 size={14} />
                             </button>
                         </div>
@@ -263,7 +265,7 @@ function ArchitectesForm({ data, onChange }: { data: typeof DEFAULTS.architectes
                         <Field label="Phrase (doré, au survol)"><TextInput value={p.phrase} onChange={v => setPortrait(i, 'phrase', v)} /></Field>
                     </div>
                 ))}
-                <button onClick={addPortrait} className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-white/10 rounded-xl text-sm text-gray-500 hover:border-[#008751]/40 hover:text-[#008751] transition-all">
+                <button type="button" onClick={addPortrait} className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-white/10 rounded-xl text-sm text-gray-500 hover:border-[#008751]/40 hover:text-[#008751] transition-all">
                     <Plus size={16} /> Ajouter un portrait
                 </button>
             </div>
@@ -290,7 +292,7 @@ function LogoForm({ data, onChange }: { data: typeof DEFAULTS.logo; onChange: (d
                     <div key={i} className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-3">
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-bold text-gray-400">Symbole #{i + 1}</span>
-                            <button onClick={() => removeSymbol(i)} className="text-red-400/60 hover:text-red-400 transition-colors p-1">
+                            <button type="button" aria-label="Supprimer ce symbole" onClick={() => removeSymbol(i)} className="text-red-400/60 hover:text-red-400 transition-colors p-1">
                                 <Trash2 size={14} />
                             </button>
                         </div>
@@ -298,7 +300,7 @@ function LogoForm({ data, onChange }: { data: typeof DEFAULTS.logo; onChange: (d
                         <Field label="Description"><TextArea value={s.text} onChange={v => setSymbol(i, 'text', v)} rows={3} /></Field>
                     </div>
                 ))}
-                <button onClick={addSymbol} className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-white/10 rounded-xl text-sm text-gray-500 hover:border-[#008751]/40 hover:text-[#008751] transition-all">
+                <button type="button" onClick={addSymbol} className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-white/10 rounded-xl text-sm text-gray-500 hover:border-[#008751]/40 hover:text-[#008751] transition-all">
                     <Plus size={16} /> Ajouter un symbole
                 </button>
             </div>
@@ -345,12 +347,12 @@ function ConfianceForm({ data, onChange }: { data: typeof DEFAULTS.confiance; on
                                 </div>
                             )}
                         </div>
-                        <button onClick={() => removeCarousel(i)} className="mt-2 text-red-400/60 hover:text-red-400 transition-colors p-1 flex-shrink-0">
+                        <button type="button" aria-label="Supprimer cette image" onClick={() => removeCarousel(i)} className="mt-2 text-red-400/60 hover:text-red-400 transition-colors p-1 flex-shrink-0">
                             <Trash2 size={14} />
                         </button>
                     </div>
                 ))}
-                <button onClick={addCarousel} className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-white/10 rounded-xl text-sm text-gray-500 hover:border-[#008751]/40 hover:text-[#008751] transition-all">
+                <button type="button" onClick={addCarousel} className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-white/10 rounded-xl text-sm text-gray-500 hover:border-[#008751]/40 hover:text-[#008751] transition-all">
                     <Plus size={16} /> Ajouter une image
                 </button>
             </div>
@@ -505,8 +507,11 @@ export default function AdminNotreHistoirePage() {
                     {/* Sidebar tabs */}
                     <div className="lg:w-48 flex-shrink-0">
                         <div className="space-y-1">
-                            {TABS.map(tab => (
+                            {TABS.map(tab => {
+                                const TabIcon = tab.icon
+                                return (
                                 <button
+                                    type="button"
                                     key={tab.key}
                                     onClick={() => setActiveTab(tab.key)}
                                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left ${activeTab === tab.key
@@ -514,11 +519,12 @@ export default function AdminNotreHistoirePage() {
                                             : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.03]'
                                         }`}
                                 >
-                                    <tab.icon size={15} className="flex-shrink-0" />
+                                    <TabIcon size={15} className="flex-shrink-0" />
                                     <span className="truncate">{tab.label}</span>
                                     {activeTab === tab.key && <ChevronRight size={14} className="ml-auto flex-shrink-0" />}
                                 </button>
-                            ))}
+                            )})}
+
                         </div>
                     </div>
 
@@ -537,7 +543,8 @@ export default function AdminNotreHistoirePage() {
                                     <div className="flex items-center gap-3">
                                         {(() => {
                                             const tab = TABS.find(t => t.key === activeTab)!
-                                            return <tab.icon size={20} className="text-[#FCD116]" />
+                                            const Icon = tab.icon
+                                            return <Icon size={20} className="text-[#FCD116]" />
                                         })()}
                                         <h2 className="text-base font-bold text-white">
                                             {TABS.find(t => t.key === activeTab)?.label}
