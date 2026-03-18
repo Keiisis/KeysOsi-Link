@@ -90,6 +90,8 @@ export default function AdminDesignPage() {
 
     const [savedCards, setSavedCards] = useState<SavedCard[]>([])
     const [loadingCards, setLoadingCards] = useState(true)
+    const [tableReady, setTableReady] = useState<boolean | null>(null)
+    const [sqlCopied, setSqlCopied] = useState(false)
 
     const [saving, setSaving] = useState(false)
     const [downloading, setDownloading] = useState<string | null>(null)
@@ -107,24 +109,38 @@ export default function AdminDesignPage() {
     const load = useCallback(async () => {
         setLoadingCards(true)
         try {
-            const [agentsRes, cardsRes] = await Promise.all([
-                supabase
-                    .from('user_profiles')
-                    .select('id, full_name, role')
-                    .in('role', ['agent', 'admin'])
-                    .order('full_name'),
-                supabase
-                    .from('business_cards')
-                    .select('id, employee_prenom, employee_nom, position, phone, email, agent_id, created_at, is_active')
-                    .order('created_at', { ascending: false }),
-            ])
+            // ① Agents via API (service role → bypass RLS, retourne tous les agents/admins)
+            const usersRes = await fetch('/api/admin/users')
+            if (usersRes.ok) {
+                const json = await usersRes.json()
+                const validRoles = ['agent', 'admin', 'super_admin', 'superadmin']
+                const agentList: Agent[] = (json.users || [])
+                    .filter((u: { role?: string }) => u.role && validRoles.includes(u.role))
+                    .map((u: { id: string; full_name?: string; role: string }) => ({
+                        id: u.id,
+                        full_name: u.full_name || '—',
+                        role: u.role,
+                    }))
+                setAgents(agentList)
+            }
 
-            if (agentsRes.data) setAgents(agentsRes.data)
-            if (cardsRes.data) setSavedCards(cardsRes.data)
+            // ② Cartes sauvegardées
+            const cardsRes = await supabase
+                .from('business_cards')
+                .select('id, employee_prenom, employee_nom, position, phone, email, agent_id, created_at, is_active')
+                .order('created_at', { ascending: false })
 
-            // Log les erreurs éventuelles sans planter
-            if (agentsRes.error) console.warn('[Design] agents:', agentsRes.error.message)
-            if (cardsRes.error) console.warn('[Design] cards:', cardsRes.error.message)
+            if (cardsRes.data) {
+                setSavedCards(cardsRes.data)
+                setTableReady(true)
+            } else if (cardsRes.error) {
+                const msg = cardsRes.error.message || ''
+                if (msg.includes('does not exist') || msg.includes('relation') || msg.includes('schema cache') || msg.includes('not found')) {
+                    setTableReady(false)
+                } else {
+                    console.warn('[Design] cards:', msg)
+                }
+            }
         } catch (e) {
             console.error('[Design] load error:', getErrorMessage(e))
         } finally {
@@ -153,8 +169,9 @@ export default function AdminDesignPage() {
             })
             if (error) {
                 const msg = error.message || 'Erreur Supabase'
-                if (msg.includes('does not exist') || msg.includes('relation')) {
-                    setStatus({ type: 'error', msg: 'La table business_cards n\'existe pas encore. Créez-la via le SQL ci-dessous.' })
+                if (msg.includes('does not exist') || msg.includes('relation') || msg.includes('schema cache') || msg.includes('not found')) {
+                    setTableReady(false)
+                    setStatus({ type: 'error', msg: 'La table business_cards est introuvable. Créez-la via le SQL affiché ci-dessus.' })
                 } else {
                     setStatus({ type: 'error', msg })
                 }
@@ -272,12 +289,22 @@ export default function AdminDesignPage() {
                 </div>
             </div>
 
-            {/* ── SQL Notice ── */}
-            <details className="bg-[#C9A84C]/5 border border-[#C9A84C]/15 rounded-xl p-4 text-xs text-gray-500">
-                <summary className="text-[#C9A84C] font-bold cursor-pointer text-sm">
-                    ℹ️ Prérequis Supabase — Créer la table business_cards
-                </summary>
-                <pre className="mt-3 bg-black/30 rounded-lg p-3 text-gray-400 overflow-x-auto">{`CREATE TABLE business_cards (
+            {/* ── Bannière SQL — visible uniquement si table manquante ── */}
+            {tableReady === false && (
+                <motion.div
+                    initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+                    className="bg-amber-500/8 border border-amber-500/25 rounded-2xl overflow-hidden">
+                    <div className="flex items-start gap-4 p-5">
+                        <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <AlertCircle size={18} className="text-amber-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h3 className="text-white font-bold text-sm mb-1">Table <code className="bg-white/8 px-1.5 py-0.5 rounded text-amber-300 text-xs">business_cards</code> introuvable</h3>
+                            <p className="text-gray-400 text-xs mb-3">
+                                Exécutez ce SQL dans votre tableau de bord Supabase pour créer la table, puis cliquez <strong className="text-white">Actualiser</strong>.
+                            </p>
+                            <div className="relative">
+                                <pre className="bg-black/40 border border-white/[0.06] rounded-xl p-4 text-[11px] text-gray-300 overflow-x-auto font-mono leading-relaxed">{`CREATE TABLE public.business_cards (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   employee_prenom TEXT NOT NULL,
   employee_nom TEXT NOT NULL,
@@ -289,11 +316,30 @@ export default function AdminDesignPage() {
   created_at TIMESTAMPTZ DEFAULT NOW(),
   is_active BOOLEAN DEFAULT true
 );
-ALTER TABLE business_cards ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Admins full access" ON business_cards
-  FOR ALL USING (true) WITH CHECK (true);`}
-                </pre>
-            </details>
+ALTER TABLE public.business_cards ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Admins full access" ON public.business_cards
+  FOR ALL USING (true) WITH CHECK (true);`}</pre>
+                            </div>
+                            <div className="flex items-center gap-3 mt-3">
+                                <button type="button"
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(`CREATE TABLE public.business_cards (\n  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,\n  employee_prenom TEXT NOT NULL,\n  employee_nom TEXT NOT NULL,\n  position TEXT NOT NULL,\n  phone TEXT DEFAULT '',\n  email TEXT DEFAULT '',\n  agent_id UUID REFERENCES user_profiles(id) ON DELETE SET NULL,\n  created_by UUID REFERENCES user_profiles(id) ON DELETE SET NULL,\n  created_at TIMESTAMPTZ DEFAULT NOW(),\n  is_active BOOLEAN DEFAULT true\n);\nALTER TABLE public.business_cards ENABLE ROW LEVEL SECURITY;\nCREATE POLICY "Admins full access" ON public.business_cards\n  FOR ALL USING (true) WITH CHECK (true);`)
+                                        setSqlCopied(true)
+                                        setTimeout(() => setSqlCopied(false), 2500)
+                                    }}
+                                    className="flex items-center gap-2 px-3 py-2 bg-amber-500/15 border border-amber-500/25 rounded-lg text-xs text-amber-300 hover:bg-amber-500/25 transition-all font-medium">
+                                    {sqlCopied ? <CheckCircle size={13} className="text-green-400" /> : <ExternalLink size={13} />}
+                                    {sqlCopied ? 'Copié !' : 'Copier le SQL'}
+                                </button>
+                                <a href="https://supabase.com/dashboard/project/_/sql/new" target="_blank" rel="noopener noreferrer"
+                                    className="flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-xs text-gray-400 hover:text-white transition-all">
+                                    <ExternalLink size={13} /> Ouvrir l&apos;éditeur SQL Supabase
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
+            )}
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 
@@ -340,11 +386,11 @@ CREATE POLICY "Admins full access" ON business_cards
                             <UserCheck size={16} className="text-[#008751]" /> Attribuer à un agent (optionnel)
                         </h2>
 
-                        {agents.length === 0 && !loadingCards ? (
-                            <div className="text-xs text-amber-400/70 bg-amber-500/5 border border-amber-500/15 rounded-lg px-3 py-2.5 mb-3">
-                                Aucun agent trouvé dans user_profiles. Vérifiez que des utilisateurs avec le rôle <code className="bg-white/5 px-1 rounded">agent</code> ou <code className="bg-white/5 px-1 rounded">admin</code> existent dans la base.
+                        {agents.length === 0 && !loadingCards && (
+                            <div className="text-xs text-gray-500 bg-white/[0.02] border border-white/[0.05] rounded-lg px-3 py-2.5 mb-3">
+                                Aucun agent disponible — vérifiez que des utilisateurs avec le rôle <code className="bg-white/5 px-1 rounded text-gray-400">agent</code> existent dans la base.
                             </div>
-                        ) : null}
+                        )}
 
                         <div className="relative mb-3">
                             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />

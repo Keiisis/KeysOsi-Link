@@ -2,7 +2,6 @@
 
 import React, { forwardRef, useState } from 'react'
 import QRCode from 'react-qr-code'
-import Image from 'next/image'
 
 /* ══════════════════════════════════════════════════════════════
    TYPES
@@ -17,15 +16,14 @@ export interface CardData {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   PALETTE LUXE
+   PALETTE
 ══════════════════════════════════════════════════════════════ */
 
-const GOLD       = '#C9A84C'
-const GOLD_L     = '#E2C97E'
-const GOLD_P     = '#F0DFA0'
-const DARK       = '#030810'
-const BG_RECTO   = 'linear-gradient(158deg, #040c18 0%, #071e30 48%, #051523 100%)'
-const BG_VERSO   = 'linear-gradient(158deg, #030a14 0%, #060f1c 50%, #071622 100%)'
+const GOLD     = '#C9A84C'
+const GOLD_L   = '#E2C97E'
+const DARK     = '#030810'
+const BG_RECTO = 'linear-gradient(158deg, #040c18 0%, #071e30 48%, #051523 100%)'
+const BG_VERSO = 'linear-gradient(158deg, #030a14 0%, #060f1c 50%, #071622 100%)'
 
 /* ══════════════════════════════════════════════════════════════
    SVG — PORTE DU NON-RETOUR + POING
@@ -82,42 +80,38 @@ function DoorIllustration({ opacity = 1 }: { opacity?: number }) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   CORNER BRACKETS — ornement luxe de coin
+   CORNER BRACKETS
 ══════════════════════════════════════════════════════════════ */
 
-function CornerBrackets({ s }: { s: number }) {
-    const arm = 18 * s
-    const thick = 2 * s
-    const offset = 7 * s
+function CornerBrackets({ s, arm = 16 }: { s: number; arm?: number }) {
+    const a = arm * s, thick = 1.8 * s, off = 8 * s
+    const bar = (st: React.CSSProperties) => (
+        <div style={{ position: 'absolute', background: GOLD, opacity: 0.7, ...st }} />
+    )
     return (
         <>
-            {/* Top-left */}
-            <div style={{ position: 'absolute', top: offset, left: offset, width: arm, height: arm }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: thick, background: GOLD }} />
-                <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: thick, background: GOLD }} />
+            <div style={{ position: 'absolute', top: off, left: off, width: a, height: a }}>
+                {bar({ top: 0, left: 0, right: 0, height: thick })}
+                {bar({ top: 0, left: 0, bottom: 0, width: thick })}
             </div>
-            {/* Top-right */}
-            <div style={{ position: 'absolute', top: offset, right: offset, width: arm, height: arm }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: thick, background: GOLD }} />
-                <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: thick, background: GOLD }} />
+            <div style={{ position: 'absolute', top: off, right: off, width: a, height: a }}>
+                {bar({ top: 0, left: 0, right: 0, height: thick })}
+                {bar({ top: 0, right: 0, bottom: 0, width: thick })}
             </div>
-            {/* Bottom-left */}
-            <div style={{ position: 'absolute', bottom: offset, left: offset, width: arm, height: arm }}>
-                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: thick, background: GOLD }} />
-                <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: thick, background: GOLD }} />
+            <div style={{ position: 'absolute', bottom: off, left: off, width: a, height: a }}>
+                {bar({ bottom: 0, left: 0, right: 0, height: thick })}
+                {bar({ top: 0, left: 0, bottom: 0, width: thick })}
             </div>
-            {/* Bottom-right */}
-            <div style={{ position: 'absolute', bottom: offset, right: offset, width: arm, height: arm }}>
-                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: thick, background: GOLD }} />
-                <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: thick, background: GOLD }} />
+            <div style={{ position: 'absolute', bottom: off, right: off, width: a, height: a }}>
+                {bar({ bottom: 0, left: 0, right: 0, height: thick })}
+                {bar({ top: 0, right: 0, bottom: 0, width: thick })}
             </div>
         </>
     )
 }
 
 /* ══════════════════════════════════════════════════════════════
-   QR CODE — custom image avec fallback react-qr-code
-   Placez votre QR code dans /public/images/qr-code.png
+   QR CODE — /public/images/qr-code.png avec fallback
 ══════════════════════════════════════════════════════════════ */
 
 function QRCodeDisplay({ size }: { size: number }) {
@@ -167,61 +161,38 @@ export const CardRecto = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
                     flexShrink: 0,
                 }}
             >
-                {/* Ambiance radiale */}
-                <div style={{
-                    position: 'absolute', top: '45%', left: '50%',
-                    transform: 'translate(-50%,-50%)',
-                    width: 280 * s, height: 220 * s,
-                    background: `radial-gradient(ellipse, rgba(201,168,76,0.08) 0%, transparent 65%)`,
-                    pointerEvents: 'none',
-                }} />
+                {/* Bande dorée haut */}
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3 * s, background: `linear-gradient(90deg, ${GOLD}80, ${GOLD_L}, ${GOLD}80)` }} />
 
-                {/* Ornements coins */}
+                {/* Lueur centrale */}
+                <div style={{ position: 'absolute', top: '44%', left: '50%', transform: 'translate(-50%,-50%)', width: 280 * s, height: 220 * s, background: `radial-gradient(ellipse, rgba(201,168,76,0.07) 0%, transparent 65%)`, pointerEvents: 'none' }} />
+
                 <CornerBrackets s={s} />
 
-                {/* ── LOGO + ORG NAME ── */}
-                <div style={{
-                    position: 'absolute', top: 18 * s, left: 0, right: 0,
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 * s,
-                }}>
-                    <div style={{ width: 38 * s, height: 38 * s, position: 'relative' }}>
-                        <Image src="/images/logo-transparent.png" alt="RGB" fill style={{ objectFit: 'contain' }} />
+                {/* Logo + Org Name */}
+                <div style={{ position: 'absolute', top: 16 * s, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 * s }}>
+                    <div style={{ width: 36 * s, height: 36 * s, position: 'relative' }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/images/logo-transparent.png" alt="RGB" style={{ width: 36 * s, height: 36 * s, objectFit: 'contain' }} />
                     </div>
-                    <div style={{
-                        color: GOLD, fontSize: 8.5 * s, fontWeight: 700,
-                        letterSpacing: '0.24em', textTransform: 'uppercase',
-                        fontFamily: "'Cinzel','Trajan Pro','Georgia',serif", textAlign: 'center',
-                    }}>
+                    <div style={{ color: GOLD, fontSize: 8 * s, fontWeight: 700, letterSpacing: '0.26em', textTransform: 'uppercase', fontFamily: "'Cinzel','Trajan Pro','Georgia',serif", textAlign: 'center' }}>
                         RETOUR GAGNANT BÉNIN
                     </div>
-                    {/* Ornement sous titre */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 * s, width: 150 * s }}>
-                        <div style={{ flex: 1, height: 0.6 * s, background: `linear-gradient(90deg, transparent, ${GOLD}80)` }} />
-                        <div style={{ width: 3.5 * s, height: 3.5 * s, background: GOLD, transform: 'rotate(45deg)', flexShrink: 0 }} />
-                        <div style={{ flex: 1, height: 0.6 * s, background: `linear-gradient(270deg, transparent, ${GOLD}80)` }} />
+                    {/* Ornement */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 * s, width: 140 * s }}>
+                        <div style={{ flex: 1, height: 0.6 * s, background: `linear-gradient(90deg, transparent, ${GOLD}70)` }} />
+                        <div style={{ width: 3 * s, height: 3 * s, background: GOLD, transform: 'rotate(45deg)', flexShrink: 0 }} />
+                        <div style={{ flex: 1, height: 0.6 * s, background: `linear-gradient(270deg, transparent, ${GOLD}70)` }} />
                     </div>
                 </div>
 
-                {/* ── ILLUSTRATION DOMINANTE ── */}
-                <div style={{
-                    position: 'absolute',
-                    top: 60 * s, left: '50%',
-                    transform: 'translateX(-50%)',
-                    width: 172 * s, height: 138 * s,
-                }}>
-                    <DoorIllustration opacity={0.92} />
+                {/* Illustration dominante */}
+                <div style={{ position: 'absolute', top: 58 * s, left: '50%', transform: 'translateX(-50%)', width: 168 * s, height: 134 * s }}>
+                    <DoorIllustration opacity={0.9} />
                 </div>
 
-                {/* ── TAGLINE BAS ── */}
-                <div style={{
-                    position: 'absolute', bottom: 14 * s, left: 0, right: 0,
-                    textAlign: 'center',
-                    color: `${GOLD}80`,
-                    fontSize: 4.8 * s,
-                    letterSpacing: '0.15em',
-                    textTransform: 'uppercase',
-                    fontFamily: "'Arial', sans-serif",
-                }}>
+                {/* Tagline bas */}
+                <div style={{ position: 'absolute', bottom: 10 * s, left: 0, right: 0, textAlign: 'center', color: `${GOLD}75`, fontSize: 5 * s, letterSpacing: '0.18em', textTransform: 'uppercase', fontFamily: "'Arial', sans-serif" }}>
                     retourgagnantbenin.bj
                 </div>
             </div>
@@ -231,7 +202,7 @@ export const CardRecto = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
 CardRecto.displayName = 'CardRecto'
 
 /* ══════════════════════════════════════════════════════════════
-   VERSO — Contact + QR Code + Slogan
+   VERSO — Contact professionnel (épuré, sans emojis)
 ══════════════════════════════════════════════════════════════ */
 
 export const CardVerso = forwardRef<HTMLDivElement, { data: CardData; scale?: number }>(
@@ -239,6 +210,18 @@ export const CardVerso = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
         const W = 340 * scale
         const H = 220 * scale
         const s = scale
+
+        /* Préfixes de style "carte de luxe" : T. / E. */
+        const ContactRow = ({ label, value }: { label: string; value: string }) => (
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 5 * s }}>
+                <span style={{ color: GOLD, fontSize: 6 * s, fontWeight: 700, letterSpacing: '0.05em', fontFamily: "'Cinzel','Georgia',serif", flexShrink: 0 }}>
+                    {label}
+                </span>
+                <span style={{ color: 'rgba(255,255,255,0.78)', fontSize: 5.8 * s, letterSpacing: '0.02em', fontFamily: "'Arial',sans-serif" }}>
+                    {value}
+                </span>
+            </div>
+        )
 
         return (
             <div
@@ -254,124 +237,66 @@ export const CardVerso = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
                     flexShrink: 0,
                 }}
             >
-                {/* Ambiance radiale gauche */}
-                <div style={{
-                    position: 'absolute', top: '50%', left: '28%',
-                    transform: 'translate(-50%,-50%)',
-                    width: 200 * s, height: 160 * s,
-                    background: `radial-gradient(ellipse, rgba(201,168,76,0.055) 0%, transparent 70%)`,
-                    pointerEvents: 'none',
-                }} />
+                {/* Bande dorée haut */}
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3 * s, background: `linear-gradient(90deg, ${GOLD}80, ${GOLD_L}, ${GOLD}80)` }} />
+
+                {/* Barre accent gauche */}
+                <div style={{ position: 'absolute', top: 3 * s, left: 0, width: 2.5 * s, bottom: 0, background: `linear-gradient(180deg, ${GOLD}90, ${GOLD_L}70, ${GOLD}40)` }} />
 
                 {/* Watermark illustration */}
-                <div style={{
-                    position: 'absolute', top: '50%', left: '50%',
-                    transform: 'translate(-50%,-50%)',
-                    width: 220 * s, height: 178 * s,
-                    opacity: 0.03, pointerEvents: 'none',
-                }}>
+                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 220 * s, height: 178 * s, opacity: 0.025, pointerEvents: 'none' }}>
                     <DoorIllustration />
                 </div>
 
-                {/* Ornements coins */}
                 <CornerBrackets s={s} />
 
-                {/* ── CONTENU ── */}
-                <div style={{
-                    position: 'absolute',
-                    inset: `${15 * s}px ${15 * s}px ${15 * s}px ${15 * s}px`,
-                    display: 'flex', gap: 12 * s, alignItems: 'stretch',
-                }}>
-                    {/* Colonne gauche : QR + org */}
-                    <div style={{
-                        display: 'flex', flexDirection: 'column',
-                        alignItems: 'center', justifyContent: 'space-between',
-                        width: 90 * s, flexShrink: 0,
-                    }}>
-                        <div style={{
-                            padding: 4 * s, background: '#ffffff',
-                            borderRadius: 3 * s,
-                            boxShadow: `0 0 0 1px ${GOLD}45, 0 0 16px ${GOLD}20`,
-                        }}>
-                            <QRCodeDisplay size={Math.round(64 * s)} />
-                        </div>
-                        <div style={{
-                            color: GOLD, fontSize: 6.8 * s, fontWeight: 800,
-                            letterSpacing: '0.13em', textTransform: 'uppercase',
-                            textAlign: 'center',
-                            fontFamily: "'Cinzel','Georgia',serif", lineHeight: 1.45,
-                        }}>
-                            RETOUR<br />GAGNANT<br />BÉNIN
-                        </div>
-                    </div>
+                {/* ── CONTENU PRINCIPAL ── */}
+                <div style={{ position: 'absolute', top: 14 * s, left: 18 * s, right: 14 * s, bottom: 34 * s, display: 'flex', gap: 12 * s }}>
 
-                    {/* Séparateur */}
-                    <div style={{
-                        width: 0.7 * s,
-                        background: `linear-gradient(180deg, transparent, ${GOLD}55, transparent)`,
-                        flexShrink: 0,
-                    }} />
+                    {/* Colonne gauche : identité + contacts */}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
 
-                    {/* Colonne droite : coordonnées */}
-                    <div style={{
-                        flex: 1, display: 'flex', flexDirection: 'column',
-                        justifyContent: 'space-between', minWidth: 0,
-                    }}>
-                        {/* Nom + poste */}
+                        {/* Identité */}
                         <div>
-                            <div style={{
-                                color: GOLD_L, fontSize: 8.5 * s, fontWeight: 700,
-                                letterSpacing: '0.08em', textTransform: 'uppercase',
-                                fontFamily: "'Cinzel','Georgia',serif", lineHeight: 1.1,
-                            }}>
+                            <div style={{ color: GOLD_L, fontSize: 12.5 * s, fontWeight: 700, letterSpacing: '0.05em', fontFamily: "'Cinzel','Georgia',serif", lineHeight: 1.1 }}>
                                 {data.prenom} {data.nom}
                             </div>
-                            <div style={{
-                                color: 'rgba(255,255,255,0.48)', fontSize: 5.5 * s,
-                                letterSpacing: '0.12em', marginTop: 2.5 * s, textTransform: 'uppercase',
-                            }}>
+                            <div style={{ width: 80 * s, height: 0.8 * s, background: `linear-gradient(90deg, ${GOLD}, transparent)`, marginTop: 5 * s, marginBottom: 4 * s }} />
+                            <div style={{ color: 'rgba(255,255,255,0.38)', fontSize: 6.2 * s, letterSpacing: '0.2em', textTransform: 'uppercase', fontFamily: "'Arial',sans-serif" }}>
                                 {data.position}
                             </div>
                         </div>
 
-                        <div style={{ height: 0.5 * s, background: `${GOLD}40` }} />
-
-                        {/* Contact personnel */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3.5 * s }}>
-                            {data.phone && (
-                                <div style={{ display: 'flex', gap: 5 * s, alignItems: 'center' }}>
-                                    <span style={{ color: GOLD, fontSize: 6 * s }}>☎</span>
-                                    <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 5.5 * s }}>{data.phone}</span>
-                                </div>
-                            )}
-                            {data.email && (
-                                <div style={{ display: 'flex', gap: 5 * s, alignItems: 'center' }}>
-                                    <span style={{ color: GOLD, fontSize: 6 * s }}>✉</span>
-                                    <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 5.5 * s }}>{data.email}</span>
-                                </div>
-                            )}
+                        {/* Contacts personnels */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 * s }}>
+                            {data.phone && <ContactRow label="T." value={data.phone} />}
+                            {data.email && <ContactRow label="E." value={data.email} />}
                         </div>
+                    </div>
 
-                        <div style={{ height: 0.5 * s, background: `${GOLD}25` }} />
+                    {/* Séparateur vertical */}
+                    <div style={{ width: 0.7 * s, background: `linear-gradient(180deg, transparent, ${GOLD}45, transparent)`, flexShrink: 0 }} />
 
-                        {/* Contact org */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2.5 * s }}>
-                            <div style={{ color: 'rgba(255,255,255,0.48)', fontSize: 5 * s }}>☎ +229 01 60 32 21 21 · +229 01 94 35 50 50</div>
-                            <div style={{ color: 'rgba(255,255,255,0.48)', fontSize: 5 * s }}>✉ contact@retourgagnantbenin.bj</div>
-                            <div style={{ color: 'rgba(255,255,255,0.48)', fontSize: 5 * s }}>🌐 www.retourgagnantbenin.bj</div>
-                            <div style={{ color: 'rgba(255,255,255,0.33)', fontSize: 4.5 * s, lineHeight: 1.45 }}>
-                                Haie-Vive Cocotiers, Carré N°1158, Cotonou — BÉNIN
-                            </div>
+                    {/* Colonne droite : QR + marque */}
+                    <div style={{ width: 82 * s, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ padding: 4 * s, background: '#ffffff', borderRadius: 3 * s, boxShadow: `0 0 0 1px ${GOLD}40, 0 0 18px ${GOLD}18` }}>
+                            <QRCodeDisplay size={Math.round(62 * s)} />
                         </div>
-
-                        {/* Slogan */}
-                        <div style={{
-                            color: GOLD, fontSize: 5.8 * s, fontWeight: 700,
-                            letterSpacing: '0.18em', textTransform: 'uppercase',
-                            fontFamily: "'Cinzel','Georgia',serif",
-                        }}>
-                            VOTRE RETOUR, NOTRE MISSION
+                        <div style={{ color: GOLD, fontSize: 6.5 * s, fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif", lineHeight: 1.55, textAlign: 'center' }}>
+                            RETOUR<br />GAGNANT<br />BÉNIN
                         </div>
+                    </div>
+                </div>
+
+                {/* ── BANDE BAS — org info ── */}
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 34 * s, background: 'rgba(0,0,0,0.18)', borderTop: `0.8px solid ${GOLD}30`, paddingLeft: 18 * s, paddingRight: 14 * s, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2.5 * s }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 * s }}>
+                        <span style={{ color: 'rgba(255,255,255,0.32)', fontSize: 5 * s }}>W. www.retourgagnantbenin.bj</span>
+                        <span style={{ color: `${GOLD}30`, fontSize: 5 * s }}>·</span>
+                        <span style={{ color: 'rgba(255,255,255,0.32)', fontSize: 5 * s }}>T. +229 01 60 32 21 21</span>
+                    </div>
+                    <div style={{ color: GOLD, fontSize: 6 * s, fontWeight: 700, letterSpacing: '0.25em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif" }}>
+                        VOTRE RETOUR, NOTRE MISSION
                     </div>
                 </div>
             </div>
