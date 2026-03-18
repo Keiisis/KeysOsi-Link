@@ -12,6 +12,41 @@ import { usePathname } from 'next/navigation'
 import { type LangCode, DEFAULT_LANG, LANG_COOKIE_NAME, DASHBOARD_LANG_COOKIE, SUPPORTED_LANGUAGES, isValidLang } from './constants'
 import { hashText } from './hash'
 
+// Extract brand names to prevent them from being translated, EXCEPT "VOTRE RETOUR GAGNANT"
+const extractBrands = (text: string) => {
+    let masked = text || '';
+    const extractedVars: Record<string, string> = {};
+
+    const vrgMatch = masked.match(/VOTRE RETOUR GAGNANT/gi);
+    if (vrgMatch) {
+        masked = masked.replace(/VOTRE RETOUR GAGNANT/ig, '___VRG___');
+    }
+
+    const rgbMatch1 = masked.match(/RETOUR GAGNANT BÉNIN/i);
+    if (rgbMatch1) {
+        extractedVars['RGB1'] = rgbMatch1[0];
+        masked = masked.replace(/RETOUR GAGNANT BÉNIN/ig, '{RGB1}');
+    }
+
+    const rgbMatch2 = masked.match(/RETOUR GAGNANT BENIN/i);
+    if (rgbMatch2) {
+        extractedVars['RGB2'] = rgbMatch2[0];
+        masked = masked.replace(/RETOUR GAGNANT BENIN/ig, '{RGB2}');
+    }
+
+    const rgMatch = masked.match(/RETOUR GAGNANT/i);
+    if (rgMatch) {
+        extractedVars['RG'] = rgMatch[0];
+        masked = masked.replace(/RETOUR GAGNANT/ig, '{RG}');
+    }
+
+    if (vrgMatch) {
+        masked = masked.replace(/___VRG___/g, vrgMatch[0]);
+    }
+
+    return { maskedText: masked, extractedVars };
+};
+
 interface TranslationContextType {
     lang: LangCode
     setLang: (lang: LangCode) => void
@@ -191,18 +226,21 @@ export function TranslationProvider({ children }: { children: React.ReactNode })
             return applyVars(text, vars)
         }
 
-        const hash = hashText(text)
+        const { maskedText, extractedVars } = extractBrands(text)
+        const hash = hashText(maskedText)
         const cached = cache.get(hash)
 
+        const finalVars = { ...vars, ...extractedVars }
+
         if (cached) {
-            return applyVars(cached, vars)
+            return applyVars(cached, finalVars)
         }
 
-        // Request async translation (will update on next render)
-        requestTranslation(text)
+        // Request async translation using the masked text (will update on next render)
+        requestTranslation(maskedText)
 
         // Return French text as fallback
-        return applyVars(text, vars)
+        return applyVars(maskedText, finalVars)
     }, [lang, cache, requestTranslation])
 
     const value = useMemo(() => ({

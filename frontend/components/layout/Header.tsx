@@ -67,7 +67,7 @@ export default function Header() {
                                     <span className="text-[#008751]">RETOUR</span> <span className="text-[#E8112D]">GAGNANT</span>
                                 </span>
                                 <span className="text-[8px] sm:text-sm xl:text-base font-extrabold tracking-[0.25em] sm:tracking-[0.5em] uppercase font-sans text-white/60 group-hover:text-[#FCD116] transition-colors duration-500">
-                                    <T>BÉNIN</T>
+                                    BÉNIN
                                 </span>
                             </div>
                         </Link>

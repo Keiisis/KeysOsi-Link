@@ -86,8 +86,8 @@ export async function POST(req: Request) {
 CRITICAL RULES:
 1. Return ONLY a valid JSON array of strings in the exact same order.
 2. DO NOT add any markdown formatting, explanations, or notes.
-3. Preserve shortcodes like {name} exactly as they are.
-4. IMPORTANT: Translate everything, even branded terms like "Retour Gagnant" if it makes sense in the target language (e.g., "Winning Return" in English). We want a natural, high-quality translation for a premium service.
+3. Preserve shortcodes like {name}, {RG}, {RGB1}, {RGB2} exactly as they are.
+4. IMPORTANT: Translate everything to a natural, high-quality translation for a premium service. For the exact phrase "VOTRE RETOUR GAGNANT", translate it as "YOUR WINNING RETURN" or similar. But DO NOT translate the tags {RG}, {RGB1}, {RGB2} if they appear.
 5. EXTREMELY IMPORTANT: Preserve ANY and ALL HTML tags exactly identical. Do not modify or remove attributes like 'class', 'className', 'style'. Do not translate the class names or style values.
 
 French array:
