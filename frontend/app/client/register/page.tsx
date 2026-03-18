@@ -41,25 +41,13 @@ export default function ClientRegisterPage() {
         setIsLoading(true)
 
         try {
-            // 1. Inscription Supabase Auth
-            const { data: authData, error: signUpError } = await supabase.auth.signUp({
-                email: form.email.trim().toLowerCase(),
-                password: form.password,
-                options: {
-                    data: { nom: form.nom, prenom: form.prenom }
-                }
-            })
-
-            if (signUpError) throw new Error(signUpError.message)
-            if (!authData.user) throw new Error('Erreur lors de la création du compte.')
-
-            // 2. Créer profil + lier documents existants
+            // Inscription et liaison centralisées côté serveur avec envoi d'email personnalisé
             const res = await fetch('/api/client/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    user_id: authData.user.id,
                     email: form.email.trim().toLowerCase(),
+                    password: form.password,
                     nom: form.nom,
                     prenom: form.prenom,
                     phone: form.phone,
@@ -71,13 +59,19 @@ export default function ClientRegisterPage() {
             setLinkedDocs(json.linked?.documents || 0)
             setSuccess(true)
 
-            if (authData.session) {
-                // Email confirmation désactivée → redirection directe
+            if (json.needsEmailConfirm) {
+                // Email confirmation requise
+                setNeedsEmailConfirm(true)
+            } else {
+                // Connecter l'utilisateur s'il n'a pas besoin de confirmer l'email (très rare dans cette configuration)
+                if (json.autoSignIn) {
+                    await supabase.auth.signInWithPassword({
+                        email: form.email.trim().toLowerCase(),
+                        password: form.password
+                    })
+                }
                 const from = new URLSearchParams(window.location.search).get('from')
                 setTimeout(() => { window.location.href = from || '/client/dashboard' }, 1800)
-            } else {
-                // Email confirmation requise → informer l'utilisateur
-                setNeedsEmailConfirm(true)
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Erreur lors de l\'inscription.')
