@@ -191,8 +191,9 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                 return
             }
 
-            // Agents et admins peuvent accéder à l'espace agent
-            if (profile.role !== 'agent' && profile.role !== 'admin') {
+            // Seuls les agents purs peuvent accéder à l'espace agent
+            // (admin/superadmin → /admin uniquement, conformément à l'isolation stricte des rôles)
+            if (profile.role !== 'agent') {
                 await supabase.auth.signOut()
                 window.location.href = '/agent/login?error=unauthorized'
                 return
@@ -206,6 +207,9 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                 avatar_url: profile.avatar_url,
             })
             setLoading(false)
+
+            // Mettre à jour last_seen_at (sans attendre)
+            fetch('/api/admin/ping', { method: 'POST' }).catch(() => {})
         }
 
         checkAuth()

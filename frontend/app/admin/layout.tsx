@@ -55,7 +55,11 @@ function AdminLayoutContent({
             if (!profile || !ADMIN_ROLES.includes(profile.role)) {
                 await supabase.auth.signOut()
                 router.push('/admin/login?error=unauthorized')
+                return
             }
+
+            // Mettre à jour last_seen_at (sans attendre)
+            fetch('/api/admin/ping', { method: 'POST' }).catch(() => {})
         }
         checkRole()
     // eslint-disable-next-line react-hooks/exhaustive-deps

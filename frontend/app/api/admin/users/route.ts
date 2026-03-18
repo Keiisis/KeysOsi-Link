@@ -9,35 +9,45 @@ export async function GET() {
 
     const supabase = createClient(supabaseUrl, serviceKey)
 
-    // Récupère tous les users auth + leurs profils
-    const [authRes, profilesRes] = await Promise.all([
-        supabase.auth.admin.listUsers({ perPage: 200 }),
+    // Récupère users auth + profils agents/admins + IDs clients
+    const [authRes, profilesRes, clientIdsRes] = await Promise.all([
+        supabase.auth.admin.listUsers({ perPage: 500 }),
         supabase.from('user_profiles').select('id, full_name, role, is_active, last_seen_at, created_at'),
+        supabase.from('client_profiles').select('id'),
     ])
 
     if (authRes.error) return NextResponse.json({ error: authRes.error.message }, { status: 500 })
 
-    const profileMap = new Map((profilesRes.data || []).map(p => [p.id, p]))
+    const profileMap  = new Map((profilesRes.data || []).map(p => [p.id, p]))
+    // Set des IDs clients pour exclusion stricte
+    const clientIdSet = new Set((clientIdsRes.data || []).map((c: { id: string }) => c.id))
 
-    // SÉCURITÉ : on n'inclut QUE les utilisateurs présents dans user_profiles
-    // (admin, agent, superadmin). Les clients n'ont PAS de user_profiles → exclus.
-    // Plus de fallback 'agent' qui faisait apparaître les clients comme agents.
     const VALID_ROLES = ['agent', 'admin', 'super_admin', 'superadmin']
 
     const users = authRes.data.users
         .filter(u => {
+            // Exclure les clients purs : dans client_profiles ET pas dans user_profiles
+            if (clientIdSet.has(u.id) && !profileMap.has(u.id)) return false
+
+            // Inclure si user_profiles avec rôle valide
             const profile = profileMap.get(u.id)
-            return profile && VALID_ROLES.includes(profile.role)
+            if (profile && VALID_ROLES.includes(profile.role)) return true
+
+            // Inclure si user_metadata.role valide (agents créés avant user_profiles — ex: Nadjath)
+            const metaRole = u.user_metadata?.role
+            if (metaRole && VALID_ROLES.includes(metaRole)) return true
+
+            return false
         })
         .map(u => {
-            const profile = profileMap.get(u.id)!
+            const profile = profileMap.get(u.id)
             return {
                 id: u.id,
                 email: u.email,
-                full_name: profile.full_name || u.user_metadata?.full_name || 'Sans nom',
-                role: profile.role,
-                is_active: profile.is_active ?? true,
-                last_seen_at: profile.last_seen_at || null,
+                full_name: profile?.full_name || u.user_metadata?.full_name || 'Sans nom',
+                role: profile?.role || u.user_metadata?.role || 'agent',
+                is_active: profile?.is_active ?? true,
+                last_seen_at: profile?.last_seen_at || null,
                 created_at: u.created_at,
             }
         })
