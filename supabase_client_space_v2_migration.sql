@@ -113,8 +113,12 @@ DO $$ BEGIN
 END $$;
 
 -- Agents et admins peuvent voir les fichiers clients
+-- (uniquement si la table agent_profiles existe)
 DO $$ BEGIN
-    IF NOT EXISTS (
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'agent_profiles'
+    ) AND NOT EXISTS (
         SELECT 1 FROM pg_policies
         WHERE schemaname = 'public' AND tablename = 'client_documents' AND policyname = 'agent_select_client_docs'
     ) THEN
