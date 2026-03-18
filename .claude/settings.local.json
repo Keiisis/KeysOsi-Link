@@ -20,7 +20,10 @@
       "Bash(git add frontend/app/api/services/route.ts)",
       "Bash(git add frontend/app/api/settings/frontend/route.ts frontend/app/\\\\\\(routes\\\\\\)/services/[slug]/page.tsx supabase_update_services_v2.sql)",
       "Bash(git add frontend/app/\\\\\\(routes\\\\\\)/services/[slug]/page.tsx supabase_update_services_v3.sql)",
-      "Bash(npx tsc --noEmit)"
+      "Bash(npx tsc --noEmit)",
+      "Bash(git add frontend/app/api/client/ frontend/app/client/ frontend/app/portail/ frontend/middleware.ts supabase_client_space_migration.sql)",
+      "Bash(git add frontend/app/client/layout.tsx)",
+      "Bash(git add frontend/app/client/reset-password/page.tsx frontend/app/client/payer frontend/app/api/client/payment frontend/app/client/login/page.tsx frontend/app/client/layout.tsx frontend/app/client/documents/page.tsx \"frontend/app/client/documents/[id]/page.tsx\" frontend/app/client/dossier/page.tsx supabase_client_space_v2_migration.sql)"
     ],
     "additionalDirectories": [
       "c:\\Users\\HP\\Desktop\\RETOUR GAGNANT TEMPLATE\\frontend\\app\\api\\admin\\users"

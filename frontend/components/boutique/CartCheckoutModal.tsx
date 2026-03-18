@@ -14,7 +14,8 @@ import { Price } from '@/components/ui/Price'
 // ─── Déclarations des SDK tiers ────────────────────────────────────────────────
 declare global {
     interface Window {
-        openKkiapayWidget: (config: Record<string, unknown>) => void
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        openKkiapayWidget: (config: any) => void
         addKkiapayListener: (
             event: string,
             callback: (data: Record<string, unknown>) => void

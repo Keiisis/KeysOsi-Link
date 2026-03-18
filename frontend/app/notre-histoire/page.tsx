@@ -461,7 +461,7 @@ function ChapitreArchitectes() {
                             whileInView={{ opacity: 1 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.8, delay: i * 0.2, ease: 'easeOut' as const }}
-                            className="relative flex-1 h-[60vh] lg:h-full overflow-hidden group cursor-pointer bg-white"
+                            className="relative w-full lg:w-auto lg:flex-1 h-[60vh] lg:h-full overflow-hidden group cursor-pointer bg-white"
                         >
                             <Image
                                 src={p.src}
