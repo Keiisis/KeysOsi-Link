@@ -63,43 +63,76 @@ export default function ClientDashboardPage() {
                 .single()
             if (profile) setClientNom([profile.prenom, profile.nom].filter(Boolean).join(' '))
 
-            // Documents (via client_id OU client_email)
+            const uid = session.user.id
+
+            // Documents récents (affichage uniquement)
             const { data: docs } = await supabase
                 .from('documents_financiers')
                 .select('id, type, numero, total, status, currency, created_at')
-                .or(`client_id.eq.${session.user.id},client_email.eq.${email}`)
+                .or(`client_id.eq.${uid},client_email.eq.${email}`)
                 .order('created_at', { ascending: false })
                 .limit(5)
+            setRecentDocs(docs || [])
 
-            const allDocs = docs || []
-            setRecentDocs(allDocs)
+            // Stats via requêtes COUNT dédiées (sur la totalité des docs, pas juste les 5 derniers)
+            const [
+                { count: devisCount },
+                { count: facturesCount },
+                { data: dossier },
+                { data: msgIds },
+                { data: paidDocs },
+            ] = await Promise.all([
+                supabase
+                    .from('documents_financiers')
+                    .select('id', { count: 'exact', head: true })
+                    .or(`client_id.eq.${uid},client_email.eq.${email}`)
+                    .eq('type', 'devis')
+                    .in('status', ['envoye', 'brouillon']),
+                supabase
+                    .from('documents_financiers')
+                    .select('id', { count: 'exact', head: true })
+                    .or(`client_id.eq.${uid},client_email.eq.${email}`)
+                    .eq('type', 'facture')
+                    .eq('status', 'envoye'),
+                supabase
+                    .from('dossier_tracking')
+                    .select('id, statut')
+                    .or(`client_id.eq.${uid},client_email.eq.${email}`)
+                    .neq('statut', 'termine')
+                    .neq('statut', 'annule')
+                    .limit(1),
+                // IDs des messages du client pour chercher les réponses agent
+                supabase
+                    .from('messages')
+                    .select('id')
+                    .or(`client_id.eq.${uid},email.eq.${email}`),
+                // Total dépensé : tous les docs payés
+                supabase
+                    .from('documents_financiers')
+                    .select('total')
+                    .or(`client_id.eq.${uid},client_email.eq.${email}`)
+                    .eq('status', 'paye'),
+            ])
 
-            // Dossier
-            const { data: dossier } = await supabase
-                .from('dossier_tracking')
-                .select('id, statut')
-                .or(`client_id.eq.${session.user.id},client_email.eq.${email}`)
-                .neq('statut', 'termine')
-                .neq('statut', 'annule')
-                .limit(1)
+            // Réponses agent non lues = messages dans chat_messages (role=agent) pour ce client
+            let agentRepliesCount = 0
+            const conversationIds = (msgIds || []).map(m => m.id)
+            if (conversationIds.length > 0) {
+                const { count } = await supabase
+                    .from('chat_messages')
+                    .select('id', { count: 'exact', head: true })
+                    .in('conversation_id', conversationIds)
+                    .eq('role', 'agent')
+                agentRepliesCount = count || 0
+            }
 
-            // Messages non lus
-            const { count: msgCount } = await supabase
-                .from('messages')
-                .select('id', { count: 'exact', head: true })
-                .or(`client_id.eq.${session.user.id},email.eq.${email}`)
-                .eq('lu', false)
-
-            // Stats
-            const devisEnAttente = allDocs.filter(d => d.type === 'devis' && ['envoye', 'brouillon'].includes(d.status)).length
-            const facturesToPay = allDocs.filter(d => d.type === 'facture' && d.status === 'envoye').length
-            const totalPayé = allDocs.filter(d => d.status === 'paye').reduce((s, d) => s + (d.total || 0), 0)
+            const totalPayé = (paidDocs || []).reduce((s: number, d: { total: number }) => s + (d.total || 0), 0)
 
             setStats({
-                devisEnAttente,
-                facturesToPay,
+                devisEnAttente: devisCount || 0,
+                facturesToPay: facturesCount || 0,
                 dossierActif: (dossier?.length || 0) > 0,
-                messagesNonLus: msgCount || 0,
+                messagesNonLus: agentRepliesCount,
                 totalDépenses: totalPayé,
             })
             setLoading(false)
@@ -111,7 +144,7 @@ export default function ClientDashboardPage() {
         { title: 'Devis en attente', value: stats.devisEnAttente, icon: FileText, color: 'from-blue-500 to-blue-600', href: '/client/documents', desc: 'À signer' },
         { title: 'Factures à payer', value: stats.facturesToPay, icon: Receipt, color: 'from-amber-500 to-orange-600', href: '/client/documents', desc: 'En attente de paiement' },
         { title: 'Dossier actif', value: stats.dossierActif ? '✓' : '—', icon: FolderOpen, color: 'from-indigo-500 to-purple-600', href: '/client/dossier', desc: 'Suivi en cours' },
-        { title: 'Messages', value: stats.messagesNonLus, icon: MessageSquare, color: 'from-emerald-500 to-teal-600', href: '/client/messages', desc: 'Non lus' },
+        { title: 'Réponses reçues', value: stats.messagesNonLus, icon: MessageSquare, color: 'from-emerald-500 to-teal-600', href: '/client/messages', desc: 'De votre agent' },
     ]
 
     const quickActions = [

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
-import { MessageSquare, Send, Loader2, CheckCircle2, AlertCircle, Clock } from 'lucide-react'
+import { MessageSquare, Send, Loader2, CheckCircle2, AlertCircle, Clock, ChevronRight, User } from 'lucide-react'
 
 interface Message {
     id: string
@@ -12,19 +12,77 @@ interface Message {
     type: string
     lu: boolean
     created_at: string
-    reponse?: string
-    reponse_at?: string
 }
 
+interface ChatMessage {
+    id: string
+    conversation_id: string
+    role: 'agent' | 'client'
+    content: string
+    created_at: string
+}
+
+interface Thread {
+    msg: Message
+    replies: ChatMessage[]
+    hasUnread: boolean
+}
+
+const LAST_SEEN_KEY = 'client_messages_last_seen'
+
 export default function ClientMessagesPage() {
-    const [messages, setMessages] = useState<Message[]>([])
+    const [threads, setThreads] = useState<Thread[]>([])
     const [loading, setLoading] = useState(true)
+    const [selected, setSelected] = useState<Thread | null>(null)
     const [form, setForm] = useState({ sujet: '', message: '' })
     const [sending, setSending] = useState(false)
     const [sent, setSent] = useState(false)
     const [error, setError] = useState('')
     const [clientInfo, setClientInfo] = useState({ nom: '', prenom: '', email: '', phone: '', id: '' })
     const bottomRef = useRef<HTMLDivElement>(null)
+    const threadBottomRef = useRef<HTMLDivElement>(null)
+
+    const getLastSeen = () => {
+        try { return parseInt(localStorage.getItem(LAST_SEEN_KEY) || '0', 10) } catch { return 0 }
+    }
+
+    const markSeen = () => {
+        try { localStorage.setItem(LAST_SEEN_KEY, Date.now().toString()) } catch { /* ignore */ }
+    }
+
+    const loadThreads = async (uid: string, email: string) => {
+        const { data: msgs } = await supabase
+            .from('messages')
+            .select('id, sujet, message, type, lu, created_at')
+            .or(`client_id.eq.${uid},email.eq.${email}`)
+            .order('created_at', { ascending: false })
+
+        const msgList = (msgs as Message[]) || []
+
+        if (msgList.length === 0) {
+            setThreads([])
+            return
+        }
+
+        const ids = msgList.map(m => m.id)
+        const { data: chats } = await supabase
+            .from('chat_messages')
+            .select('id, conversation_id, role, content, created_at')
+            .in('conversation_id', ids)
+            .order('created_at', { ascending: true })
+
+        const chatList = (chats as ChatMessage[]) || []
+        const lastSeen = getLastSeen()
+
+        const built: Thread[] = msgList.map(msg => {
+            const replies = chatList.filter(c => c.conversation_id === msg.id)
+            const agentReplies = replies.filter(r => r.role === 'agent')
+            const hasUnread = agentReplies.some(r => new Date(r.created_at).getTime() > lastSeen)
+            return { msg, replies, hasUnread }
+        })
+
+        setThreads(built)
+    }
 
     useEffect(() => {
         const load = async () => {
@@ -40,17 +98,23 @@ export default function ClientMessagesPage() {
 
             setClientInfo({ email, nom: profile?.nom || '', prenom: profile?.prenom || '', phone: profile?.phone || '', id: session.user.id })
 
-            const { data } = await supabase
-                .from('messages')
-                .select('id, sujet, message, type, lu, created_at, reponse, reponse_at')
-                .or(`client_id.eq.${session.user.id},email.eq.${email}`)
-                .order('created_at', { ascending: false })
-
-            setMessages(data as Message[] || [])
+            await loadThreads(session.user.id, email)
             setLoading(false)
         }
         load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
+
+    // Marquer comme vu quand l'utilisateur ouvre un fil
+    const openThread = (thread: Thread) => {
+        setSelected(thread)
+        markSeen()
+        // Rafraîchir les threads pour mettre à jour les badges
+        setThreads(prev => prev.map(t =>
+            t.msg.id === thread.msg.id ? { ...t, hasUnread: false } : t
+        ))
+        setTimeout(() => threadBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
+    }
 
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -75,14 +139,7 @@ export default function ClientMessagesPage() {
 
             if (insertErr) throw new Error(insertErr.message)
 
-            // Reload messages
-            const { data } = await supabase
-                .from('messages')
-                .select('id, sujet, message, type, lu, created_at, reponse, reponse_at')
-                .or(`client_id.eq.${clientInfo.id},email.eq.${clientInfo.email}`)
-                .order('created_at', { ascending: false })
-
-            setMessages(data as Message[] || [])
+            await loadThreads(clientInfo.id, clientInfo.email)
             setForm({ sujet: '', message: '' })
             setSent(true)
             setTimeout(() => setSent(false), 3000)
@@ -93,6 +150,8 @@ export default function ClientMessagesPage() {
         setSending(false)
     }
 
+    const totalUnread = threads.filter(t => t.hasUnread).length
+
     return (
         <div className="space-y-6">
             <div>
@@ -100,13 +159,20 @@ export default function ClientMessagesPage() {
                     <MessageSquare size={14} className="text-emerald-400" />
                     <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.3em]">Messagerie</span>
                 </div>
-                <h1 className="text-2xl font-black text-white">Messages</h1>
-                <p className="text-gray-500 text-sm mt-1">Envoyez un message à votre agent. Réponse sous 24h.</p>
+                <h1 className="text-2xl font-black text-white flex items-center gap-3">
+                    Messages
+                    {totalUnread > 0 && (
+                        <span className="text-sm font-bold bg-blue-500 text-white px-2 py-0.5 rounded-full">
+                            {totalUnread} nouvelle{totalUnread > 1 ? 's' : ''} réponse{totalUnread > 1 ? 's' : ''}
+                        </span>
+                    )}
+                </h1>
+                <p className="text-gray-500 text-sm mt-1">Échangez avec votre agent. Réponse sous 24h.</p>
             </div>
 
-            <div className="grid lg:grid-cols-2 gap-6">
-                {/* New message form */}
-                <div className="bg-[#0a1221] border border-white/[0.06] rounded-2xl p-5">
+            <div className="grid lg:grid-cols-5 gap-5">
+                {/* Formulaire nouveau message */}
+                <div className="lg:col-span-2 bg-[#0a1221] border border-white/[0.06] rounded-2xl p-5">
                     <h2 className="font-black text-white text-sm mb-4 flex items-center gap-2">
                         <Send size={15} className="text-emerald-400" /> Nouveau message
                     </h2>
@@ -124,7 +190,7 @@ export default function ClientMessagesPage() {
                             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-4 overflow-hidden">
                                 <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-500/8 border border-emerald-500/20">
                                     <CheckCircle2 size={14} className="text-emerald-400" />
-                                    <p className="text-emerald-400 text-[12px] font-bold">Message envoyé avec succès !</p>
+                                    <p className="text-emerald-400 text-[12px] font-bold">Message envoyé ! Votre agent vous répondra bientôt.</p>
                                 </div>
                             </motion.div>
                         )}
@@ -135,62 +201,137 @@ export default function ClientMessagesPage() {
                             <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.15em] block mb-1.5">Sujet</label>
                             <input type="text" required value={form.sujet} onChange={e => setForm(f => ({ ...f, sujet: e.target.value }))}
                                 placeholder="Ex: Question sur mon dossier de nationalité"
-                                className="w-full bg-white/[0.04] border border-white/[0.08] focus:border-emerald-500/40 rounded-xl py-3 px-4 text-white placeholder:text-gray-600 focus:outline-none text-sm transition-colors" />
+                                className="w-full bg-white/[0.04] border border-white/[0.08] focus:border-emerald-500/40 rounded-xl py-2.5 px-3 text-white placeholder:text-gray-600 focus:outline-none text-sm transition-colors" />
                         </div>
                         <div>
                             <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.15em] block mb-1.5">Message</label>
                             <textarea required rows={5} value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
                                 placeholder="Décrivez votre demande ou question..."
-                                className="w-full bg-white/[0.04] border border-white/[0.08] focus:border-emerald-500/40 rounded-xl py-3 px-4 text-white placeholder:text-gray-600 focus:outline-none text-sm resize-none transition-colors" />
+                                className="w-full bg-white/[0.04] border border-white/[0.08] focus:border-emerald-500/40 rounded-xl py-2.5 px-3 text-white placeholder:text-gray-600 focus:outline-none text-sm resize-none transition-colors" />
                         </div>
                         <motion.button type="submit" disabled={sending} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
                             className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold h-11 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 transition-all">
-                            {sending ? <Loader2 className="animate-spin" size={16} /> : <><Send size={14} /> Envoyer le message</>}
+                            {sending ? <Loader2 className="animate-spin" size={16} /> : <><Send size={14} /> Envoyer</>}
                         </motion.button>
                     </form>
                 </div>
 
-                {/* History */}
-                <div className="bg-[#0a1221] border border-white/[0.06] rounded-2xl overflow-hidden flex flex-col">
-                    <div className="p-5 border-b border-white/[0.06]">
-                        <h2 className="font-black text-white text-sm flex items-center gap-2">
-                            <Clock size={15} className="text-blue-400" /> Historique ({messages.length})
-                        </h2>
-                    </div>
-                    <div className="flex-1 overflow-y-auto max-h-[480px]">
-                        {loading ? (
-                            <div className="flex items-center justify-center p-10">
-                                <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+                {/* Liste conversations + thread */}
+                <div className="lg:col-span-3 bg-[#0a1221] border border-white/[0.06] rounded-2xl overflow-hidden flex flex-col min-h-[480px]">
+                    {loading ? (
+                        <div className="flex items-center justify-center flex-1 p-10">
+                            <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+                        </div>
+                    ) : threads.length === 0 ? (
+                        <div className="flex-1 flex flex-col items-center justify-center p-10 text-center">
+                            <MessageSquare size={28} className="text-gray-700 mb-2" />
+                            <p className="text-gray-500 text-sm">Aucun message pour le moment.</p>
+                            <p className="text-gray-600 text-xs mt-1">Envoyez votre premier message à votre agent.</p>
+                        </div>
+                    ) : selected ? (
+                        /* Vue thread */
+                        <div className="flex flex-col flex-1">
+                            <div className="p-4 border-b border-white/[0.06] flex items-center gap-3">
+                                <button type="button" aria-label="Retour à la liste des conversations" onClick={() => setSelected(null)} className="text-gray-500 hover:text-white transition-colors">
+                                    <ChevronRight size={16} className="rotate-180" />
+                                </button>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-white text-sm truncate">{selected.msg.sujet}</p>
+                                    <p className="text-[10px] text-gray-500">
+                                        {new Date(selected.msg.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                    </p>
+                                </div>
                             </div>
-                        ) : messages.length === 0 ? (
-                            <div className="p-10 text-center">
-                                <MessageSquare size={28} className="text-gray-700 mx-auto mb-2" />
-                                <p className="text-gray-500 text-sm">Aucun message pour le moment.</p>
-                            </div>
-                        ) : (
-                            <div className="divide-y divide-white/[0.04]">
-                                {messages.map(msg => (
-                                    <div key={msg.id} className="p-4 hover:bg-white/[0.02] transition-colors">
-                                        <div className="flex items-start justify-between gap-2 mb-2">
-                                            <p className="text-sm font-bold text-white">{msg.sujet}</p>
-                                            {!msg.lu && <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 mt-1.5" />}
-                                        </div>
-                                        <p className="text-[12px] text-gray-400 line-clamp-2 mb-2">{msg.message}</p>
-                                        <p className="text-[10px] text-gray-600">{new Date(msg.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                                        {msg.reponse && (
-                                            <div className="mt-2 p-3 bg-emerald-500/8 border border-emerald-500/15 rounded-xl">
-                                                <p className="text-[10px] font-bold text-emerald-400 mb-1 flex items-center gap-1">
-                                                    <CheckCircle2 size={10} /> Réponse de l'agent
-                                                </p>
-                                                <p className="text-[12px] text-gray-300">{msg.reponse}</p>
+
+                            <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[400px]">
+                                {/* Message initial client */}
+                                <div className="flex justify-end">
+                                    <div className="max-w-[80%] bg-blue-500/15 border border-blue-500/20 rounded-2xl rounded-tr-sm px-4 py-3">
+                                        <p className="text-[11px] font-bold text-blue-400 mb-1">Vous</p>
+                                        <p className="text-sm text-gray-200 leading-relaxed">{selected.msg.message}</p>
+                                        <p className="text-[10px] text-gray-600 mt-1.5 text-right">
+                                            {new Date(selected.msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Réponses de l'agent */}
+                                {selected.replies.map(reply => (
+                                    <div key={reply.id} className={`flex ${reply.role === 'agent' ? 'justify-start' : 'justify-end'}`}>
+                                        {reply.role === 'agent' && (
+                                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/20 flex items-center justify-center flex-shrink-0 mr-2 mt-1">
+                                                <User size={13} className="text-emerald-400" />
                                             </div>
                                         )}
+                                        <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${reply.role === 'agent'
+                                            ? 'bg-emerald-500/10 border border-emerald-500/20 rounded-tl-sm'
+                                            : 'bg-blue-500/15 border border-blue-500/20 rounded-tr-sm'}`}>
+                                            <p className={`text-[11px] font-bold mb-1 ${reply.role === 'agent' ? 'text-emerald-400' : 'text-blue-400'}`}>
+                                                {reply.role === 'agent' ? 'Votre agent' : 'Vous'}
+                                            </p>
+                                            <p className="text-sm text-gray-200 leading-relaxed whitespace-pre-line">{reply.content}</p>
+                                            <p className="text-[10px] text-gray-600 mt-1.5">
+                                                {new Date(reply.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                            </p>
+                                        </div>
                                     </div>
+                                ))}
+
+                                {selected.replies.length === 0 && (
+                                    <div className="flex items-center gap-2 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                                        <Clock size={13} className="text-gray-600" />
+                                        <p className="text-[12px] text-gray-500">En attente de réponse de votre agent (sous 24h).</p>
+                                    </div>
+                                )}
+
+                                <div ref={threadBottomRef} />
+                            </div>
+                        </div>
+                    ) : (
+                        /* Liste des conversations */
+                        <div className="flex flex-col flex-1">
+                            <div className="p-4 border-b border-white/[0.06]">
+                                <p className="font-black text-white text-sm flex items-center gap-2">
+                                    <Clock size={14} className="text-blue-400" /> Conversations ({threads.length})
+                                </p>
+                            </div>
+                            <div className="flex-1 overflow-y-auto divide-y divide-white/[0.04]">
+                                {threads.map(thread => (
+                                    <button type="button" key={thread.msg.id} onClick={() => openThread(thread)}
+                                        className="w-full text-left p-4 hover:bg-white/[0.02] transition-colors flex items-start gap-3">
+                                        <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-2 ${thread.hasUnread ? 'bg-blue-500' : 'bg-transparent'}`} />
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <p className={`text-sm truncate ${thread.hasUnread ? 'font-bold text-white' : 'font-semibold text-gray-300'}`}>
+                                                    {thread.msg.sujet}
+                                                </p>
+                                                <span className="text-[10px] text-gray-600 flex-shrink-0">
+                                                    {new Date(thread.msg.created_at).toLocaleDateString('fr-FR')}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                                {thread.replies.filter(r => r.role === 'agent').length > 0 ? (
+                                                    <>
+                                                        <CheckCircle2 size={11} className={thread.hasUnread ? 'text-emerald-400' : 'text-gray-600'} />
+                                                        <p className={`text-[11px] truncate ${thread.hasUnread ? 'text-emerald-400 font-bold' : 'text-gray-500'}`}>
+                                                            {thread.hasUnread ? 'Nouvelle réponse de votre agent' : `${thread.replies.filter(r => r.role === 'agent').length} réponse(s)`}
+                                                        </p>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Clock size={11} className="text-gray-600" />
+                                                        <p className="text-[11px] text-gray-600">En attente de réponse</p>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <ChevronRight size={13} className="text-gray-600 flex-shrink-0 mt-1" />
+                                    </button>
                                 ))}
                                 <div ref={bottomRef} />
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
