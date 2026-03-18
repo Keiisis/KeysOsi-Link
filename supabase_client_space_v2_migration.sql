@@ -4,45 +4,79 @@
 -- Idempotente : peut être ré-exécutée sans erreur
 -- ============================================================
 
+
 -- ─── 0. GUARDS V1 ────────────────────────────────────────────
--- Sécurité : s'assurer que les colonnes de la migration V1 existent.
--- Si la colonne client_id est absente sur messages, toutes les queries
--- (y compris la publication realtime) échouent avec "column does not exist".
--- ADD COLUMN IF NOT EXISTS est silencieux si la colonne existe déjà.
+-- Sécurité : s'assurer que les colonnes V1 existent sur messages et rdv_requests.
+-- On utilise des DO blocks pour éviter l'erreur "relation does not exist"
+-- si ces tables n'ont pas encore été créées par la migration V1.
 
-ALTER TABLE public.messages
-    ADD COLUMN IF NOT EXISTS client_id UUID REFERENCES public.client_profiles(id) ON DELETE SET NULL;
+DO $$ BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'messages'
+    ) THEN
+        ALTER TABLE public.messages
+            ADD COLUMN IF NOT EXISTS client_id UUID REFERENCES public.client_profiles(id) ON DELETE SET NULL;
+        ALTER TABLE public.messages
+            ADD COLUMN IF NOT EXISTS lu BOOLEAN DEFAULT false;
+    END IF;
+END $$;
 
-ALTER TABLE public.messages
-    ADD COLUMN IF NOT EXISTS lu BOOLEAN DEFAULT false;
-
--- rdv_requests : s'assurer que client_id existe (table créée en V1)
 DO $$ BEGIN
     IF EXISTS (
         SELECT 1 FROM information_schema.tables
         WHERE table_schema = 'public' AND table_name = 'rdv_requests'
     ) THEN
-        EXECUTE 'ALTER TABLE public.rdv_requests
-            ADD COLUMN IF NOT EXISTS client_id UUID REFERENCES public.client_profiles(id) ON DELETE SET NULL';
+        ALTER TABLE public.rdv_requests
+            ADD COLUMN IF NOT EXISTS client_id UUID REFERENCES public.client_profiles(id) ON DELETE SET NULL;
     END IF;
 END $$;
 
+
 -- ─── 1. TABLE client_documents ──────────────────────────────
--- Stocke les métadonnées des fichiers uploadés par les clients
+-- Créer la table SANS les colonnes FK pour éviter l'erreur
+-- "relation does not exist" si client_profiles/dossier_tracking sont absentes.
+-- Les colonnes FK sont ajoutées séparément avec ADD COLUMN IF NOT EXISTS.
+
 CREATE TABLE IF NOT EXISTS public.client_documents (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    client_id       UUID REFERENCES public.client_profiles(id) ON DELETE CASCADE,
-    dossier_id      UUID REFERENCES public.dossier_tracking(id) ON DELETE SET NULL,
-    nom_fichier     TEXT NOT NULL,
+    nom_fichier     TEXT NOT NULL DEFAULT '',
     type_fichier    TEXT,
     taille          INTEGER,
     url             TEXT NOT NULL DEFAULT '',
-    storage_path    TEXT NOT NULL,
+    storage_path    TEXT NOT NULL DEFAULT '',
     created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Index pour les requêtes par client et dossier
-CREATE INDEX IF NOT EXISTS idx_client_documents_client_id ON public.client_documents(client_id);
+-- Ajouter client_id (idempotent — silencieux si la colonne existe déjà).
+-- C'est ici qu'était le bug : si la table existait sans cette colonne,
+-- CREATE TABLE IF NOT EXISTS la sautait et l'index échouait.
+ALTER TABLE public.client_documents
+    ADD COLUMN IF NOT EXISTS client_id UUID REFERENCES public.client_profiles(id) ON DELETE CASCADE;
+
+-- Ajouter dossier_id avec FK si dossier_tracking existe, sinon simple UUID
+DO $$ BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name  = 'client_documents'
+          AND column_name = 'dossier_id'
+    ) THEN
+        IF EXISTS (
+            SELECT 1 FROM information_schema.tables
+            WHERE table_schema = 'public' AND table_name = 'dossier_tracking'
+        ) THEN
+            ALTER TABLE public.client_documents
+                ADD COLUMN dossier_id UUID REFERENCES public.dossier_tracking(id) ON DELETE SET NULL;
+        ELSE
+            ALTER TABLE public.client_documents
+                ADD COLUMN dossier_id UUID;
+        END IF;
+    END IF;
+END $$;
+
+-- Index (client_id et dossier_id existent maintenant dans tous les cas)
+CREATE INDEX IF NOT EXISTS idx_client_documents_client_id  ON public.client_documents(client_id);
 CREATE INDEX IF NOT EXISTS idx_client_documents_dossier_id ON public.client_documents(dossier_id);
 
 -- RLS
@@ -183,7 +217,10 @@ END $$;
 -- Activer la réplication realtime sur la table messages
 -- (nécessaire pour les notifications en temps réel dans layout.tsx)
 DO $$ BEGIN
-    IF NOT EXISTS (
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'messages'
+    ) AND NOT EXISTS (
         SELECT 1 FROM pg_publication_tables
         WHERE pubname = 'supabase_realtime' AND tablename = 'messages'
     ) THEN
