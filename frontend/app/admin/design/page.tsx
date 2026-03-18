@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { toPng } from 'html-to-image'
 import jsPDF from 'jspdf'
 import {
-    CreditCard, Download, FileImage, FilePdf, User, Plus, Trash2,
+    CreditCard, Download, FileImage, User, Plus, Trash2,
     CheckCircle, AlertCircle, Loader2, Eye, UserCheck, RefreshCw,
     ChevronDown, Search, ExternalLink
 } from 'lucide-react'
