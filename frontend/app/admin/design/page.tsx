@@ -8,8 +8,9 @@ import jsPDF from 'jspdf'
 import {
     CreditCard, Download, FileImage, User, Plus, Trash2,
     CheckCircle, AlertCircle, Loader2, Eye, UserCheck, RefreshCw,
-    Search, ExternalLink
+    Search, ExternalLink, BookOpen, ChevronRight
 } from 'lucide-react'
+import Link from 'next/link'
 import { CardRecto, CardVerso, type CardData } from '@/components/business-card/BusinessCard'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -219,6 +220,31 @@ export default function AdminDesignPage() {
     /* ═══ RENDER ═══ */
     return (
         <div className="space-y-8">
+
+            {/* ── Navigation sous-sections ── */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="relative overflow-hidden rounded-2xl bg-[#C9A84C]/8 border-2 border-[#C9A84C]/30 p-5 flex items-center gap-4">
+                    <div className="w-11 h-11 rounded-xl bg-[#C9A84C]/20 border border-[#C9A84C]/30 flex items-center justify-center flex-shrink-0">
+                        <CreditCard size={20} className="text-[#C9A84C]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-white font-bold text-sm">Cartes de Visite</p>
+                        <p className="text-gray-500 text-xs">Format 85×55mm — Recto / Verso</p>
+                    </div>
+                    <div className="w-2 h-2 rounded-full bg-[#C9A84C]" />
+                </div>
+                <Link href="/admin/design/depliant"
+                    className="group relative overflow-hidden rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-[#C9A84C]/30 hover:bg-[#C9A84C]/5 p-5 flex items-center gap-4 transition-all">
+                    <div className="w-11 h-11 rounded-xl bg-white/[0.04] border border-white/[0.08] group-hover:bg-[#C9A84C]/15 group-hover:border-[#C9A84C]/25 flex items-center justify-center flex-shrink-0 transition-all">
+                        <BookOpen size={20} className="text-gray-500 group-hover:text-[#C9A84C] transition-colors" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-gray-300 font-bold text-sm group-hover:text-white transition-colors">Dépliant A3</p>
+                        <p className="text-gray-600 text-xs">2 volets · Français / English</p>
+                    </div>
+                    <ChevronRight size={16} className="text-gray-600 group-hover:text-[#C9A84C] transition-colors" />
+                </Link>
+            </div>
 
             {/* ── Header ── */}
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#C9A84C]/15 via-[#0f141e] to-[#071525]/80 border border-white/10 p-6">
