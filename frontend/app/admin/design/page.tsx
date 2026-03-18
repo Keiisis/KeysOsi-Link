@@ -8,7 +8,7 @@ import jsPDF from 'jspdf'
 import {
     CreditCard, Download, FileImage, User, Plus, Trash2,
     CheckCircle, AlertCircle, Loader2, Eye, UserCheck, RefreshCw,
-    ChevronDown, Search, ExternalLink
+    Search, ExternalLink
 } from 'lucide-react'
 import { CardRecto, CardVerso, type CardData } from '@/components/business-card/BusinessCard'
 
@@ -18,9 +18,7 @@ import { CardRecto, CardVerso, type CardData } from '@/components/business-card/
 
 interface Agent {
     id: string
-    prenom: string
-    nom: string
-    email: string
+    full_name: string
     role: string
 }
 
@@ -34,7 +32,6 @@ interface SavedCard {
     agent_id: string | null
     created_at: string
     is_active: boolean
-    agent?: { prenom: string; nom: string; email: string } | null
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -43,12 +40,7 @@ interface SavedCard {
 
 async function captureCard(ref: React.RefObject<HTMLDivElement | null>, pixelRatio = 3): Promise<string> {
     if (!ref.current) throw new Error('Élément non trouvé')
-    return toPng(ref.current, {
-        pixelRatio,
-        cacheBust: true,
-        skipFonts: false,
-        style: { borderRadius: '0' }
-    })
+    return toPng(ref.current, { pixelRatio, cacheBust: true, skipFonts: false })
 }
 
 async function downloadPNG(ref: React.RefObject<HTMLDivElement | null>, filename: string) {
@@ -64,23 +56,23 @@ async function downloadPDF(
     versoRef: React.RefObject<HTMLDivElement | null>,
     name: string
 ) {
-    // Capture both faces at high resolution
     const [rectoUrl, versoUrl] = await Promise.all([
         captureCard(rectoRef, 4),
         captureCard(versoRef, 4),
     ])
-
-    // 85mm × 55mm landscape PDF
     const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [85, 55] })
-
-    // Page 1 — Recto
     pdf.addImage(rectoUrl, 'PNG', 0, 0, 85, 55)
-
-    // Page 2 — Verso
     pdf.addPage([85, 55], 'landscape')
     pdf.addImage(versoUrl, 'PNG', 0, 0, 85, 55)
-
     pdf.save(`carte-visite-${name.toLowerCase().replace(/\s+/g, '-')}.pdf`)
+}
+
+/** Extrait le message d'une erreur (Error, Supabase PostgrestError, ou objet quelconque) */
+function getErrorMessage(e: unknown): string {
+    if (!e) return 'Erreur inconnue'
+    if (e instanceof Error) return e.message
+    if (typeof e === 'object' && 'message' in e) return String((e as { message: unknown }).message)
+    return String(e)
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -88,45 +80,52 @@ async function downloadPDF(
    ═══════════════════════════════════════════════════════════════ */
 
 export default function AdminDesignPage() {
-    // Form state
     const [form, setForm] = useState<CardData>({ prenom: '', nom: '', position: '', phone: '', email: '' })
     const [activeView, setActiveView] = useState<'recto' | 'verso'>('recto')
 
-    // Agents
     const [agents, setAgents] = useState<Agent[]>([])
     const [selectedAgent, setSelectedAgent] = useState<string>('')
     const [agentSearch, setAgentSearch] = useState('')
 
-    // Saved cards
     const [savedCards, setSavedCards] = useState<SavedCard[]>([])
     const [loadingCards, setLoadingCards] = useState(true)
 
-    // Status
     const [saving, setSaving] = useState(false)
     const [downloading, setDownloading] = useState<string | null>(null)
     const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
 
-    // Card refs for download
     const rectoRef = useRef<HTMLDivElement>(null)
     const versoRef = useRef<HTMLDivElement>(null)
 
-    // Is form valid for preview
-    const isValid = form.prenom.trim() && form.nom.trim() && form.position.trim()
+    const isValid = !!(form.prenom.trim() && form.nom.trim() && form.position.trim())
 
-    const set = (k: keyof CardData) => (e: React.ChangeEvent<HTMLInputElement>) => setForm(p => ({ ...p, [k]: e.target.value }))
+    const set = (k: keyof CardData) => (e: React.ChangeEvent<HTMLInputElement>) =>
+        setForm(p => ({ ...p, [k]: e.target.value }))
 
-    /* Load agents + saved cards */
+    /* ─── Chargement agents + cartes ─── */
     const load = useCallback(async () => {
         setLoadingCards(true)
         try {
-            const [{ data: agentsData }, { data: cardsData }] = await Promise.all([
-                supabase.from('users').select('id, prenom, nom, email, role').in('role', ['agent', 'admin']).order('nom'),
-                supabase.from('business_cards').select('*, agent:users(prenom, nom, email)').order('created_at', { ascending: false }),
+            const [agentsRes, cardsRes] = await Promise.all([
+                supabase
+                    .from('user_profiles')
+                    .select('id, full_name, role')
+                    .in('role', ['agent', 'admin'])
+                    .order('full_name'),
+                supabase
+                    .from('business_cards')
+                    .select('id, employee_prenom, employee_nom, position, phone, email, agent_id, created_at, is_active')
+                    .order('created_at', { ascending: false }),
             ])
-            if (agentsData) setAgents(agentsData)
-            if (cardsData) setSavedCards(cardsData as SavedCard[])
-        } catch {
-            // Table might not exist yet — handled gracefully
+
+            if (agentsRes.data) setAgents(agentsRes.data)
+            if (cardsRes.data) setSavedCards(cardsRes.data)
+
+            // Log les erreurs éventuelles sans planter
+            if (agentsRes.error) console.warn('[Design] agents:', agentsRes.error.message)
+            if (cardsRes.error) console.warn('[Design] cards:', cardsRes.error.message)
+        } catch (e) {
+            console.error('[Design] load error:', getErrorMessage(e))
         } finally {
             setLoadingCards(false)
         }
@@ -134,7 +133,7 @@ export default function AdminDesignPage() {
 
     useEffect(() => { load() }, [load])
 
-    /* Save card to Supabase */
+    /* ─── Sauvegarde ─── */
     const save = async () => {
         if (!isValid) return
         setSaving(true)
@@ -143,74 +142,85 @@ export default function AdminDesignPage() {
             const { data: { session } } = await supabase.auth.getSession()
             const { error } = await supabase.from('business_cards').insert({
                 employee_prenom: form.prenom.trim(),
-                employee_nom: form.nom.trim(),
-                position: form.position.trim(),
-                phone: form.phone.trim(),
-                email: form.email.trim(),
-                agent_id: selectedAgent || null,
-                created_by: session?.user?.id || null,
-                is_active: true,
+                employee_nom:    form.nom.trim(),
+                position:        form.position.trim(),
+                phone:           form.phone.trim(),
+                email:           form.email.trim(),
+                agent_id:        selectedAgent || null,
+                created_by:      session?.user?.id || null,
+                is_active:       true,
             })
-            if (error) throw error
+            if (error) {
+                const msg = error.message || 'Erreur Supabase'
+                if (msg.includes('does not exist') || msg.includes('relation')) {
+                    setStatus({ type: 'error', msg: 'La table business_cards n\'existe pas encore. Créez-la via le SQL ci-dessous.' })
+                } else {
+                    setStatus({ type: 'error', msg })
+                }
+                return
+            }
             setStatus({ type: 'success', msg: 'Carte sauvegardée avec succès !' })
             await load()
             setTimeout(() => setStatus(null), 4000)
-        } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : 'Erreur inconnue'
-            if (msg.includes('does not exist')) {
-                setStatus({ type: 'error', msg: 'La table business_cards n\'existe pas encore. Créez-la dans Supabase (voir SQL ci-dessous).' })
-            } else {
-                setStatus({ type: 'error', msg })
-            }
+        } catch (e) {
+            setStatus({ type: 'error', msg: getErrorMessage(e) })
         } finally {
             setSaving(false)
         }
     }
 
-    /* Delete card */
+    /* ─── Suppression ─── */
     const deleteCard = async (id: string) => {
         if (!confirm('Supprimer cette carte ?')) return
-        await supabase.from('business_cards').delete().eq('id', id)
+        const { error } = await supabase.from('business_cards').delete().eq('id', id)
+        if (error) console.error('[Design] delete:', error.message)
         await load()
     }
 
-    /* Assign card to agent */
+    /* ─── Attribution à un agent ─── */
     const assignCard = async (cardId: string, agentId: string) => {
-        await supabase.from('business_cards').update({ agent_id: agentId }).eq('id', cardId)
+        const { error } = await supabase.from('business_cards').update({ agent_id: agentId }).eq('id', cardId)
+        if (error) console.error('[Design] assign:', error.message)
         await load()
     }
 
-    /* Download from saved card */
+    /* ─── Téléchargement depuis une carte sauvegardée ─── */
     const downloadSaved = async (card: SavedCard, type: 'recto-png' | 'verso-png' | 'pdf') => {
         setDownloading(card.id + type)
         const cardData: CardData = {
-            prenom: card.employee_prenom,
-            nom: card.employee_nom,
+            prenom:   card.employee_prenom,
+            nom:      card.employee_nom,
             position: card.position,
-            phone: card.phone,
-            email: card.email,
+            phone:    card.phone,
+            email:    card.email,
         }
-        // Populate form temporarily to render hidden cards
         setForm(cardData)
-        await new Promise(r => setTimeout(r, 200)) // wait for render
+        await new Promise(r => setTimeout(r, 250))
         try {
             const fullName = `${card.employee_prenom}-${card.employee_nom}`
-            if (type === 'recto-png') await downloadPNG(rectoRef, `recto-${fullName}.png`)
+            if (type === 'recto-png')      await downloadPNG(rectoRef, `recto-${fullName}.png`)
             else if (type === 'verso-png') await downloadPNG(versoRef, `verso-${fullName}.png`)
-            else await downloadPDF(rectoRef, versoRef, fullName)
+            else                           await downloadPDF(rectoRef, versoRef, fullName)
+        } catch (e) {
+            alert('Erreur export : ' + getErrorMessage(e))
         } finally {
             setDownloading(null)
         }
     }
 
     const filteredAgents = agents.filter(a =>
-        `${a.prenom} ${a.nom} ${a.email}`.toLowerCase().includes(agentSearch.toLowerCase())
+        a.full_name?.toLowerCase().includes(agentSearch.toLowerCase())
     )
+
+    /* ─── Nom de l'agent lié à une carte ─── */
+    const agentName = (card: SavedCard) =>
+        agents.find(a => a.id === card.agent_id)?.full_name || null
 
     /* ═══ RENDER ═══ */
     return (
         <div className="space-y-8">
-            {/* Header */}
+
+            {/* ── Header ── */}
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#C9A84C]/15 via-[#0f141e] to-[#071525]/80 border border-white/10 p-6">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-[#C9A84C]/5 rounded-full blur-[80px]" />
                 <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -223,13 +233,20 @@ export default function AdminDesignPage() {
                             <p className="text-gray-400 text-sm">Génération automatique — format 85×55mm, recto/verso</p>
                         </div>
                     </div>
-                    <button type="button" onClick={load} className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-gray-400 hover:text-white hover:border-white/20 transition-all">
-                        <RefreshCw size={14} /> Actualiser
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <a href="/notre-histoire" target="_blank"
+                            className="flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-xs text-gray-400 hover:text-white transition-all">
+                            <ExternalLink size={12} /> Site public
+                        </a>
+                        <button type="button" onClick={load}
+                            className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-gray-400 hover:text-white hover:border-white/20 transition-all">
+                            <RefreshCw size={14} /> Actualiser
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            {/* SQL Notice */}
+            {/* ── SQL Notice ── */}
             <details className="bg-[#C9A84C]/5 border border-[#C9A84C]/15 rounded-xl p-4 text-xs text-gray-500">
                 <summary className="text-[#C9A84C] font-bold cursor-pointer text-sm">
                     ℹ️ Prérequis Supabase — Créer la table business_cards
@@ -241,17 +258,19 @@ export default function AdminDesignPage() {
   position TEXT NOT NULL,
   phone TEXT DEFAULT '',
   email TEXT DEFAULT '',
-  agent_id UUID REFERENCES auth.users(id),
-  created_by UUID REFERENCES auth.users(id),
+  agent_id UUID REFERENCES user_profiles(id) ON DELETE SET NULL,
+  created_by UUID REFERENCES user_profiles(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   is_active BOOLEAN DEFAULT true
 );
 ALTER TABLE business_cards ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Admins full access" ON business_cards FOR ALL USING (true);`}
+CREATE POLICY "Admins full access" ON business_cards
+  FOR ALL USING (true) WITH CHECK (true);`}
                 </pre>
             </details>
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+
                 {/* ═══ FORMULAIRE ═══ */}
                 <div className="space-y-5">
                     <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6">
@@ -294,6 +313,13 @@ CREATE POLICY "Admins full access" ON business_cards FOR ALL USING (true);`}
                         <h2 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
                             <UserCheck size={16} className="text-[#008751]" /> Attribuer à un agent (optionnel)
                         </h2>
+
+                        {agents.length === 0 && !loadingCards ? (
+                            <div className="text-xs text-amber-400/70 bg-amber-500/5 border border-amber-500/15 rounded-lg px-3 py-2.5 mb-3">
+                                Aucun agent trouvé dans user_profiles. Vérifiez que des utilisateurs avec le rôle <code className="bg-white/5 px-1 rounded">agent</code> ou <code className="bg-white/5 px-1 rounded">admin</code> existent dans la base.
+                            </div>
+                        ) : null}
+
                         <div className="relative mb-3">
                             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                             <input
@@ -303,7 +329,8 @@ CREATE POLICY "Admins full access" ON business_cards FOR ALL USING (true);`}
                                 className="w-full bg-black/30 border border-white/10 rounded-lg pl-8 pr-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#008751]/50 transition-colors"
                             />
                         </div>
-                        <div className="space-y-1.5 max-h-40 overflow-y-auto">
+
+                        <div className="space-y-1.5 max-h-44 overflow-y-auto">
                             <button type="button"
                                 onClick={() => setSelectedAgent('')}
                                 className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${!selectedAgent ? 'bg-[#008751]/15 border border-[#008751]/30 text-[#008751]' : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.03]'}`}
@@ -315,9 +342,14 @@ CREATE POLICY "Admins full access" ON business_cards FOR ALL USING (true);`}
                                     onClick={() => setSelectedAgent(a.id)}
                                     className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${selectedAgent === a.id ? 'bg-[#008751]/15 border border-[#008751]/30 text-[#008751]' : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.03]'}`}
                                 >
-                                    {a.prenom} {a.nom} <span className="opacity-50 text-xs">— {a.role}</span>
+                                    {a.full_name || '—'} <span className="opacity-50 text-xs">— {a.role}</span>
                                 </button>
                             ))}
+                            {loadingCards && (
+                                <div className="flex items-center gap-2 px-3 py-2 text-gray-600 text-xs">
+                                    <Loader2 size={12} className="animate-spin" /> Chargement des agents…
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -328,19 +360,22 @@ CREATE POLICY "Admins full access" ON business_cards FOR ALL USING (true);`}
                             {saving ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
                             Sauvegarder la carte
                         </button>
-                        <button type="button" onClick={async () => { setDownloading('recto-png'); await downloadPNG(rectoRef, `recto-${form.prenom}-${form.nom}.png`); setDownloading(null) }}
+                        <button type="button"
+                            onClick={async () => { setDownloading('recto-png'); try { await downloadPNG(rectoRef, `recto-${form.prenom}-${form.nom}.png`) } finally { setDownloading(null) } }}
                             disabled={!isValid || downloading !== null}
                             className="flex items-center gap-2 px-4 py-2.5 bg-white/[0.03] border border-white/10 text-gray-400 rounded-xl text-sm font-medium hover:text-white hover:border-white/20 transition-all disabled:opacity-40">
                             {downloading === 'recto-png' ? <Loader2 size={14} className="animate-spin" /> : <FileImage size={14} />}
                             PNG Recto
                         </button>
-                        <button type="button" onClick={async () => { setDownloading('verso-png'); await downloadPNG(versoRef, `verso-${form.prenom}-${form.nom}.png`); setDownloading(null) }}
+                        <button type="button"
+                            onClick={async () => { setDownloading('verso-png'); try { await downloadPNG(versoRef, `verso-${form.prenom}-${form.nom}.png`) } finally { setDownloading(null) } }}
                             disabled={!isValid || downloading !== null}
                             className="flex items-center gap-2 px-4 py-2.5 bg-white/[0.03] border border-white/10 text-gray-400 rounded-xl text-sm font-medium hover:text-white hover:border-white/20 transition-all disabled:opacity-40">
                             {downloading === 'verso-png' ? <Loader2 size={14} className="animate-spin" /> : <FileImage size={14} />}
                             PNG Verso
                         </button>
-                        <button type="button" onClick={async () => { setDownloading('pdf'); await downloadPDF(rectoRef, versoRef, `${form.prenom}-${form.nom}`); setDownloading(null) }}
+                        <button type="button"
+                            onClick={async () => { setDownloading('pdf'); try { await downloadPDF(rectoRef, versoRef, `${form.prenom}-${form.nom}`) } finally { setDownloading(null) } }}
                             disabled={!isValid || downloading !== null}
                             className="flex items-center gap-2 px-4 py-2.5 bg-[#008751]/10 border border-[#008751]/30 text-[#008751] rounded-xl text-sm font-bold hover:bg-[#008751]/20 transition-all disabled:opacity-40">
                             {downloading === 'pdf' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
@@ -348,15 +383,19 @@ CREATE POLICY "Admins full access" ON business_cards FOR ALL USING (true);`}
                         </button>
                     </div>
 
-                    {/* Status */}
+                    {/* Status toast */}
                     <AnimatePresence>
                         {status && (
                             <motion.div
                                 initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                                className={`flex items-start gap-2 p-3 rounded-xl text-sm ${status.type === 'success' ? 'bg-green-500/10 border border-green-500/20 text-green-400' : 'bg-red-500/10 border border-red-500/20 text-red-400'}`}
+                                className={`flex items-start gap-2 p-3 rounded-xl text-sm ${status.type === 'success'
+                                    ? 'bg-green-500/10 border border-green-500/20 text-green-400'
+                                    : 'bg-red-500/10 border border-red-500/20 text-red-400'}`}
                             >
-                                {status.type === 'success' ? <CheckCircle size={15} className="mt-0.5 flex-shrink-0" /> : <AlertCircle size={15} className="mt-0.5 flex-shrink-0" />}
-                                {status.msg}
+                                {status.type === 'success'
+                                    ? <CheckCircle size={15} className="mt-0.5 flex-shrink-0" />
+                                    : <AlertCircle size={15} className="mt-0.5 flex-shrink-0" />}
+                                <span>{status.msg}</span>
                             </motion.div>
                         )}
                     </AnimatePresence>
@@ -367,7 +406,7 @@ CREATE POLICY "Admins full access" ON business_cards FOR ALL USING (true);`}
                     <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6">
                         <div className="flex items-center justify-between mb-5">
                             <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                                <Eye size={16} className="text-[#C9A84C]" /> Aperçu
+                                <Eye size={16} className="text-[#C9A84C]" /> Aperçu en temps réel
                             </h2>
                             <div className="flex rounded-lg overflow-hidden border border-white/10">
                                 <button type="button" onClick={() => setActiveView('recto')}
@@ -381,28 +420,36 @@ CREATE POLICY "Admins full access" ON business_cards FOR ALL USING (true);`}
                             </div>
                         </div>
 
-                        <div className="flex justify-center">
-                            <div style={{ transform: 'scale(0.85)', transformOrigin: 'top center' }}>
+                        <div className="flex justify-center overflow-hidden">
+                            <div style={{ transform: 'scale(0.82)', transformOrigin: 'top center', marginBottom: -40 }}>
                                 <AnimatePresence mode="wait">
                                     {activeView === 'recto' ? (
-                                        <motion.div key="recto" initial={{ opacity: 0, rotateY: -15 }} animate={{ opacity: 1, rotateY: 0 }} exit={{ opacity: 0, rotateY: 15 }} transition={{ duration: 0.3 }}>
-                                            <CardRecto ref={rectoRef} data={isValid ? form : { prenom: 'Prénom', nom: 'Nom', position: 'Poste', phone: '', email: '' }} />
+                                        <motion.div key="recto"
+                                            initial={{ opacity: 0, rotateY: -15 }}
+                                            animate={{ opacity: 1, rotateY: 0 }}
+                                            exit={{ opacity: 0, rotateY: 15 }}
+                                            transition={{ duration: 0.3 }}>
+                                            <CardRecto data={isValid ? form : { prenom: 'PRÉNOM', nom: 'NOM', position: 'Fonction', phone: '', email: '' }} />
                                         </motion.div>
                                     ) : (
-                                        <motion.div key="verso" initial={{ opacity: 0, rotateY: 15 }} animate={{ opacity: 1, rotateY: 0 }} exit={{ opacity: 0, rotateY: -15 }} transition={{ duration: 0.3 }}>
-                                            <CardVerso ref={versoRef} data={isValid ? form : { prenom: 'Prénom', nom: 'Nom', position: 'Poste', phone: '', email: '' }} />
+                                        <motion.div key="verso"
+                                            initial={{ opacity: 0, rotateY: 15 }}
+                                            animate={{ opacity: 1, rotateY: 0 }}
+                                            exit={{ opacity: 0, rotateY: -15 }}
+                                            transition={{ duration: 0.3 }}>
+                                            <CardVerso data={isValid ? form : { prenom: 'PRÉNOM', nom: 'NOM', position: 'Fonction', phone: '+229 01 XX XX XX', email: 'email@exemple.bj' }} />
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
                             </div>
                         </div>
 
-                        <p className="text-center text-gray-600 text-xs mt-3">
-                            Format réel : 85 × 55 mm — 300 DPI à l&apos;export
+                        <p className="text-center text-gray-600 text-xs mt-2">
+                            Format réel : 85 × 55 mm — export 300+ DPI
                         </p>
                     </div>
 
-                    {/* Hidden refs pour download (toujours dans le DOM) */}
+                    {/* Refs cachées pour export */}
                     <div className="hidden" aria-hidden>
                         <CardRecto ref={rectoRef} data={form} scale={1} />
                         <CardVerso ref={versoRef} data={form} scale={1} />
@@ -430,58 +477,86 @@ CREATE POLICY "Admins full access" ON business_cards FOR ALL USING (true);`}
                     </div>
                 ) : (
                     <div className="divide-y divide-white/[0.04]">
-                        {savedCards.map(card => (
-                            <div key={card.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 hover:bg-white/[0.02] transition-colors">
-                                {/* Miniature */}
-                                <div style={{ transform: 'scale(0.28)', transformOrigin: 'top left', width: 340 * 0.28, height: 220 * 0.28, flexShrink: 0, pointerEvents: 'none' }}>
-                                    <CardRecto data={{ prenom: card.employee_prenom, nom: card.employee_nom, position: card.position, phone: card.phone, email: card.email }} />
-                                </div>
+                        {savedCards.map(card => {
+                            const linkedAgent = agentName(card)
+                            return (
+                                <div key={card.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 hover:bg-white/[0.02] transition-colors">
+                                    {/* Miniature */}
+                                    <div style={{ transform: 'scale(0.28)', transformOrigin: 'top left', width: 340 * 0.28, height: 220 * 0.28, flexShrink: 0, pointerEvents: 'none' }}>
+                                        <CardRecto data={{
+                                            prenom: card.employee_prenom,
+                                            nom: card.employee_nom,
+                                            position: card.position,
+                                            phone: card.phone,
+                                            email: card.email,
+                                        }} />
+                                    </div>
 
-                                {/* Info */}
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-white font-bold text-sm">{card.employee_prenom} {card.employee_nom}</p>
-                                    <p className="text-gray-400 text-xs">{card.position}</p>
-                                    {card.agent && (
-                                        <p className="text-[#008751] text-xs mt-0.5 flex items-center gap-1">
-                                            <UserCheck size={10} /> Attribuée à {card.agent.prenom} {card.agent.nom}
+                                    {/* Infos */}
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-white font-bold text-sm">{card.employee_prenom} {card.employee_nom}</p>
+                                        <p className="text-gray-400 text-xs">{card.position}</p>
+                                        {linkedAgent ? (
+                                            <p className="text-[#008751] text-xs mt-0.5 flex items-center gap-1">
+                                                <UserCheck size={10} /> Attribuée à {linkedAgent}
+                                            </p>
+                                        ) : (
+                                            <p className="text-gray-600 text-xs mt-0.5">Non attribuée</p>
+                                        )}
+                                        <p className="text-gray-600 text-xs mt-0.5">
+                                            {new Date(card.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
                                         </p>
-                                    )}
-                                    <p className="text-gray-600 text-xs mt-0.5">{new Date(card.created_at).toLocaleDateString('fr-FR')}</p>
-                                </div>
+                                    </div>
 
-                                {/* Actions */}
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    {!card.agent_id && agents.length > 0 && (
-                                        <select
-                                            onChange={e => e.target.value && assignCard(card.id, e.target.value)}
-                                            className="bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-gray-400 focus:outline-none focus:border-[#008751]/50"
-                                            defaultValue=""
-                                        >
-                                            <option value="" disabled>Attribuer…</option>
-                                            {agents.map(a => (
-                                                <option key={a.id} value={a.id}>{a.prenom} {a.nom}</option>
-                                            ))}
-                                        </select>
-                                    )}
-                                    <button type="button" onClick={() => downloadSaved(card, 'recto-png')} disabled={downloading !== null}
-                                        className="flex items-center gap-1 px-2 py-1.5 bg-white/[0.03] border border-white/10 rounded-lg text-xs text-gray-400 hover:text-white transition-colors disabled:opacity-40" title="PNG Recto">
-                                        <FileImage size={12} /> R
-                                    </button>
-                                    <button type="button" onClick={() => downloadSaved(card, 'verso-png')} disabled={downloading !== null}
-                                        className="flex items-center gap-1 px-2 py-1.5 bg-white/[0.03] border border-white/10 rounded-lg text-xs text-gray-400 hover:text-white transition-colors disabled:opacity-40" title="PNG Verso">
-                                        <FileImage size={12} /> V
-                                    </button>
-                                    <button type="button" onClick={() => downloadSaved(card, 'pdf')} disabled={downloading !== null}
-                                        className="flex items-center gap-1 px-2 py-1.5 bg-[#008751]/10 border border-[#008751]/20 rounded-lg text-xs text-[#008751] hover:bg-[#008751]/20 transition-colors disabled:opacity-40" title="PDF Recto+Verso">
-                                        <Download size={12} /> PDF
-                                    </button>
-                                    <button type="button" onClick={() => deleteCard(card.id)}
-                                        className="flex items-center gap-1 px-2 py-1.5 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400 hover:bg-red-500/20 transition-colors" title="Supprimer">
-                                        <Trash2 size={12} />
-                                    </button>
+                                    {/* Actions */}
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        {/* Dropdown attribution */}
+                                        {agents.length > 0 && (
+                                            <select
+                                                title="Attribuer cette carte à un agent"
+                                                onChange={e => e.target.value && assignCard(card.id, e.target.value)}
+                                                className="bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-gray-400 focus:outline-none focus:border-[#008751]/50 max-w-[160px]"
+                                                value={card.agent_id || ''}
+                                            >
+                                                <option value="" disabled={!!card.agent_id}>
+                                                    {card.agent_id ? '↻ Réattribuer…' : 'Attribuer à…'}
+                                                </option>
+                                                {agents.map(a => (
+                                                    <option key={a.id} value={a.id}>{a.full_name}</option>
+                                                ))}
+                                            </select>
+                                        )}
+                                        <button type="button"
+                                            onClick={() => downloadSaved(card, 'recto-png')}
+                                            disabled={downloading !== null}
+                                            className="flex items-center gap-1 px-2 py-1.5 bg-white/[0.03] border border-white/10 rounded-lg text-xs text-gray-400 hover:text-white transition-colors disabled:opacity-40"
+                                            title="PNG Recto">
+                                            <FileImage size={12} /> R
+                                        </button>
+                                        <button type="button"
+                                            onClick={() => downloadSaved(card, 'verso-png')}
+                                            disabled={downloading !== null}
+                                            className="flex items-center gap-1 px-2 py-1.5 bg-white/[0.03] border border-white/10 rounded-lg text-xs text-gray-400 hover:text-white transition-colors disabled:opacity-40"
+                                            title="PNG Verso">
+                                            <FileImage size={12} /> V
+                                        </button>
+                                        <button type="button"
+                                            onClick={() => downloadSaved(card, 'pdf')}
+                                            disabled={downloading !== null}
+                                            className="flex items-center gap-1 px-2 py-1.5 bg-[#008751]/10 border border-[#008751]/20 rounded-lg text-xs text-[#008751] hover:bg-[#008751]/20 transition-colors disabled:opacity-40"
+                                            title="PDF Recto+Verso">
+                                            <Download size={12} /> PDF
+                                        </button>
+                                        <button type="button"
+                                            onClick={() => deleteCard(card.id)}
+                                            className="flex items-center gap-1 px-2 py-1.5 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400 hover:bg-red-500/20 transition-colors"
+                                            title="Supprimer">
+                                            <Trash2 size={12} />
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
                 )}
             </div>

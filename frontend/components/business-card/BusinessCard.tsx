@@ -17,116 +17,148 @@ export interface CardData {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   CONSTANTES DE DESIGN
+   DESIGN TOKENS — palette luxe premium
    ═══════════════════════════════════════════════════════════════ */
 
-const GOLD = '#C9A84C'
-const GOLD_LIGHT = '#E2C97E'
-const NAVY = '#071525'
-const TEAL = '#0c2d3a'
+const GOLD        = '#C9A84C'
+const GOLD_LIGHT  = '#E2C97E'
+const GOLD_PALE   = '#F5E8BA'
+const DARK        = '#030810'
+const NAVY_MID    = '#061a2e'
 
 /* ═══════════════════════════════════════════════════════════════
-   SVG — PORTE DU NON-RETOUR + POING BRISEUR DE CHAÎNES
+   SVG — ILLUSTRATION PORTE DU NON-RETOUR + POING
+   Redesignée : plus grande, plus détaillée, ornements enrichis
    ═══════════════════════════════════════════════════════════════ */
 
-function DoorIllustration() {
+function DoorIllustration({ opacity = 1 }: { opacity?: number }) {
     return (
-        <svg viewBox="0 0 200 175" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+        <svg
+            viewBox="0 0 260 210"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{ width: '100%', height: '100%', opacity }}
+        >
             <defs>
-                <filter id="gold-glow">
-                    <feGaussianBlur stdDeviation="1.2" result="blur" />
-                    <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                <filter id="glow-s">
+                    <feGaussianBlur stdDeviation="1" result="b" />
+                    <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
                 </filter>
+                <filter id="glow-m">
+                    <feGaussianBlur stdDeviation="1.8" result="b" />
+                    <feMerge><feMergeNode in="b" /><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+                </filter>
+                <linearGradient id="gv" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={GOLD_LIGHT} />
+                    <stop offset="100%" stopColor={GOLD} stopOpacity="0.5" />
+                </linearGradient>
             </defs>
 
-            {/* === ARCHITRAVE / BEAM SUPÉRIEUR === */}
-            <rect x="5" y="30" width="190" height="11" stroke={GOLD} strokeWidth="1.3" filter="url(#gold-glow)" />
-            <rect x="5" y="30" width="190" height="11" stroke={GOLD_LIGHT} strokeWidth="0.3" opacity="0.25" />
-            {/* Ligne décorative sous l'architrave */}
-            <line x1="5" y1="45" x2="195" y2="45" stroke={GOLD} strokeWidth="0.5" opacity="0.5" />
+            {/* ── Frise / Architrave ── */}
+            <rect x="10" y="28" width="240" height="14" stroke="url(#gv)" strokeWidth="1.5" fill="none" filter="url(#glow-s)" />
+            <line x1="10" y1="24" x2="250" y2="24" stroke={GOLD} strokeWidth="0.5" opacity="0.4" />
+            <line x1="10" y1="45" x2="250" y2="45" stroke={GOLD} strokeWidth="0.4" opacity="0.3" />
 
-            {/* === SILHOUETTES EN PROCESSION sur l'architrave === */}
-            {[18, 30, 42, 54, 66].map(cx => (
-                <g key={cx} opacity="0.85" fill={GOLD}>
-                    <circle cx={cx} cy="24" r="2.8" />
-                    <rect x={cx - 1.5} y="27" width="3" height="5" rx="1" />
+            {/* Figures en procession — gauche */}
+            {[20, 32, 44, 56, 68, 80].map(cx => (
+                <g key={cx} fill={GOLD} opacity="0.9">
+                    <circle cx={cx} cy="21" r="3.2" />
+                    <rect x={cx - 2.2} y="25" width="4.4" height="5.5" rx="1.8" />
                 </g>
             ))}
-            {[134, 146, 158, 170, 182].map(cx => (
-                <g key={cx} opacity="0.85" fill={GOLD}>
-                    <circle cx={cx} cy="24" r="2.8" />
-                    <rect x={cx - 1.5} y="27" width="3" height="5" rx="1" />
+            {/* Figures en procession — droite */}
+            {[180, 192, 204, 216, 228, 240].map(cx => (
+                <g key={cx} fill={GOLD} opacity="0.9">
+                    <circle cx={cx} cy="21" r="3.2" />
+                    <rect x={cx - 2.2} y="25" width="4.4" height="5.5" rx="1.8" />
                 </g>
             ))}
 
-            {/* === PILIER GAUCHE === */}
-            <rect x="8" y="41" width="16" height="84" stroke={GOLD} strokeWidth="1.3" filter="url(#gold-glow)" />
-            <line x1="8" y1="55" x2="24" y2="55" stroke={GOLD} strokeWidth="0.6" opacity="0.5" />
-            <line x1="8" y1="65" x2="24" y2="65" stroke={GOLD} strokeWidth="0.6" opacity="0.5" />
-            <line x1="8" y1="75" x2="24" y2="75" stroke={GOLD} strokeWidth="0.6" opacity="0.3" />
+            {/* ── Pilier gauche ── */}
+            <rect x="12" y="42" width="20" height="115" stroke="url(#gv)" strokeWidth="1.5" fill="none" filter="url(#glow-s)" />
+            {[57, 70, 83, 96, 109, 122].map(y => (
+                <line key={y} x1="12" y1={y} x2="32" y2={y} stroke={GOLD} strokeWidth="0.5" opacity="0.35" />
+            ))}
 
-            {/* === PILIER DROIT === */}
-            <rect x="176" y="41" width="16" height="84" stroke={GOLD} strokeWidth="1.3" filter="url(#gold-glow)" />
-            <line x1="176" y1="55" x2="192" y2="55" stroke={GOLD} strokeWidth="0.6" opacity="0.5" />
-            <line x1="176" y1="65" x2="192" y2="65" stroke={GOLD} strokeWidth="0.6" opacity="0.5" />
-            <line x1="176" y1="75" x2="192" y2="75" stroke={GOLD} strokeWidth="0.6" opacity="0.3" />
+            {/* ── Pilier droit ── */}
+            <rect x="228" y="42" width="20" height="115" stroke="url(#gv)" strokeWidth="1.5" fill="none" filter="url(#glow-s)" />
+            {[57, 70, 83, 96, 109, 122].map(y => (
+                <line key={y} x1="228" y1={y} x2="248" y2={y} stroke={GOLD} strokeWidth="0.5" opacity="0.35" />
+            ))}
 
-            {/* === ARCHE CENTRALE === */}
-            <path d="M 68,125 L 68,78 Q 68,48 100,48 Q 132,48 132,78 L 132,125"
-                stroke={GOLD} strokeWidth="2" filter="url(#gold-glow)" />
-            {/* Arche intérieure décorative */}
-            <path d="M 76,125 L 76,82 Q 76,57 100,57 Q 124,57 124,82 L 124,125"
-                stroke={GOLD} strokeWidth="0.8" opacity="0.4" />
-
+            {/* ── Grande arche ── */}
+            <path d="M 82,157 L 82,100 Q 82,58 130,58 Q 178,58 178,100 L 178,157"
+                stroke={GOLD} strokeWidth="2.5" fill="none" filter="url(#glow-m)" />
+            {/* Arche intérieure */}
+            <path d="M 93,157 L 93,104 Q 93,70 130,70 Q 167,70 167,104 L 167,157"
+                stroke={GOLD} strokeWidth="0.8" fill="none" opacity="0.35" />
             {/* Bases de l'arche */}
-            <rect x="62" y="116" width="10" height="9" stroke={GOLD} strokeWidth="0.8" opacity="0.6" />
-            <rect x="128" y="116" width="10" height="9" stroke={GOLD} strokeWidth="0.8" opacity="0.6" />
+            <rect x="74" y="146" width="12" height="12" stroke={GOLD} strokeWidth="0.9" opacity="0.7" />
+            <rect x="174" y="146" width="12" height="12" stroke={GOLD} strokeWidth="0.9" opacity="0.7" />
 
-            {/* === POING LEVÉ (briseur de chaînes) === */}
+            {/* ── Poing levé (centré dans l'arche) ── */}
             {/* Paume */}
-            <rect x="86" y="91" width="26" height="20" rx="3.5" fill={GOLD} opacity="0.95" />
+            <rect x="112" y="116" width="34" height="25" rx="4.5" fill={GOLD} opacity="0.95" />
             {/* Doigts */}
-            <rect x="86" y="78" width="6.5" height="15" rx="3" fill={GOLD} />
-            <rect x="93.5" y="75" width="6.5" height="18" rx="3" fill={GOLD} />
-            <rect x="101" y="76" width="6.5" height="17" rx="3" fill={GOLD} />
-            <rect x="108.5" y="78" width="5.5" height="15" rx="2.5" fill={GOLD} />
+            <rect x="112" y="98" width="8.5" height="20" rx="4" fill={GOLD} />
+            <rect x="121.5" y="93" width="8.5" height="25" rx="4" fill={GOLD} />
+            <rect x="131" y="95" width="8.5" height="23" rx="4" fill={GOLD} />
+            <rect x="140.5" y="98" width="7.5" height="20" rx="3.5" fill={GOLD} />
             {/* Pouce */}
-            <rect x="79" y="92" width="10" height="13" rx="3.5" fill={GOLD} transform="rotate(-18 84 98)" />
+            <rect x="100" y="117" width="15" height="17" rx="4.5" fill={GOLD} transform="rotate(-18 107 125)" />
             {/* Jointures */}
-            <line x1="92.5" y1="91" x2="92.5" y2="98" stroke={NAVY} strokeWidth="0.9" />
-            <line x1="100" y1="91" x2="100" y2="98" stroke={NAVY} strokeWidth="0.9" />
-            <line x1="107.5" y1="91" x2="107.5" y2="98" stroke={NAVY} strokeWidth="0.9" />
+            <line x1="120" y1="116" x2="120" y2="127" stroke={DARK} strokeWidth="1.1" />
+            <line x1="129" y1="116" x2="129" y2="127" stroke={DARK} strokeWidth="1.1" />
+            <line x1="138" y1="116" x2="138" y2="127" stroke={DARK} strokeWidth="1.1" />
+            {/* Reflet knuckle */}
+            <line x1="114" y1="117" x2="145" y2="117" stroke="rgba(255,255,255,0.15)" strokeWidth="0.8" />
 
-            {/* === CHAÎNES BRISÉES === */}
-            {/* Maillon gauche 1 */}
-            <ellipse cx="89" cy="116" rx="6.5" ry="3.5" stroke={GOLD} strokeWidth="1.3" transform="rotate(-25 89 116)" />
-            <ellipse cx="81" cy="126" rx="6.5" ry="3.5" stroke={GOLD} strokeWidth="1.3" transform="rotate(-25 81 126)" />
-            <ellipse cx="73" cy="136" rx="6" ry="3" stroke={GOLD} strokeWidth="1.1" opacity="0.7" transform="rotate(-25 73 136)" />
-            {/* Maillon droit 1 */}
-            <ellipse cx="111" cy="116" rx="6.5" ry="3.5" stroke={GOLD} strokeWidth="1.3" transform="rotate(25 111 116)" />
-            <ellipse cx="119" cy="126" rx="6.5" ry="3.5" stroke={GOLD} strokeWidth="1.3" transform="rotate(25 119 126)" />
-            <ellipse cx="127" cy="136" rx="6" ry="3" stroke={GOLD} strokeWidth="1.1" opacity="0.7" transform="rotate(25 127 136)" />
+            {/* ── Chaînes brisées ── */}
+            <ellipse cx="112" cy="146" rx="8.5" ry="4.5" stroke={GOLD} strokeWidth="1.5" transform="rotate(-30 112 146)" />
+            <ellipse cx="102" cy="159" rx="8.5" ry="4.5" stroke={GOLD} strokeWidth="1.5" transform="rotate(-30 102 159)" />
+            <ellipse cx="92"  cy="172" rx="8"   ry="4"   stroke={GOLD} strokeWidth="1.2" opacity="0.6" transform="rotate(-30 92 172)" />
 
-            {/* === FRAGMENTS DE BRISURE === */}
-            <rect x="94" y="110" width="4" height="2" rx="1" fill={GOLD} transform="rotate(-40 96 111)" />
-            <rect x="102" y="108" width="3" height="1.5" rx="0.5" fill={GOLD} transform="rotate(35 103 108)" />
-            <circle cx="98" cy="106" r="1.5" fill={GOLD} opacity="0.9" />
-            <circle cx="92" cy="113" r="1" fill={GOLD} opacity="0.6" />
-            <circle cx="108" cy="112" r="1" fill={GOLD} opacity="0.6" />
-            <circle cx="100" cy="115" r="0.8" fill={GOLD} opacity="0.5" />
+            <ellipse cx="148" cy="146" rx="8.5" ry="4.5" stroke={GOLD} strokeWidth="1.5" transform="rotate(30 148 146)" />
+            <ellipse cx="158" cy="159" rx="8.5" ry="4.5" stroke={GOLD} strokeWidth="1.5" transform="rotate(30 158 159)" />
+            <ellipse cx="168" cy="172" rx="8"   ry="4"   stroke={GOLD} strokeWidth="1.2" opacity="0.6" transform="rotate(30 168 172)" />
+
+            {/* Fragments de brisure */}
+            <rect x="122" y="138" width="5.5" height="2.5" rx="1" fill={GOLD} transform="rotate(-45 124 139)" />
+            <rect x="132" y="135" width="4.5" height="2" rx="0.8" fill={GOLD} transform="rotate(40 134 136)" />
+            <circle cx="127" cy="132" r="2.2" fill={GOLD} opacity="0.9" />
+            <circle cx="119" cy="141" r="1.5" fill={GOLD} opacity="0.6" />
+            <circle cx="141" cy="140" r="1.5" fill={GOLD} opacity="0.6" />
+            <circle cx="130" cy="145" r="1" fill={GOLD} opacity="0.5" />
         </svg>
     )
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   RECTO — Face institutionnelle + nom employé
+   ORNEMENT COIN — croix dorée
+   ═══════════════════════════════════════════════════════════════ */
+
+function CornerCross({ s }: { s: number }) {
+    const arm = 7 * s
+    const thick = 1.5 * s
+    return (
+        <div style={{ position: 'relative', width: arm + thick, height: arm + thick, flexShrink: 0 }}>
+            {/* horizontal */}
+            <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: thick, transform: 'translateY(-50%)', background: GOLD }} />
+            {/* vertical */}
+            <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: thick, transform: 'translateX(-50%)', background: GOLD }} />
+        </div>
+    )
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RECTO — Face institutionnelle premium
    ═══════════════════════════════════════════════════════════════ */
 
 export const CardRecto = forwardRef<HTMLDivElement, { data: CardData; scale?: number }>(
     ({ data, scale = 1 }, ref) => {
         const W = 340 * scale
         const H = 220 * scale
-        const fs = scale // font scale factor
+        const s = scale
 
         return (
             <div
@@ -136,112 +168,139 @@ export const CardRecto = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
                     height: H,
                     position: 'relative',
                     overflow: 'hidden',
-                    background: `linear-gradient(135deg, ${NAVY} 0%, ${TEAL} 55%, #0a2233 100%)`,
+                    background: `linear-gradient(155deg, #030a14 0%, ${NAVY_MID} 55%, #071f30 100%)`,
                     fontFamily: "'Georgia', 'Times New Roman', serif",
-                    boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+                    boxShadow: '0 30px 100px rgba(0,0,0,0.85)',
                     flexShrink: 0,
                 }}
             >
-                {/* Texture subtile */}
+                {/* ── Ambiance radiale or ── */}
                 <div style={{
-                    position: 'absolute', inset: 0,
-                    backgroundImage: 'radial-gradient(ellipse at 30% 20%, rgba(201,168,76,0.06) 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, rgba(12,45,58,0.8) 0%, transparent 50%)',
+                    position: 'absolute',
+                    top: '38%', left: '50%',
+                    transform: 'translate(-50%,-50%)',
+                    width: 300 * s, height: 240 * s,
+                    background: `radial-gradient(ellipse, rgba(201,168,76,0.09) 0%, transparent 65%)`,
                     pointerEvents: 'none',
                 }} />
 
-                {/* Filet doré supérieur */}
+                {/* ── Bande dorée supérieure (épaisse) ── */}
                 <div style={{
                     position: 'absolute', top: 0, left: 0, right: 0,
-                    height: 2 * scale,
-                    background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)`,
+                    height: 3 * s,
+                    background: `linear-gradient(90deg, transparent 0%, ${GOLD} 30%, ${GOLD_PALE} 50%, ${GOLD} 70%, transparent 100%)`,
                 }} />
 
-                {/* === LOGO === */}
+                {/* ── Bande dorée inférieure ── */}
                 <div style={{
-                    position: 'absolute', top: 14 * scale, left: '50%', transform: 'translateX(-50%)',
-                    width: 44 * scale, height: 44 * scale,
-                }}>
-                    <Image src="/images/logo-transparent.png" alt="RGB Logo" fill style={{ objectFit: 'contain' }} />
-                </div>
+                    position: 'absolute', bottom: 0, left: 0, right: 0,
+                    height: 3 * s,
+                    background: `linear-gradient(90deg, transparent 0%, ${GOLD} 30%, ${GOLD_PALE} 50%, ${GOLD} 70%, transparent 100%)`,
+                }} />
 
-                {/* === NOM DE L'ORGANISATION === */}
-                <div style={{
-                    position: 'absolute', top: 62 * scale, left: 0, right: 0, textAlign: 'center',
-                    color: GOLD,
-                    fontSize: 10.5 * fs,
-                    fontWeight: 700,
-                    letterSpacing: '0.18em',
-                    textTransform: 'uppercase',
-                    fontFamily: "'Cinzel', 'Trajan Pro', 'Georgia', serif",
-                }}>
-                    RETOUR GAGNANT BÉNIN
-                </div>
+                {/* ── Filets intérieurs fin (cadre double) ── */}
+                <div style={{ position: 'absolute', top: 8 * s, left: 8 * s, right: 8 * s, height: 0.7 * s, background: GOLD, opacity: 0.45 }} />
+                <div style={{ position: 'absolute', bottom: 8 * s, left: 8 * s, right: 8 * s, height: 0.7 * s, background: GOLD, opacity: 0.45 }} />
+                <div style={{ position: 'absolute', left: 8 * s, top: 8 * s, bottom: 8 * s, width: 0.7 * s, background: GOLD, opacity: 0.45 }} />
+                <div style={{ position: 'absolute', right: 8 * s, top: 8 * s, bottom: 8 * s, width: 0.7 * s, background: GOLD, opacity: 0.45 }} />
 
-                {/* === MISSION === */}
-                <div style={{
-                    position: 'absolute', top: 76 * scale, left: 20 * scale, right: 20 * scale,
-                    textAlign: 'center',
-                    color: 'rgba(255,255,255,0.75)',
-                    fontSize: 5.8 * fs,
-                    letterSpacing: '0.04em',
-                    lineHeight: 1.4,
-                    fontFamily: "'Arial', sans-serif",
-                }}>
-                    L&apos;Agence d&apos;Accompagnement à la Nationalité<br />
-                    et au Retour des Afro-descendants
-                </div>
+                {/* ── Ornements coins (losanges) ── */}
+                {([
+                    { top: 4 * s, left: 4 * s },
+                    { top: 4 * s, right: 4 * s },
+                    { bottom: 4 * s, left: 4 * s },
+                    { bottom: 4 * s, right: 4 * s },
+                ] as React.CSSProperties[]).map((pos, i) => (
+                    <div key={i} style={{
+                        position: 'absolute',
+                        width: 7 * s, height: 7 * s,
+                        background: GOLD,
+                        transform: 'rotate(45deg)',
+                        ...pos,
+                    }} />
+                ))}
 
-                {/* === ILLUSTRATION PORTE + POING === */}
+                {/* ── LOGO + ORG NAME (top centre) ── */}
                 <div style={{
                     position: 'absolute',
-                    top: 90 * scale,
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    width: 120 * scale,
-                    height: 105 * scale,
-                    opacity: 0.9,
+                    top: 15 * s, left: 0, right: 0,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 * s,
                 }}>
-                    <DoorIllustration />
+                    <div style={{ width: 40 * s, height: 40 * s, position: 'relative' }}>
+                        <Image src="/images/logo-transparent.png" alt="RGB" fill style={{ objectFit: 'contain' }} />
+                    </div>
+
+                    <div style={{
+                        color: GOLD,
+                        fontSize: 9 * s,
+                        fontWeight: 700,
+                        letterSpacing: '0.24em',
+                        textTransform: 'uppercase',
+                        fontFamily: "'Cinzel', 'Trajan Pro', 'Georgia', serif",
+                        textAlign: 'center',
+                    }}>
+                        RETOUR GAGNANT BÉNIN
+                    </div>
+
+                    {/* Ornement horizontal sous le titre */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 * s, width: 160 * s }}>
+                        <div style={{ flex: 1, height: 0.6 * s, background: `linear-gradient(90deg, transparent, ${GOLD}90)` }} />
+                        <div style={{ width: 4 * s, height: 4 * s, background: GOLD, transform: 'rotate(45deg)', flexShrink: 0 }} />
+                        <div style={{ flex: 1, height: 0.6 * s, background: `linear-gradient(270deg, transparent, ${GOLD}90)` }} />
+                    </div>
                 </div>
 
-                {/* === INFORMATIONS EMPLOYÉ (bas de carte) === */}
-                {/* Ligne séparatrice */}
+                {/* ── ILLUSTRATION centrale (dominante) ── */}
                 <div style={{
-                    position: 'absolute', bottom: 44 * scale, left: 20 * scale, right: 20 * scale,
-                    height: 1,
+                    position: 'absolute',
+                    top: 64 * s, left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: 158 * s, height: 130 * s,
+                }}>
+                    <DoorIllustration opacity={0.92} />
+                </div>
+
+                {/* ── Bandeau dégradé bas ── */}
+                <div style={{
+                    position: 'absolute', bottom: 0, left: 0, right: 0,
+                    height: 55 * s,
+                    background: `linear-gradient(0deg, rgba(3,8,16,0.98) 0%, rgba(3,8,16,0.6) 60%, transparent 100%)`,
+                    pointerEvents: 'none',
+                }} />
+
+                {/* ── Séparateur fin au-dessus des infos ── */}
+                <div style={{
+                    position: 'absolute', bottom: 48 * s, left: 18 * s, right: 18 * s,
+                    height: 0.5 * s,
                     background: `linear-gradient(90deg, transparent, ${GOLD}60, transparent)`,
                 }} />
 
+                {/* ── INFOS EMPLOYÉ (bas) ── */}
                 <div style={{
-                    position: 'absolute', bottom: 12 * scale, left: 20 * scale, right: 20 * scale,
-                    display: 'flex', flexDirection: 'column', gap: 2 * scale,
+                    position: 'absolute', bottom: 12 * s, left: 20 * s, right: 20 * s,
+                    display: 'flex', flexDirection: 'column', gap: 3 * s,
                 }}>
                     <div style={{
                         color: GOLD_LIGHT,
-                        fontSize: 9 * fs,
+                        fontSize: 11 * s,
                         fontWeight: 700,
-                        letterSpacing: '0.08em',
+                        letterSpacing: '0.14em',
                         textTransform: 'uppercase',
                         fontFamily: "'Cinzel', 'Georgia', serif",
+                        lineHeight: 1,
                     }}>
                         {data.prenom} {data.nom}
                     </div>
                     <div style={{
-                        color: 'rgba(255,255,255,0.7)',
-                        fontSize: 6.5 * fs,
-                        letterSpacing: '0.1em',
+                        color: 'rgba(255,255,255,0.55)',
+                        fontSize: 6 * s,
+                        letterSpacing: '0.16em',
+                        textTransform: 'uppercase',
                         fontFamily: "'Arial', sans-serif",
                     }}>
                         {data.position}
                     </div>
                 </div>
-
-                {/* Filet doré inférieur */}
-                <div style={{
-                    position: 'absolute', bottom: 0, left: 0, right: 0,
-                    height: 2 * scale,
-                    background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)`,
-                }} />
             </div>
         )
     }
@@ -249,14 +308,14 @@ export const CardRecto = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
 CardRecto.displayName = 'CardRecto'
 
 /* ═══════════════════════════════════════════════════════════════
-   VERSO — Contact + QR code
+   VERSO — Contacts + QR Code
    ═══════════════════════════════════════════════════════════════ */
 
 export const CardVerso = forwardRef<HTMLDivElement, { data: CardData; scale?: number }>(
     ({ data, scale = 1 }, ref) => {
         const W = 340 * scale
         const H = 220 * scale
-        const fs = scale
+        const s = scale
 
         return (
             <div
@@ -266,149 +325,188 @@ export const CardVerso = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
                     height: H,
                     position: 'relative',
                     overflow: 'hidden',
-                    background: `linear-gradient(135deg, #060f1a 0%, #0a1e2e 60%, ${TEAL} 100%)`,
+                    background: `linear-gradient(155deg, #030a14 0%, #05121e 55%, ${NAVY_MID} 100%)`,
                     fontFamily: "'Arial', sans-serif",
-                    boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+                    boxShadow: '0 30px 100px rgba(0,0,0,0.85)',
                     flexShrink: 0,
                 }}
             >
-                {/* Filets dorés */}
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2 * scale, background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)` }} />
-                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2 * scale, background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)` }} />
+                {/* ── Ambiance radiale gauche ── */}
+                <div style={{
+                    position: 'absolute',
+                    top: '50%', left: '30%',
+                    transform: 'translate(-50%,-50%)',
+                    width: 220 * s, height: 180 * s,
+                    background: `radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%)`,
+                    pointerEvents: 'none',
+                }} />
 
-                {/* Filets verticaux */}
-                <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 2 * scale, background: `linear-gradient(180deg, transparent, ${GOLD}80, transparent)` }} />
-                <div style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: 2 * scale, background: `linear-gradient(180deg, transparent, ${GOLD}80, transparent)` }} />
-
-                {/* Watermark porte (très subtil) */}
+                {/* ── Watermark illustration (fond) ── */}
                 <div style={{
                     position: 'absolute',
                     top: '50%', left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    width: 180 * scale, height: 160 * scale,
-                    opacity: 0.04,
-                    pointerEvents: 'none',
+                    transform: 'translate(-50%,-50%)',
+                    width: 230 * s, height: 200 * s,
+                    opacity: 0.032, pointerEvents: 'none',
                 }}>
                     <DoorIllustration />
                 </div>
 
-                {/* === LAYOUT GAUCHE : QR + infos, DROITE : contact perso === */}
+                {/* ── Bandes dorées épaisse haut/bas ── */}
+                <div style={{
+                    position: 'absolute', top: 0, left: 0, right: 0, height: 3 * s,
+                    background: `linear-gradient(90deg, transparent 0%, ${GOLD} 30%, ${GOLD_PALE} 50%, ${GOLD} 70%, transparent 100%)`,
+                }} />
+                <div style={{
+                    position: 'absolute', bottom: 0, left: 0, right: 0, height: 3 * s,
+                    background: `linear-gradient(90deg, transparent 0%, ${GOLD} 30%, ${GOLD_PALE} 50%, ${GOLD} 70%, transparent 100%)`,
+                }} />
+
+                {/* ── Filets intérieurs ── */}
+                <div style={{ position: 'absolute', top: 8 * s, left: 8 * s, right: 8 * s, height: 0.7 * s, background: GOLD, opacity: 0.45 }} />
+                <div style={{ position: 'absolute', bottom: 8 * s, left: 8 * s, right: 8 * s, height: 0.7 * s, background: GOLD, opacity: 0.45 }} />
+                <div style={{ position: 'absolute', left: 8 * s, top: 8 * s, bottom: 8 * s, width: 0.7 * s, background: GOLD, opacity: 0.45 }} />
+                <div style={{ position: 'absolute', right: 8 * s, top: 8 * s, bottom: 8 * s, width: 0.7 * s, background: GOLD, opacity: 0.45 }} />
+
+                {/* ── Ornements coins ── */}
+                {([
+                    { top: 4 * s, left: 4 * s },
+                    { top: 4 * s, right: 4 * s },
+                    { bottom: 4 * s, left: 4 * s },
+                    { bottom: 4 * s, right: 4 * s },
+                ] as React.CSSProperties[]).map((pos, i) => (
+                    <div key={i} style={{
+                        position: 'absolute',
+                        width: 7 * s, height: 7 * s,
+                        background: GOLD,
+                        transform: 'rotate(45deg)',
+                        ...pos,
+                    }} />
+                ))}
+
+                {/* ── CONTENU PRINCIPAL ── */}
                 <div style={{
                     position: 'absolute',
-                    inset: `${12 * scale}px ${14 * scale}px ${12 * scale}px ${14 * scale}px`,
+                    inset: `${15 * s}px ${15 * s}px ${15 * s}px ${15 * s}px`,
                     display: 'flex',
-                    gap: 12 * scale,
-                    alignItems: 'center',
+                    gap: 11 * s,
+                    alignItems: 'stretch',
                 }}>
-                    {/* Colonne gauche : QR + org name */}
+                    {/* ─ COLONNE GAUCHE : QR + org ─ */}
                     <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: 6 * scale,
-                        minWidth: 80 * scale,
+                        display: 'flex', flexDirection: 'column',
+                        alignItems: 'center', justifyContent: 'space-between',
+                        width: 90 * s, flexShrink: 0,
                     }}>
-                        {/* QR code */}
+                        {/* QR Code avec cadre doré */}
                         <div style={{
+                            padding: 4.5 * s,
                             background: '#ffffff',
-                            padding: 5 * scale,
-                            borderRadius: 4 * scale,
-                            boxShadow: `0 0 12px ${GOLD}30`,
+                            borderRadius: 3 * s,
+                            boxShadow: `0 0 0 1px ${GOLD}50, 0 0 18px ${GOLD}25`,
                         }}>
                             <QRCode
                                 value="https://www.retourgagnantbenin.bj"
-                                size={60 * scale}
-                                fgColor="#071525"
+                                size={Math.round(66 * s)}
+                                fgColor="#030810"
                                 bgColor="#ffffff"
                                 level="M"
                             />
                         </div>
 
+                        {/* Nom org compact */}
                         <div style={{
                             color: GOLD,
-                            fontSize: 5.2 * fs,
+                            fontSize: 7 * s,
                             fontWeight: 800,
-                            letterSpacing: '0.12em',
+                            letterSpacing: '0.14em',
                             textTransform: 'uppercase',
                             textAlign: 'center',
                             fontFamily: "'Cinzel', 'Georgia', serif",
-                            lineHeight: 1.3,
+                            lineHeight: 1.45,
                         }}>
                             RETOUR<br />GAGNANT<br />BÉNIN
                         </div>
                     </div>
 
-                    {/* Séparateur vertical */}
+                    {/* ─ Séparateur vertical ─ */}
                     <div style={{
-                        width: 1,
-                        alignSelf: 'stretch',
-                        background: `linear-gradient(180deg, transparent, ${GOLD}50, transparent)`,
+                        width: 0.7 * s,
+                        background: `linear-gradient(180deg, transparent, ${GOLD}60, transparent)`,
                         flexShrink: 0,
                     }} />
 
-                    {/* Colonne droite : coordonnées */}
+                    {/* ─ COLONNE DROITE : coordonnées ─ */}
                     <div style={{
                         flex: 1,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 5 * scale,
-                        justifyContent: 'center',
+                        display: 'flex', flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        minWidth: 0,
                     }}>
-                        {/* Nom employé */}
+                        {/* Nom + poste */}
                         <div>
-                            <div style={{ color: GOLD_LIGHT, fontSize: 7.5 * fs, fontWeight: 700, letterSpacing: '0.08em', fontFamily: "'Cinzel','Georgia',serif" }}>
+                            <div style={{
+                                color: GOLD_LIGHT,
+                                fontSize: 8.5 * s,
+                                fontWeight: 700,
+                                letterSpacing: '0.08em',
+                                textTransform: 'uppercase',
+                                fontFamily: "'Cinzel', 'Georgia', serif",
+                                lineHeight: 1.1,
+                            }}>
                                 {data.prenom} {data.nom}
                             </div>
-                            <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 5.5 * fs, letterSpacing: '0.1em', marginTop: 1 * scale }}>
+                            <div style={{
+                                color: 'rgba(255,255,255,0.48)',
+                                fontSize: 5.5 * s,
+                                letterSpacing: '0.12em',
+                                marginTop: 2.5 * s,
+                                textTransform: 'uppercase',
+                            }}>
                                 {data.position}
                             </div>
                         </div>
 
                         {/* Séparateur */}
-                        <div style={{ height: 1, background: `${GOLD}30` }} />
+                        <div style={{ height: 0.5 * s, background: `${GOLD}40` }} />
 
-                        {/* Contact employé */}
-                        {data.phone && (
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4 * scale }}>
-                                <span style={{ color: GOLD, fontSize: 5 * fs, marginTop: 1 * scale }}>☎</span>
-                                <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 5.5 * fs }}>{data.phone}</span>
-                            </div>
-                        )}
-                        {data.email && (
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4 * scale }}>
-                                <span style={{ color: GOLD, fontSize: 5 * fs, marginTop: 1 * scale }}>✉</span>
-                                <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 5.5 * fs }}>{data.email}</span>
-                            </div>
-                        )}
+                        {/* Contact personnel */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3.5 * s }}>
+                            {data.phone && (
+                                <div style={{ display: 'flex', gap: 5 * s, alignItems: 'center' }}>
+                                    <span style={{ color: GOLD, fontSize: 6 * s }}>☎</span>
+                                    <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 5.5 * s, letterSpacing: '0.02em' }}>{data.phone}</span>
+                                </div>
+                            )}
+                            {data.email && (
+                                <div style={{ display: 'flex', gap: 5 * s, alignItems: 'center' }}>
+                                    <span style={{ color: GOLD, fontSize: 6 * s }}>✉</span>
+                                    <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 5.5 * s }}>{data.email}</span>
+                                </div>
+                            )}
+                        </div>
 
                         {/* Séparateur */}
-                        <div style={{ height: 1, background: `${GOLD}20` }} />
+                        <div style={{ height: 0.5 * s, background: `${GOLD}25` }} />
 
-                        {/* Infos org */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 * scale }}>
-                            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 5 * fs }}>
-                                ☎ +229 01 60 32 21 21 | +229 01 94 35 50 50
-                            </div>
-                            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 5 * fs }}>
-                                ✉ contact@retourgagnantbenin.bj
-                            </div>
-                            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 5 * fs }}>
-                                🌐 www.retourgagnantbenin.bj
-                            </div>
-                            <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 4.5 * fs, lineHeight: 1.4 }}>
-                                Haie-Vive Cocotiers, Carré N°1158, Cotonou
+                        {/* Contact org */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2.5 * s }}>
+                            <div style={{ color: 'rgba(255,255,255,0.48)', fontSize: 5 * s }}>☎ +229 01 60 32 21 21 · +229 01 94 35 50 50</div>
+                            <div style={{ color: 'rgba(255,255,255,0.48)', fontSize: 5 * s }}>✉ contact@retourgagnantbenin.bj</div>
+                            <div style={{ color: 'rgba(255,255,255,0.48)', fontSize: 5 * s }}>🌐 www.retourgagnantbenin.bj</div>
+                            <div style={{ color: 'rgba(255,255,255,0.33)', fontSize: 4.5 * s, lineHeight: 1.45 }}>
+                                Haie-Vive Cocotiers, Carré N°1158, Cotonou — BÉNIN
                             </div>
                         </div>
 
                         {/* Slogan */}
                         <div style={{
                             color: GOLD,
-                            fontSize: 5.5 * fs,
+                            fontSize: 5.8 * s,
                             fontWeight: 700,
-                            letterSpacing: '0.14em',
+                            letterSpacing: '0.18em',
                             textTransform: 'uppercase',
-                            fontFamily: "'Cinzel','Georgia',serif",
-                            marginTop: 2 * scale,
+                            fontFamily: "'Cinzel', 'Georgia', serif",
                         }}>
                             VOTRE RETOUR, NOTRE MISSION
                         </div>
