@@ -23,7 +23,11 @@
       "Bash(npx tsc --noEmit)",
       "Bash(git add frontend/app/api/client/ frontend/app/client/ frontend/app/portail/ frontend/middleware.ts supabase_client_space_migration.sql)",
       "Bash(git add frontend/app/client/layout.tsx)",
-      "Bash(git add frontend/app/client/reset-password/page.tsx frontend/app/client/payer frontend/app/api/client/payment frontend/app/client/login/page.tsx frontend/app/client/layout.tsx frontend/app/client/documents/page.tsx \"frontend/app/client/documents/[id]/page.tsx\" frontend/app/client/dossier/page.tsx supabase_client_space_v2_migration.sql)"
+      "Bash(git add frontend/app/client/reset-password/page.tsx frontend/app/client/payer frontend/app/api/client/payment frontend/app/client/login/page.tsx frontend/app/client/layout.tsx frontend/app/client/documents/page.tsx \"frontend/app/client/documents/[id]/page.tsx\" frontend/app/client/dossier/page.tsx supabase_client_space_v2_migration.sql)",
+      "Bash(git add frontend/app/admin/frontend/page.tsx frontend/app/admin/design/ frontend/app/agent/layout.tsx frontend/app/agent/ma-carte-de-visite/ frontend/components/business-card/ frontend/package.json frontend/package-lock.json frontend/app/client/layout.tsx)",
+      "Bash(git add frontend/app/admin/design/page.tsx)",
+      "Bash(git add frontend/components/business-card/BusinessCard.tsx frontend/app/admin/design/page.tsx)",
+      "Bash(git add frontend/components/brochure/BrochurePanel.tsx frontend/app/admin/design/depliant/page.tsx frontend/app/admin/design/page.tsx frontend/components/business-card/BusinessCard.tsx)"
     ],
     "additionalDirectories": [
       "c:\\Users\\HP\\Desktop\\RETOUR GAGNANT TEMPLATE\\frontend\\app\\api\\admin\\users"

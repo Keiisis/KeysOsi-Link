@@ -1,6 +1,6 @@
 'use client'
 
-import React, { forwardRef, useState } from 'react'
+import React, { forwardRef, useState, useEffect } from 'react'
 import QRCode from 'react-qr-code'
 
 /* ══════════════════════════════════════════════════════════════

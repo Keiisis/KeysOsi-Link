@@ -6,7 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { T } from '@/lib/translation'
+import { T, useTranslation } from '@/lib/translation'
 import { usePageSections } from '@/lib/hooks/usePageSections'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -188,6 +188,7 @@ function TiltCard({ src, children }: { src: string, children?: React.ReactNode }
    ═══════════════════════════════════════════════════════════════ */
 
 function HeroSection({ data }: { data: SectionData['hero'] }) {
+    const { t } = useTranslation()
     const ref = useRef<HTMLDivElement>(null)
     const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] })
     const yImage = useTransform(scrollYProgress, [0, 1], [0, 150])
@@ -216,7 +217,7 @@ function HeroSection({ data }: { data: SectionData['hero'] }) {
                 >
                     <Image
                         src={data.image}
-                        alt="Nathalie Riffert Germany, Georges-Emmanuel Germany et S.E.M. Patrice Talon"
+                        alt={t("Nathalie Riffert Germany, Georges-Emmanuel Germany et S.E.M. Patrice Talon")}
                         fill
                         className="object-cover object-top"
                         priority
@@ -235,10 +236,10 @@ function HeroSection({ data }: { data: SectionData['hero'] }) {
                     transition={{ duration: 0.5, delay: 1.5 }}
                     className="text-4xl sm:text-5xl md:text-7xl font-black font-heading tracking-tight leading-[1.05] text-gray-900 mb-8"
                 >
-                    <TypewriterText text={data.title_line1} delay={1800} />
+                    <TypewriterText text={t(data.title_line1)} delay={1800} />
                     <br />
                     <span className="text-[#008751]">
-                        <TypewriterText text={data.title_line2} delay={3400} />
+                        <TypewriterText text={t(data.title_line2)} delay={3400} />
                     </span>
                 </motion.h1>
 
@@ -248,7 +249,7 @@ function HeroSection({ data }: { data: SectionData['hero'] }) {
                     transition={{ duration: 1, delay: 5 }}
                     className="text-xl md:text-2xl text-gray-900 max-w-3xl mx-auto leading-relaxed font-semibold mb-12"
                 >
-                    {data.subtitle}
+                    {t(data.subtitle)}
                 </motion.p>
 
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1, delay: 5.5 }}>
@@ -258,7 +259,7 @@ function HeroSection({ data }: { data: SectionData['hero'] }) {
                         transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' as const }}
                         className="inline-flex flex-col items-center gap-2 text-gray-400 hover:text-[#008751] transition-colors"
                     >
-                        <span className="text-xs uppercase tracking-widest font-black">Découvrir</span>
+                        <span className="text-xs uppercase tracking-widest font-black"><T>Découvrir</T></span>
                         <ChevronDown className="w-5 h-5" />
                     </motion.a>
                 </motion.div>
@@ -272,6 +273,7 @@ function HeroSection({ data }: { data: SectionData['hero'] }) {
    ═══════════════════════════════════════════════════════════════ */
 
 function ChapitreRencontre({ data }: { data: SectionData['rencontre'] }) {
+    const { t } = useTranslation()
     const containerRef = useRef<HTMLDivElement>(null)
     const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start end', 'end start'] })
     const lineHeight = useTransform(scrollYProgress, [0, 1], ['0%', '100%'])
@@ -291,10 +293,10 @@ function ChapitreRencontre({ data }: { data: SectionData['rencontre'] }) {
                                 transition={{ duration: 1.2, ease: 'easeOut' as const }}
                                 className="relative w-full h-[80vh] overflow-hidden shadow-2xl shadow-gray-300/40 border border-gray-100"
                             >
-                                <Image src={data.image} alt="Première rencontre en Martinique" fill className="object-cover" />
+                                <Image src={data.image} alt={t("Première rencontre en Martinique")} fill className="object-cover" />
                                 <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-gray-900/90 to-transparent">
-                                    <p className="text-white text-sm font-black uppercase tracking-widest">{data.image_caption_label}</p>
-                                    <p className="text-white/70 text-xs mt-1">{data.image_caption_sub}</p>
+                                    <p className="text-white text-sm font-black uppercase tracking-widest">{t(data.image_caption_label)}</p>
+                                    <p className="text-white/70 text-xs mt-1">{t(data.image_caption_sub)}</p>
                                 </div>
                             </motion.div>
                         </div>
@@ -308,7 +310,7 @@ function ChapitreRencontre({ data }: { data: SectionData['rencontre'] }) {
 
                         {/* Image mobile */}
                         <div className="block lg:hidden relative h-72 overflow-hidden shadow-xl border border-gray-100 ml-8">
-                            <Image src={data.image} alt="Martinique" fill className="object-cover" />
+                            <Image src={data.image} alt={t("Martinique")} fill className="object-cover" />
                         </div>
 
                         {/* Bloc 1 */}
@@ -320,14 +322,14 @@ function ChapitreRencontre({ data }: { data: SectionData['rencontre'] }) {
                             className="ml-8 lg:ml-16 p-8 md:p-12 bg-white border border-gray-100 shadow-xl shadow-gray-200/30"
                         >
                             <h2 className="text-3xl md:text-5xl font-black font-heading text-gray-900 leading-tight mb-8">
-                                {data.block1_heading.split(',').map((part, i, arr) => (
+                                {t(data.block1_heading).split(',').map((part, i, arr) => (
                                     <span key={i}>
                                         {part.trim()}{i < arr.length - 1 ? ',' : ''}
                                         {i < arr.length - 1 && <br />}
                                     </span>
                                 ))}
                             </h2>
-                            <p className="text-lg text-gray-600 leading-relaxed">{data.block1_text}</p>
+                            <p className="text-lg text-gray-600 leading-relaxed">{t(data.block1_text)}</p>
                         </motion.div>
 
                         {/* Bloc 2 — citation */}
@@ -338,7 +340,7 @@ function ChapitreRencontre({ data }: { data: SectionData['rencontre'] }) {
                             transition={{ duration: 0.8, ease: 'easeOut' as const }}
                             className="ml-8 lg:ml-16 p-8 md:p-12 bg-gray-50 border-l-[3px] border-[#D4A017] shadow-xl shadow-gray-200/30"
                         >
-                            <p className="text-xl text-gray-800 leading-relaxed font-serif italic">{data.block2_quote}</p>
+                            <p className="text-xl text-gray-800 leading-relaxed font-serif italic">{t(data.block2_quote)}</p>
                         </motion.div>
 
                         {/* Bloc 3 */}
@@ -349,8 +351,8 @@ function ChapitreRencontre({ data }: { data: SectionData['rencontre'] }) {
                             transition={{ duration: 0.8, ease: 'easeOut' as const }}
                             className="ml-8 lg:ml-16 p-8 md:p-12 bg-white border border-gray-100 shadow-xl shadow-gray-200/30"
                         >
-                            <p className="text-lg text-gray-600 leading-relaxed mb-6">{data.block3_text1}</p>
-                            <p className="text-xl text-gray-900 font-semibold leading-snug">{data.block3_text2}</p>
+                            <p className="text-lg text-gray-600 leading-relaxed mb-6">{t(data.block3_text1)}</p>
+                            <p className="text-xl text-gray-900 font-semibold leading-snug">{t(data.block3_text2)}</p>
                         </motion.div>
                     </div>
                 </div>
@@ -364,6 +366,7 @@ function ChapitreRencontre({ data }: { data: SectionData['rencontre'] }) {
    ═══════════════════════════════════════════════════════════════ */
 
 function ChapitreFondatrice({ data }: { data: SectionData['fondatrice'] }) {
+    const { t } = useTranslation()
     return (
         <section className="relative bg-white border-y border-gray-100">
             <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen">
@@ -379,7 +382,7 @@ function ChapitreFondatrice({ data }: { data: SectionData['fondatrice'] }) {
                     <div className="absolute bottom-8 left-8 lg:bottom-12 lg:left-12">
                         <div className="text-white">
                             <p className="font-black text-2xl font-heading mb-1">{data.name}</p>
-                            <p className="text-[#D4A017] text-xs font-bold uppercase tracking-widest">{data.title_label}</p>
+                            <p className="text-[#D4A017] text-xs font-bold uppercase tracking-widest">{t(data.title_label)}</p>
                         </div>
                     </div>
                 </div>
@@ -393,11 +396,11 @@ function ChapitreFondatrice({ data }: { data: SectionData['fondatrice'] }) {
                         className="max-w-lg"
                     >
                         <h3 className="text-3xl md:text-4xl lg:text-5xl font-black font-heading text-gray-900 mb-8 md:mb-12 leading-tight">
-                            {data.section_heading}
+                            {t(data.section_heading)}
                         </h3>
                         <div className="relative">
                             <blockquote className="text-lg md:text-xl lg:text-2xl text-gray-800 leading-relaxed font-serif italic border-l-[3px] border-gray-300 pl-6 md:pl-8">
-                                {data.quote}
+                                {t(data.quote)}
                             </blockquote>
                         </div>
                         <motion.p
@@ -407,7 +410,7 @@ function ChapitreFondatrice({ data }: { data: SectionData['fondatrice'] }) {
                             transition={{ duration: 0.8, delay: 0.5, ease: 'easeOut' as const }}
                             className="mt-8 md:mt-12 text-xl md:text-2xl font-black text-[#008751] font-heading"
                         >
-                            {data.closing}
+                            {t(data.closing)}
                         </motion.p>
                     </motion.div>
                 </div>
@@ -421,6 +424,7 @@ function ChapitreFondatrice({ data }: { data: SectionData['fondatrice'] }) {
    ═══════════════════════════════════════════════════════════════ */
 
 function ChapitreArchitectes({ data }: { data: SectionData['architectes'] }) {
+    const { t } = useTranslation()
     return (
         <section className="relative bg-[#FAFBFC] py-16 md:py-32 overflow-hidden">
             <div className="container mx-auto px-6 max-w-[1400px]">
@@ -432,7 +436,7 @@ function ChapitreArchitectes({ data }: { data: SectionData['architectes'] }) {
                     className="text-center mb-10 md:mb-20"
                 >
                     <h2 className="text-3xl md:text-4xl lg:text-6xl font-black font-heading text-gray-900">
-                        {data.heading.split(' ').map((word, i, arr) => {
+                        {t(data.heading).split(' ').map((word, i, arr) => {
                             const isLast = i === arr.length - 1
                             return isLast
                                 ? <span key={i} className="text-[#008751]">{word}</span>
@@ -459,9 +463,9 @@ function ChapitreArchitectes({ data }: { data: SectionData['architectes'] }) {
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-700" />
                             <div className="absolute bottom-0 left-0 right-0 p-6 lg:p-10 lg:translate-y-[20%] lg:opacity-0 lg:group-hover:translate-y-0 lg:group-hover:opacity-100 transition-all duration-700 ease-out z-20">
-                                <p className="text-[#D4A017] text-xs font-bold uppercase tracking-[0.2em] mb-2 lg:mb-3">{p.phrase}</p>
+                                <p className="text-[#D4A017] text-xs font-bold uppercase tracking-[0.2em] mb-2 lg:mb-3">{t(p.phrase)}</p>
                                 <p className="text-white text-lg md:text-2xl lg:text-3xl font-black font-heading leading-tight mb-1">{p.name}</p>
-                                <p className="text-white/80 text-xs sm:text-sm font-medium">{p.role}</p>
+                                <p className="text-white/80 text-xs sm:text-sm font-medium">{t(p.role)}</p>
                             </div>
                         </motion.div>
                     ))}
@@ -476,6 +480,7 @@ function ChapitreArchitectes({ data }: { data: SectionData['architectes'] }) {
    ═══════════════════════════════════════════════════════════════ */
 
 function ChapitreLogo({ data }: { data: SectionData['logo'] }) {
+    const { t } = useTranslation()
     return (
         <section className="relative bg-white py-16 md:py-32 overflow-hidden border-y border-gray-100">
             <div className="container mx-auto px-6 max-w-7xl">
@@ -487,7 +492,7 @@ function ChapitreLogo({ data }: { data: SectionData['logo'] }) {
                     className="text-center mb-12 md:mb-24"
                 >
                     <h2 className="text-3xl md:text-4xl lg:text-6xl font-black font-heading text-gray-900 leading-tight">
-                        {data.heading}
+                        {t(data.heading)}
                     </h2>
                 </motion.div>
 
@@ -518,8 +523,8 @@ function ChapitreLogo({ data }: { data: SectionData['logo'] }) {
                                 transition={{ duration: 0.8, delay: i * 0.2, ease: 'easeOut' as const }}
                                 className="pl-6 border-l-[3px] border-gray-200 hover:border-[#D4A017] transition-colors duration-500"
                             >
-                                <h3 className="text-xl md:text-2xl font-black text-gray-900 mb-3 font-heading">{s.title}</h3>
-                                <p className="text-gray-600 text-base md:text-lg leading-relaxed">{s.text}</p>
+                                <h3 className="text-xl md:text-2xl font-black text-gray-900 mb-3 font-heading">{t(s.title)}</h3>
+                                <p className="text-gray-600 text-base md:text-lg leading-relaxed">{t(s.text)}</p>
                             </motion.div>
                         ))}
                     </div>
@@ -534,6 +539,7 @@ function ChapitreLogo({ data }: { data: SectionData['logo'] }) {
    ═══════════════════════════════════════════════════════════════ */
 
 function ChapitreConfiance({ data }: { data: SectionData['confiance'] }) {
+    const { t } = useTranslation()
     const scrollRef = useRef<HTMLDivElement>(null)
 
     return (
@@ -547,10 +553,10 @@ function ChapitreConfiance({ data }: { data: SectionData['confiance'] }) {
                     className="text-center mb-10 md:mb-20"
                 >
                     <h2 className="text-3xl md:text-4xl lg:text-5xl font-black font-heading text-gray-900">
-                        {data.heading}
+                        {t(data.heading)}
                     </h2>
                     <p className="text-gray-500 max-w-2xl mx-auto mt-4 md:mt-6 text-base md:text-lg leading-relaxed">
-                        {data.subtitle}
+                        {t(data.subtitle)}
                     </p>
                 </motion.div>
 
@@ -566,15 +572,15 @@ function ChapitreConfiance({ data }: { data: SectionData['confiance'] }) {
                     </div>
                     <div>
                         <p className="text-xl md:text-2xl lg:text-3xl text-gray-900 font-heading font-black leading-snug mb-4 md:mb-6">
-                            {data.main_title}
+                            {t(data.main_title)}
                         </p>
-                        <p className="text-base md:text-lg text-gray-600 leading-relaxed mb-4 md:mb-6">{data.main_text1}</p>
-                        <p className="text-base md:text-lg text-gray-600 leading-relaxed mb-4 md:mb-6">{data.main_text2}</p>
+                        <p className="text-base md:text-lg text-gray-600 leading-relaxed mb-4 md:mb-6">{t(data.main_text1)}</p>
+                        <p className="text-base md:text-lg text-gray-600 leading-relaxed mb-4 md:mb-6">{t(data.main_text2)}</p>
                         <p className="text-base md:text-lg lg:text-xl text-gray-900 font-semibold leading-relaxed">
-                            {data.main_text3.split('je suis rentré chez moi').map((part, i, arr) => (
+                            {t(data.main_text3).split('je suis rentré chez moi').map((part, i, arr) => (
                                 <span key={i}>
                                     {part}
-                                    {i < arr.length - 1 && <em className="text-[#008751]">je suis rentré chez moi</em>}
+                                    {i < arr.length - 1 && <em className="text-[#008751]">{t("je suis rentré chez moi")}</em>}
                                 </span>
                             ))}
                         </p>
@@ -610,7 +616,7 @@ function ChapitreConfiance({ data }: { data: SectionData['confiance'] }) {
                 </div>
 
                 <p className="text-center text-gray-400 text-sm mt-10 font-bold tracking-widest uppercase">
-                    Glissez pour découvrir
+                    <T>Glissez pour découvrir</T>
                 </p>
             </div>
         </section>
@@ -622,6 +628,7 @@ function ChapitreConfiance({ data }: { data: SectionData['confiance'] }) {
    ═══════════════════════════════════════════════════════════════ */
 
 function CTAFinal({ data }: { data: SectionData['cta'] }) {
+    const { t } = useTranslation()
     return (
         <section className="relative bg-white py-16 md:py-32 overflow-hidden border-t border-gray-100">
             <div className="container mx-auto px-6 text-center max-w-4xl relative z-10">
@@ -632,12 +639,12 @@ function CTAFinal({ data }: { data: SectionData['cta'] }) {
                     transition={{ duration: 1, ease: 'easeOut' as const }}
                 >
                     <h2 className="text-3xl md:text-4xl lg:text-6xl font-black font-heading text-gray-900 leading-tight mb-6 md:mb-8">
-                        {data.heading_line1}<br />
-                        <span className="text-[#008751]">{data.heading_line2}</span>
+                        {t(data.heading_line1)}<br />
+                        <span className="text-[#008751]">{t(data.heading_line2)}</span>
                     </h2>
 
                     <p className="text-gray-500 text-base md:text-lg lg:text-xl leading-relaxed max-w-2xl mx-auto mb-10 md:mb-16">
-                        {data.subtitle}
+                        {t(data.subtitle)}
                     </p>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-6">

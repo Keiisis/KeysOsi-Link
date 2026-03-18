@@ -50,26 +50,31 @@ export default function Header() {
                 )}
             >
                 <div className="container mx-auto px-4 sm:px-6 lg:px-12 flex justify-between items-center max-w-[1600px]">
-                    {/* Logo Section */}
-                    <Link href="/" className="flex items-center gap-4 group shrink-0">
-                        <div className="relative w-14 h-14 xl:w-20 xl:h-20 overflow-hidden rounded-full border border-white/10 group-hover:border-[#FCD116]/50 transition-colors bg-white shadow-lg">
-                            <Image
-                                src="/images/logo.jpg"
-                                alt={t("Retour Gagnant Logo")}
-                                fill
-                                sizes="(max-width: 1280px) 56px, 80px"
-                                className="object-cover"
-                            />
+                    {/* Logo Section & Mobile Language Switcher */}
+                    <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                        <Link href="/" className="flex items-center gap-2 sm:gap-4 group shrink-0">
+                            <div className="relative w-10 h-10 sm:w-14 sm:h-14 xl:w-20 xl:h-20 overflow-hidden rounded-full border border-white/10 group-hover:border-[#FCD116]/50 transition-colors bg-white shadow-lg">
+                                <Image
+                                    src="/images/logo.jpg"
+                                    alt={t("Retour Gagnant Logo")}
+                                    fill
+                                    sizes="(max-width: 1280px) 40px, 80px"
+                                    className="object-cover"
+                                />
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="font-heading font-black text-[11px] sm:text-2xl xl:text-3xl tracking-tighter group-hover:text-white transition-colors duration-500">
+                                    <span className="text-[#008751]">RETOUR</span> <span className="text-[#E8112D]">GAGNANT</span>
+                                </span>
+                                <span className="text-[8px] sm:text-sm xl:text-base font-extrabold tracking-[0.25em] sm:tracking-[0.5em] uppercase font-sans text-white/60 group-hover:text-[#FCD116] transition-colors duration-500">
+                                    <T>BÉNIN</T>
+                                </span>
+                            </div>
+                        </Link>
+                        <div className="lg:hidden ml-1">
+                            <LanguageSwitcher />
                         </div>
-                        <div className="flex flex-col">
-                            <span className="font-heading font-black text-sm sm:text-2xl xl:text-3xl tracking-tighter group-hover:text-white transition-colors duration-500">
-                                <span className="text-[#008751]">RETOUR</span> <span className="text-[#E8112D]">GAGNANT</span>
-                            </span>
-                            <span className="text-xs sm:text-sm xl:text-base font-extrabold tracking-[0.35em] sm:tracking-[0.5em] uppercase font-sans text-white/60 group-hover:text-[#FCD116] transition-colors duration-500">
-                                <T>BÉNIN</T>
-                            </span>
-                        </div>
-                    </Link>
+                    </div>
 
                     {/* Desktop Nav - Centered Menu Pill */}
                     <nav className="hidden lg:flex flex-1 items-center justify-center px-4 xl:px-8">
@@ -192,15 +197,6 @@ export default function Header() {
                                     </Link>
                                 </motion.div>
                             ))}
-                            <motion.div
-                                className="pt-2 w-full max-w-sm flex justify-center"
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ delay: 0.35 }}
-                            >
-                                <LanguageSwitcher />
-                            </motion.div>
-
                             <motion.div
                                 className="pt-4 w-full max-w-sm"
                                 initial={{ opacity: 0, scale: 0.9 }}
