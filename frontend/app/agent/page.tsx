@@ -26,6 +26,7 @@ interface DashboardStats {
     leadsOracle: number
     leadsNonContactes: number
     nationalityApps: number
+    rdvEnAttente: number
 }
 
 // ═══════════════════════════════════════════
@@ -115,6 +116,7 @@ export default function AgentDashboard() {
         leadsOracle: 0,
         leadsNonContactes: 0,
         nationalityApps: 0,
+        rdvEnAttente: 0,
     })
     const [recentDossiers, setRecentDossiers] = useState<AnyRecord[]>([])
     const [recentMessages, setRecentMessages] = useState<AnyRecord[]>([])
@@ -142,7 +144,8 @@ export default function AgentDashboard() {
                     voixCountRes,
                     leadsRes,
                     msgsRes,
-                    nationalityCountRes
+                    nationalityCountRes,
+                    rdvRes,
                 ] = await Promise.all([
                     supabase.from('dossier_tracking').select('*', { count: 'exact' }).order('created_at', { ascending: false }),
                     supabase.from('messages').select('*', { count: 'exact', head: true }).eq('lu', false),
@@ -150,6 +153,7 @@ export default function AgentDashboard() {
                     supabase.from('eligibility_results').select('*').order('created_at', { ascending: false }),
                     supabase.from('messages').select('*').order('created_at', { ascending: false }).limit(5),
                     supabase.from('nationality_applications').select('*', { count: 'exact', head: true }),
+                    supabase.from('rdv_requests').select('id', { count: 'exact', head: true }).eq('statut', 'en_attente'),
                 ])
 
                 const allDossiers = (dossiersRes.data as AnyRecord[]) || []
@@ -164,6 +168,7 @@ export default function AgentDashboard() {
                     leadsOracle: allLeads.length,
                     leadsNonContactes: allLeads.filter(l => !l.contacted).length,
                     nationalityApps: nationalityCountRes.count || 0,
+                    rdvEnAttente: rdvRes.count || 0,
                 })
 
                 setRecentDossiers(allDossiers.slice(0, 5))
@@ -231,6 +236,16 @@ export default function AgentDashboard() {
             href: '/agent/nationalite',
             sparkData: [1, 2, 3, 2, 4, 3, stats.nationalityApps],
             sparkColor: '#1976D2',
+        },
+        {
+            label: t('RDV en attente'),
+            value: stats.rdvEnAttente,
+            icon: Calendar,
+            gradient: 'from-rose-500 to-pink-600',
+            borderGlow: 'hover:shadow-[0_0_30px_rgba(244,63,94,0.15)]',
+            href: '/agent/agenda',
+            sparkData: [0, 1, 2, 1, 3, 2, stats.rdvEnAttente],
+            sparkColor: '#F43F5E',
         },
     ]
 

@@ -21,14 +21,16 @@ interface Event {
 
 interface RDV {
     id: string
-    nom: string
-    prenom: string
-    email: string
-    telephone: string
-    sujet: string
-    message: string
+    client_id: string | null
+    client_email: string
+    date: string
+    heure: string
+    type: 'presentiel' | 'visio' | 'telephone'
+    motif: string
+    notes: string | null
+    statut: 'en_attente' | 'confirme' | 'annule' | 'termine'
     created_at: string
-    type: string
+    client_profiles?: { nom: string; prenom: string; phone: string | null } | null
 }
 
 const typeConfig: Record<string, { color: string; icon: typeof MapPin; label: string }> = {
@@ -61,7 +63,7 @@ export default function AgentAgendaPage() {
 
         const [eventsRes, rdvRes] = await Promise.all([
             supabase.from('agent_events').select('*').eq('agent_id', user.id).order('date', { ascending: true }),
-            supabase.from('messages').select('*').eq('type', 'rendez-vous').order('created_at', { ascending: false }),
+            supabase.from('rdv_requests').select('*, client_profiles(nom, prenom, phone)').order('created_at', { ascending: false }),
         ])
 
         setEvents((eventsRes.data || []) as Event[])
@@ -100,10 +102,16 @@ export default function AgentAgendaPage() {
         setShowModal(true)
     }
 
-    // Extract date from RDV sujet: "RDV (Service) : 2026-02-28 - 10:00 [whatsapp]"
-    const parseRDVDate = (rdv: RDV): string => {
-        const match = rdv.sujet?.match(/(\d{4}-\d{2}-\d{2})/)
-        return match ? match[1] : rdv.created_at.split('T')[0]
+    const getClientName = (rdv: RDV) => {
+        if (rdv.client_profiles?.nom) return `${rdv.client_profiles.nom} ${rdv.client_profiles.prenom || ''}`.trim()
+        return rdv.client_email
+    }
+
+    const updateRdvStatus = async (rdvId: string, statut: RDV['statut']) => {
+        await supabase.from('rdv_requests').update({ statut }).eq('id', rdvId)
+        const applyUpdate = (r: RDV): RDV => r.id === rdvId ? { ...r, statut } : r
+        setRdvList(prev => prev.map(applyUpdate))
+        setSelectedRDV(prev => prev ? applyUpdate(prev) : null)
     }
 
     const prevMonth = () => { setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1)); setSelectedDay(null) }
@@ -112,7 +120,7 @@ export default function AgentAgendaPage() {
     const getItemsForDay = (day: number) => {
         const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
         const ev = events.filter(e => e.date === dateStr)
-        const rv = rdvList.filter(r => parseRDVDate(r) === dateStr)
+        const rv = rdvList.filter(r => r.date === dateStr)
         return { events: ev, rdvs: rv, dateStr }
     }
 
@@ -125,7 +133,7 @@ export default function AgentAgendaPage() {
 
     // Upcoming items (next 14 days)
     const upcomingRDVs = rdvList.filter(r => {
-        const d = new Date(parseRDVDate(r))
+        const d = new Date(r.date)
         const diff = (d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
         return diff >= -1 && diff <= 14
     }).slice(0, 10)
@@ -263,10 +271,10 @@ export default function AgentAgendaPage() {
                                                 {selectedDayItems.rdvs.map(rdv => (
                                                     <div key={rdv.id} onClick={() => setSelectedRDV(rdv)} className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:border-amber-500/40 cursor-pointer transition-all">
                                                         <div className="flex items-center justify-between">
-                                                            <p className="text-xs font-bold text-white">{rdv.nom} {rdv.prenom}</p>
+                                                            <p className="text-xs font-bold text-white">{getClientName(rdv)}</p>
                                                             <ExternalLink size={10} className="text-gray-500" />
                                                         </div>
-                                                        <p className="text-[10px] text-gray-500 mt-0.5 line-clamp-1">{rdv.sujet}</p>
+                                                        <p className="text-[10px] text-gray-500 mt-0.5 line-clamp-1">{rdv.heure} — {rdv.motif}</p>
                                                     </div>
                                                 ))}
                                             </>
@@ -287,10 +295,10 @@ export default function AgentAgendaPage() {
                                         ) : upcomingRDVs.map(rdv => (
                                             <div key={rdv.id} onClick={() => setSelectedRDV(rdv)} className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/10 hover:border-amber-500/30 cursor-pointer transition-all">
                                                 <div className="flex items-center justify-between">
-                                                    <p className="text-xs font-bold text-white">{rdv.nom} {rdv.prenom}</p>
+                                                    <p className="text-xs font-bold text-white">{getClientName(rdv)}</p>
                                                     <ExternalLink size={10} className="text-gray-500" />
                                                 </div>
-                                                <p className="text-[10px] text-gray-500 mt-0.5">{rdv.sujet}</p>
+                                                <p className="text-[10px] text-gray-500 mt-0.5">{new Date(rdv.date).toLocaleDateString('fr-FR')} à {rdv.heure}</p>
                                             </div>
                                         ))}
                                     </div>
@@ -339,23 +347,64 @@ export default function AgentAgendaPage() {
                                 <button type="button" onClick={() => setSelectedRDV(null)} className="text-gray-500 hover:text-white" title="Fermer"><X size={18} /></button>
                             </div>
                             <div className="space-y-3">
+                                {/* Statut */}
+                                <span className={`inline-flex items-center text-[11px] font-bold px-3 py-1 rounded-full border ${
+                                    selectedRDV.statut === 'confirme' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                    selectedRDV.statut === 'annule' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                                    selectedRDV.statut === 'termine' ? 'bg-gray-500/10 text-gray-400 border-gray-500/20' :
+                                    'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                                }`}>
+                                    {selectedRDV.statut === 'en_attente' ? 'En attente de confirmation' :
+                                     selectedRDV.statut === 'confirme' ? 'Confirmé' :
+                                     selectedRDV.statut === 'annule' ? 'Annulé' : 'Terminé'}
+                                </span>
+
+                                {/* Infos client */}
                                 <div className="bg-white/5 rounded-xl p-4 space-y-2">
-                                    <div className="flex items-center gap-2 text-sm text-gray-300"><User size={14} className="text-emerald-400" /> {selectedRDV.nom} {selectedRDV.prenom}</div>
-                                    <div className="flex items-center gap-2 text-sm text-gray-300"><Mail size={14} className="text-emerald-400" /> {selectedRDV.email}</div>
-                                    {selectedRDV.telephone && <div className="flex items-center gap-2 text-sm text-gray-300"><Phone size={14} className="text-emerald-400" /> {selectedRDV.telephone}</div>}
-                                    <div className="flex items-center gap-2 text-sm text-gray-300"><CalendarDays size={14} className="text-emerald-400" /> {selectedRDV.sujet}</div>
+                                    <div className="flex items-center gap-2 text-sm text-gray-300"><User size={14} className="text-emerald-400" /> {getClientName(selectedRDV)}</div>
+                                    <div className="flex items-center gap-2 text-sm text-gray-300"><Mail size={14} className="text-emerald-400" /> {selectedRDV.client_email}</div>
+                                    {selectedRDV.client_profiles?.phone && <div className="flex items-center gap-2 text-sm text-gray-300"><Phone size={14} className="text-emerald-400" /> {selectedRDV.client_profiles.phone}</div>}
+                                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                                        <CalendarDays size={14} className="text-emerald-400" />
+                                        {new Date(selectedRDV.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} à {selectedRDV.heure}
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                                        {selectedRDV.type === 'presentiel' ? <MapPin size={14} className="text-emerald-400" /> : selectedRDV.type === 'visio' ? <Video size={14} className="text-emerald-400" /> : <Phone size={14} className="text-emerald-400" />}
+                                        {selectedRDV.type === 'presentiel' ? 'Présentiel' : selectedRDV.type === 'visio' ? 'Visioconférence' : 'Téléphone'}
+                                    </div>
                                 </div>
-                                {selectedRDV.message && (
+
+                                {/* Motif */}
+                                <div className="bg-white/5 rounded-xl p-4">
+                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Motif</p>
+                                    <p className="text-sm text-gray-300">{selectedRDV.motif}</p>
+                                </div>
+
+                                {selectedRDV.notes && (
                                     <div className="bg-white/5 rounded-xl p-4">
-                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Message du client</p>
-                                        <p className="text-sm text-gray-300">{selectedRDV.message}</p>
+                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Notes du client</p>
+                                        <p className="text-sm text-gray-300">{selectedRDV.notes}</p>
                                     </div>
                                 )}
-                                <p className="text-[10px] text-gray-500">Reçu le {new Date(selectedRDV.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
-                                <div className="flex gap-2 pt-2">
-                                    <a href={`mailto:${selectedRDV.email}`} className="flex-1 flex items-center justify-center gap-1 text-xs py-2.5 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30 font-bold hover:bg-blue-500/30" title="Email"><Mail size={12} /> Email</a>
-                                    {selectedRDV.telephone && (
-                                        <a href={`https://wa.me/${selectedRDV.telephone.replace(/\s+/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1 text-xs py-2.5 rounded-xl bg-green-500/20 text-green-400 border border-green-500/30 font-bold hover:bg-green-500/30" title="WhatsApp"><Phone size={12} /> WhatsApp</a>
+
+                                <p className="text-[10px] text-gray-500">Reçu le {new Date(selectedRDV.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+
+                                {/* Actions statut */}
+                                {selectedRDV.statut === 'en_attente' && (
+                                    <div className="flex gap-2">
+                                        <button type="button" onClick={() => updateRdvStatus(selectedRDV.id, 'confirme')} className="flex-1 py-2 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold hover:bg-emerald-500/30 transition-all">✓ Confirmer</button>
+                                        <button type="button" onClick={() => updateRdvStatus(selectedRDV.id, 'annule')} className="flex-1 py-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-bold hover:bg-red-500/20 transition-all">✗ Annuler</button>
+                                    </div>
+                                )}
+                                {selectedRDV.statut === 'confirme' && (
+                                    <button type="button" onClick={() => updateRdvStatus(selectedRDV.id, 'termine')} className="w-full py-2 rounded-xl bg-gray-500/10 text-gray-400 border border-gray-500/20 text-xs font-bold hover:bg-gray-500/20 transition-all">Marquer comme terminé</button>
+                                )}
+
+                                {/* Contacter */}
+                                <div className="flex gap-2 pt-1">
+                                    <a href={`mailto:${selectedRDV.client_email}`} className="flex-1 flex items-center justify-center gap-1 text-xs py-2.5 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30 font-bold hover:bg-blue-500/30"><Mail size={12} /> Email</a>
+                                    {selectedRDV.client_profiles?.phone && (
+                                        <a href={`https://wa.me/${selectedRDV.client_profiles.phone.replace(/\s+/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1 text-xs py-2.5 rounded-xl bg-green-500/20 text-green-400 border border-green-500/30 font-bold hover:bg-green-500/30"><Phone size={12} /> WhatsApp</a>
                                     )}
                                 </div>
                             </div>
