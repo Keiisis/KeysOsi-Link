@@ -41,13 +41,17 @@ export async function GET() {
         })
         .map(u => {
             const profile = profileMap.get(u.id)
+            // Priorité : last_sign_in_at de Supabase Auth (mis à jour automatiquement
+            // à chaque connexion), puis last_seen_at de user_profiles (notre ping).
+            // Cela affiche la vraie dernière connexion sans attendre de ping.
+            const lastSeen = u.last_sign_in_at || profile?.last_seen_at || null
             return {
                 id: u.id,
                 email: u.email,
                 full_name: profile?.full_name || u.user_metadata?.full_name || 'Sans nom',
                 role: profile?.role || u.user_metadata?.role || 'agent',
                 is_active: profile?.is_active ?? true,
-                last_seen_at: profile?.last_seen_at || null,
+                last_seen_at: lastSeen,
                 created_at: u.created_at,
             }
         })
