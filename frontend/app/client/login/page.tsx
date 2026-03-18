@@ -127,7 +127,12 @@ export default function ClientLoginPage() {
                         </div>
 
                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.15em]">Mot de passe</label>
+                            <div className="flex items-center justify-between">
+                                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.15em]">Mot de passe</label>
+                                <Link href="/client/reset-password" className="text-[10px] text-blue-400 hover:text-blue-300 transition-colors font-bold">
+                                    Mot de passe oublié ?
+                                </Link>
+                            </div>
                             <div className="relative">
                                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-600" size={15} />
                                 <input type={showPassword ? 'text' : 'password'} required value={password} onChange={e => setPassword(e.target.value)}

@@ -70,9 +70,10 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         return () => { subscription.unsubscribe() }
     }, [isAuthPage])
 
-    // Fetch unread messages count
+    // Fetch unread messages count + realtime subscription
     useEffect(() => {
         if (isAuthPage || !client) return
+
         const fetchUnread = async () => {
             const { count } = await supabase
                 .from('messages')
@@ -81,7 +82,20 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
                 .eq('lu', false)
             setUnreadMessages(count || 0)
         }
+
         fetchUnread()
+
+        // Realtime: re-fetch unread count on any message change
+        const channel = supabase
+            .channel(`client-messages-${client.id}`)
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'messages', filter: `client_id=eq.${client.id}` },
+                () => fetchUnread()
+            )
+            .subscribe()
+
+        return () => { supabase.removeChannel(channel) }
     }, [client, isAuthPage])
 
     const handleLogout = useCallback(async () => {

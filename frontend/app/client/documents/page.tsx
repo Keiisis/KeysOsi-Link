@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { FileText, Receipt, Search, Download, Eye, ArrowRight, Filter } from 'lucide-react'
+import { FileText, Receipt, Search, Download, Eye, ArrowRight, Filter, CreditCard } from 'lucide-react'
 
 interface Doc {
     id: string
@@ -40,7 +40,7 @@ export default function ClientDocumentsPage() {
     const [hasMore, setHasMore] = useState(false)
     const [page, setPage] = useState(0)
     const [search, setSearch] = useState('')
-    const [filter, setFilter] = useState<'all' | 'devis' | 'facture'>('all')
+    const [filter, setFilter] = useState<'all' | 'devis' | 'facture' | 'paye'>('all')
     const [userId, setUserId] = useState('')
     const [userEmail, setUserEmail] = useState('')
 
@@ -82,7 +82,7 @@ export default function ClientDocumentsPage() {
 
     const filtered = docs.filter(d => {
         const matchSearch = d.numero?.toLowerCase().includes(search.toLowerCase())
-        const matchFilter = filter === 'all' || d.type === filter
+        const matchFilter = filter === 'all' || d.type === filter || (filter === 'paye' && d.status === 'paye')
         return matchSearch && matchFilter
     })
 
@@ -126,11 +126,11 @@ export default function ClientDocumentsPage() {
                         className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl py-2.5 pl-10 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:border-blue-500/50 text-sm transition-colors" />
                 </div>
                 <div className="flex gap-1 bg-white/[0.04] border border-white/[0.06] rounded-xl p-1">
-                    {(['all', 'devis', 'facture'] as const).map(f => (
+                    {(['all', 'devis', 'facture', 'paye'] as const).map(f => (
                         <button key={f} onClick={() => setFilter(f)}
-                            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${filter === f ? 'bg-blue-500/20 text-blue-400' : 'text-gray-500 hover:text-white'}`}>
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${filter === f ? 'bg-blue-500/20 text-blue-400' : 'text-gray-500 hover:text-white'}`}>
                             <Filter size={11} />
-                            {f === 'all' ? 'Tous' : f === 'devis' ? 'Devis' : 'Factures'}
+                            {f === 'all' ? 'Tous' : f === 'devis' ? 'Devis' : f === 'facture' ? 'Factures' : 'Payés'}
                         </button>
                     ))}
                 </div>
@@ -171,6 +171,12 @@ export default function ClientDocumentsPage() {
                                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${s.cls}`}>{s.label}</span>
                                     </div>
                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        {doc.type === 'facture' && doc.status === 'envoye' && (
+                                            <Link href={`/client/payer/${doc.id}`}
+                                                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 text-[10px] font-bold transition-colors" title="Payer">
+                                                <CreditCard size={12} /> Payer
+                                            </Link>
+                                        )}
                                         <Link href={`/client/documents/${doc.id}`} className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-blue-400 transition-colors" title="Voir">
                                             <Eye size={15} />
                                         </Link>

@@ -127,7 +127,7 @@ export default function ClientDocumentDetailPage() {
                     )}
 
                     {canPay && (
-                        <Link href={`/portail/${doc.id}`} target="_blank"
+                        <Link href={`/client/payer/${doc.id}`}
                             className="flex items-center gap-2 px-4 py-2 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 rounded-xl text-sm text-amber-400 font-bold transition-all">
                             <CreditCard size={14} /> Payer maintenant
                         </Link>

@@ -1,9 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
-import { FolderOpen, CheckCircle2, Clock, AlertCircle, ChevronRight, Calendar } from 'lucide-react'
+import { FolderOpen, CheckCircle2, Clock, AlertCircle, ChevronRight, Calendar, Upload, FileUp, Trash2, Paperclip, Loader2 } from 'lucide-react'
+
+interface ClientDoc {
+    id: string
+    nom_fichier: string
+    type_fichier: string
+    taille: number
+    url: string
+    storage_path: string
+    created_at: string
+}
 
 interface Dossier {
     id: string
@@ -30,15 +40,40 @@ const STATUT_CONFIG: Record<string, { label: string; color: string; bg: string }
 
 const ETAPES_LABELS = ['Réception du dossier', 'Vérification des documents', 'Traitement administratif', 'Validation des autorités', 'Finalisation', 'Dossier clôturé']
 
+const fmtSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+}
+
+const ACCEPTED_TYPES = '.pdf,.doc,.docx,.jpg,.jpeg,.png,.gif'
+const MAX_SIZE_MB = 50
+
 export default function ClientDossierPage() {
     const [dossiers, setDossiers] = useState<Dossier[]>([])
     const [loading, setLoading] = useState(true)
+    const [userId, setUserId] = useState('')
+    const [uploadingDossier, setUploadingDossier] = useState<string | null>(null)
+    const [docsByDossier, setDocsByDossier] = useState<Record<string, ClientDoc[]>>({})
+    const [expandedDossier, setExpandedDossier] = useState<string | null>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
+    const activeDossierRef = useRef<string | null>(null)
+
+    const fetchDocs = async (dossierId: string) => {
+        const { data } = await supabase
+            .from('client_documents')
+            .select('id, nom_fichier, type_fichier, taille, url, storage_path, created_at')
+            .eq('dossier_id', dossierId)
+            .order('created_at', { ascending: false })
+        setDocsByDossier(prev => ({ ...prev, [dossierId]: data as ClientDoc[] || [] }))
+    }
 
     useEffect(() => {
         const load = async () => {
             const { data: { session } } = await supabase.auth.getSession()
             if (!session?.user) return
             const email = session.user.email || ''
+            setUserId(session.user.id)
 
             const { data } = await supabase
                 .from('dossier_tracking')
@@ -46,14 +81,102 @@ export default function ClientDossierPage() {
                 .or(`client_id.eq.${session.user.id},client_email.eq.${email}`)
                 .order('created_at', { ascending: false })
 
-            setDossiers(data as Dossier[] || [])
+            const dossierList = data as Dossier[] || []
+            setDossiers(dossierList)
+
+            // Fetch uploaded docs for each dossier
+            await Promise.all(dossierList.map(d => fetchDocs(d.id)))
+
             setLoading(false)
         }
         load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
+
+    const handleUploadClick = (dossierId: string) => {
+        activeDossierRef.current = dossierId
+        fileInputRef.current?.click()
+    }
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        const dossierId = activeDossierRef.current
+        if (!file || !dossierId || !userId) return
+
+        // Reset input so same file can be selected again
+        e.target.value = ''
+
+        if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+            alert(`Fichier trop volumineux (max ${MAX_SIZE_MB} MB)`)
+            return
+        }
+
+        setUploadingDossier(dossierId)
+
+        try {
+            const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
+            const path = `${userId}/${dossierId}/${fileName}`
+
+            const { error: uploadError } = await supabase.storage
+                .from('client-documents')
+                .upload(path, file, { cacheControl: '3600', upsert: false })
+
+            if (uploadError) throw new Error(uploadError.message)
+
+            // Get signed URL (bucket is private)
+            const { data: signedData } = await supabase.storage
+                .from('client-documents')
+                .createSignedUrl(path, 60 * 60 * 24 * 7) // 7 days
+
+            await supabase.from('client_documents').insert({
+                client_id: userId,
+                dossier_id: dossierId,
+                nom_fichier: file.name,
+                type_fichier: file.type,
+                taille: file.size,
+                url: signedData?.signedUrl || '',
+                storage_path: path,
+            })
+
+            await fetchDocs(dossierId)
+            setExpandedDossier(dossierId)
+        } catch (err) {
+            alert(err instanceof Error ? err.message : 'Erreur lors de l\'upload')
+        } finally {
+            setUploadingDossier(null)
+        }
+    }
+
+    const handleDeleteDoc = async (docId: string, storagePath: string, dossierId: string) => {
+        if (!confirm('Supprimer ce fichier ?')) return
+        try {
+            await supabase.storage.from('client-documents').remove([storagePath])
+            await supabase.from('client_documents').delete().eq('id', docId)
+            await fetchDocs(dossierId)
+        } catch (err) {
+            alert(err instanceof Error ? err.message : 'Erreur lors de la suppression')
+        }
+    }
+
+    const refreshSignedUrl = async (storagePath: string) => {
+        const { data } = await supabase.storage
+            .from('client-documents')
+            .createSignedUrl(storagePath, 60 * 60)
+        return data?.signedUrl || ''
+    }
 
     return (
         <div className="space-y-6">
+            {/* Hidden file input */}
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept={ACCEPTED_TYPES}
+                title="Sélectionner un fichier à uploader"
+                className="hidden"
+                onChange={handleFileChange}
+            />
+
             <div>
                 <div className="flex items-center gap-2 mb-1">
                     <FolderOpen size={14} className="text-indigo-400" />
@@ -163,6 +286,87 @@ export default function ClientDossierPage() {
                                         <p className="text-sm text-gray-300 leading-relaxed">{dossier.notes}</p>
                                     </div>
                                 )}
+
+                                {/* Section upload documents */}
+                                <div className="border-t border-white/[0.06] mx-5 mb-5 mt-1 pt-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setExpandedDossier(expandedDossier === dossier.id ? null : dossier.id)}
+                                            className="flex items-center gap-2 text-[11px] font-bold text-gray-400 hover:text-white transition-colors"
+                                        >
+                                            <Paperclip size={12} />
+                                            Mes fichiers ({docsByDossier[dossier.id]?.length || 0})
+                                            <ChevronRight size={11} className={`transition-transform ${expandedDossier === dossier.id ? 'rotate-90' : ''}`} />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleUploadClick(dossier.id)}
+                                            disabled={uploadingDossier === dossier.id}
+                                            className="flex items-center gap-1.5 text-[10px] font-bold px-3 py-1.5 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-400 border border-indigo-500/20 transition-all disabled:opacity-50"
+                                        >
+                                            {uploadingDossier === dossier.id
+                                                ? <Loader2 size={11} className="animate-spin" />
+                                                : <Upload size={11} />
+                                            }
+                                            {uploadingDossier === dossier.id ? 'Upload...' : 'Ajouter'}
+                                        </button>
+                                    </div>
+
+                                    <AnimatePresence>
+                                        {expandedDossier === dossier.id && (
+                                            <motion.div
+                                                initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                                                className="overflow-hidden"
+                                            >
+                                                {(docsByDossier[dossier.id] || []).length === 0 ? (
+                                                    <div className="py-4 text-center">
+                                                        <FileUp size={20} className="text-gray-700 mx-auto mb-2" />
+                                                        <p className="text-[11px] text-gray-600">Aucun fichier uploadé pour ce dossier.</p>
+                                                        <p className="text-[10px] text-gray-700 mt-0.5">PDF, Word, JPEG, PNG — max {MAX_SIZE_MB} MB</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-2">
+                                                        {(docsByDossier[dossier.id] || []).map(clientDoc => (
+                                                            <div key={clientDoc.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04] group">
+                                                                <div className="p-1.5 rounded-lg bg-indigo-500/10 flex-shrink-0">
+                                                                    <Paperclip size={12} className="text-indigo-400" />
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="text-xs font-bold text-white truncate">{clientDoc.nom_fichier}</p>
+                                                                    <p className="text-[10px] text-gray-600">
+                                                                        {fmtSize(clientDoc.taille)} · {new Date(clientDoc.created_at).toLocaleDateString('fr-FR')}
+                                                                    </p>
+                                                                </div>
+                                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={async () => {
+                                                                            const url = await refreshSignedUrl(clientDoc.storage_path)
+                                                                            window.open(url, '_blank')
+                                                                        }}
+                                                                        className="p-1.5 rounded-lg hover:bg-white/5 text-gray-500 hover:text-indigo-400 transition-colors"
+                                                                        title="Télécharger"
+                                                                    >
+                                                                        <FileUp size={13} />
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleDeleteDoc(clientDoc.id, clientDoc.storage_path, dossier.id)}
+                                                                        className="p-1.5 rounded-lg hover:bg-red-500/10 text-gray-500 hover:text-red-400 transition-colors"
+                                                                        title="Supprimer"
+                                                                    >
+                                                                        <Trash2 size={13} />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
 
                                 <div className="px-5 pb-4 flex items-center justify-between text-[11px] text-gray-600">
                                     <span>Créé le {new Date(dossier.created_at).toLocaleDateString('fr-FR')}</span>
