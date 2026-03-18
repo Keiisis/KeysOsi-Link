@@ -37,15 +37,10 @@ interface Settings {
     paypal_sandbox: string
 }
 
-declare global {
-    interface Window {
-        openKkiapayWidget: (opts: object) => void
-        addKkiapayListener: (event: string, cb: (data: { transactionId: string }) => void) => void
-        removeKkiapayListener: (event: string, cb: (data: { transactionId: string }) => void) => void
-        FedaPay: { init: (opts: object) => { open: () => void }; DIALOG_DISMISSED: string; TRANSACTION_APPROVED: string }
-        paypal: { Buttons: (opts: object) => { render: (el: string) => void } }
-    }
-}
+// Les SDKs de paiement sont accédés via (window as any) pour éviter les
+// conflits avec les déclarations globales existantes dans PaymentModal.tsx
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const win = () => window as any
 
 const fmtN = (n: number, currency: string) =>
     `${Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')} ${currency}`
@@ -62,7 +57,8 @@ export default function ClientPayerPage() {
     const [userEmail, setUserEmail] = useState('')
     const paypalRendered = useRef(false)
     const scriptsLoaded = useRef<Set<string>>(new Set())
-    const kkiapayHandlerRef = useRef<((data: { transactionId: string }) => void) | null>(null)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const kkiapayHandlerRef = useRef<((data: any) => void) | null>(null)
 
     const loadScript = useCallback((src: string): Promise<void> => {
         if (scriptsLoaded.current.has(src)) return Promise.resolve()
@@ -168,8 +164,7 @@ export default function ClientPayerPage() {
             }
         }
         load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [id])
+    }, [id, loadScript])
 
     // Load SDKs after settings are loaded
     useEffect(() => {
@@ -195,7 +190,7 @@ export default function ClientPayerPage() {
         loadScript(sdkUrl).then(() => {
             if (paypalRendered.current) return
             paypalRendered.current = true
-            window.paypal?.Buttons({
+            win().paypal?.Buttons({
                 style: { layout: 'vertical', color: 'blue', shape: 'rect', label: 'pay' },
                 createOrder: async () => {
                     const res = await fetch('/api/client/payment/paypal/create', {
@@ -210,8 +205,8 @@ export default function ClientPayerPage() {
                 onApprove: async (data: { orderID: string }) => {
                     await confirmPayment('paypal', data.orderID)
                 },
-                onError: (err: Error) => {
-                    setError(err.message || 'Erreur PayPal')
+                onError: (err: unknown) => {
+                    setError(err instanceof Error ? err.message : 'Erreur PayPal')
                     setStep('error')
                 },
             }).render('#paypal-buttons')
@@ -220,19 +215,20 @@ export default function ClientPayerPage() {
 
     const payWithKkiapay = () => {
         if (!settings?.kkiapay_public_key || !doc) return
+        const w = win()
 
         // Remove previous listener if any
         if (kkiapayHandlerRef.current) {
-            window.removeKkiapayListener?.('success', kkiapayHandlerRef.current)
+            w.removeKkiapayListener?.('success', kkiapayHandlerRef.current)
         }
 
         const handler = (response: { transactionId: string }) => {
             confirmPayment('kkiapay', response.transactionId)
         }
         kkiapayHandlerRef.current = handler
-        window.addKkiapayListener?.('success', handler)
+        w.addKkiapayListener?.('success', handler)
 
-        window.openKkiapayWidget?.({
+        w.openKkiapayWidget?.({
             amount: Math.round(doc.total),
             position: 'center',
             callback: '',
@@ -245,7 +241,9 @@ export default function ClientPayerPage() {
 
     const payWithFedaPay = () => {
         if (!settings?.fedapay_public_key || !doc) return
-        window.FedaPay?.init({
+        const FP = win().FedaPay
+        if (!FP) return
+        FP.init({
             public_key: settings.fedapay_public_key,
             transaction: {
                 amount: Math.round(doc.total),
@@ -258,8 +256,8 @@ export default function ClientPayerPage() {
                 lastname: doc.client_nom || '',
             },
             onComplete(object: { reason: string; transaction?: { id: number } }) {
-                if (object.reason === window.FedaPay.DIALOG_DISMISSED) return
-                if (object.reason === window.FedaPay.TRANSACTION_APPROVED) {
+                if (object.reason === FP.DIALOG_DISMISSED) return
+                if (object.reason === FP.TRANSACTION_APPROVED) {
                     confirmPayment('fedapay', object.transaction?.id?.toString())
                 } else {
                     setError('Paiement annulé ou échoué.')
@@ -431,7 +429,6 @@ export default function ClientPayerPage() {
                                     return (
                                         <div key={provider.id}>
                                             <button
-                                                onClick={provider.inline ? provider.action : undefined}
                                                 disabled={provider.inline && isSelected}
                                                 className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${
                                                     isSelected
