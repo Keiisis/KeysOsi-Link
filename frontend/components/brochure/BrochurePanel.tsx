@@ -10,7 +10,7 @@ import QRCode from 'react-qr-code'
 const GOLD    = '#C9A84C'
 const GOLD_L  = '#E2C97E'
 const DARK    = '#03080f'
-const BG_DARK = 'linear-gradient(158deg, #04091a 0%, #071e30 50%, #040d1a 100%)'
+const BG_DARK = 'linear-gradient(158deg, #0b2054 0%, #163a7e 40%, #0d2d6b 70%, #071840 100%)'
 const BG_CREAM = '#fdf9f2'
 const TEXT_DARK  = '#1c1408'
 const TEXT_MED   = '#4a3a20'
@@ -229,41 +229,41 @@ function TextPanelInner({ s, content, lang }: { s: number; content: ContentData;
     const H = BASE_H * s
 
     const SH = ({ children }: { children: React.ReactNode }) => (
-        <div style={{ color: TEXT_DARK, fontSize: 7.5 * s, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', fontFamily: "'Arial',sans-serif", marginBottom: 5 * s, paddingBottom: 4 * s, borderBottom: `1.5px solid ${GOLD}`, lineHeight: 1 }}>
+        <div style={{ color: TEXT_DARK, fontSize: 8.5 * s, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', fontFamily: "'Arial',sans-serif", marginBottom: 6 * s, paddingBottom: 4 * s, borderBottom: `1.5px solid ${GOLD}`, lineHeight: 1 }}>
             {children}
         </div>
     )
 
     const Body = ({ children }: { children: React.ReactNode }) => (
-        <div style={{ color: TEXT_MED, fontSize: 6.6 * s, lineHeight: 1.35, fontFamily: "'Arial',sans-serif", whiteSpace: 'pre-line' }}>
+        <div style={{ color: TEXT_MED, fontSize: 8 * s, lineHeight: 1.55, fontFamily: "'Arial',sans-serif", whiteSpace: 'pre-line' }}>
             {children}
         </div>
     )
 
     const ItemHead = ({ children }: { children: React.ReactNode }) => (
-        <div style={{ color: TEXT_DARK, fontSize: 6.8 * s, fontWeight: 700, fontFamily: "'Arial',sans-serif", marginBottom: 2 * s, marginTop: 7 * s }}>
+        <div style={{ color: TEXT_DARK, fontSize: 8 * s, fontWeight: 700, fontFamily: "'Arial',sans-serif", marginBottom: 2 * s, marginTop: 9 * s }}>
             {children}
         </div>
     )
 
     const BulletItem = ({ label, body }: { label: string; body: string }) => (
-        <div style={{ marginBottom: 7 * s }}>
+        <div style={{ marginBottom: 8 * s }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 * s, marginBottom: 2 * s }}>
-                <div style={{ width: 3.5 * s, height: 3.5 * s, borderRadius: '50%', background: GOLD, flexShrink: 0 }} />
-                <span style={{ color: TEXT_DARK, fontSize: 6.6 * s, fontWeight: 700, fontFamily: "'Arial',sans-serif" }}>{label}</span>
+                <div style={{ width: 4 * s, height: 4 * s, borderRadius: '50%', background: GOLD, flexShrink: 0 }} />
+                <span style={{ color: TEXT_DARK, fontSize: 8 * s, fontWeight: 700, fontFamily: "'Arial',sans-serif" }}>{label}</span>
             </div>
-            <div style={{ color: TEXT_LIGHT, fontSize: 6.3 * s, lineHeight: 1.3, fontFamily: "'Arial',sans-serif", paddingLeft: 8.5 * s }}>{body}</div>
+            <div style={{ color: TEXT_LIGHT, fontSize: 7.5 * s, lineHeight: 1.45, fontFamily: "'Arial',sans-serif", paddingLeft: 9 * s }}>{body}</div>
         </div>
     )
 
-    // Colonnes : gauche = Section I + items 1-2 de II, droite = items 3-5 + Section III
+    // Colonnes : gauche = Section I + items 1-2 de II + CTA épinglé, droite = items 3-5 + Section III + contacts épinglés
     const colPad = 32 * s
     const colGap = 16 * s
     const colW = (W - colPad * 2 - colGap) / 2
     const headerH = 58 * s
     const footerH = 32 * s
     const contentH = H - headerH - footerH - colPad * 2
-    const colStyle: React.CSSProperties = { width: colW, flexShrink: 0, overflow: 'hidden', height: contentH }
+    const colStyle: React.CSSProperties = { width: colW, flexShrink: 0, overflow: 'hidden', height: contentH, display: 'flex', flexDirection: 'column' }
 
     return (
         <div style={{ width: W, height: H, position: 'relative', overflow: 'hidden', background: BG_CREAM, fontFamily: "'Arial',sans-serif", flexShrink: 0 }}>
@@ -300,6 +300,13 @@ function TextPanelInner({ s, content, lang }: { s: number; content: ContentData;
                             </div>
                         ))}
                     </div>
+
+                    {/* CTA épinglé en bas */}
+                    <div style={{ marginTop: 'auto', paddingTop: 14 * s, borderTop: `1px solid ${GOLD}45` }}>
+                        <div style={{ color: TEXT_DARK, fontSize: 8.5 * s, fontWeight: 700, lineHeight: 1.5, fontFamily: "'Georgia',serif", fontStyle: 'italic' }}>
+                            &ldquo;{content.s3_cta}&rdquo;
+                        </div>
+                    </div>
                 </div>
 
                 {/* Séparateur */}
@@ -316,17 +323,24 @@ function TextPanelInner({ s, content, lang }: { s: number; content: ContentData;
 
                     <div style={{ marginTop: 14 * s }}>
                         <SH>{content.s3_title}</SH>
-                        <div style={{ color: TEXT_MED, fontSize: 6.4 * s, lineHeight: 1.35, fontFamily: "'Arial',sans-serif", marginBottom: 8 * s }}>
+                        <div style={{ color: TEXT_MED, fontSize: 7.5 * s, lineHeight: 1.5, fontFamily: "'Arial',sans-serif", marginBottom: 8 * s }}>
                             {content.s3_intro}
                         </div>
                         {content.s3_items.map((item, i) => (
                             <BulletItem key={i} label={item.label} body={item.body} />
                         ))}
-                        <div style={{ marginTop: 10 * s, paddingTop: 8 * s, borderTop: `0.8px solid ${GOLD}50` }}>
-                            <div style={{ color: TEXT_DARK, fontSize: 6.8 * s, fontWeight: 700, lineHeight: 1.4, fontFamily: "'Georgia',serif", fontStyle: 'italic' }}>
-                                {content.s3_cta}
-                            </div>
-                        </div>
+                    </div>
+
+                    {/* Contacts épinglés en bas */}
+                    <div style={{ marginTop: 'auto', paddingTop: 12 * s, borderTop: `1px solid ${GOLD}45` }}>
+                        <div style={{ color: TEXT_DARK, fontSize: 7 * s, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 6 * s }}>Contact</div>
+                        {[
+                            '+229 01 60 32 21 21  ·  +229 01 94 35 50 50',
+                            'contact@retourgagnantbenin.bj',
+                            'www.retourgagnantbenin.bj',
+                        ].map((text, i) => (
+                            <div key={i} style={{ color: TEXT_LIGHT, fontSize: 7.5 * s, lineHeight: 1.6, letterSpacing: '0.02em' }}>{text}</div>
+                        ))}
                     </div>
                 </div>
             </div>
