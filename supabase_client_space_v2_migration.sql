@@ -4,6 +4,29 @@
 -- Idempotente : peut être ré-exécutée sans erreur
 -- ============================================================
 
+-- ─── 0. GUARDS V1 ────────────────────────────────────────────
+-- Sécurité : s'assurer que les colonnes de la migration V1 existent.
+-- Si la colonne client_id est absente sur messages, toutes les queries
+-- (y compris la publication realtime) échouent avec "column does not exist".
+-- ADD COLUMN IF NOT EXISTS est silencieux si la colonne existe déjà.
+
+ALTER TABLE public.messages
+    ADD COLUMN IF NOT EXISTS client_id UUID REFERENCES public.client_profiles(id) ON DELETE SET NULL;
+
+ALTER TABLE public.messages
+    ADD COLUMN IF NOT EXISTS lu BOOLEAN DEFAULT false;
+
+-- rdv_requests : s'assurer que client_id existe (table créée en V1)
+DO $$ BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'rdv_requests'
+    ) THEN
+        EXECUTE 'ALTER TABLE public.rdv_requests
+            ADD COLUMN IF NOT EXISTS client_id UUID REFERENCES public.client_profiles(id) ON DELETE SET NULL';
+    END IF;
+END $$;
+
 -- ─── 1. TABLE client_documents ──────────────────────────────
 -- Stocke les métadonnées des fichiers uploadés par les clients
 CREATE TABLE IF NOT EXISTS public.client_documents (
