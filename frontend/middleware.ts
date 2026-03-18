@@ -180,43 +180,52 @@ export async function middleware(request: NextRequest) {
             serviceKey
         )
 
-        // ─── Espace Client : vérifier client_profiles ───────────────
-        if (isClientRoute) {
-            const { data: clientProfile } = await adminSupabase
-                .from('client_profiles')
-                .select('id')
-                .eq('id', userId)
-                .maybeSingle()
+        // ─── Récupérer les deux profils en parallèle ─────────────────
+        const [clientRes, agentRes] = await Promise.all([
+            adminSupabase.from('client_profiles').select('id').eq('id', userId).maybeSingle(),
+            adminSupabase.from('user_profiles').select('role').eq('id', userId).maybeSingle(),
+        ])
+        const clientProfile = clientRes.data
+        const agentProfile  = agentRes.data
 
+        // ─── Espace Client ────────────────────────────────────────────
+        if (isClientRoute) {
+            // Admin/Agent ne peut PAS accéder à l'espace client
+            if (agentProfile) {
+                return redirectTo(new URL('/client/login?error=unauthorized', request.url))
+            }
+            // Doit avoir un profil client
             if (!clientProfile) {
                 return redirectTo(new URL('/client/login?error=no-profile', request.url))
             }
             return supabaseResponse
         }
 
-        // ─── Espace Agent/Admin : vérifier user_profiles ────────────
-        const { data: profile, error: profileError } = await adminSupabase
-            .from('user_profiles')
-            .select('role')
-            .eq('id', userId)
-            .single()
-
-        if (profileError || !profile) {
-            // Profil introuvable — laisser passer, le layout côté client gèrera
-            console.warn('Middleware: Profil non trouvé pour', userId, '— passage autorisé')
-            return supabaseResponse
+        // ─── Espace Agent / Admin : doit avoir un profil dans user_profiles ──
+        // FAILLE CORRIGÉE : auparavant on laissait passer si le profil était absent.
+        // Un client (sans user_profiles) était donc autorisé à entrer.
+        if (!agentProfile) {
+            const loginUrl = isAdminRoute
+                ? '/admin/login?error=unauthorized'
+                : '/agent/login?error=unauthorized'
+            return redirectTo(new URL(loginUrl, request.url))
         }
 
-        // STRICT ROLE CHECK : Agent ≠ Admin — super_admin a accès à tout
+        // ─── STRICT ROLE ISOLATION ────────────────────────────────────
+        // Super Admin / Admin  → SEULEMENT /admin/*
+        // Agent                → SEULEMENT /agent/*
+        // Client               → SEULEMENT /client/*  (géré ci-dessus)
+        const role = agentProfile.role
         const ADMIN_ROLES = ['admin', 'super_admin', 'superadmin']
-        const AGENT_ROLES = ['agent', 'admin', 'super_admin', 'superadmin']
 
-        if (isAgentRoute && !AGENT_ROLES.includes(profile.role)) {
-            return redirectTo(new URL('/agent/login?error=unauthorized', request.url))
+        if (isAdminRoute && !ADMIN_ROLES.includes(role)) {
+            // Agent qui tente d'accéder à l'admin → refusé
+            return redirectTo(new URL('/admin/login?error=unauthorized', request.url))
         }
 
-        if (isAdminRoute && !ADMIN_ROLES.includes(profile.role)) {
-            return redirectTo(new URL('/admin/login?error=unauthorized', request.url))
+        if (isAgentRoute && role !== 'agent') {
+            // Admin/SuperAdmin qui tente d'accéder à l'espace agent → refusé
+            return redirectTo(new URL('/agent/login?error=unauthorized', request.url))
         }
 
         return supabaseResponse

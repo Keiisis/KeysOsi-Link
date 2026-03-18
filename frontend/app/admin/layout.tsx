@@ -26,7 +26,7 @@ function AdminLayoutContent({
     children: React.ReactNode
 }) {
     const pathname = usePathname()
-    useRouter()
+    const router = useRouter()
     const { mutate: logout } = useLogout()
     const { data: user } = useGetIdentity<{ email?: string }>()
     const { t } = useTranslation()
@@ -35,6 +35,31 @@ function AdminLayoutContent({
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
     const isLoginPage = pathname === '/admin/login'
+
+    // ─── Vérification rôle côté client (défense en profondeur) ──────
+    // Le middleware bloque déjà les non-admins, mais on revérifie ici
+    // pour éviter toute fuite si le middleware est contourné.
+    useEffect(() => {
+        if (isLoginPage) return
+        const checkRole = async () => {
+            const { data: { user: authUser } } = await supabase.auth.getUser()
+            if (!authUser) { router.push('/admin/login'); return }
+
+            const { data: profile } = await supabase
+                .from('user_profiles')
+                .select('role')
+                .eq('id', authUser.id)
+                .maybeSingle()
+
+            const ADMIN_ROLES = ['admin', 'super_admin', 'superadmin']
+            if (!profile || !ADMIN_ROLES.includes(profile.role)) {
+                await supabase.auth.signOut()
+                router.push('/admin/login?error=unauthorized')
+            }
+        }
+        checkRole()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isLoginPage])
 
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 20)

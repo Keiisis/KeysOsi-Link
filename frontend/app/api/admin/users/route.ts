@@ -19,18 +19,28 @@ export async function GET() {
 
     const profileMap = new Map((profilesRes.data || []).map(p => [p.id, p]))
 
-    const users = authRes.data.users.map(u => {
-        const profile = profileMap.get(u.id)
-        return {
-            id: u.id,
-            email: u.email,
-            full_name: profile?.full_name || u.user_metadata?.full_name || 'Sans nom',
-            role: profile?.role || u.user_metadata?.role || 'agent',
-            is_active: profile?.is_active ?? true,
-            last_seen_at: profile?.last_seen_at || null,
-            created_at: u.created_at,
-        }
-    })
+    // SÉCURITÉ : on n'inclut QUE les utilisateurs présents dans user_profiles
+    // (admin, agent, superadmin). Les clients n'ont PAS de user_profiles → exclus.
+    // Plus de fallback 'agent' qui faisait apparaître les clients comme agents.
+    const VALID_ROLES = ['agent', 'admin', 'super_admin', 'superadmin']
+
+    const users = authRes.data.users
+        .filter(u => {
+            const profile = profileMap.get(u.id)
+            return profile && VALID_ROLES.includes(profile.role)
+        })
+        .map(u => {
+            const profile = profileMap.get(u.id)!
+            return {
+                id: u.id,
+                email: u.email,
+                full_name: profile.full_name || u.user_metadata?.full_name || 'Sans nom',
+                role: profile.role,
+                is_active: profile.is_active ?? true,
+                last_seen_at: profile.last_seen_at || null,
+                created_at: u.created_at,
+            }
+        })
 
     return NextResponse.json({ users })
 }
