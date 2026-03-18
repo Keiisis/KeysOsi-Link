@@ -6,7 +6,7 @@ import { motion } from 'framer-motion'
 import {
     Globe, Map, ShieldCheck, Sparkles, Users,
     Image as ImageIcon, Flag, BookOpen, ArrowRight,
-    FileText, Palette
+    FileText, Palette, CreditCard
 } from 'lucide-react'
 
 const frontendSections = [
@@ -81,6 +81,14 @@ const frontendSections = [
         href: '/admin/notre-histoire',
         color: '#FCD116',
         count: 'Histoire & Identité',
+    },
+    {
+        title: 'Design — Cartes de Visite',
+        description: 'Générez des cartes de visite professionnelles recto/verso pour vos agents. Téléchargement PNG ou PDF, attribution directe depuis l\'admin.',
+        icon: CreditCard,
+        href: '/admin/design',
+        color: '#FCD116',
+        count: 'Cartes & Identité',
     },
 ]
 

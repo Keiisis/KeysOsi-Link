@@ -12,7 +12,7 @@ import {
     Menu, Bell, Search, Headphones, X,
     TrendingUp, BookOpen, CircleDot, ChevronRight,
     Shield, PanelLeftClose, PanelLeft,
-    Command, UserCog, Globe, Handshake, Radar, MonitorPlay, Landmark
+    Command, UserCog, Globe, Handshake, Radar, MonitorPlay, Landmark, CreditCard
 } from 'lucide-react'
 import { useTranslation, T } from '@/lib/translation'
 
@@ -408,6 +408,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
         {
             label: t('COMPTE'),
             items: [
+                { title: t('Ma Carte de Visite'), icon: CreditCard, href: '/agent/ma-carte-de-visite' },
                 { title: t('Mon Profil'), icon: UserCog, href: '/agent/profil' },
             ],
         },
