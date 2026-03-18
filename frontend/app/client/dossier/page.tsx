@@ -338,7 +338,7 @@ export default function ClientDossierPage() {
                                                                         {fmtSize(clientDoc.taille)} · {new Date(clientDoc.created_at).toLocaleDateString('fr-FR')}
                                                                     </p>
                                                                 </div>
-                                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <div className="flex items-center gap-1">
                                                                     <button
                                                                         type="button"
                                                                         onClick={async () => {

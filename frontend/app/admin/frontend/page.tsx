@@ -74,6 +74,14 @@ const frontendSections = [
         color: '#008751',
         count: 'Rédaction & SEO',
     },
+    {
+        title: 'Notre Histoire',
+        description: 'Éditez tous les contenus, textes, photos et portraits de la page Notre Histoire — héros, chapitres, architectes, logo, confiance.',
+        icon: BookOpen,
+        href: '/admin/notre-histoire',
+        color: '#FCD116',
+        count: 'Histoire & Identité',
+    },
 ]
 
 export default function AdminFrontendHub() {

@@ -9,6 +9,7 @@ import {
     ArrowRight, CheckCircle2, Users, Scale, Fingerprint, MapPin
 } from 'lucide-react'
 import { useTranslation } from '@/lib/translation'
+import { formatPrice, CurrencyCode } from '@/lib/currency'
 
 interface PageContent { section_key: string; content_fr: string }
 interface FAQ { id: string; question_fr: string; answer_fr: string; sort_order: number }
@@ -20,6 +21,8 @@ export default function NationalitePage() {
     const [docs, setDocs] = useState<RequiredDoc[]>([])
     const [openFaq, setOpenFaq] = useState<string | null>(null)
     const [loading, setLoading] = useState(true)
+    const [formAmount, setFormAmount] = useState(250)
+    const [formCurrency, setFormCurrency] = useState<CurrencyCode>('XOF')
     const { t } = useTranslation()
 
     useEffect(() => {
@@ -34,11 +37,22 @@ export default function NationalitePage() {
             // Fallbacks
             if (!map.hero_title) map.hero_title = 'Reconnaissance de Nationalité Béninoise'
             if (!map.hero_subtitle) map.hero_subtitle = 'Pour les Afro-Descendants'
-            if (!map.price) map.price = '250'
             if (!map.processing_time) map.processing_time = '3 mois'
             setContent(map)
             setFaqs((fRes.data || []) as FAQ[])
             setDocs((dRes.data || []) as RequiredDoc[])
+
+            // Fetch prix et devise depuis page_sections (admin settings)
+            supabase.from('page_sections').select('content')
+                .eq('page', 'nationalite').eq('section_key', 'form_settings').single()
+                .then(({ data }) => {
+                    if (data?.content) {
+                        const c = data.content as Record<string, unknown>
+                        if (c.amount) setFormAmount(Number(c.amount))
+                        if (c.currency) setFormCurrency(c.currency as CurrencyCode)
+                    }
+                })
+
             setLoading(false)
         }
         load()
@@ -89,7 +103,7 @@ export default function NationalitePage() {
                             {t("Soumettre ma demande")} <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                         </Link>
                         <div className="flex items-center gap-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl px-6 py-4">
-                            <span className="text-3xl font-black text-[#FCD116]">{content.price} $</span>
+                            <span className="text-3xl font-black text-[#FCD116]">{formatPrice(formAmount, formCurrency)}</span>
                             <div className="text-left">
                                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{t("Frais de traitement")}</p>
                                 <p className="text-[10px] text-gray-600 flex items-center gap-1"><Clock size={10} /> {t(content.processing_time || '3 mois')}</p>

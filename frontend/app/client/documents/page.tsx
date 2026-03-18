@@ -153,25 +153,34 @@ export default function ClientDocumentsPage() {
                         {filtered.map((doc, i) => {
                             const s = STATUS[doc.status as keyof typeof STATUS] || { label: doc.status, cls: 'text-gray-400 bg-gray-500/10' }
                             const needsAction = (doc.type === 'devis' && doc.status === 'envoye') || (doc.type === 'facture' && doc.status === 'envoye')
+                            const canPay = doc.type === 'facture' && doc.status === 'envoye'
                             return (
                                 <motion.div key={doc.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
-                                    className={`flex items-center gap-4 px-5 py-4 hover:bg-white/[0.02] transition-colors group ${needsAction ? 'border-l-2 border-amber-500/50' : ''}`}>
-                                    <div className={`p-2.5 rounded-xl flex-shrink-0 ${doc.type === 'devis' ? 'bg-blue-500/10 text-blue-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
-                                        {doc.type === 'devis' ? <FileText size={16} /> : <Receipt size={16} />}
+                                    className={`flex items-center gap-2 sm:gap-4 px-3 sm:px-5 py-3.5 sm:py-4 hover:bg-white/[0.02] transition-colors group ${needsAction ? 'border-l-2 border-amber-500/50' : ''}`}>
+                                    <div className={`p-2 sm:p-2.5 rounded-xl flex-shrink-0 ${doc.type === 'devis' ? 'bg-blue-500/10 text-blue-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                                        {doc.type === 'devis' ? <FileText size={15} /> : <Receipt size={15} />}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <p className="font-bold text-white text-sm">{doc.numero}</p>
-                                            {needsAction && <span className="text-[9px] font-black bg-amber-500/15 text-amber-400 px-1.5 py-0.5 rounded-full uppercase tracking-wide">Action requise</span>}
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                            <p className="font-bold text-white text-sm truncate">{doc.numero}</p>
+                                            {needsAction && <span className="text-[9px] font-black bg-amber-500/15 text-amber-400 px-1.5 py-0.5 rounded-full uppercase tracking-wide whitespace-nowrap">Action requise</span>}
                                         </div>
-                                        <p className="text-[11px] text-gray-500">{new Date(doc.created_at).toLocaleDateString('fr-FR')} · {doc.items?.length || 0} ligne{(doc.items?.length || 0) > 1 ? 's' : ''}</p>
+                                        <p className="text-[11px] text-gray-500 truncate">{new Date(doc.created_at).toLocaleDateString('fr-FR')} · {doc.items?.length || 0} ligne{(doc.items?.length || 0) > 1 ? 's' : ''}</p>
                                     </div>
                                     <div className="text-right flex-shrink-0">
-                                        <p className="font-mono font-black text-white text-sm">{fmtN(doc.total)} {doc.currency || 'XOF'}</p>
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${s.cls}`}>{s.label}</span>
+                                        <p className="font-mono font-black text-white text-xs sm:text-sm whitespace-nowrap">{fmtN(doc.total)} <span className="text-gray-400">{doc.currency || 'XOF'}</span></p>
+                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${s.cls}`}>{s.label}</span>
                                     </div>
-                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        {doc.type === 'facture' && doc.status === 'envoye' && (
+                                    {/* Mobile: show pay button always if needed */}
+                                    {canPay && (
+                                        <Link href={`/client/payer/${doc.id}`}
+                                            className="sm:hidden flex-shrink-0 p-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 transition-colors" title="Payer cette facture">
+                                            <CreditCard size={14} />
+                                        </Link>
+                                    )}
+                                    {/* Desktop: hover action buttons */}
+                                    <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        {canPay && (
                                             <Link href={`/client/payer/${doc.id}`}
                                                 className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 text-[10px] font-bold transition-colors" title="Payer">
                                                 <CreditCard size={12} /> Payer
@@ -184,7 +193,9 @@ export default function ClientDocumentsPage() {
                                             <Download size={15} />
                                         </Link>
                                     </div>
-                                    <ArrowRight size={14} className="text-gray-700 group-hover:text-blue-400 transition-colors flex-shrink-0" />
+                                    <Link href={`/client/documents/${doc.id}`} className="flex-shrink-0">
+                                        <ArrowRight size={14} className="text-gray-700 group-hover:text-blue-400 transition-colors" />
+                                    </Link>
                                 </motion.div>
                             )
                         })}
