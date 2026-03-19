@@ -1504,7 +1504,7 @@ function GenerationTab({
                         </div>
                         {useDossier && (
                             <textarea
-                                placeholder='Collez ici le JSON de votre dossier (téléchargé depuis l\'onglet Veille)...'
+                                placeholder={"Collez ici le JSON de votre dossier (téléchargé depuis l'onglet Veille)..."}
                                 value={dossierContext}
                                 onChange={e => setDossierContext(e.target.value)}
                                 rows={4}

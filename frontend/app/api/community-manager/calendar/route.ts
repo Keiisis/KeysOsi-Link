@@ -116,6 +116,7 @@ CONTEXTE CONCURRENT ANALYSÉ :
 - Opportunités : ${((parsed.competitive || {}).opportunities || []).join(', ')}
 
 En t'inspirant de ce concurrent mais en étant meilleur et plus différenciant :`
+            } catch { /* style_context ignoré si non parseable */ }
         }
 
         const datesInfo = dates.slice(0, 30).map(d => `Jour ${d.day}: ${d.date} (${d.weekday})`).join('\n')
