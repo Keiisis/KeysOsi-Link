@@ -18,7 +18,7 @@ const SERPER_KEYS: string[] = [
 let apifyKeyIndex = 0
 
 // ── Type normalisé universel ──────────────────────────────
-export type NormalizedPost = {
+type NormalizedPost = {
     text: string
     likes: number
     comments: number
@@ -109,7 +109,7 @@ const APIFY_ACTORS: Record<string, {
     },
 }
 
-export const VALID_PLATFORMS = Object.keys(APIFY_ACTORS)
+const VALID_PLATFORMS = Object.keys(APIFY_ACTORS)
 
 // ── Helpers ───────────────────────────────────────────────
 function strSafe(v: unknown): string {
@@ -228,7 +228,7 @@ const PLATFORM_NORMALIZERS: Record<string, (i: Record<string, unknown>, fallback
 }
 
 // ── Aplatissement + normalisation ────────────────────────
-export function flattenAndNormalize(
+function flattenAndNormalize(
     items: unknown[],
     platform: string,
     fallbackUrl: string
