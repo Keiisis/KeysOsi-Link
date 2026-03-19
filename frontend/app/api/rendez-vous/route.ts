@@ -6,19 +6,16 @@ import { fetchWithGroqRotation, GROQ_KEYS } from '@/lib/groq';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-/**
- * Generate a personalized AI auto-reply using Groq
- */
 async function generateAutoReply(clientName: string, service: string): Promise<string> {
     try {
-        if (GROQ_KEYS.length === 0) return 'Votre demande de rendez-vous est confirmée. Notre équipe la prépare.';
+        if (GROQ_KEYS.length === 0) return 'Votre demande de rendez-vous est bien enregistrée. Notre équipe la traite avec soin.';
 
         const res = await fetchWithGroqRotation({
             model: 'llama-3.1-8b-instant',
             messages: [
                 {
                     role: 'system',
-                    content: `Tu es l'assistant de Retour Gagnant Bénin. Génère un court message personnalisé (2-3 phrases max) pour confirmer la réception d'une demande de rendez-vous pour le service donné. Sois chaleureux, rassurant et professionnel. Ne donne AUCUN prix et AUCUNE date (l'agent s'en chargera). NE PAS utiliser de markdown.`
+                    content: `Tu es l'assistant de Retour Gagnant Bénin. Génère un court message personnalisé (2-3 phrases max) pour confirmer la réception d'une demande de rendez-vous. Sois chaleureux, rassurant et professionnel. Ne donne AUCUN prix et AUCUNE date (l'agent les confirmera). NE PAS utiliser de markdown.`
                 },
                 {
                     role: 'user',
@@ -30,10 +27,29 @@ async function generateAutoReply(clientName: string, service: string): Promise<s
         });
 
         const data = await res.json();
-        return data.choices?.[0]?.message?.content || 'Votre demande de rendez-vous est confirmée.';
+        return data.choices?.[0]?.message?.content || 'Votre demande de rendez-vous est bien enregistrée.';
     } catch {
-        return 'Nous avons bien reçu votre demande de rendez-vous et allons vous confirmer un créneau très prochainement.';
+        return 'Nous avons bien reçu votre demande et notre agent vous confirmera un créneau très prochainement.';
     }
+}
+
+// Mapping timeSlot → heure
+function mapTimeSlot(timeSlot: string): string {
+    const lower = (timeSlot || '').toLowerCase();
+    if (lower.includes('matin') || lower.includes('morning') || lower.includes('9h') || lower.includes('10h')) return '09:00';
+    if (lower.includes('après-midi') || lower.includes('apres-midi') || lower.includes('afternoon') || lower.includes('13h') || lower.includes('14h')) return '14:00';
+    if (lower.includes('soir') || lower.includes('evening') || lower.includes('17h') || lower.includes('18h')) return '17:00';
+    // If it looks like a time already (HH:MM)
+    if (/^\d{1,2}:\d{2}$/.test(timeSlot)) return timeSlot;
+    return '09:00';
+}
+
+// Mapping contactMethod → type rdv
+function mapContactMethod(contactMethod: string): 'presentiel' | 'visio' | 'telephone' {
+    const lower = (contactMethod || '').toLowerCase();
+    if (lower.includes('présentiel') || lower.includes('presentiel') || lower.includes('cotonou') || lower.includes('bureau')) return 'presentiel';
+    if (lower.includes('meet') || lower.includes('visio') || lower.includes('video') || lower.includes('zoom') || lower.includes('teams')) return 'visio';
+    return 'telephone'; // WhatsApp, appel, téléphone, etc.
 }
 
 export async function POST(req: NextRequest) {
@@ -42,59 +58,61 @@ export async function POST(req: NextRequest) {
         const { nom, prenom, email, telephone, service, message, date, timeSlot, contactMethod } = body;
 
         if (!nom || !email) {
-            return NextResponse.json(
-                { error: 'Nom et email sont requis.' },
-                { status: 400 }
-            );
+            return NextResponse.json({ error: 'Nom et email sont requis.' }, { status: 400 });
         }
 
         const supabase = createClient(supabaseUrl, supabaseKey);
         const clientName = `${prenom || ''} ${nom}`.trim();
-        const sujetRdv = `RDV (${service}) : ${date || 'Date N/A'} - ${timeSlot || 'Créneau N/A'} [${contactMethod}]`;
 
-        // Save to Supabase
-        const { data: insertedMsg, error: supabaseError } = await supabase
-            .from('messages')
+        // Encoder les infos visiteur dans notes (pas de compte, pas de client_id)
+        // Format structuré pour que l'agenda agent puisse parser le nom/téléphone
+        const notesParts = [`__VISITOR__: ${clientName} | Tel: ${telephone || 'N/A'}`];
+        if (message?.trim()) notesParts.push(`---\nMessage: ${message.trim()}`);
+        const notesContent = notesParts.join('\n');
+
+        // Sauvegarder dans rdv_requests (table unifiée pour tous les RDV)
+        const { data: insertedRdv, error: rdvError } = await supabase
+            .from('rdv_requests')
             .insert([{
-                nom,
-                prenom: prenom || '',
-                email,
-                telephone: telephone || '',
-                sujet: sujetRdv,
-                message: message || '',
-                type: 'rendez-vous',
-                lu: false,
+                client_id: null,
+                client_email: email,
+                date: date || null,
+                heure: mapTimeSlot(timeSlot),
+                type: mapContactMethod(contactMethod),
+                motif: service || 'Consultation générale',
+                notes: notesContent,
+                statut: 'en_attente',
             }])
             .select('id')
             .single();
 
-        if (supabaseError) throw supabaseError;
-        const msgId = insertedMsg?.id || '';
+        if (rdvError) throw rdvError;
+        const rdvId = insertedRdv?.id || '';
 
-        // Fire-and-forget: Auto-reply + Agent notification
+        // Fire-and-forget : emails de confirmation + notification agent
         (async () => {
             try {
-                // Generate AI reply
                 const aiReply = await generateAutoReply(clientName, service || 'Consultation');
+                const templates = await getEmailTemplates('fr');
 
-                // Auto-reply context
+                // Email de confirmation au visiteur (sans CTA "réserver un rdv" — illogique)
                 await sendEmail({
                     to: email,
-                    subject: `Retour Gagnant — Confirmation de Demande de Rendez-vous`,
-                    html: await (await getEmailTemplates('fr')).autoReply(clientName, aiReply),
-                    context: 'auto_reply',
-                    relatedId: msgId,
+                    subject: `✅ Retour Gagnant — Votre demande de rendez-vous est enregistrée`,
+                    html: await templates.rdvConfirmation(clientName, service || 'Consultation', date, timeSlot, contactMethod, aiReply),
+                    context: 'rdv_confirmation',
+                    relatedId: rdvId,
                 });
 
-                // Notify admin with lead context
+                // Notification admin/agent
                 const config = await getEmailConfig();
                 if (config.adminEmail) {
                     await sendEmail({
                         to: config.adminEmail,
-                        subject: `📅 Nouvelle demande de Rendez-vous — ${clientName}`,
-                        html: await (await getEmailTemplates('fr')).newLeadNotification(clientName, email, 0, service || 'Consultation', 'Formulaire de Rendez-vous'),
+                        subject: `📅 Nouveau RDV — ${clientName} (${service || 'Consultation'})`,
+                        html: await templates.newLeadNotification(clientName, email, 0, service || 'Consultation', 'Formulaire Rendez-vous'),
                         context: 'admin_notification',
-                        relatedId: msgId,
+                        relatedId: rdvId,
                     });
                 }
             } catch (emailErr) {
@@ -104,9 +122,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ success: true, message: 'Demande de rendez-vous envoyée !' });
     } catch (error) {
-        return NextResponse.json(
-            { error: 'Erreur lors de la soumission.' },
-            { status: 500 }
-        );
+        console.error('[RDV POST]', error);
+        return NextResponse.json({ error: 'Erreur lors de la soumission.' }, { status: 500 });
     }
 }

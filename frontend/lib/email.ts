@@ -403,6 +403,44 @@ export const getEmailTemplates = async (locale: string = 'fr') => {
         </table>
     `, locale),
 
+        /** Confirmation de demande de RDV — sans CTA "réserver" (redondant et illogique) */
+        rdvConfirmation: (clientName: string, service: string, date: string | null, timeSlot: string, contactMethod: string, aiMessage: string) => EMAIL_WRAPPER(`
+        <h2 style="margin:0 0 16px;font-size:20px;color:#FCD116;font-weight:800;">✅ Demande reçue, ${clientName} !</h2>
+        <p style="color:rgba(255,255,255,0.7);font-size:14px;line-height:1.8;margin:0 0 20px;">
+            Votre demande de rendez-vous a bien été enregistrée. Votre agent va l'examiner et vous confirmera le créneau très prochainement.
+        </p>
+        <div style="background:rgba(0,135,81,0.06);border:1px solid rgba(0,135,81,0.2);border-radius:12px;padding:20px;margin:0 0 20px;">
+            <p style="margin:0 0 12px;font-size:11px;font-weight:800;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.15em;">Récapitulatif de votre demande</p>
+            <table style="width:100%;border-collapse:collapse;">
+                <tr>
+                    <td style="padding:6px 0;color:rgba(255,255,255,0.4);font-size:12px;width:120px;">Service</td>
+                    <td style="padding:6px 0;color:#FCD116;font-size:13px;font-weight:700;">${service}</td>
+                </tr>
+                <tr>
+                    <td style="padding:6px 0;color:rgba(255,255,255,0.4);font-size:12px;">Date souhaitée</td>
+                    <td style="padding:6px 0;color:#fff;font-size:13px;">${date ? new Date(date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : 'À confirmer par votre agent'}</td>
+                </tr>
+                <tr>
+                    <td style="padding:6px 0;color:rgba(255,255,255,0.4);font-size:12px;">Créneau</td>
+                    <td style="padding:6px 0;color:#fff;font-size:13px;">${timeSlot || 'Selon disponibilité'}</td>
+                </tr>
+                <tr>
+                    <td style="padding:6px 0;color:rgba(255,255,255,0.4);font-size:12px;">Mode de contact</td>
+                    <td style="padding:6px 0;color:#fff;font-size:13px;">${contactMethod || 'À définir'}</td>
+                </tr>
+            </table>
+        </div>
+        <div style="background:rgba(0,135,81,0.08);border-left:3px solid #008751;padding:16px 20px;border-radius:0 12px 12px 0;margin:0 0 20px;">
+            <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.6);font-style:italic;line-height:1.7;">${aiMessage}</p>
+        </div>
+        <div style="background:rgba(252,209,22,0.05);border:1px solid rgba(252,209,22,0.15);border-radius:10px;padding:14px 18px;text-align:center;">
+            <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.5);line-height:1.6;">
+                ⏱&nbsp; Votre agent vous confirmera ce rendez-vous sous <strong style="color:rgba(255,255,255,0.8);">24h</strong>.<br/>
+                Vous recevrez un email de confirmation avec tous les détails.
+            </p>
+        </div>
+    `, locale),
+
         /** Notification to agents/admin for new lead */
         newLeadNotification: (leadName: string, leadEmail: string, score: number, service: string, source: string) => EMAIL_WRAPPER(`
         <h2 style="margin:0 0 16px;font-size:20px;color:#FCD116;font-weight:800;">🔔 ${t.newLead} — ${source}</h2>

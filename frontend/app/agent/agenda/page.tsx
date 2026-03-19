@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import {
     CalendarDays, Plus, Clock, MapPin, User, Video, Phone, Mail,
-    ChevronLeft, ChevronRight, X, Loader2, ExternalLink, Trash2
+    ChevronLeft, ChevronRight, X, Loader2, ExternalLink, Trash2,
+    Send, CheckCircle
 } from 'lucide-react'
 
 interface Event {
@@ -49,6 +50,12 @@ export default function AgentAgendaPage() {
     const [selectedRDV, setSelectedRDV] = useState<RDV | null>(null)
     const [selectedDay, setSelectedDay] = useState<number | null>(null)
     const [saving, setSaving] = useState(false)
+
+    // Inline email reply state
+    const [replyMode, setReplyMode] = useState(false)
+    const [replyMsg, setReplyMsg] = useState('')
+    const [sendingEmail, setSendingEmail] = useState(false)
+    const [emailSent, setEmailSent] = useState(false)
 
     const [newTitle, setNewTitle] = useState('')
     const [newDate, setNewDate] = useState('')
@@ -102,9 +109,47 @@ export default function AgentAgendaPage() {
         setShowModal(true)
     }
 
+    // Parse __VISITOR__: Name | Tel: +229... format in notes
+    const parseVisitorInfo = (notes: string | null): { name?: string; phone?: string } => {
+        if (!notes) return {}
+        const match = notes.match(/^__VISITOR__:\s*(.+?)\s*\|\s*Tel:\s*(.+)/m)
+        if (!match) return {}
+        return { name: match[1].trim(), phone: match[2].trim() === 'N/A' ? undefined : match[2].trim() }
+    }
+
     const getClientName = (rdv: RDV) => {
         if (rdv.client_profiles?.nom) return `${rdv.client_profiles.nom} ${rdv.client_profiles.prenom || ''}`.trim()
+        const visitor = parseVisitorInfo(rdv.notes)
+        if (visitor.name) return visitor.name
         return rdv.client_email
+    }
+
+    const getVisitorPhone = (rdv: RDV) => {
+        if (rdv.client_profiles?.phone) return rdv.client_profiles.phone
+        return parseVisitorInfo(rdv.notes).phone || null
+    }
+
+    const sendEmailReply = async () => {
+        if (!selectedRDV || !replyMsg.trim()) return
+        setSendingEmail(true)
+        try {
+            const res = await fetch('/api/rdv/reply', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    rdvId: selectedRDV.id,
+                    clientEmail: selectedRDV.client_email,
+                    clientName: getClientName(selectedRDV),
+                    message: replyMsg.trim(),
+                }),
+            })
+            if (res.ok) {
+                setEmailSent(true)
+                setReplyMsg('')
+                setTimeout(() => { setEmailSent(false); setReplyMode(false) }, 3000)
+            }
+        } catch { /* non-blocking */ }
+        setSendingEmail(false)
     }
 
     const updateRdvStatus = async (rdvId: string, statut: RDV['statut']) => {
@@ -340,11 +385,11 @@ export default function AgentAgendaPage() {
             {/* RDV Detail Modal */}
             <AnimatePresence>
                 {selectedRDV && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setSelectedRDV(null)}>
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} className="bg-[#0a0f14] border border-white/10 rounded-2xl p-6 w-full max-w-md">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => { setSelectedRDV(null); setReplyMode(false); setReplyMsg(''); setEmailSent(false) }}>
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} className="bg-[#0a0f14] border border-white/10 rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-lg font-bold text-white">Demande de Rendez-vous</h3>
-                                <button type="button" onClick={() => setSelectedRDV(null)} className="text-gray-500 hover:text-white" title="Fermer"><X size={18} /></button>
+                                <button type="button" onClick={() => { setSelectedRDV(null); setReplyMode(false); setReplyMsg(''); setEmailSent(false) }} className="text-gray-500 hover:text-white" title="Fermer"><X size={18} /></button>
                             </div>
                             <div className="space-y-3">
                                 {/* Statut */}
@@ -363,7 +408,7 @@ export default function AgentAgendaPage() {
                                 <div className="bg-white/5 rounded-xl p-4 space-y-2">
                                     <div className="flex items-center gap-2 text-sm text-gray-300"><User size={14} className="text-emerald-400" /> {getClientName(selectedRDV)}</div>
                                     <div className="flex items-center gap-2 text-sm text-gray-300"><Mail size={14} className="text-emerald-400" /> {selectedRDV.client_email}</div>
-                                    {selectedRDV.client_profiles?.phone && <div className="flex items-center gap-2 text-sm text-gray-300"><Phone size={14} className="text-emerald-400" /> {selectedRDV.client_profiles.phone}</div>}
+                                    {getVisitorPhone(selectedRDV) && <div className="flex items-center gap-2 text-sm text-gray-300"><Phone size={14} className="text-emerald-400" /> {getVisitorPhone(selectedRDV)}</div>}
                                     <div className="flex items-center gap-2 text-sm text-gray-300">
                                         <CalendarDays size={14} className="text-emerald-400" />
                                         {new Date(selectedRDV.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} à {selectedRDV.heure}
@@ -380,12 +425,16 @@ export default function AgentAgendaPage() {
                                     <p className="text-sm text-gray-300">{selectedRDV.motif}</p>
                                 </div>
 
-                                {selectedRDV.notes && (
-                                    <div className="bg-white/5 rounded-xl p-4">
-                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Notes du client</p>
-                                        <p className="text-sm text-gray-300">{selectedRDV.notes}</p>
-                                    </div>
-                                )}
+                                {/* Notes — hide internal __VISITOR__ prefix, show only the message part */}
+                                {selectedRDV.notes && (() => {
+                                    const displayNotes = selectedRDV.notes.replace(/^__VISITOR__:[^\n]*\n?---\n?/m, '').replace(/^__VISITOR__:[^\n]*/m, '').replace(/^Message:\s*/m, '').trim()
+                                    return displayNotes ? (
+                                        <div className="bg-white/5 rounded-xl p-4">
+                                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Message du client</p>
+                                            <p className="text-sm text-gray-300">{displayNotes}</p>
+                                        </div>
+                                    ) : null
+                                })()}
 
                                 <p className="text-[10px] text-gray-500">Reçu le {new Date(selectedRDV.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
 
@@ -400,11 +449,41 @@ export default function AgentAgendaPage() {
                                     <button type="button" onClick={() => updateRdvStatus(selectedRDV.id, 'termine')} className="w-full py-2 rounded-xl bg-gray-500/10 text-gray-400 border border-gray-500/20 text-xs font-bold hover:bg-gray-500/20 transition-all">Marquer comme terminé</button>
                                 )}
 
-                                {/* Contacter */}
-                                <div className="flex gap-2 pt-1">
-                                    <a href={`mailto:${selectedRDV.client_email}`} className="flex-1 flex items-center justify-center gap-1 text-xs py-2.5 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30 font-bold hover:bg-blue-500/30"><Mail size={12} /> Email</a>
-                                    {selectedRDV.client_profiles?.phone && (
-                                        <a href={`https://wa.me/${selectedRDV.client_profiles.phone.replace(/\s+/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1 text-xs py-2.5 rounded-xl bg-green-500/20 text-green-400 border border-green-500/30 font-bold hover:bg-green-500/30"><Phone size={12} /> WhatsApp</a>
+                                {/* Contacter — inline email reply ou WhatsApp */}
+                                <div className="border-t border-white/5 pt-4 space-y-3">
+                                    {!replyMode ? (
+                                        <div className="flex gap-2">
+                                            <button type="button" onClick={() => setReplyMode(true)} className="flex-1 flex items-center justify-center gap-1.5 text-xs py-2.5 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30 font-bold hover:bg-blue-500/30 transition-all">
+                                                <Mail size={12} /> Répondre par email
+                                            </button>
+                                            {getVisitorPhone(selectedRDV) && (
+                                                <a href={`https://wa.me/${getVisitorPhone(selectedRDV)!.replace(/\s+/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1.5 text-xs py-2.5 rounded-xl bg-green-500/20 text-green-400 border border-green-500/30 font-bold hover:bg-green-500/30 transition-all">
+                                                    <Phone size={12} /> WhatsApp
+                                                </a>
+                                            )}
+                                        </div>
+                                    ) : emailSent ? (
+                                        <div className="flex items-center justify-center gap-2 text-emerald-400 text-sm font-bold py-3">
+                                            <CheckCircle size={16} /> Email envoyé !
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1"><Mail size={10} /> Réponse à {selectedRDV.client_email}</p>
+                                            <textarea
+                                                value={replyMsg}
+                                                onChange={e => setReplyMsg(e.target.value)}
+                                                placeholder="Écrivez votre réponse..."
+                                                rows={4}
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-blue-500/50 resize-none"
+                                            />
+                                            <div className="flex gap-2">
+                                                <button type="button" onClick={() => { setReplyMode(false); setReplyMsg('') }} className="px-4 py-2 rounded-xl border border-white/10 text-gray-400 text-xs font-bold">Annuler</button>
+                                                <button type="button" onClick={sendEmailReply} disabled={sendingEmail || !replyMsg.trim()} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30 text-xs font-bold hover:bg-blue-500/30 disabled:opacity-50 transition-all">
+                                                    {sendingEmail ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+                                                    {sendingEmail ? 'Envoi…' : 'Envoyer'}
+                                                </button>
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
                             </div>
