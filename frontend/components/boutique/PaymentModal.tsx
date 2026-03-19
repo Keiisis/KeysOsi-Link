@@ -539,7 +539,7 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
 
         try {
             window.openKkiapayWidget({
-                amount: selectedCurrency !== 'XOF' ? Math.round(totalAmount * (1 + CONVERSION_MARGIN)) : Math.round(totalAmount),
+                amount: Math.round(totalAmount * (1 + CONVERSION_MARGIN)),
                 position: 'center',
                 key: publicKey,
                 sandbox,
@@ -615,7 +615,7 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     order_id: oid,
-                    amount: selectedCurrency !== 'XOF' ? Math.round(totalAmount * (1 + CONVERSION_MARGIN)) : Math.round(totalAmount),
+                    amount: Math.round(totalAmount * (1 + CONVERSION_MARGIN)),
                     description: `Achat: ${product.title} (x${quantity})`,
                     customer_email: customerEmail || undefined,
                     customer_phone: customerPhone,
@@ -680,7 +680,7 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
         const cancelUrl = `${window.location.origin}/boutique`
 
         window.location.href =
-            `${redirectUrl}?amount=${selectedCurrency !== 'XOF' ? Math.round(totalAmount * (1 + CONVERSION_MARGIN)) : Math.round(totalAmount)}` +
+            `${redirectUrl}?amount=${Math.round(totalAmount * (1 + CONVERSION_MARGIN))}` +
             `&currency=${product.currency || 'XOF'}` +
             `&order_id=${oid}` +
             `&phone=${encodeURIComponent(customerPhone)}` +

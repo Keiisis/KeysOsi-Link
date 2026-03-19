@@ -544,7 +544,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
         if (!publicKey) { cancelOrder(oid); setErrorMessage('Kkiapay non configurée.'); setStep('error'); return }
         try {
             window.openKkiapayWidget({
-                amount: selectedCurrency !== 'XOF' ? Math.round(finalTotal * (1 + CONVERSION_MARGIN)) : Math.round(finalTotal),
+                amount: Math.round(finalTotal * (1 + CONVERSION_MARGIN)),
                 position: 'center',
                 key: publicKey,
                 sandbox,
@@ -608,7 +608,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     order_id: oid,
-                    amount: selectedCurrency !== 'XOF' ? Math.round(finalTotal * (1 + CONVERSION_MARGIN)) : Math.round(finalTotal),
+                    amount: Math.round(finalTotal * (1 + CONVERSION_MARGIN)),
                     description: `Panier (${items.length} article${items.length > 1 ? 's' : ''})`,
                     customer_email: customerEmail || undefined,
                     customer_phone: customerPhone,
@@ -666,7 +666,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
         const cancelUrl = `${window.location.origin}/boutique`
 
         window.location.href =
-            `${url}?amount=${selectedCurrency !== 'XOF' ? Math.round(finalTotal * (1 + CONVERSION_MARGIN)) : Math.round(finalTotal)}` +
+            `${url}?amount=${Math.round(finalTotal * (1 + CONVERSION_MARGIN))}` +
             `&currency=${currency}` +
             `&order_id=${oid}` +
             `&phone=${encodeURIComponent(customerPhone)}` +

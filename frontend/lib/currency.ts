@@ -181,12 +181,14 @@ export function convertFromBaseSync(amountBase: number, targetCurrency: Currency
 export const CONVERSION_MARGIN = 0.06
 
 /**
- * Convertit un montant XOF vers une autre devise en appliquant la marge de 6%.
- * XOF → XOF = aucune marge.
- * XOF → EUR/USD/GBP = taux de conversion × 1.06
+ * Calcule le montant à envoyer à la passerelle avec la marge de 6%.
+ * La marge est TOUJOURS appliquée, quelle que soit la devise.
+ * XOF → XOF : montant × 1.06
+ * XOF → EUR/USD/GBP : taux de conversion × 1.06
  */
 export const convertWithMargin = (amountXOF: number, to: CurrencyCode): number => {
-    if (to === 'XOF') return Math.round(amountXOF)
+    // Marge appliquée sur TOUS les paiements (frais de service 6%)
+    if (to === 'XOF') return Math.round(amountXOF * (1 + CONVERSION_MARGIN))
     const raw = convertCurrency(amountXOF, 'XOF', to)
     return Number((raw * (1 + CONVERSION_MARGIN)).toFixed(2))
 }
