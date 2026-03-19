@@ -116,7 +116,7 @@ const CardBackground = ({ s }: { s: number }) => (
 ══════════════════════════════════════════════════════════════ */
 
 export const CardRecto = forwardRef<HTMLDivElement, { data: CardData; scale?: number }>(
-    ({ data: _data, scale = 1 }, ref) => {
+    ({ scale = 1 }, ref) => {
         const W = 340 * scale, H = 220 * scale, s = scale
 
         return (
@@ -131,27 +131,31 @@ export const CardRecto = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
                 {/* ── CONTENU CENTRAL ── */}
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
                     
-                    {/* Glow derrière le logo */}
-                    <div style={{ position: 'absolute', top: '45%', left: '50%', transform: 'translate(-50%, -50%)', width: 90 * s, height: 90 * s, background: `radial-gradient(circle, ${GOLD}15 0%, transparent 60%)`, pointerEvents: 'none' }} />
+                    {/* Glow divin derrière le logo géant */}
+                    <div style={{ position: 'absolute', top: '38%', left: '50%', transform: 'translate(-50%, -50%)', width: 160 * s, height: 160 * s, background: `radial-gradient(circle, ${GOLD}20 0%, transparent 60%)`, pointerEvents: 'none' }} />
 
-                    {/* Logo */}
+                    {/* Logo Géant & Majestueux */}
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/logo-transparent.png" alt="RGB" style={{ width: 52 * s, height: 52 * s, objectFit: 'contain', marginBottom: 10 * s }} />
+                    <img src="/images/logo-transparent.png" alt="RGB" style={{ width: 90 * s, height: 90 * s, objectFit: 'contain', marginBottom: 6 * s, filter: 'drop-shadow(0px 8px 16px rgba(0,0,0,0.4))' }} />
 
-                    {/* Ornement minimaliste au lieu de l'ancien */}
-                    <div style={{ width: 40 * s, height: 1 * s, background: `linear-gradient(90deg, transparent, ${GOLD}80, transparent)`, marginBottom: 10 * s }} />
+                    {/* Ornement Royal (Diamant & Lignes) */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 * s, marginBottom: 8 * s }}>
+                        <div style={{ width: 60 * s, height: 1 * s, background: `linear-gradient(90deg, transparent, ${GOLD}70)` }} />
+                        <div style={{ width: 4.5 * s, height: 4.5 * s, background: GOLD_L, transform: 'rotate(45deg)', boxShadow: `0 0 12px ${GOLD}80` }} />
+                        <div style={{ width: 60 * s, height: 1 * s, background: `linear-gradient(270deg, transparent, ${GOLD}70)` }} />
+                    </div>
 
-                    {/* Nom Agence avec fort letter-spacing */}
-                    <div style={{ color: GOLD_L, fontSize: 8.5 * s, fontWeight: 700, letterSpacing: '0.35em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif", textAlign: 'center', marginLeft: `${0.35 * 8.5 * s}px` /* Compense le letter-spacing */ }}>
+                    {/* Nom Agence avec fort letter-spacing (Titanesque) */}
+                    <div style={{ color: GOLD_L, fontSize: 10.5 * s, fontWeight: 700, letterSpacing: '0.38em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif", textAlign: 'center', marginLeft: `${0.38 * 10.5 * s}px` /* Compense le letter-spacing */ }}>
                         Retour Gagnant
                     </div>
-                    <div style={{ color: GOLD_L, fontSize: 8.5 * s, fontWeight: 700, letterSpacing: '0.35em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif", textAlign: 'center', marginTop: 3 * s, marginLeft: `${0.35 * 8.5 * s}px` }}>
+                    <div style={{ color: GOLD_L, fontSize: 10.5 * s, fontWeight: 700, letterSpacing: '0.38em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif", textAlign: 'center', marginTop: 4 * s, marginLeft: `${0.38 * 10.5 * s}px` }}>
                         Bénin
                     </div>
 
-                    {/* Tagline en or pâle italique */}
-                    <div style={{ color: `${GOLD}90`, fontSize: 5 * s, letterSpacing: '0.18em', textAlign: 'center', fontStyle: 'italic', marginTop: 8 * s, fontWeight: 300 }}>
-                        L'Agence du Retour des Afro-descendants
+                    {/* Tagline en or pâle italique (Très élégante) */}
+                    <div style={{ color: `${GOLD_L}85`, fontSize: 5.5 * s, letterSpacing: '0.22em', textAlign: 'center', fontStyle: 'italic', marginTop: 10 * s, fontWeight: 300 }}>
+                        L&apos;Agence du Retour des Afro-descendants
                     </div>
                 </div>
             </div>
