@@ -8,7 +8,6 @@ const APIFY_KEYS: string[] = [
     process.env.APIFY_API_KEY_3,
 ].filter(Boolean) as string[]
 
-// Serper fallback pool
 const SERPER_KEYS: string[] = [
     process.env.SERPER_API_KEY_1,
     process.env.SERPER_API_KEY_2,
@@ -16,25 +15,29 @@ const SERPER_KEYS: string[] = [
     process.env.SERPER_API_KEY,
 ].filter(Boolean) as string[]
 
-// Index de rotation (persiste entre requêtes du même processus)
 let apifyKeyIndex = 0
 
-function getNextApifyKey(): { key: string; idx: number } {
-    const idx = apifyKeyIndex % APIFY_KEYS.length
-    apifyKeyIndex = (apifyKeyIndex + 1) % APIFY_KEYS.length
-    return { key: APIFY_KEYS[idx], idx }
+// ── Type normalisé universel ──────────────────────────────
+export type NormalizedPost = {
+    text: string
+    likes: number
+    comments: number
+    shares: number
+    date: string
+    url: string
+    views?: number   // Twitter, TikTok
+    stars?: number   // Google Maps (0-5)
 }
 
-// ── Actors Apify par plateforme ──────────────────────────
-// Actors vérifiés et actifs sur Apify
+// ── Actors Apify — IDs vérifiés sur console.apify.com ────
 const APIFY_ACTORS: Record<string, {
-    actor: string  // Format avec ~ (pas /) pour les URLs Apify
+    actor: string
     buildInput: (url: string, username: string) => Record<string, unknown>
-    timeout: number // secondes côté Apify (server-side wait)
+    timeout: number
 }> = {
     facebook: {
-        // apify/facebook-posts-scraper (ID: KoJrdxJCTtpon81KY)
-        // Retourne un tableau PLAT de posts — plus fiable que facebook-pages-scraper
+        // https://console.apify.com/actors/KoJrdxJCTtpon81KY
+        // Retourne tableau PLAT de posts (contrairement à facebook-pages-scraper)
         actor: 'KoJrdxJCTtpon81KY',
         buildInput: (url) => ({
             startUrls: [{ url: url.replace(/\/$/, '') }],
@@ -45,19 +48,22 @@ const APIFY_ACTORS: Record<string, {
         timeout: 180,
     },
     instagram: {
-        // apify~instagram-profile-scraper : profils publics Instagram
-        actor: 'apify~instagram-profile-scraper',
-        buildInput: (_url, username) => ({
-            usernames: [username],
+        // https://console.apify.com/actors/shu8hvrXbJbY3Eb9W
+        // Sortie: {url, caption, likesCount, commentsCount, timestamp, shortCode, ...}
+        actor: 'shu8hvrXbJbY3Eb9W',
+        buildInput: (url) => ({
+            directUrls: [url.replace(/\/$/, '')],
+            resultsType: 'posts',
             resultsLimit: 20,
         }),
         timeout: 120,
     },
     tiktok: {
-        // clockworks~tiktok-scraper : profils publics TikTok
-        actor: 'clockworks~tiktok-scraper',
-        buildInput: (url) => ({
-            profiles: [url],
+        // https://console.apify.com/actors/GdWCkxBtKWOsKjdch
+        // Sortie: {text/caption, diggCount/heartCount, commentCount, shareCount, createTimeISO, webVideoUrl}
+        actor: 'GdWCkxBtKWOsKjdch',
+        buildInput: (_url, username) => ({
+            profiles: [username],
             resultsPerPage: 20,
             shouldDownloadVideos: false,
             shouldDownloadCovers: false,
@@ -65,34 +71,226 @@ const APIFY_ACTORS: Record<string, {
         }),
         timeout: 180,
     },
-    linkedin: {
-        // apify~linkedin-profile-scraper : pages entreprises LinkedIn (profils personnels très limités)
-        actor: 'apify~linkedin-profile-scraper',
-        buildInput: (url) => ({
-            profileUrls: [url],
+    twitter: {
+        // https://console.apify.com/actors/61RPP7dywgiy0JPD0
+        // Sortie: {text, likes, retweets, replies, views, url, timestamp, author{username,...}}
+        actor: '61RPP7dywgiy0JPD0',
+        buildInput: (_url, username) => ({
+            handles: [username.replace(/^@/, '')],
+            maxItems: 20,
+            sort: 'Latest',
         }),
         timeout: 120,
     },
+    google_maps: {
+        // https://console.apify.com/actors/nwua9Gu5YrADL7ZDj
+        // Sortie: {title/name, address, rating, reviewCount, reviews:[{text, stars, publishedAtDate}]}
+        actor: 'nwua9Gu5YrADL7ZDj',
+        buildInput: (url, username) => {
+            const isGmapsUrl = url.includes('google.com/maps') || url.includes('maps.google')
+            return {
+                ...(isGmapsUrl
+                    ? { startUrls: [{ url }] }
+                    : { searchStringsArray: [username || url] }),
+                maxCrawledPlaces: 5,
+                maxReviews: 20,
+                language: 'fr',
+                includeHistogram: false,
+                includeOpeningHours: false,
+                includePeopleAlsoSearch: false,
+            }
+        },
+        timeout: 180,
+    },
+    linkedin: {
+        actor: 'apify~linkedin-profile-scraper',
+        buildInput: (url) => ({ profileUrls: [url] }),
+        timeout: 120,
+    },
+}
+
+export const VALID_PLATFORMS = Object.keys(APIFY_ACTORS)
+
+// ── Helpers ───────────────────────────────────────────────
+function strSafe(v: unknown): string {
+    if (v === null || v === undefined) return ''
+    const s = String(v).trim()
+    return s === 'null' || s === 'undefined' ? '' : s
+}
+
+function num(v: unknown): number {
+    return Math.max(0, Number(v) || 0)
+}
+
+// ── Normalisateurs par plateforme ─────────────────────────
+function normalizeFacebook(i: Record<string, unknown>, fallbackUrl: string): NormalizedPost | null {
+    let url = strSafe(i.url || i.postUrl || i.link)
+    if (!url) url = fallbackUrl
+    const text = strSafe(i.text || i.message || i.content || i.caption || i.storyName)
+    if (!text && url === fallbackUrl) return null
+    return {
+        text,
+        likes: num(i.reactionsCount ?? i.likesCount ?? i.reactions ?? 0),
+        comments: num(i.commentsCount ?? i.comments ?? 0),
+        shares: num(i.sharesCount ?? i.shares ?? 0),
+        date: strSafe(i.time || i.timestamp || i.date || i.publishedAt || i.postedAt),
+        url,
+    }
+}
+
+function normalizeInstagram(i: Record<string, unknown>, fallbackUrl: string): NormalizedPost | null {
+    let url = strSafe(i.url)
+    if (!url && i.shortCode) url = `https://www.instagram.com/p/${strSafe(i.shortCode)}/`
+    if (!url) url = fallbackUrl
+    const text = strSafe(i.caption || i.text || i.description)
+    if (!text && url === fallbackUrl) return null
+    return {
+        text,
+        likes: num(i.likesCount ?? i.likes ?? 0),
+        comments: num(i.commentsCount ?? i.comments ?? 0),
+        shares: 0, // Instagram ne publie pas les partages
+        date: strSafe(i.timestamp || i.date),
+        url,
+    }
+}
+
+function normalizeTikTok(i: Record<string, unknown>, fallbackUrl: string): NormalizedPost | null {
+    let url = strSafe(i.webVideoUrl || i.videoUrl || i.url)
+    if (!url) url = fallbackUrl
+    const text = strSafe(i.text || i.caption || i.description)
+    if (!text && url === fallbackUrl) return null
+    return {
+        text,
+        likes: num(i.diggCount ?? i.heartCount ?? i.likeCount ?? i.likes ?? 0),
+        comments: num(i.commentCount ?? i.commentsCount ?? 0),
+        shares: num(i.shareCount ?? i.sharesCount ?? 0),
+        views: num(i.playCount ?? i.viewCount ?? 0),
+        date: strSafe(i.createTimeISO || i.createTime || i.timestamp || i.date),
+        url,
+    }
+}
+
+function normalizeTwitter(i: Record<string, unknown>, fallbackUrl: string): NormalizedPost | null {
+    const url = strSafe(i.url || i.tweetUrl) || fallbackUrl
+    const text = strSafe(i.text || i.fullText || i.rawContent)
+    if (!text && url === fallbackUrl) return null
+    return {
+        text,
+        likes: num(i.likes ?? i.likeCount ?? i.favoriteCount ?? 0),
+        comments: num(i.replies ?? i.replyCount ?? 0),
+        shares: num(i.retweets ?? i.retweetCount ?? 0),
+        views: num(i.views ?? i.viewCount ?? 0),
+        date: strSafe(i.timestamp || i.date || i.createdAt),
+        url,
+    }
+}
+
+function normalizeGoogleMapsReview(
+    review: Record<string, unknown>,
+    placeUrl: string,
+    placeName: string
+): NormalizedPost | null {
+    const text = strSafe(review.text || review.textTranslated)
+    if (!text) return null
+    const stars = num(review.stars || review.rating || 0)
+    return {
+        text: placeName ? `[${placeName}] ${text}` : text,
+        likes: stars * 20, // 0-5 étoiles → 0-100 pour comparaison avec autres plateformes
+        stars,
+        comments: 0,
+        shares: 0,
+        date: strSafe(review.publishedAtDate || review.date || review.updatedAt),
+        url: placeUrl,
+    }
+}
+
+function normalizeLinkedIn(i: Record<string, unknown>, fallbackUrl: string): NormalizedPost | null {
+    const url = strSafe(i.url || i.postUrl) || fallbackUrl
+    const text = strSafe(i.text || i.description || i.content || i.title)
+    if (!text && url === fallbackUrl) return null
+    return {
+        text,
+        likes: num(i.likesCount ?? i.likes ?? i.reactionsCount ?? 0),
+        comments: num(i.commentsCount ?? i.comments ?? 0),
+        shares: num(i.sharesCount ?? i.shares ?? 0),
+        date: strSafe(i.timestamp || i.date || i.publishedAt),
+        url,
+    }
+}
+
+const PLATFORM_NORMALIZERS: Record<string, (i: Record<string, unknown>, fallback: string) => NormalizedPost | null> = {
+    facebook: normalizeFacebook,
+    instagram: normalizeInstagram,
+    tiktok: normalizeTikTok,
+    twitter: normalizeTwitter,
+    linkedin: normalizeLinkedIn,
+    google_maps: normalizeLinkedIn, // fallback générique (Google Maps traité différemment)
+}
+
+// ── Aplatissement + normalisation ────────────────────────
+export function flattenAndNormalize(
+    items: unknown[],
+    platform: string,
+    fallbackUrl: string
+): NormalizedPost[] {
+    const flat: Array<{ item: Record<string, unknown>; override?: NormalizedPost }> = []
+
+    for (const raw of items) {
+        const i = raw as Record<string, unknown>
+
+        // Facebook: posts peuvent être imbriqués dans item.posts[]
+        if (Array.isArray(i.posts) && i.posts.length > 0) {
+            for (const p of i.posts) {
+                flat.push({ item: p as Record<string, unknown> })
+            }
+
+        // Google Maps: chaque lieu a ses avis dans item.reviews[]
+        } else if (platform === 'google_maps' && Array.isArray(i.reviews) && i.reviews.length > 0) {
+            const placeUrl = strSafe(i.url || i.placeUrl || i.website) || fallbackUrl
+            const placeName = strSafe(i.title || i.name)
+            for (const rev of i.reviews) {
+                const norm = normalizeGoogleMapsReview(rev as Record<string, unknown>, placeUrl, placeName)
+                if (norm) flat.push({ item: rev as Record<string, unknown>, override: norm })
+            }
+
+        // Tous les autres formats : tableau plat
+        } else {
+            flat.push({ item: i })
+        }
+    }
+
+    const normalizer = PLATFORM_NORMALIZERS[platform]
+    if (!normalizer) return []
+
+    const result: NormalizedPost[] = []
+    for (const { item, override } of flat.slice(0, 25)) {
+        const post = override ?? normalizer(item, fallbackUrl)
+        if (post) result.push(post)
+    }
+
+    console.log(`[flattenAndNormalize] ${items.length} items bruts → ${flat.length} aplatis → ${result.length} posts normalisés`)
+    if (flat.length > 0 && flat[0].item) {
+        console.log(`[flattenAndNormalize] Champs 1er item: ${Object.keys(flat[0].item).slice(0, 12).join(', ')}`)
+    }
+
+    return result
 }
 
 // ── Rotation Apify avec retry sur toutes les clés ────────
 async function callApifyWithRotation(
     platform: string,
     profileUrl: string
-): Promise<{ posts: unknown[]; usedKeyIndex: number; rawItemsCount: number; firstItemKeys: string[] }> {
+): Promise<{ posts: NormalizedPost[]; usedKeyIndex: number; rawItemsCount: number; firstItemKeys: string[] }> {
     if (APIFY_KEYS.length === 0) throw new Error('Aucune clé Apify configurée')
 
     const cfg = APIFY_ACTORS[platform]
     if (!cfg) throw new Error(`Plateforme ${platform} non supportée`)
 
-    // Extraire le username de l'URL
     const username = profileUrl.replace(/\/$/, '').split('/').filter(Boolean).pop() || profileUrl
-
     const triedKeys = new Set<number>()
     const errors: string[] = []
 
     while (triedKeys.size < APIFY_KEYS.length) {
-        // Chercher une clé non encore essayée
         let keyIdx = apifyKeyIndex % APIFY_KEYS.length
         let safety = 0
         while (triedKeys.has(keyIdx) && safety < APIFY_KEYS.length) {
@@ -108,37 +306,25 @@ async function callApifyWithRotation(
         try {
             console.log(`${label} → ${cfg.actor} | ${platform} | ${username}`)
 
-            // run-sync-get-dataset-items : lance l'actor et attend les résultats
             const res = await axios.post(
                 `https://api.apify.com/v2/acts/${cfg.actor}/run-sync-get-dataset-items?token=${apiKey}&timeout=${cfg.timeout}&format=json`,
                 cfg.buildInput(profileUrl, username),
                 {
                     headers: { 'Content-Type': 'application/json' },
-                    timeout: (cfg.timeout + 30) * 1000, // axios timeout légèrement supérieur
+                    timeout: (cfg.timeout + 30) * 1000,
                 }
             )
 
-            // Mise à jour index pour prochain appel
             apifyKeyIndex = (keyIdx + 1) % APIFY_KEYS.length
 
             const items: unknown[] = Array.isArray(res.data) ? res.data : []
             const firstItem = items[0] as Record<string, unknown> | undefined
             const firstItemKeys = firstItem ? Object.keys(firstItem) : []
-            // Détecter la structure imbriquée (facebook-pages-scraper)
-            const hasNestedPosts = firstItem && Array.isArray(firstItem.posts)
-            const rawItemsCount = hasNestedPosts
-                ? (firstItem!.posts as unknown[]).length
-                : items.length
-            const normalizedPosts = normalizeApifyItems(items, profileUrl, platform)
-            console.log(`${label} ✓ ${items.length} items bruts (nested:${hasNestedPosts}, raw posts:${rawItemsCount}) → ${normalizedPosts.length} posts normalisés`)
-            console.log(`${label} Clés 1er item: ${firstItemKeys.join(', ')}`)
+            const posts = flattenAndNormalize(items, platform, profileUrl)
 
-            return {
-                posts: normalizedPosts,
-                usedKeyIndex: keyIdx,
-                rawItemsCount,
-                firstItemKeys,
-            }
+            console.log(`${label} ✓ raw:${items.length} → posts:${posts.length} | clés:[${firstItemKeys.slice(0, 8).join(',')}]`)
+
+            return { posts, usedKeyIndex: keyIdx, rawItemsCount: items.length, firstItemKeys }
         } catch (err) {
             const status = axios.isAxiosError(err) ? err.response?.status : null
             const msg = axios.isAxiosError(err)
@@ -148,98 +334,36 @@ async function callApifyWithRotation(
             errors.push(`clé ${keyIdx + 1}: ${status ? `HTTP ${status}` : ''} ${msg}`)
             console.warn(`${label} ✗ ${status ? `HTTP ${status}` : ''} ${msg}`)
 
-            if (status === 401 || status === 403) {
-                // Clé invalide → passer à la suivante immédiatement
-                apifyKeyIndex = (keyIdx + 1) % APIFY_KEYS.length
-                continue
-            } else if (status === 429) {
-                // Rate limit → pause + rotation
-                apifyKeyIndex = (keyIdx + 1) % APIFY_KEYS.length
-                await new Promise(r => setTimeout(r, 2000))
-                continue
-            } else if (status === 400) {
-                // Mauvais input → inutile de réessayer avec d'autres clés
-                throw new Error(`Apify: paramètres invalides — ${msg}`)
-            } else {
-                // Timeout, erreur réseau, 5xx → essayer clé suivante
-                apifyKeyIndex = (keyIdx + 1) % APIFY_KEYS.length
-                continue
-            }
+            apifyKeyIndex = (keyIdx + 1) % APIFY_KEYS.length
+
+            if (status === 401 || status === 403) continue
+            if (status === 429) { await new Promise(r => setTimeout(r, 2000)); continue }
+            if (status === 400) throw new Error(`Apify: paramètres invalides — ${msg}`)
+            continue // timeout, 5xx, réseau → clé suivante
         }
     }
 
     throw new Error(`Apify: toutes les clés ont échoué. Détails: ${errors.join(' | ')}`)
 }
 
-// ── Normalisation des données Apify ─────────────────────
-function normalizeApifyItems(
-    items: unknown[],
-    fallbackUrl: string,
-    platform: string
-): Array<{ text: string; likes: number; comments: number; shares: number; date: string; url: string }> {
-    const strSafe = (v: unknown): string => {
-        if (v === null || v === undefined) return ''
-        const s = String(v).trim()
-        return s === 'null' || s === 'undefined' ? '' : s
-    }
-
-    // Aplatir les structures imbriquées : facebook-pages-scraper retourne
-    // [{pageName, posts:[{postUrl, text, time, ...}]}] — les posts sont dans item.posts[]
-    const flatItems: unknown[] = []
-    for (const item of items) {
-        const i = item as Record<string, unknown>
-        if (Array.isArray(i.posts) && i.posts.length > 0) {
-            flatItems.push(...i.posts)
-        } else {
-            flatItems.push(item)
-        }
-    }
-
-    return flatItems
-        .slice(0, 25)
-        .map((item) => {
-            const i = item as Record<string, unknown>
-
-            // URL de la publication
-            let postUrl = strSafe(i.url || i.postUrl || i.link)
-            if (!postUrl && i.shortCode) {
-                postUrl = `https://www.instagram.com/p/${strSafe(i.shortCode)}/`
-            }
-            if (!postUrl && platform === 'tiktok' && i.webVideoUrl) {
-                postUrl = strSafe(i.webVideoUrl)
-            }
-            if (!postUrl) postUrl = fallbackUrl
-
-            const text = strSafe(i.text || i.caption || i.description || i.content || i.message || i.storyName)
-
-            return {
-                text,
-                likes: Math.max(0, Number(i.likesCount ?? i.likes ?? i.diggCount ?? i.likeCount ?? i.reactionsCount ?? 0) || 0),
-                comments: Math.max(0, Number(i.commentsCount ?? i.comments ?? i.commentCount ?? 0) || 0),
-                shares: Math.max(0, Number(i.sharesCount ?? i.shares ?? i.shareCount ?? 0) || 0),
-                // Facebook pages scraper utilise `time` pour la date de publication
-                date: strSafe(i.timestamp || i.time || i.date || i.publishedAt || i.postedAt || i.createdAt),
-                url: postUrl,
-            }
-        })
-        // Filtrer les items sans texte ni URL utile
-        .filter(item => item.text.length > 0 || item.url !== fallbackUrl)
-}
-
-// ── Fallback Serper CORRIGÉ ───────────────────────────────
-// Recherche précise basée sur l'URL du profil (sans mots parasites)
-async function serperFallback(profileUrl: string, platform: string): Promise<unknown[]> {
+// ── Fallback Serper ───────────────────────────────────────
+async function serperFallback(profileUrl: string, platform: string): Promise<NormalizedPost[]> {
     const shuffled = [...SERPER_KEYS].sort(() => Math.random() - 0.5)
-
-    // Extraire le username proprement
     const cleanUrl = profileUrl.replace(/\/$/, '')
     const username = cleanUrl.split('/').filter(Boolean).pop() || ''
 
-    // Requêtes ciblées sans mots parasites
+    // Adapter le site de recherche selon la plateforme
+    const siteMap: Record<string, string> = {
+        facebook: 'facebook.com', instagram: 'instagram.com',
+        tiktok: 'tiktok.com', twitter: 'twitter.com',
+        linkedin: 'linkedin.com', google_maps: 'google.com/maps',
+    }
+    const site = siteMap[platform] || platform + '.com'
+
     const queries = [
-        `"${cleanUrl}"`,                              // URL exacte entre guillemets
-        `site:${platform}.com "${username}"`,         // Site + username exact
-        `"${username}" ${platform}`,                  // Username + plateforme
+        `"${cleanUrl}"`,
+        `site:${site} "${username}"`,
+        `"${username}" ${platform}`,
     ]
 
     for (const query of queries) {
@@ -251,33 +375,23 @@ async function serperFallback(profileUrl: string, platform: string): Promise<unk
                     { headers: { 'X-API-KEY': shuffled[i], 'Content-Type': 'application/json' }, timeout: 12000 }
                 )
                 const organic: Array<{ title?: string; snippet?: string; link?: string; date?: string }> = res.data.organic || []
-
-                // Filtrer pour ne garder que les résultats de la bonne plateforme
                 const filtered = organic.filter(r =>
-                    r.link?.includes(platform + '.com') ||
-                    r.link?.includes(username) ||
+                    r.link?.includes(site) || r.link?.includes(username) ||
                     r.snippet?.toLowerCase().includes(username.toLowerCase())
                 )
-
                 const results = filtered.length > 0 ? filtered : organic.slice(0, 5)
-
                 if (results.length > 0) {
-                    console.log(`[Serper fallback] ✓ query="${query}" → ${results.length} résultats filtrés`)
+                    console.log(`[Serper fallback] ✓ query="${query}" → ${results.length} résultats`)
                     return results.map(item => ({
                         text: item.snippet || item.title || '',
-                        likes: 0,
-                        comments: 0,
-                        shares: 0,
+                        likes: 0, comments: 0, shares: 0,
                         date: item.date || '',
                         url: item.link || profileUrl,
                     }))
                 }
-            } catch (err) {
-                console.warn(`[Serper key ${i + 1}] failed:`, err instanceof Error ? err.message : '')
-            }
+            } catch { /* essai suivant */ }
         }
     }
-
     return []
 }
 
@@ -292,14 +406,14 @@ export async function POST(request: NextRequest) {
         if (!profile_url?.trim()) {
             return NextResponse.json({ error: "L'URL du profil est obligatoire." }, { status: 400 })
         }
-        if (!platform || !['facebook', 'instagram', 'tiktok', 'linkedin'].includes(platform)) {
+        if (!platform || !VALID_PLATFORMS.includes(platform)) {
             return NextResponse.json(
-                { error: 'Plateforme invalide. Choisissez : facebook, instagram, tiktok ou linkedin.' },
+                { error: `Plateforme invalide. Choisissez : ${VALID_PLATFORMS.join(', ')}.` },
                 { status: 400 }
             )
         }
 
-        let posts: unknown[] = []
+        let posts: NormalizedPost[] = []
         let method = 'serper'
         let apifyKeyUsed: number | null = null
         let apifyError: string | null = null
@@ -311,8 +425,7 @@ export async function POST(request: NextRequest) {
                 apifyKeyUsed = result.usedKeyIndex + 1
                 apifyDebug = { raw_count: result.rawItemsCount, first_item_keys: result.firstItemKeys }
                 if (result.posts.length === 0) {
-                    // Apify OK mais 0 posts (profil privé/inaccessible/structure inconnue) → Serper
-                    console.warn(`[scrape] Apify clé #${apifyKeyUsed} → 0 posts normalisés (raw:${result.rawItemsCount}) → fallback Serper`)
+                    console.warn(`[scrape] Apify #${apifyKeyUsed} → 0 posts (raw:${result.rawItemsCount}) → Serper`)
                     posts = await serperFallback(profile_url, platform)
                     method = posts.length > 0 ? 'serper_fallback' : 'apify_empty'
                 } else {
@@ -322,7 +435,7 @@ export async function POST(request: NextRequest) {
                 }
             } catch (err) {
                 apifyError = err instanceof Error ? err.message : String(err)
-                console.warn(`[scrape] Apify échoué: ${apifyError} → fallback Serper`)
+                console.warn(`[scrape] Apify échoué: ${apifyError} → Serper`)
                 posts = await serperFallback(profile_url, platform)
                 method = posts.length > 0 ? 'serper_fallback' : 'empty'
             }
@@ -331,16 +444,12 @@ export async function POST(request: NextRequest) {
         }
 
         return NextResponse.json({
-            success: true,
-            posts,
-            total: posts.length,
-            method,
+            success: true, posts, total: posts.length, method,
             apify_keys_count: APIFY_KEYS.length,
             apify_key_used: apifyKeyUsed,
             apify_error: apifyError,
-            apify_debug: apifyDebug, // ← raw_count + first_item_keys pour diagnostic
-            profile_url,
-            platform,
+            apify_debug: apifyDebug,
+            profile_url, platform,
         })
     } catch (err) {
         console.error('[scrape] Error:', err)
@@ -348,9 +457,10 @@ export async function POST(request: NextRequest) {
     }
 }
 
-// GET /api/community-manager/scrape — Status des clés Apify
+// GET /api/community-manager/scrape — Status
 export async function GET() {
     return NextResponse.json({
+        supported_platforms: VALID_PLATFORMS,
         apify_keys_count: APIFY_KEYS.length,
         current_key_index: (apifyKeyIndex % Math.max(APIFY_KEYS.length, 1)) + 1,
         keys_preview: APIFY_KEYS.map((k, i) => ({ index: i + 1, prefix: k.substring(0, 24) + '...' })),

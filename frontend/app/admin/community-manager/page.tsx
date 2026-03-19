@@ -107,11 +107,13 @@ interface GeneratedVariant {
 }
 
 // ── Helpers ───────────────────────────────────────────────
-const PLATFORM_CONFIG: Record<string, { label: string; color: string; bg: string; icon: string }> = {
-    facebook: { label: 'Facebook', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20', icon: '📘' },
-    instagram: { label: 'Instagram', color: 'text-pink-400', bg: 'bg-pink-500/10 border-pink-500/20', icon: '📸' },
-    tiktok: { label: 'TikTok', color: 'text-cyan-400', bg: 'bg-cyan-500/10 border-cyan-500/20', icon: '🎵' },
-    linkedin: { label: 'LinkedIn', color: 'text-blue-300', bg: 'bg-blue-400/10 border-blue-400/20', icon: '💼' },
+const PLATFORM_CONFIG: Record<string, { label: string; color: string; bg: string; icon: string; placeholder?: string }> = {
+    facebook:    { label: 'Facebook',     color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/20',   icon: '📘', placeholder: 'https://www.facebook.com/nomDeLaPage' },
+    instagram:   { label: 'Instagram',    color: 'text-pink-400',   bg: 'bg-pink-500/10 border-pink-500/20',   icon: '📸', placeholder: 'https://www.instagram.com/username' },
+    tiktok:      { label: 'TikTok',       color: 'text-cyan-400',   bg: 'bg-cyan-500/10 border-cyan-500/20',   icon: '🎵', placeholder: 'https://www.tiktok.com/@username' },
+    twitter:     { label: 'X / Twitter',  color: 'text-gray-300',   bg: 'bg-gray-500/10 border-gray-500/20',   icon: '🐦', placeholder: 'https://twitter.com/username' },
+    google_maps: { label: 'Google Maps',  color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20', icon: '📍', placeholder: 'https://maps.google.com/?cid=... ou nom du lieu' },
+    linkedin:    { label: 'LinkedIn',     color: 'text-blue-300',   bg: 'bg-blue-400/10 border-blue-400/20',   icon: '💼', placeholder: 'https://www.linkedin.com/company/nom' },
 }
 
 const ENGAGEMENT_COLOR: Record<string, string> = {
@@ -252,13 +254,16 @@ function VeilleTab({
             setError('URL du profil et nom d\'utilisateur sont obligatoires.')
             return
         }
-        // Validation URL
-        try {
-            const parsed = new URL(form.profile_url.trim())
-            if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Protocole invalide')
-        } catch {
-            setError('URL invalide. Exemple : https://www.facebook.com/nomDuProfil')
-            return
+        // Validation URL (Google Maps accepte aussi un nom de lieu comme "Cosmetique Cotonou")
+        const isGoogleMaps = form.platform === 'google_maps'
+        if (!isGoogleMaps) {
+            try {
+                const parsed = new URL(form.profile_url.trim())
+                if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Protocole invalide')
+            } catch {
+                setError(`URL invalide. Exemple : ${PLATFORM_CONFIG[form.platform]?.placeholder || 'https://...'}`)
+                return
+            }
         }
         setAdding(true)
         setError(null)
@@ -390,7 +395,7 @@ function VeilleTab({
                         <label className="text-xs text-gray-500 font-bold mb-1.5 block">URL du profil</label>
                         <input
                             type="url"
-                            placeholder="https://www.facebook.com/retourgagnantbenin"
+                            placeholder={PLATFORM_CONFIG[form.platform]?.placeholder || 'https://...'}
                             value={form.profile_url}
                             onChange={e => setForm(f => ({ ...f, profile_url: e.target.value }))}
                             className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500/50 placeholder:text-gray-600"

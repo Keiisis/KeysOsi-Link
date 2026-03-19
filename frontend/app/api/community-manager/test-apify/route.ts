@@ -9,7 +9,7 @@ const APIFY_KEYS: string[] = [
 
 const ACTORS: Record<string, { actor: string; buildInput: (url: string, username: string) => Record<string, unknown>; timeout: number }> = {
     facebook: {
-        actor: 'KoJrdxJCTtpon81KY', // apify/facebook-posts-scraper
+        actor: 'KoJrdxJCTtpon81KY', // https://console.apify.com/actors/KoJrdxJCTtpon81KY
         buildInput: (url) => ({
             startUrls: [{ url: url.replace(/\/$/, '') }],
             maxPosts: 3,
@@ -19,14 +19,53 @@ const ACTORS: Record<string, { actor: string; buildInput: (url: string, username
         timeout: 180,
     },
     instagram: {
-        actor: 'apify~instagram-profile-scraper',
-        buildInput: (_url, username) => ({ usernames: [username], resultsLimit: 5 }),
+        actor: 'shu8hvrXbJbY3Eb9W', // https://console.apify.com/actors/shu8hvrXbJbY3Eb9W
+        buildInput: (url) => ({
+            directUrls: [url.replace(/\/$/, '')],
+            resultsType: 'posts',
+            resultsLimit: 3,
+        }),
         timeout: 60,
     },
     tiktok: {
-        actor: 'clockworks~tiktok-scraper',
-        buildInput: (url) => ({ profiles: [url], resultsPerPage: 5, shouldDownloadVideos: false, maxItems: 5 }),
+        actor: 'GdWCkxBtKWOsKjdch', // https://console.apify.com/actors/GdWCkxBtKWOsKjdch
+        buildInput: (_url, username) => ({
+            profiles: [username],
+            resultsPerPage: 3,
+            shouldDownloadVideos: false,
+            shouldDownloadCovers: false,
+            maxItems: 3,
+        }),
         timeout: 90,
+    },
+    twitter: {
+        actor: '61RPP7dywgiy0JPD0', // https://console.apify.com/actors/61RPP7dywgiy0JPD0
+        buildInput: (_url, username) => ({
+            handles: [username.replace(/^@/, '')],
+            maxItems: 3,
+            sort: 'Latest',
+        }),
+        timeout: 60,
+    },
+    google_maps: {
+        actor: 'nwua9Gu5YrADL7ZDj', // https://console.apify.com/actors/nwua9Gu5YrADL7ZDj
+        buildInput: (url, username) => {
+            const isGmapsUrl = url.includes('google.com/maps') || url.includes('maps.google')
+            return {
+                ...(isGmapsUrl ? { startUrls: [{ url }] } : { searchStringsArray: [username || url] }),
+                maxCrawledPlaces: 2,
+                maxReviews: 5,
+                language: 'fr',
+                includeHistogram: false,
+                includeOpeningHours: false,
+            }
+        },
+        timeout: 120,
+    },
+    linkedin: {
+        actor: 'apify~linkedin-profile-scraper',
+        buildInput: (url) => ({ profileUrls: [url] }),
+        timeout: 60,
     },
 }
 

@@ -30,15 +30,14 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
-// ── Apify actors ──────────────────────────────────────────
+// ── Apify actors (IDs vérifiés sur console.apify.com) ─────
 const APIFY_ACTORS: Record<string, {
     actor: string
     buildInput: (url: string, username: string) => Record<string, unknown>
     timeout: number
 }> = {
     facebook: {
-        // apify/facebook-posts-scraper (ID: KoJrdxJCTtpon81KY)
-        // Retourne un tableau PLAT de posts — plus fiable que facebook-pages-scraper
+        // https://console.apify.com/actors/KoJrdxJCTtpon81KY — tableau plat de posts
         actor: 'KoJrdxJCTtpon81KY',
         buildInput: (url) => ({
             startUrls: [{ url: url.replace(/\/$/, '') }],
@@ -49,13 +48,51 @@ const APIFY_ACTORS: Record<string, {
         timeout: 180,
     },
     instagram: {
-        actor: 'apify~instagram-profile-scraper',
-        buildInput: (_url, username) => ({ usernames: [username], resultsLimit: 25 }),
+        // https://console.apify.com/actors/shu8hvrXbJbY3Eb9W — {url, caption, likesCount, timestamp, shortCode}
+        actor: 'shu8hvrXbJbY3Eb9W',
+        buildInput: (url) => ({
+            directUrls: [url.replace(/\/$/, '')],
+            resultsType: 'posts',
+            resultsLimit: 20,
+        }),
         timeout: 120,
     },
     tiktok: {
-        actor: 'clockworks~tiktok-scraper',
-        buildInput: (url) => ({ profiles: [url], resultsPerPage: 25, shouldDownloadVideos: false, shouldDownloadCovers: false, maxItems: 25 }),
+        // https://console.apify.com/actors/GdWCkxBtKWOsKjdch — {text, diggCount/heartCount, commentCount, shareCount, createTimeISO, webVideoUrl}
+        actor: 'GdWCkxBtKWOsKjdch',
+        buildInput: (_url, username) => ({
+            profiles: [username],
+            resultsPerPage: 20,
+            shouldDownloadVideos: false,
+            shouldDownloadCovers: false,
+            maxItems: 20,
+        }),
+        timeout: 180,
+    },
+    twitter: {
+        // https://console.apify.com/actors/61RPP7dywgiy0JPD0 — {text, likes, retweets, replies, views, url, timestamp}
+        actor: '61RPP7dywgiy0JPD0',
+        buildInput: (_url, username) => ({
+            handles: [username.replace(/^@/, '')],
+            maxItems: 20,
+            sort: 'Latest',
+        }),
+        timeout: 120,
+    },
+    google_maps: {
+        // https://console.apify.com/actors/nwua9Gu5YrADL7ZDj — {title, address, rating, reviews:[{text, stars}]}
+        actor: 'nwua9Gu5YrADL7ZDj',
+        buildInput: (url, username) => {
+            const isGmapsUrl = url.includes('google.com/maps') || url.includes('maps.google')
+            return {
+                ...(isGmapsUrl ? { startUrls: [{ url }] } : { searchStringsArray: [username || url] }),
+                maxCrawledPlaces: 5,
+                maxReviews: 20,
+                language: 'fr',
+                includeHistogram: false,
+                includeOpeningHours: false,
+            }
+        },
         timeout: 180,
     },
     linkedin: {
@@ -64,6 +101,8 @@ const APIFY_ACTORS: Record<string, {
         timeout: 120,
     },
 }
+
+const VALID_PLATFORMS = Object.keys(APIFY_ACTORS)
 
 let apifyKeyIndex = 0
 
@@ -78,47 +117,80 @@ function ensureArray(v: unknown): string[] {
     return Array.isArray(v) ? v.map(String).filter(Boolean) : []
 }
 
-// ── Scraping ──────────────────────────────────────────────
-type RawPost = { text: string; likes: number; comments: number; shares: number; date: string; url: string }
+// ── Helpers normalisation (partagés avec scrape/route.ts) ─
+type RawPost = { text: string; likes: number; comments: number; shares: number; date: string; url: string; views?: number; stars?: number }
+
+function num(v: unknown): number { return Math.max(0, Number(v) || 0) }
+
+function normFacebook(i: Record<string, unknown>, fb: string): RawPost | null {
+    let url = strSafe(i.url || i.postUrl || i.link) || fb
+    const text = strSafe(i.text || i.message || i.content || i.caption || i.storyName)
+    if (!text && url === fb) return null
+    return { text, likes: num(i.reactionsCount ?? i.likesCount ?? 0), comments: num(i.commentsCount ?? i.comments ?? 0), shares: num(i.sharesCount ?? i.shares ?? 0), date: strSafe(i.time || i.timestamp || i.date || i.publishedAt), url }
+}
+function normInstagram(i: Record<string, unknown>, fb: string): RawPost | null {
+    let url = strSafe(i.url)
+    if (!url && i.shortCode) url = `https://www.instagram.com/p/${strSafe(i.shortCode)}/`
+    if (!url) url = fb
+    const text = strSafe(i.caption || i.text || i.description)
+    if (!text && url === fb) return null
+    return { text, likes: num(i.likesCount ?? i.likes ?? 0), comments: num(i.commentsCount ?? i.comments ?? 0), shares: 0, date: strSafe(i.timestamp || i.date), url }
+}
+function normTikTok(i: Record<string, unknown>, fb: string): RawPost | null {
+    let url = strSafe(i.webVideoUrl || i.videoUrl || i.url) || fb
+    const text = strSafe(i.text || i.caption || i.description)
+    if (!text && url === fb) return null
+    return { text, likes: num(i.diggCount ?? i.heartCount ?? i.likeCount ?? i.likes ?? 0), comments: num(i.commentCount ?? i.commentsCount ?? 0), shares: num(i.shareCount ?? i.sharesCount ?? 0), views: num(i.playCount ?? 0), date: strSafe(i.createTimeISO || i.createTime || i.timestamp || i.date), url }
+}
+function normTwitter(i: Record<string, unknown>, fb: string): RawPost | null {
+    const url = strSafe(i.url || i.tweetUrl) || fb
+    const text = strSafe(i.text || i.fullText || i.rawContent)
+    if (!text && url === fb) return null
+    return { text, likes: num(i.likes ?? i.likeCount ?? i.favoriteCount ?? 0), comments: num(i.replies ?? i.replyCount ?? 0), shares: num(i.retweets ?? i.retweetCount ?? 0), views: num(i.views ?? 0), date: strSafe(i.timestamp || i.date || i.createdAt), url }
+}
+function normGoogleReview(review: Record<string, unknown>, placeUrl: string, placeName: string): RawPost | null {
+    const text = strSafe(review.text || review.textTranslated)
+    if (!text) return null
+    const stars = num(review.stars || review.rating || 0)
+    return { text: placeName ? `[${placeName}] ${text}` : text, likes: stars * 20, stars, comments: 0, shares: 0, date: strSafe(review.publishedAtDate || review.date), url: placeUrl }
+}
+function normLinkedIn(i: Record<string, unknown>, fb: string): RawPost | null {
+    const url = strSafe(i.url || i.postUrl) || fb
+    const text = strSafe(i.text || i.description || i.content || i.title)
+    if (!text && url === fb) return null
+    return { text, likes: num(i.likesCount ?? i.likes ?? 0), comments: num(i.commentsCount ?? i.comments ?? 0), shares: num(i.sharesCount ?? i.shares ?? 0), date: strSafe(i.timestamp || i.date), url }
+}
+
+const PLATFORM_NORMALIZERS: Record<string, (i: Record<string, unknown>, fb: string) => RawPost | null> = {
+    facebook: normFacebook, instagram: normInstagram, tiktok: normTikTok,
+    twitter: normTwitter, linkedin: normLinkedIn, google_maps: normLinkedIn,
+}
 
 function normalizeItems(items: unknown[], fallbackUrl: string, platform: string): RawPost[] {
-    // Aplatir les structures imbriquées (ex: facebook-pages-scraper retourne
-    // [{pageName, posts:[{postUrl,text,time,...},...]}] — les posts sont dans item.posts[])
-    const flatItems: unknown[] = []
-    for (const item of items) {
-        const i = item as Record<string, unknown>
+    const flat: Array<{ item: Record<string, unknown>; override?: RawPost }> = []
+    for (const raw of items) {
+        const i = raw as Record<string, unknown>
         if (Array.isArray(i.posts) && i.posts.length > 0) {
-            // Page Facebook : les publications sont dans i.posts[]
-            flatItems.push(...i.posts)
-        } else {
-            flatItems.push(item)
-        }
+            for (const p of i.posts) flat.push({ item: p as Record<string, unknown> })
+        } else if (platform === 'google_maps' && Array.isArray(i.reviews) && i.reviews.length > 0) {
+            const placeUrl = strSafe(i.url || i.website) || fallbackUrl
+            const placeName = strSafe(i.title || i.name)
+            for (const rev of i.reviews) {
+                const n = normGoogleReview(rev as Record<string, unknown>, placeUrl, placeName)
+                if (n) flat.push({ item: rev as Record<string, unknown>, override: n })
+            }
+        } else { flat.push({ item: i }) }
     }
-
-    console.log(`[normalizeItems] ${items.length} items bruts → ${flatItems.length} après aplatissement`)
-    if (flatItems.length > 0) {
-        // Log la structure du 1er item pour débogage
-        const sample = flatItems[0] as Record<string, unknown>
-        console.log(`[normalizeItems] Champs 1er item: ${Object.keys(sample).slice(0, 10).join(', ')}`)
+    console.log(`[analyze-full/normalize] ${items.length} raw → ${flat.length} flat`)
+    if (flat[0]) console.log(`[analyze-full/normalize] 1er item keys: ${Object.keys(flat[0].item).slice(0, 10).join(', ')}`)
+    const normalizer = PLATFORM_NORMALIZERS[platform]
+    if (!normalizer) return []
+    const result: RawPost[] = []
+    for (const { item, override } of flat.slice(0, 25)) {
+        const post = override ?? normalizer(item, fallbackUrl)
+        if (post) result.push(post)
     }
-
-    return flatItems.slice(0, 25).map((item) => {
-        const i = item as Record<string, unknown>
-        let postUrl = strSafe(i.url || i.postUrl || i.link)
-        if (!postUrl && i.shortCode) postUrl = `https://www.instagram.com/p/${strSafe(i.shortCode)}/`
-        if (!postUrl && platform === 'tiktok' && i.webVideoUrl) postUrl = strSafe(i.webVideoUrl)
-        if (!postUrl) postUrl = fallbackUrl
-        return {
-            // Facebook posts: text | Instagram: caption | TikTok: text | LinkedIn: description
-            text: strSafe(i.text || i.caption || i.description || i.content || i.message || i.storyName),
-            likes: Math.max(0, Number(i.likesCount ?? i.likes ?? i.diggCount ?? i.likeCount ?? i.reactionsCount ?? 0) || 0),
-            comments: Math.max(0, Number(i.commentsCount ?? i.comments ?? i.commentCount ?? 0) || 0),
-            shares: Math.max(0, Number(i.sharesCount ?? i.shares ?? i.shareCount ?? 0) || 0),
-            // Facebook pages scraper utilise `time` pour la date de publication
-            date: strSafe(i.timestamp || i.time || i.date || i.publishedAt || i.postedAt || i.createdAt),
-            url: postUrl,
-        }
-    }).filter(p => p.text.length > 0 || p.url !== fallbackUrl)
+    return result
 }
 
 async function serperFallback(profileUrl: string, platform: string): Promise<RawPost[]> {
@@ -311,8 +383,8 @@ export async function POST(request: NextRequest) {
         const { profile_id, profile_url, platform, username, notes } = body
 
         if (!profile_url?.trim()) return NextResponse.json({ error: 'profile_url obligatoire' }, { status: 400 })
-        if (!platform || !['facebook', 'instagram', 'tiktok', 'linkedin'].includes(platform)) {
-            return NextResponse.json({ error: 'Plateforme invalide' }, { status: 400 })
+        if (!platform || !VALID_PLATFORMS.includes(platform)) {
+            return NextResponse.json({ error: `Plateforme invalide. Options: ${VALID_PLATFORMS.join(', ')}` }, { status: 400 })
         }
 
         const profileUsername = username || profile_url.replace(/\/$/, '').split('/').filter(Boolean).pop() || ''
