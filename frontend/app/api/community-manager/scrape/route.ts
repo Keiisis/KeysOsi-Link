@@ -16,176 +16,231 @@ const SERPER_KEYS: string[] = [
     process.env.SERPER_API_KEY,
 ].filter(Boolean) as string[]
 
-// Index de rotation en mémoire (persiste entre appels du même processus)
+// Index de rotation (persiste entre requêtes du même processus)
 let apifyKeyIndex = 0
 
-function getNextApifyKey(): string {
-    const key = APIFY_KEYS[apifyKeyIndex % APIFY_KEYS.length]
+function getNextApifyKey(): { key: string; idx: number } {
+    const idx = apifyKeyIndex % APIFY_KEYS.length
     apifyKeyIndex = (apifyKeyIndex + 1) % APIFY_KEYS.length
-    return key
+    return { key: APIFY_KEYS[idx], idx }
 }
 
 // ── Actors Apify par plateforme ──────────────────────────
-const APIFY_ACTORS: Record<string, { actor: string; buildInput: (url: string) => Record<string, unknown> }> = {
+// Actors vérifiés et actifs sur Apify
+const APIFY_ACTORS: Record<string, {
+    actor: string  // Format avec ~ (pas /) pour les URLs Apify
+    buildInput: (url: string, username: string) => Record<string, unknown>
+    timeout: number // secondes côté Apify (server-side wait)
+}> = {
     facebook: {
-        actor: 'apify/facebook-pages-scraper',
+        // apify~facebook-pages-scraper : scrape les pages et profils publics Facebook
+        actor: 'apify~facebook-pages-scraper',
         buildInput: (url) => ({
             startUrls: [{ url }],
             maxPosts: 20,
             maxPostComments: 0,
             maxReviews: 0,
         }),
+        timeout: 300, // Facebook est lent (anti-bot), 5 min minimum
     },
     instagram: {
-        actor: 'apify/instagram-profile-scraper',
-        buildInput: (url) => ({
-            usernames: [url.replace(/\/$/, '').split('/').filter(Boolean).pop() || url],
+        // apify~instagram-profile-scraper : profils publics Instagram
+        actor: 'apify~instagram-profile-scraper',
+        buildInput: (_url, username) => ({
+            usernames: [username],
             resultsLimit: 20,
         }),
+        timeout: 120,
     },
     tiktok: {
-        actor: 'clockworks/tiktok-scraper',
+        // clockworks~tiktok-scraper : profils publics TikTok
+        actor: 'clockworks~tiktok-scraper',
         buildInput: (url) => ({
             profiles: [url],
             resultsPerPage: 20,
             shouldDownloadVideos: false,
             shouldDownloadCovers: false,
+            maxItems: 20,
         }),
+        timeout: 180,
     },
     linkedin: {
-        actor: 'supreme/linkedin-profile-scraper',
+        // apify~linkedin-profile-scraper : pages entreprises LinkedIn (profils personnels très limités)
+        actor: 'apify~linkedin-profile-scraper',
         buildInput: (url) => ({
             profileUrls: [url],
         }),
+        timeout: 120,
     },
 }
 
 // ── Rotation Apify avec retry sur toutes les clés ────────
 async function callApifyWithRotation(
     platform: string,
-    profileUrl: string,
-    maxRetries: number = APIFY_KEYS.length
+    profileUrl: string
 ): Promise<{ posts: unknown[]; usedKeyIndex: number }> {
     if (APIFY_KEYS.length === 0) throw new Error('Aucune clé Apify configurée')
 
     const cfg = APIFY_ACTORS[platform]
     if (!cfg) throw new Error(`Plateforme ${platform} non supportée`)
 
-    const triedKeys = new Set<number>()
+    // Extraire le username de l'URL
+    const username = profileUrl.replace(/\/$/, '').split('/').filter(Boolean).pop() || profileUrl
 
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-        // Prendre la prochaine clé (round-robin) en évitant les clés déjà tentées
+    const triedKeys = new Set<number>()
+    const errors: string[] = []
+
+    while (triedKeys.size < APIFY_KEYS.length) {
+        // Chercher une clé non encore essayée
         let keyIdx = apifyKeyIndex % APIFY_KEYS.length
-        while (triedKeys.has(keyIdx) && triedKeys.size < APIFY_KEYS.length) {
+        let safety = 0
+        while (triedKeys.has(keyIdx) && safety < APIFY_KEYS.length) {
             keyIdx = (keyIdx + 1) % APIFY_KEYS.length
+            safety++
         }
-        if (triedKeys.size >= APIFY_KEYS.length) break
+        if (triedKeys.has(keyIdx)) break
         triedKeys.add(keyIdx)
 
         const apiKey = APIFY_KEYS[keyIdx]
-        const label = `[Apify key ${keyIdx + 1}/${APIFY_KEYS.length}]`
+        const label = `[Apify clé ${keyIdx + 1}/${APIFY_KEYS.length}]`
 
         try {
-            console.log(`${label} → ${cfg.actor} | ${platform}`)
+            console.log(`${label} → ${cfg.actor} | ${platform} | ${username}`)
 
+            // run-sync-get-dataset-items : lance l'actor et attend les résultats
             const res = await axios.post(
-                `https://api.apify.com/v2/acts/${cfg.actor}/run-sync-get-dataset-items?token=${apiKey}&timeout=60`,
-                cfg.buildInput(profileUrl),
+                `https://api.apify.com/v2/acts/${cfg.actor}/run-sync-get-dataset-items?token=${apiKey}&timeout=${cfg.timeout}&format=json`,
+                cfg.buildInput(profileUrl, username),
                 {
                     headers: { 'Content-Type': 'application/json' },
-                    timeout: 65000,
+                    timeout: (cfg.timeout + 30) * 1000, // axios timeout légèrement supérieur
                 }
             )
 
-            // Mise à jour index global pour prochains appels
+            // Mise à jour index pour prochain appel
             apifyKeyIndex = (keyIdx + 1) % APIFY_KEYS.length
 
-            const items: unknown[] = Array.isArray(res.data) ? res.data : (res.data?.items || [])
+            const items: unknown[] = Array.isArray(res.data) ? res.data : []
             console.log(`${label} ✓ ${items.length} résultats`)
 
             return {
-                posts: normalizeApifyItems(items, profileUrl),
+                posts: normalizeApifyItems(items, profileUrl, platform),
                 usedKeyIndex: keyIdx,
             }
         } catch (err) {
             const status = axios.isAxiosError(err) ? err.response?.status : null
-            const msg = err instanceof Error ? err.message : String(err)
+            const msg = axios.isAxiosError(err)
+                ? (err.response?.data?.error?.message || err.response?.data?.message || err.message)
+                : (err instanceof Error ? err.message : String(err))
+
+            errors.push(`clé ${keyIdx + 1}: ${status ? `HTTP ${status}` : ''} ${msg}`)
+            console.warn(`${label} ✗ ${status ? `HTTP ${status}` : ''} ${msg}`)
 
             if (status === 401 || status === 403) {
-                // Clé invalide ou quota dépassé → bannir cette clé, essayer la suivante
-                console.warn(`${label} ✗ AUTH ERROR (${status}) — rotation vers clé suivante`)
+                // Clé invalide → passer à la suivante immédiatement
                 apifyKeyIndex = (keyIdx + 1) % APIFY_KEYS.length
                 continue
             } else if (status === 429) {
-                // Rate limit → rotation + pause courte
-                console.warn(`${label} ✗ RATE LIMIT — rotation + pause 2s`)
+                // Rate limit → pause + rotation
                 apifyKeyIndex = (keyIdx + 1) % APIFY_KEYS.length
                 await new Promise(r => setTimeout(r, 2000))
                 continue
-            } else if (status && status >= 500) {
-                // Erreur Apify serveur → retry avec délai
-                console.warn(`${label} ✗ SERVER ERROR (${status}) — retry`)
-                await new Promise(r => setTimeout(r, 1500))
-                continue
+            } else if (status === 400) {
+                // Mauvais input → inutile de réessayer avec d'autres clés
+                throw new Error(`Apify: paramètres invalides — ${msg}`)
             } else {
-                // Timeout ou erreur réseau → essayer prochaine clé
-                console.warn(`${label} ✗ ${msg} — rotation`)
+                // Timeout, erreur réseau, 5xx → essayer clé suivante
                 apifyKeyIndex = (keyIdx + 1) % APIFY_KEYS.length
                 continue
             }
         }
     }
 
-    throw new Error(`Toutes les clés Apify ont échoué (${APIFY_KEYS.length} clés, ${maxRetries} tentatives)`)
+    throw new Error(`Apify: toutes les clés ont échoué. Détails: ${errors.join(' | ')}`)
 }
 
-// ── Normalisation des données Apify selon plateforme ─────
-function normalizeApifyItems(items: unknown[], fallbackUrl: string): Array<{
-    text: string; likes: number; comments: number; shares: number; date: string; url: string
-}> {
+// ── Normalisation des données Apify ─────────────────────
+function normalizeApifyItems(
+    items: unknown[],
+    fallbackUrl: string,
+    platform: string
+): Array<{ text: string; likes: number; comments: number; shares: number; date: string; url: string }> {
     return items.slice(0, 25).map((item) => {
         const i = item as Record<string, unknown>
+
+        // URL de la publication
+        let postUrl = String(i.url || i.postUrl || i.link || '')
+        if (!postUrl && i.shortCode) {
+            postUrl = `https://www.instagram.com/p/${i.shortCode}/`
+        }
+        if (!postUrl && platform === 'tiktok' && i.webVideoUrl) {
+            postUrl = String(i.webVideoUrl)
+        }
+        if (!postUrl) postUrl = fallbackUrl
+
         return {
-            text: String(i.text || i.caption || i.description || i.content || i.message || ''),
-            likes: Number(i.likesCount || i.likes || i.diggCount || i.likeCount || 0),
+            text: String(i.text || i.caption || i.description || i.content || i.message || i.storyName || ''),
+            likes: Number(i.likesCount || i.likes || i.diggCount || i.likeCount || i.reactionsCount || 0),
             comments: Number(i.commentsCount || i.comments || i.commentCount || 0),
-            shares: Number(i.sharesCount || i.shares || i.shareCount || i.playCount || i.viewCount || 0),
+            shares: Number(i.sharesCount || i.shares || i.shareCount || 0),
             date: String(i.timestamp || i.date || i.publishedAt || i.postedAt || i.createdAt || ''),
-            url: String(i.url || i.postUrl || i.link || i.shortCode
-                ? `https://www.instagram.com/p/${i.shortCode}/`
-                : fallbackUrl
-            ),
+            url: postUrl,
         }
     })
 }
 
-// ── Fallback Serper (si Apify indisponible) ───────────────
+// ── Fallback Serper CORRIGÉ ───────────────────────────────
+// Recherche précise basée sur l'URL du profil (sans mots parasites)
 async function serperFallback(profileUrl: string, platform: string): Promise<unknown[]> {
     const shuffled = [...SERPER_KEYS].sort(() => Math.random() - 0.5)
-    const username = profileUrl.replace(/\/$/, '').split('/').filter(Boolean).pop() || ''
-    const query = `${username} ${platform === 'all' ? '' : `site:${platform}.com`} publication post viral`
 
-    for (let i = 0; i < Math.min(shuffled.length, 3); i++) {
-        try {
-            const res = await axios.post(
-                'https://google.serper.dev/search',
-                { q: query, gl: 'bj', hl: 'fr', num: 15 },
-                { headers: { 'X-API-KEY': shuffled[i], 'Content-Type': 'application/json' }, timeout: 15000 }
-            )
-            const organic: Array<{ title?: string; snippet?: string; link?: string; date?: string }> = res.data.organic || []
-            console.log(`[Serper fallback key ${i + 1}] ✓ ${organic.length} résultats`)
-            return organic.map(item => ({
-                text: item.snippet || item.title || '',
-                likes: 0,
-                comments: 0,
-                shares: 0,
-                date: item.date || '',
-                url: item.link || profileUrl,
-            }))
-        } catch (err) {
-            console.warn(`[Serper key ${i + 1}] failed:`, err instanceof Error ? err.message : '')
+    // Extraire le username proprement
+    const cleanUrl = profileUrl.replace(/\/$/, '')
+    const username = cleanUrl.split('/').filter(Boolean).pop() || ''
+
+    // Requêtes ciblées sans mots parasites
+    const queries = [
+        `"${cleanUrl}"`,                              // URL exacte entre guillemets
+        `site:${platform}.com "${username}"`,         // Site + username exact
+        `"${username}" ${platform}`,                  // Username + plateforme
+    ]
+
+    for (const query of queries) {
+        for (let i = 0; i < Math.min(shuffled.length, 2); i++) {
+            try {
+                const res = await axios.post(
+                    'https://google.serper.dev/search',
+                    { q: query, gl: 'bj', hl: 'fr', num: 10 },
+                    { headers: { 'X-API-KEY': shuffled[i], 'Content-Type': 'application/json' }, timeout: 12000 }
+                )
+                const organic: Array<{ title?: string; snippet?: string; link?: string; date?: string }> = res.data.organic || []
+
+                // Filtrer pour ne garder que les résultats de la bonne plateforme
+                const filtered = organic.filter(r =>
+                    r.link?.includes(platform + '.com') ||
+                    r.link?.includes(username) ||
+                    r.snippet?.toLowerCase().includes(username.toLowerCase())
+                )
+
+                const results = filtered.length > 0 ? filtered : organic.slice(0, 5)
+
+                if (results.length > 0) {
+                    console.log(`[Serper fallback] ✓ query="${query}" → ${results.length} résultats filtrés`)
+                    return results.map(item => ({
+                        text: item.snippet || item.title || '',
+                        likes: 0,
+                        comments: 0,
+                        shares: 0,
+                        date: item.date || '',
+                        url: item.link || profileUrl,
+                    }))
+                }
+            } catch (err) {
+                console.warn(`[Serper key ${i + 1}] failed:`, err instanceof Error ? err.message : '')
+            }
         }
     }
+
     return []
 }
 
@@ -210,6 +265,7 @@ export async function POST(request: NextRequest) {
         let posts: unknown[] = []
         let method = 'serper'
         let apifyKeyUsed: number | null = null
+        let apifyError: string | null = null
 
         if (APIFY_KEYS.length > 0) {
             try {
@@ -217,15 +273,14 @@ export async function POST(request: NextRequest) {
                 posts = result.posts
                 apifyKeyUsed = result.usedKeyIndex + 1
                 method = 'apify'
-                console.log(`[scrape] Apify success — clé #${apifyKeyUsed}, ${posts.length} posts`)
-            } catch (apifyErr) {
-                const apifyMsg = apifyErr instanceof Error ? apifyErr.message : String(apifyErr)
-                console.warn(`[scrape] Apify toutes clés épuisées (${apifyMsg}), fallback Serper`)
+                console.log(`[scrape] ✓ Apify clé #${apifyKeyUsed} — ${posts.length} posts`)
+            } catch (err) {
+                apifyError = err instanceof Error ? err.message : String(err)
+                console.warn(`[scrape] Apify échoué: ${apifyError} → fallback Serper`)
                 posts = await serperFallback(profile_url, platform)
-                method = 'serper_fallback'
+                method = posts.length > 0 ? 'serper_fallback' : 'empty'
             }
         } else {
-            console.log('[scrape] Aucune clé Apify — Serper uniquement')
             posts = await serperFallback(profile_url, platform)
         }
 
@@ -234,29 +289,24 @@ export async function POST(request: NextRequest) {
             posts,
             total: posts.length,
             method,
-            apify_keys_available: APIFY_KEYS.length,
+            apify_keys_count: APIFY_KEYS.length,
             apify_key_used: apifyKeyUsed,
+            apify_error: apifyError, // aide au débogage
             profile_url,
             platform,
         })
     } catch (err) {
         console.error('[scrape] Error:', err)
-        const message = err instanceof Error ? err.message : 'Erreur serveur'
-        return NextResponse.json({ error: message }, { status: 500 })
+        return NextResponse.json({ error: err instanceof Error ? err.message : 'Erreur serveur' }, { status: 500 })
     }
 }
 
 // GET /api/community-manager/scrape — Status des clés Apify
 export async function GET() {
-    const status = APIFY_KEYS.map((key, i) => ({
-        index: i + 1,
-        prefix: key.substring(0, 20) + '...',
-        active: i === apifyKeyIndex % APIFY_KEYS.length,
-    }))
     return NextResponse.json({
         apify_keys_count: APIFY_KEYS.length,
-        current_key_index: (apifyKeyIndex % APIFY_KEYS.length) + 1,
-        keys: status,
+        current_key_index: (apifyKeyIndex % Math.max(APIFY_KEYS.length, 1)) + 1,
+        keys_preview: APIFY_KEYS.map((k, i) => ({ index: i + 1, prefix: k.substring(0, 24) + '...' })),
         serper_keys_count: SERPER_KEYS.length,
     })
 }

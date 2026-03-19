@@ -186,7 +186,7 @@ function VeilleTab() {
     const [loading, setLoading] = useState(true)
     const [adding, setAdding] = useState(false)
     const [scraping, setScraping] = useState<string | null>(null)
-    const [scrapedData, setScrapedData] = useState<{ profileId: string; posts: ScrapedPost[]; method: string } | null>(null)
+    const [scrapedData, setScrapedData] = useState<{ profileId: string; posts: ScrapedPost[]; method: string; apifyError?: string } | null>(null)
 
     const [form, setForm] = useState({ platform: 'facebook', profile_url: '', username: '', notes: '' })
     const [error, setError] = useState<string | null>(null)
@@ -247,7 +247,7 @@ function VeilleTab() {
                 body: JSON.stringify({ id: profile.id, last_analyzed_at: new Date().toISOString() }),
             })
 
-            setScrapedData({ profileId: profile.id, posts: data.posts, method: data.method })
+            setScrapedData({ profileId: profile.id, posts: data.posts, method: data.method, apifyError: data.apify_error })
             await fetchProfiles()
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Erreur lors de l\'analyse')
@@ -389,9 +389,16 @@ function VeilleTab() {
                             <TrendingUp size={16} className="text-emerald-400" />
                             Publications récupérées ({scrapedData.posts.length})
                         </h2>
-                        <span className="text-xs text-gray-500 bg-white/5 px-2 py-1 rounded-full">
-                            via {scrapedData.method === 'apify' ? '🤖 Apify' : '🔍 Serper'}
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                            <span className="text-xs text-gray-500 bg-white/5 px-2 py-1 rounded-full">
+                                via {scrapedData.method === 'apify' ? '🤖 Apify' : '🔍 Serper (fallback)'}
+                            </span>
+                            {scrapedData.apifyError && (
+                                <span className="text-[10px] text-orange-400/60 max-w-xs text-right" title={scrapedData.apifyError}>
+                                    ⚠ Apify: {scrapedData.apifyError.substring(0, 60)}...
+                                </span>
+                            )}
+                        </div>
                     </div>
                     <div className="space-y-3">
                         {scrapedData.posts.map((post, idx) => (
