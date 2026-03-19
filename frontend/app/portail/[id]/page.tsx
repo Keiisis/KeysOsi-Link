@@ -12,7 +12,8 @@ import {
     CreditCard, X, ChevronRight, AlertCircle, Shield
 } from 'lucide-react'
 import { LOGO_BASE64, STAMP_BASE64 } from '@/lib/logoBase64'
-import { convertCurrency } from '@/lib/currency'
+import { convertCurrency, detectUserCurrency, formatPriceWithMargin, type CurrencyCode } from '@/lib/currency'
+import CurrencySelector from '@/components/boutique/CurrencySelector'
 
 interface DocumentFinancier {
     id: string
@@ -59,6 +60,9 @@ export default function ClientPortalPage() {
     const [paymentSettings, setPaymentSettings] = useState<any>({})
     const [showPaymentMethods, setShowPaymentMethods] = useState(false)
     const [paymentError, setPaymentError] = useState('')
+    const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>('XOF')
+
+    useEffect(() => { setSelectedCurrency(detectUserCurrency()) }, [])
 
     useEffect(() => {
         const fetchSettings = async () => {
@@ -235,16 +239,18 @@ export default function ClientPortalPage() {
         if (!doc) return
         setIsProcessing(true)
         setPaymentError('')
-        
+
         try {
-            const amountXOF = doc.currency === 'XOF' ? doc.total : convertCurrency(doc.total, doc.currency as any, 'XOF')
-            
+            // Montant de base en XOF (FedaPay et KKiapay traitent uniquement en XOF)
+            const baseXOF = doc.currency === 'XOF' ? doc.total : convertCurrency(doc.total, doc.currency as CurrencyCode, 'XOF')
+
             ;(window as any).FedaPay.init({
                 public_key: paymentSettings.fedapay_public_key || process.env.NEXT_PUBLIC_FEDAPAY_PUBLIC_KEY,
                 environment: paymentSettings.fedapay_sandbox === 'true' ? 'sandbox' : 'live',
                 transaction: {
-                    amount: amountXOF,
+                    amount: Math.round(baseXOF),
                     description: `Paiement ${doc.type === 'facture' ? 'Facture' : 'Devis'} N° ${doc.numero}`,
+                    currency: { iso: 'XOF' },
                 },
                 customer: {
                     email: doc.client_email,
@@ -273,6 +279,7 @@ export default function ClientPortalPage() {
         setPaymentError('')
 
         try {
+            // KKiapay : toujours XOF (pas de paramètre devise)
             const amountXOF = doc.currency === 'XOF' ? doc.total : convertCurrency(doc.total, doc.currency as any, 'XOF')
             
             ;(window as any).openKkiapayWidget({
@@ -967,9 +974,26 @@ export default function ClientPortalPage() {
                                 )}
                                 <div className="flex justify-between items-center pt-2">
                                     <span className="text-sm font-bold text-white uppercase tracking-wider">Total TTC</span>
-                                    <span className="text-2xl font-black text-emerald-400 font-mono tracking-tighter">
-                                        {doc.total.toLocaleString('fr-FR')} <span className="text-sm font-bold ml-1">{doc.currency}</span>
-                                    </span>
+                                    <div className="text-right space-y-1">
+                                        <div className="text-2xl font-black text-emerald-400 font-mono tracking-tighter">
+                                            {selectedCurrency === 'XOF'
+                                                ? `${doc.total.toLocaleString('fr-FR')} XOF`
+                                                : formatPriceWithMargin(doc.total, selectedCurrency)
+                                            }
+                                        </div>
+                                        {selectedCurrency !== 'XOF' && (
+                                            <div className="text-[10px] text-gray-500">
+                                                {doc.total.toLocaleString('fr-FR')} XOF
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex justify-end pt-1">
+                                    <CurrencySelector
+                                        value={selectedCurrency}
+                                        onChange={setSelectedCurrency}
+                                        baseAmountXOF={doc.total}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -1063,7 +1087,11 @@ export default function ClientPortalPage() {
                             className="w-full md:w-auto flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500 to-amber-600 text-black px-8 py-4 rounded-2xl font-black text-lg shadow-[0_0_30px_rgba(245,158,11,0.3)] hover:scale-105 transition-all disabled:opacity-50 disabled:hover:scale-100"
                         >
                             {isProcessing ? <Loader2 className="animate-spin" /> : <CreditCard size={20} />}
-                            {isProcessing ? 'Connexion en cours...' : `Payer de façon sécurisée (${doc.total.toLocaleString()} ${doc.currency})`}
+                            {isProcessing ? 'Connexion en cours...' : `Payer de façon sécurisée (${
+                                selectedCurrency === 'XOF'
+                                    ? `${doc.total.toLocaleString('fr-FR')} XOF`
+                                    : formatPriceWithMargin(doc.total, selectedCurrency)
+                            })`}
                         </button>
                     )}
 
@@ -1180,14 +1208,35 @@ export default function ClientPortalPage() {
                             initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
                             className="bg-[#0f172a] border border-white/10 w-full max-w-md rounded-3xl overflow-hidden shadow-2xl"
                         >
-                            <div className="p-6 border-b border-white/5 flex items-center justify-between">
-                                <h3 className="text-xl font-black text-white flex items-center gap-3">
-                                    <CreditCard className="text-amber-400" />
-                                    Moyen de paiement
-                                </h3>
-                                <button onClick={() => setShowPaymentMethods(false)} title="Fermer" className="p-2 text-gray-500 hover:text-white transition-colors">
-                                    <X size={20} />
-                                </button>
+                            <div className="p-6 border-b border-white/5">
+                                <div className="flex items-center justify-between mb-3">
+                                    <h3 className="text-xl font-black text-white flex items-center gap-3">
+                                        <CreditCard className="text-amber-400" />
+                                        Moyen de paiement
+                                    </h3>
+                                    <button onClick={() => setShowPaymentMethods(false)} title="Fermer" className="p-2 text-gray-500 hover:text-white transition-colors">
+                                        <X size={20} />
+                                    </button>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-xs text-gray-500">Montant à payer</p>
+                                        <p className="text-lg font-black text-emerald-400 font-mono">
+                                            {selectedCurrency === 'XOF'
+                                                ? `${doc.total.toLocaleString('fr-FR')} XOF`
+                                                : formatPriceWithMargin(doc.total, selectedCurrency)
+                                            }
+                                        </p>
+                                        {selectedCurrency !== 'XOF' && (
+                                            <p className="text-[10px] text-gray-600">encaissé en {doc.total.toLocaleString('fr-FR')} XOF via KKiapay · converti via FedaPay</p>
+                                        )}
+                                    </div>
+                                    <CurrencySelector
+                                        value={selectedCurrency}
+                                        onChange={setSelectedCurrency}
+                                        baseAmountXOF={doc.total}
+                                    />
+                                </div>
                             </div>
 
                             <div className="p-6 space-y-4">

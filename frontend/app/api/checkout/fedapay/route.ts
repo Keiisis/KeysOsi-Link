@@ -24,6 +24,9 @@ export async function POST(request: Request) {
             )
         }
 
+        // FedaPay et KKiapay traitent uniquement en XOF
+        const fedaCurrency = 'XOF'
+
         // Lire les settings FedaPay
         const { data: settingsData, error: settingsError } = await supabase
             .from('settings')
@@ -56,7 +59,7 @@ export async function POST(request: Request) {
         const payload: Record<string, unknown> = {
             amount: Math.round(Number(amount)),
             description: description || `Commande ${order_id}`,
-            currency: { iso: 'XOF' },
+            currency: { iso: fedaCurrency },
         }
 
         // Ajouter les informations client si disponibles

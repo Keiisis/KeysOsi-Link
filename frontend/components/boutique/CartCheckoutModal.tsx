@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { useCart } from '@/lib/store/cartStore'
 import { Price } from '@/components/ui/Price'
 import CurrencySelector from '@/components/boutique/CurrencySelector'
-import { type CurrencyCode, detectUserCurrency, convertWithMargin, formatPrice } from '@/lib/currency'
+import { type CurrencyCode, detectUserCurrency, convertWithMargin, formatPrice, CONVERSION_MARGIN } from '@/lib/currency'
 
 // ─── Déclarations des SDK tiers ────────────────────────────────────────────────
 declare global {
@@ -543,7 +543,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
         if (!publicKey) { cancelOrder(oid); setErrorMessage('Kkiapay non configurée.'); setStep('error'); return }
         try {
             window.openKkiapayWidget({
-                amount: finalTotal,
+                amount: selectedCurrency !== 'XOF' ? Math.round(finalTotal * (1 + CONVERSION_MARGIN)) : Math.round(finalTotal),
                 position: 'center',
                 key: publicKey,
                 sandbox,
@@ -607,7 +607,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     order_id: oid,
-                    amount: Math.round(finalTotal),
+                    amount: selectedCurrency !== 'XOF' ? Math.round(finalTotal * (1 + CONVERSION_MARGIN)) : Math.round(finalTotal),
                     description: `Panier (${items.length} article${items.length > 1 ? 's' : ''})`,
                     customer_email: customerEmail || undefined,
                     customer_phone: customerPhone,
@@ -665,7 +665,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
         const cancelUrl = `${window.location.origin}/boutique`
 
         window.location.href =
-            `${url}?amount=${finalTotal}` +
+            `${url}?amount=${selectedCurrency !== 'XOF' ? Math.round(finalTotal * (1 + CONVERSION_MARGIN)) : Math.round(finalTotal)}` +
             `&currency=${currency}` +
             `&order_id=${oid}` +
             `&phone=${encodeURIComponent(customerPhone)}` +
@@ -894,7 +894,10 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                     }
                                 </span>
                                 {selectedCurrency !== 'XOF' && (
-                                    <p className="text-[10px] text-gray-500">≈ <Price amount={finalTotal} currency="XOF" noConvert /> · +3% frais</p>
+                                    <div className="text-right">
+                                        <p className="text-[10px] text-gray-500">= <Price amount={finalTotal} currency="XOF" noConvert /></p>
+                                        <p className="text-[9px] text-gray-600 mt-0.5">Débité en XOF par votre banque</p>
+                                    </div>
                                 )}
                                 <CurrencySelector
                                     value={selectedCurrency}

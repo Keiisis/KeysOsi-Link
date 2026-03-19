@@ -9,7 +9,8 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { Price } from '@/components/ui/Price'
-import { CurrencyCode } from '@/lib/currency'
+import { CurrencyCode, detectUserCurrency, formatPriceWithMargin } from '@/lib/currency'
+import CurrencySelector from '@/components/boutique/CurrencySelector'
 
 // Types SDK tiers — les déclarations globales Window sont dans PaymentModal.tsx
 // On réutilise les mêmes interfaces locales pour Stripe
@@ -75,6 +76,10 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
     const stripeInstanceRef = useRef<StripeInstance | null>(null)
     const cardElementRef = useRef<StripeElement | null>(null)
     const cardMountedRef = useRef(false)
+
+    // Devise d'affichage — FedaPay convertit, KKiapay toujours XOF
+    const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>('XOF')
+    useEffect(() => { setSelectedCurrency(detectUserCurrency()) }, [])
 
     // PayPal
     const paypalRenderedRef = useRef(false)
@@ -389,9 +394,12 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
 
         try { await ensureFedaPay() } catch (err) { cancelOrder(oid); setErrorMessage(err instanceof Error ? err.message : 'Erreur FedaPay'); setStep('error'); return }
 
+        // FedaPay et KKiapay traitent uniquement en XOF — sélecteur de devise = affichage uniquement
+        const fedaAmountXOF = Math.round(proposal.total_amount)
+
         let fedapayTxId: number | null = null
         try {
-            const createRes = await fetch('/api/checkout/fedapay', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order_id: oid, amount: Math.round(proposal.total_amount), description: `Voyage ${proposal.destination}`, customer_email: customerEmail || undefined, customer_phone: customerPhone }) })
+            const createRes = await fetch('/api/checkout/fedapay', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order_id: oid, amount: fedaAmountXOF, description: `Voyage ${proposal.destination}`, customer_email: customerEmail || undefined, customer_phone: customerPhone }) })
             const createData = await createRes.json()
             if (!createRes.ok || !createData.fedapay_transaction_id) { cancelOrder(oid); setErrorMessage(createData.error || 'FedaPay erreur'); setStep('error'); return }
             fedapayTxId = createData.fedapay_transaction_id
@@ -401,14 +409,11 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
             win.FedaPay.init('#fedapay-button', {
                 public_key: publicKey,
                 environment: sandbox ? 'sandbox' : 'live',
-                // On passe id ET amount/description comme fallback : si le widget ne peut pas
-                // charger la transaction par ID (ex: erreur réseau, mismatch d'environnement),
-                // il dispose quand même des valeurs pour créer la transaction côté widget.
                 transaction: {
                     id: fedapayTxId,
-                    amount: Math.round(proposal.total_amount),
+                    amount: fedaAmountXOF,
                     description: `Voyage ${proposal.destination} — ${proposal.client_name}`,
-                    currency: { iso: proposal.currency || 'XOF' },
+                    currency: { iso: 'XOF' },
                 },
                 onComplete: async (resp: Record<string, unknown>) => {
                     const tx = resp.transaction as Record<string, unknown> | undefined
@@ -552,11 +557,28 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
                                         </div>
                                     ))}
                                 </div>
-                                <div className="border-t border-white/10 pt-3 flex justify-between items-center">
-                                    <span className="text-amber-500 font-bold text-sm">Total</span>
-                                    <span className="text-2xl font-black text-white">
-                                        <Price amount={proposal.total_amount} currency="XOF" forceDisplayCurrency={(proposal.currency as CurrencyCode) || 'XOF'} />
-                                    </span>
+                                <div className="border-t border-white/10 pt-3">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-amber-500 font-bold text-sm">Total</span>
+                                        <CurrencySelector
+                                            value={selectedCurrency}
+                                            onChange={setSelectedCurrency}
+                                            baseAmountXOF={proposal.total_amount}
+                                        />
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-2xl font-black text-white">
+                                            {selectedCurrency === 'XOF'
+                                                ? <Price amount={proposal.total_amount} currency="XOF" forceDisplayCurrency="XOF" />
+                                                : formatPriceWithMargin(proposal.total_amount, selectedCurrency)
+                                            }
+                                        </span>
+                                        {selectedCurrency !== 'XOF' && (
+                                            <span className="text-[10px] text-gray-500">
+                                                <Price amount={proposal.total_amount} currency="XOF" forceDisplayCurrency="XOF" /> XOF
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
@@ -614,9 +636,22 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
                         <motion.div key="payment" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                             <div className="text-center mb-8">
                                 <h2 className="text-2xl font-black mb-2">Choisissez votre moyen de paiement</h2>
-                                <p className="text-slate-400 text-sm">Montant : <span className="text-amber-400 font-bold">
-                                    <Price amount={proposal.total_amount} currency="XOF" forceDisplayCurrency={(proposal.currency as CurrencyCode) || 'XOF'} />
-                                </span></p>
+                                <div className="flex items-center justify-center gap-3 mt-2">
+                                    <p className="text-slate-400 text-sm">Montant : <span className="text-amber-400 font-bold">
+                                        {selectedCurrency === 'XOF'
+                                            ? <Price amount={proposal.total_amount} currency="XOF" forceDisplayCurrency="XOF" />
+                                            : formatPriceWithMargin(proposal.total_amount, selectedCurrency)
+                                        }
+                                    </span></p>
+                                    <CurrencySelector
+                                        value={selectedCurrency}
+                                        onChange={setSelectedCurrency}
+                                        baseAmountXOF={proposal.total_amount}
+                                    />
+                                </div>
+                                {selectedCurrency !== 'XOF' && (
+                                    <p className="text-[10px] text-slate-600 mt-1">FedaPay encaisse en {selectedCurrency} · KKiapay encaisse en XOF</p>
+                                )}
                             </div>
 
                             <div className="space-y-3 mb-6">

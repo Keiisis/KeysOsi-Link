@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Product } from './ProductCard'
 import { Price } from '@/components/ui/Price'
 import CurrencySelector from '@/components/boutique/CurrencySelector'
-import { type CurrencyCode, detectUserCurrency, convertWithMargin, formatPrice } from '@/lib/currency'
+import { type CurrencyCode, detectUserCurrency, convertWithMargin, formatPrice, CONVERSION_MARGIN } from '@/lib/currency'
 
 // ─── Déclarations des SDK tiers ────────────────────────────────────────────────
 declare global {
@@ -538,7 +538,7 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
 
         try {
             window.openKkiapayWidget({
-                amount: totalAmount,
+                amount: selectedCurrency !== 'XOF' ? Math.round(totalAmount * (1 + CONVERSION_MARGIN)) : Math.round(totalAmount),
                 position: 'center',
                 key: publicKey,
                 sandbox,
@@ -614,7 +614,7 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     order_id: oid,
-                    amount: Math.round(totalAmount),
+                    amount: selectedCurrency !== 'XOF' ? Math.round(totalAmount * (1 + CONVERSION_MARGIN)) : Math.round(totalAmount),
                     description: `Achat: ${product.title} (x${quantity})`,
                     customer_email: customerEmail || undefined,
                     customer_phone: customerPhone,
@@ -679,7 +679,7 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
         const cancelUrl = `${window.location.origin}/boutique`
 
         window.location.href =
-            `${redirectUrl}?amount=${totalAmount}` +
+            `${redirectUrl}?amount=${selectedCurrency !== 'XOF' ? Math.round(totalAmount * (1 + CONVERSION_MARGIN)) : Math.round(totalAmount)}` +
             `&currency=${product.currency || 'XOF'}` +
             `&order_id=${oid}` +
             `&phone=${encodeURIComponent(customerPhone)}` +
@@ -873,7 +873,10 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                                     }
                                 </p>
                                 {selectedCurrency !== 'XOF' && (
-                                    <p className="text-[10px] text-gray-500">≈ <Price amount={totalAmount} currency="XOF" noConvert /> · +3% frais</p>
+                                    <div className="text-right">
+                                        <p className="text-[10px] text-gray-500">= <Price amount={totalAmount} currency="XOF" noConvert /></p>
+                                        <p className="text-[9px] text-gray-600 mt-0.5">Débité en XOF par votre banque</p>
+                                    </div>
                                 )}
                                 <CurrencySelector
                                     value={selectedCurrency}

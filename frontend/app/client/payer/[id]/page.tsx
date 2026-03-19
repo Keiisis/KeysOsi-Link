@@ -9,6 +9,8 @@ import {
     ArrowLeft, CreditCard, Loader2, CheckCircle2, AlertCircle,
     Receipt, Shield, Lock, Smartphone, Globe, ChevronRight
 } from 'lucide-react'
+import CurrencySelector from '@/components/boutique/CurrencySelector'
+import { type CurrencyCode, detectUserCurrency, formatPriceWithMargin, formatPrice } from '@/lib/currency'
 
 interface Doc {
     id: string
@@ -59,6 +61,12 @@ export default function ClientPayerPage() {
     const scriptsLoaded = useRef<Set<string>>(new Set())
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const kkiapayHandlerRef = useRef<((data: any) => void) | null>(null)
+    const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>('XOF')
+
+    // Detect user currency client-side
+    useEffect(() => {
+        setSelectedCurrency(detectUserCurrency())
+    }, [])
 
     const loadScript = useCallback((src: string): Promise<void> => {
         if (scriptsLoaded.current.has(src)) return Promise.resolve()
@@ -243,12 +251,13 @@ export default function ClientPayerPage() {
         if (!settings?.fedapay_public_key || !doc) return
         const FP = win().FedaPay
         if (!FP) return
+        // FedaPay et KKiapay traitent uniquement en XOF — le sélecteur de devise est informatif
         FP.init({
             public_key: settings.fedapay_public_key,
             transaction: {
                 amount: Math.round(doc.total),
                 description: `Facture ${doc.numero}`,
-                currency: { iso: doc.currency || 'XOF' },
+                currency: { iso: 'XOF' },
             },
             customer: {
                 email: doc.client_email || userEmail,
@@ -364,9 +373,28 @@ export default function ClientPayerPage() {
                         <h1 className="text-xl font-black text-white">{doc.numero}</h1>
                     </div>
                 </div>
-                <div className="bg-white/[0.03] rounded-xl p-4 flex items-center justify-between">
-                    <span className="text-sm text-gray-400">Montant à payer</span>
-                    <span className="text-2xl font-black text-white font-mono">{fmtN(doc.total, doc.currency || 'XOF')}</span>
+                <div className="bg-white/[0.03] rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-400">Montant à payer</span>
+                        <CurrencySelector
+                            value={selectedCurrency}
+                            onChange={setSelectedCurrency}
+                            baseAmountXOF={doc.total}
+                        />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="text-2xl font-black text-white font-mono">
+                            {selectedCurrency === 'XOF'
+                                ? fmtN(doc.total, 'XOF')
+                                : formatPriceWithMargin(doc.total, selectedCurrency)
+                            }
+                        </span>
+                        {selectedCurrency !== 'XOF' && (
+                            <span className="text-[10px] text-gray-500 bg-white/5 border border-white/10 px-2 py-1 rounded-full">
+                                encaissé en {formatPrice(doc.total, 'XOF').replace(/\s/g, '\u00A0')} XOF
+                            </span>
+                        )}
+                    </div>
                 </div>
             </motion.div>
 
