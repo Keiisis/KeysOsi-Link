@@ -23,7 +23,7 @@ async function callGroqWithRetry(systemPrompt: string, userPrompt: string): Prom
                 ],
                 model: 'llama-3.3-70b-versatile',
                 response_format: { type: 'json_object' },
-                temperature: 0.8,
+                temperature: 0.5,
                 max_tokens: 3000,
             })
             return completion.choices[0].message.content || '{}'
@@ -67,10 +67,35 @@ export async function POST(request: NextRequest) {
             target_audience,
             style_inspiration,
             language = 'fr',
+            dossier_context,
         } = body
 
         if (!topic?.trim()) {
             return NextResponse.json({ error: 'Le sujet est obligatoire.' }, { status: 400 })
+        }
+
+        // Parser le dossier concurrent si fourni
+        let dossierBlock = ''
+        if (dossier_context?.trim()) {
+            try {
+                const d = JSON.parse(dossier_context)
+                const style = d.style || {}
+                const competitive = d.competitive || {}
+                const meta = d.meta || {}
+                dossierBlock = `
+DOSSIER CONCURRENT @${meta.username || 'inconnu'} (${meta.platform || platform}) :
+- Formule virale : "${style.viral_formula || ''}"
+- Ton : ${style.tone || ''}
+- Structure : ${style.structure || ''}
+- Hooks efficaces : ${(style.hooks || []).slice(0, 3).join(' / ')}
+- Triggers d'engagement : ${(style.engagement_triggers || []).join(', ')}
+- Faiblesses à exploiter : ${(competitive.weaknesses || []).join(', ')}
+- Opportunités non exploitées : ${(competitive.opportunities || []).join(', ')}
+
+MISSION : Crée du contenu qui utilise les forces de ce concurrent mais surpasse ses faiblesses.`
+            } catch {
+                // Dossier non parseable → ignorer silencieusement
+            }
         }
 
         const langLabel = language === 'fon' ? 'en Fon (langue locale béninoise)' : language === 'en' ? 'en anglais' : 'en français'
@@ -82,15 +107,44 @@ SUJET : ${topic}
 TON SOUHAITÉ : ${tone || 'inspirant'}
 AUDIENCE CIBLE : ${target_audience || 'investisseurs et entrepreneurs béninois'}
 ${style_inspiration ? `INSPIRATION DE STYLE : ${style_inspiration}` : ''}
+${dossierBlock}
 
 Contexte : Retour Gagnant Bénin accompagne des personnes dans le trading, l'investissement et la création de richesse en Afrique.
 
 Génère 3 variantes très différentes les unes des autres (style, longueur, accroche différents).`
 
         const rawJson = await callGroqWithRetry(SYSTEM_PROMPT, userPrompt)
-        const result = JSON.parse(rawJson)
 
-        return NextResponse.json({ success: true, ...result, topic, platform, tone, language })
+        let result: { variants?: unknown[] } = {}
+        try {
+            result = JSON.parse(rawJson)
+        } catch {
+            console.warn('[generate] JSON.parse failed, raw:', rawJson?.slice(0, 200))
+            return NextResponse.json({ error: 'Réponse IA invalide, veuillez réessayer.' }, { status: 502 })
+        }
+
+        // S'assurer que variants est un tableau non-vide
+        if (!Array.isArray(result.variants) || result.variants.length === 0) {
+            console.warn('[generate] variants manquants dans la réponse:', rawJson?.slice(0, 300))
+            return NextResponse.json({ error: 'L\'IA n\'a pas retourné de variantes. Veuillez réessayer.' }, { status: 502 })
+        }
+
+        // Normaliser chaque variante
+        const variants = result.variants.map((v: unknown, i: number) => {
+            const variant = (v && typeof v === 'object' ? v : {}) as Record<string, unknown>
+            return {
+                id: Number(variant.id ?? i + 1),
+                text: String(variant.text || ''),
+                hashtags: Array.isArray(variant.hashtags) ? variant.hashtags.map(String) : [],
+                best_time: String(variant.best_time || 'Lundi-Vendredi 18h-20h'),
+                viral_tips: Array.isArray(variant.viral_tips) ? variant.viral_tips.map(String) : [],
+                emoji_suggestions: Array.isArray(variant.emoji_suggestions) ? variant.emoji_suggestions.map(String) : [],
+                style_label: String(variant.style_label || 'Standard'),
+                estimated_engagement: String(variant.estimated_engagement || 'moyen'),
+            }
+        })
+
+        return NextResponse.json({ success: true, variants, topic, platform, tone, language })
     } catch (err) {
         console.error('[generate] Error:', err)
         const message = err instanceof Error ? err.message : 'Erreur serveur'

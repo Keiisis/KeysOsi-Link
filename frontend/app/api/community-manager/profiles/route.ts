@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-// Service role — bypasse RLS
+// Service role — bypasse RLS (obligatoire)
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY manquant — impossible de bypasser RLS')
+}
 const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY
 )
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 // GET /api/community-manager/profiles
 export async function GET() {
@@ -37,7 +42,10 @@ export async function POST(request: NextRequest) {
 
         const { data, error } = await supabaseAdmin
             .from('social_profiles')
-            .insert({ platform, profile_url: profile_url.trim(), username: username.trim(), notes: notes?.trim() || null })
+            .upsert(
+                { platform, profile_url: profile_url.trim(), username: username.trim(), notes: notes?.trim() || null },
+                { onConflict: 'profile_url', ignoreDuplicates: false }
+            )
             .select()
             .single()
 
@@ -72,6 +80,7 @@ export async function DELETE(request: NextRequest) {
         const { searchParams } = new URL(request.url)
         const id = searchParams.get('id')
         if (!id) return NextResponse.json({ error: 'ID manquant.' }, { status: 400 })
+        if (!UUID_REGEX.test(id)) return NextResponse.json({ error: 'ID invalide.' }, { status: 400 })
 
         const { error } = await supabaseAdmin.from('social_profiles').delete().eq('id', id)
         if (error) return NextResponse.json({ error: error.message }, { status: 500 })

@@ -7,7 +7,9 @@ import {
     Plus, Trash2, Search, ExternalLink, Save,
     Globe, Loader2, ChevronRight,
     TrendingUp, MessageCircle, ThumbsUp, Share2, BookOpen,
-    AlertTriangle, Sparkles, Target, ArrowRight
+    AlertTriangle, Sparkles, Target, ArrowRight,
+    Brain, Download, Calendar, FileJson, BarChart2,
+    Trophy, Lightbulb, Swords, Clock, Hash, Film
 } from 'lucide-react'
 // Toutes les opérations DB passent par les API routes (service role, bypass RLS)
 
@@ -68,6 +70,31 @@ interface StyleAnalysis {
     call_to_action_style: string
 }
 
+interface IntelligenceDossier {
+    meta: { version: string; generated_at: string; tool: string; posts_analyzed: number; scrape_method: string; platform: string; profile_url: string; username: string }
+    profile: { platform: string; username: string; profile_url: string; notes: string }
+    style: { tone: string; vocabulary_level: string; structure: string; hooks: string[]; hashtag_strategy: string; emoji_usage: string; avg_post_length: string; engagement_triggers: string[]; writing_patterns: string[]; improvement_tips: string[]; viral_formula: string; best_content_types: string[]; cta_style: string; top_topics: string[]; content_mix: string }
+    top_posts: Array<{ rank: number; text: string; likes: number; comments: number; shares: number; viral_score: number; date: string; url: string }>
+    stats: { avg_likes: number; avg_comments: number; avg_shares: number; best_viral_score: number; engagement_level: string; total_posts_scraped: number; posts_with_engagement: number }
+    patterns: { best_times: string[]; top_hooks: string[]; top_topics: string[]; content_mix: string }
+    competitive: { strengths: string[]; weaknesses: string[]; opportunities: string[] }
+    claude_prompt: string
+}
+
+interface CalendarDay {
+    day: number
+    date: string
+    weekday: string
+    topic: string
+    content_type: string
+    posting_time: string
+    hook: string
+    hashtags: string[]
+    brief: string
+    tone: string
+    visual_idea: string
+}
+
 interface GeneratedVariant {
     id: number
     text: string
@@ -110,12 +137,14 @@ const TABS = [
     { id: 'style', label: 'Analyse Style', icon: Palette },
     { id: 'viral', label: 'Posts Viraux', icon: TrendingUp },
     { id: 'generation', label: 'Génération', icon: Zap },
+    { id: 'calendrier', label: 'Calendrier', icon: Calendar },
 ]
 
 // ═════════════════════════════════════════════════════════
 export default function CommunityManagerPage() {
     const [activeTab, setActiveTab] = useState('veille')
     const [copiedId, setCopiedId] = useState<string | null>(null)
+    const [activeDossier, setActiveDossier] = useState<IntelligenceDossier | null>(null)
 
     const copyToClipboard = (text: string, id: string) => {
         navigator.clipboard.writeText(text)
@@ -168,10 +197,11 @@ export default function CommunityManagerPage() {
                     exit={{ opacity: 0, y: -8 }}
                     transition={{ duration: 0.2 }}
                 >
-                    {activeTab === 'veille' && <VeilleTab />}
+                    {activeTab === 'veille' && <VeilleTab onDossierReady={setActiveDossier} activeDossier={activeDossier} copyToClipboard={copyToClipboard} copiedId={copiedId} />}
                     {activeTab === 'style' && <StyleTab copyToClipboard={copyToClipboard} copiedId={copiedId} />}
                     {activeTab === 'viral' && <ViralTab copyToClipboard={copyToClipboard} copiedId={copiedId} setActiveTab={setActiveTab} />}
-                    {activeTab === 'generation' && <GenerationTab copyToClipboard={copyToClipboard} copiedId={copiedId} />}
+                    {activeTab === 'generation' && <GenerationTab copyToClipboard={copyToClipboard} copiedId={copiedId} activeDossier={activeDossier} />}
+                    {activeTab === 'calendrier' && <CalendarTab activeDossier={activeDossier} copyToClipboard={copyToClipboard} copiedId={copiedId} />}
                 </motion.div>
             </AnimatePresence>
         </div>
@@ -181,11 +211,23 @@ export default function CommunityManagerPage() {
 // ═════════════════════════════════════════════════════════
 // TAB 1 — VEILLE CONCURRENTIELLE
 // ═════════════════════════════════════════════════════════
-function VeilleTab() {
+function VeilleTab({
+    onDossierReady,
+    activeDossier,
+    copyToClipboard,
+    copiedId,
+}: {
+    onDossierReady: (d: IntelligenceDossier) => void
+    activeDossier: IntelligenceDossier | null
+    copyToClipboard: (text: string, id: string) => void
+    copiedId: string | null
+}) {
     const [profiles, setProfiles] = useState<SocialProfile[]>([])
     const [loading, setLoading] = useState(true)
     const [adding, setAdding] = useState(false)
     const [scraping, setScraping] = useState<string | null>(null)
+    const [buildingDossier, setBuildingDossier] = useState<string | null>(null)
+    const [dossierProfileId, setDossierProfileId] = useState<string | null>(null)
     const [scrapedData, setScrapedData] = useState<{ profileId: string; posts: ScrapedPost[]; method: string; apifyError?: string } | null>(null)
 
     const [form, setForm] = useState({ platform: 'facebook', profile_url: '', username: '', notes: '' })
@@ -208,6 +250,14 @@ function VeilleTab() {
     const addProfile = async () => {
         if (!form.profile_url.trim() || !form.username.trim()) {
             setError('URL du profil et nom d\'utilisateur sont obligatoires.')
+            return
+        }
+        // Validation URL
+        try {
+            const parsed = new URL(form.profile_url.trim())
+            if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Protocole invalide')
+        } catch {
+            setError('URL invalide. Exemple : https://www.facebook.com/nomDuProfil')
             return
         }
         setAdding(true)
@@ -256,9 +306,56 @@ function VeilleTab() {
     }
 
     const deleteProfile = async (id: string) => {
-        await fetch(`/api/community-manager/profiles?id=${id}`, { method: 'DELETE' })
-        await fetchProfiles()
-        if (scrapedData?.profileId === id) setScrapedData(null)
+        try {
+            const res = await fetch(`/api/community-manager/profiles?id=${id}`, { method: 'DELETE' })
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}))
+                setError(data.error || 'Erreur lors de la suppression')
+                return
+            }
+            await fetchProfiles()
+            if (scrapedData?.profileId === id) setScrapedData(null)
+            if (dossierProfileId === id) setDossierProfileId(null)
+        } catch {
+            setError('Impossible de supprimer le profil. Vérifiez votre connexion.')
+        }
+    }
+
+    const buildFullDossier = async (profile: SocialProfile) => {
+        setBuildingDossier(profile.id)
+        setError(null)
+        try {
+            const res = await fetch('/api/community-manager/analyze-full', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    profile_id: profile.id,
+                    profile_url: profile.profile_url,
+                    platform: profile.platform,
+                    username: profile.username,
+                    notes: profile.notes,
+                }),
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error)
+            onDossierReady(data.dossier)
+            setDossierProfileId(profile.id)
+            await fetchProfiles()
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Erreur lors de la construction du dossier')
+        }
+        setBuildingDossier(null)
+    }
+
+    const downloadDossierJSON = () => {
+        if (!activeDossier) return
+        const blob = new Blob([JSON.stringify(activeDossier, null, 2)], { type: 'application/json' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `dossier_${activeDossier.profile.username}_${activeDossier.meta.platform}_${new Date().toISOString().split('T')[0]}.json`
+        a.click()
+        URL.revokeObjectURL(url)
     }
 
     return (
@@ -359,12 +456,22 @@ function VeilleTab() {
                                     <button
                                         type="button"
                                         onClick={() => analyzeProfile(profile)}
-                                        disabled={scraping === profile.id}
-                                        title="Analyser ce profil"
+                                        disabled={scraping === profile.id || buildingDossier === profile.id}
+                                        title="Scraper les posts"
                                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-purple-400 text-xs font-bold transition-all disabled:opacity-50"
                                     >
                                         {scraping === profile.id ? <Loader2 size={12} className="animate-spin" /> : <Search size={12} />}
-                                        {scraping === profile.id ? 'Analyse...' : 'Analyser'}
+                                        {scraping === profile.id ? 'Scraping...' : 'Posts'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => buildFullDossier(profile)}
+                                        disabled={buildingDossier === profile.id || scraping === profile.id}
+                                        title="Construire le Dossier Intelligence IA complet"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 text-xs font-bold transition-all disabled:opacity-50"
+                                    >
+                                        {buildingDossier === profile.id ? <Loader2 size={12} className="animate-spin" /> : <Brain size={12} />}
+                                        {buildingDossier === profile.id ? 'Analyse IA...' : 'Dossier IA'}
                                     </button>
                                     <button
                                         type="button"
@@ -419,6 +526,131 @@ function VeilleTab() {
                         ))}
                     </div>
                 </div>
+            )}
+
+            {/* ─── Dossier Intelligence IA ─────────────────── */}
+            {activeDossier && dossierProfileId && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                    {/* Header dossier */}
+                    <div className="bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 border border-emerald-500/20 rounded-2xl p-5">
+                        <div className="flex items-start justify-between gap-4 flex-wrap">
+                            <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <Brain size={18} className="text-emerald-400" />
+                                    <span className="text-emerald-400 text-xs font-bold uppercase tracking-widest">Dossier Intelligence IA</span>
+                                </div>
+                                <h3 className="text-white font-black text-lg">@{activeDossier.profile.username}</h3>
+                                <p className="text-gray-400 text-xs mt-0.5">
+                                    {activeDossier.meta.posts_analyzed} posts analysés · {activeDossier.meta.scrape_method} · {new Date(activeDossier.meta.generated_at).toLocaleString('fr-FR')}
+                                </p>
+                            </div>
+                            <div className="flex gap-2 flex-wrap">
+                                <button type="button" onClick={downloadDossierJSON}
+                                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-300 text-xs font-bold transition-all">
+                                    <Download size={13} /> Télécharger JSON
+                                </button>
+                                <button type="button"
+                                    onClick={() => copyToClipboard(activeDossier.claude_prompt, 'claude-prompt')}
+                                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-300 text-xs font-bold transition-all">
+                                    {copiedId === 'claude-prompt' ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                                    {copiedId === 'claude-prompt' ? 'Copié !' : 'Copier prompt Claude.ai'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Stats engagement */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {[
+                            { label: 'Moy. Likes', value: activeDossier.stats.avg_likes.toLocaleString(), color: 'text-blue-400', icon: '👍' },
+                            { label: 'Moy. Commentaires', value: activeDossier.stats.avg_comments.toLocaleString(), color: 'text-yellow-400', icon: '💬' },
+                            { label: 'Moy. Partages', value: activeDossier.stats.avg_shares.toLocaleString(), color: 'text-pink-400', icon: '🔁' },
+                            { label: 'Engagement', value: activeDossier.stats.engagement_level, color: activeDossier.stats.engagement_level === 'viral' ? 'text-yellow-400' : activeDossier.stats.engagement_level === 'élevé' ? 'text-emerald-400' : 'text-orange-400', icon: '📊' },
+                        ].map(s => (
+                            <div key={s.label} className="bg-white/[0.03] border border-white/5 rounded-xl p-4">
+                                <p className="text-gray-600 text-[10px] font-bold uppercase tracking-wider mb-1">{s.icon} {s.label}</p>
+                                <p className={`font-black text-base ${s.color}`}>{s.value}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Formule virale + style */}
+                    <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-5">
+                        <p className="text-purple-400 text-[10px] font-bold uppercase tracking-widest mb-2">✨ Formule Virale Détectée</p>
+                        <p className="text-white font-bold text-base">{activeDossier.style.viral_formula || 'Non détectée'}</p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                            {[
+                                { label: 'Ton', value: activeDossier.style.tone },
+                                { label: 'Structure', value: activeDossier.style.structure },
+                                { label: 'Longueur', value: activeDossier.style.avg_post_length },
+                                { label: 'CTA', value: activeDossier.style.cta_style },
+                            ].map(m => (
+                                <div key={m.label} className="bg-white/[0.03] rounded-lg p-3">
+                                    <p className="text-gray-600 text-[10px] font-bold mb-1">{m.label}</p>
+                                    <p className="text-gray-300 text-xs">{m.value || '—'}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Top posts */}
+                    {activeDossier.top_posts.length > 0 && (
+                        <div className="bg-white/[0.03] border border-white/5 rounded-xl p-5">
+                            <p className="text-white font-bold text-sm mb-3 flex items-center gap-2"><Trophy size={14} className="text-yellow-400" /> Top Posts (classés par score viral)</p>
+                            <div className="space-y-3">
+                                {activeDossier.top_posts.slice(0, 5).map((post) => (
+                                    <div key={post.rank} className="flex items-start gap-3 p-3 bg-white/[0.02] rounded-lg border border-white/5">
+                                        <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${post.rank === 1 ? 'bg-yellow-500/20 text-yellow-400' : post.rank === 2 ? 'bg-gray-400/20 text-gray-300' : 'bg-orange-500/20 text-orange-400'}`}>
+                                            {post.rank}
+                                        </span>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-gray-300 text-xs line-clamp-2">{post.text || post.url}</p>
+                                            <div className="flex items-center gap-3 mt-1.5 text-[10px] text-gray-600">
+                                                {post.likes > 0 && <span>👍 {post.likes.toLocaleString()}</span>}
+                                                {post.comments > 0 && <span>💬 {post.comments.toLocaleString()}</span>}
+                                                {post.shares > 0 && <span>🔁 {post.shares.toLocaleString()}</span>}
+                                                <span className="text-emerald-400 font-bold">Score: {post.viral_score}/100</span>
+                                                {post.url && <a href={post.url} target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300"><ExternalLink size={10} /></a>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Analyse compétitive */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-4">
+                            <p className="text-emerald-400 text-xs font-bold mb-3 flex items-center gap-1.5"><Trophy size={12} /> Forces</p>
+                            <ul className="space-y-1.5">{activeDossier.competitive.strengths.map((s, i) => <li key={i} className="text-gray-300 text-xs flex items-start gap-1.5"><ChevronRight size={10} className="text-emerald-400 flex-shrink-0 mt-0.5" />{s}</li>)}</ul>
+                        </div>
+                        <div className="bg-red-500/5 border border-red-500/10 rounded-xl p-4">
+                            <p className="text-red-400 text-xs font-bold mb-3 flex items-center gap-1.5"><Swords size={12} /> Faiblesses à exploiter</p>
+                            <ul className="space-y-1.5">{activeDossier.competitive.weaknesses.map((s, i) => <li key={i} className="text-gray-300 text-xs flex items-start gap-1.5"><ChevronRight size={10} className="text-red-400 flex-shrink-0 mt-0.5" />{s}</li>)}</ul>
+                        </div>
+                        <div className="bg-blue-500/5 border border-blue-500/10 rounded-xl p-4">
+                            <p className="text-blue-400 text-xs font-bold mb-3 flex items-center gap-1.5"><Lightbulb size={12} /> Opportunités</p>
+                            <ul className="space-y-1.5">{activeDossier.competitive.opportunities.map((s, i) => <li key={i} className="text-gray-300 text-xs flex items-start gap-1.5"><ChevronRight size={10} className="text-blue-400 flex-shrink-0 mt-0.5" />{s}</li>)}</ul>
+                        </div>
+                    </div>
+
+                    {/* Prompt Claude.ai préview */}
+                    <div className="bg-white/[0.02] border border-white/5 rounded-xl p-5">
+                        <div className="flex items-center justify-between mb-3">
+                            <p className="text-white font-bold text-sm flex items-center gap-2"><FileJson size={14} className="text-purple-400" /> Prompt prêt pour Claude.ai / ChatGPT</p>
+                            <button type="button" onClick={() => copyToClipboard(activeDossier.claude_prompt, 'claude-prompt-2')}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-xs font-bold transition-all">
+                                {copiedId === 'claude-prompt-2' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                                Copier
+                            </button>
+                        </div>
+                        <pre className="text-gray-500 text-[11px] font-mono leading-relaxed max-h-40 overflow-y-auto whitespace-pre-wrap bg-black/20 rounded-lg p-3 border border-white/5">
+                            {activeDossier.claude_prompt.slice(0, 600)}...
+                        </pre>
+                        <p className="text-gray-600 text-[10px] mt-2">💡 Copiez ce prompt dans Claude.ai, ChatGPT ou Gemini avec le JSON pour générer du contenu optimisé qui surpasse ce concurrent.</p>
+                    </div>
+                </motion.div>
             )}
 
             {/* Notice Apify */}
@@ -597,6 +829,283 @@ function StyleTab({ copyToClipboard, copiedId }: { copyToClipboard: (t: string, 
                         </div>
                     </div>
                 </motion.div>
+            )}
+        </div>
+    )
+}
+
+// ═════════════════════════════════════════════════════════
+// TAB 5 — CALENDRIER ÉDITORIAL IA
+// ═════════════════════════════════════════════════════════
+const CONTENT_TYPE_CONFIG: Record<string, { icon: string; color: string }> = {
+    post: { icon: '📝', color: 'text-gray-300' },
+    reel: { icon: '🎬', color: 'text-pink-400' },
+    story: { icon: '⭕', color: 'text-orange-400' },
+    carrousel: { icon: '🎠', color: 'text-blue-400' },
+    live: { icon: '🔴', color: 'text-red-400' },
+    sondage: { icon: '📊', color: 'text-cyan-400' },
+}
+
+function CalendarTab({
+    activeDossier,
+    copyToClipboard,
+    copiedId,
+}: {
+    activeDossier: IntelligenceDossier | null
+    copyToClipboard: (text: string, id: string) => void
+    copiedId: string | null
+}) {
+    const [form, setForm] = useState({
+        platform: 'facebook',
+        topics: '',
+        frequency: '3x_semaine',
+        tone: 'varié',
+        language: 'fr',
+        start_date: new Date().toISOString().split('T')[0],
+        use_dossier: !!activeDossier,
+    })
+    const [generating, setGenerating] = useState(false)
+    const [calendar, setCalendar] = useState<CalendarDay[]>([])
+    const [error, setError] = useState<string | null>(null)
+    const [expandedDay, setExpandedDay] = useState<number | null>(null)
+
+    const generate = async () => {
+        setGenerating(true)
+        setError(null)
+        setCalendar([])
+        try {
+            const payload: Record<string, unknown> = {
+                platform: form.platform,
+                topics: form.topics.split(/[\n,]+/).map(t => t.trim()).filter(Boolean),
+                frequency: form.frequency,
+                tone: form.tone,
+                language: form.language,
+                start_date: form.start_date,
+            }
+            if (form.use_dossier && activeDossier) {
+                payload.style_context = activeDossier
+            }
+            const res = await fetch('/api/community-manager/calendar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error)
+            setCalendar(data.calendar || [])
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Erreur de génération')
+        }
+        setGenerating(false)
+    }
+
+    const exportCSV = () => {
+        const headers = ['Jour', 'Date', 'Jour de la semaine', 'Sujet', 'Format', 'Heure', 'Accroche', 'Brief', 'Hashtags', 'Idée visuelle']
+        const rows = calendar.map(d => [
+            d.day, d.date, d.weekday, `"${d.topic}"`, d.content_type, d.posting_time,
+            `"${d.hook}"`, `"${d.brief}"`, `"${d.hashtags.join(' ')}"`, `"${d.visual_idea}"`
+        ])
+        const csv = [headers, ...rows].map(r => r.join(';')).join('\n')
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `calendrier_editorial_${form.platform}_${form.start_date}.csv`
+        a.click()
+        URL.revokeObjectURL(url)
+    }
+
+    const exportText = () => {
+        const text = calendar.map(d =>
+            `=== Jour ${d.day} — ${d.date} (${d.weekday}) ===\n📌 ${d.topic}\n🎬 Format: ${d.content_type} | 🕐 ${d.posting_time}\n💬 Accroche: ${d.hook}\n📋 Brief: ${d.brief}\n🏷 Hashtags: ${d.hashtags.join(' ')}\n🖼 Visuel: ${d.visual_idea}\n`
+        ).join('\n')
+        copyToClipboard(text, 'calendar-text')
+    }
+
+    const toneColor: Record<string, string> = {
+        inspirant: 'text-purple-400',
+        informatif: 'text-blue-400',
+        urgent: 'text-red-400',
+        humoristique: 'text-yellow-400',
+        storytelling: 'text-pink-400',
+        autoritaire: 'text-emerald-400',
+    }
+
+    return (
+        <div className="space-y-6">
+            {/* Formulaire */}
+            <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-6">
+                <h2 className="text-white font-bold mb-4 flex items-center gap-2">
+                    <Calendar size={16} className="text-cyan-400" /> Générer un Calendrier Éditorial 30 Jours IA
+                </h2>
+
+                {activeDossier && (
+                    <div className="mb-4 p-3 bg-emerald-500/5 border border-emerald-500/10 rounded-xl flex items-center justify-between">
+                        <span className="text-emerald-400 text-xs font-bold flex items-center gap-2">
+                            <Brain size={12} /> Dossier concurrent @{activeDossier.profile.username} disponible
+                        </span>
+                        <button type="button" onClick={() => setForm(f => ({ ...f, use_dossier: !f.use_dossier }))}
+                            className={`text-[10px] font-bold px-3 py-1 rounded-lg transition-all ${form.use_dossier ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/20' : 'bg-white/5 text-gray-500 border border-white/10'}`}>
+                            {form.use_dossier ? '✓ Utilisé comme inspiration' : 'Activer'}
+                        </button>
+                    </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                        <label className="text-xs text-gray-500 font-bold mb-1.5 block">Plateforme</label>
+                        <select value={form.platform} onChange={e => setForm(f => ({ ...f, platform: e.target.value }))}
+                            className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-500/50">
+                            {Object.entries(PLATFORM_CONFIG).map(([key, cfg]) => (
+                                <option key={key} value={key}>{cfg.icon} {cfg.label}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="text-xs text-gray-500 font-bold mb-1.5 block">Fréquence</label>
+                        <select value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))}
+                            className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-500/50">
+                            <option value="daily">📅 Quotidien (30 posts)</option>
+                            <option value="3x_semaine">📅 3x/semaine (~13 posts)</option>
+                            <option value="hebdo">📅 Hebdomadaire (~5 posts)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="text-xs text-gray-500 font-bold mb-1.5 block">Date de début</label>
+                        <input type="date" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
+                            className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-500/50"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-xs text-gray-500 font-bold mb-1.5 block">Ton général</label>
+                        <select value={form.tone} onChange={e => setForm(f => ({ ...f, tone: e.target.value }))}
+                            className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-500/50">
+                            <option value="varié">🎭 Varié (recommandé)</option>
+                            <option value="inspirant">💫 Inspirant</option>
+                            <option value="informatif">📚 Informatif</option>
+                            <option value="urgent">⚡ Urgence</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="text-xs text-gray-500 font-bold mb-1.5 block">Langue</label>
+                        <select value={form.language} onChange={e => setForm(f => ({ ...f, language: e.target.value }))}
+                            className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-500/50">
+                            <option value="fr">🇫🇷 Français</option>
+                            <option value="fon">🇧🇯 Fon</option>
+                            <option value="en">🇬🇧 Anglais</option>
+                        </select>
+                    </div>
+                    <div className="md:col-span-1">
+                        <label className="text-xs text-gray-500 font-bold mb-1.5 block">Sujets prioritaires (optionnel, un par ligne)</label>
+                        <textarea placeholder={'trading Bénin\nliberté financière\ntémoignages clients'}
+                            value={form.topics} onChange={e => setForm(f => ({ ...f, topics: e.target.value }))}
+                            rows={3} className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-500/50 placeholder:text-gray-600 resize-none"
+                        />
+                    </div>
+                </div>
+
+                {error && (
+                    <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs flex items-center gap-2">
+                        <AlertTriangle size={14} /> {error}
+                    </div>
+                )}
+
+                <button type="button" onClick={generate} disabled={generating}
+                    className="mt-4 bg-cyan-500 hover:bg-cyan-400 text-black px-6 py-2.5 rounded-xl text-sm font-black flex items-center gap-2 transition-all disabled:opacity-50">
+                    {generating ? <Loader2 size={15} className="animate-spin" /> : <Calendar size={15} />}
+                    {generating ? 'Génération IA en cours...' : 'Générer le Calendrier 30 Jours'}
+                </button>
+            </div>
+
+            {/* Résultat calendrier */}
+            {calendar.length > 0 && (
+                <div className="space-y-4">
+                    {/* Header + exports */}
+                    <div className="flex items-center justify-between flex-wrap gap-3">
+                        <p className="text-white font-bold flex items-center gap-2">
+                            <Calendar size={16} className="text-cyan-400" />
+                            {calendar.length} publications planifiées
+                        </p>
+                        <div className="flex gap-2">
+                            <button type="button" onClick={exportCSV}
+                                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 text-xs font-bold transition-all">
+                                <Download size={13} /> Exporter CSV
+                            </button>
+                            <button type="button" onClick={exportText}
+                                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-purple-400 text-xs font-bold transition-all">
+                                {copiedId === 'calendar-text' ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                                Copier tout
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Grille calendrier */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                        {calendar.map(day => {
+                            const typeCfg = CONTENT_TYPE_CONFIG[day.content_type] || { icon: '📝', color: 'text-gray-300' }
+                            const isExpanded = expandedDay === day.day
+                            return (
+                                <motion.div key={day.day}
+                                    initial={{ opacity: 0, scale: 0.97 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: day.day * 0.02 }}
+                                    className="bg-white/[0.03] border border-white/5 rounded-xl overflow-hidden hover:border-white/10 transition-all cursor-pointer"
+                                    onClick={() => setExpandedDay(isExpanded ? null : day.day)}
+                                >
+                                    {/* En-tête jour */}
+                                    <div className="flex items-center justify-between px-4 py-3 bg-white/[0.02] border-b border-white/5">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-white font-black text-sm">J{day.day}</span>
+                                            <span className="text-gray-500 text-xs">{day.date}</span>
+                                            <span className="text-gray-600 text-[10px]">{day.weekday}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-xs ${typeCfg.color}`}>{typeCfg.icon} {day.content_type}</span>
+                                            <span className="text-gray-600 text-[10px] flex items-center gap-0.5"><Clock size={9} /> {day.posting_time}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Contenu */}
+                                    <div className="p-4">
+                                        <p className="text-white font-bold text-xs mb-2 line-clamp-2">{day.topic}</p>
+                                        <p className="text-yellow-300/80 text-[11px] italic mb-2 line-clamp-1">&ldquo;{day.hook}&rdquo;</p>
+
+                                        {isExpanded && (
+                                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2 mt-3 pt-3 border-t border-white/5">
+                                                <p className="text-gray-400 text-xs leading-relaxed">{day.brief}</p>
+                                                {day.visual_idea && (
+                                                    <p className="text-gray-500 text-[11px] flex items-start gap-1.5">
+                                                        <Film size={10} className="flex-shrink-0 mt-0.5 text-pink-400" /> {day.visual_idea}
+                                                    </p>
+                                                )}
+                                                <div className="flex flex-wrap gap-1 pt-1">
+                                                    {day.hashtags.slice(0, 5).map((tag, i) => (
+                                                        <span key={i} className="text-[10px] bg-purple-500/10 text-purple-300 px-1.5 py-0.5 rounded-full">
+                                                            {tag.startsWith('#') ? tag : `#${tag}`}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                                <button type="button"
+                                                    onClick={e => { e.stopPropagation(); copyToClipboard(`${day.topic}\n\n${day.hook}\n\n${day.brief}\n\n${day.hashtags.join(' ')}`, `cal-${day.day}`) }}
+                                                    className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-white transition-all mt-1">
+                                                    {copiedId === `cal-${day.day}` ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                                                    Copier ce jour
+                                                </button>
+                                            </motion.div>
+                                        )}
+                                    </div>
+
+                                    {/* Badge ton */}
+                                    <div className="px-4 pb-3">
+                                        <span className={`text-[10px] font-bold ${toneColor[day.tone] || 'text-gray-500'}`}>
+                                            ● {day.tone}
+                                        </span>
+                                    </div>
+                                </motion.div>
+                            )
+                        })}
+                    </div>
+                </div>
             )}
         </div>
     )
@@ -791,7 +1300,13 @@ function ViralTab({
 // ═════════════════════════════════════════════════════════
 // TAB 4 — GÉNÉRATION VIRALE
 // ═════════════════════════════════════════════════════════
-function GenerationTab({ copyToClipboard, copiedId }: { copyToClipboard: (t: string, id: string) => void; copiedId: string | null }) {
+function GenerationTab({
+    copyToClipboard, copiedId, activeDossier
+}: {
+    copyToClipboard: (t: string, id: string) => void
+    copiedId: string | null
+    activeDossier: IntelligenceDossier | null
+}) {
     const [form, setForm] = useState({
         topic: '',
         platform: 'facebook',
@@ -806,6 +1321,9 @@ function GenerationTab({ copyToClipboard, copiedId }: { copyToClipboard: (t: str
     const [library, setLibrary] = useState<ContentItem[]>([])
     const [savingId, setSavingId] = useState<number | null>(null)
 
+    const [dossierContext, setDossierContext] = useState<string>('')
+    const [useDossier, setUseDossier] = useState(false)
+
     // Charger style depuis session storage (si venu de l'onglet Style)
     useEffect(() => {
         const savedStyle = sessionStorage.getItem('cm_style_inspiration')
@@ -816,6 +1334,14 @@ function GenerationTab({ copyToClipboard, copiedId }: { copyToClipboard: (t: str
         if (savedPlatform && PLATFORM_CONFIG[savedPlatform]) setForm(f => ({ ...f, platform: savedPlatform }))
         loadLibrary()
     }, [])
+
+    // Quand le dossier actif change, le pré-charger
+    useEffect(() => {
+        if (activeDossier) {
+            setDossierContext(JSON.stringify(activeDossier, null, 2))
+            setUseDossier(true)
+        }
+    }, [activeDossier])
 
     const loadLibrary = async () => {
         try {
@@ -836,10 +1362,14 @@ function GenerationTab({ copyToClipboard, copiedId }: { copyToClipboard: (t: str
         setError(null)
         setVariants([])
         try {
+            const payload = {
+                ...form,
+                ...(useDossier && dossierContext.trim() ? { dossier_context: dossierContext.trim() } : {}),
+            }
             const res = await fetch('/api/community-manager/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(form),
+                body: JSON.stringify(payload),
             })
             const data = await res.json()
             if (!res.ok) throw new Error(data.error)
@@ -952,6 +1482,38 @@ function GenerationTab({ copyToClipboard, copiedId }: { copyToClipboard: (t: str
                             rows={2}
                             className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-yellow-500/50 placeholder:text-gray-600 resize-none"
                         />
+                    </div>
+
+                    {/* Dossier Intelligence IA */}
+                    <div className="md:col-span-2 bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <label className="text-xs text-emerald-400 font-bold flex items-center gap-1.5">
+                                <Brain size={12} /> Dossier Intelligence Concurrent (optionnel — surpuissant)
+                            </label>
+                            <div className="flex items-center gap-2">
+                                {activeDossier && (
+                                    <span className="text-[10px] text-emerald-400/70 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                                        ✓ Dossier @{activeDossier.profile.username} chargé
+                                    </span>
+                                )}
+                                <button type="button" onClick={() => setUseDossier(u => !u)}
+                                    className={`text-[10px] font-bold px-3 py-1 rounded-lg transition-all ${useDossier ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/20' : 'bg-white/5 text-gray-500 border border-white/10'}`}>
+                                    {useDossier ? '✓ Activé' : 'Activer'}
+                                </button>
+                            </div>
+                        </div>
+                        {useDossier && (
+                            <textarea
+                                placeholder='Collez ici le JSON de votre dossier (téléchargé depuis l\'onglet Veille)...'
+                                value={dossierContext}
+                                onChange={e => setDossierContext(e.target.value)}
+                                rows={4}
+                                className="w-full bg-black/40 border border-emerald-500/20 rounded-xl px-3 py-2.5 text-emerald-300/70 text-[11px] font-mono focus:outline-none focus:border-emerald-500/40 placeholder:text-gray-700 resize-none"
+                            />
+                        )}
+                        {!useDossier && (
+                            <p className="text-gray-600 text-[10px]">Activez pour utiliser le dossier d'un concurrent comme contexte — l'IA créera du contenu qui surpasse ce concurrent.</p>
+                        )}
                     </div>
                 </div>
                 {error && (

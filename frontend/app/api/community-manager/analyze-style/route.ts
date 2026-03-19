@@ -76,7 +76,23 @@ ${samples.trim()}
 Retourne ton analyse complète en JSON.`
 
         const rawJson = await callGroqWithRetry(SYSTEM_PROMPT, userPrompt)
-        const analysis = JSON.parse(rawJson)
+
+        let analysis: Record<string, unknown>
+        try {
+            analysis = JSON.parse(rawJson)
+        } catch {
+            // Groq a retourné du texte non-JSON → on encapsule dans un objet minimal
+            console.warn('[analyze-style] JSON.parse failed, raw:', rawJson?.slice(0, 200))
+            analysis = { viral_formula: rawJson?.slice(0, 500) || 'Analyse indisponible', improvement_tips: [], hooks: [], engagement_triggers: [], writing_patterns: [], best_content_types: [] }
+        }
+
+        // Garantir que les champs tableau existent et sont bien des tableaux
+        const ensureArray = (v: unknown): string[] => Array.isArray(v) ? v.map(String) : []
+        analysis.hooks = ensureArray(analysis.hooks)
+        analysis.engagement_triggers = ensureArray(analysis.engagement_triggers)
+        analysis.writing_patterns = ensureArray(analysis.writing_patterns)
+        analysis.improvement_tips = ensureArray(analysis.improvement_tips)
+        analysis.best_content_types = ensureArray(analysis.best_content_types)
 
         return NextResponse.json({ success: true, analysis, platform, profile_url })
     } catch (err) {

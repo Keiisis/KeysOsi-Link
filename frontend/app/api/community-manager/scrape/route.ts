@@ -165,28 +165,40 @@ function normalizeApifyItems(
     fallbackUrl: string,
     platform: string
 ): Array<{ text: string; likes: number; comments: number; shares: number; date: string; url: string }> {
-    return items.slice(0, 25).map((item) => {
-        const i = item as Record<string, unknown>
+    const strSafe = (v: unknown): string => {
+        if (v === null || v === undefined) return ''
+        const s = String(v).trim()
+        return s === 'null' || s === 'undefined' ? '' : s
+    }
 
-        // URL de la publication
-        let postUrl = String(i.url || i.postUrl || i.link || '')
-        if (!postUrl && i.shortCode) {
-            postUrl = `https://www.instagram.com/p/${i.shortCode}/`
-        }
-        if (!postUrl && platform === 'tiktok' && i.webVideoUrl) {
-            postUrl = String(i.webVideoUrl)
-        }
-        if (!postUrl) postUrl = fallbackUrl
+    return items
+        .slice(0, 25)
+        .map((item) => {
+            const i = item as Record<string, unknown>
 
-        return {
-            text: String(i.text || i.caption || i.description || i.content || i.message || i.storyName || ''),
-            likes: Number(i.likesCount || i.likes || i.diggCount || i.likeCount || i.reactionsCount || 0),
-            comments: Number(i.commentsCount || i.comments || i.commentCount || 0),
-            shares: Number(i.sharesCount || i.shares || i.shareCount || 0),
-            date: String(i.timestamp || i.date || i.publishedAt || i.postedAt || i.createdAt || ''),
-            url: postUrl,
-        }
-    })
+            // URL de la publication
+            let postUrl = strSafe(i.url || i.postUrl || i.link)
+            if (!postUrl && i.shortCode) {
+                postUrl = `https://www.instagram.com/p/${strSafe(i.shortCode)}/`
+            }
+            if (!postUrl && platform === 'tiktok' && i.webVideoUrl) {
+                postUrl = strSafe(i.webVideoUrl)
+            }
+            if (!postUrl) postUrl = fallbackUrl
+
+            const text = strSafe(i.text || i.caption || i.description || i.content || i.message || i.storyName)
+
+            return {
+                text,
+                likes: Math.max(0, Number(i.likesCount ?? i.likes ?? i.diggCount ?? i.likeCount ?? i.reactionsCount ?? 0) || 0),
+                comments: Math.max(0, Number(i.commentsCount ?? i.comments ?? i.commentCount ?? 0) || 0),
+                shares: Math.max(0, Number(i.sharesCount ?? i.shares ?? i.shareCount ?? 0) || 0),
+                date: strSafe(i.timestamp || i.date || i.publishedAt || i.postedAt || i.createdAt),
+                url: postUrl,
+            }
+        })
+        // Filtrer les items sans texte ni URL utile
+        .filter(item => item.text.length > 0 || item.url !== fallbackUrl)
 }
 
 // ── Fallback Serper CORRIGÉ ───────────────────────────────
