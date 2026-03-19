@@ -10,11 +10,12 @@ import { CartDrawer } from '@/components/boutique/CartDrawer'
 export function LayoutShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
 
-    // Les routes /admin et /agent ont leurs propres layouts dédiés
+    // Les routes /admin, /agent et /client ont leurs propres layouts dédiés
     const isAdminRoute = pathname.startsWith('/admin')
     const isAgentRoute = pathname.startsWith('/agent')
+    const isClientRoute = pathname.startsWith('/client')
     const isPortfolioRoute = pathname.startsWith('/portfolio')
-    const isStandaloneRoute = isAdminRoute || isAgentRoute || isPortfolioRoute
+    const isStandaloneRoute = isAdminRoute || isAgentRoute || isClientRoute || isPortfolioRoute
 
     if (isStandaloneRoute) {
         return <>{children}</>

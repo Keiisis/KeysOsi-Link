@@ -104,13 +104,13 @@ export async function POST(req: NextRequest) {
                     relatedId: rdvId,
                 });
 
-                // Notification admin/agent
+                // Notification admin/agent — template dédié RDV (sans score Oracle)
                 const config = await getEmailConfig();
                 if (config.adminEmail) {
                     await sendEmail({
                         to: config.adminEmail,
                         subject: `📅 Nouveau RDV — ${clientName} (${service || 'Consultation'})`,
-                        html: await templates.newLeadNotification(clientName, email, 0, service || 'Consultation', 'Formulaire Rendez-vous'),
+                        html: await templates.rdvAdminNotification(clientName, email, service || 'Consultation', date, timeSlot, contactMethod),
                         context: 'admin_notification',
                         relatedId: rdvId,
                     });

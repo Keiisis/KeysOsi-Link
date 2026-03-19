@@ -471,6 +471,44 @@ export const getEmailTemplates = async (locale: string = 'fr') => {
         </table>
     `, 'fr'),
 
+        /** Notification admin — nouvelle demande de RDV (sans score Oracle) */
+        rdvAdminNotification: (clientName: string, clientEmail: string, service: string, date: string | null, timeSlot: string, contactMethod: string) => EMAIL_WRAPPER(`
+        <h2 style="margin:0 0 16px;font-size:20px;color:#FCD116;font-weight:800;">📅 Nouvelle demande de RDV</h2>
+        <table style="width:100%;border-collapse:collapse;margin:0 0 24px;">
+            <tr>
+              <td style="padding:10px 0;color:rgba(255,255,255,0.4);font-size:13px;border-bottom:1px solid rgba(255,255,255,0.06);width:130px;">Client</td>
+              <td style="padding:10px 0;color:#fff;font-size:13px;font-weight:700;border-bottom:1px solid rgba(255,255,255,0.06);">${clientName}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 0;color:rgba(255,255,255,0.4);font-size:13px;border-bottom:1px solid rgba(255,255,255,0.06);">Email</td>
+              <td style="padding:10px 0;color:#fff;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.06);">${clientEmail}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 0;color:rgba(255,255,255,0.4);font-size:13px;border-bottom:1px solid rgba(255,255,255,0.06);">Service demandé</td>
+              <td style="padding:10px 0;color:#FCD116;font-size:13px;font-weight:700;border-bottom:1px solid rgba(255,255,255,0.06);">${service}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 0;color:rgba(255,255,255,0.4);font-size:13px;border-bottom:1px solid rgba(255,255,255,0.06);">Date souhaitée</td>
+              <td style="padding:10px 0;color:#fff;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.06);">${date || 'À définir'}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 0;color:rgba(255,255,255,0.4);font-size:13px;border-bottom:1px solid rgba(255,255,255,0.06);">Créneau</td>
+              <td style="padding:10px 0;color:#fff;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.06);">${timeSlot || 'Non précisé'}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 0;color:rgba(255,255,255,0.4);font-size:13px;">Mode de contact</td>
+              <td style="padding:10px 0;color:#fff;font-size:13px;">${contactMethod || 'Non précisé'}</td>
+            </tr>
+        </table>
+        <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
+          <tr><td>
+            <a href="${SITE_URL}/agent/agenda" style="display:inline-block;background:linear-gradient(135deg,#FCD116,#f5c518);color:#111827;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:800;font-size:13px;box-shadow:0 4px 15px rgba(252,209,22,0.3);">
+              Voir dans l'Agenda
+            </a>
+          </td></tr>
+        </table>
+    `, 'fr'),
+
         /** Agent reply email — sent from chat console */
         agentReply: (clientName: string, agentMessage: string, language: string = 'fr') => EMAIL_WRAPPER(`
         <h2 style="margin:0 0 20px;font-size:20px;color:#FCD116;font-weight:800;">${getI18n(language).hello} ${clientName},</h2>
