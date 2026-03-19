@@ -47,6 +47,7 @@ export default function ClientRendezVousPage() {
     const [error, setError] = useState('')
     const [clientEmail, setClientEmail] = useState('')
     const [clientId, setClientId] = useState('')
+    const [clientName, setClientName] = useState('')
     const [form, setForm] = useState({
         date: '',
         heure: '10:00',
@@ -63,6 +64,10 @@ export default function ClientRendezVousPage() {
             const email = session.user.email || ''
             setClientEmail(email)
             setClientId(session.user.id)
+            // Récupérer le nom depuis les métadonnées ou client_profiles
+            const meta = session.user.user_metadata
+            const name = meta?.full_name || meta?.name || email.split('@')[0]
+            setClientName(name)
 
             const { data } = await supabase
                 .from('rdv_requests')
@@ -84,7 +89,7 @@ export default function ClientRendezVousPage() {
 
         try {
             const motifFinal = form.motif === 'Autre' ? form.motifCustom : form.motif
-            const { error: insertErr } = await supabase
+            const { data: insertedRdv, error: insertErr } = await supabase
                 .from('rdv_requests')
                 .insert({
                     client_id: clientId,
@@ -96,8 +101,25 @@ export default function ClientRendezVousPage() {
                     notes: form.notes || null,
                     statut: 'en_attente',
                 })
+                .select('id')
+                .single()
 
             if (insertErr) throw new Error(insertErr.message)
+
+            // Fire-and-forget : email de confirmation
+            fetch('/api/rdv/confirm-client', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    rdvId: insertedRdv?.id,
+                    clientName,
+                    clientEmail,
+                    service: motifFinal,
+                    date: form.date,
+                    heure: form.heure,
+                    type: form.type,
+                }),
+            }).catch(console.error);
 
             // Reload
             const { data } = await supabase

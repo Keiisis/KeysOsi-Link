@@ -10,6 +10,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/lib/store/cartStore'
 import { Price } from '@/components/ui/Price'
+import CurrencySelector from '@/components/boutique/CurrencySelector'
+import { type CurrencyCode, detectUserCurrency, convertWithMargin, formatPrice } from '@/lib/currency'
 
 // ─── Déclarations des SDK tiers ────────────────────────────────────────────────
 declare global {
@@ -170,7 +172,13 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
     const paypalRenderedRef = useRef(false)
     const paypalOrderIdRef = useRef<string | null>(null)
 
-    const currency = 'XOF' // Devise fixe — toutes les passerelles travaillent en XOF
+    const currency = 'XOF' // Devise DB — toujours XOF pour les gateways africaines
+
+    // Devise sélectionnée par le client (auto-détection à l'ouverture)
+    const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>('XOF')
+    useEffect(() => { if (isOpen) setSelectedCurrency(detectUserCurrency()) }, [isOpen])
+    const selectedCurrencyRef = useRef<CurrencyCode>('XOF')
+    selectedCurrencyRef.current = selectedCurrency
 
     // Shipping
     const [shippingCountry, setShippingCountry] = useState('')
@@ -179,6 +187,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
     const shippingFee = ZONE_FEES[shippingZone] ?? 0
 
     const finalTotal = Math.max(0, totalAmount - (appliedCoupon?.discount_amount || 0) + shippingFee)
+    const displayAmount = convertWithMargin(finalTotal, selectedCurrency)
 
     useEffect(() => {
         if (!isOpen) return
@@ -313,7 +322,9 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
         const clientId = settings.paypal_client_id
         if (!clientId) return
 
-        const curr = (settings.paypal_currency || 'XOF').toUpperCase()
+        const curr = selectedCurrencyRef.current !== 'XOF'
+            ? selectedCurrencyRef.current
+            : (settings.paypal_currency || 'XOF').toUpperCase()
         const container = document.getElementById('cart-paypal-button-container')
         if (!container) return
 
@@ -335,10 +346,16 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                         if (!oid) throw new Error('Erreur création commande')
                         paypalOrderIdRef.current = oid
 
+                        const ppCurrency = selectedCurrencyRef.current
+                        const ppAmount = convertWithMargin(finalTotal, ppCurrency)
                         const res = await fetch('/api/checkout/paypal/create', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ order_id: oid }),
+                            body: JSON.stringify({
+                                order_id: oid,
+                                display_currency: ppCurrency !== 'XOF' ? ppCurrency : undefined,
+                                display_amount: ppCurrency !== 'XOF' ? ppAmount : undefined,
+                            }),
                         })
                         const data = await res.json()
                         if (!data.paypal_order_id) throw new Error(data.error || 'Erreur PayPal')
@@ -392,10 +409,19 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
         } else {
             const existingScript = document.getElementById('paypal-sdk-script')
             if (existingScript) {
-                existingScript.addEventListener('load', initPayPalButtons)
-            } else {
+                const existingCurrency = existingScript.getAttribute('data-currency')
+                if (existingCurrency && existingCurrency !== curr) {
+                    existingScript.remove()
+                    paypalRenderedRef.current = false
+                } else {
+                    existingScript.addEventListener('load', initPayPalButtons)
+                    return
+                }
+            }
+            if (!document.getElementById('paypal-sdk-script')) {
                 const script = document.createElement('script')
                 script.id = 'paypal-sdk-script'
+                script.setAttribute('data-currency', curr)
                 script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=${curr}&locale=fr_FR&intent=capture`
                 script.onload = initPayPalButtons
                 script.onerror = () => {
@@ -658,9 +684,15 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
         if (!publicKey) { cancelOrder(oid); setErrorMessage("Stripe n'est pas configuré."); setStep('error'); return }
 
         try {
+            const stripeCurrency = selectedCurrencyRef.current
+            const stripeDisplayAmount = convertWithMargin(finalTotal, stripeCurrency)
             const res = await fetch('/api/checkout/stripe', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-display-currency': stripeCurrency,
+                    'x-display-amount': String(stripeDisplayAmount),
+                },
                 body: JSON.stringify({ order_id: oid }),
             })
             const data = await res.json()
@@ -854,9 +886,22 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                         )}
                         <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/5">
                             <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold"><T>Total</T></span>
-                            <span className="text-xl font-black text-[#FCD116] font-heading">
-                                <Price amount={finalTotal} currency="XOF" noConvert />
-                            </span>
+                            <div className="flex flex-col items-end gap-1.5">
+                                <span className="text-xl font-black text-[#FCD116] font-heading">
+                                    {selectedCurrency === 'XOF'
+                                        ? <Price amount={finalTotal} currency="XOF" noConvert />
+                                        : <span>{formatPrice(displayAmount, selectedCurrency)}</span>
+                                    }
+                                </span>
+                                {selectedCurrency !== 'XOF' && (
+                                    <p className="text-[10px] text-gray-500">≈ <Price amount={finalTotal} currency="XOF" noConvert /> · +3% frais</p>
+                                )}
+                                <CurrencySelector
+                                    value={selectedCurrency}
+                                    onChange={setSelectedCurrency}
+                                    baseAmountXOF={finalTotal}
+                                />
+                            </div>
                         </div>
                     </div>}
 
@@ -1055,7 +1100,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                     className="w-full h-14 rounded-xl bg-[#635BFF] text-white font-black text-sm hover:bg-[#635BFF]/80 transition-all disabled:opacity-50"
                                 >
                                     {stripeReady ? (
-                                        <span className="flex items-center gap-1 justify-center"><T>Payer</T> <Price amount={finalTotal} currency="XOF" noConvert /> <Lock size={14} className="ml-2" /></span>
+                                        <span className="flex items-center gap-1 justify-center"><T>Payer</T> {selectedCurrency === 'XOF' ? <Price amount={finalTotal} currency="XOF" noConvert /> : <span>{formatPrice(displayAmount, selectedCurrency)}</span>} <Lock size={14} className="ml-2" /></span>
                                     ) : (
                                         <><Loader2 size={16} className="animate-spin mr-2" /> <T>Chargement...</T></>
                                     )}
@@ -1088,7 +1133,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                                     </div>
                                 </div>
                                 <p className="text-[10px] text-gray-600 text-center">
-                                    Montant: <span className="text-white font-bold"><Price amount={finalTotal} currency="XOF" noConvert /></span>
+                                    Montant: <span className="text-white font-bold">{selectedCurrency === 'XOF' ? <Price amount={finalTotal} currency="XOF" noConvert /> : <span>{formatPrice(displayAmount, selectedCurrency)}</span>}</span>
                                 </p>
                                 <button
                                     type="button"

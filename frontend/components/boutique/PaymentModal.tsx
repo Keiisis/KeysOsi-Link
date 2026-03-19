@@ -10,6 +10,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Product } from './ProductCard'
 import { Price } from '@/components/ui/Price'
+import CurrencySelector from '@/components/boutique/CurrencySelector'
+import { type CurrencyCode, detectUserCurrency, convertWithMargin, formatPrice } from '@/lib/currency'
 
 // ─── Déclarations des SDK tiers ────────────────────────────────────────────────
 declare global {
@@ -180,6 +182,14 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
         : product.price * quantity
     const totalAmount = baseAmount + shippingFee
 
+    // Devise sélectionnée par le client (XOF par défaut, auto-détection à l'ouverture)
+    const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>('XOF')
+    useEffect(() => { if (isOpen) setSelectedCurrency(detectUserCurrency()) }, [isOpen])
+    const displayAmount = convertWithMargin(totalAmount, selectedCurrency)
+    // Ref pour les closures PayPal (toujours la valeur courante)
+    const selectedCurrencyRef = useRef<CurrencyCode>('XOF')
+    selectedCurrencyRef.current = selectedCurrency
+
     // Charger les settings de paiement
     useEffect(() => {
         if (!isOpen) return
@@ -307,7 +317,10 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
         const clientId = settings.paypal_client_id
         if (!clientId) return
 
-        const currency = (settings.paypal_currency || 'XOF').toUpperCase()
+        // Utiliser la devise choisie par l'utilisateur (ou la devise PayPal configurée si XOF sélectionné)
+        const paypalCurrency = selectedCurrencyRef.current !== 'XOF'
+            ? selectedCurrencyRef.current
+            : (settings.paypal_currency || 'XOF').toUpperCase()
         const container = document.getElementById('paypal-button-container')
         if (!container) return
 
@@ -331,10 +344,16 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                         paypalOrderIdRef.current = oid
 
                         // Créer la commande PayPal
+                        const ppCurrency = selectedCurrencyRef.current
+                        const ppAmount = convertWithMargin(totalAmount, ppCurrency)
                         const res = await fetch('/api/checkout/paypal/create', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ order_id: oid }),
+                            body: JSON.stringify({
+                                order_id: oid,
+                                display_currency: ppCurrency !== 'XOF' ? ppCurrency : undefined,
+                                display_amount: ppCurrency !== 'XOF' ? ppAmount : undefined,
+                            }),
                         })
                         const data = await res.json()
                         if (!data.paypal_order_id) {
@@ -388,11 +407,21 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
         } else {
             const existingScript = document.getElementById('paypal-sdk-script')
             if (existingScript) {
-                existingScript.addEventListener('load', initPayPalButtons)
-            } else {
+                // Si le script existant a une devise différente, le recharger
+                const existingCurrency = existingScript.getAttribute('data-currency')
+                if (existingCurrency && existingCurrency !== paypalCurrency) {
+                    existingScript.remove()
+                    paypalRenderedRef.current = false
+                } else {
+                    existingScript.addEventListener('load', initPayPalButtons)
+                    return
+                }
+            }
+            if (!document.getElementById('paypal-sdk-script')) {
                 const script = document.createElement('script')
                 script.id = 'paypal-sdk-script'
-                script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=${currency}&locale=fr_FR&intent=capture`
+                script.setAttribute('data-currency', paypalCurrency)
+                script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=${paypalCurrency}&locale=fr_FR&intent=capture`
                 script.onload = initPayPalButtons
                 script.onerror = () => {
                     setErrorMessage('Impossible de charger PayPal')
@@ -675,9 +704,15 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
 
         // Obtenir le client_secret pour le PaymentIntent
         try {
+            const stripeCurrency = selectedCurrencyRef.current
+            const stripeAmount = convertWithMargin(totalAmount, stripeCurrency)
             const res = await fetch('/api/checkout/stripe', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-display-currency': stripeCurrency,
+                    'x-display-amount': String(stripeAmount),
+                },
                 body: JSON.stringify({ order_id: oid }),
             })
             const data = await res.json()
@@ -825,14 +860,27 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
 
                     {/* Résumé commande */}
                     <div className="px-6 py-4 bg-white/[0.02] border-b border-white/5">
-                        <div className="flex justify-between items-center">
+                        <div className="flex justify-between items-center gap-3">
                             <div>
                                 <p className="text-sm font-bold text-white">{product.title}</p>
                                 <p className="text-[10px] text-gray-500 uppercase tracking-widest">Quantité: {quantity}</p>
                             </div>
-                            <p className="text-xl font-black text-[#FCD116] font-heading">
-                                <Price amount={totalAmount} currency="XOF" noConvert />
-                            </p>
+                            <div className="flex flex-col items-end gap-1.5">
+                                <p className="text-xl font-black text-[#FCD116] font-heading">
+                                    {selectedCurrency === 'XOF'
+                                        ? <Price amount={totalAmount} currency="XOF" noConvert />
+                                        : <span>{formatPrice(displayAmount, selectedCurrency)}</span>
+                                    }
+                                </p>
+                                {selectedCurrency !== 'XOF' && (
+                                    <p className="text-[10px] text-gray-500">≈ <Price amount={totalAmount} currency="XOF" noConvert /> · +3% frais</p>
+                                )}
+                                <CurrencySelector
+                                    value={selectedCurrency}
+                                    onChange={setSelectedCurrency}
+                                    baseAmountXOF={totalAmount}
+                                />
+                            </div>
                         </div>
                     </div>
 

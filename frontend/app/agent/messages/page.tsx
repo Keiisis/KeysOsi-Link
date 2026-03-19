@@ -42,6 +42,8 @@ export default function AgentMessagesPage() {
     const [translatingOwn, setTranslatingOwn] = useState(false);
     const [clientTyping, setClientTyping] = useState(false);
     const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [replySuggestions, setReplySuggestions] = useState<string[]>([]);
+    const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
     const fetchMessages = async () => {
         const { data } = await supabase
@@ -174,8 +176,7 @@ export default function AgentMessagesPage() {
                                 ...prev,
                                 [msg.id]: { translated: data.translated, sourceLanguage: data.sourceLanguage }
                             }));
-                            const langLow = data.sourceLanguage?.toLowerCase() || '';
-                            if (!langLow.includes('franç') && !langLow.includes('french') && data.sourceLanguage !== "Inconnue") {
+                            if (data.sourceLanguage && data.sourceLanguage !== "Inconnue") {
                                 setDetectedClientLanguage(data.sourceLanguage);
                             }
                         }
@@ -184,6 +185,43 @@ export default function AgentMessagesPage() {
             }
         });
     }, [chatHistory, translations]);
+
+    // Auto-suggestions IA quand le dernier message est du client
+    useEffect(() => {
+        const lastMsg = chatHistory[chatHistory.length - 1];
+        if (!lastMsg || lastMsg.role !== 'client') return;
+
+        setLoadingSuggestions(true);
+        setReplySuggestions([]);
+
+        const controller = new AbortController();
+        fetch('/api/ai/translate-message', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                text: lastMsg.content,
+                mode: 'suggest_reply',
+                language: detectedClientLanguage,
+                history: chatHistory.slice(-6).map(m => ({ role: m.role, content: m.content }))
+            }),
+            signal: controller.signal
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data.suggestions?.length > 0) setReplySuggestions(data.suggestions);
+            })
+            .catch(err => { if (err.name !== 'AbortError') console.error(err); })
+            .finally(() => setLoadingSuggestions(false));
+
+        return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [chatHistory.length]);
+
+    // Clear suggestions when conversation changes
+    useEffect(() => {
+        setReplySuggestions([]);
+        setDetectedClientLanguage("Français");
+    }, [selected?.id]);
 
     const handleTranslateOutbox = async () => {
         if (!replyText.trim()) return;
@@ -500,6 +538,36 @@ export default function AgentMessagesPage() {
                                         Traduire mon texte avant envoi
                                     </button>
                                 </div>
+                                {/* Suggestions IA */}
+                                {(loadingSuggestions || replySuggestions.length > 0) && (
+                                    <div className="mt-3 px-2">
+                                        <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-2 flex items-center gap-1.5">
+                                            <Bot size={11} className="text-blue-400" />
+                                            Suggestions IA ({detectedClientLanguage})
+                                            {loadingSuggestions && <Loader2 size={10} className="animate-spin text-blue-400 ml-1" />}
+                                        </p>
+                                        <div className="flex flex-col gap-1.5">
+                                            {loadingSuggestions && replySuggestions.length === 0 && (
+                                                <div className="flex gap-2">
+                                                    {[1, 2, 3].map(i => (
+                                                        <div key={i} className="h-7 flex-1 bg-white/5 rounded-lg animate-pulse" />
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {replySuggestions.map((s, i) => (
+                                                <button
+                                                    key={i}
+                                                    type="button"
+                                                    onClick={() => setReplyText(s)}
+                                                    className="text-left text-xs text-gray-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 hover:border-blue-500/40 rounded-xl px-3 py-2 transition-all leading-relaxed"
+                                                >
+                                                    <span className="text-blue-400 font-bold mr-1.5">#{i + 1}</span>{s}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="flex items-center gap-2 mt-4 px-2">
                                     <AlertCircle size={10} className="text-blue-400" />
                                     <p className="text-[10px] text-gray-400 font-medium">Répondez depuis cette console, l&apos;email sera envoyé via l&apos;adresse officielle.</p>

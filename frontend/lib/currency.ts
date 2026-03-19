@@ -163,3 +163,29 @@ export function convertFromBaseSync(amountBase: number, targetCurrency: Currency
     if (targetCurrency === 'XOF') return Math.round(amountBase)
     return Number((amountBase / rate).toFixed(2))
 }
+
+// ═══════════════════════════════════════════════════════════
+// CONVERSION AVEC MARGE — pour les paiements multi-devises
+// Marge 3% pour couvrir les frais de conversion et de traitement
+// ═══════════════════════════════════════════════════════════
+
+export const CONVERSION_MARGIN = 0.03
+
+/**
+ * Convertit un montant XOF vers une autre devise en appliquant la marge de 3%.
+ * XOF → XOF = aucune marge.
+ * XOF → EUR/USD/GBP = taux de conversion × 1.03
+ */
+export const convertWithMargin = (amountXOF: number, to: CurrencyCode): number => {
+    if (to === 'XOF') return Math.round(amountXOF)
+    const raw = convertCurrency(amountXOF, 'XOF', to)
+    return Number((raw * (1 + CONVERSION_MARGIN)).toFixed(2))
+}
+
+/**
+ * Formate un montant XOF converti avec marge dans la devise cible.
+ * Ex: formatPriceWithMargin(150000, 'EUR') → "235,93 €"
+ */
+export const formatPriceWithMargin = (amountXOF: number, to: CurrencyCode): string => {
+    return formatPrice(convertWithMargin(amountXOF, to), to)
+}

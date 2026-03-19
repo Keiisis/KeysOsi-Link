@@ -1,21 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchWithGroqRotation, GROQ_KEYS } from '@/lib/groq';
-const SYSTEM_PROMPT = `Tu es un traducteur expert pour Retour Gagnant Bénin.
-Ton seul rôle est de traduire du texte, ou de détecter la langue et de traduire.
 
-Règles:
-1. Si mode = "detect_and_translate":
-    - Tu dois renvoyer UNIQUEMENT un objet JSON avec deux clés : "sourceLanguage" (la langue détectée du message d'origine, par exemple "English", "Español", "Fon", etc.) et "translated" (le message traduit en Français).
-    - Exemple: {"sourceLanguage": "English", "translated": "Bonjour"}
+// Modèle puissant pour détection de langue précise
+const DETECT_MODEL = "llama-3.3-70b-versatile";
+// Modèle rapide pour traduction simple
+const TRANSLATE_MODEL = "llama-3.1-8b-instant";
 
-2. Si mode = "translate_to":
-    - Tu dois renvoyer UNIQUEMENT la traduction du texte dans la langue cible spécifiée, sans aucun JSON, ni guillemets ajoutés.
+const DETECT_SYSTEM = `Tu es un expert en détection de langue et traduction pour Retour Gagnant Bénin (service basé au Bénin, Afrique de l'Ouest).
 
-NE RAJOUTE AUCUN TEXTE, SEULEMENT LE RÉSULTAT DEMANDÉ.`;
+Exemples de langues à détecter :
+- "Bonjour, je voudrais un rendez-vous" → Français
+- "Hello, I need help" → English
+- "Hola, necesito ayuda" → Español
+- "Mi dzo be" → Fon
+- "Ẹ káàárọ" → Yoruba
+- "Merhaba" → Turc
+
+RÈGLE CRITIQUE : Si le texte contient des mots français comme "bonjour", "merci", "je", "vous", "nous", "pour", "les", "des", "est", "avec" → la langue est OBLIGATOIREMENT "Français".
+
+Réponds UNIQUEMENT en JSON valide, rien d'autre.`;
+
+const TRANSLATE_SYSTEM = `Tu es un traducteur expert. Traduis le texte fourni exactement dans la langue cible.
+NE RAJOUTE AUCUN TEXTE, SEULEMENT LA TRADUCTION.`;
+
+const SUGGEST_SYSTEM = `Tu es un assistant expert en relation client pour Retour Gagnant Bénin (service d'accompagnement pour retour au Bénin depuis la diaspora).
+
+Génère 3 suggestions de réponse courtes et professionnelles pour un agent, dans la langue du client.
+Chaque suggestion doit être utile, naturelle et adaptée au contexte du message client.
+
+Format de réponse : JSON avec une liste "suggestions" de 3 chaînes de texte courtes (max 80 mots chacune).
+Exemple : {"suggestions": ["Bonjour, je reviens vers vous rapidement.", "Merci pour votre message, je traite votre demande.", "Je vous contacte dans les 24h pour confirmer."]}`;
 
 export async function POST(request: NextRequest) {
     try {
-        const { text, mode, targetLanguage } = await request.json();
+        const body = await request.json();
+        const { text, mode, targetLanguage, language, history } = body;
+
         if (GROQ_KEYS.length === 0) {
             return NextResponse.json(
                 { error: "La clé API Groq n'est pas configurée." },
@@ -23,64 +43,129 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        let instruction = "";
+        // ─── Mode : suggest_reply ───────────────────────────────────────────
+        if (mode === "suggest_reply") {
+            if (!text) {
+                return NextResponse.json({ error: "Texte manquant." }, { status: 400 });
+            }
+
+            const clientLang = language || "Français";
+            const historyContext = history && history.length > 0
+                ? `\n\nHistorique récent de la conversation :\n${history.slice(-4).map((m: { role: string; content: string }) => `${m.role === 'client' ? 'Client' : 'Agent'}: ${m.content}`).join('\n')}`
+                : "";
+
+            const instruction = `Message du client (en ${clientLang}) :
+"${text}"${historyContext}
+
+Génère 3 suggestions de réponse courtes en ${clientLang} pour l'agent. Format JSON : {"suggestions": ["...", "...", "..."]}`;
+
+            const response = await fetchWithGroqRotation({
+                model: DETECT_MODEL,
+                messages: [
+                    { role: "system", content: SUGGEST_SYSTEM },
+                    { role: "user", content: instruction },
+                ],
+                temperature: 0.7,
+                max_tokens: 500,
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error("Groq suggest_reply error:", errorText);
+                return NextResponse.json({ suggestions: [] });
+            }
+
+            const data = await response.json();
+            const output = data.choices?.[0]?.message?.content?.trim() || "";
+
+            try {
+                const cleaned = output.replace(/```json/g, "").replace(/```/g, "").trim();
+                const json = JSON.parse(cleaned);
+                return NextResponse.json({ suggestions: json.suggestions || [] });
+            } catch {
+                console.error("Failed to parse suggestions JSON:", output);
+                return NextResponse.json({ suggestions: [] });
+            }
+        }
+
+        // ─── Mode : detect_and_translate ───────────────────────────────────
         if (mode === "detect_and_translate") {
-            instruction = `Détecte la langue du texte suivant et traduis-le en Français. Formate ta réponse en JSON exactement comme suit : {"sourceLanguage": "NomDeLaLangue", "translated": "TexteTraduit"} . NE METS RIEN D'AUTRE QUE LE JSON.
-            
-Texte : ${text}`;
-        } else if (mode === "translate_to") {
+            if (!text) {
+                return NextResponse.json({ error: "Texte manquant." }, { status: 400 });
+            }
+
+            const instruction = `Détecte la langue du texte suivant et traduis-le en Français.
+Réponds UNIQUEMENT avec ce JSON (rien d'autre) : {"sourceLanguage": "NomDeLaLangue", "translated": "TexteEnFrançais"}
+
+Texte à analyser : "${text}"`;
+
+            const response = await fetchWithGroqRotation({
+                model: DETECT_MODEL,
+                messages: [
+                    { role: "system", content: DETECT_SYSTEM },
+                    { role: "user", content: instruction },
+                ],
+                temperature: 0.05,
+                max_tokens: 800,
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error("Groq detect error:", errorText);
+                return NextResponse.json({ sourceLanguage: "Inconnue", translated: text });
+            }
+
+            const data = await response.json();
+            const output = data.choices?.[0]?.message?.content?.trim() || "";
+
+            try {
+                const cleaned = output.replace(/```json/g, "").replace(/```/g, "").trim();
+                const json = JSON.parse(cleaned);
+                return NextResponse.json(json);
+            } catch {
+                console.error("Failed to parse detect JSON:", output);
+                return NextResponse.json({ sourceLanguage: "Inconnue", translated: output });
+            }
+        }
+
+        // ─── Mode : translate_to ────────────────────────────────────────────
+        if (mode === "translate_to") {
             if (!targetLanguage) {
                 return NextResponse.json({ error: "Langue cible non spécifiée." }, { status: 400 });
             }
-            instruction = `Traduis le texte suivant en ${targetLanguage}. Ne renvoie QUE la traduction exacte, sans guillemets, sans commentaires.
-            
-Texte : ${text}`;
-        } else {
-            return NextResponse.json({ error: "Mode invalide." }, { status: 400 });
-        }
-
-        const response = await fetchWithGroqRotation({
-            model: mode === "detect_and_translate" ? "llama-3.1-8b-instant" : "llama-3.1-8b-instant",
-            messages: [
-                { role: "system", content: SYSTEM_PROMPT },
-                { role: "user", content: instruction },
-            ],
-            temperature: 0.1, // Low temperature for more deterministic translation
-            max_tokens: 1500,
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Groq API error:", errorText);
-            return NextResponse.json(
-                { error: "Erreur technique de traduction." },
-                { status: 500 }
-            );
-        }
-
-        const data = await response.json();
-        const output = data.choices?.[0]?.message?.content?.trim() || "";
-
-        if (mode === "detect_and_translate") {
-            try {
-                // Sometime LLMs wrap json in markdown
-                const cleanedOutput = output.replace(/```json/g, "").replace(/```/g, "").trim();
-                const json = JSON.parse(cleanedOutput);
-                return NextResponse.json(json); // { sourceLanguage: "...", translated: "..." }
-            } catch {
-                console.error("Failed to parse JSON translation:", output);
-                // Fallback if the AI didn't follow JSON format correctly but gave text
-                return NextResponse.json({ sourceLanguage: "Inconnue", translated: output });
+            if (!text) {
+                return NextResponse.json({ error: "Texte manquant." }, { status: 400 });
             }
-        } else {
+
+            const instruction = `Traduis le texte suivant en ${targetLanguage}. Ne renvoie QUE la traduction, sans guillemets, sans commentaires.
+
+Texte : ${text}`;
+
+            const response = await fetchWithGroqRotation({
+                model: TRANSLATE_MODEL,
+                messages: [
+                    { role: "system", content: TRANSLATE_SYSTEM },
+                    { role: "user", content: instruction },
+                ],
+                temperature: 0.1,
+                max_tokens: 1500,
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error("Groq translate error:", errorText);
+                return NextResponse.json({ error: "Erreur technique de traduction." }, { status: 500 });
+            }
+
+            const data = await response.json();
+            const output = data.choices?.[0]?.message?.content?.trim() || "";
             return NextResponse.json({ translated: output });
         }
 
+        return NextResponse.json({ error: "Mode invalide." }, { status: 400 });
+
     } catch (error) {
         console.error("Translation Message Error:", error);
-        return NextResponse.json(
-            { error: "Erreur serveur" },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
     }
 }

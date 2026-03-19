@@ -61,11 +61,22 @@ export async function POST(request: Request) {
             )
         }
 
-        const { order_id } = await request.json()
+        const body = await request.json()
+        const { order_id, display_currency, display_amount } = body
 
         if (!order_id) {
             return NextResponse.json({ error: 'order_id requis' }, { status: 400 })
         }
+
+        // Paramètres d'affichage optionnels transmis par le modal (devise choisie + montant converti avec marge)
+        const VALID_CURRENCIES = new Set(['XOF', 'EUR', 'USD', 'GBP', 'CAD', 'CHF'])
+        const useDisplayParams = (
+            display_currency &&
+            VALID_CURRENCIES.has(String(display_currency).toUpperCase()) &&
+            display_amount &&
+            !isNaN(parseFloat(String(display_amount))) &&
+            parseFloat(String(display_amount)) > 0
+        )
 
         // Récupérer les settings PayPal
         const { data: settingsData } = await supabase
@@ -80,8 +91,10 @@ export async function POST(request: Request) {
         const clientSecret = sm.paypal_client_secret
         const sandbox = sm.paypal_sandbox === 'true'
 
-        // PayPal ne supporte pas XOF — utiliser EUR par défaut (parité fixe avec le CFA)
-        const currency = (sm.paypal_currency || 'EUR').toUpperCase()
+        // Devise : utiliser celle choisie par l'utilisateur si fournie, sinon la devise PayPal configurée
+        const currency = useDisplayParams
+            ? String(display_currency).toUpperCase()
+            : (sm.paypal_currency || 'EUR').toUpperCase()
 
         if (!clientId || !clientSecret) {
             return NextResponse.json({ error: 'PayPal non configuré' }, { status: 503 })
@@ -109,11 +122,14 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Commande déjà payée' }, { status: 400 })
         }
 
-        // Convertir XOF → devise PayPal configurée (ex: 15000 XOF → 22.87 EUR)
-        const convertedAmount = convertFromXOF(order.amount, currency)
+        // Si display_amount fourni par le modal (déjà converti avec marge 3%) → utiliser directement
+        // Sinon → conversion auto depuis XOF
+        const rawAmount = useDisplayParams
+            ? parseFloat(String(display_amount))
+            : convertFromXOF(order.amount, currency)
         const amountStr = ZERO_DECIMAL.has(currency)
-            ? String(Math.round(convertedAmount))
-            : convertedAmount.toFixed(2)
+            ? String(Math.round(rawAmount))
+            : rawAmount.toFixed(2)
 
         const base = sandbox
             ? 'https://api-m.sandbox.paypal.com'
