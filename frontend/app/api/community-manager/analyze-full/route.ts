@@ -40,12 +40,12 @@ const APIFY_ACTORS: Record<string, {
         actor: 'apify~facebook-pages-scraper',
         buildInput: (url) => ({
             startUrls: [{ url: url.replace(/\/$/, '') }],
-            maxPosts: 25,
+            maxPosts: 10,            // Limité pour éviter les timeouts Facebook
             maxPostComments: 0,
             maxReviews: 0,
-            proxyConfiguration: { useApifyProxy: true },
+            proxyConfiguration: { useApifyProxy: true, apifyProxyGroups: ['RESIDENTIAL'] },
         }),
-        timeout: 300,
+        timeout: 200,               // Échoue vite si Facebook bloque → Serper fallback
     },
     instagram: {
         actor: 'apify~instagram-profile-scraper',

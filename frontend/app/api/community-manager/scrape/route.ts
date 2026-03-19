@@ -33,16 +33,17 @@ const APIFY_ACTORS: Record<string, {
     timeout: number // secondes côté Apify (server-side wait)
 }> = {
     facebook: {
-        // apify~facebook-pages-scraper : scrape les pages et profils publics Facebook
+        // apify~facebook-pages-scraper : scrape les pages publiques Facebook
+        // Note: Facebook anti-bot → on limite à 10 posts pour rester dans le timeout
         actor: 'apify~facebook-pages-scraper',
         buildInput: (url) => ({
             startUrls: [{ url: url.replace(/\/$/, '') }],
-            maxPosts: 20,
+            maxPosts: 10,            // 20→10 : plus rapide, moins de risque de timeout
             maxPostComments: 0,
             maxReviews: 0,
-            proxyConfiguration: { useApifyProxy: true },
+            proxyConfiguration: { useApifyProxy: true, apifyProxyGroups: ['RESIDENTIAL'] },
         }),
-        timeout: 300, // Facebook est lent (anti-bot), 5 min minimum
+        timeout: 200,               // 300→200s : échoue plus vite → fallback Serper plus rapide
     },
     instagram: {
         // apify~instagram-profile-scraper : profils publics Instagram
@@ -79,7 +80,7 @@ const APIFY_ACTORS: Record<string, {
 async function callApifyWithRotation(
     platform: string,
     profileUrl: string
-): Promise<{ posts: unknown[]; usedKeyIndex: number }> {
+): Promise<{ posts: unknown[]; usedKeyIndex: number; rawItemsCount: number; firstItemKeys: string[] }> {
     if (APIFY_KEYS.length === 0) throw new Error('Aucune clé Apify configurée')
 
     const cfg = APIFY_ACTORS[platform]
@@ -122,12 +123,22 @@ async function callApifyWithRotation(
             apifyKeyIndex = (keyIdx + 1) % APIFY_KEYS.length
 
             const items: unknown[] = Array.isArray(res.data) ? res.data : []
+            const firstItem = items[0] as Record<string, unknown> | undefined
+            const firstItemKeys = firstItem ? Object.keys(firstItem) : []
+            // Détecter la structure imbriquée (facebook-pages-scraper)
+            const hasNestedPosts = firstItem && Array.isArray(firstItem.posts)
+            const rawItemsCount = hasNestedPosts
+                ? (firstItem!.posts as unknown[]).length
+                : items.length
             const normalizedPosts = normalizeApifyItems(items, profileUrl, platform)
-            console.log(`${label} ✓ ${items.length} items bruts → ${normalizedPosts.length} posts normalisés`)
+            console.log(`${label} ✓ ${items.length} items bruts (nested:${hasNestedPosts}, raw posts:${rawItemsCount}) → ${normalizedPosts.length} posts normalisés`)
+            console.log(`${label} Clés 1er item: ${firstItemKeys.join(', ')}`)
 
             return {
                 posts: normalizedPosts,
                 usedKeyIndex: keyIdx,
+                rawItemsCount,
+                firstItemKeys,
             }
         } catch (err) {
             const status = axios.isAxiosError(err) ? err.response?.status : null
@@ -293,14 +304,16 @@ export async function POST(request: NextRequest) {
         let method = 'serper'
         let apifyKeyUsed: number | null = null
         let apifyError: string | null = null
+        let apifyDebug: Record<string, unknown> = {}
 
         if (APIFY_KEYS.length > 0) {
             try {
                 const result = await callApifyWithRotation(platform, profile_url)
                 apifyKeyUsed = result.usedKeyIndex + 1
+                apifyDebug = { raw_count: result.rawItemsCount, first_item_keys: result.firstItemKeys }
                 if (result.posts.length === 0) {
-                    // Apify OK mais 0 posts (profil privé/personnel/inaccessible) → Serper
-                    console.warn(`[scrape] Apify clé #${apifyKeyUsed} → 0 posts → fallback Serper`)
+                    // Apify OK mais 0 posts (profil privé/inaccessible/structure inconnue) → Serper
+                    console.warn(`[scrape] Apify clé #${apifyKeyUsed} → 0 posts normalisés (raw:${result.rawItemsCount}) → fallback Serper`)
                     posts = await serperFallback(profile_url, platform)
                     method = posts.length > 0 ? 'serper_fallback' : 'apify_empty'
                 } else {
@@ -325,7 +338,8 @@ export async function POST(request: NextRequest) {
             method,
             apify_keys_count: APIFY_KEYS.length,
             apify_key_used: apifyKeyUsed,
-            apify_error: apifyError, // aide au débogage
+            apify_error: apifyError,
+            apify_debug: apifyDebug, // ← raw_count + first_item_keys pour diagnostic
             profile_url,
             platform,
         })
