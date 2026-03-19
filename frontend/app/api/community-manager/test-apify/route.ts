@@ -133,7 +133,7 @@ export async function GET(request: NextRequest) {
                 error: msg,
             },
             input_sent: input,
-            advice: getAdvice(status, msg, elapsed, cfg.timeout),
+            advice: getAdvice(status ?? null, msg, elapsed, cfg.timeout),
         }, { status: 200 }) // 200 pour que le client puisse lire le diagnostic
     }
 }
