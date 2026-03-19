@@ -12,7 +12,7 @@ import {
     ShoppingBag, Receipt, UserCog, Tag, Calculator,
     Mail, FileText, Compass, X, PanelLeftClose, PanelLeft,
     BarChart3, FileSignature, FolderOpen, Palette, Calendar, Star,
-    Languages, Radar, Box, Coins
+    Languages, Radar, Box, Coins, Megaphone
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -125,6 +125,7 @@ function AdminLayoutContent({
         { title: 'Coupons', icon: Tag, href: '/admin/coupons' },
         { title: 'Messages', icon: MessageSquare, href: '/admin/messages', badge: unreadMessages },
         { title: 'Notifications', icon: Bell, href: '/admin/notifications', badge: unreadNotifications },
+        { title: 'Community Mgr', icon: Megaphone, href: '/admin/community-manager' },
         { title: 'Traductions', icon: Languages, href: '/admin/traductions' },
         { title: 'Utilisateurs', icon: UserCog, href: '/admin/users' },
         { title: 'Réglages', icon: Settings, href: '/admin/settings' },
