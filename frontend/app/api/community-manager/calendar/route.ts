@@ -96,7 +96,23 @@ export async function POST(request: NextRequest) {
         }
 
         const langLabel = language === 'fon' ? 'en Fon (langue locale béninoise)' : language === 'en' ? 'en anglais' : 'en français'
-        const platformLabel = platform.charAt(0).toUpperCase() + platform.slice(1)
+        const PLATFORM_LABELS: Record<string, string> = {
+            facebook: 'Facebook', instagram: 'Instagram', tiktok: 'TikTok',
+            twitter: 'Twitter/X', linkedin: 'LinkedIn', google_maps: 'Google Maps',
+        }
+        const platformLabel = PLATFORM_LABELS[platform] || platform
+
+        // Types de contenu disponibles par plateforme
+        const PLATFORM_CONTENT_TYPES: Record<string, string> = {
+            facebook:    'post|reel|story|carrousel|live|sondage',
+            instagram:   'post|reel|story|carrousel|sondage',
+            tiktok:      'video|live|duet|challenge',
+            twitter:     'tweet|thread|poll|quote_tweet',
+            linkedin:    'post|article|carrousel|sondage|video',
+            google_maps: 'avis|reponse_avis|post_etablissement',
+        }
+        const contentTypes = PLATFORM_CONTENT_TYPES[platform] || 'post|reel|story|carrousel|live|sondage'
+
         const topicsStr = topics.length > 0 ? topics.join(', ') : 'trading, investissement, liberté financière, témoignages clients, formation'
 
         let contextBlock = ''
@@ -132,7 +148,7 @@ DATES DE PUBLICATION (à respecter exactement) :
 ${datesInfo}
 
 Règles :
-- Varie les formats (post, reel, carrousel, story, live, sondage)
+- Varie les formats disponibles pour ${platformLabel} : ${contentTypes}
 - Alterne les tons (inspirant, éducatif, urgent, storytelling)
 - Inclus des témoignages, tips pratiques, coulisses, offres
 - Hooks courts et percutants (max 15 mots)

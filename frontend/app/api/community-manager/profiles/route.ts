@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
         if (!profile_url?.trim() || !username?.trim()) {
             return NextResponse.json({ error: 'URL et nom d\'utilisateur obligatoires.' }, { status: 400 })
         }
-        if (!['facebook', 'instagram', 'tiktok', 'linkedin'].includes(platform)) {
+        if (!['facebook', 'instagram', 'tiktok', 'linkedin', 'twitter', 'google_maps'].includes(platform)) {
             return NextResponse.json({ error: 'Plateforme invalide.' }, { status: 400 })
         }
 

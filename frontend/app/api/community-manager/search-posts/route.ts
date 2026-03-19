@@ -9,10 +9,12 @@ const serperApiKeys = [
 ].filter(Boolean) as string[]
 
 const PLATFORM_SITE_MAP: Record<string, string> = {
-    facebook: 'site:facebook.com',
-    instagram: 'site:instagram.com',
-    tiktok: 'site:tiktok.com',
-    linkedin: 'site:linkedin.com',
+    facebook:    'site:facebook.com',
+    instagram:   'site:instagram.com',
+    tiktok:      'site:tiktok.com',
+    linkedin:    'site:linkedin.com',
+    twitter:     'site:twitter.com OR site:x.com',
+    google_maps: 'site:google.com/maps OR site:goo.gl/maps',
     all: '',
 }
 
@@ -96,5 +98,6 @@ function detectPlatformFromUrl(url: string): string {
     if (url.includes('tiktok.com')) return 'tiktok'
     if (url.includes('linkedin.com')) return 'linkedin'
     if (url.includes('twitter.com') || url.includes('x.com')) return 'twitter'
+    if (url.includes('google.com/maps') || url.includes('maps.google') || url.includes('goo.gl/maps')) return 'google_maps'
     return 'web'
 }

@@ -74,7 +74,7 @@ interface IntelligenceDossier {
     meta: { version: string; generated_at: string; tool: string; posts_analyzed: number; scrape_method: string; platform: string; profile_url: string; username: string }
     profile: { platform: string; username: string; profile_url: string; notes: string }
     style: { tone: string; vocabulary_level: string; structure: string; hooks: string[]; hashtag_strategy: string; emoji_usage: string; avg_post_length: string; engagement_triggers: string[]; writing_patterns: string[]; improvement_tips: string[]; viral_formula: string; best_content_types: string[]; cta_style: string; top_topics: string[]; content_mix: string }
-    top_posts: Array<{ rank: number; text: string; likes: number; comments: number; shares: number; viral_score: number; date: string; url: string }>
+    top_posts: Array<{ rank: number; text: string; likes: number; comments: number; shares: number; stars?: number; views?: number; viral_score: number; date: string; url: string }>
     stats: { avg_likes: number; avg_comments: number; avg_shares: number; best_viral_score: number; engagement_level: string; total_posts_scraped: number; posts_with_engagement: number }
     patterns: { best_times: string[]; top_hooks: string[]; top_topics: string[]; content_mix: string }
     competitive: { strengths: string[]; weaknesses: string[]; opportunities: string[] }
@@ -611,9 +611,11 @@ function VeilleTab({
                                         <div className="flex-1 min-w-0">
                                             <p className="text-gray-300 text-xs line-clamp-2">{post.text || post.url}</p>
                                             <div className="flex items-center gap-3 mt-1.5 text-[10px] text-gray-600">
+                                                {post.stars !== undefined && post.stars > 0 && <span className="text-yellow-400">{'⭐'.repeat(Math.round(post.stars))} {post.stars}/5</span>}
                                                 {post.likes > 0 && <span>👍 {post.likes.toLocaleString()}</span>}
                                                 {post.comments > 0 && <span>💬 {post.comments.toLocaleString()}</span>}
                                                 {post.shares > 0 && <span>🔁 {post.shares.toLocaleString()}</span>}
+                                                {(post.views ?? 0) > 0 && <span>👁 {(post.views ?? 0).toLocaleString()}</span>}
                                                 <span className="text-emerald-400 font-bold">Score: {post.viral_score}/100</span>
                                                 {post.url && <a href={post.url} target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300"><ExternalLink size={10} /></a>}
                                             </div>
@@ -680,6 +682,7 @@ function StyleTab({ copyToClipboard, copiedId }: { copyToClipboard: (t: string, 
     const [analysis, setAnalysis] = useState<StyleAnalysis | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [styleInspiration, setStyleInspiration] = useState<string | null>(null)
+    const [styleSaved, setStyleSaved] = useState(false)
 
     const analyze = async () => {
         if (samples.trim().length < 50) {
@@ -708,7 +711,8 @@ function StyleTab({ copyToClipboard, copiedId }: { copyToClipboard: (t: string, 
     const saveStyleInspiration = () => {
         if (styleInspiration) {
             sessionStorage.setItem('cm_style_inspiration', styleInspiration)
-            alert('Style sauvegardé ! Disponible dans l\'onglet Génération.')
+            setStyleSaved(true)
+            setTimeout(() => setStyleSaved(false), 2500)
         }
     }
 
@@ -793,7 +797,8 @@ function StyleTab({ copyToClipboard, copiedId }: { copyToClipboard: (t: string, 
                                     title="Utiliser ce style dans la génération"
                                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 text-xs font-bold transition-all"
                                 >
-                                    <ArrowRight size={12} /> Utiliser pour générer
+                                    {styleSaved ? <Check size={12} className="text-emerald-400" /> : <ArrowRight size={12} />}
+                                    {styleSaved ? 'Sauvegardé !' : 'Utiliser pour générer'}
                                 </button>
                             </div>
                         </div>
@@ -905,10 +910,11 @@ function CalendarTab({
     }
 
     const exportCSV = () => {
+        const esc = (s: unknown) => '"' + String(s ?? '').replace(/"/g, '""') + '"'
         const headers = ['Jour', 'Date', 'Jour de la semaine', 'Sujet', 'Format', 'Heure', 'Accroche', 'Brief', 'Hashtags', 'Idée visuelle']
         const rows = calendar.map(d => [
-            d.day, d.date, d.weekday, `"${d.topic}"`, d.content_type, d.posting_time,
-            `"${d.hook}"`, `"${d.brief}"`, `"${d.hashtags.join(' ')}"`, `"${d.visual_idea}"`
+            d.day, d.date, d.weekday, esc(d.topic), d.content_type, d.posting_time,
+            esc(d.hook), esc(d.brief), esc(d.hashtags.join(' ')), esc(d.visual_idea)
         ])
         const csv = [headers, ...rows].map(r => r.join(';')).join('\n')
         const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
@@ -1351,6 +1357,7 @@ function GenerationTab({
     const loadLibrary = async () => {
         try {
             const res = await fetch('/api/community-manager/library')
+            if (!res.ok) { setLibrary([]); return }
             const data = await res.json()
             setLibrary(Array.isArray(data) ? data : [])
         } catch {

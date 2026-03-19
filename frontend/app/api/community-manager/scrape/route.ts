@@ -218,13 +218,32 @@ function normalizeLinkedIn(i: Record<string, unknown>, fallbackUrl: string): Nor
     }
 }
 
+// Fallback pour un item Google Maps sans reviews[] (fiche lieu seule)
+function normalizeGoogleMapsPlace(i: Record<string, unknown>, fallbackUrl: string): NormalizedPost | null {
+    const url = strSafe(i.url || i.placeUrl || i.website) || fallbackUrl
+    const name = strSafe(i.title || i.name)
+    const address = strSafe(i.address || i.vicinity)
+    const text = name ? `${name}${address ? ` — ${address}` : ''}` : strSafe(i.description)
+    if (!text) return null
+    const stars = num(i.rating || i.totalScore || 0)
+    return {
+        text: stars ? `${text} (⭐ ${stars}/5)` : text,
+        likes: stars * 20,
+        stars,
+        comments: num(i.reviewCount || i.reviewsCount || i.userRatingsTotal || 0),
+        shares: 0,
+        date: strSafe(i.updatedAt || i.createdAt || ''),
+        url,
+    }
+}
+
 const PLATFORM_NORMALIZERS: Record<string, (i: Record<string, unknown>, fallback: string) => NormalizedPost | null> = {
     facebook: normalizeFacebook,
     instagram: normalizeInstagram,
     tiktok: normalizeTikTok,
     twitter: normalizeTwitter,
     linkedin: normalizeLinkedIn,
-    google_maps: normalizeLinkedIn, // fallback générique (Google Maps traité différemment)
+    google_maps: normalizeGoogleMapsPlace,
 }
 
 // ── Aplatissement + normalisation ────────────────────────

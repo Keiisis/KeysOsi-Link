@@ -161,9 +161,20 @@ function normLinkedIn(i: Record<string, unknown>, fb: string): RawPost | null {
     return { text, likes: num(i.likesCount ?? i.likes ?? 0), comments: num(i.commentsCount ?? i.comments ?? 0), shares: num(i.sharesCount ?? i.shares ?? 0), date: strSafe(i.timestamp || i.date), url }
 }
 
+// Fallback pour fiche Google Maps sans reviews[] (lieu seul)
+function normGooglePlace(i: Record<string, unknown>, fb: string): RawPost | null {
+    const url = strSafe(i.url || i.placeUrl || i.website) || fb
+    const name = strSafe(i.title || i.name)
+    const address = strSafe(i.address || i.vicinity)
+    const text = name ? `${name}${address ? ` — ${address}` : ''}` : strSafe(i.description)
+    if (!text) return null
+    const stars = num(i.rating || i.totalScore || 0)
+    return { text: stars ? `${text} (⭐ ${stars}/5)` : text, likes: stars * 20, stars, comments: num(i.reviewCount || i.reviewsCount || 0), shares: 0, date: strSafe(i.updatedAt || ''), url }
+}
+
 const PLATFORM_NORMALIZERS: Record<string, (i: Record<string, unknown>, fb: string) => RawPost | null> = {
     facebook: normFacebook, instagram: normInstagram, tiktok: normTikTok,
-    twitter: normTwitter, linkedin: normLinkedIn, google_maps: normLinkedIn,
+    twitter: normTwitter, linkedin: normLinkedIn, google_maps: normGooglePlace,
 }
 
 function normalizeItems(items: unknown[], fallbackUrl: string, platform: string): RawPost[] {
@@ -374,6 +385,8 @@ ${(competitive.opportunities || []).map((s, i) => `${i + 1}. ${s}`).join('\n')}
 *Dossier généré le ${meta.generated_at} — ${meta.posts_analyzed} publications analysées via Community Manager Pro*`
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 // ═════════════════════════════════════════════════════════
 // POST /api/community-manager/analyze-full
 // ═════════════════════════════════════════════════════════
@@ -385,6 +398,9 @@ export async function POST(request: NextRequest) {
         if (!profile_url?.trim()) return NextResponse.json({ error: 'profile_url obligatoire' }, { status: 400 })
         if (!platform || !VALID_PLATFORMS.includes(platform)) {
             return NextResponse.json({ error: `Plateforme invalide. Options: ${VALID_PLATFORMS.join(', ')}` }, { status: 400 })
+        }
+        if (profile_id && !UUID_REGEX.test(profile_id)) {
+            return NextResponse.json({ error: 'profile_id invalide.' }, { status: 400 })
         }
 
         const profileUsername = username || profile_url.replace(/\/$/, '').split('/').filter(Boolean).pop() || ''
@@ -457,6 +473,8 @@ export async function POST(request: NextRequest) {
                 likes: p.likes,
                 comments: p.comments,
                 shares: p.shares,
+                ...(p.stars !== undefined ? { stars: p.stars } : {}),
+                ...(p.views !== undefined ? { views: p.views } : {}),
                 viral_score: p.viral_score,
                 date: p.date,
                 url: p.url,
