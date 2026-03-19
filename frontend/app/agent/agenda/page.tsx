@@ -176,12 +176,17 @@ export default function AgentAgendaPage() {
     const today = new Date()
     const isToday = (day: number) => today.getDate() === day && today.getMonth() === currentDate.getMonth() && today.getFullYear() === currentDate.getFullYear()
 
-    // Upcoming items (next 14 days)
-    const upcomingRDVs = rdvList.filter(r => {
-        const d = new Date(r.date)
-        const diff = (d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-        return diff >= -1 && diff <= 14
-    }).slice(0, 10)
+    // RDVs : en_attente en premier, puis par date décroissante — tous affichés
+    const statutOrder: Record<string, number> = { en_attente: 0, confirme: 1, termine: 2, annule: 3 }
+    const sortedRDVs = [...rdvList].sort((a, b) => {
+        const sA = statutOrder[a.statut] ?? 4
+        const sB = statutOrder[b.statut] ?? 4
+        if (sA !== sB) return sA - sB
+        if (!a.date && !b.date) return 0
+        if (!a.date) return 1
+        if (!b.date) return -1
+        return new Date(b.date).getTime() - new Date(a.date).getTime()
+    })
 
     const upcomingEvents = events.filter(e => {
         const d = new Date(e.date)
@@ -334,16 +339,26 @@ export default function AgentAgendaPage() {
                                     <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
                                         <CalendarDays size={14} className="text-amber-400" /> Demandes de RDV ({rdvList.length})
                                     </h3>
-                                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                                        {upcomingRDVs.length === 0 ? (
+                                    <div className="space-y-2 max-h-72 overflow-y-auto">
+                                        {sortedRDVs.length === 0 ? (
                                             <p className="text-gray-500 text-xs text-center py-4">Aucune demande de RDV</p>
-                                        ) : upcomingRDVs.map(rdv => (
+                                        ) : sortedRDVs.map(rdv => (
                                             <div key={rdv.id} onClick={() => setSelectedRDV(rdv)} className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/10 hover:border-amber-500/30 cursor-pointer transition-all">
                                                 <div className="flex items-center justify-between">
                                                     <p className="text-xs font-bold text-white">{getClientName(rdv)}</p>
-                                                    <ExternalLink size={10} className="text-gray-500" />
+                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                                                        rdv.statut === 'en_attente' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                        rdv.statut === 'confirme' ? 'bg-emerald-500/20 text-emerald-400' :
+                                                        rdv.statut === 'annule' ? 'bg-red-500/20 text-red-400' :
+                                                        'bg-gray-500/20 text-gray-400'
+                                                    }`}>
+                                                        {rdv.statut === 'en_attente' ? 'En attente' : rdv.statut === 'confirme' ? 'Confirmé' : rdv.statut === 'annule' ? 'Annulé' : 'Terminé'}
+                                                    </span>
                                                 </div>
-                                                <p className="text-[10px] text-gray-500 mt-0.5">{new Date(rdv.date).toLocaleDateString('fr-FR')} à {rdv.heure}</p>
+                                                <p className="text-[10px] text-gray-500 mt-0.5">
+                                                    {rdv.date ? new Date(rdv.date + 'T12:00:00').toLocaleDateString('fr-FR') : 'Date à confirmer'}{rdv.heure ? ` à ${rdv.heure}` : ''}
+                                                </p>
+                                                <p className="text-[10px] text-gray-600 mt-0.5 line-clamp-1">{rdv.motif}</p>
                                             </div>
                                         ))}
                                     </div>
@@ -411,7 +426,10 @@ export default function AgentAgendaPage() {
                                     {getVisitorPhone(selectedRDV) && <div className="flex items-center gap-2 text-sm text-gray-300"><Phone size={14} className="text-emerald-400" /> {getVisitorPhone(selectedRDV)}</div>}
                                     <div className="flex items-center gap-2 text-sm text-gray-300">
                                         <CalendarDays size={14} className="text-emerald-400" />
-                                        {new Date(selectedRDV.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} à {selectedRDV.heure}
+                                        {selectedRDV.date
+                                            ? new Date(selectedRDV.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+                                            : 'Date à confirmer'
+                                        }{selectedRDV.heure ? ` à ${selectedRDV.heure}` : ''}
                                     </div>
                                     <div className="flex items-center gap-2 text-sm text-gray-300">
                                         {selectedRDV.type === 'presentiel' ? <MapPin size={14} className="text-emerald-400" /> : selectedRDV.type === 'visio' ? <Video size={14} className="text-emerald-400" /> : <Phone size={14} className="text-emerald-400" />}
