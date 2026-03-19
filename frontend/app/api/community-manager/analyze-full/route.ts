@@ -38,7 +38,13 @@ const APIFY_ACTORS: Record<string, {
 }> = {
     facebook: {
         actor: 'apify~facebook-pages-scraper',
-        buildInput: (url) => ({ startUrls: [{ url }], maxPosts: 25, maxPostComments: 0, maxReviews: 0 }),
+        buildInput: (url) => ({
+            startUrls: [{ url: url.replace(/\/$/, '') }],
+            maxPosts: 25,
+            maxPostComments: 0,
+            maxReviews: 0,
+            proxyConfiguration: { useApifyProxy: true },
+        }),
         timeout: 300,
     },
     instagram: {
@@ -75,18 +81,40 @@ function ensureArray(v: unknown): string[] {
 type RawPost = { text: string; likes: number; comments: number; shares: number; date: string; url: string }
 
 function normalizeItems(items: unknown[], fallbackUrl: string, platform: string): RawPost[] {
-    return items.slice(0, 25).map((item) => {
+    // Aplatir les structures imbriquées (ex: facebook-pages-scraper retourne
+    // [{pageName, posts:[{postUrl,text,time,...},...]}] — les posts sont dans item.posts[])
+    const flatItems: unknown[] = []
+    for (const item of items) {
+        const i = item as Record<string, unknown>
+        if (Array.isArray(i.posts) && i.posts.length > 0) {
+            // Page Facebook : les publications sont dans i.posts[]
+            flatItems.push(...i.posts)
+        } else {
+            flatItems.push(item)
+        }
+    }
+
+    console.log(`[normalizeItems] ${items.length} items bruts → ${flatItems.length} après aplatissement`)
+    if (flatItems.length > 0) {
+        // Log la structure du 1er item pour débogage
+        const sample = flatItems[0] as Record<string, unknown>
+        console.log(`[normalizeItems] Champs 1er item: ${Object.keys(sample).slice(0, 10).join(', ')}`)
+    }
+
+    return flatItems.slice(0, 25).map((item) => {
         const i = item as Record<string, unknown>
         let postUrl = strSafe(i.url || i.postUrl || i.link)
         if (!postUrl && i.shortCode) postUrl = `https://www.instagram.com/p/${strSafe(i.shortCode)}/`
         if (!postUrl && platform === 'tiktok' && i.webVideoUrl) postUrl = strSafe(i.webVideoUrl)
         if (!postUrl) postUrl = fallbackUrl
         return {
+            // Facebook posts: text | Instagram: caption | TikTok: text | LinkedIn: description
             text: strSafe(i.text || i.caption || i.description || i.content || i.message || i.storyName),
             likes: Math.max(0, Number(i.likesCount ?? i.likes ?? i.diggCount ?? i.likeCount ?? i.reactionsCount ?? 0) || 0),
             comments: Math.max(0, Number(i.commentsCount ?? i.comments ?? i.commentCount ?? 0) || 0),
             shares: Math.max(0, Number(i.sharesCount ?? i.shares ?? i.shareCount ?? 0) || 0),
-            date: strSafe(i.timestamp || i.date || i.publishedAt || i.postedAt || i.createdAt),
+            // Facebook pages scraper utilise `time` pour la date de publication
+            date: strSafe(i.timestamp || i.time || i.date || i.publishedAt || i.postedAt || i.createdAt),
             url: postUrl,
         }
     }).filter(p => p.text.length > 0 || p.url !== fallbackUrl)

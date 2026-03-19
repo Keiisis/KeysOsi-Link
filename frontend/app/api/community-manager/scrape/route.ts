@@ -36,10 +36,11 @@ const APIFY_ACTORS: Record<string, {
         // apify~facebook-pages-scraper : scrape les pages et profils publics Facebook
         actor: 'apify~facebook-pages-scraper',
         buildInput: (url) => ({
-            startUrls: [{ url }],
+            startUrls: [{ url: url.replace(/\/$/, '') }],
             maxPosts: 20,
             maxPostComments: 0,
             maxReviews: 0,
+            proxyConfiguration: { useApifyProxy: true },
         }),
         timeout: 300, // Facebook est lent (anti-bot), 5 min minimum
     },
@@ -172,7 +173,19 @@ function normalizeApifyItems(
         return s === 'null' || s === 'undefined' ? '' : s
     }
 
-    return items
+    // Aplatir les structures imbriquées : facebook-pages-scraper retourne
+    // [{pageName, posts:[{postUrl, text, time, ...}]}] — les posts sont dans item.posts[]
+    const flatItems: unknown[] = []
+    for (const item of items) {
+        const i = item as Record<string, unknown>
+        if (Array.isArray(i.posts) && i.posts.length > 0) {
+            flatItems.push(...i.posts)
+        } else {
+            flatItems.push(item)
+        }
+    }
+
+    return flatItems
         .slice(0, 25)
         .map((item) => {
             const i = item as Record<string, unknown>
@@ -194,7 +207,8 @@ function normalizeApifyItems(
                 likes: Math.max(0, Number(i.likesCount ?? i.likes ?? i.diggCount ?? i.likeCount ?? i.reactionsCount ?? 0) || 0),
                 comments: Math.max(0, Number(i.commentsCount ?? i.comments ?? i.commentCount ?? 0) || 0),
                 shares: Math.max(0, Number(i.sharesCount ?? i.shares ?? i.shareCount ?? 0) || 0),
-                date: strSafe(i.timestamp || i.date || i.publishedAt || i.postedAt || i.createdAt),
+                // Facebook pages scraper utilise `time` pour la date de publication
+                date: strSafe(i.timestamp || i.time || i.date || i.publishedAt || i.postedAt || i.createdAt),
                 url: postUrl,
             }
         })
