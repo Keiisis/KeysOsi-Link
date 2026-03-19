@@ -142,6 +142,13 @@ async function scrapePosts(profileUrl: string, platform: string): Promise<{ post
                 const items: unknown[] = Array.isArray(res.data) ? res.data : []
                 const posts = normalizeItems(items, profileUrl, platform)
                 console.log(`[analyze-full] Apify ✓ clé ${keyIdx + 1} — ${posts.length} posts`)
+
+                if (posts.length === 0) {
+                    // Apify OK mais 0 résultats (profil privé / personnel / vide) → Serper
+                    console.warn(`[analyze-full] Apify 0 posts → fallback Serper`)
+                    const serperPosts = await serperFallback(profileUrl, platform)
+                    return { posts: serperPosts, method: serperPosts.length > 0 ? 'serper_fallback' : 'apify_empty' }
+                }
                 return { posts, method: 'apify' }
             } catch (err) {
                 const status = axios.isAxiosError(err) ? err.response?.status : null

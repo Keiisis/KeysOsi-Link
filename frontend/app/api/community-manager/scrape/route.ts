@@ -121,10 +121,11 @@ async function callApifyWithRotation(
             apifyKeyIndex = (keyIdx + 1) % APIFY_KEYS.length
 
             const items: unknown[] = Array.isArray(res.data) ? res.data : []
-            console.log(`${label} ✓ ${items.length} résultats`)
+            const normalizedPosts = normalizeApifyItems(items, profileUrl, platform)
+            console.log(`${label} ✓ ${items.length} items bruts → ${normalizedPosts.length} posts normalisés`)
 
             return {
-                posts: normalizeApifyItems(items, profileUrl, platform),
+                posts: normalizedPosts,
                 usedKeyIndex: keyIdx,
             }
         } catch (err) {
@@ -282,10 +283,17 @@ export async function POST(request: NextRequest) {
         if (APIFY_KEYS.length > 0) {
             try {
                 const result = await callApifyWithRotation(platform, profile_url)
-                posts = result.posts
                 apifyKeyUsed = result.usedKeyIndex + 1
-                method = 'apify'
-                console.log(`[scrape] ✓ Apify clé #${apifyKeyUsed} — ${posts.length} posts`)
+                if (result.posts.length === 0) {
+                    // Apify OK mais 0 posts (profil privé/personnel/inaccessible) → Serper
+                    console.warn(`[scrape] Apify clé #${apifyKeyUsed} → 0 posts → fallback Serper`)
+                    posts = await serperFallback(profile_url, platform)
+                    method = posts.length > 0 ? 'serper_fallback' : 'apify_empty'
+                } else {
+                    posts = result.posts
+                    method = 'apify'
+                    console.log(`[scrape] ✓ Apify clé #${apifyKeyUsed} — ${posts.length} posts`)
+                }
             } catch (err) {
                 apifyError = err instanceof Error ? err.message : String(err)
                 console.warn(`[scrape] Apify échoué: ${apifyError} → fallback Serper`)
