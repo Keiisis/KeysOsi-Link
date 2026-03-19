@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
         })
     } catch (err) {
         const elapsed = Math.round((Date.now() - startTime) / 1000)
-        const status = axios.isAxiosError(err) ? err.response?.status : null
+        const status: number | null = axios.isAxiosError(err) ? (err.response?.status ?? null) : null
         const msg = axios.isAxiosError(err)
             ? (err.response?.data?.error?.message || err.response?.data?.message || err.message)
             : (err instanceof Error ? err.message : String(err))
