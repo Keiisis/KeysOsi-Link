@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { ChevronDown } from 'lucide-react'
-import { type CurrencyCode, convertWithMargin, formatPrice } from '@/lib/currency'
+import { type CurrencyCode, convertCurrency, formatPrice } from '@/lib/currency'
 
 const CURRENCY_OPTIONS: { code: CurrencyCode; flag: string; label: string }[] = [
     { code: 'XOF', flag: '🇧🇯', label: 'FCFA' },
@@ -56,7 +56,7 @@ export default function CurrencySelector({ value, onChange, baseAmountXOF, class
                         : 'bg-white border border-gray-200'
                 }`}>
                     {CURRENCY_OPTIONS.map(opt => {
-                        const converted = baseAmountXOF ? convertWithMargin(baseAmountXOF, opt.code) : null
+                        const converted = baseAmountXOF ? convertCurrency(baseAmountXOF, 'XOF', opt.code) : null
                         const isSelected = opt.code === value
                         return (
                             <button
@@ -86,7 +86,7 @@ export default function CurrencySelector({ value, onChange, baseAmountXOF, class
                         )
                     })}
                     <div className={`px-3 py-2 border-t ${dark ? 'border-white/5' : 'border-gray-100'}`}>
-                        <p className={`text-[9px] text-center ${dark ? 'text-gray-600' : 'text-gray-400'}`}>Taux incluant 3% frais</p>
+                        <p className={`text-[9px] text-center ${dark ? 'text-gray-600' : 'text-gray-400'}`}>Taux de change en temps réel</p>
                     </div>
                 </div>
             )}

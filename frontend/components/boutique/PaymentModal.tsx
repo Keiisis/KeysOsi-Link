@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Product } from './ProductCard'
 import { Price } from '@/components/ui/Price'
 import CurrencySelector from '@/components/boutique/CurrencySelector'
-import { type CurrencyCode, detectUserCurrency, convertWithMargin, formatPrice, CONVERSION_MARGIN } from '@/lib/currency'
+import { type CurrencyCode, detectUserCurrency, convertWithMargin, convertCurrency, formatPrice, CONVERSION_MARGIN } from '@/lib/currency'
 
 // ─── Déclarations des SDK tiers ────────────────────────────────────────────────
 declare global {
@@ -185,7 +185,8 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
     // Devise sélectionnée par le client (XOF par défaut, auto-détection à l'ouverture)
     const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>('XOF')
     useEffect(() => { if (isOpen) setSelectedCurrency(detectUserCurrency()) }, [isOpen])
-    const displayAmount = convertWithMargin(totalAmount, selectedCurrency)
+    // Affichage honnête sans marge (la marge 6% est prélevée silencieusement par la passerelle)
+    const displayAmount = convertCurrency(totalAmount, 'XOF', selectedCurrency)
     // Ref pour les closures PayPal (toujours la valeur courante)
     const selectedCurrencyRef = useRef<CurrencyCode>('XOF')
     selectedCurrencyRef.current = selectedCurrency

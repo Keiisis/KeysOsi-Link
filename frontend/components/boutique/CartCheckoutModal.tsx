@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { useCart } from '@/lib/store/cartStore'
 import { Price } from '@/components/ui/Price'
 import CurrencySelector from '@/components/boutique/CurrencySelector'
-import { type CurrencyCode, detectUserCurrency, convertWithMargin, formatPrice, CONVERSION_MARGIN } from '@/lib/currency'
+import { type CurrencyCode, detectUserCurrency, convertWithMargin, convertCurrency, formatPrice, CONVERSION_MARGIN } from '@/lib/currency'
 
 // ─── Déclarations des SDK tiers ────────────────────────────────────────────────
 declare global {
@@ -187,7 +187,8 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
     const shippingFee = ZONE_FEES[shippingZone] ?? 0
 
     const finalTotal = Math.max(0, totalAmount - (appliedCoupon?.discount_amount || 0) + shippingFee)
-    const displayAmount = convertWithMargin(finalTotal, selectedCurrency)
+    // Affichage honnête sans marge (la marge 6% est prélevée silencieusement par la passerelle)
+    const displayAmount = convertCurrency(finalTotal, 'XOF', selectedCurrency)
 
     useEffect(() => {
         if (!isOpen) return
