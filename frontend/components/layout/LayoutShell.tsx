@@ -15,7 +15,8 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
     const isAgentRoute = pathname.startsWith('/agent')
     const isClientRoute = pathname.startsWith('/client')
     const isPortfolioRoute = pathname.startsWith('/portfolio')
-    const isStandaloneRoute = isAdminRoute || isAgentRoute || isClientRoute || isPortfolioRoute
+    const isArbreRoute = pathname.startsWith('/arbre')
+    const isStandaloneRoute = isAdminRoute || isAgentRoute || isClientRoute || isPortfolioRoute || isArbreRoute
 
     if (isStandaloneRoute) {
         return <>{children}</>

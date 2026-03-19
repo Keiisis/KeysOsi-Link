@@ -1,8 +1,8 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import { useParams } from 'next/navigation'
 
-// Three.js must be loaded client-side only (no SSR)
 const GenealogyTree3D = dynamic(
   () => import('@/components/genealogy/GenealogyTree3D'),
   {
@@ -20,6 +20,9 @@ const GenealogyTree3D = dynamic(
   }
 )
 
-export default function ArbrePage() {
-  return <GenealogyTree3D />
+export default function ArbrePublicPage() {
+  const params = useParams()
+  const applicationRef = params.ref as string
+
+  return <GenealogyTree3D applicationRef={applicationRef} />
 }

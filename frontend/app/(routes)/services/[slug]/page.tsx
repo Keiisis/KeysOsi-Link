@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { GoldenIcon } from '@/components/ui/GoldenIcon'
 import PricingCalculator3D from '@/components/services/PricingCalculator3D'
-import CinematicIntro from '@/components/services/CinematicIntro'
+
 import { useTranslation, T } from '@/lib/translation'
 
 interface ServiceData {
@@ -288,7 +288,7 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
             .catch(() => { /* défaut : calculateur visible */ })
     }, [slug])
 
-    const [showIntro, setShowIntro] = useState(slug === 'passeport')
+
 
     if (loading) {
         return (
@@ -311,11 +311,6 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
 
     return (
         <>
-            {showIntro && (
-                <div className="fixed inset-0 z-[100]">
-                    <CinematicIntro onComplete={() => setShowIntro(false)} />
-                </div>
-            )}
 
             <div className="min-h-screen bg-gray-50">
                 {/* Hero Banner */}

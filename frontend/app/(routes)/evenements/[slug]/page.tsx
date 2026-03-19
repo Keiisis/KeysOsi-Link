@@ -11,6 +11,8 @@ import {
     Phone, Mail, User, CreditCard, ExternalLink,
 } from 'lucide-react'
 import { useTranslation, T } from '@/lib/translation'
+import CurrencySelector from '@/components/boutique/CurrencySelector'
+import { type CurrencyCode, detectUserCurrency, convertWithMargin, formatPrice as fmtCurrency } from '@/lib/currency'
 
 interface EventData {
     id: string; title: string; slug: string; description: string; short_description: string
@@ -23,7 +25,6 @@ interface EventData {
 
 const formatDate = (d: string) => new Date(d).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 const formatTime = (d: string) => new Date(d).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-const formatPrice = (n: number) => new Intl.NumberFormat('fr-FR').format(n)
 
 const PAYMENT_METHODS = [
     { id: 'kkiapay', label: 'Kkiapay', sub: 'Mobile Money — Bénin', color: '#008751' },
@@ -48,6 +49,11 @@ export default function EventDetailPage() {
     const [error, setError] = useState('')
     const [galleryIdx, setGalleryIdx] = useState(0)
     const [form, setForm] = useState({ full_name: '', email: '', phone: '', whatsapp: '', payment_method: '' })
+    const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>('XOF')
+
+    useEffect(() => {
+        setSelectedCurrency(detectUserCurrency())
+    }, [])
 
     useEffect(() => {
         if (!slug) return
@@ -118,6 +124,8 @@ export default function EventDetailPage() {
 
     const price = ticketType === 'vip' ? event.price_vip : event.price_standard
     const isFree = price === 0
+    const showPrice = (amountXOF: number) => fmtCurrency(convertWithMargin(amountXOF, selectedCurrency), selectedCurrency)
+    const displayPrice = showPrice(price)
 
     return (
         <div className="min-h-screen bg-[#fafbfc]">
@@ -287,9 +295,17 @@ export default function EventDetailPage() {
                                     style={{ background: 'linear-gradient(90deg, #008751, #FCD116, #E8112D)' }} />
 
                                 <div className="p-6 space-y-5">
-                                    <div>
-                                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1"><T>Rejoignez l'événement</T></div>
-                                        <h3 className="text-lg font-black text-[#1a2332] leading-tight">{t(event.title)}</h3>
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div>
+                                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1"><T>Rejoignez l'événement</T></div>
+                                            <h3 className="text-lg font-black text-[#1a2332] leading-tight">{t(event.title)}</h3>
+                                        </div>
+                                        <CurrencySelector
+                                            value={selectedCurrency}
+                                            onChange={setSelectedCurrency}
+                                            baseAmountXOF={event.price_standard || event.price_vip}
+                                            theme="light"
+                                        />
                                     </div>
 
                                     {/* Prix */}
@@ -301,8 +317,7 @@ export default function EventDetailPage() {
                                             </div>
                                             {event.price_standard > 0 ? (
                                                 <span className="text-lg font-black text-[#008751]">
-                                                    {formatPrice(event.price_standard)}
-                                                    <span className="text-xs font-bold text-gray-400 ml-1">{event.currency}</span>
+                                                    {showPrice(event.price_standard)}
                                                 </span>
                                             ) : (
                                                 <span className="text-sm font-black text-[#008751]"><T>GRATUIT</T></span>
@@ -316,8 +331,7 @@ export default function EventDetailPage() {
                                                     <span className="text-sm font-bold text-[#1a2332]"><T>VIP</T></span>
                                                 </div>
                                                 <span className="text-lg font-black text-amber-600">
-                                                    {formatPrice(event.price_vip)}
-                                                    <span className="text-xs font-bold text-gray-400 ml-1">{event.currency}</span>
+                                                    {showPrice(event.price_vip)}
                                                 </span>
                                             </div>
                                         )}
@@ -332,7 +346,7 @@ export default function EventDetailPage() {
                                                 boxShadow: '0 8px 32px rgba(0,135,81,0.35)',
                                             }}>
                                             <Ticket size={16} />
-                                            {event.price_standard === 0 ? t('Participer gratuitement') : `${t('Participer')} — ${formatPrice(event.price_standard)} ${event.currency}`}
+                                            {event.price_standard === 0 ? t('Participer gratuitement') : `${t('Participer')} — ${showPrice(event.price_standard)}`}
                                         </button>
 
                                         {event.price_vip > 0 && (
@@ -343,7 +357,7 @@ export default function EventDetailPage() {
                                                     boxShadow: '0 8px 32px rgba(252,209,22,0.4)',
                                                 }}>
                                                 <Crown size={16} />
-                                                {t('Réserver VIP')} — {formatPrice(event.price_vip)} {event.currency}
+                                                {t('Réserver VIP')} — {showPrice(event.price_vip)}
                                             </button>
                                         )}
                                     </div>
@@ -503,13 +517,27 @@ export default function EventDetailPage() {
                                         {/* Étape 2 — Paiement */}
                                         {formStep === 1 && !isFree && (
                                             <div className="space-y-4">
-                                                <div className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-100">
-                                                    <span className="text-xs font-bold text-gray-500"><T>Montant à payer</T></span>
-                                                    <span className="text-xl font-black"
-                                                        style={{ color: ticketType === 'vip' ? '#d97706' : '#008751' }}>
-                                                        {formatPrice(price)}
-                                                        <span className="text-sm font-bold text-gray-400 ml-1">{event.currency}</span>
-                                                    </span>
+                                                <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 space-y-2">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-xs font-bold text-gray-500"><T>Montant à payer</T></span>
+                                                        <CurrencySelector
+                                                            value={selectedCurrency}
+                                                            onChange={setSelectedCurrency}
+                                                            baseAmountXOF={price}
+                                                            theme="light"
+                                                        />
+                                                    </div>
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-xl font-black"
+                                                            style={{ color: ticketType === 'vip' ? '#d97706' : '#008751' }}>
+                                                            {displayPrice}
+                                                        </span>
+                                                        {selectedCurrency !== 'XOF' && (
+                                                            <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                                                                encaissé en XOF
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                                 <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
                                                     <CreditCard size={10} /> <T>Moyen de paiement</T>
