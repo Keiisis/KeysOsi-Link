@@ -36,6 +36,15 @@ const cachedRates: Record<CurrencyCode, number> = { ...BASE_RATES_TO_XOF }
 let lastFetch = 0
 
 /**
+ * Invalide le cache et force le rechargement des taux depuis la DB au prochain appel.
+ * À appeler après une sauvegarde depuis l'admin.
+ */
+export const forceRefreshRates = async (): Promise<void> => {
+    lastFetch = 0
+    await refreshRates()
+}
+
+/**
  * Met à jour les taux depuis la table Supabase `currencies`
  */
 export const refreshRates = async (): Promise<void> => {
