@@ -37,15 +37,16 @@ const APIFY_ACTORS: Record<string, {
     timeout: number
 }> = {
     facebook: {
-        actor: 'apify~facebook-pages-scraper',
+        // apify/facebook-posts-scraper (ID: KoJrdxJCTtpon81KY)
+        // Retourne un tableau PLAT de posts — plus fiable que facebook-pages-scraper
+        actor: 'KoJrdxJCTtpon81KY',
         buildInput: (url) => ({
             startUrls: [{ url: url.replace(/\/$/, '') }],
-            maxPosts: 10,            // Limité pour éviter les timeouts Facebook
+            maxPosts: 15,
             maxPostComments: 0,
-            maxReviews: 0,
-            proxyConfiguration: { useApifyProxy: true, apifyProxyGroups: ['RESIDENTIAL'] },
+            proxy: { useApifyProxy: true, apifyProxyGroups: ['RESIDENTIAL'] },
         }),
-        timeout: 200,               // Échoue vite si Facebook bloque → Serper fallback
+        timeout: 180,
     },
     instagram: {
         actor: 'apify~instagram-profile-scraper',

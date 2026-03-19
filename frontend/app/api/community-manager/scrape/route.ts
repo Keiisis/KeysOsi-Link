@@ -33,17 +33,16 @@ const APIFY_ACTORS: Record<string, {
     timeout: number // secondes côté Apify (server-side wait)
 }> = {
     facebook: {
-        // apify~facebook-pages-scraper : scrape les pages publiques Facebook
-        // Note: Facebook anti-bot → on limite à 10 posts pour rester dans le timeout
-        actor: 'apify~facebook-pages-scraper',
+        // apify/facebook-posts-scraper (ID: KoJrdxJCTtpon81KY)
+        // Retourne un tableau PLAT de posts — plus fiable que facebook-pages-scraper
+        actor: 'KoJrdxJCTtpon81KY',
         buildInput: (url) => ({
             startUrls: [{ url: url.replace(/\/$/, '') }],
-            maxPosts: 10,            // 20→10 : plus rapide, moins de risque de timeout
+            maxPosts: 15,
             maxPostComments: 0,
-            maxReviews: 0,
-            proxyConfiguration: { useApifyProxy: true, apifyProxyGroups: ['RESIDENTIAL'] },
+            proxy: { useApifyProxy: true, apifyProxyGroups: ['RESIDENTIAL'] },
         }),
-        timeout: 200,               // 300→200s : échoue plus vite → fallback Serper plus rapide
+        timeout: 180,
     },
     instagram: {
         // apify~instagram-profile-scraper : profils publics Instagram

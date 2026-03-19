@@ -9,15 +9,14 @@ const APIFY_KEYS: string[] = [
 
 const ACTORS: Record<string, { actor: string; buildInput: (url: string, username: string) => Record<string, unknown>; timeout: number }> = {
     facebook: {
-        actor: 'apify~facebook-pages-scraper',
+        actor: 'KoJrdxJCTtpon81KY', // apify/facebook-posts-scraper
         buildInput: (url) => ({
             startUrls: [{ url: url.replace(/\/$/, '') }],
-            maxPosts: 5,
+            maxPosts: 3,
             maxPostComments: 0,
-            maxReviews: 0,
-            proxyConfiguration: { useApifyProxy: true },
+            proxy: { useApifyProxy: true, apifyProxyGroups: ['RESIDENTIAL'] },
         }),
-        timeout: 200,
+        timeout: 180,
     },
     instagram: {
         actor: 'apify~instagram-profile-scraper',
