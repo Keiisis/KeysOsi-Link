@@ -4,17 +4,12 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Megaphone, Eye, Palette, Zap, Star, StarOff, Copy, Check,
-    Plus, Trash2, RefreshCw, Search, ExternalLink, Save,
-    Facebook, Instagram, Globe, Loader2, ChevronRight,
+    Plus, Trash2, Search, ExternalLink, Save,
+    Globe, Loader2, ChevronRight,
     TrendingUp, MessageCircle, ThumbsUp, Share2, BookOpen,
     AlertTriangle, Sparkles, Target, ArrowRight
 } from 'lucide-react'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+// Toutes les opérations DB passent par les API routes (service role, bypass RLS)
 
 // ── Types ────────────────────────────────────────────────
 interface SocialProfile {
@@ -200,8 +195,13 @@ function VeilleTab() {
 
     const fetchProfiles = async () => {
         setLoading(true)
-        const { data } = await supabase.from('social_profiles').select('*').order('created_at', { ascending: false })
-        setProfiles(data || [])
+        try {
+            const res = await fetch('/api/community-manager/profiles')
+            const data = await res.json()
+            setProfiles(Array.isArray(data) ? data : [])
+        } catch {
+            setProfiles([])
+        }
         setLoading(false)
     }
 
@@ -213,13 +213,13 @@ function VeilleTab() {
         setAdding(true)
         setError(null)
         try {
-            const { error: dbErr } = await supabase.from('social_profiles').insert({
-                platform: form.platform,
-                profile_url: form.profile_url.trim(),
-                username: form.username.trim(),
-                notes: form.notes.trim() || null,
+            const res = await fetch('/api/community-manager/profiles', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(form),
             })
-            if (dbErr) throw new Error(dbErr.message)
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error)
             setForm({ platform: 'facebook', profile_url: '', username: '', notes: '' })
             await fetchProfiles()
         } catch (err) {
@@ -240,13 +240,12 @@ function VeilleTab() {
             const data = await res.json()
             if (!res.ok) throw new Error(data.error)
 
-            // Sauvegarder l'analyse
-            await supabase.from('social_analyses').insert({
-                profile_id: profile.id,
-                analysis_type: 'top_posts',
-                result: { posts: data.posts, method: data.method },
+            // Mettre à jour last_analyzed_at via API route (service role)
+            await fetch('/api/community-manager/profiles', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: profile.id, last_analyzed_at: new Date().toISOString() }),
             })
-            await supabase.from('social_profiles').update({ last_analyzed_at: new Date().toISOString() }).eq('id', profile.id)
 
             setScrapedData({ profileId: profile.id, posts: data.posts, method: data.method })
             await fetchProfiles()
@@ -257,7 +256,7 @@ function VeilleTab() {
     }
 
     const deleteProfile = async (id: string) => {
-        await supabase.from('social_profiles').delete().eq('id', id)
+        await fetch(`/api/community-manager/profiles?id=${id}`, { method: 'DELETE' })
         await fetchProfiles()
         if (scrapedData?.profileId === id) setScrapedData(null)
     }
@@ -633,7 +632,7 @@ function ViralTab({
     const [profiles, setProfiles] = useState<SocialProfile[]>([])
 
     useEffect(() => {
-        supabase.from('social_profiles').select('*').order('created_at', { ascending: false }).then(({ data }) => setProfiles(data || []))
+        fetch('/api/community-manager/profiles').then(r => r.json()).then(data => setProfiles(Array.isArray(data) ? data : []))
     }, [])
 
     const searchPosts = async () => {
@@ -812,8 +811,13 @@ function GenerationTab({ copyToClipboard, copiedId }: { copyToClipboard: (t: str
     }, [])
 
     const loadLibrary = async () => {
-        const { data } = await supabase.from('content_library').select('*').order('created_at', { ascending: false }).limit(20)
-        setLibrary(data || [])
+        try {
+            const res = await fetch('/api/community-manager/library')
+            const data = await res.json()
+            setLibrary(Array.isArray(data) ? data : [])
+        } catch {
+            setLibrary([])
+        }
     }
 
     const generate = async () => {
@@ -841,25 +845,33 @@ function GenerationTab({ copyToClipboard, copiedId }: { copyToClipboard: (t: str
 
     const saveToLibrary = async (variant: GeneratedVariant) => {
         setSavingId(variant.id)
-        await supabase.from('content_library').insert({
-            platform: form.platform,
-            content_type: 'post',
-            text: variant.text,
-            hashtags: variant.hashtags,
-            style_inspiration: form.style_inspiration || null,
-            viral_score: variant.estimated_engagement === 'viral' ? 5 : variant.estimated_engagement === 'élevé' ? 4 : 3,
+        await fetch('/api/community-manager/library', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                platform: form.platform,
+                content_type: 'post',
+                text: variant.text,
+                hashtags: variant.hashtags,
+                style_inspiration: form.style_inspiration || null,
+                viral_score: variant.estimated_engagement === 'viral' ? 5 : variant.estimated_engagement === 'élevé' ? 4 : 3,
+            }),
         })
         await loadLibrary()
         setSavingId(null)
     }
 
     const toggleFavorite = async (item: ContentItem) => {
-        await supabase.from('content_library').update({ is_favorite: !item.is_favorite }).eq('id', item.id)
+        await fetch('/api/community-manager/library', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: item.id, is_favorite: !item.is_favorite }),
+        })
         await loadLibrary()
     }
 
     const deleteFromLibrary = async (id: string) => {
-        await supabase.from('content_library').delete().eq('id', id)
+        await fetch(`/api/community-manager/library?id=${id}`, { method: 'DELETE' })
         await loadLibrary()
     }
 
