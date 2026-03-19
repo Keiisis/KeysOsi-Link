@@ -154,8 +154,12 @@ export default function InventoryPage() {
     })
 
     // ─── KPIs ─────────────────────────────────────────────────────────────────
-    const totalStockValue = items.reduce((sum, item) =>
-        item.track_inventory ? sum + (item.current_stock * item.cost_price) : sum, 0)
+    // Boutique items n'ont pas de cost_price → on utilise base_price (prix de vente)
+    const totalStockValue = items.reduce((sum, item) => {
+        if (!item.track_inventory) return sum
+        const unitPrice = item.cost_price > 0 ? item.cost_price : item.base_price
+        return sum + (item.current_stock * unitPrice)
+    }, 0)
     const lowStockCount = items.filter(i =>
         i.track_inventory && i.current_stock <= i.low_stock_threshold).length
     const boutiqueCount = items.filter(i => i.source === 'boutique').length
@@ -225,7 +229,7 @@ export default function InventoryPage() {
                             <Euro size={18} className="text-blue-400" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Valeur Stock (Achat)</p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Valeur Stock</p>
                             <h3 className="text-lg font-black text-blue-400">{formatCurrencySync(totalStockValue, 'XOF')}</h3>
                         </div>
                     </div>
