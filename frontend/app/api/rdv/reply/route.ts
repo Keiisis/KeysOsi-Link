@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
         const result = await sendEmail({
             to: clientEmail,
             subject: `📋 Retour Gagnant — Réponse à votre demande de rendez-vous`,
-            html: templates.agentReply(clientName || clientEmail, message.trim(), 'fr'),
+            html: await templates.agentReply(clientName || clientEmail, message.trim(), 'fr'),
             context: 'rdv_reply',
             relatedId: rdvId || undefined,
         });
