@@ -7,7 +7,8 @@ import {
     Activity, Globe, Monitor, Smartphone, Tablet,
     TrendingUp, Users, Eye, MapPin, Clock,
     Wifi, RefreshCw, ChevronRight, BarChart2,
-    Chrome, AlertCircle, Zap, Radio
+    Chrome, AlertCircle, Zap, Radio,
+    type LucideIcon,
 } from 'lucide-react'
 
 // ── World Map (CSR only — react-simple-maps requiert le DOM) ─
@@ -89,7 +90,7 @@ function formatPage(page: string): string {
 
 // ── KPI Card ─────────────────────────────────────────────────
 function KPICard({ label, value, icon: Icon, color, suffix = '', pulse = false }: {
-    label: string; value: number | string; icon: React.ElementType
+    label: string; value: number | string; icon: LucideIcon
     color: string; suffix?: string; pulse?: boolean
 }) {
     return (
