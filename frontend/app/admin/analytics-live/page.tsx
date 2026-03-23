@@ -8,6 +8,8 @@ import {
     TrendingUp, Users, Eye, MapPin, Clock,
     Wifi, RefreshCw, ChevronRight, BarChart2,
     Chrome, AlertCircle, Zap, Radio,
+    MousePointer2, Heart, ShieldAlert, Network,
+    Languages, Gauge, Repeat2, ArrowDownToLine,
     type LucideIcon,
 } from 'lucide-react'
 
@@ -56,6 +58,15 @@ interface LiveData {
     device_stats: Record<string, number>
     browser_stats: Record<string, number>
     hourly_chart: { hour: string; count: number }[]
+    // Métriques enrichies
+    top_isp: { isp: string; count: number }[]
+    top_languages: { language: string; count: number }[]
+    connection_stats: Record<string, number>
+    top_screens: { resolution: string; count: number }[]
+    returning_stats: { returning: number; new_visitors: number }
+    security_stats: { vpn: number; proxy: number; tor: number }
+    avg_scroll_depth: number
+    avg_page_load_ms: number
 }
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -200,6 +211,11 @@ export default function AnalyticsLivePage() {
     const maxCountry = data ? Math.max(...data.top_countries.map(c => c.count), 1) : 1
     const totalDevices = data ? Object.values(data.device_stats).reduce((a, b) => a + b, 0) || 1 : 1
     const totalBrowsers = data ? Object.values(data.browser_stats).reduce((a, b) => a + b, 0) || 1 : 1
+    const totalVisitors = data ? (data.returning_stats?.returning ?? 0) + (data.returning_stats?.new_visitors ?? 0) : 1
+    const maxIsp = data ? Math.max(...(data.top_isp?.map(i => i.count) ?? [1]), 1) : 1
+    const maxLang = data ? Math.max(...(data.top_languages?.map(l => l.count) ?? [1]), 1) : 1
+    const maxConn = data ? Math.max(...Object.values(data.connection_stats ?? {}), 1) : 1
+    const maxScreen = data ? Math.max(...(data.top_screens?.map(s => s.count) ?? [1]), 1) : 1
 
     return (
         <div className="space-y-6">
@@ -253,6 +269,34 @@ export default function AnalyticsLivePage() {
                     <KPICard label="Visiteurs uniques 24h" value={data?.stats.unique_visitors_24h ?? 0} icon={Users} color="#818cf8" />
                     <KPICard label="Pages vues 24h" value={data?.stats.page_views_24h ?? 0} icon={Eye} color="#60a5fa" />
                     <KPICard label="Pays représentés" value={data?.stats.countries_24h ?? 0} icon={Globe} color="#f59e0b" suffix="pays" />
+                </div>
+            )}
+
+            {/* ── Métriques secondaires ───────────────────────────── */}
+            {data && (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <KPICard
+                        label="Scroll moyen"
+                        value={`${data.avg_scroll_depth ?? 0}%`}
+                        icon={MousePointer2} color="#a78bfa"
+                        suffix="de la page"
+                    />
+                    <KPICard
+                        label="Chargement moyen"
+                        value={data.avg_page_load_ms > 0 ? `${(data.avg_page_load_ms / 1000).toFixed(1)}s` : '—'}
+                        icon={Gauge} color="#f59e0b"
+                    />
+                    <KPICard
+                        label="Visiteurs fidèles"
+                        value={totalVisitors > 0 ? `${Math.round(((data.returning_stats?.returning ?? 0) / totalVisitors) * 100)}%` : '—'}
+                        icon={Repeat2} color="#f43f5e"
+                    />
+                    <KPICard
+                        label="VPN / Proxy"
+                        value={(data.security_stats?.vpn ?? 0) + (data.security_stats?.proxy ?? 0)}
+                        icon={ShieldAlert}
+                        color={(data.security_stats?.vpn ?? 0) + (data.security_stats?.proxy ?? 0) > 0 ? '#ef4444' : '#6b7280'}
+                    />
                 </div>
             )}
 
@@ -516,6 +560,130 @@ export default function AnalyticsLivePage() {
                 </div>
             )}
 
+            {/* ── FAI, Langues, Connexion, Résolutions ────────────── */}
+            {data && (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+
+                    {/* Top FAI / Opérateurs */}
+                    <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5">
+                        <p className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                            <Network size={14} className="text-sky-400" />
+                            Opérateurs / FAI (24h)
+                        </p>
+                        <div className="space-y-2.5">
+                            {(data.top_isp ?? []).slice(0, 7).map((item) => (
+                                <div key={item.isp} className="flex items-center gap-3 group">
+                                    <span className="flex-1 text-xs text-gray-400 truncate group-hover:text-white transition-colors" title={item.isp}>
+                                        {item.isp}
+                                    </span>
+                                    <MiniBar value={item.count} max={maxIsp} color="#38bdf8" />
+                                    <span className="text-[10px] text-gray-600 font-mono w-6 text-right">{item.count}</span>
+                                </div>
+                            ))}
+                            {(data.top_isp ?? []).length === 0 && (
+                                <p className="text-xs text-gray-700 text-center py-4">—</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Langues navigateur */}
+                    <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5">
+                        <p className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                            <Languages size={14} className="text-emerald-400" />
+                            Langues (24h)
+                        </p>
+                        <div className="space-y-2.5">
+                            {(data.top_languages ?? []).slice(0, 7).map((item) => (
+                                <div key={item.language} className="flex items-center gap-3 group">
+                                    <span className="w-9 text-xs font-bold text-gray-300 flex-shrink-0">{item.language}</span>
+                                    <MiniBar value={item.count} max={maxLang} color="#34d399" />
+                                    <span className="text-[10px] text-gray-600 font-mono w-6 text-right">{item.count}</span>
+                                </div>
+                            ))}
+                            {(data.top_languages ?? []).length === 0 && (
+                                <p className="text-xs text-gray-700 text-center py-4">—</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Type de connexion */}
+                    <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5">
+                        <p className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                            <ArrowDownToLine size={14} className="text-orange-400" />
+                            Connexion (24h)
+                        </p>
+                        <div className="space-y-2.5">
+                            {Object.entries(data.connection_stats ?? {})
+                                .sort(([, a], [, b]) => b - a)
+                                .map(([type, count]) => (
+                                    <div key={type} className="flex items-center gap-3 group">
+                                        <span className="w-12 text-xs font-bold text-gray-300 uppercase flex-shrink-0">{type}</span>
+                                        <MiniBar value={count} max={maxConn} color="#fb923c" />
+                                        <span className="text-[10px] text-gray-600 font-mono w-6 text-right">{count}</span>
+                                    </div>
+                                ))}
+                            {Object.keys(data.connection_stats ?? {}).length === 0 && (
+                                <p className="text-xs text-gray-700 text-center py-4">—</p>
+                            )}
+                        </div>
+                        {/* Fidélité en bas */}
+                        {totalVisitors > 1 && (
+                            <div className="mt-4 pt-4 border-t border-white/5">
+                                <p className="text-[10px] text-gray-600 mb-2 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                                    <Heart size={10} className="text-rose-400" /> Fidélité
+                                </p>
+                                <div className="flex gap-2 items-center">
+                                    <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden flex">
+                                        <div
+                                            className="h-full bg-rose-500 rounded-l-full transition-all"
+                                            style={{ width: `${Math.round(((data.returning_stats?.returning ?? 0) / totalVisitors) * 100)}%` }}
+                                        />
+                                    </div>
+                                    <div className="text-[10px] text-gray-500 whitespace-nowrap">
+                                        <span className="text-rose-400 font-bold">{data.returning_stats?.returning ?? 0}</span> retour
+                                        <span className="text-gray-700 mx-1">·</span>
+                                        <span className="text-emerald-400 font-bold">{data.returning_stats?.new_visitors ?? 0}</span> nouveau
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Résolutions écran */}
+                    <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5">
+                        <p className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                            <Monitor size={14} className="text-violet-400" />
+                            Résolutions (24h)
+                        </p>
+                        <div className="space-y-2.5">
+                            {(data.top_screens ?? []).slice(0, 6).map((item) => (
+                                <div key={item.resolution} className="flex items-center gap-3 group">
+                                    <span className="w-24 text-[10px] font-mono text-gray-400 flex-shrink-0 truncate">{item.resolution}</span>
+                                    <MiniBar value={item.count} max={maxScreen} color="#a78bfa" />
+                                    <span className="text-[10px] text-gray-600 font-mono w-6 text-right">{item.count}</span>
+                                </div>
+                            ))}
+                            {(data.top_screens ?? []).length === 0 && (
+                                <p className="text-xs text-gray-700 text-center py-4">—</p>
+                            )}
+                        </div>
+                        {/* Alerte sécurité */}
+                        {((data.security_stats?.vpn ?? 0) + (data.security_stats?.proxy ?? 0) + (data.security_stats?.tor ?? 0)) > 0 && (
+                            <div className="mt-4 pt-4 border-t border-white/5">
+                                <p className="text-[10px] text-red-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                                    <ShieldAlert size={10} /> Accès suspects
+                                </p>
+                                <div className="flex gap-3 mt-1.5 text-[10px] text-gray-500">
+                                    {(data.security_stats?.vpn ?? 0) > 0 && <span><span className="text-red-400 font-bold">{data.security_stats.vpn}</span> VPN</span>}
+                                    {(data.security_stats?.proxy ?? 0) > 0 && <span><span className="text-orange-400 font-bold">{data.security_stats.proxy}</span> Proxy</span>}
+                                    {(data.security_stats?.tor ?? 0) > 0 && <span><span className="text-purple-400 font-bold">{data.security_stats.tor}</span> Tor</span>}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* ── Table détaillée des sessions ───────────────────── */}
             {data && uniqueLiveSessions.length > 0 && (
                 <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl overflow-hidden">
@@ -530,7 +698,7 @@ export default function AnalyticsLivePage() {
                         <table className="w-full text-xs">
                             <thead>
                                 <tr className="border-b border-white/5">
-                                    {['Pays', 'Ville', 'Page', 'Appareil', 'Navigateur', 'OS', 'Dernière activité'].map(h => (
+                                    {['Pays', 'Ville', 'Opérateur', 'Page', 'Appareil', 'Navigateur', 'OS', 'Langue', 'Scroll', 'Chgt.', 'Dernière activité'].map(h => (
                                         <th key={h} className="px-4 py-2.5 text-left text-[10px] font-bold text-gray-600 uppercase tracking-widest whitespace-nowrap">
                                             {h}
                                         </th>
@@ -548,8 +716,11 @@ export default function AnalyticsLivePage() {
                                                     <span className="text-gray-400">{s.country || '—'}</span>
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">{s.city || '—'}</td>
-                                            <td className="px-4 py-2.5 max-w-[150px] truncate">
+                                            <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap max-w-[120px] truncate"
+                                                title={(s as unknown as Record<string, string>).isp || '—'}>
+                                                {(s as unknown as Record<string, string>).isp || '—'}
+                                            </td>
+                                            <td className="px-4 py-2.5 max-w-[130px] truncate">
                                                 <a href={s.page} target="_blank" rel="noopener noreferrer"
                                                     className="text-purple-400 hover:text-purple-300 flex items-center gap-1">
                                                     {formatPage(s.page)}
@@ -569,6 +740,29 @@ export default function AnalyticsLivePage() {
                                                 </span>
                                             </td>
                                             <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">{s.os || '—'}</td>
+                                            <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap font-mono text-[10px]">
+                                                {((s as unknown as Record<string, string>).language || '').split('-')[0]?.toUpperCase() || '—'}
+                                            </td>
+                                            <td className="px-4 py-2.5 whitespace-nowrap">
+                                                {((s as unknown as Record<string, number>).scroll_depth ?? 0) > 0 ? (
+                                                    <span className="flex items-center gap-1 text-[10px]">
+                                                        <span className="text-purple-400 font-bold font-mono">
+                                                            {(s as unknown as Record<string, number>).scroll_depth}%
+                                                        </span>
+                                                        <div className="w-10 h-1 bg-white/10 rounded-full overflow-hidden">
+                                                            <div
+                                                                className="h-full bg-purple-500 rounded-full"
+                                                                style={{ width: `${(s as unknown as Record<string, number>).scroll_depth}%` }}
+                                                            />
+                                                        </div>
+                                                    </span>
+                                                ) : <span className="text-gray-700 text-[10px]">—</span>}
+                                            </td>
+                                            <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap font-mono text-[10px]">
+                                                {((s as unknown as Record<string, number>).page_load_ms ?? 0) > 0
+                                                    ? `${((s as unknown as Record<string, number>).page_load_ms / 1000).toFixed(1)}s`
+                                                    : '—'}
+                                            </td>
                                             <td className="px-4 py-2.5 text-gray-600 whitespace-nowrap font-mono text-[10px]">
                                                 {timeAgo(s.last_seen_at)}
                                             </td>
@@ -595,7 +789,8 @@ export default function AnalyticsLivePage() {
                         Exécuter ce SQL dans <strong className="text-white">Supabase → SQL Editor</strong> :
                     </p>
                     <pre className="bg-[#0a0f18] border border-white/5 rounded-xl p-4 text-[11px] text-green-400 font-mono overflow-x-auto leading-relaxed">
-{`create table if not exists visitor_sessions (
+{`-- ① Création initiale (si table inexistante)
+create table if not exists visitor_sessions (
   id uuid default gen_random_uuid() primary key,
   session_id text not null,
   ip text, country text, country_code text,
@@ -610,20 +805,41 @@ export default function AnalyticsLivePage() {
   last_seen_at timestamptz default now()
 );
 
--- Contrainte unique pour upsert
+-- Contrainte unique pour upsert (session_id + page)
 alter table visitor_sessions
-  add constraint visitor_sessions_session_page_key
+  add constraint if not exists visitor_sessions_session_page_key
   unique (session_id, page);
 
--- Index perf
-create index on visitor_sessions(created_at desc);
-create index on visitor_sessions(last_seen_at desc);
+-- ② Migration : colonnes enrichies (safe si déjà existantes)
+alter table visitor_sessions
+  add column if not exists continent text,
+  add column if not exists continent_code text,
+  add column if not exists isp text,
+  add column if not exists timezone text,
+  add column if not exists is_vpn boolean default false,
+  add column if not exists is_proxy boolean default false,
+  add column if not exists is_tor boolean default false,
+  add column if not exists screen_resolution text,
+  add column if not exists viewport_size text,
+  add column if not exists language text,
+  add column if not exists connection_type text,
+  add column if not exists hardware_concurrency smallint default 0,
+  add column if not exists device_memory float default 0,
+  add column if not exists is_returning boolean default false,
+  add column if not exists page_load_ms integer default 0,
+  add column if not exists scroll_depth smallint default 0;
 
--- RLS
+-- Index performances
+create index if not exists vs_created_at on visitor_sessions(created_at desc);
+create index if not exists vs_last_seen  on visitor_sessions(last_seen_at desc);
+create index if not exists vs_isp        on visitor_sessions(isp);
+create index if not exists vs_country    on visitor_sessions(country_code);
+
+-- RLS (service_role bypasse automatiquement)
 alter table visitor_sessions enable row level security;
-create policy "allow_insert" on visitor_sessions
+create policy if not exists "allow_insert" on visitor_sessions
   for insert with check (true);
-create policy "allow_service_select" on visitor_sessions
+create policy if not exists "allow_service_select" on visitor_sessions
   for select using (true);`}
                     </pre>
                 </motion.div>
