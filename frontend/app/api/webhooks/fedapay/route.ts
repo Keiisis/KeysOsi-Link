@@ -90,11 +90,11 @@ export async function POST(request: Request) {
                     return NextResponse.json({ ok: false, message: 'Vérification FedaPay échouée' })
                 }
 
-                // Vérification du montant — FedaPay stocke en centimes (amount en XOF * 100)
+                // Vérification du montant — FedaPay retourne le montant en XOF directement (zero-decimal)
                 const txAmount = txObject?.amount
                 if (txAmount !== undefined && txAmount !== null) {
-                    // FedaPay retourne le montant en centimes XOF (1 XOF = 100 centimes)
-                    const verifiedAmountXof = txAmount / 100
+                    // XOF est zero-decimal : 10 000 XOF = 10 000 (pas de centimes)
+                    const verifiedAmountXof = txAmount
                     if (verifiedAmountXof < order.amount * 0.99) {
                         console.error('[FedaPay Webhook] Montant incorrect:', {
                             verifiedAmountXof,

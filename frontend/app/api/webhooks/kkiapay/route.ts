@@ -47,7 +47,7 @@ export async function POST(request: Request) {
             const { data: settingsData } = await supabase
                 .from('settings')
                 .select('key, value')
-                .in('key', ['kkiapay_private_key', 'kkiapay_sandbox'])
+                .in('key', ['kkiapay_public_key', 'kkiapay_private_key', 'kkiapay_secret_key', 'kkiapay_sandbox'])
 
             const sm: Record<string, string> = {}
             for (const s of settingsData || []) sm[s.key] = s.value
@@ -58,12 +58,14 @@ export async function POST(request: Request) {
                 ? 'https://api-sandbox.kkiapay.me'
                 : 'https://api.kkiapay.me'
 
-            // Server-side verification avec clé privée (authentifié)
+            // Server-side verification — le SDK officiel envoie les 3 headers
             const verifyRes = await fetch(`${kkiapayBase}/api/v1/transactions/status`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'x-api-key': sm.kkiapay_public_key || '',
                     'x-private-key': privateKey,
+                    'x-secret-key': sm.kkiapay_secret_key || '',
                 },
                 body: JSON.stringify({ transactionId }),
             })

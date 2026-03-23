@@ -149,17 +149,20 @@ export async function POST(request: Request) {
         const captureUnit = captureData.purchase_units?.[0]?.payments?.captures?.[0]
         const captureId = captureUnit?.id
         const capturedAmount = parseFloat(captureUnit?.amount?.value || '0')
+        // Utiliser la devise réellement capturée (pas la config admin) car l'utilisateur
+        // peut choisir une devise différente via le modal (ex: USD au lieu de EUR)
+        const capturedCurrency = (captureUnit?.amount?.currency_code || paypalCurrency).toUpperCase()
 
         // Vérification stricte du montant capturé (tolérance ±0.02 pour arrondi de conversion)
         // Ex: 15000 XOF → 22.87 EUR → on accepte entre 22.85 et 22.89 EUR uniquement
-        const expectedPaypalAmount = convertFromXOF(existingOrder.amount, paypalCurrency)
+        const expectedPaypalAmount = convertFromXOF(existingOrder.amount, capturedCurrency)
         const ROUNDING_TOLERANCE = 0.02
         if (capturedAmount <= 0 || Math.abs(capturedAmount - expectedPaypalAmount) > ROUNDING_TOLERANCE) {
             console.error('[PayPal Capture] Montant incorrect:', {
                 capturedAmount,
                 expectedPaypalAmount,
                 orderAmountXof: existingOrder.amount,
-                paypalCurrency,
+                capturedCurrency,
                 diff: Math.abs(capturedAmount - expectedPaypalAmount),
             })
             return NextResponse.json(

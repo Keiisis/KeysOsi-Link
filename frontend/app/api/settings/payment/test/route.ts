@@ -30,18 +30,24 @@ export async function POST(request: Request) {
                     const apiUrl = sandbox ? 'https://api-sandbox.kkiapay.me' : 'https://api.kkiapay.me'
                     const env = sandbox ? 'Sandbox' : 'Production'
 
-                    // /ping n'existe pas — utiliser GET /api/v1/transactions (endpoint officiel documenté)
-                    const response = await axios.get(`${apiUrl}/api/v1/transactions`, {
-                        params: { pageSize: 1 },
-                        headers: {
-                            'x-api-key': publicKey,
-                            'x-private-key': privateKey,
-                            'x-secret-key': settings?.kkiapay_secret_key || '',
-                        },
-                        validateStatus: () => true,
-                        timeout: 10000,
-                    })
+                    // L'API Kkiapay expose POST /api/v1/transactions/status (vérifié dans le SDK officiel)
+                    // On envoie un transactionId bidon — si les clés sont valides, on reçoit une erreur métier (pas 401/404)
+                    const response = await axios.post(
+                        `${apiUrl}/api/v1/transactions/status`,
+                        { transactionId: 'test-connectivity' },
+                        {
+                            headers: {
+                                'x-api-key': publicKey,
+                                'x-private-key': privateKey,
+                                'x-secret-key': settings?.kkiapay_secret_key || '',
+                            },
+                            validateStatus: () => true,
+                            timeout: 10000,
+                        }
+                    )
 
+                    // 200 = transaction trouvée (improbable avec un ID bidon mais clés valides)
+                    // 4003 / autre erreur métier = clés acceptées, transaction non trouvée → connectivité OK
                     if (response.status === 200) {
                         return NextResponse.json({ success: true, message: `Kkiapay ${env} connectée` })
                     }
@@ -50,6 +56,12 @@ export async function POST(request: Request) {
                     }
                     if (response.status === 404) {
                         return NextResponse.json({ success: false, error: `Kkiapay: endpoint introuvable — vérifiez le mode Sandbox/Production` })
+                    }
+                    // Tout autre status (ex: 500 avec "Transaction Not Found") = clés acceptées par le serveur
+                    const data = response.data
+                    const reason = data?.reason || data?.message || ''
+                    if (reason.toLowerCase().includes('not found') || reason.toLowerCase().includes('introuvable')) {
+                        return NextResponse.json({ success: true, message: `Kkiapay ${env} connectée (clés validées)` })
                     }
                     return NextResponse.json({ success: false, error: `Kkiapay: réponse inattendue (status ${response.status})` })
                 } catch (err: unknown) {
