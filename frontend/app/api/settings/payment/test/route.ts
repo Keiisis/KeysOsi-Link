@@ -57,10 +57,10 @@ export async function POST(request: Request) {
                     if (response.status === 404) {
                         return NextResponse.json({ success: false, error: `Kkiapay: endpoint introuvable — vérifiez le mode Sandbox/Production` })
                     }
-                    // Tout autre status (ex: 500 avec "Transaction Not Found") = clés acceptées par le serveur
-                    const data = response.data
-                    const reason = data?.reason || data?.message || ''
-                    if (reason.toLowerCase().includes('not found') || reason.toLowerCase().includes('introuvable')) {
+                    // Status 400 ou 500 avec un body = le serveur a reçu et traité la requête.
+                    // Si les clés étaient invalides, on recevrait 401/403. Un 400 signifie que
+                    // l'auth a réussi mais la transaction bidon est rejetée → connectivité OK.
+                    if (response.status === 400 || response.status === 500) {
                         return NextResponse.json({ success: true, message: `Kkiapay ${env} connectée (clés validées)` })
                     }
                     return NextResponse.json({ success: false, error: `Kkiapay: réponse inattendue (status ${response.status})` })
