@@ -30,27 +30,52 @@ async function getGeoFromIP(ip: string): Promise<GeoData | null> {
     const cached = geoCache.get(ip)
     if (cached && Date.now() - cached.ts < GEO_CACHE_TTL) return cached.data
 
+    // ── Provider 1 : ipwho.is (HTTPS, pas de limite stricte) ──
+    try {
+        const res = await fetch(
+            `https://ipwho.is/${ip}`,
+            { signal: AbortSignal.timeout(5000) }
+        )
+        if (res.ok) {
+            const json = await res.json()
+            if (json.success === true) {
+                const geo: GeoData = {
+                    country: json.country || 'Inconnu',
+                    country_code: json.country_code || 'XX',
+                    city: json.city || '',
+                    region: json.region || '',
+                    latitude: json.latitude || 0,
+                    longitude: json.longitude || 0,
+                }
+                geoCache.set(ip, { data: geo, ts: Date.now() })
+                return geo
+            }
+        }
+    } catch { /* ipwho.is indisponible → essayer fallback */ }
+
+    // ── Provider 2 : ip-api.com (HTTP fallback, 45 req/min) ──
     try {
         const res = await fetch(
             `http://ip-api.com/json/${ip}?fields=status,country,countryCode,city,regionName,lat,lon`,
-            { signal: AbortSignal.timeout(4000) }
+            { signal: AbortSignal.timeout(3000) }
         )
-        const json = await res.json()
-        if (json.status === 'success') {
-            const geo: GeoData = {
-                country: json.country || 'Inconnu',
-                country_code: json.countryCode || 'XX',
-                city: json.city || '',
-                region: json.regionName || '',
-                latitude: json.lat || 0,
-                longitude: json.lon || 0,
+        if (res.ok) {
+            const json = await res.json()
+            if (json.status === 'success') {
+                const geo: GeoData = {
+                    country: json.country || 'Inconnu',
+                    country_code: json.countryCode || 'XX',
+                    city: json.city || '',
+                    region: json.regionName || '',
+                    latitude: json.lat || 0,
+                    longitude: json.lon || 0,
+                }
+                geoCache.set(ip, { data: geo, ts: Date.now() })
+                return geo
             }
-            geoCache.set(ip, { data: geo, ts: Date.now() })
-            return geo
         }
-    } catch {
-        // ip-api.com indisponible → fallback null
-    }
+    } catch { /* ip-api.com indisponible → geo null */ }
+
     geoCache.set(ip, { data: null, ts: Date.now() })
     return null
 }

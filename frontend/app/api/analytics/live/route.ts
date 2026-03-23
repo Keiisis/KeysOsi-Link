@@ -36,6 +36,7 @@ export async function GET() {
             .from('visitor_sessions')
             .select('session_id, page, country, country_code, device_type, browser, latitude, longitude, created_at, last_seen_at')
             .gte('created_at', since24h)
+            .limit(100000)
 
         const rows = all24h || []
 
