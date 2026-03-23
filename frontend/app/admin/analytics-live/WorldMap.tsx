@@ -105,8 +105,8 @@ const WorldMap = memo(function WorldMap({ sessions }: { sessions: Session[] }) {
                                 const s = g.sessions[0]
                                 const rect = (evt.target as SVGElement).closest('svg')?.getBoundingClientRect()
                                 setTooltip({
-                                    x: (evt as MouseEvent).clientX - (rect?.left ?? 0),
-                                    y: (evt as MouseEvent).clientY - (rect?.top ?? 0),
+                                    x: evt.clientX - (rect?.left ?? 0),
+                                    y: evt.clientY - (rect?.top ?? 0),
                                     city: s.city || s.country || 'Inconnu',
                                     country: s.country || '',
                                     browser: s.browser || '',
