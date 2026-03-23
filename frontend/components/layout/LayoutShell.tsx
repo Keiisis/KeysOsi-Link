@@ -6,6 +6,7 @@ import Footer from '@/components/layout/Footer'
 import AudioPlayer from '@/components/layout/AudioPlayer'
 import ChatAssistant from '@/components/chat/ChatAssistant'
 import { CartDrawer } from '@/components/boutique/CartDrawer'
+import { VisitorTracker } from '@/components/analytics/VisitorTracker'
 
 export function LayoutShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
@@ -15,8 +16,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
     const isAgentRoute = pathname.startsWith('/agent')
     const isClientRoute = pathname.startsWith('/client')
     const isPortfolioRoute = pathname.startsWith('/portfolio')
-    const isArbreRoute = pathname.startsWith('/arbre')
-    const isStandaloneRoute = isAdminRoute || isAgentRoute || isClientRoute || isPortfolioRoute || isArbreRoute
+    const isStandaloneRoute = isAdminRoute || isAgentRoute || isClientRoute || isPortfolioRoute
 
     if (isStandaloneRoute) {
         return <>{children}</>
@@ -25,6 +25,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
     // Routes publiques : Header + Footer + AudioPlayer + Chat
     return (
         <>
+            <VisitorTracker />
             <Header />
             <AudioPlayer />
             <CartDrawer />

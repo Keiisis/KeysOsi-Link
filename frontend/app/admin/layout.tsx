@@ -12,7 +12,7 @@ import {
     ShoppingBag, Receipt, UserCog, Tag, Calculator,
     Mail, FileText, Compass, X, PanelLeftClose, PanelLeft,
     BarChart3, FileSignature, FolderOpen, Palette, Calendar, Star,
-    Languages, Radar, Box, Coins, Megaphone
+    Languages, Radar, Box, Coins, Megaphone, Activity
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -110,6 +110,7 @@ function AdminLayoutContent({
         { title: 'Événements', icon: Calendar, href: '/admin/evenements' },
         { title: 'Sponsors', icon: Star, href: '/admin/sponsors' },
         { title: 'Analytics', icon: BarChart3, href: '/admin/analytics' },
+        { title: 'Visiteurs Live', icon: Activity, href: '/admin/analytics-live' },
         { title: 'Frontend', icon: Palette, href: '/admin/frontend' },
         { title: 'Dossiers', icon: FileText, href: '/admin/dossiers' },
         { title: 'Leads Oracle', icon: Compass, href: '/admin/leads-oracle' },
