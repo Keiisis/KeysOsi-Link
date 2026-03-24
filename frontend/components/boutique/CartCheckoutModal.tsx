@@ -551,6 +551,8 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                 phone: customerPhone || undefined,
                 email: customerEmail || undefined,
                 name: customerName || undefined,
+                paymentmethod: ['momo', 'card'],
+                countries: ['BJ'],
                 data: { order_id: oid },
                 callback: `${window.location.origin}/boutique`,
             })

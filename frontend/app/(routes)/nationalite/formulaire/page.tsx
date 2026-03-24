@@ -179,6 +179,7 @@ export default function NationaliteFormPage() {
                 amount: amountXOF, position: 'center', key: paymentSettings.kkiapay_public_key,
                 sandbox: paymentSettings.kkiapay_sandbox === 'true', phone: form.telephone || undefined,
                 email: form.email || undefined, name: `${form.prenom || ''} ${form.nom || ''}`.trim() || undefined,
+                paymentmethod: ['momo', 'card'], countries: ['BJ'],
                 data: { context: 'nationality', email: form.email },
                 callback: `${window.location.origin}/nationalite/formulaire`,
             })
