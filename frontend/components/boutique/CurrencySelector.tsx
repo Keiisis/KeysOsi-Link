@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { ChevronDown } from 'lucide-react'
-import { type CurrencyCode, convertCurrency, formatPrice } from '@/lib/currency'
+import { type CurrencyCode, convertCurrency, formatPrice, getAllowedCurrencies } from '@/lib/currency'
+import { useTranslation } from '@/lib/translation'
 
 const CURRENCY_OPTIONS: { code: CurrencyCode; flag: string; label: string }[] = [
     { code: 'XOF', flag: '🇧🇯', label: 'FCFA' },
@@ -22,8 +23,14 @@ interface CurrencySelectorProps {
 export default function CurrencySelector({ value, onChange, baseAmountXOF, className = '', theme = 'dark' }: CurrencySelectorProps) {
     const [open, setOpen] = useState(false)
     const ref = useRef<HTMLDivElement>(null)
-    const current = CURRENCY_OPTIONS.find(o => o.code === value) || CURRENCY_OPTIONS[0]
+    const { lang } = useTranslation()
+    const allowedCodes = getAllowedCurrencies(lang)
+    const filteredOptions = CURRENCY_OPTIONS.filter(o => allowedCodes.includes(o.code))
+    const current = filteredOptions.find(o => o.code === value) || filteredOptions[0]
     const dark = theme === 'dark'
+
+    // Si une seule devise autorisée, ne rien afficher
+    if (filteredOptions.length <= 1) return null
 
     useEffect(() => {
         const handler = (e: MouseEvent) => {
@@ -55,7 +62,7 @@ export default function CurrencySelector({ value, onChange, baseAmountXOF, class
                         ? 'bg-[#0d1520] border border-white/10'
                         : 'bg-white border border-gray-200'
                 }`}>
-                    {CURRENCY_OPTIONS.map(opt => {
+                    {filteredOptions.map(opt => {
                         const converted = baseAmountXOF ? convertCurrency(baseAmountXOF, 'XOF', opt.code) : null
                         const isSelected = opt.code === value
                         return (

@@ -10,7 +10,8 @@ import {
     Receipt, Shield, Lock, Smartphone, Globe, ChevronRight
 } from 'lucide-react'
 import CurrencySelector from '@/components/boutique/CurrencySelector'
-import { type CurrencyCode, detectUserCurrency, formatPriceWithMargin, formatPrice } from '@/lib/currency'
+import { type CurrencyCode, getCurrencyForLang, formatPriceWithMargin, formatPrice } from '@/lib/currency'
+import { useTranslation } from '@/lib/translation'
 
 interface Doc {
     id: string
@@ -61,12 +62,9 @@ export default function ClientPayerPage() {
     const scriptsLoaded = useRef<Set<string>>(new Set())
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const kkiapayHandlerRef = useRef<((data: any) => void) | null>(null)
-    const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>('XOF')
-
-    // Detect user currency client-side
-    useEffect(() => {
-        setSelectedCurrency(detectUserCurrency())
-    }, [])
+    const { lang } = useTranslation()
+    const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>(() => getCurrencyForLang(lang))
+    useEffect(() => { setSelectedCurrency(getCurrencyForLang(lang)) }, [lang])
 
     const loadScript = useCallback((src: string): Promise<void> => {
         if (scriptsLoaded.current.has(src)) return Promise.resolve()

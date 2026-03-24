@@ -1,11 +1,38 @@
 import { supabase } from '@/lib/supabase'
+import type { LangCode } from '@/lib/translation/constants'
 
 // ═══════════════════════════════════════════════════════════
 // SYSTÈME DE DEVISES ERP (DB-BACKED) — XOF (FCFA), EUR (€), USD ($)
 // Conversion automatique synchronisée avec l'ERP
+// Devise affichée = f(langue active) — mapping ci-dessous
 // ═══════════════════════════════════════════════════════════
 
 export type CurrencyCode = 'XOF' | 'EUR' | 'USD' | 'GBP'
+
+// ── Mapping Langue → Devises ──────────────────────────────
+// fr, es, cr → XOF (FCFA) par défaut, EUR disponible
+// en, pt, ht → USD ($) uniquement
+export const LANG_CURRENCY_CONFIG: Record<LangCode, {
+    default: CurrencyCode
+    allowed: CurrencyCode[]
+}> = {
+    fr: { default: 'XOF', allowed: ['XOF', 'EUR'] },
+    es: { default: 'XOF', allowed: ['XOF', 'EUR'] },
+    cr: { default: 'XOF', allowed: ['XOF', 'EUR'] },
+    en: { default: 'USD', allowed: ['USD'] },
+    pt: { default: 'USD', allowed: ['USD'] },
+    ht: { default: 'USD', allowed: ['USD'] },
+}
+
+/** Retourne la devise par défaut pour une langue donnée */
+export function getCurrencyForLang(lang: LangCode): CurrencyCode {
+    return LANG_CURRENCY_CONFIG[lang]?.default || 'XOF'
+}
+
+/** Retourne les devises autorisées pour une langue donnée */
+export function getAllowedCurrencies(lang: LangCode): CurrencyCode[] {
+    return LANG_CURRENCY_CONFIG[lang]?.allowed || ['XOF', 'EUR']
+}
 
 export interface CurrencyInfo {
     code: CurrencyCode

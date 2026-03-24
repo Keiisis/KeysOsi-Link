@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { useCart } from '@/lib/store/cartStore'
 import { Price } from '@/components/ui/Price'
 import CurrencySelector from '@/components/boutique/CurrencySelector'
-import { type CurrencyCode, detectUserCurrency, convertWithMargin, convertCurrency, formatPrice, CONVERSION_MARGIN } from '@/lib/currency'
+import { type CurrencyCode, getCurrencyForLang, convertWithMargin, convertCurrency, formatPrice, CONVERSION_MARGIN } from '@/lib/currency'
 
 // ─── Déclarations des SDK tiers ────────────────────────────────────────────────
 declare global {
@@ -139,7 +139,7 @@ const ALL_COUNTRIES = [
 ].sort()
 
 export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
-    const { t } = useTranslation();
+    const { t, lang } = useTranslation();
     const { items, totalAmount, clearCart } = useCart()
     const [step, setStep] = useState<Step>('info')
     const [provider, setProvider] = useState<PaymentProvider | null>(null)
@@ -174,9 +174,9 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
 
     const currency = 'XOF' // Devise DB — toujours XOF pour les gateways africaines
 
-    // Devise sélectionnée par le client (auto-détection à l'ouverture)
-    const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>('XOF')
-    useEffect(() => { if (isOpen) setSelectedCurrency(detectUserCurrency()) }, [isOpen])
+    // Devise sélectionnée par le client (dérivée de la langue active)
+    const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>(() => getCurrencyForLang(lang))
+    useEffect(() => { if (isOpen) setSelectedCurrency(getCurrencyForLang(lang)) }, [isOpen, lang])
     const selectedCurrencyRef = useRef<CurrencyCode>('XOF')
     selectedCurrencyRef.current = selectedCurrency
 

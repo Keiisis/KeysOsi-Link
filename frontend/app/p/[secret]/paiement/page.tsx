@@ -9,7 +9,8 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { Price } from '@/components/ui/Price'
-import { CurrencyCode, detectUserCurrency, formatPriceWithMargin } from '@/lib/currency'
+import { CurrencyCode, getCurrencyForLang, formatPriceWithMargin } from '@/lib/currency'
+import { useTranslation } from '@/lib/translation'
 import CurrencySelector from '@/components/boutique/CurrencySelector'
 
 // Types SDK tiers — les déclarations globales Window sont dans PaymentModal.tsx
@@ -78,8 +79,9 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
     const cardMountedRef = useRef(false)
 
     // Devise d'affichage — FedaPay convertit, KKiapay toujours XOF
-    const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>('XOF')
-    useEffect(() => { setSelectedCurrency(detectUserCurrency()) }, [])
+    const { lang } = useTranslation()
+    const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>(() => getCurrencyForLang(lang))
+    useEffect(() => { setSelectedCurrency(getCurrencyForLang(lang)) }, [lang])
 
     // PayPal
     const paypalRenderedRef = useRef(false)

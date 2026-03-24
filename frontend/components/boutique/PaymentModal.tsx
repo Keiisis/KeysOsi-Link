@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Product } from './ProductCard'
 import { Price } from '@/components/ui/Price'
 import CurrencySelector from '@/components/boutique/CurrencySelector'
-import { type CurrencyCode, detectUserCurrency, convertWithMargin, convertCurrency, formatPrice, CONVERSION_MARGIN } from '@/lib/currency'
+import { type CurrencyCode, getCurrencyForLang, convertWithMargin, convertCurrency, formatPrice, CONVERSION_MARGIN } from '@/lib/currency'
 
 // ─── Déclarations des SDK tiers ────────────────────────────────────────────────
 declare global {
@@ -150,7 +150,7 @@ const ALL_COUNTRIES = [
 ]
 
 export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModalProps) {
-    const { t } = useTranslation();
+    const { t, lang } = useTranslation();
     const [step, setStep] = useState<Step>('info')
     const [provider, setProvider] = useState<PaymentProvider | null>(null)
     const [customerName, setCustomerName] = useState('')
@@ -182,9 +182,9 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
         : product.price * quantity
     const totalAmount = baseAmount + shippingFee
 
-    // Devise sélectionnée par le client (XOF par défaut, auto-détection à l'ouverture)
-    const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>('XOF')
-    useEffect(() => { if (isOpen) setSelectedCurrency(detectUserCurrency()) }, [isOpen])
+    // Devise sélectionnée par le client (dérivée de la langue active)
+    const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>(() => getCurrencyForLang(lang))
+    useEffect(() => { if (isOpen) setSelectedCurrency(getCurrencyForLang(lang)) }, [isOpen, lang])
     // Affichage honnête sans marge (la marge 6% est prélevée silencieusement par la passerelle)
     const displayAmount = convertCurrency(totalAmount, 'XOF', selectedCurrency)
     // Ref pour les closures PayPal (toujours la valeur courante)

@@ -12,7 +12,8 @@ import {
     CreditCard, X, ChevronRight, AlertCircle, Shield
 } from 'lucide-react'
 import { LOGO_BASE64, STAMP_BASE64 } from '@/lib/logoBase64'
-import { convertCurrency, detectUserCurrency, formatPriceWithMargin, type CurrencyCode } from '@/lib/currency'
+import { convertCurrency, getCurrencyForLang, formatPriceWithMargin, type CurrencyCode } from '@/lib/currency'
+import { useTranslation } from '@/lib/translation'
 import CurrencySelector from '@/components/boutique/CurrencySelector'
 
 interface DocumentFinancier {
@@ -60,9 +61,9 @@ export default function ClientPortalPage() {
     const [paymentSettings, setPaymentSettings] = useState<any>({})
     const [showPaymentMethods, setShowPaymentMethods] = useState(false)
     const [paymentError, setPaymentError] = useState('')
-    const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>('XOF')
-
-    useEffect(() => { setSelectedCurrency(detectUserCurrency()) }, [])
+    const { lang } = useTranslation()
+    const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>(() => getCurrencyForLang(lang))
+    useEffect(() => { setSelectedCurrency(getCurrencyForLang(lang)) }, [lang])
 
     useEffect(() => {
         const fetchSettings = async () => {

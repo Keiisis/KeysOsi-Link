@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import { useTranslation, T } from '@/lib/translation'
 import CurrencySelector from '@/components/boutique/CurrencySelector'
-import { type CurrencyCode, detectUserCurrency, convertWithMargin, formatPrice as fmtCurrency } from '@/lib/currency'
+import { type CurrencyCode, getCurrencyForLang, convertWithMargin, formatPrice as fmtCurrency } from '@/lib/currency'
 
 interface EventData {
     id: string; title: string; slug: string; description: string; short_description: string
@@ -37,7 +37,7 @@ export default function EventDetailPage() {
     const params = useParams()
     const slug = params?.slug as string
 
-    const { t } = useTranslation()
+    const { t, lang } = useTranslation()
 
     const [event, setEvent] = useState<EventData | null>(null)
     const [loading, setLoading] = useState(true)
@@ -49,11 +49,8 @@ export default function EventDetailPage() {
     const [error, setError] = useState('')
     const [galleryIdx, setGalleryIdx] = useState(0)
     const [form, setForm] = useState({ full_name: '', email: '', phone: '', whatsapp: '', payment_method: '' })
-    const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>('XOF')
-
-    useEffect(() => {
-        setSelectedCurrency(detectUserCurrency())
-    }, [])
+    const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>(() => getCurrencyForLang(lang))
+    useEffect(() => { setSelectedCurrency(getCurrencyForLang(lang)) }, [lang])
 
     useEffect(() => {
         if (!slug) return
