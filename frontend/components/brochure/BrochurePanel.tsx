@@ -21,6 +21,18 @@ export const BASE_W = 595
 export const BASE_H = 842
 
 /* ══════════════════════════════════════════════════════════════
+   IMAGES DU DÉPLIANT
+   4 photos du Bénin à dispatcher sur les pages FR + EN
+══════════════════════════════════════════════════════════════ */
+
+const DEPLIANT_IMAGES = {
+    ganvie: '/images/depliant/ganvie.jpg',
+    pendjari: '/images/depliant/pendjari.jpg',
+    amazone: '/images/depliant/amazone.jpg',
+    porte: '/images/depliant/porte-non-retour.jpg',
+}
+
+/* ══════════════════════════════════════════════════════════════
    CONTENU TEXTUEL — FRANÇAIS
 ══════════════════════════════════════════════════════════════ */
 
@@ -34,6 +46,7 @@ const FR = {
         { title: '3. Investissement et entrepreneuriat', body: 'Identification des secteurs porteurs, mise en relation avec les institutions financières partenaires, assistance à la création d\'entreprise et au montage de projets.' },
         { title: '4. Logement et immobilier', body: 'Réseau de promoteurs immobiliers, notaires partenaires et agences foncières fiables pour trouver, sécuriser et acquérir un logement ou un terrain dans les meilleures conditions.' },
         { title: '5. Voyages de découverte et d\'immersion', body: 'Avant de décider, il faut voir. L\'Agence organise des voyages incluant visites de sites, rencontres avec des retournants, réunions avec des institutions et entrepreneurs locaux.' },
+        { title: '6. Recherche généalogique', body: 'Le retour au Bénin pour les Afro-descendants dépasse un simple projet de vie : c\'est une véritable quête identitaire. RGB les accompagne dans la redécouverte de leurs origines (lignées, territoires, noms, groupes ethniques).' },
     ],
     s3_title: 'III — NOS PARTENAIRES STRATÉGIQUES',
     s3_intro: 'Chaque partenaire est choisi sur la base de trois critères non négociables : expertise avérée, fiabilité démontrée et engagement réel en faveur de la réussite des Afro-descendants.',
@@ -61,6 +74,7 @@ const EN = {
         { title: '3. Investment & Entrepreneurship Support', body: 'Identifying high-potential sectors, connecting with partner financial institutions, and providing comprehensive assistance with business creation and project development.' },
         { title: '4. Housing & Real Estate Facilitation', body: 'A network of real estate developers, partner notaries, and trusted land agencies to help beneficiaries find, secure, and acquire housing or land under the best conditions.' },
         { title: '5. Discovery & Immersion Trips', body: 'Before making a decision, one must experience the environment. RGB organizes discovery trips including site visits, meetings with returnees, and exploration of residential areas.' },
+        { title: '6. Genealogical Research', body: 'The return to Benin for Afro-descendants goes beyond a simple life project; it is a true quest for identity. RGB supports them in rediscovering their origins (lineages, territories, names, and ethnic groups).' },
     ],
     s3_title: 'III — OUR STRATEGIC PARTNERS',
     s3_intro: 'Each partner is chosen on the basis of three non-negotiable criteria: proven expertise, demonstrated reliability, and genuine commitment to the success of returning Afro-descendants.',
@@ -142,8 +156,23 @@ function QRDisplay({ size }: { size: number }) {
     return <QRCode value="https://www.retourgagnantbenin.bj" size={size} fgColor={DARK} bgColor="#ffffff" level="M" />
 }
 
+/** Image encadrée dorée pour les pages intérieures */
+function DepliantImage({ src, s, w, h, radius = 4 }: { src: string; s: number; w: number; h: number; radius?: number }) {
+    return (
+        <div style={{
+            width: w * s, height: h * s, borderRadius: radius * s,
+            border: `1.5px solid ${GOLD}50`, overflow: 'hidden', flexShrink: 0,
+            boxShadow: `0 2px 8px rgba(0,0,0,0.15)`,
+        }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        </div>
+    )
+}
+
 /* ══════════════════════════════════════════════════════════════
    PANEL 1 RECTO — COUVERTURE (COVER)
+   Logo agrandi, nom centré, mise en page impactante
 ══════════════════════════════════════════════════════════════ */
 
 export const Panel1Recto = forwardRef<HTMLDivElement, { scale?: number }>(
@@ -152,63 +181,65 @@ export const Panel1Recto = forwardRef<HTMLDivElement, { scale?: number }>(
         return (
             <div ref={ref} style={{ width: W, height: H, position: 'relative', overflow: 'hidden', background: BG_DARK, fontFamily: "'Georgia',serif", flexShrink: 0 }}>
 
-                {/* Lueur centrale */}
-                <div style={{ position: 'absolute', top: '38%', left: '50%', transform: 'translate(-50%,-50%)', width: 420 * s, height: 420 * s, background: `radial-gradient(ellipse, rgba(201,168,76,0.09) 0%, transparent 62%)`, pointerEvents: 'none' }} />
+                {/* Lueur centrale élargie */}
+                <div style={{ position: 'absolute', top: '35%', left: '50%', transform: 'translate(-50%,-50%)', width: 500 * s, height: 500 * s, background: `radial-gradient(ellipse, rgba(201,168,76,0.12) 0%, transparent 60%)`, pointerEvents: 'none' }} />
                 {/* Accent vert haut droite */}
-                <div style={{ position: 'absolute', top: 0, right: 0, width: 200 * s, height: 200 * s, background: `radial-gradient(circle at 100% 0%, rgba(0,135,81,0.1) 0%, transparent 60%)`, pointerEvents: 'none' }} />
+                <div style={{ position: 'absolute', top: 0, right: 0, width: 250 * s, height: 250 * s, background: `radial-gradient(circle at 100% 0%, rgba(0,135,81,0.12) 0%, transparent 60%)`, pointerEvents: 'none' }} />
+                {/* Accent bleu bas gauche */}
+                <div style={{ position: 'absolute', bottom: 0, left: 0, width: 200 * s, height: 200 * s, background: `radial-gradient(circle at 0% 100%, rgba(11,32,84,0.3) 0%, transparent 60%)`, pointerEvents: 'none' }} />
 
-                <CornerBrackets s={s} arm={30} />
+                <CornerBrackets s={s} arm={32} />
 
-                {/* ── LOGO + ORG ── */}
-                <div style={{ position: 'absolute', top: 90 * s, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 * s }}>
-                    {/* Médaillon logo */}
-                    <div style={{ width: 100 * s, height: 100 * s, borderRadius: 18 * s, border: `1px solid ${GOLD}35`, background: `radial-gradient(circle, rgba(201,168,76,0.07), transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {/* ── LOGO + ORG — centré verticalement ── */}
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 80 * s, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18 * s }}>
+                    {/* Médaillon logo AGRANDI */}
+                    <div style={{ width: 170 * s, height: 170 * s, borderRadius: 28 * s, border: `1.5px solid ${GOLD}40`, background: `radial-gradient(circle, rgba(201,168,76,0.08), transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 60px rgba(201,168,76,0.08)` }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src="/images/logo-transparent.png" alt="RGB" style={{ width: 76 * s, height: 76 * s, objectFit: 'contain' }} />
+                        <img src="/images/logo-transparent.png" alt="RGB" style={{ width: 130 * s, height: 130 * s, objectFit: 'contain' }} />
                     </div>
 
-                    {/* Titre */}
+                    {/* Titre AGRANDI */}
                     <div style={{ textAlign: 'center', lineHeight: 1 }}>
-                        <div style={{ color: `${GOLD}cc`, fontSize: 26 * s, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif" }}>
+                        <div style={{ color: `${GOLD}cc`, fontSize: 34 * s, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif" }}>
                             RETOUR GAGNANT
                         </div>
-                        <div style={{ color: GOLD_L, fontSize: 42 * s, fontWeight: 700, letterSpacing: '0.24em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif", marginTop: 2 * s }}>
+                        <div style={{ color: GOLD_L, fontSize: 56 * s, fontWeight: 700, letterSpacing: '0.26em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif", marginTop: 4 * s }}>
                             BÉNIN
                         </div>
                     </div>
 
-                    {/* Ornement */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 * s, width: 220 * s }}>
-                        <div style={{ flex: 1, height: 0.8 * s, background: `linear-gradient(90deg, transparent, ${GOLD}70)` }} />
+                    {/* Ornement ÉLARGI */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 * s, width: 280 * s }}>
+                        <div style={{ flex: 1, height: 1 * s, background: `linear-gradient(90deg, transparent, ${GOLD}70)` }} />
                         <Diamond s={s} />
-                        <div style={{ flex: 1, height: 0.8 * s, background: `linear-gradient(270deg, transparent, ${GOLD}70)` }} />
+                        <div style={{ flex: 1, height: 1 * s, background: `linear-gradient(270deg, transparent, ${GOLD}70)` }} />
                     </div>
 
                     {/* Sous-titre */}
-                    <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 5 * s }}>
-                        <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11.5 * s, letterSpacing: '0.06em', fontFamily: "'Arial','Helvetica',sans-serif" }}>
+                    <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 6 * s }}>
+                        <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13 * s, letterSpacing: '0.08em', fontFamily: "'Arial','Helvetica',sans-serif" }}>
                             L&apos;Agence du Retour des Afro-descendants
                         </div>
-                        <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 10.5 * s, letterSpacing: '0.1em', fontFamily: "'Arial','Helvetica',sans-serif" }}>
+                        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 * s, letterSpacing: '0.12em', fontFamily: "'Arial','Helvetica',sans-serif" }}>
                             au Bénin
                         </div>
                     </div>
                 </div>
 
                 {/* Watermark RGB */}
-                <div style={{ position: 'absolute', bottom: 100 * s, left: 0, right: 0, textAlign: 'center', color: `${GOLD}07`, fontSize: 168 * s, fontWeight: 900, letterSpacing: '-0.02em', fontFamily: "'Cinzel','Georgia',serif", pointerEvents: 'none', userSelect: 'none', lineHeight: 1 }}>
+                <div style={{ position: 'absolute', bottom: 100 * s, left: 0, right: 0, textAlign: 'center', color: `${GOLD}06`, fontSize: 180 * s, fontWeight: 900, letterSpacing: '-0.02em', fontFamily: "'Cinzel','Georgia',serif", pointerEvents: 'none', userSelect: 'none', lineHeight: 1 }}>
                     RGB
                 </div>
 
                 {/* Bande bas */}
-                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, paddingTop: 16 * s, paddingBottom: 20 * s, borderTop: `1px solid ${GOLD}22`, background: 'rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 * s }}>
-                    <div style={{ color: GOLD, fontSize: 8.5 * s, fontWeight: 700, letterSpacing: '0.32em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif" }}>
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, paddingTop: 16 * s, paddingBottom: 22 * s, borderTop: `1px solid ${GOLD}22`, background: 'rgba(0,0,0,0.35)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 * s }}>
+                    <div style={{ color: GOLD, fontSize: 9 * s, fontWeight: 700, letterSpacing: '0.35em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif" }}>
                         VOTRE RETOUR, NOTRE MISSION
                     </div>
                     <div style={{ color: `${GOLD}60`, fontSize: 7.5 * s, letterSpacing: '0.14em', fontFamily: "'Arial',sans-serif" }}>
                         www.retourgagnantbenin.bj
                     </div>
-                    <div style={{ color: 'rgba(255,255,255,0.18)', fontSize: 7 * s, letterSpacing: '0.07em', fontFamily: "'Arial',sans-serif" }}>
+                    <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: 7 * s, letterSpacing: '0.07em', fontFamily: "'Arial',sans-serif" }}>
                         Haie-Vive Cocotiers, Cotonou — BÉNIN
                     </div>
                 </div>
@@ -220,49 +251,49 @@ Panel1Recto.displayName = 'Panel1Recto'
 
 /* ══════════════════════════════════════════════════════════════
    HELPER — PANNEAU TEXTE (réutilisé FR + EN)
+   Avec 6 services, images du Bénin, header agrandi
 ══════════════════════════════════════════════════════════════ */
 
 type ContentData = typeof FR
 
-function TextPanelInner({ s, content, lang }: { s: number; content: ContentData; lang: 'FR' | 'EN' }) {
+function TextPanelInner({ s, content, lang, images }: { s: number; content: ContentData; lang: 'FR' | 'EN'; images: { top: string; bottom: string } }) {
     const W = BASE_W * s
     const H = BASE_H * s
 
     const SH = ({ children }: { children: React.ReactNode }) => (
-        <div style={{ color: TEXT_DARK, fontSize: 8.5 * s, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', fontFamily: "'Arial',sans-serif", marginBottom: 6 * s, paddingBottom: 4 * s, borderBottom: `1.5px solid ${GOLD}`, lineHeight: 1 }}>
+        <div style={{ color: TEXT_DARK, fontSize: 8 * s, fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', fontFamily: "'Arial',sans-serif", marginBottom: 5 * s, paddingBottom: 3 * s, borderBottom: `1.5px solid ${GOLD}`, lineHeight: 1 }}>
             {children}
         </div>
     )
 
-    const Body = ({ children }: { children: React.ReactNode }) => (
-        <div style={{ color: TEXT_MED, fontSize: 8 * s, lineHeight: 1.55, fontFamily: "'Arial',sans-serif", whiteSpace: 'pre-line' }}>
+    const Body = ({ children, size = 7.2 }: { children: React.ReactNode; size?: number }) => (
+        <div style={{ color: TEXT_MED, fontSize: size * s, lineHeight: 1.5, fontFamily: "'Arial',sans-serif", whiteSpace: 'pre-line' }}>
             {children}
         </div>
     )
 
     const ItemHead = ({ children }: { children: React.ReactNode }) => (
-        <div style={{ color: TEXT_DARK, fontSize: 8 * s, fontWeight: 700, fontFamily: "'Arial',sans-serif", marginBottom: 2 * s, marginTop: 9 * s }}>
+        <div style={{ color: TEXT_DARK, fontSize: 7.2 * s, fontWeight: 700, fontFamily: "'Arial',sans-serif", marginBottom: 1 * s, marginTop: 6 * s }}>
             {children}
         </div>
     )
 
     const BulletItem = ({ label, body }: { label: string; body: string }) => (
-        <div style={{ marginBottom: 8 * s }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5 * s, marginBottom: 2 * s }}>
-                <div style={{ width: 4 * s, height: 4 * s, borderRadius: '50%', background: GOLD, flexShrink: 0 }} />
-                <span style={{ color: TEXT_DARK, fontSize: 8 * s, fontWeight: 700, fontFamily: "'Arial',sans-serif" }}>{label}</span>
+        <div style={{ marginBottom: 5 * s }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 * s, marginBottom: 1 * s }}>
+                <div style={{ width: 3.5 * s, height: 3.5 * s, borderRadius: '50%', background: GOLD, flexShrink: 0 }} />
+                <span style={{ color: TEXT_DARK, fontSize: 7 * s, fontWeight: 700, fontFamily: "'Arial',sans-serif" }}>{label}</span>
             </div>
-            <div style={{ color: TEXT_LIGHT, fontSize: 7.5 * s, lineHeight: 1.45, fontFamily: "'Arial',sans-serif", paddingLeft: 9 * s }}>{body}</div>
+            <div style={{ color: TEXT_LIGHT, fontSize: 6.8 * s, lineHeight: 1.4, fontFamily: "'Arial',sans-serif", paddingLeft: 7.5 * s }}>{body}</div>
         </div>
     )
 
-    // Colonnes : gauche = Section I + items 1-2 de II + CTA épinglé, droite = items 3-5 + Section III + contacts épinglés
-    const colPad = 32 * s
-    const colGap = 16 * s
+    const colPad = 28 * s
+    const colGap = 14 * s
     const colW = (W - colPad * 2 - colGap) / 2
-    const headerH = 58 * s
-    const footerH = 32 * s
-    const contentH = H - headerH - footerH - colPad * 2
+    const headerH = 72 * s  // Header AGRANDI
+    const footerH = 28 * s
+    const contentH = H - headerH - footerH - colPad * 1.5
     const colStyle: React.CSSProperties = { width: colW, flexShrink: 0, overflow: 'hidden', height: contentH, display: 'flex', flexDirection: 'column' }
 
     return (
@@ -271,39 +302,45 @@ function TextPanelInner({ s, content, lang }: { s: number; content: ContentData;
             {/* Bordure haut dorée */}
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4 * s, background: `linear-gradient(90deg, ${GOLD}, ${GOLD_L}, ${GOLD})` }} />
 
-            {/* Header */}
-            <div style={{ position: 'absolute', top: 4 * s, left: 0, right: 0, height: headerH, background: TEXT_DARK, display: 'flex', alignItems: 'center', paddingLeft: colPad, paddingRight: colPad, gap: 12 * s }}>
+            {/* Header AGRANDI — bande noire plus haute */}
+            <div style={{ position: 'absolute', top: 4 * s, left: 0, right: 0, height: headerH, background: TEXT_DARK, display: 'flex', alignItems: 'center', paddingLeft: colPad, paddingRight: colPad, gap: 14 * s }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/logo-transparent.png" alt="RGB" style={{ width: 30 * s, height: 30 * s, objectFit: 'contain', opacity: 0.9 }} />
+                <img src="/images/logo-transparent.png" alt="RGB" style={{ width: 40 * s, height: 40 * s, objectFit: 'contain', opacity: 0.95 }} />
                 <div style={{ flex: 1 }}>
-                    <div style={{ color: GOLD, fontSize: 9.5 * s, fontWeight: 700, letterSpacing: '0.16em', fontFamily: "'Cinzel','Georgia',serif" }}>RETOUR GAGNANT BÉNIN</div>
-                    <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 7 * s, letterSpacing: '0.12em', marginTop: 2 * s }}>PRÉSENTATION & SERVICES</div>
+                    <div style={{ color: GOLD, fontSize: 12 * s, fontWeight: 700, letterSpacing: '0.16em', fontFamily: "'Cinzel','Georgia',serif" }}>RETOUR GAGNANT BÉNIN</div>
+                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 7.5 * s, letterSpacing: '0.12em', marginTop: 3 * s }}>{lang === 'FR' ? 'PRÉSENTATION & SERVICES' : 'PRESENTATION & SERVICES'}</div>
                 </div>
-                <div style={{ paddingLeft: 8 * s, paddingRight: 8 * s, paddingTop: 4 * s, paddingBottom: 4 * s, border: `1px solid ${GOLD}60`, borderRadius: 4 * s, color: GOLD, fontSize: 8.5 * s, fontWeight: 700, letterSpacing: '0.15em', fontFamily: "'Cinzel',serif" }}>
+                <div style={{ paddingLeft: 10 * s, paddingRight: 10 * s, paddingTop: 5 * s, paddingBottom: 5 * s, border: `1.5px solid ${GOLD}60`, borderRadius: 4 * s, color: GOLD, fontSize: 10 * s, fontWeight: 700, letterSpacing: '0.18em', fontFamily: "'Cinzel',serif" }}>
                     {lang}
                 </div>
             </div>
 
             {/* Colonnes de contenu */}
-            <div style={{ position: 'absolute', top: 4 * s + headerH + colPad, left: colPad, right: colPad, display: 'flex', gap: colGap, height: contentH }}>
+            <div style={{ position: 'absolute', top: 4 * s + headerH + colPad * 0.7, left: colPad, right: colPad, display: 'flex', gap: colGap, height: contentH }}>
 
                 {/* Colonne gauche */}
                 <div style={colStyle}>
                     <SH>{content.s1_title}</SH>
                     <Body>{content.s1_body}</Body>
-                    <div style={{ marginTop: 12 * s }}>
+
+                    {/* Image 1 — après présentation */}
+                    <div style={{ marginTop: 8 * s, marginBottom: 8 * s, display: 'flex', justifyContent: 'center' }}>
+                        <DepliantImage src={images.top} s={s} w={colW / s} h={65} radius={5} />
+                    </div>
+
+                    <div>
                         <SH>{content.s2_title}</SH>
-                        {content.s2_items.slice(0, 2).map((item, i) => (
+                        {content.s2_items.slice(0, 3).map((item, i) => (
                             <div key={i}>
                                 <ItemHead>{item.title}</ItemHead>
-                                <Body>{item.body}</Body>
+                                <Body size={6.8}>{item.body}</Body>
                             </div>
                         ))}
                     </div>
 
                     {/* CTA épinglé en bas */}
-                    <div style={{ marginTop: 'auto', paddingTop: 14 * s, borderTop: `1px solid ${GOLD}45` }}>
-                        <div style={{ color: TEXT_DARK, fontSize: 8.5 * s, fontWeight: 700, lineHeight: 1.5, fontFamily: "'Georgia',serif", fontStyle: 'italic' }}>
+                    <div style={{ marginTop: 'auto', paddingTop: 10 * s, borderTop: `1px solid ${GOLD}45` }}>
+                        <div style={{ color: TEXT_DARK, fontSize: 7.5 * s, fontWeight: 700, lineHeight: 1.5, fontFamily: "'Georgia',serif", fontStyle: 'italic' }}>
                             &ldquo;{content.s3_cta}&rdquo;
                         </div>
                     </div>
@@ -314,16 +351,21 @@ function TextPanelInner({ s, content, lang }: { s: number; content: ContentData;
 
                 {/* Colonne droite */}
                 <div style={colStyle}>
-                    {content.s2_items.slice(2).map((item, i) => (
+                    {content.s2_items.slice(3).map((item, i) => (
                         <div key={i}>
                             <ItemHead>{item.title}</ItemHead>
-                            <Body>{item.body}</Body>
+                            <Body size={6.8}>{item.body}</Body>
                         </div>
                     ))}
 
-                    <div style={{ marginTop: 14 * s }}>
+                    {/* Image 2 — après services */}
+                    <div style={{ marginTop: 8 * s, marginBottom: 8 * s, display: 'flex', justifyContent: 'center' }}>
+                        <DepliantImage src={images.bottom} s={s} w={colW / s} h={65} radius={5} />
+                    </div>
+
+                    <div>
                         <SH>{content.s3_title}</SH>
-                        <div style={{ color: TEXT_MED, fontSize: 7.5 * s, lineHeight: 1.5, fontFamily: "'Arial',sans-serif", marginBottom: 8 * s }}>
+                        <div style={{ color: TEXT_MED, fontSize: 6.8 * s, lineHeight: 1.45, fontFamily: "'Arial',sans-serif", marginBottom: 6 * s }}>
                             {content.s3_intro}
                         </div>
                         {content.s3_items.map((item, i) => (
@@ -332,14 +374,14 @@ function TextPanelInner({ s, content, lang }: { s: number; content: ContentData;
                     </div>
 
                     {/* Contacts épinglés en bas */}
-                    <div style={{ marginTop: 'auto', paddingTop: 12 * s, borderTop: `1px solid ${GOLD}45` }}>
-                        <div style={{ color: TEXT_DARK, fontSize: 7 * s, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 6 * s }}>Contact</div>
+                    <div style={{ marginTop: 'auto', paddingTop: 10 * s, borderTop: `1px solid ${GOLD}45` }}>
+                        <div style={{ color: TEXT_DARK, fontSize: 6.5 * s, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 4 * s }}>Contact</div>
                         {[
                             '+229 01 60 32 21 21  ·  +229 01 94 35 50 50',
                             'contact@retourgagnantbenin.bj',
                             'www.retourgagnantbenin.bj',
                         ].map((text, i) => (
-                            <div key={i} style={{ color: TEXT_LIGHT, fontSize: 7.5 * s, lineHeight: 1.6, letterSpacing: '0.02em' }}>{text}</div>
+                            <div key={i} style={{ color: TEXT_LIGHT, fontSize: 7 * s, lineHeight: 1.55, letterSpacing: '0.02em' }}>{text}</div>
                         ))}
                     </div>
                 </div>
@@ -347,11 +389,11 @@ function TextPanelInner({ s, content, lang }: { s: number; content: ContentData;
 
             {/* Footer */}
             <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: footerH, background: TEXT_DARK, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 * s }}>
-                <div style={{ color: `${GOLD}70`, fontSize: 6.5 * s, letterSpacing: '0.12em' }}>contact@retourgagnantbenin.bj</div>
+                <div style={{ color: `${GOLD}70`, fontSize: 6 * s, letterSpacing: '0.12em' }}>contact@retourgagnantbenin.bj</div>
                 <div style={{ width: 1 * s, height: 10 * s, background: `${GOLD}35` }} />
-                <div style={{ color: `${GOLD}70`, fontSize: 6.5 * s, letterSpacing: '0.12em' }}>+229 01 60 32 21 21</div>
+                <div style={{ color: `${GOLD}70`, fontSize: 6 * s, letterSpacing: '0.12em' }}>+229 01 60 32 21 21</div>
                 <div style={{ width: 1 * s, height: 10 * s, background: `${GOLD}35` }} />
-                <div style={{ color: `${GOLD}70`, fontSize: 6.5 * s, letterSpacing: '0.12em' }}>www.retourgagnantbenin.bj</div>
+                <div style={{ color: `${GOLD}70`, fontSize: 6 * s, letterSpacing: '0.12em' }}>www.retourgagnantbenin.bj</div>
             </div>
         </div>
     )
@@ -359,12 +401,13 @@ function TextPanelInner({ s, content, lang }: { s: number; content: ContentData;
 
 /* ══════════════════════════════════════════════════════════════
    PANEL 1 VERSO — FRANÇAIS
+   Images: Ganvié (haut) + Statue Amazone (bas)
 ══════════════════════════════════════════════════════════════ */
 
 export const Panel1Verso = forwardRef<HTMLDivElement, { scale?: number }>(
     ({ scale = 1 }, ref) => (
         <div ref={ref} style={{ flexShrink: 0 }}>
-            <TextPanelInner s={scale} content={FR} lang="FR" />
+            <TextPanelInner s={scale} content={FR} lang="FR" images={{ top: DEPLIANT_IMAGES.ganvie, bottom: DEPLIANT_IMAGES.amazone }} />
         </div>
     )
 )
@@ -372,12 +415,13 @@ Panel1Verso.displayName = 'Panel1Verso'
 
 /* ══════════════════════════════════════════════════════════════
    PANEL 2 VERSO — ENGLISH
+   Images: Éléphants Pendjari (haut) + Porte du Non-Retour (bas)
 ══════════════════════════════════════════════════════════════ */
 
 export const Panel2Verso = forwardRef<HTMLDivElement, { scale?: number }>(
     ({ scale = 1 }, ref) => (
         <div ref={ref} style={{ flexShrink: 0 }}>
-            <TextPanelInner s={scale} content={EN} lang="EN" />
+            <TextPanelInner s={scale} content={EN} lang="EN" images={{ top: DEPLIANT_IMAGES.pendjari, bottom: DEPLIANT_IMAGES.porte }} />
         </div>
     )
 )
@@ -385,6 +429,7 @@ Panel2Verso.displayName = 'Panel2Verso'
 
 /* ══════════════════════════════════════════════════════════════
    PANEL 2 RECTO — 4e DE COUVERTURE (BACK)
+   Logo agrandi, QR centré, "SCANNEZ MOI POUR NOUS DECOUVRIR"
 ══════════════════════════════════════════════════════════════ */
 
 export const Panel2Recto = forwardRef<HTMLDivElement, { scale?: number }>(
@@ -394,54 +439,54 @@ export const Panel2Recto = forwardRef<HTMLDivElement, { scale?: number }>(
             <div ref={ref} style={{ width: W, height: H, position: 'relative', overflow: 'hidden', background: BG_DARK, fontFamily: "'Arial',sans-serif", flexShrink: 0 }}>
 
                 {/* Lueur */}
-                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 400 * s, height: 400 * s, background: `radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 65%)`, pointerEvents: 'none' }} />
+                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 450 * s, height: 450 * s, background: `radial-gradient(ellipse, rgba(201,168,76,0.07) 0%, transparent 65%)`, pointerEvents: 'none' }} />
                 <CornerBrackets s={s} arm={28} />
 
                 {/* Bande haut */}
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4 * s, background: `linear-gradient(90deg, ${GOLD}, ${GOLD_L}, ${GOLD})` }} />
 
-                {/* Logo + nom */}
-                <div style={{ position: 'absolute', top: 60 * s, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 * s }}>
-                    <div style={{ width: 64 * s, height: 64 * s, borderRadius: 12 * s, border: `1px solid ${GOLD}30`, background: `radial-gradient(circle, rgba(201,168,76,0.06), transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {/* Logo + nom AGRANDIS */}
+                <div style={{ position: 'absolute', top: 50 * s, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 * s }}>
+                    <div style={{ width: 100 * s, height: 100 * s, borderRadius: 18 * s, border: `1.5px solid ${GOLD}35`, background: `radial-gradient(circle, rgba(201,168,76,0.07), transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 40px rgba(201,168,76,0.06)` }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src="/images/logo-transparent.png" alt="RGB" style={{ width: 48 * s, height: 48 * s, objectFit: 'contain' }} />
+                        <img src="/images/logo-transparent.png" alt="RGB" style={{ width: 76 * s, height: 76 * s, objectFit: 'contain' }} />
                     </div>
-                    <div style={{ color: GOLD, fontSize: 14 * s, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif", textAlign: 'center' }}>
+                    <div style={{ color: GOLD, fontSize: 18 * s, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif", textAlign: 'center' }}>
                         RETOUR GAGNANT BÉNIN
                     </div>
-                    <HRule s={s} w={180 * s} opacity={0.4} />
+                    <HRule s={s} w={220 * s} opacity={0.4} />
                 </div>
 
-                {/* QR Code central */}
-                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-48%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 * s }}>
-                    <div style={{ padding: 10 * s, background: '#ffffff', borderRadius: 8 * s, boxShadow: `0 0 0 1px ${GOLD}40, 0 8px 40px rgba(0,0,0,0.5), 0 0 32px ${GOLD}15` }}>
-                        <QRDisplay size={Math.round(140 * s)} />
+                {/* QR Code central — bien centré */}
+                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-45%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 * s }}>
+                    <div style={{ padding: 12 * s, background: '#ffffff', borderRadius: 10 * s, boxShadow: `0 0 0 1.5px ${GOLD}40, 0 10px 50px rgba(0,0,0,0.5), 0 0 40px ${GOLD}12` }}>
+                        <QRDisplay size={Math.round(150 * s)} />
                     </div>
-                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 7 * s, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
-                        Scannez pour nous découvrir
+                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 7.5 * s, letterSpacing: '0.2em', textTransform: 'uppercase', textAlign: 'center', fontWeight: 600 }}>
+                        Scannez moi pour nous découvrir
                     </div>
                 </div>
 
-                {/* Coordonnées */}
-                <div style={{ position: 'absolute', bottom: 70 * s, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 * s }}>
-                    <HRule s={s} w={240 * s} opacity={0.3} />
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 * s }}>
+                {/* Coordonnées — bien centrées et présentées */}
+                <div style={{ position: 'absolute', bottom: 60 * s, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 * s }}>
+                    <HRule s={s} w={280 * s} opacity={0.3} />
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 * s }}>
                         {[
                             { icon: '📍', text: 'Haie-Vive Cocotiers, Carré N°1158, Cotonou — BÉNIN' },
                             { icon: '☎', text: '+229 01 60 32 21 21  ·  +229 01 94 35 50 50' },
                             { icon: '✉', text: 'contact@retourgagnantbenin.bj' },
                             { icon: '🌐', text: 'www.retourgagnantbenin.bj' },
                         ].map(({ icon, text }) => (
-                            <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 6 * s }}>
-                                <span style={{ fontSize: 7 * s }}>{icon}</span>
-                                <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 7.5 * s, letterSpacing: '0.04em' }}>{text}</span>
+                            <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 7 * s }}>
+                                <span style={{ fontSize: 8 * s }}>{icon}</span>
+                                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 8 * s, letterSpacing: '0.04em' }}>{text}</span>
                             </div>
                         ))}
                     </div>
                 </div>
 
                 {/* Slogan bas */}
-                <div style={{ position: 'absolute', bottom: 22 * s, left: 0, right: 0, textAlign: 'center', color: GOLD, fontSize: 8 * s, fontWeight: 700, letterSpacing: '0.28em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif" }}>
+                <div style={{ position: 'absolute', bottom: 20 * s, left: 0, right: 0, textAlign: 'center', color: GOLD, fontSize: 8.5 * s, fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif" }}>
                     VOTRE RETOUR, NOTRE MISSION
                 </div>
             </div>
