@@ -157,7 +157,7 @@ function QRDisplay({ size }: { size: number }) {
 }
 
 /** Image encadrée dorée pour les pages intérieures — affichage complet */
-function DepliantImage({ src, s, w, h, radius = 6, caption }: { src: string; s: number; w: number; h: number; radius?: number; caption?: string }) {
+function DepliantImage({ src, s, w, h, radius = 6, caption, position = 'center' }: { src: string; s: number; w: number; h: number; radius?: number; caption?: string; position?: string }) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 * s, flexShrink: 0 }}>
             <div style={{
@@ -167,7 +167,7 @@ function DepliantImage({ src, s, w, h, radius = 6, caption }: { src: string; s: 
                 background: '#0b1a3a',
             }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt={caption || ''} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                <img src={src} alt={caption || ''} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: position, display: 'block' }} />
             </div>
             {caption && (
                 <div style={{ color: TEXT_LIGHT, fontSize: 5.5 * s, letterSpacing: '0.08em', fontStyle: 'italic', fontFamily: "'Georgia',serif", textAlign: 'center' }}>
@@ -266,11 +266,11 @@ type ContentData = typeof FR
 
 /** Légendes images par langue */
 const IMG_CAPTIONS = {
-    FR: { top: 'Cité Lacustre de Ganvié', bottom: 'Place de l\'Amazone, Abomey' },
+    FR: { top: 'Cité Lacustre de Ganvié', bottom: 'Place de l\'Amazone' },
     EN: { top: 'Parc National de la Pendjari', bottom: 'Porte du Non-Retour, Ouidah' },
 }
 
-function TextPanelInner({ s, content, lang, images }: { s: number; content: ContentData; lang: 'FR' | 'EN'; images: { top: string; bottom: string } }) {
+function TextPanelInner({ s, content, lang, images, imgPositions }: { s: number; content: ContentData; lang: 'FR' | 'EN'; images: { top: string; bottom: string }; imgPositions?: { top?: string; bottom?: string } }) {
     const W = BASE_W * s
     const H = BASE_H * s
     const captions = IMG_CAPTIONS[lang]
@@ -412,8 +412,8 @@ function TextPanelInner({ s, content, lang, images }: { s: number; content: Cont
                 paddingRight: colPad,
                 borderTop: `1px solid ${GOLD}30`,
             }}>
-                <DepliantImage src={images.top} s={s} w={imgW / s} h={120} radius={6} caption={captions.top} />
-                <DepliantImage src={images.bottom} s={s} w={imgW / s} h={120} radius={6} caption={captions.bottom} />
+                <DepliantImage src={images.top} s={s} w={imgW / s} h={120} radius={6} caption={captions.top} position={imgPositions?.top || 'center'} />
+                <DepliantImage src={images.bottom} s={s} w={imgW / s} h={120} radius={6} caption={captions.bottom} position={imgPositions?.bottom || 'center'} />
             </div>
 
             {/* Footer */}
@@ -436,7 +436,7 @@ function TextPanelInner({ s, content, lang, images }: { s: number; content: Cont
 export const Panel1Verso = forwardRef<HTMLDivElement, { scale?: number }>(
     ({ scale = 1 }, ref) => (
         <div ref={ref} style={{ flexShrink: 0 }}>
-            <TextPanelInner s={scale} content={FR} lang="FR" images={{ top: DEPLIANT_IMAGES.ganvie, bottom: DEPLIANT_IMAGES.amazone }} />
+            <TextPanelInner s={scale} content={FR} lang="FR" images={{ top: DEPLIANT_IMAGES.ganvie, bottom: DEPLIANT_IMAGES.amazone }} imgPositions={{ bottom: 'top center' }} />
         </div>
     )
 )

@@ -362,7 +362,7 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
         if (!publicKey) { cancelOrder(oid); setErrorMessage('Kkiapay non configuré'); setStep('error'); return }
         try {
             await ensureKkiapaySDK()
-            window.openKkiapayWidget({ amount: proposal.total_amount, position: 'center', key: publicKey, sandbox, phone: customerPhone || undefined, email: customerEmail || undefined, name: customerName || undefined, paymentmethod: ['momo', 'card'], countries: ['BJ'], data: { order_id: oid }, callback: `${window.location.origin}/p/${secret}/paiement` })
+            window.openKkiapayWidget({ amount: proposal.total_amount, position: 'center', key: publicKey, sandbox, phone: customerPhone || undefined, email: customerEmail || undefined, name: customerName || undefined, paymentmethod: ['momo', 'card'], data: { order_id: oid }, callback: `${window.location.origin}/p/${secret}/paiement` })
             window.addKkiapayListener('success', async (response) => { await verifyPayment(oid, response.transactionId as string) })
             window.addKkiapayListener('failed', () => { cancelOrder(oid); setErrorMessage('Paiement échoué'); setStep('error') })
         } catch (err) { cancelOrder(oid); setErrorMessage(err instanceof Error ? err.message : 'Erreur Kkiapay'); setStep('error') }

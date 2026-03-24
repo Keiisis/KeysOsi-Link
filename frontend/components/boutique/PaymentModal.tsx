@@ -547,7 +547,6 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                 email: customerEmail || undefined,
                 name: customerName || undefined,
                 paymentmethod: ['momo', 'card'],
-                countries: ['BJ'],
                 data: { order_id: oid },
                 callback: `${window.location.origin}/boutique`,
             })
