@@ -16,9 +16,9 @@ export const LANG_CURRENCY_CONFIG: Record<LangCode, {
     default: CurrencyCode
     allowed: CurrencyCode[]
 }> = {
-    fr: { default: 'XOF', allowed: ['XOF', 'EUR'] },
-    es: { default: 'XOF', allowed: ['XOF', 'EUR'] },
-    cr: { default: 'XOF', allowed: ['XOF', 'EUR'] },
+    fr: { default: 'EUR', allowed: ['EUR', 'XOF'] },
+    es: { default: 'EUR', allowed: ['EUR', 'XOF'] },
+    cr: { default: 'EUR', allowed: ['EUR', 'XOF'] },
     en: { default: 'USD', allowed: ['USD'] },
     pt: { default: 'USD', allowed: ['USD'] },
     ht: { default: 'USD', allowed: ['USD'] },
