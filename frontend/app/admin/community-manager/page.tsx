@@ -9,7 +9,8 @@ import {
     TrendingUp, MessageCircle, ThumbsUp, Share2, BookOpen,
     AlertTriangle, Sparkles, Target, ArrowRight,
     Brain, Download, Calendar, FileJson, BarChart2,
-    Trophy, Lightbulb, Swords, Clock, Hash, Film
+    Trophy, Lightbulb, Swords, Clock, Hash, Film,
+    Shield, Users, Flame, Gauge
 } from 'lucide-react'
 // Toutes les opérations DB passent par les API routes (service role, bypass RLS)
 
@@ -55,6 +56,7 @@ interface ContentItem {
 }
 
 interface StyleAnalysis {
+    // Legacy flat fields (backward compat)
     tone: string
     vocabulary_level: string
     typical_structure: string
@@ -68,12 +70,80 @@ interface StyleAnalysis {
     viral_formula: string
     best_content_types: string[]
     call_to_action_style: string
+    // Deep Style DNA v3
+    voice_fingerprint?: {
+        signature_phrases: string[]
+        transition_words: string[]
+        rhythm: string
+        sentence_avg_words: number
+        punctuation_style: string
+        opening_patterns: string[]
+        closing_patterns: string[]
+    }
+    hooks_masterclass?: Array<{
+        hook: string
+        technique: string
+        power_score: number
+        why_it_works: string
+    }>
+    content_blueprint?: {
+        structure_template: string
+        ideal_length_words: number
+        hashtag_count: number
+        hashtag_placement: string
+        emoji_density: string
+        emoji_favorites: string[]
+        visual_pairing: string
+        cta_formulas: string[]
+        posting_frequency: string
+        best_days: string[]
+    }
+    scores?: {
+        hook_power: number
+        emotional_depth: number
+        storytelling: number
+        authority: number
+        humor: number
+        urgency: number
+        community_building: number
+        viral_potential: number
+        overall: number
+    }
+    emotional_map?: {
+        dominant_emotions: Array<{ emotion: string; frequency: number; example: string }>
+        emotional_arc: string
+        pain_points_addressed: string[]
+        desires_activated: string[]
+        emotional_density_score: number
+    }
+    audience_persona?: {
+        age_range: string
+        gender_lean: string
+        socio_economic: string
+        pain_points: string[]
+        language_register: string
+        platform_behavior: string
+    }
+    competitive_edge?: {
+        unique_differentiator: string
+        content_gaps: string[]
+        vulnerability: string
+        copy_this: string[]
+        avoid_this: string[]
+    }
+    claude_instructions?: {
+        system_prompt: string
+        do_list: string[]
+        dont_list: string[]
+        example_rewrites: Array<{ before: string; after: string }>
+    }
 }
 
 interface IntelligenceDossier {
     meta: { version: string; generated_at: string; tool: string; posts_analyzed: number; scrape_method: string; platform: string; profile_url: string; username: string }
     profile: { platform: string; username: string; profile_url: string; notes: string }
     style: { tone: string; vocabulary_level: string; structure: string; hooks: string[]; hashtag_strategy: string; emoji_usage: string; avg_post_length: string; engagement_triggers: string[]; writing_patterns: string[]; improvement_tips: string[]; viral_formula: string; best_content_types: string[]; cta_style: string; top_topics: string[]; content_mix: string }
+    style_dna?: StyleAnalysis
     top_posts: Array<{ rank: number; text: string; likes: number; comments: number; shares: number; stars?: number; views?: number; viral_score: number; date: string; url: string }>
     stats: { avg_likes: number; avg_comments: number; avg_shares: number; best_viral_score: number; engagement_level: string; total_posts_scraped: number; posts_with_engagement: number }
     patterns: { best_times: string[]; top_hooks: string[]; top_topics: string[]; content_mix: string }
@@ -626,6 +696,86 @@ function VeilleTab({
                         </div>
                     )}
 
+                    {/* Deep Style DNA (v3) — Radar + Scores */}
+                    {activeDossier.style_dna?.scores && (
+                        <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-5">
+                            <div className="flex items-center justify-between mb-4">
+                                <p className="text-purple-400 text-xs font-bold flex items-center gap-2"><BarChart2 size={12} /> Deep Style DNA</p>
+                                {activeDossier.style_dna.scores && <ScoreBadge score={activeDossier.style_dna.scores.overall} />}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="flex items-center justify-center">
+                                    <RadarChart scores={activeDossier.style_dna.scores} />
+                                </div>
+                                <div className="flex flex-col justify-center gap-2">
+                                    <ScoreBar label="Accroche" value={activeDossier.style_dna.scores.hook_power} color="bg-yellow-500" />
+                                    <ScoreBar label="Émotion" value={activeDossier.style_dna.scores.emotional_depth} color="bg-red-500" />
+                                    <ScoreBar label="Narration" value={activeDossier.style_dna.scores.storytelling} color="bg-pink-500" />
+                                    <ScoreBar label="Autorité" value={activeDossier.style_dna.scores.authority} color="bg-blue-500" />
+                                    <ScoreBar label="Viralité" value={activeDossier.style_dna.scores.viral_potential} color="bg-orange-500" />
+                                    <ScoreBar label="Communauté" value={activeDossier.style_dna.scores.community_building} color="bg-emerald-500" />
+                                    <ScoreBar label="Urgence" value={activeDossier.style_dna.scores.urgency} color="bg-cyan-500" />
+                                    <ScoreBar label="Humour" value={activeDossier.style_dna.scores.humor} color="bg-violet-500" />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Hooks Masterclass (v3) */}
+                    {activeDossier.style_dna?.hooks_masterclass && activeDossier.style_dna.hooks_masterclass.length > 0 && (
+                        <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-5">
+                            <p className="text-yellow-400 text-xs font-bold mb-3 flex items-center gap-2">🎣 Hooks Masterclass</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {activeDossier.style_dna.hooks_masterclass.map((h, i) => (
+                                    <div key={i} className="bg-white/[0.02] border border-white/5 rounded-xl p-3">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <p className="text-white font-bold text-xs flex-1">&ldquo;{h.hook}&rdquo;</p>
+                                            <span className={`text-[10px] font-black flex-shrink-0 ${h.power_score >= 80 ? 'text-emerald-400' : h.power_score >= 60 ? 'text-yellow-400' : 'text-gray-400'}`}>{h.power_score}</span>
+                                        </div>
+                                        <p className="text-gray-500 text-[10px] mt-1">{h.technique} — {h.why_it_works}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Audience Persona + Emotional Map (v3) */}
+                    {(activeDossier.style_dna?.audience_persona || activeDossier.style_dna?.emotional_map) && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {activeDossier.style_dna?.audience_persona && (
+                                <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4">
+                                    <p className="text-pink-400 text-xs font-bold mb-3 flex items-center gap-2"><Users size={12} /> Persona Audience</p>
+                                    <div className="space-y-1.5 text-xs">
+                                        <div className="flex justify-between"><span className="text-gray-500">Âge</span><span className="text-gray-300">{activeDossier.style_dna.audience_persona.age_range}</span></div>
+                                        <div className="flex justify-between"><span className="text-gray-500">Socio-éco</span><span className="text-gray-300">{activeDossier.style_dna.audience_persona.socio_economic}</span></div>
+                                        <div className="flex justify-between"><span className="text-gray-500">Comportement</span><span className="text-gray-300">{activeDossier.style_dna.audience_persona.platform_behavior}</span></div>
+                                        {activeDossier.style_dna.audience_persona.pain_points.length > 0 && (
+                                            <div className="pt-2 border-t border-white/5">
+                                                <p className="text-gray-600 text-[10px] font-bold mb-1">Pain points :</p>
+                                                {activeDossier.style_dna.audience_persona.pain_points.map((p, i) => <p key={i} className="text-gray-400 text-[10px] ml-2">• {p}</p>)}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                            {activeDossier.style_dna?.emotional_map && (
+                                <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4">
+                                    <p className="text-red-400 text-xs font-bold mb-3 flex items-center gap-2"><Flame size={12} /> Carte Émotionnelle</p>
+                                    <p className="text-gray-600 text-[10px] font-bold mb-2">Arc : <span className="text-red-300">{activeDossier.style_dna.emotional_map.emotional_arc}</span></p>
+                                    {activeDossier.style_dna.emotional_map.dominant_emotions.map((e, i) => (
+                                        <div key={i} className="flex items-center gap-2 mb-1.5">
+                                            <span className="text-gray-300 text-[10px] w-20 text-right">{e.emotion}</span>
+                                            <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                                <div className="h-full rounded-full bg-red-500/60" style={{ width: `${Math.round(e.frequency * 100)}%` }} />
+                                            </div>
+                                            <span className="text-gray-500 text-[10px] w-8">{Math.round(e.frequency * 100)}%</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {/* Analyse compétitive */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-4">
@@ -641,6 +791,40 @@ function VeilleTab({
                             <ul className="space-y-1.5">{activeDossier.competitive.opportunities.map((s, i) => <li key={i} className="text-gray-300 text-xs flex items-start gap-1.5"><ChevronRight size={10} className="text-blue-400 flex-shrink-0 mt-0.5" />{s}</li>)}</ul>
                         </div>
                     </div>
+
+                    {/* Claude Instructions (v3) — Before/After */}
+                    {activeDossier.style_dna?.claude_instructions && (
+                        <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-5">
+                            <p className="text-purple-400 text-xs font-bold mb-4 flex items-center gap-2"><Brain size={12} /> Instructions Claude.ai — DO / DON&apos;T</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                                <div className="bg-emerald-500/5 rounded-xl p-3">
+                                    <p className="text-emerald-400 text-[10px] font-bold mb-2">DO</p>
+                                    <ul className="space-y-1">{activeDossier.style_dna.claude_instructions.do_list.map((s, i) => <li key={i} className="text-gray-300 text-xs flex items-start gap-1.5"><Check size={10} className="text-emerald-400 flex-shrink-0 mt-0.5" />{s}</li>)}</ul>
+                                </div>
+                                <div className="bg-red-500/5 rounded-xl p-3">
+                                    <p className="text-red-400 text-[10px] font-bold mb-2">DON&apos;T</p>
+                                    <ul className="space-y-1">{activeDossier.style_dna.claude_instructions.dont_list.map((s, i) => <li key={i} className="text-gray-300 text-xs flex items-start gap-1.5"><AlertTriangle size={10} className="text-red-400 flex-shrink-0 mt-0.5" />{s}</li>)}</ul>
+                                </div>
+                            </div>
+                            {activeDossier.style_dna.claude_instructions.example_rewrites.length > 0 && (
+                                <div className="space-y-2">
+                                    <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Avant → Après</p>
+                                    {activeDossier.style_dna.claude_instructions.example_rewrites.map((rw, i) => (
+                                        <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                            <div className="bg-red-500/5 border border-red-500/10 rounded-lg p-3">
+                                                <p className="text-red-400 text-[10px] font-bold mb-1">AVANT</p>
+                                                <p className="text-gray-400 text-xs italic">{rw.before}</p>
+                                            </div>
+                                            <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-lg p-3">
+                                                <p className="text-emerald-400 text-[10px] font-bold mb-1">APRES</p>
+                                                <p className="text-gray-200 text-xs font-medium">{rw.after}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* Prompt Claude.ai préview */}
                     <div className="bg-white/[0.02] border border-white/5 rounded-xl p-5">
@@ -775,28 +959,25 @@ function StyleTab({ copyToClipboard, copiedId }: { copyToClipboard: (t: string, 
             {/* Résultat analyse */}
             {analysis && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-                    {/* Formule virale */}
-                    <div className="bg-purple-500/10 border border-purple-500/20 rounded-2xl p-5">
-                        <div className="flex items-start justify-between gap-4">
+                    {/* Score global + Formule virale */}
+                    <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-2xl p-5">
+                        <div className="flex items-start justify-between gap-4 flex-wrap">
                             <div className="flex-1">
-                                <p className="text-purple-400 text-xs font-bold uppercase tracking-widest mb-2">Formule Virale</p>
-                                <p className="text-white font-bold text-lg leading-relaxed">{analysis.viral_formula}</p>
+                                <p className="text-purple-400 text-xs font-bold uppercase tracking-widest mb-3">Deep Style DNA</p>
+                                {analysis.scores && <ScoreBadge score={analysis.scores.overall} />}
+                                {analysis.viral_formula && (
+                                    <p className="text-white font-bold text-base mt-3 leading-relaxed">{analysis.viral_formula}</p>
+                                )}
                             </div>
                             <div className="flex gap-2 flex-shrink-0">
-                                <button
-                                    type="button"
-                                    onClick={() => copyToClipboard(analysis.viral_formula, 'formula')}
-                                    title="Copier la formule"
-                                    className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all"
-                                >
-                                    {copiedId === 'formula' ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                                <button type="button"
+                                    onClick={() => copyToClipboard(JSON.stringify(analysis, null, 2), 'style-json')}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-xs transition-all">
+                                    {copiedId === 'style-json' ? <Check size={12} className="text-emerald-400" /> : <FileJson size={12} />}
+                                    JSON
                                 </button>
-                                <button
-                                    type="button"
-                                    onClick={saveStyleInspiration}
-                                    title="Utiliser ce style dans la génération"
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 text-xs font-bold transition-all"
-                                >
+                                <button type="button" onClick={saveStyleInspiration}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 text-xs font-bold transition-all">
                                     {styleSaved ? <Check size={12} className="text-emerald-400" /> : <ArrowRight size={12} />}
                                     {styleSaved ? 'Sauvegardé !' : 'Utiliser pour générer'}
                                 </button>
@@ -804,7 +985,27 @@ function StyleTab({ copyToClipboard, copiedId }: { copyToClipboard: (t: string, 
                         </div>
                     </div>
 
-                    {/* Métriques */}
+                    {/* Radar Chart + Scores */}
+                    {analysis.scores && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-5 flex items-center justify-center">
+                                <RadarChart scores={analysis.scores} />
+                            </div>
+                            <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-5 flex flex-col justify-center gap-2">
+                                <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-2">Scores par axe</p>
+                                <ScoreBar label="Accroche" value={analysis.scores.hook_power} color="bg-yellow-500" />
+                                <ScoreBar label="Émotion" value={analysis.scores.emotional_depth} color="bg-red-500" />
+                                <ScoreBar label="Narration" value={analysis.scores.storytelling} color="bg-pink-500" />
+                                <ScoreBar label="Autorité" value={analysis.scores.authority} color="bg-blue-500" />
+                                <ScoreBar label="Viralité" value={analysis.scores.viral_potential} color="bg-orange-500" />
+                                <ScoreBar label="Communauté" value={analysis.scores.community_building} color="bg-emerald-500" />
+                                <ScoreBar label="Urgence" value={analysis.scores.urgency} color="bg-cyan-500" />
+                                <ScoreBar label="Humour" value={analysis.scores.humor} color="bg-violet-500" />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Métriques rapides */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         {[
                             { label: 'Ton', value: analysis.tone, color: 'text-pink-400' },
@@ -819,25 +1020,206 @@ function StyleTab({ copyToClipboard, copiedId }: { copyToClipboard: (t: string, 
                         ))}
                     </div>
 
-                    {/* Hooks et patterns */}
+                    {/* Hooks Masterclass */}
+                    {analysis.hooks_masterclass && analysis.hooks_masterclass.length > 0 && (
+                        <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-5">
+                            <p className="text-yellow-400 text-xs font-bold mb-4 flex items-center gap-2">🎣 Hooks Masterclass — Accroches décortiquées</p>
+                            <div className="space-y-3">
+                                {analysis.hooks_masterclass.map((h, i) => (
+                                    <div key={i} className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="flex-1">
+                                                <p className="text-white font-bold text-sm">&ldquo;{h.hook}&rdquo;</p>
+                                                <p className="text-gray-500 text-xs mt-1">{h.why_it_works}</p>
+                                            </div>
+                                            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                                                <span className={`text-xs font-black ${h.power_score >= 80 ? 'text-emerald-400' : h.power_score >= 60 ? 'text-yellow-400' : 'text-gray-400'}`}>
+                                                    {h.power_score}/100
+                                                </span>
+                                                <span className="text-[10px] text-purple-400/70 bg-purple-500/10 px-2 py-0.5 rounded-full">{h.technique}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Voice Fingerprint */}
+                    {analysis.voice_fingerprint && (
+                        <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-5">
+                            <p className="text-cyan-400 text-xs font-bold mb-4 flex items-center gap-2"><Sparkles size={12} /> Empreinte Vocale</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-gray-600 text-[10px] font-bold mb-2">Rythme : <span className="text-cyan-300">{analysis.voice_fingerprint.rhythm}</span></p>
+                                    <p className="text-gray-600 text-[10px] font-bold mb-2">Moy. mots/phrase : <span className="text-cyan-300">{analysis.voice_fingerprint.sentence_avg_words}</span></p>
+                                    <p className="text-gray-600 text-[10px] font-bold mb-2">Ponctuation : <span className="text-cyan-300">{analysis.voice_fingerprint.punctuation_style}</span></p>
+                                </div>
+                                <div>
+                                    <p className="text-gray-600 text-[10px] font-bold mb-1.5">Phrases signatures :</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {analysis.voice_fingerprint.signature_phrases.map((p, i) => (
+                                            <span key={i} className="text-[10px] bg-cyan-500/10 text-cyan-300 px-2 py-0.5 rounded-full border border-cyan-500/10">&ldquo;{p}&rdquo;</span>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-gray-600 text-[10px] font-bold mb-1.5">Patterns d&apos;ouverture :</p>
+                                    <ul className="space-y-1">{analysis.voice_fingerprint.opening_patterns.map((p, i) => <li key={i} className="text-gray-300 text-xs flex items-start gap-1.5"><ChevronRight size={10} className="text-cyan-400 flex-shrink-0 mt-0.5" />{p}</li>)}</ul>
+                                </div>
+                                <div>
+                                    <p className="text-gray-600 text-[10px] font-bold mb-1.5">Patterns de clôture :</p>
+                                    <ul className="space-y-1">{analysis.voice_fingerprint.closing_patterns.map((p, i) => <li key={i} className="text-gray-300 text-xs flex items-start gap-1.5"><ChevronRight size={10} className="text-cyan-400 flex-shrink-0 mt-0.5" />{p}</li>)}</ul>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Audience Persona + Emotional Map */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <AnalysisCard title="Accroches récurrentes" items={analysis.hooks} color="text-yellow-400" icon="🎣" />
-                        <AnalysisCard title="Déclencheurs d'engagement" items={analysis.engagement_triggers} color="text-orange-400" icon="⚡" />
-                        <AnalysisCard title="Types de contenu gagnants" items={analysis.best_content_types} color="text-cyan-400" icon="🏆" />
-                        <AnalysisCard title="Tips pour améliorer" items={analysis.improvement_tips} color="text-emerald-400" icon="💡" />
+                        {analysis.audience_persona && (
+                            <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-5">
+                                <p className="text-pink-400 text-xs font-bold mb-3 flex items-center gap-2"><Users size={12} /> Persona Audience</p>
+                                <div className="space-y-2 text-xs">
+                                    <div className="flex justify-between"><span className="text-gray-500">Âge</span><span className="text-gray-300 font-bold">{analysis.audience_persona.age_range}</span></div>
+                                    <div className="flex justify-between"><span className="text-gray-500">Genre</span><span className="text-gray-300 font-bold">{analysis.audience_persona.gender_lean}</span></div>
+                                    <div className="flex justify-between"><span className="text-gray-500">Socio-éco</span><span className="text-gray-300 font-bold">{analysis.audience_persona.socio_economic}</span></div>
+                                    <div className="flex justify-between"><span className="text-gray-500">Registre</span><span className="text-gray-300 font-bold">{analysis.audience_persona.language_register}</span></div>
+                                    {analysis.audience_persona.pain_points.length > 0 && (
+                                        <div className="pt-2 border-t border-white/5">
+                                            <p className="text-gray-600 text-[10px] font-bold mb-1.5">Points de douleur :</p>
+                                            <ul className="space-y-1">{analysis.audience_persona.pain_points.map((p, i) => <li key={i} className="text-gray-400 flex items-start gap-1.5"><ChevronRight size={10} className="text-pink-400 flex-shrink-0 mt-0.5" />{p}</li>)}</ul>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                        {analysis.emotional_map && (
+                            <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-5">
+                                <p className="text-red-400 text-xs font-bold mb-3 flex items-center gap-2"><Flame size={12} /> Carte Émotionnelle</p>
+                                <p className="text-gray-600 text-[10px] font-bold mb-2">Arc émotionnel : <span className="text-red-300">{analysis.emotional_map.emotional_arc}</span></p>
+                                {analysis.emotional_map.dominant_emotions.length > 0 && (
+                                    <div className="space-y-2 mb-3">
+                                        {analysis.emotional_map.dominant_emotions.map((e, i) => (
+                                            <div key={i} className="flex items-center gap-2">
+                                                <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                                    <div className="h-full rounded-full bg-red-500/60" style={{ width: `${Math.round(e.frequency * 100)}%` }} />
+                                                </div>
+                                                <span className="text-gray-300 text-[10px] font-bold w-24 text-right">{e.emotion}</span>
+                                                <span className="text-gray-500 text-[10px] w-8">{Math.round(e.frequency * 100)}%</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                {analysis.emotional_map.desires_activated.length > 0 && (
+                                    <div className="pt-2 border-t border-white/5">
+                                        <p className="text-gray-600 text-[10px] font-bold mb-1.5">Désirs activés :</p>
+                                        <div className="flex flex-wrap gap-1">{analysis.emotional_map.desires_activated.map((d, i) => <span key={i} className="text-[10px] bg-red-500/10 text-red-300 px-2 py-0.5 rounded-full">{d}</span>)}</div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
-                    {/* Structure et stratégies */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4">
-                            <p className="text-gray-500 text-xs font-bold mb-2">📐 Structure type</p>
-                            <p className="text-gray-300 text-sm">{analysis.typical_structure}</p>
+                    {/* Competitive Edge */}
+                    {analysis.competitive_edge && (
+                        <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-5">
+                            <p className="text-emerald-400 text-xs font-bold mb-4 flex items-center gap-2"><Shield size={12} /> Avantage Compétitif</p>
+                            {analysis.competitive_edge.unique_differentiator && (
+                                <p className="text-white font-bold text-sm mb-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">{analysis.competitive_edge.unique_differentiator}</p>
+                            )}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                {analysis.competitive_edge.copy_this.length > 0 && (
+                                    <div className="bg-emerald-500/5 rounded-xl p-3">
+                                        <p className="text-emerald-400 text-[10px] font-bold mb-2">A copier</p>
+                                        <ul className="space-y-1">{analysis.competitive_edge.copy_this.map((s, i) => <li key={i} className="text-gray-300 text-xs flex items-start gap-1.5"><Check size={10} className="text-emerald-400 flex-shrink-0 mt-0.5" />{s}</li>)}</ul>
+                                    </div>
+                                )}
+                                {analysis.competitive_edge.avoid_this.length > 0 && (
+                                    <div className="bg-red-500/5 rounded-xl p-3">
+                                        <p className="text-red-400 text-[10px] font-bold mb-2">A éviter</p>
+                                        <ul className="space-y-1">{analysis.competitive_edge.avoid_this.map((s, i) => <li key={i} className="text-gray-300 text-xs flex items-start gap-1.5"><AlertTriangle size={10} className="text-red-400 flex-shrink-0 mt-0.5" />{s}</li>)}</ul>
+                                    </div>
+                                )}
+                                {analysis.competitive_edge.content_gaps.length > 0 && (
+                                    <div className="bg-blue-500/5 rounded-xl p-3">
+                                        <p className="text-blue-400 text-[10px] font-bold mb-2">Opportunités</p>
+                                        <ul className="space-y-1">{analysis.competitive_edge.content_gaps.map((s, i) => <li key={i} className="text-gray-300 text-xs flex items-start gap-1.5"><Lightbulb size={10} className="text-blue-400 flex-shrink-0 mt-0.5" />{s}</li>)}</ul>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                        <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4">
-                            <p className="text-gray-500 text-xs font-bold mb-2"># Stratégie hashtags</p>
-                            <p className="text-gray-300 text-sm">{analysis.hashtag_strategy}</p>
+                    )}
+
+                    {/* Claude Instructions — Before/After */}
+                    {analysis.claude_instructions && (
+                        <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-5">
+                            <div className="flex items-center justify-between mb-4">
+                                <p className="text-purple-400 text-xs font-bold flex items-center gap-2"><Brain size={12} /> Instructions Claude.ai</p>
+                                <button type="button"
+                                    onClick={() => copyToClipboard(analysis.claude_instructions?.system_prompt || '', 'claude-sys')}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-xs font-bold transition-all">
+                                    {copiedId === 'claude-sys' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                                    Copier System Prompt
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                                <div className="bg-emerald-500/5 rounded-xl p-3">
+                                    <p className="text-emerald-400 text-[10px] font-bold mb-2">DO — A faire</p>
+                                    <ul className="space-y-1">{analysis.claude_instructions.do_list.map((s, i) => <li key={i} className="text-gray-300 text-xs flex items-start gap-1.5"><Check size={10} className="text-emerald-400 flex-shrink-0 mt-0.5" />{s}</li>)}</ul>
+                                </div>
+                                <div className="bg-red-500/5 rounded-xl p-3">
+                                    <p className="text-red-400 text-[10px] font-bold mb-2">DON&apos;T — A éviter</p>
+                                    <ul className="space-y-1">{analysis.claude_instructions.dont_list.map((s, i) => <li key={i} className="text-gray-300 text-xs flex items-start gap-1.5"><AlertTriangle size={10} className="text-red-400 flex-shrink-0 mt-0.5" />{s}</li>)}</ul>
+                                </div>
+                            </div>
+                            {analysis.claude_instructions.example_rewrites.length > 0 && (
+                                <div className="space-y-3">
+                                    <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Exemples Avant → Après</p>
+                                    {analysis.claude_instructions.example_rewrites.map((rw, i) => (
+                                        <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                            <div className="bg-red-500/5 border border-red-500/10 rounded-xl p-3">
+                                                <p className="text-red-400 text-[10px] font-bold mb-1">AVANT</p>
+                                                <p className="text-gray-400 text-xs italic">{rw.before}</p>
+                                            </div>
+                                            <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-3">
+                                                <p className="text-emerald-400 text-[10px] font-bold mb-1">APRES</p>
+                                                <p className="text-gray-200 text-xs font-medium">{rw.after}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
-                    </div>
+                    )}
+
+                    {/* Content Blueprint */}
+                    {analysis.content_blueprint && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4">
+                                <p className="text-gray-500 text-xs font-bold mb-2">📐 Structure type</p>
+                                <p className="text-gray-300 text-sm">{analysis.content_blueprint.structure_template}</p>
+                                <div className="flex flex-wrap gap-2 mt-3">
+                                    <span className="text-[10px] bg-white/5 text-gray-400 px-2 py-0.5 rounded-full">{analysis.content_blueprint.ideal_length_words} mots</span>
+                                    <span className="text-[10px] bg-white/5 text-gray-400 px-2 py-0.5 rounded-full">{analysis.content_blueprint.hashtag_count} hashtags ({analysis.content_blueprint.hashtag_placement})</span>
+                                    <span className="text-[10px] bg-white/5 text-gray-400 px-2 py-0.5 rounded-full">Emojis: {analysis.content_blueprint.emoji_density}</span>
+                                </div>
+                            </div>
+                            <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4">
+                                <p className="text-gray-500 text-xs font-bold mb-2">📅 Planning</p>
+                                {analysis.content_blueprint.posting_frequency && <p className="text-gray-300 text-xs mb-2">Fréquence : {analysis.content_blueprint.posting_frequency}</p>}
+                                {analysis.content_blueprint.best_days.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mb-2">{analysis.content_blueprint.best_days.map((d, i) => <span key={i} className="text-[10px] bg-purple-500/10 text-purple-300 px-2 py-0.5 rounded-full">{d}</span>)}</div>
+                                )}
+                                {analysis.content_blueprint.cta_formulas.length > 0 && (
+                                    <>
+                                        <p className="text-gray-600 text-[10px] font-bold mt-3 mb-1">Formules CTA :</p>
+                                        <ul className="space-y-1">{analysis.content_blueprint.cta_formulas.map((c, i) => <li key={i} className="text-gray-300 text-xs">{c}</li>)}</ul>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </motion.div>
             )}
         </div>
@@ -1118,6 +1500,110 @@ function CalendarTab({
                     </div>
                 </div>
             )}
+        </div>
+    )
+}
+
+// ═════════════════════════════════════════════════════════
+// COMPOSANTS DEEP STYLE DNA
+// ═════════════════════════════════════════════════════════
+const RADAR_AXES = [
+    { key: 'hook_power', label: 'Accroche', icon: '🎣' },
+    { key: 'emotional_depth', label: 'Émotion', icon: '❤️' },
+    { key: 'storytelling', label: 'Narration', icon: '📖' },
+    { key: 'authority', label: 'Autorité', icon: '👑' },
+    { key: 'viral_potential', label: 'Viralité', icon: '🔥' },
+    { key: 'community_building', label: 'Communauté', icon: '👥' },
+    { key: 'urgency', label: 'Urgence', icon: '⚡' },
+    { key: 'humor', label: 'Humour', icon: '😄' },
+] as const
+
+function RadarChart({ scores, size = 220 }: { scores: Record<string, number>; size?: number }) {
+    const cx = size / 2
+    const cy = size / 2
+    const r = size * 0.38
+    const n = RADAR_AXES.length
+
+    const getPoint = (index: number, value: number) => {
+        const angle = (Math.PI * 2 * index) / n - Math.PI / 2
+        const dist = (value / 100) * r
+        return { x: cx + dist * Math.cos(angle), y: cy + dist * Math.sin(angle) }
+    }
+
+    const gridLevels = [25, 50, 75, 100]
+
+    return (
+        <svg viewBox={`0 0 ${size} ${size}`} className="w-full max-w-[240px] mx-auto">
+            {/* Grille */}
+            {gridLevels.map(level => {
+                const points = Array.from({ length: n }, (_, i) => {
+                    const p = getPoint(i, level)
+                    return `${p.x},${p.y}`
+                }).join(' ')
+                return <polygon key={level} points={points} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="0.5" />
+            })}
+            {/* Axes */}
+            {RADAR_AXES.map((_, i) => {
+                const p = getPoint(i, 100)
+                return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="rgba(255,255,255,0.06)" strokeWidth="0.5" />
+            })}
+            {/* Zone de données */}
+            <polygon
+                points={RADAR_AXES.map((axis, i) => {
+                    const p = getPoint(i, scores[axis.key] || 0)
+                    return `${p.x},${p.y}`
+                }).join(' ')}
+                fill="rgba(168,85,247,0.15)"
+                stroke="rgba(168,85,247,0.6)"
+                strokeWidth="1.5"
+            />
+            {/* Points */}
+            {RADAR_AXES.map((axis, i) => {
+                const p = getPoint(i, scores[axis.key] || 0)
+                return <circle key={axis.key} cx={p.x} cy={p.y} r="3" fill="rgba(168,85,247,0.9)" stroke="rgba(168,85,247,0.4)" strokeWidth="1" />
+            })}
+            {/* Labels */}
+            {RADAR_AXES.map((axis, i) => {
+                const p = getPoint(i, 118)
+                return (
+                    <text key={axis.key} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="central" className="fill-gray-500 text-[7px] font-bold">
+                        {axis.icon} {axis.label}
+                    </text>
+                )
+            })}
+        </svg>
+    )
+}
+
+function ScoreBar({ label, value, color = 'bg-purple-500' }: { label: string; value: number; color?: string }) {
+    return (
+        <div className="flex items-center gap-3">
+            <span className="text-gray-500 text-[10px] font-bold w-20 text-right">{label}</span>
+            <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
+                <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${value}%` }}
+                    transition={{ duration: 0.8, ease: 'easeOut' }}
+                    className={`h-full rounded-full ${color}`}
+                />
+            </div>
+            <span className="text-gray-400 text-[10px] font-mono w-8">{value}</span>
+        </div>
+    )
+}
+
+function ScoreBadge({ score }: { score: number }) {
+    const color = score >= 80 ? 'from-emerald-500 to-green-400 text-emerald-950' :
+        score >= 60 ? 'from-purple-500 to-violet-400 text-purple-950' :
+        score >= 40 ? 'from-yellow-500 to-orange-400 text-yellow-950' :
+        'from-red-500 to-rose-400 text-red-950'
+    const label = score >= 80 ? 'Excellent' : score >= 60 ? 'Bon' : score >= 40 ? 'Moyen' : 'Faible'
+
+    return (
+        <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r ${color} font-black text-sm`}>
+            <Gauge size={16} />
+            <span>{score}/100</span>
+            <span className="text-[10px] font-bold opacity-80">{label}</span>
         </div>
     )
 }

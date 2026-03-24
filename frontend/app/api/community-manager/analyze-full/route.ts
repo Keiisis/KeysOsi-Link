@@ -278,57 +278,254 @@ async function scrapePosts(profileUrl: string, platform: string): Promise<{ post
     return { posts, method: posts.length > 0 ? 'serper_fallback' : 'empty' }
 }
 
-// ── Analyse de style IA ───────────────────────────────────
-const STYLE_SYSTEM_PROMPT = `Tu es un expert en marketing digital africain, copywriting viral et community management.
-Analyse le style d'écriture des publications fournies et retourne UNIQUEMENT un objet JSON valide avec cette structure exacte :
-{
-  "tone": "string",
-  "vocabulary_level": "simple|courant|soutenu|technique",
-  "typical_structure": "string (ex: Choc → Problème → Solution → CTA)",
-  "hooks": ["string","string","string"],
-  "hashtag_strategy": "string",
-  "emoji_usage": "string",
-  "avg_post_length": "court <100 mots|moyen 100-300|long >300",
-  "engagement_triggers": ["string"],
-  "writing_patterns": ["string"],
-  "improvement_tips": ["string","string","string"],
-  "viral_formula": "string (formule en 1 phrase percutante)",
-  "best_content_types": ["string"],
-  "call_to_action_style": "string",
-  "top_topics": ["string"],
-  "best_posting_times": ["string"],
-  "content_mix": "string (ex: 60% éducatif, 30% motivationnel, 10% promotionnel)",
-  "strengths": ["string","string"],
-  "weaknesses": ["string","string"],
-  "opportunities": ["string","string","string"]
-}`
+// ══════════════════════════════════════════════════════════
+// Deep Style DNA v2 — Moteur multi-pass
+// ══════════════════════════════════════════════════════════
 
-async function analyzeStyle(posts: RawPost[], platform: string, profileUrl: string): Promise<Record<string, unknown> | null> {
-    const textPosts = posts.filter(p => p.text.length > 10)
-    if (textPosts.length === 0) return null
-    const samples = textPosts.slice(0, 15).map(p => p.text).join('\n---\n').slice(0, 8000)
-
+async function callGroq(
+    systemPrompt: string, userPrompt: string,
+    opts: { temperature: number; max_tokens: number }
+): Promise<string> {
     const shuffled = [...GROQ_KEYS].sort(() => Math.random() - 0.5)
     for (let i = 0; i < Math.min(shuffled.length, 3); i++) {
         try {
             const groq = new Groq({ apiKey: shuffled[i] })
-            const completion = await groq.chat.completions.create({
+            const c = await groq.chat.completions.create({
                 messages: [
-                    { role: 'system', content: STYLE_SYSTEM_PROMPT },
-                    { role: 'user', content: `Analyse ces ${textPosts.length} publications ${platform} (profil: ${profileUrl}) :\n\n---\n${samples}\n---\n\nRetourne l'analyse JSON complète.` },
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userPrompt },
                 ],
                 model: 'llama-3.3-70b-versatile',
                 response_format: { type: 'json_object' },
-                temperature: 0.3,
-                max_tokens: 2000,
+                temperature: opts.temperature,
+                max_tokens: opts.max_tokens,
             })
-            const rawJson = completion.choices[0].message.content || '{}'
-            try { return JSON.parse(rawJson) } catch { return null }
+            return c.choices[0].message.content || '{}'
         } catch (err) {
             console.warn(`[analyze-full] Groq key ${i + 1} failed:`, err instanceof Error ? err.message : '')
+            if (i === Math.min(shuffled.length, 3) - 1) throw err
         }
     }
-    return null
+    throw new Error('Toutes les clés Groq ont échoué')
+}
+
+function clamp(v: unknown, min: number, max: number): number {
+    const n = Number(v); return isNaN(n) ? 0 : Math.max(min, Math.min(max, Math.round(n)))
+}
+function ensureStr(v: unknown, fb = ''): string {
+    if (v == null) return fb; const s = String(v).trim(); return s === 'null' || s === 'undefined' ? fb : s
+}
+
+const PASS1_SYSTEM = `Tu es un analyste quantitatif expert en marketing digital, copywriting viral et community management africain.
+Analyse les publications et extrais des METRIQUES PRECISES, PATTERNS STRUCTURELS et SCORES CHIFFRES.
+Chaque score: entier 0-100. Chaque hook: CITATION EXACTE du texte.
+Retourne UNIQUEMENT un JSON valide :
+{
+  "voice_fingerprint": {
+    "signature_phrases": ["citation exacte"] (max 5),
+    "transition_words": ["mot"] (max 8),
+    "rhythm": "short_punchy | flowing_narrative | mixed",
+    "sentence_avg_words": number,
+    "punctuation_style": "exclamation_heavy | question_driven | ellipsis_lover | clean | mixed",
+    "opening_patterns": ["pattern"] (max 4),
+    "closing_patterns": ["pattern"] (max 4)
+  },
+  "hooks_masterclass": [{"hook":"texte exact","technique":"curiosity_gap|shock_stat|direct_question|bold_claim|personal_story|controversy|social_proof|scarcity|empathy_hook","power_score":number,"why_it_works":"string"}] (max 6),
+  "content_blueprint": {
+    "structure_template": "string",
+    "ideal_length_words": number,
+    "hashtag_count": number,
+    "hashtag_placement": "end|inline|mixed|none",
+    "emoji_density": "none|light|medium|heavy",
+    "emoji_favorites": ["emoji"] (max 5),
+    "visual_pairing": "lifestyle_photos|data_graphics|face_close_ups|quotes_cards|video_clips|mixed",
+    "cta_formulas": ["formule CTA exacte"] (max 4),
+    "posting_frequency": "string",
+    "best_days": ["jour"]
+  },
+  "scores": {
+    "hook_power": number, "emotional_depth": number, "storytelling": number,
+    "authority": number, "humor": number, "urgency": number,
+    "community_building": number, "viral_potential": number
+  }
+}`
+
+const PASS2_SYSTEM = `Tu es un stratège marketing digital expert en psychologie d'audience et positionnement concurrentiel pour l'Afrique de l'Ouest.
+Tu reçois l'analyse structurelle (Pass 1) et les publications originales.
+Complète avec la dimension STRATEGIQUE, PSYCHOLOGIQUE et CREATIVE.
+Le system_prompt doit être DIRECTEMENT utilisable dans Claude/ChatGPT pour imiter ce style.
+Les example_rewrites montrent la TRANSFORMATION d'un texte générique vers le style analysé.
+Retourne UNIQUEMENT un JSON valide :
+{
+  "emotional_map": {
+    "dominant_emotions": [{"emotion":"string","frequency":number (0-1),"example":"citation courte"}] (max 5),
+    "emotional_arc": "buildup_to_climax|steady|rollercoaster|tension_release|crescendo",
+    "pain_points_addressed": ["string"] (max 5),
+    "desires_activated": ["string"] (max 5),
+    "emotional_density_score": number (0-100)
+  },
+  "audience_persona": {
+    "age_range": "string",
+    "gender_lean": "mixed|female_dominant|male_dominant",
+    "socio_economic": "string",
+    "pain_points": ["string"] (max 4),
+    "language_register": "familier|informal_professional|formel|technique|mixte",
+    "platform_behavior": "string"
+  },
+  "competitive_edge": {
+    "unique_differentiator": "string",
+    "content_gaps": ["string"] (max 4),
+    "vulnerability": "string",
+    "copy_this": ["string"] (max 4),
+    "avoid_this": ["string"] (max 3),
+    "strengths": ["string"] (max 3),
+    "weaknesses": ["string"] (max 3),
+    "opportunities": ["string"] (max 3)
+  },
+  "claude_instructions": {
+    "system_prompt": "prompt système complet prêt à l'emploi (max 400 mots)",
+    "do_list": ["string"] (max 6),
+    "dont_list": ["string"] (max 5),
+    "example_rewrites": [{"before":"texte générique","after":"même contenu dans le style analysé"}] (2 exemples)
+  },
+  "viral_formula": "formule virale condensée en 1 phrase",
+  "tone": "string",
+  "vocabulary_level": "simple|courant|soutenu|technique|mixte",
+  "top_topics": ["string"] (max 5),
+  "best_posting_times": ["string"] (max 3),
+  "content_mix": "string (ex: 60% éducatif, 30% motivationnel, 10% promotionnel)"
+}`
+
+interface HookItem { hook: string; technique: string; power_score: number; why_it_works: string }
+interface EmotionItem { emotion: string; frequency: number; example: string }
+interface RewriteItem { before: string; after: string }
+
+function sanitizePass1(raw: Record<string, unknown>) {
+    const vf = (raw.voice_fingerprint || {}) as Record<string, unknown>
+    const hm = Array.isArray(raw.hooks_masterclass) ? raw.hooks_masterclass : []
+    const cb = (raw.content_blueprint || {}) as Record<string, unknown>
+    const sc = (raw.scores || {}) as Record<string, unknown>
+    return {
+        voice_fingerprint: {
+            signature_phrases: ensureArray(vf.signature_phrases).slice(0, 5),
+            transition_words: ensureArray(vf.transition_words).slice(0, 8),
+            rhythm: ensureStr(vf.rhythm, 'mixed'),
+            sentence_avg_words: clamp(vf.sentence_avg_words, 3, 50),
+            punctuation_style: ensureStr(vf.punctuation_style, 'mixed'),
+            opening_patterns: ensureArray(vf.opening_patterns).slice(0, 4),
+            closing_patterns: ensureArray(vf.closing_patterns).slice(0, 4),
+        },
+        hooks_masterclass: hm.slice(0, 6).map((h: unknown) => {
+            const item = (h || {}) as Record<string, unknown>
+            return { hook: ensureStr(item.hook), technique: ensureStr(item.technique, 'bold_claim'), power_score: clamp(item.power_score, 0, 100), why_it_works: ensureStr(item.why_it_works) } as HookItem
+        }),
+        content_blueprint: {
+            structure_template: ensureStr(cb.structure_template),
+            ideal_length_words: clamp(cb.ideal_length_words, 10, 2000),
+            hashtag_count: clamp(cb.hashtag_count, 0, 30),
+            hashtag_placement: ensureStr(cb.hashtag_placement, 'end'),
+            emoji_density: ensureStr(cb.emoji_density, 'medium'),
+            emoji_favorites: ensureArray(cb.emoji_favorites).slice(0, 5),
+            visual_pairing: ensureStr(cb.visual_pairing, 'mixed'),
+            cta_formulas: ensureArray(cb.cta_formulas).slice(0, 4),
+            posting_frequency: ensureStr(cb.posting_frequency),
+            best_days: ensureArray(cb.best_days),
+        },
+        scores: {
+            hook_power: clamp(sc.hook_power, 0, 100), emotional_depth: clamp(sc.emotional_depth, 0, 100),
+            storytelling: clamp(sc.storytelling, 0, 100), authority: clamp(sc.authority, 0, 100),
+            humor: clamp(sc.humor, 0, 100), urgency: clamp(sc.urgency, 0, 100),
+            community_building: clamp(sc.community_building, 0, 100), viral_potential: clamp(sc.viral_potential, 0, 100),
+        },
+    }
+}
+
+function sanitizePass2(raw: Record<string, unknown>) {
+    const em = (raw.emotional_map || {}) as Record<string, unknown>
+    const ap = (raw.audience_persona || {}) as Record<string, unknown>
+    const ce = (raw.competitive_edge || {}) as Record<string, unknown>
+    const ci = (raw.claude_instructions || {}) as Record<string, unknown>
+    const dominantEmotions = Array.isArray(em.dominant_emotions) ? em.dominant_emotions : []
+    const rewrites = Array.isArray(ci.example_rewrites) ? ci.example_rewrites : []
+    return {
+        emotional_map: {
+            dominant_emotions: dominantEmotions.slice(0, 5).map((e: unknown) => {
+                const item = (e || {}) as Record<string, unknown>
+                return { emotion: ensureStr(item.emotion), frequency: Math.max(0, Math.min(1, Number(item.frequency) || 0)), example: ensureStr(item.example) } as EmotionItem
+            }),
+            emotional_arc: ensureStr(em.emotional_arc, 'steady'),
+            pain_points_addressed: ensureArray(em.pain_points_addressed).slice(0, 5),
+            desires_activated: ensureArray(em.desires_activated).slice(0, 5),
+            emotional_density_score: clamp(em.emotional_density_score, 0, 100),
+        },
+        audience_persona: {
+            age_range: ensureStr(ap.age_range, '25-40'), gender_lean: ensureStr(ap.gender_lean, 'mixed'),
+            socio_economic: ensureStr(ap.socio_economic), pain_points: ensureArray(ap.pain_points).slice(0, 4),
+            language_register: ensureStr(ap.language_register, 'informal_professional'), platform_behavior: ensureStr(ap.platform_behavior),
+        },
+        competitive_edge: {
+            unique_differentiator: ensureStr(ce.unique_differentiator),
+            content_gaps: ensureArray(ce.content_gaps).slice(0, 4), vulnerability: ensureStr(ce.vulnerability),
+            copy_this: ensureArray(ce.copy_this).slice(0, 4), avoid_this: ensureArray(ce.avoid_this).slice(0, 3),
+            strengths: ensureArray(ce.strengths).slice(0, 3), weaknesses: ensureArray(ce.weaknesses).slice(0, 3),
+            opportunities: ensureArray(ce.opportunities).slice(0, 3),
+        },
+        claude_instructions: {
+            system_prompt: ensureStr(ci.system_prompt), do_list: ensureArray(ci.do_list).slice(0, 6),
+            dont_list: ensureArray(ci.dont_list).slice(0, 5),
+            example_rewrites: rewrites.slice(0, 2).map((r: unknown) => {
+                const item = (r || {}) as Record<string, unknown>
+                return { before: ensureStr(item.before), after: ensureStr(item.after) } as RewriteItem
+            }),
+        },
+        viral_formula: ensureStr(raw.viral_formula),
+        tone: ensureStr(raw.tone, 'Non déterminé'),
+        vocabulary_level: ensureStr(raw.vocabulary_level, 'courant'),
+        top_topics: ensureArray(raw.top_topics).slice(0, 5),
+        best_posting_times: ensureArray(raw.best_posting_times).slice(0, 3),
+        content_mix: ensureStr(raw.content_mix),
+    }
+}
+
+async function analyzeStyleDeep(posts: RawPost[], platform: string, profileUrl: string) {
+    const textPosts = posts.filter(p => p.text.length > 10)
+    if (textPosts.length === 0) return null
+    const samples = textPosts.slice(0, 15).map(p => p.text).join('\n---\n').slice(0, 12000)
+    const ctx = `Plateforme: ${platform} | Profil: ${profileUrl}`
+
+    // Pass 1 : Structurel
+    console.log(`[analyze-full] Deep Style DNA — Pass 1...`)
+    let pass1
+    try {
+        const raw1 = await callGroq(PASS1_SYSTEM, `${ctx}\n\nAnalyse ces ${textPosts.length} publications :\n---\n${samples}\n---`, { temperature: 0.2, max_tokens: 3000 })
+        pass1 = sanitizePass1(JSON.parse(raw1))
+    } catch (err) {
+        console.warn('[analyze-full] Pass 1 failed:', err instanceof Error ? err.message : '')
+        return null
+    }
+
+    // Pass 2 : Stratégique
+    console.log(`[analyze-full] Deep Style DNA — Pass 2...`)
+    let pass2
+    try {
+        const raw2 = await callGroq(PASS2_SYSTEM, `${ctx}\n\n## Analyse structurelle (Pass 1) :\n\`\`\`json\n${JSON.stringify(pass1, null, 2)}\n\`\`\`\n\n## Publications originales :\n---\n${samples.slice(0, 6000)}\n---`, { temperature: 0.5, max_tokens: 3000 })
+        pass2 = sanitizePass2(JSON.parse(raw2))
+    } catch (err) {
+        console.warn('[analyze-full] Pass 2 failed, partial:', err instanceof Error ? err.message : '')
+        pass2 = null
+    }
+
+    const scores = {
+        ...pass1.scores,
+        overall: Math.round(
+            pass1.scores.hook_power * 0.2 + pass1.scores.emotional_depth * 0.15 +
+            pass1.scores.storytelling * 0.15 + pass1.scores.authority * 0.1 +
+            pass1.scores.viral_potential * 0.2 + pass1.scores.community_building * 0.1 +
+            pass1.scores.urgency * 0.05 + pass1.scores.humor * 0.05
+        ),
+    }
+
+    return { pass1, pass2, scores }
 }
 
 // ── Calcul score viral ────────────────────────────────────
@@ -337,52 +534,95 @@ function computeViralScore(post: RawPost): number {
     return post.likes * 1 + post.comments * 3 + post.shares * 5
 }
 
-// ── Génération du prompt Claude.ai ───────────────────────
-function buildClaudePrompt(dossier: Record<string, unknown>): string {
+// ── Génération du prompt Claude.ai v2 ────────────────────
+function buildClaudePromptV2(dossier: Record<string, unknown>): string {
     const meta = dossier.meta as Record<string, unknown>
+    const dna = dossier.style_dna as Record<string, unknown> | undefined
     const style = dossier.style as Record<string, unknown>
     const competitive = dossier.competitive as Record<string, string[]>
 
-    return `# Contexte Expert — Dossier Intelligence Concurrent
+    // Si pas de Deep DNA, fallback vers l'ancien format
+    if (!dna) {
+        return `# Dossier Intelligence @${meta.username} (${meta.platform})
+Formule virale: "${style.viral_formula || 'Non déterminée'}"
+Ton: ${style.tone || '?'} | Structure: ${style.structure || '?'}
+Forces: ${(competitive.strengths || []).join(', ')}
+Faiblesses: ${(competitive.weaknesses || []).join(', ')}
+Opportunités: ${(competitive.opportunities || []).join(', ')}
+---
+*${meta.posts_analyzed} posts analysés — ${meta.generated_at}*`
+    }
 
-Tu es un expert en marketing viral africain, copywriting percutant et community management pour l'Afrique de l'Ouest.
+    const vf = (dna.voice_fingerprint || {}) as Record<string, unknown>
+    const em = (dna.emotional_map || {}) as Record<string, unknown>
+    const ap = (dna.audience_persona || {}) as Record<string, unknown>
+    const cb = (dna.content_blueprint || {}) as Record<string, unknown>
+    const ce = (dna.competitive_edge || {}) as Record<string, unknown>
+    const ci = (dna.claude_instructions || {}) as Record<string, unknown>
+    const sc = (dna.scores || {}) as Record<string, number>
+    const dominantEmotions = Array.isArray(em.dominant_emotions) ? em.dominant_emotions : []
+    const rewrites = Array.isArray(ci.example_rewrites) ? ci.example_rewrites : []
 
-## Dossier d'Intelligence Marketing @${meta.username} (${meta.platform})
+    return `# System Prompt — Imite le style de @${meta.username} (${meta.platform})
 
-\`\`\`json
-${JSON.stringify(dossier, null, 2)}
-\`\`\`
-
-## Formule Virale Détectée
-"${style.viral_formula || 'Non déterminée'}"
-
-## Ce qui fonctionne pour eux (forces)
-${(competitive.strengths || []).map((s, i) => `${i + 1}. ${s}`).join('\n')}
-
-## Leurs faiblesses à exploiter
-${(competitive.weaknesses || []).map((s, i) => `${i + 1}. ${s}`).join('\n')}
-
-## Opportunités non exploitées
-${(competitive.opportunities || []).map((s, i) => `${i + 1}. ${s}`).join('\n')}
+${ci.system_prompt || `Tu es un expert en community management. Tu imites le style de @${meta.username} sur ${meta.platform}.`}
 
 ---
 
-## Comment utiliser ce dossier
+## REGLES A SUIVRE
+${ensureArray(ci.do_list).map(d => `✅ ${d}`).join('\n') || '(aucune)'}
 
-**Exemple 1 — Créer un post supérieur :**
-> "En te basant sur ce dossier, crée un post ${meta.platform} sur [TON SUJET] qui utilise la formule virale détectée mais qui surpasse leur contenu sur [UN POINT FAIBLE]"
+## A EVITER
+${ensureArray(ci.dont_list).map(d => `❌ ${d}`).join('\n') || '(aucune)'}
 
-**Exemple 2 — Calendrier éditorial :**
-> "Génère un calendrier éditorial de 30 jours en t'inspirant des patterns de ce concurrent (topics récurrents, formats gagnants) mais avec une approche différenciante pour Retour Gagnant Bénin"
+## EMPREINTE VOCALE
+- Rythme: ${vf.rhythm || '?'}
+- Longueur phrases: ~${vf.sentence_avg_words || '?'} mots/phrase
+- Expressions signatures: ${ensureArray(vf.signature_phrases).join(' | ') || '?'}
+- Mots de transition: ${ensureArray(vf.transition_words).join(', ') || '?'}
+- Ponctuation: ${vf.punctuation_style || '?'}
+- Ouverture type: ${ensureArray(vf.opening_patterns).join(', ') || '?'}
+- Fermeture type: ${ensureArray(vf.closing_patterns).join(', ') || '?'}
 
-**Exemple 3 — Réécriture virale :**
-> "Réécris ce post en le rendant plus viral selon la formule détectée : [COLLER LE POST]"
+## STRUCTURE TYPE
+${cb.structure_template || '?'}
+- Longueur idéale: ${cb.ideal_length_words || '?'} mots
+- Hashtags: ${cb.hashtag_count || '?'} (placement: ${cb.hashtag_placement || '?'})
+- Emojis: ${cb.emoji_density || '?'}${ensureArray(cb.emoji_favorites).length > 0 ? ` — favoris: ${ensureArray(cb.emoji_favorites).join(' ')}` : ''}
+- Visuel: ${cb.visual_pairing || '?'}
 
-**Exemple 4 — Campagne complète :**
-> "Crée une séquence de 5 posts ${meta.platform} sur [THÈME] en exploitant leurs opportunités non exploitées et en surpassant leurs faiblesses"
+## FORMULES CTA A REUTILISER
+${ensureArray(cb.cta_formulas).map(c => `→ "${c}"`).join('\n') || '(aucune)'}
+
+## CARTE EMOTIONNELLE
+- Emotions dominantes: ${dominantEmotions.map((e: Record<string, unknown>) => `${e.emotion} (${Math.round((Number(e.frequency) || 0) * 100)}%)`).join(', ') || '?'}
+- Arc émotionnel: ${em.emotional_arc || '?'}
+- Douleurs ciblées: ${ensureArray(em.pain_points_addressed).join(', ') || '?'}
+- Désirs activés: ${ensureArray(em.desires_activated).join(', ') || '?'}
+
+## AUDIENCE CIBLE
+- Age: ${ap.age_range || '?'} | Genre: ${ap.gender_lean || '?'}
+- Profil socio-économique: ${ap.socio_economic || '?'}
+- Registre: ${ap.language_register || '?'}
+- Comportement: ${ap.platform_behavior || '?'}
+
+## EXEMPLES AVANT / APRES
+${rewrites.map((r: Record<string, unknown>, i: number) => `### Exemple ${i + 1}\n**AVANT (générique):** "${r.before || '?'}"\n**APRES (style @${meta.username}):** "${r.after || '?'}"`).join('\n\n') || '(pas d\'exemples)'}
+
+## INTELLIGENCE COMPETITIVE
+- Différenciateur unique: ${ce.unique_differentiator || '?'}
+- A copier: ${ensureArray(ce.copy_this).join(' | ') || '?'}
+- A éviter: ${ensureArray(ce.avoid_this).join(' | ') || '?'}
+- Failles exploitables: ${ce.vulnerability || '?'}
+- Sujets non couverts: ${ensureArray(ce.content_gaps).join(', ') || '?'}
+
+## SCORES (sur 100)
+🎯 Global: ${sc.overall || '?'}/100
+- Accroche: ${sc.hook_power || '?'} | Emotion: ${sc.emotional_depth || '?'} | Story: ${sc.storytelling || '?'}
+- Autorité: ${sc.authority || '?'} | Viralité: ${sc.viral_potential || '?'} | Communauté: ${sc.community_building || '?'}
 
 ---
-*Dossier généré le ${meta.generated_at} — ${meta.posts_analyzed} publications analysées via Community Manager Pro*`
+*Dossier @${meta.username} — ${meta.posts_analyzed} posts analysés — ${meta.generated_at} — Community Manager Pro v3*`
 }
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -418,10 +658,12 @@ export async function POST(request: NextRequest) {
             viral_score: Math.round((rawScores[i] / maxRaw) * 100),
         })).sort((a, b) => b.viral_score - a.viral_score)
 
-        // ── 3. Analyse de style ───────────────────────────
-        console.log(`[analyze-full] Analyse style Groq...`)
-        const style = await analyzeStyle(rawPosts, platform, profile_url)
-        const s = style || {}
+        // ── 3. Deep Style DNA (multi-pass) ──────────────
+        console.log(`[analyze-full] Deep Style DNA Groq...`)
+        const deepResult = await analyzeStyleDeep(rawPosts, platform, profile_url)
+        const p1 = deepResult?.pass1
+        const p2 = deepResult?.pass2
+        const dnaScores = deepResult?.scores
 
         // ── 4. Stats d'engagement ─────────────────────────
         const withEngage = postsScored.filter(p => p.likes + p.comments + p.shares > 0)
@@ -432,12 +674,12 @@ export async function POST(request: NextRequest) {
         const bestScore = postsScored[0]?.viral_score ?? 0
         const engagementLevel = withEngage.length === 0 ? 'non mesuré' : bestScore > 70 ? 'viral' : bestScore > 40 ? 'élevé' : bestScore > 20 ? 'moyen' : 'faible'
 
-        // ── 5. Construction du Dossier Intelligence ───────
+        // ── 5. Construction du Dossier Intelligence v3 ────
         const dossier: Record<string, unknown> = {
             meta: {
-                version: '2.0',
+                version: '3.0',
                 generated_at: new Date().toISOString(),
-                tool: 'Retour Gagnant — Community Manager Pro',
+                tool: 'Retour Gagnant — Community Manager Pro v3',
                 posts_analyzed: rawPosts.length,
                 scrape_method: scrapeMethod,
                 platform,
@@ -450,22 +692,34 @@ export async function POST(request: NextRequest) {
                 profile_url,
                 notes: notes || '',
             },
+            // Deep Style DNA (nouveau)
+            style_dna: p1 ? {
+                voice_fingerprint: p1.voice_fingerprint,
+                hooks_masterclass: p1.hooks_masterclass,
+                content_blueprint: p1.content_blueprint,
+                scores: dnaScores,
+                emotional_map: p2?.emotional_map || null,
+                audience_persona: p2?.audience_persona || null,
+                competitive_edge: p2?.competitive_edge || null,
+                claude_instructions: p2?.claude_instructions || null,
+            } : null,
+            // Legacy flat style (backward compat)
             style: {
-                tone: String(s.tone || 'Non déterminé'),
-                vocabulary_level: String(s.vocabulary_level || 'courant'),
-                structure: String(s.typical_structure || ''),
-                hooks: ensureArray(s.hooks),
-                hashtag_strategy: String(s.hashtag_strategy || ''),
-                emoji_usage: String(s.emoji_usage || ''),
-                avg_post_length: String(s.avg_post_length || ''),
-                engagement_triggers: ensureArray(s.engagement_triggers),
-                writing_patterns: ensureArray(s.writing_patterns),
-                improvement_tips: ensureArray(s.improvement_tips),
-                viral_formula: String(s.viral_formula || ''),
-                best_content_types: ensureArray(s.best_content_types),
-                cta_style: String(s.call_to_action_style || ''),
-                top_topics: ensureArray(s.top_topics),
-                content_mix: String(s.content_mix || ''),
+                tone: p2?.tone || 'Non déterminé',
+                vocabulary_level: p2?.vocabulary_level || 'courant',
+                structure: p1?.content_blueprint.structure_template || '',
+                hooks: p1?.hooks_masterclass.map((h: HookItem) => h.hook) || [],
+                hashtag_strategy: p1 ? `${p1.content_blueprint.hashtag_count} hashtags, placement: ${p1.content_blueprint.hashtag_placement}` : '',
+                emoji_usage: p1?.content_blueprint.emoji_density || '',
+                avg_post_length: p1 ? `${p1.content_blueprint.ideal_length_words} mots` : '',
+                engagement_triggers: p2?.emotional_map?.pain_points_addressed || [],
+                writing_patterns: p1?.voice_fingerprint.opening_patterns || [],
+                improvement_tips: p2?.competitive_edge?.content_gaps || [],
+                viral_formula: p2?.viral_formula || '',
+                best_content_types: p1 ? [p1.content_blueprint.visual_pairing] : [],
+                cta_style: p1?.content_blueprint.cta_formulas.join(' / ') || '',
+                top_topics: p2?.top_topics || [],
+                content_mix: p2?.content_mix || '',
             },
             top_posts: postsScored.slice(0, 10).map((p, i) => ({
                 rank: i + 1,
@@ -489,20 +743,20 @@ export async function POST(request: NextRequest) {
                 posts_with_engagement: withEngage.length,
             },
             patterns: {
-                best_times: ensureArray(s.best_posting_times).length > 0 ? ensureArray(s.best_posting_times) : ['18h-20h', '7h-9h'],
-                top_hooks: ensureArray(s.hooks).slice(0, 5),
-                top_topics: ensureArray(s.top_topics),
-                content_mix: String(s.content_mix || ''),
+                best_times: p2?.best_posting_times?.length ? p2.best_posting_times : ['18h-20h', '7h-9h'],
+                top_hooks: p1?.hooks_masterclass.slice(0, 5).map((h: HookItem) => h.hook) || [],
+                top_topics: p2?.top_topics || [],
+                content_mix: p2?.content_mix || '',
             },
             competitive: {
-                strengths: ensureArray(s.strengths),
-                weaknesses: ensureArray(s.weaknesses),
-                opportunities: ensureArray(s.opportunities),
+                strengths: p2?.competitive_edge?.strengths || [],
+                weaknesses: p2?.competitive_edge?.weaknesses || [],
+                opportunities: p2?.competitive_edge?.opportunities || [],
             },
         }
 
-        // ── 6. Prompt Claude.ai prêt à l'emploi ──────────
-        const claudePrompt = buildClaudePrompt(dossier)
+        // ── 6. Prompt Claude.ai v2 prêt à l'emploi ──────
+        const claudePrompt = buildClaudePromptV2(dossier)
         dossier.claude_prompt = claudePrompt
 
         // ── 7. Sauvegarde Supabase ────────────────────────
@@ -521,7 +775,7 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        console.log(`[analyze-full] ✓ Dossier construit — engagement: ${engagementLevel} | style analysé: ${style !== null}`)
+        console.log(`[analyze-full] ✓ Dossier construit — engagement: ${engagementLevel} | style analysé: ${deepResult !== null}`)
         return NextResponse.json({ success: true, dossier })
     } catch (err) {
         console.error('[analyze-full] Error:', err)
