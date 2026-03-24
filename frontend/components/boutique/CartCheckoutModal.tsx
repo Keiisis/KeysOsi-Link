@@ -549,6 +549,8 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                 key: publicKey,
                 sandbox,
                 phone: customerPhone,
+                email: customerEmail,
+                name: customerName,
                 data: { order_id: oid },
             })
             window.addKkiapayListener('success', async (r) => {

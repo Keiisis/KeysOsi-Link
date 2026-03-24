@@ -178,6 +178,7 @@ export default function NationaliteFormPage() {
             window.openKkiapayWidget({
                 amount: amountXOF, position: 'center', key: paymentSettings.kkiapay_public_key,
                 sandbox: paymentSettings.kkiapay_sandbox === 'true', phone: form.telephone,
+                email: form.email, name: `${form.prenom || ''} ${form.nom || ''}`.trim(),
                 data: { context: 'nationality', email: form.email },
             })
             window.addKkiapayListener('success', (response) => {

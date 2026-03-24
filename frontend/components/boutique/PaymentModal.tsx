@@ -544,6 +544,8 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                 key: publicKey,
                 sandbox,
                 phone: customerPhone,
+                email: customerEmail,
+                name: customerName,
                 data: { order_id: oid },
                 callback: '',
             })

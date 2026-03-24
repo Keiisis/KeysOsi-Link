@@ -288,6 +288,8 @@ export default function ClientPortalPage() {
                 position: 'center',
                 key: paymentSettings.kkiapay_public_key,
                 sandbox: paymentSettings.kkiapay_sandbox === 'true',
+                email: doc.client_email || '',
+                name: `${doc.client_prenom || ''} ${doc.client_nom || ''}`.trim(),
                 data: { doc_id: id, type: doc.type },
             })
 
