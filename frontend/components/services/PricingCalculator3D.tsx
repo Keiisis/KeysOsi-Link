@@ -6,11 +6,24 @@ import { CheckCircle2, MessageCircle, Calculator, ChevronDown, Check } from "luc
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslation, T } from "@/lib/translation";
+import { Price } from "@/components/ui/Price";
 
 interface PricingOption {
     label: string;
     price: string;
     features?: string[];
+}
+
+/** Parse un prix string FCFA en montant numérique + suffixe éventuel */
+function parseFCFAPrice(priceStr: string): { amount: number; suffix: string } | null {
+    const match = priceStr.match(/^([\d\s.]+)\s*FCFA(.*)$/i)
+    if (match) {
+        const amount = Number(match[1].replace(/[\s.]/g, ''))
+        if (!isNaN(amount) && amount > 0) {
+            return { amount, suffix: match[2]?.trim() || '' }
+        }
+    }
+    return null
 }
 
 interface PricingCalculator3DProps {
@@ -114,7 +127,13 @@ export default function PricingCalculator3D({ options, baseColor, serviceName }:
                                 className="text-4xl font-extrabold font-heading tracking-tight"
                                 style={{ color: baseColor }}
                             >
-                                {selectedOption.price}
+                                {(() => {
+                                    const parsed = parseFCFAPrice(selectedOption.price)
+                                    if (parsed) {
+                                        return <><Price amount={parsed.amount} currency="XOF" />{parsed.suffix ? ` ${parsed.suffix}` : ''}</>
+                                    }
+                                    return <T>{selectedOption.price}</T>
+                                })()}
                             </motion.div>
                         </AnimatePresence>
                         <p className="text-sm text-gray-400 mt-2 font-medium"><T>Prix estimatif (hors options)</T></p>

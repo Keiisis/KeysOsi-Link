@@ -9,7 +9,8 @@ import {
     ArrowRight, CheckCircle2, Users, Scale, Fingerprint, MapPin
 } from 'lucide-react'
 import { useTranslation } from '@/lib/translation'
-import { formatPrice, CurrencyCode } from '@/lib/currency'
+import { CurrencyCode } from '@/lib/currency'
+import { Price } from '@/components/ui/Price'
 
 interface PageContent { section_key: string; content_fr: string }
 interface FAQ { id: string; question_fr: string; answer_fr: string; sort_order: number }
@@ -103,7 +104,7 @@ export default function NationalitePage() {
                             {t("Soumettre ma demande")} <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                         </Link>
                         <div className="flex items-center gap-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl px-6 py-4">
-                            <span className="text-3xl font-black text-[#FCD116]">{formatPrice(formAmount, formCurrency)}</span>
+                            <span className="text-3xl font-black text-[#FCD116]"><Price amount={formAmount} currency={formCurrency} /></span>
                             <div className="text-left">
                                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{t("Frais de traitement")}</p>
                                 <p className="text-[10px] text-gray-600 flex items-center gap-1"><Clock size={10} /> {t(content.processing_time || '3 mois')}</p>
