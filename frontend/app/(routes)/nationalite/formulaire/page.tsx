@@ -177,9 +177,10 @@ export default function NationaliteFormPage() {
         try {
             window.openKkiapayWidget({
                 amount: amountXOF, position: 'center', key: paymentSettings.kkiapay_public_key,
-                sandbox: paymentSettings.kkiapay_sandbox === 'true', phone: form.telephone,
-                email: form.email, name: `${form.prenom || ''} ${form.nom || ''}`.trim(),
+                sandbox: paymentSettings.kkiapay_sandbox === 'true', phone: form.telephone || undefined,
+                email: form.email || undefined, name: `${form.prenom || ''} ${form.nom || ''}`.trim() || undefined,
                 data: { context: 'nationality', email: form.email },
+                callback: `${window.location.origin}/nationalite/formulaire`,
             })
             window.addKkiapayListener('success', (response) => {
                 setPaymentTxId(String(response.transactionId || '')); setPaymentDone(true); setPaymentProcessing(false)

@@ -288,9 +288,10 @@ export default function ClientPortalPage() {
                 position: 'center',
                 key: paymentSettings.kkiapay_public_key,
                 sandbox: paymentSettings.kkiapay_sandbox === 'true',
-                email: doc.client_email || '',
-                name: `${doc.client_prenom || ''} ${doc.client_nom || ''}`.trim(),
+                email: doc.client_email || undefined,
+                name: `${doc.client_prenom || ''} ${doc.client_nom || ''}`.trim() || undefined,
                 data: { doc_id: id, type: doc.type },
+                callback: `${window.location.origin}/portail/${id}`,
             })
 
             ;(window as any).addKkiapayListener('success', async (response: any) => {

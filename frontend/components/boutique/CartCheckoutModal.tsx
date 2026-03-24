@@ -548,10 +548,11 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                 position: 'center',
                 key: publicKey,
                 sandbox,
-                phone: customerPhone,
-                email: customerEmail,
-                name: customerName,
+                phone: customerPhone || undefined,
+                email: customerEmail || undefined,
+                name: customerName || undefined,
                 data: { order_id: oid },
+                callback: `${window.location.origin}/boutique`,
             })
             window.addKkiapayListener('success', async (r) => {
                 await verifyPayment(oid, r.transactionId as string)

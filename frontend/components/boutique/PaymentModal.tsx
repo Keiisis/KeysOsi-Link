@@ -543,11 +543,11 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                 position: 'center',
                 key: publicKey,
                 sandbox,
-                phone: customerPhone,
-                email: customerEmail,
-                name: customerName,
+                phone: customerPhone || undefined,
+                email: customerEmail || undefined,
+                name: customerName || undefined,
                 data: { order_id: oid },
-                callback: '',
+                callback: `${window.location.origin}/boutique`,
             })
             window.addKkiapayListener('success', async (response) => {
                 await verifyPayment(oid, response.transactionId as string)
