@@ -156,16 +156,24 @@ function QRDisplay({ size }: { size: number }) {
     return <QRCode value="https://www.retourgagnantbenin.bj" size={size} fgColor={DARK} bgColor="#ffffff" level="M" />
 }
 
-/** Image encadrée dorée pour les pages intérieures */
-function DepliantImage({ src, s, w, h, radius = 4 }: { src: string; s: number; w: number; h: number; radius?: number }) {
+/** Image encadrée dorée pour les pages intérieures — affichage complet */
+function DepliantImage({ src, s, w, h, radius = 6, caption }: { src: string; s: number; w: number; h: number; radius?: number; caption?: string }) {
     return (
-        <div style={{
-            width: w * s, height: h * s, borderRadius: radius * s,
-            border: `1.5px solid ${GOLD}50`, overflow: 'hidden', flexShrink: 0,
-            boxShadow: `0 2px 8px rgba(0,0,0,0.15)`,
-        }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 * s, flexShrink: 0 }}>
+            <div style={{
+                width: w * s, height: h * s, borderRadius: radius * s,
+                border: `2px solid ${GOLD}70`, overflow: 'hidden', flexShrink: 0,
+                boxShadow: `0 4px 16px rgba(0,0,0,0.25), 0 0 0 0.5px ${GOLD}30`,
+                background: '#0b1a3a',
+            }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={src} alt={caption || ''} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            </div>
+            {caption && (
+                <div style={{ color: TEXT_LIGHT, fontSize: 5.5 * s, letterSpacing: '0.08em', fontStyle: 'italic', fontFamily: "'Georgia',serif", textAlign: 'center' }}>
+                    {caption}
+                </div>
+            )}
         </div>
     )
 }
@@ -256,45 +264,57 @@ Panel1Recto.displayName = 'Panel1Recto'
 
 type ContentData = typeof FR
 
+/** Légendes images par langue */
+const IMG_CAPTIONS = {
+    FR: { top: 'Cité Lacustre de Ganvié', bottom: 'Place de l\'Amazone, Abomey' },
+    EN: { top: 'Parc National de la Pendjari', bottom: 'Porte du Non-Retour, Ouidah' },
+}
+
 function TextPanelInner({ s, content, lang, images }: { s: number; content: ContentData; lang: 'FR' | 'EN'; images: { top: string; bottom: string } }) {
     const W = BASE_W * s
     const H = BASE_H * s
+    const captions = IMG_CAPTIONS[lang]
 
     const SH = ({ children }: { children: React.ReactNode }) => (
-        <div style={{ color: TEXT_DARK, fontSize: 8 * s, fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', fontFamily: "'Arial',sans-serif", marginBottom: 5 * s, paddingBottom: 3 * s, borderBottom: `1.5px solid ${GOLD}`, lineHeight: 1 }}>
+        <div style={{ color: TEXT_DARK, fontSize: 7.5 * s, fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', fontFamily: "'Arial',sans-serif", marginBottom: 4 * s, paddingBottom: 3 * s, borderBottom: `1.5px solid ${GOLD}`, lineHeight: 1 }}>
             {children}
         </div>
     )
 
-    const Body = ({ children, size = 7.2 }: { children: React.ReactNode; size?: number }) => (
-        <div style={{ color: TEXT_MED, fontSize: size * s, lineHeight: 1.5, fontFamily: "'Arial',sans-serif", whiteSpace: 'pre-line' }}>
+    const Body = ({ children, size = 6.8 }: { children: React.ReactNode; size?: number }) => (
+        <div style={{ color: TEXT_MED, fontSize: size * s, lineHeight: 1.45, fontFamily: "'Arial',sans-serif", whiteSpace: 'pre-line' }}>
             {children}
         </div>
     )
 
     const ItemHead = ({ children }: { children: React.ReactNode }) => (
-        <div style={{ color: TEXT_DARK, fontSize: 7.2 * s, fontWeight: 700, fontFamily: "'Arial',sans-serif", marginBottom: 1 * s, marginTop: 6 * s }}>
+        <div style={{ color: TEXT_DARK, fontSize: 6.8 * s, fontWeight: 700, fontFamily: "'Arial',sans-serif", marginBottom: 1 * s, marginTop: 5 * s }}>
             {children}
         </div>
     )
 
     const BulletItem = ({ label, body }: { label: string; body: string }) => (
-        <div style={{ marginBottom: 5 * s }}>
+        <div style={{ marginBottom: 4 * s }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 * s, marginBottom: 1 * s }}>
-                <div style={{ width: 3.5 * s, height: 3.5 * s, borderRadius: '50%', background: GOLD, flexShrink: 0 }} />
-                <span style={{ color: TEXT_DARK, fontSize: 7 * s, fontWeight: 700, fontFamily: "'Arial',sans-serif" }}>{label}</span>
+                <div style={{ width: 3 * s, height: 3 * s, borderRadius: '50%', background: GOLD, flexShrink: 0 }} />
+                <span style={{ color: TEXT_DARK, fontSize: 6.5 * s, fontWeight: 700, fontFamily: "'Arial',sans-serif" }}>{label}</span>
             </div>
-            <div style={{ color: TEXT_LIGHT, fontSize: 6.8 * s, lineHeight: 1.4, fontFamily: "'Arial',sans-serif", paddingLeft: 7.5 * s }}>{body}</div>
+            <div style={{ color: TEXT_LIGHT, fontSize: 6.2 * s, lineHeight: 1.4, fontFamily: "'Arial',sans-serif", paddingLeft: 7 * s }}>{body}</div>
         </div>
     )
 
-    const colPad = 28 * s
-    const colGap = 14 * s
+    const colPad = 24 * s
+    const colGap = 12 * s
     const colW = (W - colPad * 2 - colGap) / 2
-    const headerH = 72 * s  // Header AGRANDI
-    const footerH = 28 * s
-    const contentH = H - headerH - footerH - colPad * 1.5
+    const headerH = 62 * s
+    const footerH = 26 * s
+    const imgStripH = 145 * s   // Bande images pleine largeur — GRANDE
+    const imgGap = 12 * s
+    const textTop = 4 * s + headerH + 14 * s
+    const textBottom = footerH + imgStripH + 10 * s
+    const contentH = H - textTop - textBottom
     const colStyle: React.CSSProperties = { width: colW, flexShrink: 0, overflow: 'hidden', height: contentH, display: 'flex', flexDirection: 'column' }
+    const imgW = (W - colPad * 2 - imgGap) / 2
 
     return (
         <div style={{ width: W, height: H, position: 'relative', overflow: 'hidden', background: BG_CREAM, fontFamily: "'Arial',sans-serif", flexShrink: 0 }}>
@@ -302,45 +322,40 @@ function TextPanelInner({ s, content, lang, images }: { s: number; content: Cont
             {/* Bordure haut dorée */}
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4 * s, background: `linear-gradient(90deg, ${GOLD}, ${GOLD_L}, ${GOLD})` }} />
 
-            {/* Header AGRANDI — bande noire plus haute */}
-            <div style={{ position: 'absolute', top: 4 * s, left: 0, right: 0, height: headerH, background: TEXT_DARK, display: 'flex', alignItems: 'center', paddingLeft: colPad, paddingRight: colPad, gap: 14 * s }}>
+            {/* Header — bande noire */}
+            <div style={{ position: 'absolute', top: 4 * s, left: 0, right: 0, height: headerH, background: TEXT_DARK, display: 'flex', alignItems: 'center', paddingLeft: colPad, paddingRight: colPad, gap: 12 * s }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/logo-transparent.png" alt="RGB" style={{ width: 40 * s, height: 40 * s, objectFit: 'contain', opacity: 0.95 }} />
+                <img src="/images/logo-transparent.png" alt="RGB" style={{ width: 36 * s, height: 36 * s, objectFit: 'contain', opacity: 0.95 }} />
                 <div style={{ flex: 1 }}>
-                    <div style={{ color: GOLD, fontSize: 12 * s, fontWeight: 700, letterSpacing: '0.16em', fontFamily: "'Cinzel','Georgia',serif" }}>RETOUR GAGNANT BÉNIN</div>
-                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 7.5 * s, letterSpacing: '0.12em', marginTop: 3 * s }}>{lang === 'FR' ? 'PRÉSENTATION & SERVICES' : 'PRESENTATION & SERVICES'}</div>
+                    <div style={{ color: GOLD, fontSize: 11 * s, fontWeight: 700, letterSpacing: '0.16em', fontFamily: "'Cinzel','Georgia',serif" }}>RETOUR GAGNANT BÉNIN</div>
+                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 7 * s, letterSpacing: '0.12em', marginTop: 2 * s }}>{lang === 'FR' ? 'PRÉSENTATION & SERVICES' : 'PRESENTATION & SERVICES'}</div>
                 </div>
-                <div style={{ paddingLeft: 10 * s, paddingRight: 10 * s, paddingTop: 5 * s, paddingBottom: 5 * s, border: `1.5px solid ${GOLD}60`, borderRadius: 4 * s, color: GOLD, fontSize: 10 * s, fontWeight: 700, letterSpacing: '0.18em', fontFamily: "'Cinzel',serif" }}>
+                <div style={{ paddingLeft: 8 * s, paddingRight: 8 * s, paddingTop: 4 * s, paddingBottom: 4 * s, border: `1.5px solid ${GOLD}60`, borderRadius: 4 * s, color: GOLD, fontSize: 10 * s, fontWeight: 700, letterSpacing: '0.18em', fontFamily: "'Cinzel',serif" }}>
                     {lang}
                 </div>
             </div>
 
-            {/* Colonnes de contenu */}
-            <div style={{ position: 'absolute', top: 4 * s + headerH + colPad * 0.7, left: colPad, right: colPad, display: 'flex', gap: colGap, height: contentH }}>
+            {/* Colonnes de contenu texte */}
+            <div style={{ position: 'absolute', top: textTop, left: colPad, right: colPad, display: 'flex', gap: colGap, height: contentH }}>
 
                 {/* Colonne gauche */}
                 <div style={colStyle}>
                     <SH>{content.s1_title}</SH>
                     <Body>{content.s1_body}</Body>
 
-                    {/* Image 1 — après présentation */}
-                    <div style={{ marginTop: 8 * s, marginBottom: 8 * s, display: 'flex', justifyContent: 'center' }}>
-                        <DepliantImage src={images.top} s={s} w={colW / s} h={65} radius={5} />
-                    </div>
-
-                    <div>
+                    <div style={{ marginTop: 6 * s }}>
                         <SH>{content.s2_title}</SH>
                         {content.s2_items.slice(0, 3).map((item, i) => (
                             <div key={i}>
                                 <ItemHead>{item.title}</ItemHead>
-                                <Body size={6.8}>{item.body}</Body>
+                                <Body size={6.4}>{item.body}</Body>
                             </div>
                         ))}
                     </div>
 
                     {/* CTA épinglé en bas */}
-                    <div style={{ marginTop: 'auto', paddingTop: 10 * s, borderTop: `1px solid ${GOLD}45` }}>
-                        <div style={{ color: TEXT_DARK, fontSize: 7.5 * s, fontWeight: 700, lineHeight: 1.5, fontFamily: "'Georgia',serif", fontStyle: 'italic' }}>
+                    <div style={{ marginTop: 'auto', paddingTop: 8 * s, borderTop: `1px solid ${GOLD}45` }}>
+                        <div style={{ color: TEXT_DARK, fontSize: 7 * s, fontWeight: 700, lineHeight: 1.45, fontFamily: "'Georgia',serif", fontStyle: 'italic' }}>
                             &ldquo;{content.s3_cta}&rdquo;
                         </div>
                     </div>
@@ -354,18 +369,13 @@ function TextPanelInner({ s, content, lang, images }: { s: number; content: Cont
                     {content.s2_items.slice(3).map((item, i) => (
                         <div key={i}>
                             <ItemHead>{item.title}</ItemHead>
-                            <Body size={6.8}>{item.body}</Body>
+                            <Body size={6.4}>{item.body}</Body>
                         </div>
                     ))}
 
-                    {/* Image 2 — après services */}
-                    <div style={{ marginTop: 8 * s, marginBottom: 8 * s, display: 'flex', justifyContent: 'center' }}>
-                        <DepliantImage src={images.bottom} s={s} w={colW / s} h={65} radius={5} />
-                    </div>
-
-                    <div>
+                    <div style={{ marginTop: 6 * s }}>
                         <SH>{content.s3_title}</SH>
-                        <div style={{ color: TEXT_MED, fontSize: 6.8 * s, lineHeight: 1.45, fontFamily: "'Arial',sans-serif", marginBottom: 6 * s }}>
+                        <div style={{ color: TEXT_MED, fontSize: 6.4 * s, lineHeight: 1.4, fontFamily: "'Arial',sans-serif", marginBottom: 5 * s }}>
                             {content.s3_intro}
                         </div>
                         {content.s3_items.map((item, i) => (
@@ -374,17 +384,36 @@ function TextPanelInner({ s, content, lang, images }: { s: number; content: Cont
                     </div>
 
                     {/* Contacts épinglés en bas */}
-                    <div style={{ marginTop: 'auto', paddingTop: 10 * s, borderTop: `1px solid ${GOLD}45` }}>
-                        <div style={{ color: TEXT_DARK, fontSize: 6.5 * s, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 4 * s }}>Contact</div>
+                    <div style={{ marginTop: 'auto', paddingTop: 8 * s, borderTop: `1px solid ${GOLD}45` }}>
+                        <div style={{ color: TEXT_DARK, fontSize: 6 * s, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 3 * s }}>Contact</div>
                         {[
                             '+229 01 60 32 21 21  ·  +229 01 94 35 50 50',
                             'contact@retourgagnantbenin.bj',
                             'www.retourgagnantbenin.bj',
                         ].map((text, i) => (
-                            <div key={i} style={{ color: TEXT_LIGHT, fontSize: 7 * s, lineHeight: 1.55, letterSpacing: '0.02em' }}>{text}</div>
+                            <div key={i} style={{ color: TEXT_LIGHT, fontSize: 6.5 * s, lineHeight: 1.5, letterSpacing: '0.02em' }}>{text}</div>
                         ))}
                     </div>
                 </div>
+            </div>
+
+            {/* ══════ BANDE IMAGES PLEINE LARGEUR — Photos du Bénin en entier ══════ */}
+            <div style={{
+                position: 'absolute',
+                bottom: footerH,
+                left: 0, right: 0,
+                height: imgStripH,
+                background: `linear-gradient(180deg, ${BG_CREAM} 0%, #f5efe4 100%)`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: imgGap,
+                paddingLeft: colPad,
+                paddingRight: colPad,
+                borderTop: `1px solid ${GOLD}30`,
+            }}>
+                <DepliantImage src={images.top} s={s} w={imgW / s} h={120} radius={6} caption={captions.top} />
+                <DepliantImage src={images.bottom} s={s} w={imgW / s} h={120} radius={6} caption={captions.bottom} />
             </div>
 
             {/* Footer */}
