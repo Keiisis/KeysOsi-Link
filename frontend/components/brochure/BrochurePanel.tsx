@@ -30,6 +30,7 @@ const DEPLIANT_IMAGES = {
     pendjari: '/images/depliant/pendjari.jpg',
     amazone: '/images/depliant/amazone.jpg',
     porte: '/images/depliant/porte-non-retour.jpg',
+    registre: '/images/depliant/registre-historique.jpg',
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -246,15 +247,15 @@ export const Panel1Recto = forwardRef<HTMLDivElement, { scale?: number }>(
                     RGB
                 </div>
 
-                {/* Bande bas */}
-                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, paddingTop: 16 * s, paddingBottom: 22 * s, borderTop: `1px solid ${GOLD}22`, background: 'rgba(0,0,0,0.35)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 * s }}>
-                    <div style={{ color: GOLD, fontSize: 9 * s, fontWeight: 700, letterSpacing: '0.35em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif" }}>
+                {/* Bande bas — AGRANDIE + CONTRASTE AMÉLIORÉ */}
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, paddingTop: 18 * s, paddingBottom: 24 * s, borderTop: `1.5px solid ${GOLD}40`, background: 'rgba(0,0,0,0.55)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 * s }}>
+                    <div style={{ color: GOLD, fontSize: 12 * s, fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif" }}>
                         VOTRE RETOUR, NOTRE MISSION
                     </div>
-                    <div style={{ color: `${GOLD}60`, fontSize: 7.5 * s, letterSpacing: '0.14em', fontFamily: "'Arial',sans-serif" }}>
+                    <div style={{ color: GOLD_L, fontSize: 9.5 * s, letterSpacing: '0.12em', fontFamily: "'Arial',sans-serif", fontWeight: 600 }}>
                         www.retourgagnantbenin.bj
                     </div>
-                    <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: 7 * s, letterSpacing: '0.07em', fontFamily: "'Arial',sans-serif" }}>
+                    <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 9 * s, letterSpacing: '0.07em', fontFamily: "'Arial',sans-serif" }}>
                         Haie-Vive Cocotiers, Cotonou — BÉNIN
                     </div>
                 </div>
@@ -289,42 +290,42 @@ function TextPanelInner({ s, content, lang, images, imgPositions }: { s: number;
     const captions = IMG_CAPTIONS[lang]
 
     const SH = ({ children }: { children: React.ReactNode }) => (
-        <div style={{ color: TEXT_DARK, fontSize: 7.5 * s, fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', fontFamily: "'Arial',sans-serif", marginBottom: 4 * s, paddingBottom: 3 * s, borderBottom: `1.5px solid ${GOLD}`, lineHeight: 1 }}>
+        <div style={{ color: TEXT_DARK, fontSize: 9 * s, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', fontFamily: "'Arial',sans-serif", marginBottom: 4 * s, paddingBottom: 3 * s, borderBottom: `1.5px solid ${GOLD}`, lineHeight: 1.1 }}>
             {children}
         </div>
     )
 
-    const Body = ({ children, size = 6.8 }: { children: React.ReactNode; size?: number }) => (
-        <div style={{ color: TEXT_MED, fontSize: size * s, lineHeight: 1.45, fontFamily: "'Arial',sans-serif", whiteSpace: 'pre-line' }}>
+    const Body = ({ children, size = 7.8 }: { children: React.ReactNode; size?: number }) => (
+        <div style={{ color: TEXT_MED, fontSize: size * s, lineHeight: 1.4, fontFamily: "'Arial',sans-serif", whiteSpace: 'pre-line' }}>
             {children}
         </div>
     )
 
     const ItemHead = ({ children }: { children: React.ReactNode }) => (
-        <div style={{ color: TEXT_DARK, fontSize: 6.8 * s, fontWeight: 700, fontFamily: "'Arial',sans-serif", marginBottom: 1 * s, marginTop: 5 * s }}>
+        <div style={{ color: TEXT_DARK, fontSize: 7.8 * s, fontWeight: 700, fontFamily: "'Arial',sans-serif", marginBottom: 1 * s, marginTop: 4 * s }}>
             {children}
         </div>
     )
 
     const BulletItem = ({ label, body }: { label: string; body: string }) => (
-        <div style={{ marginBottom: 4 * s }}>
+        <div style={{ marginBottom: 3 * s }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 * s, marginBottom: 1 * s }}>
-                <div style={{ width: 3 * s, height: 3 * s, borderRadius: '50%', background: GOLD, flexShrink: 0 }} />
-                <span style={{ color: TEXT_DARK, fontSize: 6.5 * s, fontWeight: 700, fontFamily: "'Arial',sans-serif" }}>{label}</span>
+                <div style={{ width: 3.5 * s, height: 3.5 * s, borderRadius: '50%', background: GOLD, flexShrink: 0 }} />
+                <span style={{ color: TEXT_DARK, fontSize: 7.5 * s, fontWeight: 700, fontFamily: "'Arial',sans-serif" }}>{label}</span>
             </div>
-            <div style={{ color: TEXT_LIGHT, fontSize: 6.2 * s, lineHeight: 1.4, fontFamily: "'Arial',sans-serif", paddingLeft: 7 * s }}>{body}</div>
+            <div style={{ color: TEXT_LIGHT, fontSize: 7 * s, lineHeight: 1.35, fontFamily: "'Arial',sans-serif", paddingLeft: 7.5 * s }}>{body}</div>
         </div>
     )
 
-    const colPad = 24 * s
-    const colGap = 12 * s
+    const colPad = 22 * s
+    const colGap = 10 * s
     const colW = (W - colPad * 2 - colGap) / 2
-    const headerH = 62 * s
-    const footerH = 26 * s
-    const imgStripH = 145 * s   // Bande images pleine largeur — GRANDE
-    const imgGap = 12 * s
-    const textTop = 4 * s + headerH + 14 * s
-    const textBottom = footerH + imgStripH + 10 * s
+    const headerH = 68 * s
+    const footerH = 30 * s
+    const imgStripH = 115 * s   // Bande images — réduite pour laisser de la place au texte agrandi
+    const imgGap = 10 * s
+    const textTop = 4 * s + headerH + 10 * s
+    const textBottom = footerH + imgStripH + 6 * s
     const contentH = H - textTop - textBottom
     const colStyle: React.CSSProperties = { width: colW, flexShrink: 0, overflow: 'hidden', height: contentH, display: 'flex', flexDirection: 'column' }
     const imgW = (W - colPad * 2 - imgGap) / 2
@@ -335,15 +336,15 @@ function TextPanelInner({ s, content, lang, images, imgPositions }: { s: number;
             {/* Bordure haut dorée */}
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4 * s, background: `linear-gradient(90deg, ${GOLD}, ${GOLD_L}, ${GOLD})` }} />
 
-            {/* Header — bande noire */}
+            {/* Header — bande noire AGRANDIE */}
             <div style={{ position: 'absolute', top: 4 * s, left: 0, right: 0, height: headerH, background: TEXT_DARK, display: 'flex', alignItems: 'center', paddingLeft: colPad, paddingRight: colPad, gap: 12 * s }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/logo-transparent.png" alt="RGB" style={{ width: 36 * s, height: 36 * s, objectFit: 'contain', opacity: 0.95 }} />
+                <img src="/images/logo-transparent.png" alt="RGB" style={{ width: 42 * s, height: 42 * s, objectFit: 'contain', opacity: 0.95 }} />
                 <div style={{ flex: 1 }}>
-                    <div style={{ color: GOLD, fontSize: 11 * s, fontWeight: 700, letterSpacing: '0.16em', fontFamily: "'Cinzel','Georgia',serif" }}>RETOUR GAGNANT BÉNIN</div>
-                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 7 * s, letterSpacing: '0.12em', marginTop: 2 * s }}>{lang === 'FR' ? 'PRÉSENTATION & SERVICES' : 'PRESENTATION & SERVICES'}</div>
+                    <div style={{ color: GOLD, fontSize: 14 * s, fontWeight: 700, letterSpacing: '0.16em', fontFamily: "'Cinzel','Georgia',serif" }}>RETOUR GAGNANT BÉNIN</div>
+                    <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 8.5 * s, letterSpacing: '0.12em', marginTop: 2 * s }}>{lang === 'FR' ? 'PRÉSENTATION & SERVICES' : 'PRESENTATION & SERVICES'}</div>
                 </div>
-                <div style={{ paddingLeft: 8 * s, paddingRight: 8 * s, paddingTop: 4 * s, paddingBottom: 4 * s, border: `1.5px solid ${GOLD}60`, borderRadius: 4 * s, color: GOLD, fontSize: 10 * s, fontWeight: 700, letterSpacing: '0.18em', fontFamily: "'Cinzel',serif" }}>
+                <div style={{ paddingLeft: 10 * s, paddingRight: 10 * s, paddingTop: 5 * s, paddingBottom: 5 * s, border: `1.5px solid ${GOLD}60`, borderRadius: 4 * s, color: GOLD, fontSize: 12 * s, fontWeight: 700, letterSpacing: '0.18em', fontFamily: "'Cinzel',serif" }}>
                     {lang}
                 </div>
             </div>
@@ -356,19 +357,19 @@ function TextPanelInner({ s, content, lang, images, imgPositions }: { s: number;
                     <SH>{content.s1_title}</SH>
                     <Body>{content.s1_body}</Body>
 
-                    <div style={{ marginTop: 6 * s }}>
+                    <div style={{ marginTop: 5 * s }}>
                         <SH>{content.s2_title}</SH>
                         {content.s2_items.slice(0, 3).map((item, i) => (
                             <div key={i}>
                                 <ItemHead>{item.title}</ItemHead>
-                                <Body size={6.4}>{item.body}</Body>
+                                <Body size={7.2}>{item.body}</Body>
                             </div>
                         ))}
                     </div>
 
                     {/* CTA épinglé en bas */}
-                    <div style={{ marginTop: 'auto', paddingTop: 8 * s, borderTop: `1px solid ${GOLD}45` }}>
-                        <div style={{ color: TEXT_DARK, fontSize: 7 * s, fontWeight: 700, lineHeight: 1.45, fontFamily: "'Georgia',serif", fontStyle: 'italic' }}>
+                    <div style={{ marginTop: 'auto', paddingTop: 6 * s, borderTop: `1px solid ${GOLD}45` }}>
+                        <div style={{ color: TEXT_DARK, fontSize: 8 * s, fontWeight: 700, lineHeight: 1.4, fontFamily: "'Georgia',serif", fontStyle: 'italic' }}>
                             &ldquo;{content.s3_cta}&rdquo;
                         </div>
                     </div>
@@ -382,13 +383,13 @@ function TextPanelInner({ s, content, lang, images, imgPositions }: { s: number;
                     {content.s2_items.slice(3).map((item, i) => (
                         <div key={i}>
                             <ItemHead>{item.title}</ItemHead>
-                            <Body size={6.4}>{item.body}</Body>
+                            <Body size={7.2}>{item.body}</Body>
                         </div>
                     ))}
 
-                    <div style={{ marginTop: 6 * s }}>
+                    <div style={{ marginTop: 5 * s }}>
                         <SH>{content.s3_title}</SH>
-                        <div style={{ color: TEXT_MED, fontSize: 6.4 * s, lineHeight: 1.4, fontFamily: "'Arial',sans-serif", marginBottom: 5 * s }}>
+                        <div style={{ color: TEXT_MED, fontSize: 7.2 * s, lineHeight: 1.35, fontFamily: "'Arial',sans-serif", marginBottom: 4 * s }}>
                             {content.s3_intro}
                         </div>
                         {content.s3_items.map((item, i) => (
@@ -396,21 +397,27 @@ function TextPanelInner({ s, content, lang, images, imgPositions }: { s: number;
                         ))}
                     </div>
 
+                    {/* Image registre historique sous Santé & Éducation */}
+                    <div style={{ marginTop: 3 * s, borderRadius: 4 * s, overflow: 'hidden', border: `1px solid ${GOLD}40`, flexShrink: 0 }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={DEPLIANT_IMAGES.registre} alt={lang === 'FR' ? 'Registre historique des affranchis' : 'Historical registry of freed citizens'} style={{ width: '100%', height: 55 * s, objectFit: 'cover', objectPosition: 'center', display: 'block' }} />
+                    </div>
+
                     {/* Contacts épinglés en bas */}
-                    <div style={{ marginTop: 'auto', paddingTop: 8 * s, borderTop: `1px solid ${GOLD}45` }}>
-                        <div style={{ color: TEXT_DARK, fontSize: 6 * s, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 3 * s }}>Contact</div>
+                    <div style={{ marginTop: 'auto', paddingTop: 6 * s, borderTop: `1px solid ${GOLD}45` }}>
+                        <div style={{ color: TEXT_DARK, fontSize: 7.5 * s, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 3 * s }}>Contact</div>
                         {[
                             '+229 01 60 32 21 21  ·  +229 01 94 35 50 50',
                             'contact@retourgagnantbenin.bj',
                             'www.retourgagnantbenin.bj',
                         ].map((text, i) => (
-                            <div key={i} style={{ color: TEXT_LIGHT, fontSize: 6.5 * s, lineHeight: 1.5, letterSpacing: '0.02em' }}>{text}</div>
+                            <div key={i} style={{ color: TEXT_LIGHT, fontSize: 7.5 * s, lineHeight: 1.45, letterSpacing: '0.02em' }}>{text}</div>
                         ))}
                     </div>
                 </div>
             </div>
 
-            {/* ══════ BANDE IMAGES PLEINE LARGEUR — Photos du Bénin en entier ══════ */}
+            {/* ══════ BANDE IMAGES PLEINE LARGEUR — Photos du Bénin ══════ */}
             <div style={{
                 position: 'absolute',
                 bottom: footerH,
@@ -425,17 +432,17 @@ function TextPanelInner({ s, content, lang, images, imgPositions }: { s: number;
                 paddingRight: colPad,
                 borderTop: `1px solid ${GOLD}30`,
             }}>
-                <DepliantImage src={images.top} s={s} w={imgW / s} h={120} radius={6} caption={captions.top.main} captionSub={captions.top.sub} position={imgPositions?.top || 'center'} />
-                <DepliantImage src={images.bottom} s={s} w={imgW / s} h={120} radius={6} caption={captions.bottom.main} captionSub={captions.bottom.sub} position={imgPositions?.bottom || 'center'} />
+                <DepliantImage src={images.top} s={s} w={imgW / s} h={90} radius={6} caption={captions.top.main} captionSub={captions.top.sub} position={imgPositions?.top || 'center'} />
+                <DepliantImage src={images.bottom} s={s} w={imgW / s} h={90} radius={6} caption={captions.bottom.main} captionSub={captions.bottom.sub} position={imgPositions?.bottom || 'center'} />
             </div>
 
-            {/* Footer */}
-            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: footerH, background: TEXT_DARK, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 * s }}>
-                <div style={{ color: `${GOLD}70`, fontSize: 6 * s, letterSpacing: '0.12em' }}>contact@retourgagnantbenin.bj</div>
-                <div style={{ width: 1 * s, height: 10 * s, background: `${GOLD}35` }} />
-                <div style={{ color: `${GOLD}70`, fontSize: 6 * s, letterSpacing: '0.12em' }}>+229 01 60 32 21 21</div>
-                <div style={{ width: 1 * s, height: 10 * s, background: `${GOLD}35` }} />
-                <div style={{ color: `${GOLD}70`, fontSize: 6 * s, letterSpacing: '0.12em' }}>www.retourgagnantbenin.bj</div>
+            {/* Footer — AGRANDI + plus lisible */}
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: footerH, background: TEXT_DARK, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 * s }}>
+                <div style={{ color: GOLD, fontSize: 7.5 * s, letterSpacing: '0.1em', fontWeight: 600 }}>contact@retourgagnantbenin.bj</div>
+                <div style={{ width: 1.2 * s, height: 12 * s, background: `${GOLD}50` }} />
+                <div style={{ color: GOLD, fontSize: 7.5 * s, letterSpacing: '0.1em', fontWeight: 600 }}>+229 01 60 32 21 21</div>
+                <div style={{ width: 1.2 * s, height: 12 * s, background: `${GOLD}50` }} />
+                <div style={{ color: GOLD, fontSize: 7.5 * s, letterSpacing: '0.1em', fontWeight: 600 }}>www.retourgagnantbenin.bj</div>
             </div>
         </div>
     )
@@ -488,47 +495,47 @@ export const Panel2Recto = forwardRef<HTMLDivElement, { scale?: number }>(
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4 * s, background: `linear-gradient(90deg, ${GOLD}, ${GOLD_L}, ${GOLD})` }} />
 
                 {/* Logo + nom AGRANDIS */}
-                <div style={{ position: 'absolute', top: 50 * s, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 * s }}>
-                    <div style={{ width: 100 * s, height: 100 * s, borderRadius: 18 * s, border: `1.5px solid ${GOLD}35`, background: `radial-gradient(circle, rgba(201,168,76,0.07), transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 40px rgba(201,168,76,0.06)` }}>
+                <div style={{ position: 'absolute', top: 45 * s, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 * s }}>
+                    <div style={{ width: 110 * s, height: 110 * s, borderRadius: 20 * s, border: `1.5px solid ${GOLD}35`, background: `radial-gradient(circle, rgba(201,168,76,0.07), transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 40px rgba(201,168,76,0.06)` }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src="/images/logo-transparent.png" alt="RGB" style={{ width: 76 * s, height: 76 * s, objectFit: 'contain' }} />
+                        <img src="/images/logo-transparent.png" alt="RGB" style={{ width: 84 * s, height: 84 * s, objectFit: 'contain' }} />
                     </div>
-                    <div style={{ color: GOLD, fontSize: 18 * s, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif", textAlign: 'center' }}>
+                    <div style={{ color: GOLD, fontSize: 22 * s, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif", textAlign: 'center' }}>
                         RETOUR GAGNANT BÉNIN
                     </div>
-                    <HRule s={s} w={220 * s} opacity={0.4} />
+                    <HRule s={s} w={260 * s} opacity={0.4} />
                 </div>
 
                 {/* QR Code central — bien centré */}
-                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-45%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 * s }}>
-                    <div style={{ padding: 12 * s, background: '#ffffff', borderRadius: 10 * s, boxShadow: `0 0 0 1.5px ${GOLD}40, 0 10px 50px rgba(0,0,0,0.5), 0 0 40px ${GOLD}12` }}>
-                        <QRDisplay size={Math.round(150 * s)} />
+                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-42%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 * s }}>
+                    <div style={{ padding: 14 * s, background: '#ffffff', borderRadius: 12 * s, boxShadow: `0 0 0 2px ${GOLD}40, 0 10px 50px rgba(0,0,0,0.5), 0 0 40px ${GOLD}12` }}>
+                        <QRDisplay size={Math.round(165 * s)} />
                     </div>
-                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 7.5 * s, letterSpacing: '0.2em', textTransform: 'uppercase', textAlign: 'center', fontWeight: 600 }}>
+                    <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 10.5 * s, letterSpacing: '0.22em', textTransform: 'uppercase', textAlign: 'center', fontWeight: 700 }}>
                         Scannez moi pour nous découvrir
                     </div>
                 </div>
 
-                {/* Coordonnées — bien centrées et présentées */}
-                <div style={{ position: 'absolute', bottom: 60 * s, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 * s }}>
-                    <HRule s={s} w={280 * s} opacity={0.3} />
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 * s }}>
+                {/* Coordonnées — AGRANDIES + plus lisibles */}
+                <div style={{ position: 'absolute', bottom: 65 * s, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 * s }}>
+                    <HRule s={s} w={320 * s} opacity={0.35} />
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 * s }}>
                         {[
                             { icon: '📍', text: 'Haie-Vive Cocotiers, Carré N°1158, Cotonou — BÉNIN' },
                             { icon: '☎', text: '+229 01 60 32 21 21  ·  +229 01 94 35 50 50' },
                             { icon: '✉', text: 'contact@retourgagnantbenin.bj' },
                             { icon: '🌐', text: 'www.retourgagnantbenin.bj' },
                         ].map(({ icon, text }) => (
-                            <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 7 * s }}>
-                                <span style={{ fontSize: 8 * s }}>{icon}</span>
-                                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 8 * s, letterSpacing: '0.04em' }}>{text}</span>
+                            <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 8 * s }}>
+                                <span style={{ fontSize: 10 * s }}>{icon}</span>
+                                <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: 10 * s, letterSpacing: '0.04em', fontWeight: 500 }}>{text}</span>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                {/* Slogan bas */}
-                <div style={{ position: 'absolute', bottom: 20 * s, left: 0, right: 0, textAlign: 'center', color: GOLD, fontSize: 8.5 * s, fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif" }}>
+                {/* Slogan bas — AGRANDI */}
+                <div style={{ position: 'absolute', bottom: 22 * s, left: 0, right: 0, textAlign: 'center', color: GOLD, fontSize: 11 * s, fontWeight: 700, letterSpacing: '0.28em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif" }}>
                     VOTRE RETOUR, NOTRE MISSION
                 </div>
             </div>
