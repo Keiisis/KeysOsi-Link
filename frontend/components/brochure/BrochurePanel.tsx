@@ -368,14 +368,14 @@ function TextPanelInner({ s, content, lang, images, imgPositions }: { s: number;
                         ))}
                     </div>
 
-                    {/* Image passeport béninois sous service #3 — affichée EN ENTIER, sans cadre */}
-                    <div style={{ marginTop: 5 * s, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
+                    {/* Image passeport béninois sous service #3 — s'adapte à l'espace disponible */}
+                    <div style={{ marginTop: 4 * s, flex: '1 1 auto', minHeight: 0, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={DEPLIANT_IMAGES.passeport} alt={lang === 'FR' ? 'Passeport République du Bénin' : 'Republic of Benin Passport'} style={{ width: 140 * s, height: 'auto', objectFit: 'contain', display: 'block' }} />
+                        <img src={DEPLIANT_IMAGES.passeport} alt={lang === 'FR' ? 'Passeport République du Bénin' : 'Republic of Benin Passport'} style={{ maxWidth: 140 * s, maxHeight: '100%', objectFit: 'contain', display: 'block' }} />
                     </div>
 
-                    {/* CTA épinglé en bas */}
-                    <div style={{ marginTop: 'auto', paddingTop: 6 * s, borderTop: `1px solid ${GOLD}45` }}>
+                    {/* CTA toujours visible en bas */}
+                    <div style={{ flexShrink: 0, paddingTop: 5 * s, borderTop: `1px solid ${GOLD}45`, marginTop: 4 * s }}>
                         <div style={{ color: TEXT_DARK, fontSize: 8 * s, fontWeight: 700, lineHeight: 1.4, fontFamily: "'Georgia',serif", fontStyle: 'italic' }}>
                             &ldquo;{content.s3_cta}&rdquo;
                         </div>
