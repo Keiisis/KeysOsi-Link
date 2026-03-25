@@ -635,14 +635,18 @@ export async function POST(request: Request) {
 
         // ─── Notification email ──────────────────────────────────────────────
         try {
-            const origin = new URL(request.url).origin
-            await fetch(`${origin}/api/notifications/order`, {
+            const origin = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin
+            const notifUrl = `${origin}/api/notifications/order`
+            console.log('[Verify] Envoi notification →', notifUrl, '| order_id:', order_id)
+            const notifRes = await fetch(notifUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ order_id, type: 'payment_success' }),
             })
+            const notifBody = await notifRes.text()
+            console.log('[Verify] Notification response:', notifRes.status, notifBody)
         } catch (notifErr) {
-            console.error('Notification email error:', notifErr)
+            console.error('[Verify] Notification email ERREUR:', notifErr)
         }
 
         return NextResponse.json({ success: true })

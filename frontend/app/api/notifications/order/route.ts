@@ -116,6 +116,9 @@ export async function POST(request: Request) {
     })
 
     // Email notification via Nodemailer
+    console.log('[Notification] SMTP config:', { host: settings.smtp_host || 'MANQUANT', user: settings.smtp_user || 'MANQUANT', pass: settings.smtp_pass ? '***' : 'MANQUANT', port: settings.smtp_port || '(default 465)' })
+    console.log('[Notification] Admin email:', adminEmail || 'MANQUANT', '| Client email:', order.customer_email || 'MANQUANT')
+
     if (settings.smtp_host && settings.smtp_user && settings.smtp_pass) {
       const transporter = nodemailer.createTransport({
         host: settings.smtp_host,
@@ -133,6 +136,7 @@ export async function POST(request: Request) {
       // Send to Admin
       if (adminEmail) {
         try {
+          console.log('[Notification] Envoi email admin →', adminEmail)
           await transporter.sendMail({
             from: fromString,
             to: adminEmail,
@@ -142,14 +146,16 @@ export async function POST(request: Request) {
               : `[${siteName}] Commande #${order_id.slice(0, 8)} mise a jour`,
             html: generateOrderEmailHTML(order, siteName, type, baseUrl),
           })
+          console.log('[Notification] Email admin envoyé OK')
         } catch (emailErr) {
-          console.error('Admin Email send error:', emailErr)
+          console.error('[Notification] ERREUR email admin:', emailErr)
         }
       }
 
       // Send to Customer
       if (order.customer_email && type === 'payment_success') {
         try {
+          console.log('[Notification] Envoi facture client →', order.customer_email)
           await transporter.sendMail({
             from: fromString,
             to: order.customer_email,
@@ -157,12 +163,15 @@ export async function POST(request: Request) {
             subject: `✅ Facture & Confirmation de commande — ${siteName}`,
             html: generateCustomerEmailHTML(order, siteName, baseUrl, eventTicket, settings),
           })
+          console.log('[Notification] Email client envoyé OK')
         } catch (emailErr) {
-          console.error('Customer email error:', emailErr)
+          console.error('[Notification] ERREUR email client:', emailErr)
         }
+      } else {
+        console.warn('[Notification] Pas d\'email client — customer_email:', order.customer_email, '| type:', type)
       }
     } else {
-      console.log("SMTP not configuréed. Skipping emails.")
+      console.error("[Notification] SMTP NON CONFIGURÉ — smtp_host:", settings.smtp_host, "smtp_user:", settings.smtp_user, "smtp_pass:", settings.smtp_pass ? 'présent' : 'MANQUANT')
     }
 
     return NextResponse.json({ ok: true })
