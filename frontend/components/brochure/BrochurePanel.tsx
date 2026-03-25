@@ -371,7 +371,7 @@ function TextPanelInner({ s, content, lang, images, imgPositions }: { s: number;
                     {/* Image passeport béninois sous service #3 — affichée EN ENTIER, sans cadre */}
                     <div style={{ marginTop: 5 * s, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={DEPLIANT_IMAGES.passeport} alt={lang === 'FR' ? 'Passeport République du Bénin' : 'Republic of Benin Passport'} style={{ width: 100 * s, height: 'auto', objectFit: 'contain', display: 'block' }} />
+                        <img src={DEPLIANT_IMAGES.passeport} alt={lang === 'FR' ? 'Passeport République du Bénin' : 'Republic of Benin Passport'} style={{ width: 140 * s, height: 'auto', objectFit: 'contain', display: 'block' }} />
                     </div>
 
                     {/* CTA épinglé en bas */}
