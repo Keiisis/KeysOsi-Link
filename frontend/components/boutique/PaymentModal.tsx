@@ -551,33 +551,44 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
         const kkAmount = Math.max(1, Math.round(totalAmount * (1 + CONVERSION_MARGIN)))
         console.log('[Kkiapay] amount XOF:', kkAmount, 'totalAmount:', totalAmount, 'sandbox:', sandbox)
 
-        // ── Intercepteur réseau pour diagnostiquer les erreurs 400 du SDK Kkiapay ──
-        const originalFetch = window.fetch
-        window.fetch = async function (...args: Parameters<typeof fetch>) {
-            const response = await originalFetch.apply(this, args)
-            const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request)?.url || ''
-            if (url.includes('kkiapay.me') && !response.ok) {
-                try {
-                    const cloned = response.clone()
-                    const errorBody = await cloned.text()
-                    console.error(`[Kkiapay INTERCEPTOR] ${response.status} ${url}`)
-                    console.error(`[Kkiapay INTERCEPTOR] Request:`, args[1])
-                    console.error(`[Kkiapay INTERCEPTOR] Response body:`, errorBody)
-                    // Stocker pour affichage à l'utilisateur
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    ;(window as any).__kkiapayLastError = {
-                        status: response.status,
-                        url,
-                        body: errorBody,
-                        request: args[1],
-                        timestamp: new Date().toISOString(),
-                    }
-                } catch { /* ignore clone errors */ }
-            }
-            return response
+        // ── Intercepteur XHR pour capturer les erreurs 400 du SDK Kkiapay (axios/XHR) ──
+        const origOpen = XMLHttpRequest.prototype.open
+        const origSend = XMLHttpRequest.prototype.send
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        XMLHttpRequest.prototype.open = function (method: string, url: string | URL, ...rest: any[]) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ;(this as any).__kkUrl = String(url)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ;(this as any).__kkMethod = method
+            return origOpen.apply(this, [method, url, ...rest] as Parameters<typeof origOpen>)
         }
-        // Restaurer fetch après 60s (nettoyage)
-        setTimeout(() => { window.fetch = originalFetch }, 60000)
+        XMLHttpRequest.prototype.send = function (body?: Document | XMLHttpRequestBodyInit | null) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const url = (this as any).__kkUrl || ''
+            if (url.includes('kkiapay.me')) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                console.log(`[Kkiapay XHR] → ${(this as any).__kkMethod} ${url}`)
+                console.log(`[Kkiapay XHR] → Body envoyé:`, body)
+                this.addEventListener('load', () => {
+                    if (this.status >= 400) {
+                        console.error(`[Kkiapay XHR] ← ${this.status} ${url}`)
+                        console.error(`[Kkiapay XHR] ← Réponse:`, this.responseText)
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        ;(window as any).__kkiapayLastError = {
+                            status: this.status, url, requestBody: body,
+                            responseBody: this.responseText,
+                            timestamp: new Date().toISOString(),
+                        }
+                    }
+                })
+            }
+            return origSend.call(this, body)
+        }
+        // Restaurer après 60s
+        setTimeout(() => {
+            XMLHttpRequest.prototype.open = origOpen
+            XMLHttpRequest.prototype.send = origSend
+        }, 60000)
 
         try {
             window.openKkiapayWidget({
