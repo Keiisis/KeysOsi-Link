@@ -144,6 +144,10 @@ const config = {
                     '66%': { transform: 'translate(25px, -40px) scale(0.95)' },
                     '100%': { transform: 'translate(0, 0) scale(1)' },
                 },
+                'shimmer': {
+                    '0%': { transform: 'translateX(-100%)' },
+                    '100%': { transform: 'translateX(100%)' },
+                },
             },
             animation: {
                 'accordion-down': 'accordion-down 0.2s ease-out',
@@ -158,6 +162,7 @@ const config = {
                 'nexus-shake': 'nexus-shake 0.5s ease-in-out',
                 'orb-1': 'orb-float-1 20s ease-in-out infinite',
                 'orb-2': 'orb-float-2 25s ease-in-out infinite',
+                'shimmer': 'shimmer 1.8s ease-in-out infinite',
             },
         },
     },

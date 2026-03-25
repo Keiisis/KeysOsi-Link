@@ -1,25 +1,143 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
-import { ShoppingBag, Search, Tag, Loader2, MoveRight } from 'lucide-react'
+import { Search, Tag, MoveRight } from 'lucide-react'
 import { ProductCard, type Product } from '@/components/boutique/ProductCard'
 import { useTranslation } from '@/lib/translation'
+import { useIsMobile } from '@/lib/hooks/useMediaQuery'
+import { gsap } from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+
+gsap.registerPlugin(ScrollTrigger)
+
+// ─── Split Text Helper ──────────────────────────────────────────────
+function SplitText({ text, className, delay = 0 }: { text: string; className?: string; delay?: number }) {
+    return (
+        <motion.span
+            className={className}
+            initial="hidden"
+            animate="visible"
+            variants={{
+                hidden: {},
+                visible: { transition: { staggerChildren: 0.04, delayChildren: delay } },
+            }}
+            aria-label={text}
+        >
+            {text.split('').map((char, i) => (
+                <motion.span
+                    key={i}
+                    className="inline-block"
+                    style={{ willChange: 'transform, opacity' }}
+                    variants={{
+                        hidden: { opacity: 0, y: 60, rotateX: -80, filter: 'blur(8px)' },
+                        visible: {
+                            opacity: 1, y: 0, rotateX: 0, filter: 'blur(0px)',
+                            transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] },
+                        },
+                    }}
+                >
+                    {char === ' ' ? '\u00A0' : char}
+                </motion.span>
+            ))}
+        </motion.span>
+    )
+}
+
+// ─── Floating Particles ─────────────────────────────────────────────
+function FloatingParticles({ count = 6 }: { count?: number }) {
+    return (
+        <>
+            {Array.from({ length: count }).map((_, i) => (
+                <motion.div
+                    key={i}
+                    className="absolute rounded-full"
+                    style={{
+                        left: `${12 + i * 14}%`,
+                        top: `${15 + (i * 19) % 65}%`,
+                        width: i % 2 === 0 ? 4 : 3,
+                        height: i % 2 === 0 ? 4 : 3,
+                        background: i % 3 === 0 ? '#008751' : i % 3 === 1 ? '#FCD116' : '#E8112D',
+                        opacity: 0.15,
+                    }}
+                    animate={{
+                        y: [0, -25 - i * 5, 0],
+                        opacity: [0.1, 0.3, 0.1],
+                        scale: [1, 1.3, 1],
+                    }}
+                    transition={{
+                        duration: 5 + i * 0.8,
+                        repeat: Infinity,
+                        ease: 'easeInOut',
+                        delay: i * 0.6,
+                    }}
+                />
+            ))}
+        </>
+    )
+}
+
+// ─── Skeleton Card ──────────────────────────────────────────────────
+function SkeletonCard({ index }: { index: number }) {
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.06, duration: 0.5 }}
+            className="rounded-3xl overflow-hidden bg-white border border-gray-100 shadow-sm"
+        >
+            <div className="aspect-[4/5] bg-gray-100 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/70 to-transparent animate-shimmer" />
+            </div>
+            <div className="p-6 space-y-4">
+                <div className="h-2.5 w-14 bg-gray-100 rounded-full" />
+                <div className="h-5 w-3/4 bg-gray-100 rounded-full" />
+                <div className="space-y-2">
+                    <div className="h-3 w-full bg-gray-50 rounded-full" />
+                    <div className="h-3 w-2/3 bg-gray-50 rounded-full" />
+                </div>
+                <div className="pt-4 border-t border-gray-50">
+                    <div className="h-7 w-28 bg-gray-100 rounded-full" />
+                </div>
+            </div>
+        </motion.div>
+    )
+}
+
+// ═════════════════════════════════════════════════════════════════════
+// PAGE BOUTIQUE — Ultra Immersive
+// ═════════════════════════════════════════════════════════════════════
 
 export default function BoutiquePage() {
     const { t } = useTranslation()
+    const isMobile = useIsMobile()
 
     const categories = ['Tous', 'Mode', 'Artisanat', 'Alimentaire', 'Culturel', 'Accessoires', 'Autre']
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [activeCategory, setActiveCategory] = useState('Tous')
+    const [searchFocused, setSearchFocused] = useState(false)
+    const [pageReady, setPageReady] = useState(false)
     const containerRef = useRef<HTMLDivElement>(null)
+    const gridRef = useRef<HTMLDivElement>(null)
 
-    const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start start", "end start"] })
+    const { scrollY } = useScroll()
+    const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end start'] })
     const yHero = useTransform(scrollYProgress, [0, 1], [0, 300])
     const opacityHero = useTransform(scrollYProgress, [0, 0.5], [1, 0])
 
+    // Parallax layers
+    const bgY1 = useTransform(scrollY, [0, 3000], [0, -300])
+    const bgY2 = useTransform(scrollY, [0, 3000], [0, -550])
+
+    // Page entrance orchestration
+    useEffect(() => {
+        const t = setTimeout(() => setPageReady(true), 100)
+        return () => clearTimeout(t)
+    }, [])
+
+    // Fetch products
     useEffect(() => {
         const fetchProducts = async () => {
             try {
@@ -35,6 +153,48 @@ export default function BoutiquePage() {
         fetchProducts()
     }, [])
 
+    // GSAP ScrollTrigger batch for product grid
+    const initScrollTrigger = useCallback(() => {
+        // Kill existing triggers
+        ScrollTrigger.getAll().forEach(t => t.kill())
+
+        // Wait for DOM to settle
+        requestAnimationFrame(() => {
+            const cards = gridRef.current?.querySelectorAll('.product-card-item')
+            if (!cards || cards.length === 0) return
+
+            // Reset cards to hidden state
+            gsap.set(cards, { opacity: 0, y: 50, scale: 0.94, filter: 'blur(5px)' })
+
+            ScrollTrigger.batch(cards, {
+                onEnter: (elements) => {
+                    gsap.to(elements, {
+                        opacity: 1, y: 0, scale: 1, filter: 'blur(0px)',
+                        duration: 0.85,
+                        stagger: 0.07,
+                        ease: 'power3.out',
+                        overwrite: true,
+                    })
+                },
+                start: 'top 88%',
+                once: true,
+            })
+        })
+    }, [])
+
+    useEffect(() => {
+        if (!loading && products.length > 0) {
+            // Small delay to let filtered grid render
+            const t = setTimeout(initScrollTrigger, 150)
+            return () => clearTimeout(t)
+        }
+    }, [loading, activeCategory, searchTerm, initScrollTrigger])
+
+    // Cleanup
+    useEffect(() => {
+        return () => ScrollTrigger.getAll().forEach(t => t.kill())
+    }, [])
+
     const filtered = products.filter(p => {
         const matchSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             p.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -42,124 +202,185 @@ export default function BoutiquePage() {
         return matchSearch && matchCategory && p.is_active
     })
 
+    // Count products per category
+    const getCategoryCount = (cat: string) => {
+        if (cat === 'Tous') return products.filter(p => p.is_active).length
+        return products.filter(p => p.is_active && p.category.toLowerCase() === cat.toLowerCase()).length
+    }
+
     return (
         <main ref={containerRef} className="bg-white text-gray-900 min-h-screen relative overflow-hidden selection:bg-[#008751]/20">
-            {/* Subtle background accents */}
-            <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+
+            {/* ══════ PARALLAX BACKGROUND LAYERS ══════ */}
+
+            {/* Layer 1 — Deep gradient orbs */}
+            <motion.div style={{ y: bgY1 }} className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
                 <motion.div
-                    animate={{ rotate: 360, scale: [1, 1.1, 1] }}
-                    transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-                    className="absolute -top-[20%] -right-[10%] w-[800px] h-[800px] bg-[#FCD116]/[0.06] rounded-full blur-[150px]"
+                    animate={{ rotate: 360, scale: [1, 1.15, 1] }}
+                    transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
+                    className="absolute -top-[20%] -right-[10%] w-[800px] h-[800px] bg-[#FCD116]/[0.05] rounded-full blur-[180px]"
                 />
                 <motion.div
                     animate={{ rotate: -360, scale: [1, 1.2, 1] }}
-                    transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-                    className="absolute top-[40%] -left-[20%] w-[600px] h-[600px] bg-[#008751]/[0.04] rounded-full blur-[150px]"
+                    transition={{ duration: 35, repeat: Infinity, ease: 'linear' }}
+                    className="absolute top-[50%] -left-[20%] w-[700px] h-[700px] bg-[#008751]/[0.04] rounded-full blur-[180px]"
                 />
+                <motion.div
+                    animate={{ rotate: 180, scale: [1, 1.1, 1] }}
+                    transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
+                    className="absolute top-[20%] right-[30%] w-[400px] h-[400px] bg-[#E8112D]/[0.02] rounded-full blur-[150px]"
+                />
+            </motion.div>
+
+            {/* Layer 2 — Decorative lines (desktop only) */}
+            {!isMobile && (
+                <motion.div style={{ y: bgY2 }} className="fixed inset-0 pointer-events-none z-[1]">
+                    <div className="absolute top-[15%] left-[8%] w-px h-48 bg-gradient-to-b from-transparent via-[#008751]/[0.08] to-transparent" />
+                    <div className="absolute top-[55%] right-[12%] w-px h-64 bg-gradient-to-b from-transparent via-[#FCD116]/[0.1] to-transparent" />
+                    <div className="absolute top-[35%] left-[85%] w-px h-36 bg-gradient-to-b from-transparent via-[#E8112D]/[0.06] to-transparent" />
+                    <div className="absolute top-[75%] left-[25%] w-px h-40 bg-gradient-to-b from-transparent via-[#008751]/[0.06] to-transparent" />
+                </motion.div>
+            )}
+
+            {/* Layer 3 — Floating particles */}
+            <div className="fixed inset-0 pointer-events-none z-[2]">
+                <FloatingParticles count={isMobile ? 3 : 6} />
             </div>
 
-            {/* HERO BOUTIQUE */}
-            <motion.section style={{ y: yHero, opacity: opacityHero }} className="relative pt-40 pb-20 md:pt-48 md:pb-32 px-6 z-10 w-full flex flex-col items-center justify-center min-h-[50vh]">
-                <motion.div
-                    initial={{ opacity: 0, y: 40, filter: "blur(10px)" }}
-                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                    transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-                    className="text-center space-y-8 relative z-10 w-full max-w-4xl mx-auto"
-                >
-                    <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-black font-heading tracking-tighter leading-none text-gray-900">
-                        {t("Notre")}{' '}
-                        <span className="relative inline-block text-transparent bg-clip-text bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D]">
-                            {t("Boutique")}
-                            <motion.div
-                                className="absolute -bottom-4 sm:-bottom-6 left-0 right-0 h-1 sm:h-2 bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D] rounded-full"
-                                initial={{ scaleX: 0, opacity: 0 }}
-                                animate={{ scaleX: 1, opacity: 1 }}
-                                transition={{ delay: 0.5, duration: 1, ease: 'easeOut' }}
-                            />
-                        </span>
-                    </h1>
+            {/* ══════ HERO SECTION — Split Text Reveal ══════ */}
+            <motion.section
+                style={{ y: yHero, opacity: opacityHero }}
+                className="relative pt-40 pb-20 md:pt-48 md:pb-32 px-6 z-10 w-full flex flex-col items-center justify-center min-h-[50vh]"
+            >
+                <div className="text-center space-y-8 relative z-10 w-full max-w-4xl mx-auto" style={{ perspective: 1000 }}>
+                    {pageReady && (
+                        <>
+                            <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-black font-heading tracking-tighter leading-none text-gray-900">
+                                <SplitText text={t("Notre")} delay={0.2} />{' '}
+                                <span className="relative inline-block">
+                                    <SplitText
+                                        text={t("Boutique")}
+                                        className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D]"
+                                        delay={0.5}
+                                    />
+                                    <motion.div
+                                        className="absolute -bottom-4 sm:-bottom-6 left-0 right-0 h-1 sm:h-2 bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D] rounded-full origin-left"
+                                        initial={{ scaleX: 0, opacity: 0 }}
+                                        animate={{ scaleX: 1, opacity: 1 }}
+                                        transition={{ delay: 1.2, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                                    />
+                                </span>
+                            </h1>
 
-                    <p className="text-gray-500 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed font-light mt-8">
-                        {t("L'héritage, l'art, le savoir-faire, l'élégance — Bénin est un tableau unique réuni dans une collection soigneusement sélectionnée. Laissez-vous inspirer.")}
-                    </p>
-                </motion.div>
+                            <motion.p
+                                className="text-gray-500 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed font-light mt-8"
+                                initial={{ opacity: 0, y: 25, filter: 'blur(6px)' }}
+                                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                                transition={{ delay: 1.5, duration: 1, ease: [0.16, 1, 0.3, 1] }}
+                            >
+                                {t("L'héritage, l'art, le savoir-faire, l'élégance — Bénin est un tableau unique réuni dans une collection soigneusement sélectionnée. Laissez-vous inspirer.")}
+                            </motion.p>
+                        </>
+                    )}
+                </div>
             </motion.section>
 
-            {/* STICKY FILTER & SEARCH BAR */}
-            <div className="sticky top-[80px] z-50 w-full px-4 sm:px-6 mb-12">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3, duration: 0.8 }}
-                    className="container mx-auto max-w-6xl"
-                >
-                    <div className="bg-white/80 backdrop-blur-2xl border border-gray-200 rounded-3xl p-3 shadow-lg shadow-gray-200/50 flex flex-col md:flex-row items-center gap-4">
+            {/* ══════ STICKY FILTER & SEARCH BAR ══════ */}
+            <motion.div
+                className="sticky top-[80px] z-50 w-full px-4 sm:px-6 mb-12"
+                initial={{ opacity: 0, y: -30, filter: 'blur(8px)' }}
+                animate={pageReady ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}}
+                transition={{ delay: 1.8, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+            >
+                <div className="container mx-auto max-w-6xl">
+                    <motion.div
+                        animate={{
+                            boxShadow: searchFocused
+                                ? '0 8px 40px rgba(0, 135, 81, 0.12), 0 0 0 2px rgba(0, 135, 81, 0.15)'
+                                : '0 4px 24px rgba(0,0,0,0.06)',
+                        }}
+                        transition={{ duration: 0.3 }}
+                        className="bg-white/85 backdrop-blur-2xl border border-gray-200 rounded-3xl p-3 flex flex-col md:flex-row items-center gap-4"
+                    >
                         {/* Search Input */}
                         <div className="relative flex-1 w-full group">
                             <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                                <Search size={18} className="text-gray-400 group-focus-within:text-[#008751] transition-colors" />
+                                <motion.div animate={{ rotate: searchFocused ? 90 : 0 }} transition={{ duration: 0.3 }}>
+                                    <Search size={18} className={`transition-colors duration-300 ${searchFocused ? 'text-[#008751]' : 'text-gray-400'}`} />
+                                </motion.div>
                             </div>
                             <input
                                 type="text"
                                 placeholder={t("Que recherchez-vous aujourd'hui ?")}
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
-                                className="w-full bg-gray-50 hover:bg-gray-100 border border-transparent focus:border-[#008751]/40 rounded-2xl py-3.5 pl-12 pr-4 text-gray-900 text-sm focus:outline-none transition-all placeholder:text-gray-400"
+                                onFocus={() => setSearchFocused(true)}
+                                onBlur={() => setSearchFocused(false)}
+                                className="w-full bg-gray-50 hover:bg-gray-100/80 border border-transparent focus:border-[#008751]/30 rounded-2xl py-3.5 pl-12 pr-4 text-gray-900 text-sm focus:outline-none transition-all placeholder:text-gray-400"
                             />
                         </div>
 
                         {/* Category Pills */}
                         <div className="flex items-center gap-2 overflow-x-auto scrollbar-none w-full md:w-auto pb-2 md:pb-0 px-1">
-                            {categories.map(cat => (
-                                <button
-                                    key={cat}
-                                    onClick={() => setActiveCategory(cat)}
-                                    className={`relative px-5 py-2.5 rounded-2xl text-[10px] sm:text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 overflow-hidden ${activeCategory === cat
-                                        ? 'text-black'
-                                        : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
-                                        }`}
-                                >
-                                    {activeCategory === cat && (
-                                        <motion.div
-                                            layoutId="activeCategoryBg"
-                                            className="absolute inset-0 bg-gradient-to-r from-[#FCD116] to-[#E5BD14] rounded-2xl shadow-lg"
-                                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                        />
-                                    )}
-                                    <span className="relative z-10">{t(cat)}</span>
-                                </button>
-                            ))}
+                            {categories.map(cat => {
+                                const count = getCategoryCount(cat)
+                                return (
+                                    <button
+                                        key={cat}
+                                        onClick={() => setActiveCategory(cat)}
+                                        className={`relative px-4 py-2.5 rounded-2xl text-[10px] sm:text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 overflow-hidden flex items-center gap-1.5 ${activeCategory === cat
+                                            ? 'text-black'
+                                            : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+                                            }`}
+                                    >
+                                        {activeCategory === cat && (
+                                            <motion.div
+                                                layoutId="activeCategoryBg"
+                                                className="absolute inset-0 bg-gradient-to-r from-[#FCD116] to-[#E5BD14] rounded-2xl shadow-lg"
+                                                transition={{ type: 'spring', stiffness: 400, damping: 25, mass: 0.8 }}
+                                            />
+                                        )}
+                                        <span className="relative z-10">{t(cat)}</span>
+                                        <AnimatePresence mode="wait">
+                                            <motion.span
+                                                key={count}
+                                                initial={{ opacity: 0, scale: 0.5 }}
+                                                animate={{ opacity: 0.6, scale: 1 }}
+                                                exit={{ opacity: 0, scale: 0.5 }}
+                                                className={`relative z-10 text-[8px] font-bold ${activeCategory === cat ? 'opacity-60' : ''}`}
+                                            >
+                                                {count}
+                                            </motion.span>
+                                        </AnimatePresence>
+                                    </button>
+                                )
+                            })}
                         </div>
-                    </div>
-                </motion.div>
-            </div>
+                    </motion.div>
+                </div>
+            </motion.div>
 
-            {/* PRODUCT GRID */}
+            {/* ══════ PRODUCT GRID ══════ */}
             <section className="py-10 pb-32 relative z-10 min-h-[50vh]">
                 <div className="container mx-auto px-6 max-w-7xl">
                     {loading ? (
-                        <div className="flex flex-col items-center justify-center py-40 space-y-8">
-                            <div className="relative">
-                                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: "linear" }}>
-                                    <Loader2 size={64} className="text-[#008751]" />
-                                </motion.div>
-                                <div className="absolute inset-0 blur-2xl bg-[#008751]/20 animate-pulse" />
-                            </div>
-                            <p className="text-gray-400 text-xs sm:text-sm font-bold uppercase tracking-[0.2em] animate-pulse">
-                                {t("Préparation de l'expérience...")}
-                            </p>
+                        /* Skeleton Loading */
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8 lg:gap-10">
+                            {Array.from({ length: 8 }).map((_, i) => (
+                                <SkeletonCard key={i} index={i} />
+                            ))}
                         </div>
                     ) : filtered.length > 0 ? (
-                        <motion.div
-                            layout
+                        <div
+                            ref={gridRef}
                             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8 lg:gap-10"
                         >
-                            <AnimatePresence mode="popLayout">
-                                {filtered.map((product, i) => (
-                                    <ProductCard key={product.id} product={product} index={i} />
-                                ))}
-                            </AnimatePresence>
-                        </motion.div>
+                            {filtered.map((product, i) => (
+                                <div key={product.id} className="product-card-item" style={{ opacity: 0 }}>
+                                    <ProductCard product={product} index={i} />
+                                </div>
+                            ))}
+                        </div>
                     ) : (
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
