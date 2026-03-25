@@ -12,9 +12,9 @@ const GOLD_L  = '#E2C97E'
 const DARK    = '#03080f'
 const BG_DARK = 'linear-gradient(158deg, #0b2054 0%, #163a7e 40%, #0d2d6b 70%, #071840 100%)'
 const BG_CREAM = '#fdf9f2'
-const TEXT_DARK  = '#1c1408'
-const TEXT_MED   = '#4a3a20'
-const TEXT_LIGHT = '#7a6545'
+const TEXT_DARK  = '#1a1005'
+const TEXT_MED   = '#3d2e15'
+const TEXT_LIGHT = '#5c4a2a'
 
 // A4 portrait en pixels (72 ppi de référence)
 export const BASE_W = 595
@@ -160,7 +160,7 @@ function QRDisplay({ size }: { size: number }) {
 /** Image encadrée dorée pour les pages intérieures — affichage complet */
 function DepliantImage({ src, s, w, h, radius = 6, caption, captionSub, position = 'center' }: { src: string; s: number; w: number; h: number; radius?: number; caption?: string; captionSub?: string; position?: string }) {
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 * s, flexShrink: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 * s, flexShrink: 0 }}>
             <div style={{
                 width: w * s, height: h * s, borderRadius: radius * s,
                 border: `2px solid ${GOLD}70`, overflow: 'hidden', flexShrink: 0,
@@ -171,12 +171,12 @@ function DepliantImage({ src, s, w, h, radius = 6, caption, captionSub, position
                 <img src={src} alt={caption || ''} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: position, display: 'block' }} />
             </div>
             {caption && (
-                <div style={{ textAlign: 'center', lineHeight: 1.3 }}>
-                    <div style={{ color: TEXT_LIGHT, fontSize: 5.5 * s, letterSpacing: '0.08em', fontStyle: 'italic', fontFamily: "'Georgia',serif" }}>
+                <div style={{ textAlign: 'center', lineHeight: 1.25 }}>
+                    <div style={{ color: TEXT_DARK, fontSize: 7.5 * s, fontWeight: 700, letterSpacing: '0.06em', fontStyle: 'italic', fontFamily: "'Georgia',serif" }}>
                         {caption}
                     </div>
                     {captionSub && (
-                        <div style={{ color: `${TEXT_LIGHT}90`, fontSize: 4.8 * s, letterSpacing: '0.06em', fontStyle: 'italic', fontFamily: "'Georgia',serif" }}>
+                        <div style={{ color: TEXT_MED, fontSize: 6.5 * s, fontWeight: 600, letterSpacing: '0.05em', fontStyle: 'italic', fontFamily: "'Georgia',serif", marginTop: 1 * s }}>
                             {captionSub}
                         </div>
                     )}
@@ -397,10 +397,10 @@ function TextPanelInner({ s, content, lang, images, imgPositions }: { s: number;
                         ))}
                     </div>
 
-                    {/* Image registre historique sous Santé & Éducation */}
-                    <div style={{ marginTop: 3 * s, borderRadius: 4 * s, overflow: 'hidden', border: `1px solid ${GOLD}40`, flexShrink: 0 }}>
+                    {/* Image registre historique sous Santé & Éducation — affichée EN ENTIER */}
+                    <div style={{ marginTop: 3 * s, borderRadius: 4 * s, overflow: 'hidden', border: `1px solid ${GOLD}40`, flexShrink: 0, background: '#f5efe4' }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={DEPLIANT_IMAGES.registre} alt={lang === 'FR' ? 'Registre historique des affranchis' : 'Historical registry of freed citizens'} style={{ width: '100%', height: 55 * s, objectFit: 'cover', objectPosition: 'center', display: 'block' }} />
+                        <img src={DEPLIANT_IMAGES.registre} alt={lang === 'FR' ? 'Registre historique des affranchis' : 'Historical registry of freed citizens'} style={{ width: '100%', height: 'auto', objectFit: 'contain', display: 'block' }} />
                     </div>
 
                     {/* Contacts épinglés en bas */}
