@@ -560,7 +560,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                 email: customerEmail || undefined,
                 name: customerName || undefined,
                 paymentmethod: ['momo', 'card'],
-                data: { order_id: oid },
+                data: JSON.stringify({ order_id: oid }),
                 callback: `${window.location.origin}/boutique`,
             })
             window.addKkiapayListener('success', async (r) => {

@@ -291,7 +291,7 @@ export default function ClientPortalPage() {
                 email: doc.client_email || undefined,
                 name: `${doc.client_prenom || ''} ${doc.client_nom || ''}`.trim() || undefined,
                 paymentmethod: ['momo', 'card'],
-                data: { doc_id: id, type: doc.type },
+                data: JSON.stringify({ doc_id: id, type: doc.type }),
                 callback: `${window.location.origin}/portail/${id}`,
             })
 

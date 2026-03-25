@@ -180,7 +180,7 @@ export default function NationaliteFormPage() {
                 sandbox: paymentSettings.kkiapay_sandbox === 'true', phone: form.telephone || undefined,
                 email: form.email || undefined, name: `${form.prenom || ''} ${form.nom || ''}`.trim() || undefined,
                 paymentmethod: ['momo', 'card'],
-                data: { context: 'nationality', email: form.email },
+                data: JSON.stringify({ context: 'nationality', email: form.email }),
                 callback: `${window.location.origin}/nationalite/formulaire`,
             })
             window.addKkiapayListener('success', (response) => {
