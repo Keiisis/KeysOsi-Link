@@ -31,6 +31,7 @@ const DEPLIANT_IMAGES = {
     amazone: '/images/depliant/amazone.jpg',
     porte: '/images/depliant/porte-non-retour.jpg',
     registre: '/images/depliant/registre-historique.jpg',
+    passeport: '/images/depliant/passeport-benin.png',
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -367,6 +368,14 @@ function TextPanelInner({ s, content, lang, images, imgPositions }: { s: number;
                         ))}
                     </div>
 
+                    {/* Image passeport béninois sous service #3 — affichée EN ENTIER */}
+                    <div style={{ marginTop: 5 * s, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
+                        <div style={{ borderRadius: 5 * s, overflow: 'hidden', border: `2px solid ${GOLD}50`, boxShadow: `0 3px 12px rgba(0,0,0,0.2), 0 0 0 0.5px ${GOLD}25` }}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={DEPLIANT_IMAGES.passeport} alt={lang === 'FR' ? 'Passeport République du Bénin' : 'Republic of Benin Passport'} style={{ width: 75 * s, height: 'auto', objectFit: 'contain', display: 'block' }} />
+                        </div>
+                    </div>
+
                     {/* CTA épinglé en bas */}
                     <div style={{ marginTop: 'auto', paddingTop: 6 * s, borderTop: `1px solid ${GOLD}45` }}>
                         <div style={{ color: TEXT_DARK, fontSize: 8 * s, fontWeight: 700, lineHeight: 1.4, fontFamily: "'Georgia',serif", fontStyle: 'italic' }}>
@@ -403,16 +412,12 @@ function TextPanelInner({ s, content, lang, images, imgPositions }: { s: number;
                         <img src={DEPLIANT_IMAGES.registre} alt={lang === 'FR' ? 'Registre historique des affranchis' : 'Historical registry of freed citizens'} style={{ width: '100%', height: 'auto', objectFit: 'contain', display: 'block' }} />
                     </div>
 
-                    {/* Contacts épinglés en bas */}
-                    <div style={{ marginTop: 'auto', paddingTop: 6 * s, borderTop: `1px solid ${GOLD}45` }}>
-                        <div style={{ color: TEXT_DARK, fontSize: 7.5 * s, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 3 * s }}>Contact</div>
-                        {[
-                            '+229 01 60 32 21 21  ·  +229 01 94 35 50 50',
-                            'contact@retourgagnantbenin.bj',
-                            'www.retourgagnantbenin.bj',
-                        ].map((text, i) => (
-                            <div key={i} style={{ color: TEXT_LIGHT, fontSize: 7.5 * s, lineHeight: 1.45, letterSpacing: '0.02em' }}>{text}</div>
-                        ))}
+                    {/* Contacts épinglés en bas — LISIBLES à l'impression */}
+                    <div style={{ marginTop: 'auto', paddingTop: 6 * s, borderTop: `1.5px solid ${GOLD}50` }}>
+                        <div style={{ color: TEXT_DARK, fontSize: 8 * s, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 3 * s }}>Contact</div>
+                        <div style={{ color: TEXT_DARK, fontSize: 7.8 * s, fontWeight: 700, lineHeight: 1.5, letterSpacing: '0.02em' }}>+229 01 60 32 21 21 · +229 01 94 35 50 50</div>
+                        <div style={{ color: TEXT_DARK, fontSize: 7.8 * s, fontWeight: 700, lineHeight: 1.5, letterSpacing: '0.02em' }}>contact@retourgagnantbenin.bj</div>
+                        <div style={{ color: TEXT_DARK, fontSize: 7.8 * s, fontWeight: 700, lineHeight: 1.5, letterSpacing: '0.02em' }}>www.retourgagnantbenin.bj</div>
                     </div>
                 </div>
             </div>
