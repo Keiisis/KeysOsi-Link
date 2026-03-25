@@ -537,9 +537,17 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
             return
         }
 
+        if (typeof window.openKkiapayWidget !== 'function') {
+            cancelOrder(oid)
+            setErrorMessage("SDK Kkiapay non chargé. Rechargez la page.")
+            setStep('error')
+            return
+        }
+        const kkAmount = Math.max(1, Math.round(totalAmount * (1 + CONVERSION_MARGIN)))
+        console.log('[Kkiapay] amount XOF:', kkAmount, 'totalAmount:', totalAmount, 'sandbox:', sandbox)
         try {
             window.openKkiapayWidget({
-                amount: Math.round(totalAmount * (1 + CONVERSION_MARGIN)),
+                amount: kkAmount,
                 position: 'center',
                 key: publicKey,
                 sandbox,
@@ -558,9 +566,10 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                 setErrorMessage('Le paiement a échoué. Veuillez réessayer.')
                 setStep('error')
             })
-        } catch {
+        } catch (err) {
+            console.error('[Kkiapay] Erreur widget:', err)
             cancelOrder(oid)
-            setErrorMessage("Impossible d'ouvrir le widget Kkiapay")
+            setErrorMessage(`Erreur Kkiapay: ${err instanceof Error ? err.message : String(err)}`)
             setStep('error')
         }
     }

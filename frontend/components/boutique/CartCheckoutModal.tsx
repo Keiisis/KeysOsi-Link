@@ -542,9 +542,14 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
         const publicKey = settings.kkiapay_public_key
         const sandbox = settings.kkiapay_sandbox === 'true'
         if (!publicKey) { cancelOrder(oid); setErrorMessage('Kkiapay non configurée.'); setStep('error'); return }
+        if (typeof window.openKkiapayWidget !== 'function') {
+            cancelOrder(oid); setErrorMessage("SDK Kkiapay non chargé. Rechargez la page."); setStep('error'); return
+        }
+        const kkAmount = Math.max(1, Math.round(finalTotal * (1 + CONVERSION_MARGIN)))
+        console.log('[Kkiapay] amount XOF:', kkAmount, 'finalTotal:', finalTotal, 'sandbox:', sandbox)
         try {
             window.openKkiapayWidget({
-                amount: Math.round(finalTotal * (1 + CONVERSION_MARGIN)),
+                amount: kkAmount,
                 position: 'center',
                 key: publicKey,
                 sandbox,
@@ -561,8 +566,9 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
             window.addKkiapayListener('failed', () => {
                 cancelOrder(oid); setErrorMessage('Paiement échoué.'); setStep('error')
             })
-        } catch {
-            cancelOrder(oid); setErrorMessage("Impossible d'ouvrir Kkiapay"); setStep('error')
+        } catch (err) {
+            console.error('[Kkiapay] Erreur widget:', err)
+            cancelOrder(oid); setErrorMessage(`Erreur Kkiapay: ${err instanceof Error ? err.message : String(err)}`); setStep('error')
         }
     }
 
