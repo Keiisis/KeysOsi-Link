@@ -12,6 +12,7 @@ import { Product } from './ProductCard'
 import { Price } from '@/components/ui/Price'
 import CurrencySelector from '@/components/boutique/CurrencySelector'
 import { type CurrencyCode, getCurrencyForLang, convertWithMargin, convertCurrency, formatPrice, CONVERSION_MARGIN } from '@/lib/currency'
+import { ensureKkiapaySDK } from '@/lib/ensurePaymentSDK'
 
 // ─── Déclarations des SDK tiers ────────────────────────────────────────────────
 declare global {
@@ -537,7 +538,9 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
             return
         }
 
-        if (typeof window.openKkiapayWidget !== 'function') {
+        try {
+            await ensureKkiapaySDK()
+        } catch {
             cancelOrder(oid)
             setErrorMessage("SDK Kkiapay non chargé. Rechargez la page.")
             setStep('error')

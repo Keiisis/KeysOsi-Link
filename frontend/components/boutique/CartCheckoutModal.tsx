@@ -12,6 +12,7 @@ import { useCart } from '@/lib/store/cartStore'
 import { Price } from '@/components/ui/Price'
 import CurrencySelector from '@/components/boutique/CurrencySelector'
 import { type CurrencyCode, getCurrencyForLang, convertWithMargin, convertCurrency, formatPrice, CONVERSION_MARGIN } from '@/lib/currency'
+import { ensureKkiapaySDK } from '@/lib/ensurePaymentSDK'
 
 // ─── Déclarations des SDK tiers ────────────────────────────────────────────────
 declare global {
@@ -542,7 +543,9 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
         const publicKey = settings.kkiapay_public_key
         const sandbox = settings.kkiapay_sandbox === 'true'
         if (!publicKey) { cancelOrder(oid); setErrorMessage('Kkiapay non configurée.'); setStep('error'); return }
-        if (typeof window.openKkiapayWidget !== 'function') {
+        try {
+            await ensureKkiapaySDK()
+        } catch {
             cancelOrder(oid); setErrorMessage("SDK Kkiapay non chargé. Rechargez la page."); setStep('error'); return
         }
         const kkAmount = Math.max(1, Math.round(finalTotal * (1 + CONVERSION_MARGIN)))
