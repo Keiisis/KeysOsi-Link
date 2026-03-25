@@ -157,9 +157,9 @@ function QRDisplay({ size }: { size: number }) {
 }
 
 /** Image encadrée dorée pour les pages intérieures — affichage complet */
-function DepliantImage({ src, s, w, h, radius = 6, caption, position = 'center' }: { src: string; s: number; w: number; h: number; radius?: number; caption?: string; position?: string }) {
+function DepliantImage({ src, s, w, h, radius = 6, caption, captionSub, position = 'center' }: { src: string; s: number; w: number; h: number; radius?: number; caption?: string; captionSub?: string; position?: string }) {
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 * s, flexShrink: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 * s, flexShrink: 0 }}>
             <div style={{
                 width: w * s, height: h * s, borderRadius: radius * s,
                 border: `2px solid ${GOLD}70`, overflow: 'hidden', flexShrink: 0,
@@ -170,8 +170,15 @@ function DepliantImage({ src, s, w, h, radius = 6, caption, position = 'center' 
                 <img src={src} alt={caption || ''} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: position, display: 'block' }} />
             </div>
             {caption && (
-                <div style={{ color: TEXT_LIGHT, fontSize: 5.5 * s, letterSpacing: '0.08em', fontStyle: 'italic', fontFamily: "'Georgia',serif", textAlign: 'center' }}>
-                    {caption}
+                <div style={{ textAlign: 'center', lineHeight: 1.3 }}>
+                    <div style={{ color: TEXT_LIGHT, fontSize: 5.5 * s, letterSpacing: '0.08em', fontStyle: 'italic', fontFamily: "'Georgia',serif" }}>
+                        {caption}
+                    </div>
+                    {captionSub && (
+                        <div style={{ color: `${TEXT_LIGHT}90`, fontSize: 4.8 * s, letterSpacing: '0.06em', fontStyle: 'italic', fontFamily: "'Georgia',serif" }}>
+                            {captionSub}
+                        </div>
+                    )}
                 </div>
             )}
         </div>
@@ -264,10 +271,16 @@ Panel1Recto.displayName = 'Panel1Recto'
 
 type ContentData = typeof FR
 
-/** Légendes images par langue */
+/** Légendes images bilingues (FR + EN sous chaque image) */
 const IMG_CAPTIONS = {
-    FR: { top: 'Cité Lacustre de Ganvié', bottom: 'Place de l\'Amazone' },
-    EN: { top: 'Parc National de la Pendjari', bottom: 'Porte du Non-Retour, Ouidah' },
+    FR: {
+        top:    { main: 'Cité Lacustre de Ganvié',        sub: 'Lacustrine City of Ganvié' },
+        bottom: { main: 'Place de l\'Amazone',             sub: 'Amazon Square' },
+    },
+    EN: {
+        top:    { main: 'Parc National de la Pendjari',    sub: 'Pendjari National Park' },
+        bottom: { main: 'Porte du Non-Retour, Ouidah',     sub: 'Gate of No Return, Ouidah' },
+    },
 }
 
 function TextPanelInner({ s, content, lang, images, imgPositions }: { s: number; content: ContentData; lang: 'FR' | 'EN'; images: { top: string; bottom: string }; imgPositions?: { top?: string; bottom?: string } }) {
@@ -412,8 +425,8 @@ function TextPanelInner({ s, content, lang, images, imgPositions }: { s: number;
                 paddingRight: colPad,
                 borderTop: `1px solid ${GOLD}30`,
             }}>
-                <DepliantImage src={images.top} s={s} w={imgW / s} h={120} radius={6} caption={captions.top} position={imgPositions?.top || 'center'} />
-                <DepliantImage src={images.bottom} s={s} w={imgW / s} h={120} radius={6} caption={captions.bottom} position={imgPositions?.bottom || 'center'} />
+                <DepliantImage src={images.top} s={s} w={imgW / s} h={120} radius={6} caption={captions.top.main} captionSub={captions.top.sub} position={imgPositions?.top || 'center'} />
+                <DepliantImage src={images.bottom} s={s} w={imgW / s} h={120} radius={6} caption={captions.bottom.main} captionSub={captions.bottom.sub} position={imgPositions?.bottom || 'center'} />
             </div>
 
             {/* Footer */}
