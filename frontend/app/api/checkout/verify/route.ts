@@ -95,7 +95,7 @@ export async function POST(request: Request) {
             .from('settings')
             .select('key, value')
             .in('key', [
-                'kkiapay_sandbox', 'kkiapay_private_key',
+                'kkiapay_sandbox', 'kkiapay_private_key', 'kkiapay_sandbox_private_key',
                 'fedapay_secret_key', 'fedapay_sandbox',
                 'stripe_secret_key',
                 'paypal_client_id', 'paypal_client_secret', 'paypal_sandbox',
@@ -110,7 +110,9 @@ export async function POST(request: Request) {
         if (method === 'kkiapay') {
             try {
                 const isSandbox = sm.kkiapay_sandbox === 'true'
-                const privateKey = sm.kkiapay_private_key || ''
+                const privateKey = isSandbox
+                    ? (sm.kkiapay_sandbox_private_key || sm.kkiapay_private_key || '')
+                    : (sm.kkiapay_private_key || '')
 
                 // Fail-closed : sans clé privée, impossible de vérifier auprès de Kkiapay
                 if (!privateKey) {
@@ -128,16 +130,19 @@ export async function POST(request: Request) {
                 const { data: kkSettings } = await supabase
                     .from('settings')
                     .select('key, value')
-                    .in('key', ['kkiapay_public_key', 'kkiapay_secret_key'])
+                    .in('key', ['kkiapay_public_key', 'kkiapay_secret_key', 'kkiapay_sandbox_public_key'])
 
                 const kkSm: Record<string, string> = {}
                 for (const s of kkSettings || []) kkSm[s.key] = s.value
+                const kkPublicKey = isSandbox
+                    ? (kkSm.kkiapay_sandbox_public_key || kkSm.kkiapay_public_key)
+                    : kkSm.kkiapay_public_key
 
                 const verifyRes = await fetch(`${kkiapayBase}/api/v1/transactions/status`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'x-api-key': kkSm.kkiapay_public_key || '',
+                        'x-api-key': kkPublicKey || '',
                         'x-private-key': privateKey,
                         'x-secret-key': kkSm.kkiapay_secret_key || '',
                     },

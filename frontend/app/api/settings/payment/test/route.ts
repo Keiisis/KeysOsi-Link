@@ -15,8 +15,13 @@ export async function POST(request: Request) {
 
             // ─── KKIAPAY ──────────────────────────────────────────────────────────────
             case 'kkiapay': {
-                const publicKey = settings?.kkiapay_public_key
-                const privateKey = settings?.kkiapay_private_key
+                const sandbox = settings?.kkiapay_sandbox === 'true'
+                const publicKey = sandbox
+                    ? (settings?.kkiapay_sandbox_public_key || settings?.kkiapay_public_key)
+                    : settings?.kkiapay_public_key
+                const privateKey = sandbox
+                    ? (settings?.kkiapay_sandbox_private_key || settings?.kkiapay_private_key)
+                    : settings?.kkiapay_private_key
 
                 if (!publicKey || !privateKey) {
                     return NextResponse.json({ success: false, error: 'Clé publique et clé privée Kkiapay requises' })
@@ -26,12 +31,9 @@ export async function POST(request: Request) {
                 }
 
                 try {
-                    const sandbox = settings?.kkiapay_sandbox === 'true'
                     const apiUrl = sandbox ? 'https://api-sandbox.kkiapay.me' : 'https://api.kkiapay.me'
                     const env = sandbox ? 'Sandbox' : 'Production'
 
-                    // L'API Kkiapay expose POST /api/v1/transactions/status (vérifié dans le SDK officiel)
-                    // On envoie un transactionId bidon — si les clés sont valides, on reçoit une erreur métier (pas 401/404)
                     const response = await axios.post(
                         `${apiUrl}/api/v1/transactions/status`,
                         { transactionId: 'test-connectivity' },

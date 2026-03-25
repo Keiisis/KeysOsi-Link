@@ -357,8 +357,10 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
         setStep('processing')
         const oid = await createOrder('kkiapay')
         if (!oid || !proposal) return
-        const publicKey = settings.kkiapay_public_key
         const sandbox = settings.kkiapay_sandbox === 'true'
+        const publicKey = sandbox
+            ? (settings.kkiapay_sandbox_public_key || settings.kkiapay_public_key)
+            : settings.kkiapay_public_key
         if (!publicKey) { cancelOrder(oid); setErrorMessage('Kkiapay non configuré'); setStep('error'); return }
         try {
             await ensureKkiapaySDK()

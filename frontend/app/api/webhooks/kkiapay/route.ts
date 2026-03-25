@@ -47,13 +47,15 @@ export async function POST(request: Request) {
             const { data: settingsData } = await supabase
                 .from('settings')
                 .select('key, value')
-                .in('key', ['kkiapay_public_key', 'kkiapay_private_key', 'kkiapay_secret_key', 'kkiapay_sandbox'])
+                .in('key', ['kkiapay_public_key', 'kkiapay_private_key', 'kkiapay_secret_key', 'kkiapay_sandbox', 'kkiapay_sandbox_public_key', 'kkiapay_sandbox_private_key'])
 
             const sm: Record<string, string> = {}
             for (const s of settingsData || []) sm[s.key] = s.value
 
-            const privateKey = sm.kkiapay_private_key || ''
             const isSandbox = sm.kkiapay_sandbox === 'true'
+            const privateKey = isSandbox
+                ? (sm.kkiapay_sandbox_private_key || sm.kkiapay_private_key || '')
+                : (sm.kkiapay_private_key || '')
             const kkiapayBase = isSandbox
                 ? 'https://api-sandbox.kkiapay.me'
                 : 'https://api.kkiapay.me'
@@ -63,7 +65,7 @@ export async function POST(request: Request) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-api-key': sm.kkiapay_public_key || '',
+                    'x-api-key': isSandbox ? (sm.kkiapay_sandbox_public_key || sm.kkiapay_public_key || '') : (sm.kkiapay_public_key || ''),
                     'x-private-key': privateKey,
                     'x-secret-key': sm.kkiapay_secret_key || '',
                 },

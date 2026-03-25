@@ -286,7 +286,9 @@ export default function ClientPortalPage() {
             ;(window as any).openKkiapayWidget({
                 amount: amountXOF,
                 position: 'center',
-                key: paymentSettings.kkiapay_public_key,
+                key: paymentSettings.kkiapay_sandbox === 'true'
+                    ? (paymentSettings.kkiapay_sandbox_public_key || paymentSettings.kkiapay_public_key)
+                    : paymentSettings.kkiapay_public_key,
                 sandbox: paymentSettings.kkiapay_sandbox === 'true',
                 email: doc.client_email || undefined,
                 name: `${doc.client_prenom || ''} ${doc.client_nom || ''}`.trim() || undefined,

@@ -176,7 +176,10 @@ export default function NationaliteFormPage() {
         const amountXOF = formCurrency === 'XOF' ? formAmount : convertCurrency(formAmount, formCurrency, 'XOF')
         try {
             window.openKkiapayWidget({
-                amount: amountXOF, position: 'center', key: paymentSettings.kkiapay_public_key,
+                amount: amountXOF, position: 'center',
+                key: paymentSettings.kkiapay_sandbox === 'true'
+                    ? (paymentSettings.kkiapay_sandbox_public_key || paymentSettings.kkiapay_public_key)
+                    : paymentSettings.kkiapay_public_key,
                 sandbox: paymentSettings.kkiapay_sandbox === 'true', phone: form.telephone || undefined,
                 email: form.email || undefined, name: `${form.prenom || ''} ${form.nom || ''}`.trim() || undefined,
                 paymentmethod: ['momo', 'card'],

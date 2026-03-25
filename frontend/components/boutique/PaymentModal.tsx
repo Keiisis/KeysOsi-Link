@@ -528,8 +528,10 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
         const oid = await createOrder('kkiapay')
         if (!oid) return
 
-        const publicKey = settings.kkiapay_public_key
         const sandbox = settings.kkiapay_sandbox === 'true'
+        const publicKey = sandbox
+            ? (settings.kkiapay_sandbox_public_key || settings.kkiapay_public_key)
+            : settings.kkiapay_public_key
 
         if (!publicKey) {
             cancelOrder(oid)
