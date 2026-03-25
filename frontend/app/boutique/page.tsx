@@ -12,10 +12,9 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 gsap.registerPlugin(ScrollTrigger)
 
 // ─── Split Text Helper ──────────────────────────────────────────────
-function SplitText({ text, className, delay = 0 }: { text: string; className?: string; delay?: number }) {
+function SplitText({ text, charClassName, delay = 0 }: { text: string; charClassName?: string; delay?: number }) {
     return (
         <motion.span
-            className={className}
             initial="hidden"
             animate="visible"
             variants={{
@@ -27,7 +26,7 @@ function SplitText({ text, className, delay = 0 }: { text: string; className?: s
             {text.split('').map((char, i) => (
                 <motion.span
                     key={i}
-                    className="inline-block"
+                    className={`inline-block ${charClassName || ''}`}
                     style={{ willChange: 'transform, opacity' }}
                     variants={{
                         hidden: { opacity: 0, y: 60, rotateX: -80, filter: 'blur(8px)' },
@@ -260,7 +259,7 @@ export default function BoutiquePage() {
                                 <span className="relative inline-block">
                                     <SplitText
                                         text={t("Boutique")}
-                                        className="text-transparent bg-clip-text bg-gradient-to-r from-[#006b40] via-[#d4a800] to-[#c70e28]"
+                                        charClassName="text-transparent bg-clip-text bg-gradient-to-r from-[#006b40] via-[#d4a800] to-[#c70e28]"
                                         delay={0.5}
                                     />
                                     <motion.div
