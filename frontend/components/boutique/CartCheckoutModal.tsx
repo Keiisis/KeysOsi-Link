@@ -552,6 +552,33 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
         }
         const kkAmount = Math.max(1, Math.round(finalTotal * (1 + CONVERSION_MARGIN)))
         console.log('[Kkiapay] amount XOF:', kkAmount, 'finalTotal:', finalTotal, 'sandbox:', sandbox)
+
+        // ── Intercepteur réseau pour diagnostiquer les erreurs 400 du SDK Kkiapay ──
+        const originalFetch = window.fetch
+        window.fetch = async function (...args: Parameters<typeof fetch>) {
+            const response = await originalFetch.apply(this, args)
+            const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request)?.url || ''
+            if (url.includes('kkiapay.me') && !response.ok) {
+                try {
+                    const cloned = response.clone()
+                    const errorBody = await cloned.text()
+                    console.error(`[Kkiapay INTERCEPTOR] ${response.status} ${url}`)
+                    console.error(`[Kkiapay INTERCEPTOR] Request:`, args[1])
+                    console.error(`[Kkiapay INTERCEPTOR] Response body:`, errorBody)
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    ;(window as any).__kkiapayLastError = {
+                        status: response.status,
+                        url,
+                        body: errorBody,
+                        request: args[1],
+                        timestamp: new Date().toISOString(),
+                    }
+                } catch { /* ignore clone errors */ }
+            }
+            return response
+        }
+        setTimeout(() => { window.fetch = originalFetch }, 60000)
+
         try {
             window.openKkiapayWidget({
                 amount: kkAmount,

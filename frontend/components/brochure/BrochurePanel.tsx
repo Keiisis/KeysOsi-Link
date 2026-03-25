@@ -368,12 +368,10 @@ function TextPanelInner({ s, content, lang, images, imgPositions }: { s: number;
                         ))}
                     </div>
 
-                    {/* Image passeport béninois sous service #3 — affichée EN ENTIER */}
+                    {/* Image passeport béninois sous service #3 — affichée EN ENTIER, sans cadre */}
                     <div style={{ marginTop: 5 * s, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
-                        <div style={{ borderRadius: 5 * s, overflow: 'hidden', border: `2px solid ${GOLD}50`, boxShadow: `0 3px 12px rgba(0,0,0,0.2), 0 0 0 0.5px ${GOLD}25` }}>
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={DEPLIANT_IMAGES.passeport} alt={lang === 'FR' ? 'Passeport République du Bénin' : 'Republic of Benin Passport'} style={{ width: 75 * s, height: 'auto', objectFit: 'contain', display: 'block' }} />
-                        </div>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={DEPLIANT_IMAGES.passeport} alt={lang === 'FR' ? 'Passeport République du Bénin' : 'Republic of Benin Passport'} style={{ width: 100 * s, height: 'auto', objectFit: 'contain', display: 'block' }} />
                     </div>
 
                     {/* CTA épinglé en bas */}
@@ -406,18 +404,18 @@ function TextPanelInner({ s, content, lang, images, imgPositions }: { s: number;
                         ))}
                     </div>
 
-                    {/* Image registre historique sous Santé & Éducation — affichée EN ENTIER */}
-                    <div style={{ marginTop: 3 * s, borderRadius: 4 * s, overflow: 'hidden', border: `1px solid ${GOLD}40`, flexShrink: 0, background: '#f5efe4' }}>
+                    {/* Image registre historique sous Santé & Éducation */}
+                    <div style={{ marginTop: 3 * s, borderRadius: 4 * s, overflow: 'hidden', border: `1px solid ${GOLD}40`, flex: '1 1 auto', minHeight: 0, background: '#f5efe4' }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={DEPLIANT_IMAGES.registre} alt={lang === 'FR' ? 'Registre historique des affranchis' : 'Historical registry of freed citizens'} style={{ width: '100%', height: 'auto', objectFit: 'contain', display: 'block' }} />
+                        <img src={DEPLIANT_IMAGES.registre} alt={lang === 'FR' ? 'Registre historique des affranchis' : 'Historical registry of freed citizens'} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
                     </div>
 
-                    {/* Contacts épinglés en bas — LISIBLES à l'impression */}
-                    <div style={{ marginTop: 'auto', paddingTop: 6 * s, borderTop: `1.5px solid ${GOLD}50` }}>
-                        <div style={{ color: TEXT_DARK, fontSize: 8 * s, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 3 * s }}>Contact</div>
-                        <div style={{ color: TEXT_DARK, fontSize: 7.8 * s, fontWeight: 700, lineHeight: 1.5, letterSpacing: '0.02em' }}>+229 01 60 32 21 21 · +229 01 94 35 50 50</div>
-                        <div style={{ color: TEXT_DARK, fontSize: 7.8 * s, fontWeight: 700, lineHeight: 1.5, letterSpacing: '0.02em' }}>contact@retourgagnantbenin.bj</div>
-                        <div style={{ color: TEXT_DARK, fontSize: 7.8 * s, fontWeight: 700, lineHeight: 1.5, letterSpacing: '0.02em' }}>www.retourgagnantbenin.bj</div>
+                    {/* Contacts épinglés en bas — TOUJOURS VISIBLES */}
+                    <div style={{ flexShrink: 0, paddingTop: 5 * s, borderTop: `1.5px solid ${GOLD}50`, marginTop: 4 * s }}>
+                        <div style={{ color: TEXT_DARK, fontSize: 8 * s, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 2 * s }}>Contact</div>
+                        <div style={{ color: TEXT_DARK, fontSize: 7.5 * s, fontWeight: 700, lineHeight: 1.5, letterSpacing: '0.02em' }}>+229 01 60 32 21 21 · +229 01 94 35 50 50</div>
+                        <div style={{ color: TEXT_DARK, fontSize: 7.5 * s, fontWeight: 700, lineHeight: 1.5, letterSpacing: '0.02em' }}>contact@retourgagnantbenin.bj</div>
+                        <div style={{ color: TEXT_DARK, fontSize: 7.5 * s, fontWeight: 700, lineHeight: 1.5, letterSpacing: '0.02em' }}>www.retourgagnantbenin.bj</div>
                     </div>
                 </div>
             </div>
