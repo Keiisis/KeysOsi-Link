@@ -590,6 +590,11 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
             XMLHttpRequest.prototype.send = origSend
         }, 60000)
 
+        // Séparer le nom complet en firstname/lastname (requis par Kkiapay pour les cartes)
+        const nameParts = (customerName || '').trim().split(/\s+/)
+        const firstName = nameParts[0] || 'Client'
+        const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : firstName
+
         try {
             window.openKkiapayWidget({
                 amount: kkAmount,
@@ -599,6 +604,8 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
                 phone: customerPhone || undefined,
                 email: customerEmail || undefined,
                 name: customerName || undefined,
+                firstname: firstName,
+                lastname: lastName,
                 paymentmethod: ['momo', 'card'],
                 data: JSON.stringify({ order_id: oid }),
                 callback: `${window.location.origin}/boutique`,
