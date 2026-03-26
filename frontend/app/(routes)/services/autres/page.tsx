@@ -7,6 +7,7 @@ import {
     Globe, Map, Truck, Heart, School, Clipboard, LucideIcon
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { T, useTranslation } from '@/lib/translation';
@@ -91,14 +92,31 @@ export default function AutresServicesPage() {
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="max-w-3xl"
+                        className="max-w-4xl flex flex-col md:flex-row items-center gap-8"
                     >
-                        <h1 className="text-4xl md:text-5xl font-bold font-heading mb-4">
-                            {t(content.hero_title)}
-                        </h1>
-                        <p className="text-xl text-white/70">
-                            {t(content.hero_subtitle)}
-                        </p>
+                        <div className="shrink-0 drop-shadow-[0_0_30px_rgba(252,209,22,0.4)]">
+                            <motion.div
+                                className="w-32 h-32 md:w-40 md:h-40 flex items-center justify-center relative"
+                                animate={{ y: [0, -15, 0], rotate: [0, 4, -4, 0] }}
+                                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                            >
+                                <Image
+                                    src="/assets/icones/Autres Services.png"
+                                    alt="Autres Services"
+                                    fill
+                                    className="object-contain bg-transparent drop-shadow-[0_15px_35px_rgba(0,0,0,0.4)]"
+                                    sizes="160px"
+                                />
+                            </motion.div>
+                        </div>
+                        <div>
+                            <h1 className="text-4xl md:text-5xl font-bold font-heading mb-4">
+                                {t(content.hero_title)}
+                            </h1>
+                            <p className="text-xl text-white/70">
+                                {t(content.hero_subtitle)}
+                            </p>
+                        </div>
                     </motion.div>
                 </div>
             </section>
@@ -149,7 +167,7 @@ export default function AutresServicesPage() {
                             {t(content.cta_description)}
                         </p>
                         <Link href="/rendez-vous">
-                            <button className="px-8 py-3 bg-[#008751] text-white font-bold rounded-full hover:bg-[#006e42] transition-colors shadow-md hover:shadow-lg">
+                            <button type="button" className="px-8 py-3 bg-[#008751] text-white font-bold rounded-full hover:bg-[#006e42] transition-colors shadow-md hover:shadow-lg">
                                 {t(content.cta_button_text)}
                             </button>
                         </Link>

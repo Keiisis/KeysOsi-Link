@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle2, ChevronRight, FileText, Calendar } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { GoldenIcon } from '@/components/ui/GoldenIcon';
 import PricingCalculator3D from '@/components/services/PricingCalculator3D';
 import { supabase } from '@/lib/supabase';
 import { T, useTranslation } from '@/lib/translation';
@@ -114,10 +114,17 @@ export default function NationaliteVipPage() {
                     >
                         <div className="shrink-0 drop-shadow-[0_0_30px_rgba(252,209,22,0.4)]">
                             <motion.div
-                                animate={{ y: [0, -10, 0] }}
-                                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                                className="w-32 h-32 md:w-40 md:h-40 flex items-center justify-center relative"
+                                animate={{ y: [0, -15, 0], rotate: [0, 4, -4, 0] }}
+                                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
                             >
-                                <GoldenIcon type="recade" className="w-32 h-32 md:w-40 md:h-40" />
+                                <Image
+                                    src="/assets/icones/Nationalité Béninoise VIP.png"
+                                    alt="Nationalité Béninoise VIP"
+                                    fill
+                                    className="object-contain bg-transparent drop-shadow-[0_15px_35px_rgba(0,0,0,0.4)]"
+                                    sizes="160px"
+                                />
                             </motion.div>
                         </div>
                         <div>
