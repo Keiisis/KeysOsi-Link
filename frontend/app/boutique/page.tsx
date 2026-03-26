@@ -259,7 +259,7 @@ export default function BoutiquePage() {
                                 <span className="relative inline-block">
                                     <SplitText
                                         text={t("Boutique")}
-                                        charClassName="text-transparent bg-clip-text bg-gradient-to-r from-[#006b40] via-[#d4a800] to-[#c70e28]"
+                                        charClassName="text-[#008751]"
                                         delay={0.5}
                                     />
                                     <motion.div
