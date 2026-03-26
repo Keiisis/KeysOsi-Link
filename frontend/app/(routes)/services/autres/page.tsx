@@ -1,71 +1,74 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ChevronRight, Car, HeartPulse, GraduationCap, FileCheck, LucideIcon } from 'lucide-react';
+import {
+    ChevronRight, Car, HeartPulse, GraduationCap, FileCheck,
+    Plane, Home, Building2, Stethoscope, BookOpen, Briefcase,
+    Globe, Map, Truck, Heart, School, Clipboard, LucideIcon
+} from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { T, useTranslation } from '@/lib/translation';
 
-interface AutreService {
+interface ServiceItem {
     icon: string;
     title: string;
     description: string;
 }
 
-const FALLBACK_AUTRES_SERVICES: AutreService[] = [
-    {
-        icon: "Car",
-        title: "Transport & Logistique",
-        description: "Transfert aéroport, location de véhicule avec chauffeur, organisation de déplacements interurbains.",
-    },
-    {
-        icon: "HeartPulse",
-        title: "Santé",
-        description: "Mise en relation avec des cliniques et médecins partenaires, accompagnement pour les soins et hospitalisations.",
-    },
-    {
-        icon: "GraduationCap",
-        title: "Scolarité & Éducation",
-        description: "Orientation et inscription dans des établissements scolaires francophones et internationaux au Bénin.",
-    },
-    {
-        icon: "FileCheck",
-        title: "Démarches Administratives",
-        description: "Assistance pour les demandes de visa, titres de séjour, regroupement familial et autres démarches officielles.",
-    },
-];
+interface PageContent {
+    hero_title: string;
+    hero_subtitle: string;
+    services: ServiceItem[];
+    cta_title: string;
+    cta_description: string;
+    cta_button_text: string;
+}
+
+const DEFAULT_CONTENT: PageContent = {
+    hero_title: "Autres Services",
+    hero_subtitle: "Transport, santé, éducation, démarches administratives — Découvrez tous nos services complémentaires pour faciliter votre installation au Bénin.",
+    services: [
+        { icon: "Car", title: "Transport & Logistique", description: "Transfert aéroport, location de véhicule avec chauffeur, organisation de déplacements interurbains." },
+        { icon: "HeartPulse", title: "Santé", description: "Mise en relation avec des cliniques et médecins partenaires, accompagnement pour les soins et hospitalisations." },
+        { icon: "GraduationCap", title: "Scolarité & Éducation", description: "Orientation et inscription dans des établissements scolaires francophones et internationaux au Bénin." },
+        { icon: "FileCheck", title: "Démarches Administratives", description: "Assistance pour les demandes de visa, titres de séjour, regroupement familial et autres démarches officielles." },
+    ],
+    cta_title: "Un besoin spécifique ?",
+    cta_description: "Contactez-nous pour discuter de votre situation. Nous évaluons chaque demande individuellement et vous orientons vers la meilleure solution.",
+    cta_button_text: "Prendre rendez-vous",
+};
 
 const ICON_MAP: Record<string, LucideIcon> = {
-    Car,
-    HeartPulse,
-    GraduationCap,
-    FileCheck,
+    Car, HeartPulse, GraduationCap, FileCheck,
+    Plane, Home, Building2, Stethoscope,
+    BookOpen, Briefcase, Globe, Map,
+    Truck, Heart, School, Clipboard,
 };
 
 export default function AutresServicesPage() {
     const { t } = useTranslation();
-    const [services, setServices] = useState<AutreService[]>(FALLBACK_AUTRES_SERVICES);
+    const [content, setContent] = useState<PageContent>(DEFAULT_CONTENT);
 
     useEffect(() => {
-        const fetchServices = async () => {
+        const fetchContent = async () => {
             try {
                 const { data } = await supabase
-                    .from('settings')
-                    .select('value')
-                    .eq('key', 'autres_services_json')
+                    .from('page_sections')
+                    .select('content')
+                    .eq('page', 'autres-services')
+                    .eq('section_key', 'page_content')
+                    .eq('is_active', true)
                     .single();
-                if (data?.value) {
-                    const parsed = JSON.parse(data.value) as AutreService[];
-                    if (Array.isArray(parsed) && parsed.length > 0) {
-                        setServices(parsed);
-                    }
+                if (data?.content) {
+                    setContent(prev => ({ ...prev, ...(data.content as Partial<PageContent>) }));
                 }
             } catch {
-                // setting absent ou JSON invalide — utiliser le fallback
+                // fallback to defaults
             }
         };
-        fetchServices();
+        fetchContent();
     }, []);
 
     return (
@@ -91,10 +94,10 @@ export default function AutresServicesPage() {
                         className="max-w-3xl"
                     >
                         <h1 className="text-4xl md:text-5xl font-bold font-heading mb-4">
-                            <T>Autres Services</T>
+                            {t(content.hero_title)}
                         </h1>
                         <p className="text-xl text-white/70">
-                            <T>Transport, santé, éducation, démarches administratives — Découvrez tous nos services complémentaires pour faciliter votre installation au Bénin.</T>
+                            {t(content.hero_subtitle)}
                         </p>
                     </motion.div>
                 </div>
@@ -104,7 +107,7 @@ export default function AutresServicesPage() {
             <section className="py-16">
                 <div className="container mx-auto px-4 max-w-5xl">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        {services.map((service, i) => {
+                        {content.services.map((service, i) => {
                             const IconComponent = ICON_MAP[service.icon] || FileCheck;
                             return (
                                 <motion.div
@@ -140,14 +143,14 @@ export default function AutresServicesPage() {
                         className="mt-12 text-center bg-white rounded-2xl p-8 shadow-sm border border-gray-100"
                     >
                         <h2 className="text-2xl font-bold text-[#1a2332] mb-3">
-                            <T>Un besoin spécifique ?</T>
+                            {t(content.cta_title)}
                         </h2>
                         <p className="text-gray-600 mb-6 max-w-xl mx-auto">
-                            <T>Contactez-nous pour discuter de votre situation. Nous évaluons chaque demande individuellement et vous orientons vers la meilleure solution.</T>
+                            {t(content.cta_description)}
                         </p>
                         <Link href="/rendez-vous">
                             <button className="px-8 py-3 bg-[#008751] text-white font-bold rounded-full hover:bg-[#006e42] transition-colors shadow-md hover:shadow-lg">
-                                <T>Prendre rendez-vous</T>
+                                {t(content.cta_button_text)}
                             </button>
                         </Link>
                     </motion.div>

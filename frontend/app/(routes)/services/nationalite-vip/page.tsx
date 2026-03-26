@@ -11,40 +11,83 @@ import PricingCalculator3D from '@/components/services/PricingCalculator3D';
 import { supabase } from '@/lib/supabase';
 import { T, useTranslation } from '@/lib/translation';
 
-const PIECES_REQUISES = [
-    "Acte de naissance apostillé (original + traduction assermentée si nécessaire)",
-    "Justificatif de domicile de moins de 3 mois",
-    "Copie du passeport en cours de validité",
-    "Certificat de bonne conduite / extrait de casier judiciaire",
-    "Preuve de lien avec le Bénin (généalogie, acte de naissance d'un parent béninois, etc.)",
-    "4 photos d'identité récentes",
-    "Formulaire de demande de naturalisation (fourni par nos soins)",
-];
+interface PricingOption {
+    label: string;
+    price: string;
+}
 
-const PRICING_OPTIONS = [
-    { label: "Accompagnement dossier standard", price: "150.000 FCFA" },
-    { label: "Pack VIP — suivi prioritaire complet", price: "350.000 FCFA" },
-    { label: "Consultation initiale", price: "Gratuit" },
-];
+interface PageContent {
+    hero_title: string;
+    hero_subtitle: string;
+    accompagnement_title: string;
+    accompagnement_text: string;
+    documents_title: string;
+    documents_note: string;
+    documents: string[];
+    pricing_show_calculator: boolean;
+    pricing_options: PricingOption[];
+    cta1_title: string;
+    cta1_description: string;
+    cta1_button_text: string;
+    cta2_title: string;
+    cta2_description: string;
+    cta2_button_text: string;
+    cta2_note: string;
+}
+
+const DEFAULT_CONTENT: PageContent = {
+    hero_title: "Nationalité Béninoise — Accompagnement VIP",
+    hero_subtitle: "Procédure personnalisée et accompagnée de A à Z pour obtenir la nationalité béninoise.",
+    accompagnement_title: "Notre accompagnement",
+    accompagnement_text: "Nous guidons les membres de la diaspora afro-descendante dans l'ensemble des démarches administratives nécessaires à l'obtention de la nationalité béninoise. De la constitution du dossier à la remise des documents officiels, notre équipe assure un suivi personnalisé et transparent à chaque étape.",
+    documents_title: "Pièces à fournir",
+    documents_note: "* Cette liste peut varier selon votre situation individuelle. Nos conseillers vous transmettront la liste définitive lors de votre consultation.",
+    documents: [
+        "Acte de naissance apostillé (original + traduction assermentée si nécessaire)",
+        "Justificatif de domicile de moins de 3 mois",
+        "Copie du passeport en cours de validité",
+        "Certificat de bonne conduite / extrait de casier judiciaire",
+        "Preuve de lien avec le Bénin (généalogie, acte de naissance d'un parent béninois, etc.)",
+        "4 photos d'identité récentes",
+        "Formulaire de demande de naturalisation (fourni par nos soins)",
+    ],
+    pricing_show_calculator: false,
+    pricing_options: [
+        { label: "Accompagnement dossier standard", price: "150.000 FCFA" },
+        { label: "Pack VIP — suivi prioritaire complet", price: "350.000 FCFA" },
+        { label: "Consultation initiale", price: "Gratuit" },
+    ],
+    cta1_title: "Commencer ma demande",
+    cta1_description: "Remplissez le formulaire de demande en ligne. Notre équipe vous recontactera sous 48h.",
+    cta1_button_text: "Commencer ma demande",
+    cta2_title: "Prendre un rendez-vous",
+    cta2_description: "Échangez avec un conseiller pour évaluer votre situation et préparer votre dossier.",
+    cta2_button_text: "Réserver un créneau",
+    cta2_note: "Premier appel de 15 min gratuit",
+};
 
 export default function NationaliteVipPage() {
     const { t } = useTranslation();
-    const [showCalculator, setShowCalculator] = useState(false);
+    const [content, setContent] = useState<PageContent>(DEFAULT_CONTENT);
 
     useEffect(() => {
-        const fetchSetting = async () => {
+        const fetchContent = async () => {
             try {
                 const { data } = await supabase
-                    .from('settings')
-                    .select('value')
-                    .eq('key', 'passeport_show_calculator')
+                    .from('page_sections')
+                    .select('content')
+                    .eq('page', 'nationalite-vip')
+                    .eq('section_key', 'page_content')
+                    .eq('is_active', true)
                     .single();
-                if (data?.value === 'true') setShowCalculator(true);
+                if (data?.content) {
+                    setContent(prev => ({ ...prev, ...(data.content as Partial<PageContent>) }));
+                }
             } catch {
-                // setting absent — calculateur masqué par défaut
+                // fallback to defaults
             }
         };
-        fetchSetting();
+        fetchContent();
     }, []);
 
     return (
@@ -79,10 +122,10 @@ export default function NationaliteVipPage() {
                         </div>
                         <div>
                             <h1 className="text-4xl md:text-5xl font-bold font-heading mb-4">
-                                <T>Nationalité Béninoise — Accompagnement VIP</T>
+                                {t(content.hero_title)}
                             </h1>
                             <p className="text-xl text-white/70">
-                                <T>Procédure personnalisée et accompagnée de A à Z pour obtenir la nationalité béninoise.</T>
+                                {t(content.hero_subtitle)}
                             </p>
                         </div>
                     </motion.div>
@@ -102,15 +145,10 @@ export default function NationaliteVipPage() {
                         >
                             <div>
                                 <h2 className="text-2xl font-bold text-[#1a2332] mb-4">
-                                    <T>Notre accompagnement</T>
+                                    {t(content.accompagnement_title)}
                                 </h2>
                                 <p className="text-gray-600 leading-relaxed text-lg">
-                                    <T>
-                                        Nous guidons les membres de la diaspora afro-descendante dans l'ensemble des démarches
-                                        administratives nécessaires à l'obtention de la nationalité béninoise. De la constitution
-                                        du dossier à la remise des documents officiels, notre équipe assure un suivi personnalisé
-                                        et transparent à chaque étape.
-                                    </T>
+                                    {t(content.accompagnement_text)}
                                 </p>
                             </div>
 
@@ -118,10 +156,10 @@ export default function NationaliteVipPage() {
                             <div>
                                 <h2 className="text-2xl font-bold text-[#1a2332] mb-6 flex items-center gap-3">
                                     <FileText className="text-[#008751]" size={24} />
-                                    <T>Pièces à fournir</T>
+                                    {t(content.documents_title)}
                                 </h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {PIECES_REQUISES.map((item, i) => (
+                                    {content.documents.map((item, i) => (
                                         <motion.div
                                             key={i}
                                             initial={{ opacity: 0, x: -10 }}
@@ -135,7 +173,7 @@ export default function NationaliteVipPage() {
                                     ))}
                                 </div>
                                 <p className="mt-4 text-sm text-gray-500 italic">
-                                    <T>* Cette liste peut varier selon votre situation individuelle. Nos conseillers vous transmettront la liste définitive lors de votre consultation.</T>
+                                    {t(content.documents_note)}
                                 </p>
                             </div>
                         </motion.div>
@@ -148,9 +186,9 @@ export default function NationaliteVipPage() {
                             className="lg:col-span-1"
                         >
                             <div className="sticky top-24 space-y-6">
-                                {showCalculator && (
+                                {content.pricing_show_calculator && (
                                     <PricingCalculator3D
-                                        options={PRICING_OPTIONS}
+                                        options={content.pricing_options}
                                         baseColor="#FCD116"
                                         serviceName="Nationalité Béninoise VIP"
                                     />
@@ -160,14 +198,14 @@ export default function NationaliteVipPage() {
                                     <div className="h-1 w-full bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D]" />
                                     <CardContent className="p-6">
                                         <h3 className="text-lg font-bold text-[#1a2332] mb-2">
-                                            <T>Commencer ma demande</T>
+                                            {t(content.cta1_title)}
                                         </h3>
                                         <p className="text-sm text-gray-500 mb-4">
-                                            <T>Remplissez le formulaire de demande en ligne. Notre équipe vous recontactera sous 48h.</T>
+                                            {t(content.cta1_description)}
                                         </p>
                                         <Link href="/nationalite" className="block">
                                             <Button className="w-full bg-[#008751] hover:bg-[#006e42] text-white font-bold h-12 rounded-xl transition-all shadow-md hover:shadow-lg">
-                                                <T>Commencer ma demande</T>
+                                                {t(content.cta1_button_text)}
                                             </Button>
                                         </Link>
                                     </CardContent>
@@ -178,18 +216,18 @@ export default function NationaliteVipPage() {
                                     <CardContent className="p-6">
                                         <h3 className="text-lg font-bold text-[#1a2332] mb-2 flex items-center gap-2">
                                             <Calendar size={18} className="text-[#008751]" />
-                                            <T>Prendre un rendez-vous</T>
+                                            {t(content.cta2_title)}
                                         </h3>
                                         <p className="text-sm text-gray-500 mb-4">
-                                            <T>Échangez avec un conseiller pour évaluer votre situation et préparer votre dossier.</T>
+                                            {t(content.cta2_description)}
                                         </p>
                                         <Link href="/rendez-vous" className="block">
                                             <Button variant="outline" className="w-full border-[#008751]/30 text-[#008751] hover:bg-[#008751] hover:text-white font-bold h-12 rounded-xl transition-all">
-                                                <T>Réserver un créneau</T>
+                                                {t(content.cta2_button_text)}
                                             </Button>
                                         </Link>
                                         <p className="text-xs text-center text-gray-400 mt-3">
-                                            <T>Premier appel de 15 min gratuit</T>
+                                            {t(content.cta2_note)}
                                         </p>
                                     </CardContent>
                                 </Card>

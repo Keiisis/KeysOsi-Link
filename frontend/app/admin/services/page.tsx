@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
     Plus, Trash2, Edit2, Search, Loader2,
     Layers, RefreshCw, ToggleLeft, ToggleRight,
+    ExternalLink, Globe, FileText,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -118,6 +119,75 @@ export default function AdminServicesPage() {
                     >
                         <Plus size={16} /> CRÉER UN SERVICE
                     </Link>
+                </div>
+            </div>
+
+            {/* Pages de services spéciaux */}
+            <div className="bg-[#0a0f18] border border-white/5 rounded-2xl overflow-hidden">
+                <div className="px-6 py-4 border-b border-white/5 flex items-center gap-2">
+                    <Layers size={14} className="text-[#FCD116]" />
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pages de services dédiées</span>
+                    <span className="ml-2 text-[9px] text-gray-600 font-normal normal-case">Contenu éditable directement</span>
+                </div>
+                <div className="divide-y divide-white/5">
+                    {[
+                        {
+                            title: 'Nationalité VIP',
+                            subtitle: 'Accompagnement dossier nationalité béninoise',
+                            slug: 'nationalite-vip',
+                            href: '/admin/nationalite/content',
+                            color: '#FCD116',
+                            icon: Globe,
+                            frontendUrl: '/services/nationalite-vip',
+                        },
+                        {
+                            title: 'Autres Services',
+                            subtitle: 'Transport, santé, éducation, démarches admin.',
+                            slug: 'autres',
+                            href: '/admin/autres-services',
+                            color: '#008751',
+                            icon: FileText,
+                            frontendUrl: '/services/autres',
+                        },
+                    ].map((item) => {
+                        const Icon = item.icon
+                        return (
+                            <div key={item.slug} className="grid grid-cols-1 md:grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-white/[0.02] transition-colors">
+                                <div className="col-span-1">
+                                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: item.color + '20', border: `1px solid ${item.color}40` }}>
+                                        <Icon size={14} style={{ color: item.color }} />
+                                    </div>
+                                </div>
+                                <div className="col-span-4">
+                                    <p className="text-sm font-bold text-white">{item.title}</p>
+                                    <p className="text-[10px] text-gray-500 mt-0.5">{item.subtitle}</p>
+                                </div>
+                                <div className="col-span-3">
+                                    <span className="text-[10px] font-mono text-gray-500 bg-white/5 px-2 py-1 rounded">/{item.slug}</span>
+                                </div>
+                                <div className="col-span-2">
+                                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#008751]/20 text-[#008751]">Page dédiée</span>
+                                </div>
+                                <div className="col-span-2 flex items-center justify-end gap-2">
+                                    <Link
+                                        href={item.href}
+                                        className="flex items-center gap-1.5 bg-[#008751]/20 hover:bg-[#008751]/30 text-[#008751] font-black text-[10px] px-3 py-2 rounded-xl transition-all"
+                                    >
+                                        <Edit2 size={12} /> Éditer
+                                    </Link>
+                                    <a
+                                        href={item.frontendUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="p-2 rounded-xl bg-white/5 text-gray-400 border border-white/5 hover:bg-white/10 hover:text-white transition-all"
+                                        title="Voir sur le site"
+                                    >
+                                        <ExternalLink size={13} />
+                                    </a>
+                                </div>
+                            </div>
+                        )
+                    })}
                 </div>
             </div>
 
