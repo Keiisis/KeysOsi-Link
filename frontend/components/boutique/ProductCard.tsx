@@ -11,6 +11,7 @@ import { Price } from '@/components/ui/Price'
 import { CurrencyCode } from '@/lib/currency'
 import { T, useTranslation } from '@/lib/translation'
 import { useIsMobile } from '@/lib/hooks/useMediaQuery'
+import { useFlyCart } from '@/lib/store/flyStore'
 
 export interface Product {
     id: string
@@ -34,6 +35,7 @@ export function ProductCard({ product }: { product: Product, index?: number }) {
     const [isHovered, setIsHovered] = useState(false)
     const isFav = isInWishlist(product.id)
     const isMobile = useIsMobile()
+    const { trigger: flyTrigger } = useFlyCart()
     const cardRef = useRef<HTMLDivElement>(null)
 
     const hasDiscount = product.sale_price && product.sale_price < product.price
@@ -92,6 +94,8 @@ export function ProductCard({ product }: { product: Product, index?: number }) {
     const handleAddToCart = (e: React.MouseEvent) => {
         e.preventDefault()
         if (isOutOfStock) return
+        // Déclencher l'animation fly-to-cart
+        flyTrigger(e.clientX, e.clientY)
         addItem({
             id: product.id,
             title: product.title,

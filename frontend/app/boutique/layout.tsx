@@ -3,6 +3,7 @@
 import Script from 'next/script'
 import { CartDrawer } from '@/components/boutique/CartDrawer'
 import { CartFloatingButton } from '@/components/boutique/CartFloatingButton'
+import { CartFlyAnimation } from '@/components/boutique/CartFlyAnimation'
 import { MaintenanceGuard } from '@/components/boutique/MaintenanceGuard'
 
 export default function BoutiqueLayout({
@@ -37,6 +38,7 @@ export default function BoutiqueLayout({
             {/* Cart UI */}
             <CartDrawer />
             <CartFloatingButton />
+            <CartFlyAnimation />
         </>
     )
 }
