@@ -30,6 +30,7 @@ const IMG_BY_SLUG: Record<string, string> = {
     construction: '/assets/icones/icone_Construction.png',
     investissement: '/assets/icones/icone_Investissement.png',
     'nationalite-vip': '/assets/icones/Nationalité Béninoise VIP.png',
+    'recherche-ancestrale': '/assets/icones/Recherche Ancestrale.png',
     autres: '/assets/icones/Autres Services.png',
 }
 
@@ -76,6 +77,12 @@ const FALLBACK_SERVICES: ServiceItem[] = [
         title: 'Nationalité VIP',
         description: "Accompagnement personnalisé pour l'obtention de la nationalité béninoise — dossier complet, suivi administratif et prise en charge prioritaire.",
         imageUrl: '/assets/icones/Nationalité Béninoise VIP.png',
+    },
+    {
+        id: 'f-7b', slug: 'recherche-ancestrale', iconType: 'cowrie',
+        title: 'Recherche Ancestrale',
+        description: "Retrouvez la trace de vos ancêtres réduits en esclavage — archives, bases de données spécialisées et accompagnement généalogique pour reconstituer votre lignée africaine.",
+        imageUrl: '/assets/icones/Recherche Ancestrale.png',
     },
     {
         id: 'f-8', slug: 'autres', iconType: 'standard',

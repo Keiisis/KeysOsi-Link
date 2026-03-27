@@ -79,6 +79,7 @@ export default function AdminServicesPage() {
 
     const getEditHref = (service: Service) => {
         if (service.slug === 'nationalite-vip') return '/admin/nationalite/content'
+        if (service.slug === 'recherche-ancestrale') return '/admin/recherche-ancestrale'
         if (service.slug === 'autres') return '/admin/autres-services'
         return `/admin/services/edit/${service.id}`
     }

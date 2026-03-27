@@ -164,6 +164,25 @@ const FALLBACK_SERVICES: Record<string, ServiceData> = {
             { label: 'Consultation stratégique', price: '50 000 FCFA' },
         ],
     },
+    'recherche-ancestrale': {
+        title: 'Recherche Ancestrale',
+        subtitle: "Retrouvez la trace de ceux que l'histoire a effacés",
+        description: "Pour des millions de descendants de la diaspora africaine, une partie de l'arbre généalogique a été effacée par la traite transatlantique. Nous mobilisons archives, bases de données spécialisées et associations expertes pour reconstituer votre lignée africaine.",
+        features: [
+            "Extrait de naissance de vos deux parents (père et mère)",
+            "Extrait de naissance ou de décès de vos grands-parents (côté paternel et maternel)",
+            "Actes de mariage, notariés, militaires ou de décès des arrière-grands-parents",
+            "Consultation d'archives officielles et bases de données diasporiques",
+            "Partenariats avec associations spécialisées en généalogie afro-descendante",
+        ],
+        price: '250 €',
+        color: '#FCD116',
+        icon_type: 'cowrie',
+        image_url: '',
+        pricing_options: [
+            { label: 'Recherche complète — archives, bases de données & associations', price: '250 €' },
+        ],
+    },
     'nationalite-vip': {
         title: 'Nationalité VIP',
         subtitle: 'Obtenir la nationalité béninoise pour la diaspora afro-descendante',
