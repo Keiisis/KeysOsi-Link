@@ -99,15 +99,40 @@ export default function NationaliteFormPage() {
     const [paymentProcessing, setPaymentProcessing] = useState(false)
     const [paymentError, setPaymentError] = useState('')
 
-    const [rawDocs, setRawDocs] = useState<{ label: string, name: string, file: File }[]>([])
+    // ── Types ──────────────────────────────────────────────────────────────────
+    interface DocSlot {
+        key: string          // identifiant technique unique
+        label: string        // libellé affiché
+        multi: boolean       // plusieurs fichiers autorisés
+        hint?: string        // indice optionnel
+        required: boolean    // obligatoire (true) ou facultatif (false)
+        ancestral?: boolean  // déclenche l'upsell Recherche Ancestrale si manquant
+        conditional?: string // affiché seulement si condition (ex: 'has_children')
+    }
+
+    const [rawDocs, setRawDocs] = useState<{ key: string, label: string, name: string, file: File }[]>([])
     const [uploadProgress, setUploadProgress] = useState(0)
-    const [requiredDocs, setRequiredDocs] = useState<{ label: string, multi: boolean, hint?: string }[]>([
-        { label: t('Pièce d\'identité en cours de validité'), multi: false },
-        { label: t('Justificatif de domicile'), multi: false },
-        { label: t('Preuve de profession'), multi: false },
-        { label: t('Preuve d\'afro descendance'), multi: true, hint: t('Vous pouvez charger plusieurs documents ici !') },
-        { label: t('Casier judiciaire ou Certificat d\'antécédents criminels'), multi: false },
-    ])
+    const [docWarnings, setDocWarnings] = useState<string[]>([])
+
+    // 13 slots structurés — chargés depuis l'admin ou valeurs par défaut
+    const DEFAULT_DOC_SLOTS: DocSlot[] = [
+        { key: 'identite',          label: "Pièce d'identité en cours de validité",                                  multi: false, required: true },
+        { key: 'domicile',          label: "Justificatif de domicile",                                                multi: false, required: true },
+        { key: 'profession',        label: "Preuve de profession",                                                    multi: false, required: true },
+        { key: 'afro_descendance',  label: "Preuve d'afro descendance",                                               multi: true,  required: true,  hint: "ADN, acte notarié, archives historiques, arbre généalogique…" },
+        { key: 'casier',            label: "Casier judiciaire ou Certificat d'antécédents criminels",                 multi: false, required: true },
+        { key: 'photo',             label: "Photo d'identité récente (moins de 6 mois)",                              multi: false, required: true },
+        { key: 'naissance_pere',    label: "Extrait de naissance du père",                                            multi: false, required: false, ancestral: true },
+        { key: 'naissance_mere',    label: "Extrait de naissance de la mère",                                         multi: false, required: false, ancestral: true },
+        { key: 'livret_parents',    label: "Livret de famille des parents",                                           multi: false, required: false },
+        { key: 'agp_paternel',      label: "Acte de naissance / décès — Arrière-grand-père paternel",                 multi: false, required: false, ancestral: true },
+        { key: 'agm_paternelle',    label: "Acte de naissance / décès — Arrière-grand-mère paternelle",               multi: false, required: false, ancestral: true },
+        { key: 'agp_maternel',      label: "Acte de naissance / décès — Arrière-grand-père maternel",                 multi: false, required: false, ancestral: true },
+        { key: 'agm_maternelle',    label: "Acte de naissance / décès — Arrière-grand-mère maternelle",               multi: false, required: false, ancestral: true },
+        { key: 'livret_mineur',     label: "Livret de famille (pour enfant mineur)",                                  multi: false, required: false, conditional: 'has_children' },
+        { key: 'autres',            label: "Autres documents complémentaires",                                        multi: true,  required: false, hint: "Tout document supplémentaire pouvant appuyer votre dossier" },
+    ]
+    const [docSlots, setDocSlots] = useState<DocSlot[]>(DEFAULT_DOC_SLOTS)
     const [bgImageUrl, setBgImageUrl] = useState<string>('/images/bg-default-afro.jpg')
     const [formAmount, setFormAmount] = useState(250)
     const [formCurrency, setFormCurrency] = useState<CurrencyCode>('USD')
@@ -151,8 +176,8 @@ export default function NationaliteFormPage() {
                     const c = data.content as Record<string, unknown>
                     if (c.amount) setFormAmount(Number(c.amount))
                     if (c.currency) setFormCurrency(c.currency as CurrencyCode)
-                    if (c.required_documents && Array.isArray(c.required_documents)) {
-                        setRequiredDocs(c.required_documents)
+                    if (c.doc_slots && Array.isArray(c.doc_slots)) {
+                        setDocSlots(c.doc_slots as DocSlot[])
                     }
                 }
             })
@@ -245,9 +270,23 @@ export default function NationaliteFormPage() {
         }
         if (step === 3 && !form.type_document_identite) e.push(t('Type de document requis'))
         if (step === 4) {
-            const req = requiredDocs.map(d => d.label)
-            const uploaded = rawDocs.map(d => d.label)
-            req.forEach(l => { if (!uploaded.includes(l)) e.push(`${t('Document manquant :')} ${t(l)}`) })
+            // Validation SOFT : on ne bloque que les 6 obligatoires, les autres sont des avertissements
+            const uploadedKeys = rawDocs.map(d => d.key)
+            const strictRequired = docSlots.filter(s => s.required)
+            strictRequired.forEach(slot => {
+                if (!uploadedKeys.includes(slot.key)) {
+                    e.push(`${t('Document manquant :')} ${t(slot.label)}`)
+                }
+            })
+            // Avertissements non bloquants pour les facultatifs
+            const warnings: string[] = []
+            const optionalSlots = docSlots.filter(s => !s.required && !s.conditional)
+            optionalSlots.forEach(slot => {
+                if (!uploadedKeys.includes(slot.key)) {
+                    warnings.push(slot.label)
+                }
+            })
+            setDocWarnings(warnings)
         }
         // Step 5 = Récapitulatif (pas de validation, juste relecture)
         return e
@@ -273,7 +312,7 @@ export default function NationaliteFormPage() {
             const doc = rawDocs[i]
             const ext = doc.file.name.split('.').pop()
             const folder = `nat-${Date.now()}`
-            const filename = `${folder}/${doc.label.replace(/[^a-zA-Z0-9]/g, '_')}_${i}.${ext}`
+            const filename = `${folder}/${doc.key}_${i}.${ext}`
 
             let uploaded = false
             for (let attempt = 0; attempt < 2; attempt++) {
@@ -283,7 +322,7 @@ export default function NationaliteFormPage() {
                         upsert: attempt > 0,
                     })
                     if (data && !error) {
-                        finalUploadedUrls.push(`${t(doc.label)}: ${filename}`)
+                        finalUploadedUrls.push(`${doc.key}:${doc.label}: ${filename}`)
                         uploaded = true
                         break
                     } else {
@@ -335,6 +374,20 @@ export default function NationaliteFormPage() {
             if (res.ok && result.success) {
                 setAppRef(result.reference)
                 setUploadProgress(100)
+                // Déclencher l'analyse des documents manquants en arrière-plan
+                const uploadedKeys = rawDocs.map(d => d.key)
+                fetch('/api/nationality/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ref: result.reference,
+                        email: form.email,
+                        prenom: form.prenom,
+                        nom: form.nom,
+                        uploaded_keys: uploadedKeys,
+                        all_slots: docSlots.map(s => ({ key: s.key, label: s.label, required: s.required, ancestral: s.ancestral || false })),
+                    }),
+                }).catch(err => console.error('[ANALYZE] Erreur déclenchement analyze:', err))
                 setShowWelcome(true)
             } else {
                 setErrors([result.error || t('Erreur lors de la soumission. Veuillez réessayer.')])
@@ -567,39 +620,108 @@ export default function NationaliteFormPage() {
                                 </div>
                             </div>}
 
-                            {step === 4 && <div className="space-y-4">
-                                <h2 className="text-lg font-black text-white"><T>Pièces à joindre</T></h2>
-                                <p className="text-xs text-gray-500"><T>Formats : PNG, JPG, JPEG, PDF. Taille max : 5 Mo.</T></p>
-                                {requiredDocs.map((doc, i) => (
-                                    <div key={i} className="bg-white/[0.03] border border-white/5 rounded-xl p-5 flex items-center justify-between hover:border-emerald-500/20 transition-all">
-                                        <div className="flex items-center gap-4"><FileText size={18} className="text-emerald-400/60" /><div><span className="text-sm text-white">{t(doc.label)}<span className="text-red-400 ml-1">*</span></span>{doc.hint && <p className="text-[10px] text-gray-600">{doc.hint}</p>}</div></div>
-                                        <label className="cursor-pointer shrink-0"><div className="text-right"><p className="text-[10px] text-gray-600"><T>Glisser déposer ou</T></p><p className="text-xs font-bold text-emerald-400">{doc.multi ? t('CHOISIR FICHIER(S)') : t('CHOISIR UN FICHIER')}</p></div>
-                                            <input title={t(doc.label)} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" multiple={doc.multi} onChange={e => { const f = e.target.files; if (f) { const newDocs = Array.from(f).map(fi => ({ label: doc.label, name: fi.name, file: fi })); setRawDocs(p => [...p, ...newDocs]) } }} />
-                                        </label>
-                                    </div>
-                                ))}
-                                {rawDocs.length > 0 && <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-4 space-y-3">
-                                    <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider">{t("Fichiers ajoutés")} ({rawDocs.length})</p>
-                                    {rawDocs.map((d, i) => {
-                                        const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(d.name)
-                                        return (
-                                            <div key={i} className="flex items-center gap-3 bg-white/[0.02] rounded-lg p-2">
-                                                {isImage ? (<>
-                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                    < img src={URL.createObjectURL(d.file)} alt={d.label} className="w-14 h-14 object-cover rounded-lg border border-white/10" />
-                                                </>) : (
-                                                    <div className="w-14 h-14 flex items-center justify-center bg-white/5 rounded-lg border border-white/10"><FileText size={20} className="text-gray-500" /></div>
-                                                )}
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-xs text-white font-bold truncate">{t(d.label)}</p>
-                                                    <p className="text-[10px] text-gray-500 truncate">{d.name} — {(d.file.size / 1024).toFixed(0)} Ko</p>
+                            {step === 4 && (() => {
+                                const uploadedKeys = rawDocs.map(d => d.key)
+                                const hasChildren = form.nombre_enfants > 0
+                                const visibleSlots = docSlots.filter(s =>
+                                    s.conditional !== 'has_children' || hasChildren
+                                )
+                                const obligatoires = visibleSlots.filter(s => s.required)
+                                const facultatifs = visibleSlots.filter(s => !s.required)
+
+                                const renderSlot = (doc: DocSlot) => {
+                                    const uploaded = uploadedKeys.includes(doc.key)
+                                    const isAncestral = doc.ancestral
+                                    return (
+                                        <div key={doc.key} className={`bg-white/[0.03] border rounded-xl p-4 flex items-center justify-between transition-all ${uploaded ? 'border-emerald-500/40 bg-emerald-500/5' : isAncestral ? 'border-amber-500/20 hover:border-amber-500/40' : 'border-white/5 hover:border-emerald-500/20'}`}>
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${uploaded ? 'bg-emerald-500/20' : isAncestral ? 'bg-amber-500/10' : 'bg-white/5'}`}>
+                                                    {uploaded ? <CheckCircle2 size={16} className="text-emerald-400" /> : <FileText size={16} className={isAncestral ? 'text-amber-400/60' : 'text-gray-500'} />}
                                                 </div>
-                                                <button title={t("Supprimer")} onClick={() => setRawDocs(p => p.filter((_, idx) => idx !== i))} className="p-1.5 text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"><X size={14} /></button>
+                                                <div className="min-w-0">
+                                                    <span className="text-sm text-white block truncate">
+                                                        {t(doc.label)}
+                                                        {doc.required && <span className="text-red-400 ml-1">*</span>}
+                                                        {!doc.required && isAncestral && <span className="ml-1.5 text-[9px] font-bold uppercase tracking-wider text-amber-400/70 bg-amber-500/10 px-1.5 py-0.5 rounded">Ancestral</span>}
+                                                        {!doc.required && !isAncestral && <span className="ml-1.5 text-[9px] font-bold uppercase tracking-wider text-gray-600 bg-white/5 px-1.5 py-0.5 rounded">Optionnel</span>}
+                                                    </span>
+                                                    {doc.hint && <p className="text-[10px] text-gray-600 mt-0.5">{doc.hint}</p>}
+                                                </div>
                                             </div>
-                                        )
-                                    })}
-                                </div>}
-                            </div>}
+                                            <label className="cursor-pointer shrink-0 ml-3">
+                                                <div className="text-right">
+                                                    <p className="text-[10px] text-gray-600">{uploaded ? t('Modifier') : t('Choisir')}</p>
+                                                    <p className="text-xs font-bold text-emerald-400">{doc.multi ? t('FICHIER(S)') : t('UN FICHIER')}</p>
+                                                </div>
+                                                <input title={t(doc.label)} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" multiple={doc.multi}
+                                                    onChange={e => {
+                                                        const f = e.target.files
+                                                        if (f) {
+                                                            const newDocs = Array.from(f).map(fi => ({ key: doc.key, label: doc.label, name: fi.name, file: fi }))
+                                                            setRawDocs(p => [...p.filter(x => doc.multi || x.key !== doc.key), ...newDocs])
+                                                        }
+                                                    }} />
+                                            </label>
+                                        </div>
+                                    )
+                                }
+
+                                return (
+                                    <div className="space-y-5">
+                                        <div>
+                                            <h2 className="text-lg font-black text-white"><T>Pièces à joindre</T></h2>
+                                            <p className="text-xs text-gray-500 mt-1"><T>Formats : PNG, JPG, JPEG, PDF. Taille max : 5 Mo par fichier.</T></p>
+                                        </div>
+
+                                        {/* Avertissement docs ancestraux manquants */}
+                                        {docWarnings.filter(w => docSlots.find(s => s.label === w && s.ancestral)).length > 0 && (
+                                            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
+                                                <p className="text-xs font-bold text-amber-400 mb-1">Documents ancestraux manquants</p>
+                                                <p className="text-[11px] text-amber-300/70 leading-relaxed">
+                                                    Vous n'avez pas fourni certains actes d'état civil de vos ascendants. Vous pouvez soumettre votre dossier et les compléter dans un délai de 7 semaines — ou laisser notre service <strong>Recherche Ancestrale</strong> les retrouver pour vous (250 €).
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {/* Slots obligatoires */}
+                                        <div className="space-y-3">
+                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Documents obligatoires</p>
+                                            {obligatoires.map(renderSlot)}
+                                        </div>
+
+                                        {/* Slots facultatifs */}
+                                        <div className="space-y-3">
+                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Documents complémentaires <span className="text-gray-700 font-normal normal-case tracking-normal">(facultatifs — peuvent être transmis dans les 7 semaines suivant la soumission)</span></p>
+                                            {facultatifs.map(renderSlot)}
+                                        </div>
+
+                                        {/* Fichiers ajoutés */}
+                                        {rawDocs.length > 0 && (
+                                            <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-4 space-y-3">
+                                                <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider">{t("Fichiers ajoutés")} ({rawDocs.length})</p>
+                                                {rawDocs.map((d, i) => {
+                                                    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(d.name)
+                                                    return (
+                                                        <div key={i} className="flex items-center gap-3 bg-white/[0.02] rounded-lg p-2">
+                                                            {isImage ? (
+                                                                // eslint-disable-next-line @next/next/no-img-element
+                                                                <img src={URL.createObjectURL(d.file)} alt={d.label} className="w-14 h-14 object-cover rounded-lg border border-white/10" />
+                                                            ) : (
+                                                                <div className="w-14 h-14 flex items-center justify-center bg-white/5 rounded-lg border border-white/10"><FileText size={20} className="text-gray-500" /></div>
+                                                            )}
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-xs text-white font-bold truncate">{t(d.label)}</p>
+                                                                <p className="text-[10px] text-gray-500 truncate">{d.name} — {(d.file.size / 1024).toFixed(0)} Ko</p>
+                                                            </div>
+                                                            <button type="button" title={t("Supprimer")} onClick={() => setRawDocs(p => p.filter((_, idx) => idx !== i))} className="p-1.5 text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"><X size={14} /></button>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })()}
 
                             {step === 6 && <div className="space-y-5">
                                 <h2 className="text-lg font-black text-white"><T>Paiement des frais de traitement</T></h2>
