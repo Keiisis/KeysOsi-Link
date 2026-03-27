@@ -588,8 +588,8 @@ export default function NationaliteFormPage() {
                                         <FileText size={24} className="mx-auto text-emerald-400/50 mb-2" />
                                         <p className="text-xs font-bold text-emerald-400"><T>Cliquer ou glisser-déposer</T></p>
                                         <p className="text-[10px] text-gray-600 mt-1"><T>PNG, JPG, PDF — Max 5 Mo</T></p>
-                                        {rawDocs.find(d => d.label === 'Document d\'identité (scan)') && <p className="text-[10px] text-emerald-400 mt-2 font-bold"><T>Fichier sélectionné :</T> {rawDocs.find(d => d.label === 'Document d\'identité (scan)')?.name}</p>}
-                                        <input title={t("Scan du document d'identité")} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={e => { const f = e.target.files; if (f && f[0]) { setRawDocs(p => [...p.filter(d => d.label !== 'Document d\'identité (scan)'), { label: 'Document d\'identité (scan)', name: f[0].name, file: f[0] }]) } }} />
+                                        {rawDocs.find(d => d.key === 'identite_scan') && <p className="text-[10px] text-emerald-400 mt-2 font-bold"><T>Fichier sélectionné :</T> {rawDocs.find(d => d.key === 'identite_scan')?.name}</p>}
+                                        <input title={t("Scan du document d'identité")} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={e => { const f = e.target.files; if (f && f[0]) { setRawDocs(p => [...p.filter(d => d.key !== 'identite_scan'), { key: 'identite_scan', label: "Document d'identité (scan)", name: f[0].name, file: f[0] }]) } }} />
                                     </label>
                                 </div>
 
