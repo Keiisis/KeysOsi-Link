@@ -19,7 +19,9 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'email et mot de passe requis' }, { status: 400 })
         }
 
-        const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.retourgagnantbenin.bj'
+        // Toujours utiliser NEXT_PUBLIC_SITE_URL pour le redirectTo des emails — jamais le header origin
+        // (en dev, origin = localhost:3000 → les liens email pointeraient vers localhost)
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.retourgagnantbenin.bj'
 
         // 1. Créer le compte et générer le lien de confirmation (Bypass SMTP Supabase)
         const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
@@ -28,7 +30,7 @@ export async function POST(req: NextRequest) {
             password: password,
             options: {
                 data: { nom: nom || '', prenom: prenom || '', phone: phone || '' },
-                redirectTo: `${origin}/client/login`
+                redirectTo: `${siteUrl}/auth/callback?next=/client/auth-confirm`
             }
         })
 

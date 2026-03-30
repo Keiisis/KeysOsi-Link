@@ -4,23 +4,26 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { Mail, Lock, Loader2, ArrowRight, Eye, EyeOff, AlertCircle, CheckCircle2, User } from 'lucide-react'
+import { Mail, Lock, Loader2, ArrowRight, Eye, EyeOff, AlertCircle, CheckCircle2, User, RefreshCw } from 'lucide-react'
 
 export default function ClientLoginPage() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
-    const [error, setError] = useState('')
+    const [error, setError] = useState<'invalid_credentials' | 'email_not_confirmed' | 'generic' | null>(null)
     const [success, setSuccess] = useState(false)
+    const [resendStatus, setResendStatus] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle')
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search)
             if (params.get('error') === 'no-profile') {
-                setError('Aucun compte client trouvé. Veuillez créer un compte.')
+                setError('generic')
             }
-            // Pré-remplir l'email depuis l'URL (venant du portail)
+            if (params.get('error') === 'confirmation_failed') {
+                setError('email_not_confirmed')
+            }
             const emailParam = params.get('email')
             if (emailParam) setEmail(decodeURIComponent(emailParam))
         }
@@ -29,7 +32,8 @@ export default function ClientLoginPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsLoading(true)
-        setError('')
+        setError(null)
+        setResendStatus('idle')
 
         try {
             const { error: authError } = await supabase.auth.signInWithPassword({
@@ -37,7 +41,17 @@ export default function ClientLoginPage() {
                 password,
             })
 
-            if (authError) throw new Error('Identifiants incorrects. Veuillez réessayer.')
+            if (authError) {
+                const msg = authError.message.toLowerCase()
+                if (msg.includes('email not confirmed') || msg.includes('not confirmed')) {
+                    setError('email_not_confirmed')
+                } else if (msg.includes('invalid') || msg.includes('credentials') || msg.includes('password')) {
+                    setError('invalid_credentials')
+                } else {
+                    setError('generic')
+                }
+                return
+            }
 
             await supabase.auth.getSession()
             setSuccess(true)
@@ -46,10 +60,29 @@ export default function ClientLoginPage() {
             setTimeout(() => {
                 window.location.href = from || '/client/dashboard'
             }, 900)
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Erreur de connexion.')
+        } catch {
+            setError('generic')
         } finally {
             if (!success) setIsLoading(false)
+        }
+    }
+
+    const handleResendConfirmation = async () => {
+        if (!email.trim()) {
+            setError('invalid_credentials')
+            return
+        }
+        setResendStatus('loading')
+        try {
+            const res = await fetch('/api/client/resend-confirmation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email.trim().toLowerCase() }),
+            })
+            if (!res.ok) throw new Error()
+            setResendStatus('sent')
+        } catch {
+            setResendStatus('error')
         }
     }
 
@@ -91,17 +124,6 @@ export default function ClientLoginPage() {
                     className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-7 shadow-[0_20px_60px_rgba(0,0,0,0.4)] relative"
                 >
                     <AnimatePresence>
-                        {error && (
-                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-5 overflow-hidden">
-                                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-500/8 border border-red-500/15">
-                                    <AlertCircle size={15} className="text-red-400 flex-shrink-0 mt-0.5" />
-                                    <p className="text-red-400 text-[12px]">{error}</p>
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
-                    <AnimatePresence>
                         {success && (
                             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="absolute inset-0 z-20 flex items-center justify-center bg-[#060d16]/90 rounded-2xl">
                                 <div className="flex flex-col items-center gap-3">
@@ -110,6 +132,63 @@ export default function ClientLoginPage() {
                                     </div>
                                     <p className="text-sm font-bold text-white">Connexion réussie</p>
                                     <p className="text-[10px] text-gray-500 uppercase tracking-widest">Redirection...</p>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Erreur email non confirmé */}
+                    <AnimatePresence>
+                        {error === 'email_not_confirmed' && (
+                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-5 overflow-hidden">
+                                <div className="p-4 rounded-xl bg-amber-500/8 border border-amber-500/20 space-y-3">
+                                    <div className="flex items-start gap-2.5">
+                                        <AlertCircle size={15} className="text-amber-400 flex-shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-amber-400 text-[12px] font-bold mb-0.5">Email non confirmé</p>
+                                            <p className="text-amber-300/70 text-[11px] leading-relaxed">
+                                                Votre compte existe mais votre email n'est pas encore vérifié. Vérifiez votre boîte mail (y compris les spams).
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {resendStatus === 'idle' && (
+                                        <button type="button" onClick={handleResendConfirmation}
+                                            className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 text-[11px] font-bold transition-all border border-amber-500/20">
+                                            <RefreshCw size={12} />
+                                            Renvoyer l&apos;email de confirmation
+                                        </button>
+                                    )}
+                                    {resendStatus === 'loading' && (
+                                        <div className="flex items-center justify-center gap-2 py-2 text-amber-400/60 text-[11px]">
+                                            <Loader2 size={12} className="animate-spin" />
+                                            Envoi en cours...
+                                        </div>
+                                    )}
+                                    {resendStatus === 'sent' && (
+                                        <div className="flex items-center gap-2 py-2 text-emerald-400 text-[11px] font-bold">
+                                            <CheckCircle2 size={12} />
+                                            Email envoyé ! Vérifiez votre boîte mail.
+                                        </div>
+                                    )}
+                                    {resendStatus === 'error' && (
+                                        <p className="text-red-400 text-[11px] text-center">Erreur d&apos;envoi. Réessayez dans quelques minutes.</p>
+                                    )}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Erreurs classiques */}
+                    <AnimatePresence>
+                        {(error === 'invalid_credentials' || error === 'generic') && (
+                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-5 overflow-hidden">
+                                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-500/8 border border-red-500/15">
+                                    <AlertCircle size={15} className="text-red-400 flex-shrink-0 mt-0.5" />
+                                    <p className="text-red-400 text-[12px]">
+                                        {error === 'invalid_credentials'
+                                            ? 'Identifiants incorrects. Vérifiez votre email et mot de passe.'
+                                            : 'Une erreur est survenue. Veuillez réessayer.'}
+                                    </p>
                                 </div>
                             </motion.div>
                         )}

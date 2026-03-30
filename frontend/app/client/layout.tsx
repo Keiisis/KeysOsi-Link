@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase'
 import {
     LayoutDashboard, FileText, FolderOpen, MessageSquare,
     CalendarDays, UserCircle, LogOut, Menu, X, Bell,
-    ChevronRight, CircleDot, Shield
+    ChevronRight, CircleDot, Shield, Briefcase
 } from 'lucide-react'
 
 interface ClientProfile {
@@ -29,6 +29,7 @@ const NAV_ITEMS: NavItem[] = [
     { title: 'Tableau de Bord', icon: LayoutDashboard, href: '/client/dashboard' },
     { title: 'Mes Documents', icon: FileText, href: '/client/documents' },
     { title: 'Mon Dossier', icon: FolderOpen, href: '/client/dossier' },
+    { title: 'Mes Services', icon: Briefcase, href: '/client/services' },
     { title: 'Messages', icon: MessageSquare, href: '/client/messages' },
     { title: 'Rendez-vous', icon: CalendarDays, href: '/client/rendez-vous' },
     { title: 'Mon Profil', icon: UserCircle, href: '/client/profil' },
@@ -36,7 +37,7 @@ const NAV_ITEMS: NavItem[] = [
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
-    const isAuthPage = pathname === '/client/login' || pathname === '/client/register' || pathname === '/client/reset-password'
+    const isAuthPage = pathname === '/client/login' || pathname === '/client/register' || pathname === '/client/reset-password' || pathname === '/client/auth-confirm'
 
     const [client, setClient] = useState<ClientProfile | null>(null)
     const [loading, setLoading] = useState(!isAuthPage)
