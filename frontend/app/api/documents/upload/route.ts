@@ -10,7 +10,7 @@ const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 function sanitizeFileName(name: string): string {
     return name
         .replace(/\.\./g, '')
-        .replace(/[/\]/g, '')
+        .replace(/[/\\]/g, '')
         .replace(/[^\w\-. ]/g, '_')
         .slice(0, 255);
 }
