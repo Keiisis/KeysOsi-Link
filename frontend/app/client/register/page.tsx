@@ -71,7 +71,8 @@ export default function ClientRegisterPage() {
                     })
                 }
                 const from = new URLSearchParams(window.location.search).get('from')
-                setTimeout(() => { window.location.href = from || '/client/dashboard' }, 1800)
+                const safeFrom = (from && /^\/(client|portail)\//.test(from)) ? from : '/client/dashboard'
+                setTimeout(() => { window.location.href = safeFrom }, 1800)
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Erreur lors de l\'inscription.')
