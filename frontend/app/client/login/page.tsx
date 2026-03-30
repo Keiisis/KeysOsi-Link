@@ -58,7 +58,7 @@ export default function ClientLoginPage() {
 
             const from = new URLSearchParams(window.location.search).get('from')
             // Sécurité : ne rediriger que vers des routes internes /client/* (Open Redirect fix)
-            const safeFrom = (from && /^\/client\//.test(from)) ? from : '/client/dashboard'
+            const safeFrom = (from && /^\/(client|portail)\//.test(from)) ? from : '/client/dashboard'
             setTimeout(() => {
                 window.location.href = safeFrom
             }, 900)
