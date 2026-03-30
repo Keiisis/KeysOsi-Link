@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { verifyApiAuth } from '@/lib/api-auth'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
@@ -30,7 +31,10 @@ const GENERAL_DEFAULTS: Array<{ key: string; value: string; label: string; type:
 ]
 
 // GET /api/admin/settings — retourne tous les paramètres groupés par catégorie
-export async function GET() {
+export async function GET(request: NextRequest) {
+    const auth = await verifyApiAuth(request, 'admin')
+    if (!auth.authenticated) return auth.error!
+
     try {
         const supabase = getSupabase()
 
@@ -73,6 +77,9 @@ export async function GET() {
 
 // PATCH /api/admin/settings — mise à jour d'un paramètre par clé
 export async function PATCH(request: NextRequest) {
+    const auth = await verifyApiAuth(request, 'admin')
+    if (!auth.authenticated) return auth.error!
+
     try {
         const supabase = getSupabase()
         const body = await request.json()

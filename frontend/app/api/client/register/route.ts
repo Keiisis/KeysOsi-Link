@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
                     port: Number(settings.smtp_port) || 465,
                     secure: Number(settings.smtp_port) === 465, // true for 465, false for other ports
                     auth: { user: settings.smtp_user, pass: settings.smtp_pass },
-                    tls: { rejectUnauthorized: false }
+                    tls: { rejectUnauthorized: process.env.NODE_ENV === 'production' }
                 })
                 
                 const fromString = `"${settings.smtp_from_name || 'Retour Gagnant Bénin'}" <${settings.smtp_from_email || settings.smtp_user}>`

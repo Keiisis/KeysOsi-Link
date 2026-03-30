@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { verifyApiAuth } from '@/lib/api-auth'
 import { sendEmail, getEmailTemplates } from '@/lib/email'
 
 /**
@@ -8,12 +9,25 @@ import { sendEmail, getEmailTemplates } from '@/lib/email'
  * Body: { to, subject, message, clientName, context, relatedId, language }
  */
 export async function POST(req: NextRequest) {
+    const auth = await verifyApiAuth(req, 'agent')
+    if (!auth.authenticated) return auth.error!
+
     try {
         const body = await req.json()
         const { to, subject, message, clientName, context, relatedId, language } = body
 
         if (!to || !message) {
             return NextResponse.json({ error: 'Email et message requis.' }, { status: 400 })
+        }
+
+        // Validation email + protection injection SMTP
+        if (!/^[^s@]+@[^s@]+.[^s@]+$/.test(to)) {
+            return NextResponse.json({ error: 'Email destinataire invalide.' }, { status: 400 })
+        }
+        if (/[
+]/.test(to) || (subject && /[
+]/.test(subject))) {
+            return NextResponse.json({ error: 'Caractères non autorisés dans les champs email.' }, { status: 400 })
         }
 
         // Résoudre la langue : priorité au paramètre 'language', sinon 'fr'

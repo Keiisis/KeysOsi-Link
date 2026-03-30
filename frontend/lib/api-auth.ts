@@ -106,7 +106,7 @@ export const verifyApiAuth = async (
         return {
             authenticated: false,
             error: NextResponse.json(
-                { error: 'Erreur d\'authentification: ' + (e instanceof Error ? e.message : String(e)) },
+                { error: 'Erreur d'authentification' },
                 { status: 500 }
             ),
         }

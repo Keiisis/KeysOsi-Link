@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { verifyApiAuth } from '@/lib/api-auth'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
@@ -134,7 +135,10 @@ const DEFAULT_TEMPLATES = [
 ]
 
 // GET /api/admin/email-templates — liste tous les templates (avec seed si vide)
-export async function GET() {
+export async function GET(request: NextRequest) {
+    const auth = await verifyApiAuth(request, 'admin')
+    if (!auth.authenticated) return auth.error!
+
     try {
         const supabase = getSupabase()
 
@@ -168,6 +172,9 @@ export async function GET() {
 
 // POST /api/admin/email-templates — créer un nouveau template
 export async function POST(request: NextRequest) {
+    const auth = await verifyApiAuth(request, 'admin')
+    if (!auth.authenticated) return auth.error!
+
     try {
         const supabase = getSupabase()
         const body = await request.json()
