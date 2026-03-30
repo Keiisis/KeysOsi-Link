@@ -8,11 +8,10 @@ const ALLOWED_TYPES = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'doc', 'docx'];
 const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
 function sanitizeFileName(name: string): string {
-    // Retirer les séquences de traversal de chemin et caractères dangereux
     return name
-        .replace(/../g, '')
+        .replace(/\.\./g, '')
         .replace(/[/\]/g, '')
-        .replace(/[^w-. ]/g, '_')
+        .replace(/[^\w\-. ]/g, '_')
         .slice(0, 255);
 }
 
@@ -26,7 +25,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Validation email
-        if (!/^[^s@]+@[^s@]+.[^s@]+$/.test(client_email)) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(client_email)) {
             return NextResponse.json({ error: 'Email invalide.' }, { status: 400 });
         }
 

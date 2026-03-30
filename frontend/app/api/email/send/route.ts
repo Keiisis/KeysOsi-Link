@@ -4,7 +4,7 @@ import { sendEmail, getEmailTemplates } from '@/lib/email'
 
 /**
  * POST /api/email/send
- * 
+ *
  * Send emails from agent/admin dashboard.
  * Body: { to, subject, message, clientName, context, relatedId, language }
  */
@@ -21,12 +21,10 @@ export async function POST(req: NextRequest) {
         }
 
         // Validation email + protection injection SMTP
-        if (!/^[^s@]+@[^s@]+.[^s@]+$/.test(to)) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
             return NextResponse.json({ error: 'Email destinataire invalide.' }, { status: 400 })
         }
-        if (/[
-]/.test(to) || (subject && /[
-]/.test(subject))) {
+        if (/[\r\n]/.test(to) || (subject && /[\r\n]/.test(subject))) {
             return NextResponse.json({ error: 'Caractères non autorisés dans les champs email.' }, { status: 400 })
         }
 
@@ -35,7 +33,7 @@ export async function POST(req: NextRequest) {
 
         // Générer le HTML dans la bonne langue
         const templates = await getEmailTemplates(emailLang)
-        
+
         let html: string
         if (context === 'agent_reply') {
             html = await templates.agentReply(clientName || 'Client', message, emailLang)
