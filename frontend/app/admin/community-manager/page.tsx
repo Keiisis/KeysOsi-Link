@@ -837,7 +837,7 @@ function VeilleTab({
                             </button>
                         </div>
                         <pre className="text-gray-500 text-[11px] font-mono leading-relaxed max-h-40 overflow-y-auto whitespace-pre-wrap bg-black/20 rounded-lg p-3 border border-white/5">
-                            {activeDossier.claude_prompt.slice(0, 600)}...
+                            {activeDossier.claude_prompt.slice(0, 1000)}...
                         </pre>
                         <p className="text-gray-600 text-[10px] mt-2">💡 Copiez ce prompt dans Claude.ai, ChatGPT ou Gemini avec le JSON pour générer du contenu optimisé qui surpasse ce concurrent.</p>
                     </div>
