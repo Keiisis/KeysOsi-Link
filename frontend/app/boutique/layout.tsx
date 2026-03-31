@@ -19,6 +19,7 @@ export default function BoutiqueLayout({
             <Script
                 src="https://cdn.kkiapay.me/k.js"
                 strategy="afterInteractive"
+                onError={() => console.warn('[Kkiapay] Échec chargement k.js — sera rechargé à la demande')}
             />
 
             {/* FedaPay Checkout.js SDK — afterInteractive (lazyOnload trop tardif → init échoue) */}
