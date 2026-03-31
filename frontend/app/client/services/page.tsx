@@ -10,6 +10,7 @@ import {
     Globe, Users, Award, FileSearch, Package, ChevronDown, ChevronUp,
     Calendar, TrendingUp, Sparkles, Star, Zap
 } from 'lucide-react'
+import { ServiceOrderDrawer, type OrderableService } from '@/components/client/ServiceOrderDrawer'
 
 // ── Types ─────────────────────────────────────────────────────────
 interface Service {
@@ -304,6 +305,9 @@ export default function ClientServicesPage() {
     const [clientEmail, setClientEmail] = useState('')
     const [loading, setLoading] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
+
+    // Drawer commande de service
+    const [drawerService, setDrawerService] = useState<OrderableService | null>(null)
 
     const [services, setServices] = useState<Service[]>([])
     const [dossiers, setDossiers] = useState<Dossier[]>([])
@@ -606,12 +610,37 @@ export default function ClientServicesPage() {
                                                                 Voir le suivi <ChevronRight size={10} />
                                                             </button>
                                                         </div>
-                                                    ) : (
-                                                        <Link href={withBack(svc.href, isNat && clientEmail ? { email: clientEmail } : {})}
+                                                    ) : isNat ? (
+                                                        /* Nationalité VIP → redirige vers formulaire externe */
+                                                        <Link href={withBack(svc.href, clientEmail ? { email: clientEmail } : {})}
                                                             className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-2 rounded-xl bg-gradient-to-r ${svc.color} text-white transition-all hover:opacity-90 ${svc.glow}`}>
                                                             {svc.ctaLabel}
                                                             <ArrowRight size={12} />
                                                         </Link>
+                                                    ) : svc.id === 'boutique' ? (
+                                                        /* Boutique → redirige avec bannière retour */
+                                                        <Link href={withBack(svc.href)}
+                                                            className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-2 rounded-xl bg-gradient-to-r ${svc.color} text-white transition-all hover:opacity-90 ${svc.glow}`}>
+                                                            {svc.ctaLabel}
+                                                            <ArrowRight size={12} />
+                                                        </Link>
+                                                    ) : (
+                                                        /* Autres services → drawer in-panel */
+                                                        <button type="button"
+                                                            onClick={() => setDrawerService({
+                                                                id: svc.id,
+                                                                title: svc.title,
+                                                                description: svc.description,
+                                                                color: svc.color,
+                                                                badge: svc.badge,
+                                                                features: svc.id === 'recherche-ancestrale'
+                                                                    ? ['Recherche archives', 'Bases de données spécialisées', 'IA & Généalogie']
+                                                                    : ['Accompagnement personnalisé', 'Suivi en temps réel', 'Equipe dédiée'],
+                                                            })}
+                                                            className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-2 rounded-xl bg-gradient-to-r ${svc.color} text-white transition-all hover:opacity-90 ${svc.glow}`}>
+                                                            {svc.ctaLabel}
+                                                            <ArrowRight size={12} />
+                                                        </button>
                                                     )}
                                                 </div>
                                             </div>
@@ -630,13 +659,21 @@ export default function ClientServicesPage() {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                     {services.map((svc, i) => (
                                         <motion.div key={svc.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                                            className="bg-[#0a1221] border border-white/[0.06] rounded-xl p-4 hover:border-white/10 transition-all">
+                                            className="bg-[#0a1221] border border-white/[0.06] rounded-xl p-4 hover:border-white/10 transition-all group">
                                             <h4 className="text-white font-bold text-sm mb-1">{svc.title}</h4>
                                             <p className="text-gray-500 text-[11px] leading-relaxed line-clamp-2 mb-3">{svc.description}</p>
-                                            <Link href={`/services/${svc.slug}?back=/client/services`}
+                                            <button type="button"
+                                                onClick={() => setDrawerService({
+                                                    id: svc.slug,
+                                                    title: svc.title,
+                                                    description: svc.description,
+                                                    color: 'from-blue-500 to-indigo-600',
+                                                    badge: 'Commander',
+                                                    features: ['Accompagnement personnalisé', 'Suivi en temps réel'],
+                                                })}
                                                 className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-400 hover:text-blue-300 transition-colors">
-                                                En savoir plus <ArrowRight size={10} />
-                                            </Link>
+                                                Commander ce service <ArrowRight size={10} />
+                                            </button>
                                         </motion.div>
                                     ))}
                                 </div>
@@ -717,6 +754,18 @@ export default function ClientServicesPage() {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Drawer commande de service (in-panel, pour tout sauf Nationalité VIP) */}
+            <ServiceOrderDrawer
+                service={drawerService}
+                onClose={() => setDrawerService(null)}
+                onSuccess={() => {
+                    setDrawerService(null)
+                    setActiveSection('actifs')
+                    // Recharger les données pour afficher le nouveau dossier
+                    if (clientId) loadData(clientId, clientEmail, true)
+                }}
+            />
         </div>
     )
 }
