@@ -601,6 +601,7 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
             if (typeof window.removeKkiapayListener === 'function') {
                 try { window.removeKkiapayListener('success') } catch { /* ignore */ }
                 try { window.removeKkiapayListener('failed') } catch { /* ignore */ }
+                try { window.removeKkiapayListener('close' as Parameters<typeof window.removeKkiapayListener>[0]) } catch { /* ignore */ }
             }
             window.openKkiapayWidget({
                 amount: kkAmount,
@@ -621,8 +622,12 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
             })
             window.addKkiapayListener('failed', () => {
                 cancelOrder(oid)
-                setErrorMessage('Le paiement a échoué. Veuillez réessayer.')
+                setErrorMessage('Le paiement a échoué ou a été annulé.')
                 setStep('error')
+            })
+            // 'close' : l'utilisateur a fermé le widget sans payer
+            window.addKkiapayListener('close' as Parameters<typeof window.addKkiapayListener>[0], () => {
+                cancelOrder(oid); setStep('payment')
             })
         } catch (err) {
             console.error('[Kkiapay] Erreur widget:', err)

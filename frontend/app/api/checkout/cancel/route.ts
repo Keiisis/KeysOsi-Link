@@ -31,8 +31,8 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Commande introuvable' }, { status: 404 })
         }
 
-        // Ne pas annuler une commande déjà payée
-        if (order.payment_status === 'paid') {
+        // Ne pas annuler une commande déjà payée/complétée
+        if (order.payment_status === 'completed' || order.payment_status === 'paid') {
             return NextResponse.json({ error: 'Commande déjà payée, annulation impossible' }, { status: 409 })
         }
 

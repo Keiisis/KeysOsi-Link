@@ -2,9 +2,9 @@
 
 import { useTranslation, T } from '@/lib/translation';
 import { useList, useUpdate } from '@refinedev/core'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, FileText, Clock, CheckCircle2, Zap, AlertTriangle, ChevronDown, ChevronUp, Save, Plus, X, Download } from 'lucide-react'
+import { Search, FileText, Clock, CheckCircle2, Zap, AlertTriangle, ChevronDown, ChevronUp, Save, Plus, X, Download, RefreshCw } from 'lucide-react'
 import { exportToExcel } from '@/lib/exportExcel'
 import { cn } from '@/lib/utils'
 
@@ -49,6 +49,24 @@ export default function AdminDossiersPage() {
     const [searchQuery, setSearchQuery] = useState('')
     const [expandedId, setExpandedId] = useState<string | null>(null)
     const [showCreateModal, setShowCreateModal] = useState(false)
+    const [syncing, setSyncing] = useState(false)
+    const [syncResult, setSyncResult] = useState<string | null>(null)
+
+    const handleSyncDossiers = async () => {
+        setSyncing(true)
+        setSyncResult(null)
+        try {
+            const res = await fetch('/api/cron/sync-dossiers', { method: 'POST' })
+            const data = await res.json()
+            setSyncResult(`✓ ${data.synced} dossier(s) synchronisé(s) sur ${data.total}`)
+            refetch()
+        } catch {
+            setSyncResult('Erreur de synchronisation')
+        } finally {
+            setSyncing(false)
+            setTimeout(() => setSyncResult(null), 5000)
+        }
+    }
 
     // Create form state
     const [newDossier, setNewDossier] = useState({
@@ -59,6 +77,15 @@ export default function AdminDossiersPage() {
         client_whatsapp: '',
         service_type: 'general',
     })
+
+    // Synchroniser automatiquement au chargement de la page
+    useEffect(() => {
+        fetch('/api/cron/sync-dossiers', { method: 'POST' })
+            .then(r => r.json())
+            .then(d => { if (d.synced > 0) refetch() })
+            .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     const dossiers = data || []
     const filtered = dossiers.filter((d: Record<string, unknown>) =>
@@ -159,7 +186,21 @@ export default function AdminDossiersPage() {
                     </h1>
                     <p className="text-gray-500 text-sm mt-1"><T>Gérez le suivi des dossiers clients en temps réel</T></p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                    {syncResult && (
+                        <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-xl">
+                            {syncResult}
+                        </span>
+                    )}
+                    <button
+                        onClick={handleSyncDossiers}
+                        disabled={syncing}
+                        className="flex items-center gap-2 px-4 py-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 font-bold text-sm hover:bg-blue-500/20 transition-colors disabled:opacity-50"
+                        title="Synchroniser automatiquement la progression des dossiers boutique depuis les statuts de paiement"
+                    >
+                        <RefreshCw size={15} className={syncing ? 'animate-spin' : ''} />
+                        Sync statuts paiement
+                    </button>
                     <button
                         onClick={handleExportExcel}
                         className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-bold text-sm hover:bg-white/10 transition-colors"

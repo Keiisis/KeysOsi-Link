@@ -603,6 +603,7 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
             if (typeof window.removeKkiapayListener === 'function') {
                 try { window.removeKkiapayListener('success') } catch { /* ignore */ }
                 try { window.removeKkiapayListener('failed') } catch { /* ignore */ }
+                try { window.removeKkiapayListener('close' as Parameters<typeof window.removeKkiapayListener>[0]) } catch { /* ignore */ }
             }
             window.openKkiapayWidget({
                 amount: kkAmount,
@@ -622,7 +623,11 @@ export function CartCheckoutModal({ isOpen, onClose }: CartCheckoutModalProps) {
                 await verifyPayment(oid, r.transactionId as string)
             })
             window.addKkiapayListener('failed', () => {
-                cancelOrder(oid); setErrorMessage('Paiement échoué.'); setStep('error')
+                cancelOrder(oid); setErrorMessage('Paiement échoué ou annulé.'); setStep('error')
+            })
+            // 'close' : l'utilisateur a fermé le widget sans payer
+            window.addKkiapayListener('close' as Parameters<typeof window.addKkiapayListener>[0], () => {
+                cancelOrder(oid); setStep('payment')
             })
         } catch (err) {
             console.error('[Kkiapay] Erreur widget:', err)
