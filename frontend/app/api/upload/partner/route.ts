@@ -36,6 +36,17 @@ export async function POST(request: NextRequest) {
         const bytes = await file.arrayBuffer()
         const buffer = Buffer.from(bytes)
 
+        // Auto-créer le bucket si absent (service role key requis)
+        const { error: bucketError } = await supabase.storage.createBucket('partner-assets', {
+            public: true,
+            fileSizeLimit: MAX_SIZE_MB * 1024 * 1024,
+            allowedMimeTypes: ALLOWED_TYPES,
+        })
+        // Ignorer l'erreur si le bucket existe déjà
+        if (bucketError && !bucketError.message.toLowerCase().includes('already exists') && !bucketError.message.toLowerCase().includes('duplicate')) {
+            console.warn('[upload/partner] Bucket creation warning:', bucketError.message)
+        }
+
         const { error: uploadError } = await supabase.storage
             .from('partner-assets')
             .upload(filename, buffer, {
@@ -45,12 +56,6 @@ export async function POST(request: NextRequest) {
             })
 
         if (uploadError) {
-            // Si le bucket n'existe pas, on donne un message clair
-            if (uploadError.message.includes('Bucket not found')) {
-                return NextResponse.json({
-                    error: 'Bucket "partner-assets" introuvable. Créez-le dans Supabase Storage (public).'
-                }, { status: 500 })
-            }
             return NextResponse.json({ error: uploadError.message }, { status: 500 })
         }
 
