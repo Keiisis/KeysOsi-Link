@@ -76,10 +76,12 @@ const STATUT_CONFIG: Record<string, { label: string; color: string; bg: string; 
 }
 
 const PAYMENT_STATUS: Record<string, { label: string; color: string }> = {
-    pending:   { label: 'En attente', color: 'text-amber-400' },
-    completed: { label: 'Payé',       color: 'text-emerald-400' },
-    failed:    { label: 'Échoué',     color: 'text-red-400' },
-    refunded:  { label: 'Remboursé',  color: 'text-gray-400' },
+    pending:   { label: 'En attente',  color: 'text-amber-400' },
+    completed: { label: 'Réglé',       color: 'text-emerald-400' },
+    paid:      { label: 'Réglé',       color: 'text-emerald-400' },
+    succeeded: { label: 'Réglé',       color: 'text-emerald-400' },
+    failed:    { label: 'Échoué',      color: 'text-red-400' },
+    refunded:  { label: 'Remboursé',   color: 'text-gray-400' },
 }
 
 const SERVICE_TYPE_LABEL: Record<string, string> = {
@@ -150,6 +152,13 @@ const FEATURED_SERVICES = [
 
 const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 const fmtN = (n: number) => Math.round(n).toLocaleString('fr-FR')
+
+// Ajoute ?back=/client/services à un href (gère les fragments # et les params existants)
+const withBack = (href: string, extra?: Record<string, string>) => {
+    const [path, hash] = href.split('#')
+    const params = new URLSearchParams({ ...(extra || {}), back: '/client/services' })
+    return `${path}?${params.toString()}${hash ? '#' + hash : ''}`
+}
 
 // ── Composant DossierCard ─────────────────────────────────────────
 function DossierCard({ dossier, expanded, onToggle }: {
@@ -360,13 +369,21 @@ export default function ClientServicesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
-    // Realtime subscription sur dossier_tracking
+    // Realtime : dossier_tracking + orders + nationality_applications
     useEffect(() => {
         if (!clientId) return
         const channel = supabase
             .channel(`client-services-${clientId}`)
             .on('postgres_changes',
                 { event: '*', schema: 'public', table: 'dossier_tracking', filter: `client_id=eq.${clientId}` },
+                () => loadData(clientId, clientEmail, true)
+            )
+            .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'orders', filter: `client_id=eq.${clientId}` },
+                () => loadData(clientId, clientEmail, true)
+            )
+            .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'nationality_applications', filter: `email=eq.${clientEmail}` },
                 () => loadData(clientId, clientEmail, true)
             )
             .subscribe()
@@ -496,7 +513,7 @@ export default function ClientServicesPage() {
                                                 </p>
                                                 <p className="text-purple-300/60 text-[10px]">Complétez votre dossier avec une recherche dans les archives.</p>
                                             </div>
-                                            <Link href="/services#recherche-ancestrale"
+                                            <Link href={withBack('/services#recherche-ancestrale')}
                                                 className="flex-shrink-0 flex items-center gap-1 text-[10px] font-bold px-3 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 transition-all">
                                                 En savoir plus <ArrowRight size={10} />
                                             </Link>
@@ -590,7 +607,7 @@ export default function ClientServicesPage() {
                                                             </button>
                                                         </div>
                                                     ) : (
-                                                        <Link href={isNat && clientEmail ? `${svc.href}?email=${encodeURIComponent(clientEmail)}` : svc.href}
+                                                        <Link href={withBack(svc.href, isNat && clientEmail ? { email: clientEmail } : {})}
                                                             className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-2 rounded-xl bg-gradient-to-r ${svc.color} text-white transition-all hover:opacity-90 ${svc.glow}`}>
                                                             {svc.ctaLabel}
                                                             <ArrowRight size={12} />
@@ -616,7 +633,7 @@ export default function ClientServicesPage() {
                                             className="bg-[#0a1221] border border-white/[0.06] rounded-xl p-4 hover:border-white/10 transition-all">
                                             <h4 className="text-white font-bold text-sm mb-1">{svc.title}</h4>
                                             <p className="text-gray-500 text-[11px] leading-relaxed line-clamp-2 mb-3">{svc.description}</p>
-                                            <Link href={`/services/${svc.slug}`}
+                                            <Link href={`/services/${svc.slug}?back=/client/services`}
                                                 className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-400 hover:text-blue-300 transition-colors">
                                                 En savoir plus <ArrowRight size={10} />
                                             </Link>
@@ -648,7 +665,7 @@ export default function ClientServicesPage() {
                                 <ShoppingBag size={36} className="text-gray-700 mx-auto mb-4" />
                                 <h2 className="text-white font-bold text-lg mb-2">Aucune commande</h2>
                                 <p className="text-gray-500 text-sm mb-5">Vos achats depuis la boutique apparaîtront ici.</p>
-                                <Link href="/boutique"
+                                <Link href="/boutique?back=/client/services"
                                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-sm font-bold transition-all border border-emerald-500/20">
                                     <Package size={14} />
                                     Visiter la boutique
@@ -660,7 +677,7 @@ export default function ClientServicesPage() {
                                     <h2 className="font-black text-white text-sm flex items-center gap-2">
                                         <ShoppingBag size={15} className="text-emerald-400" /> Historique commandes
                                     </h2>
-                                    <Link href="/boutique" className="text-[11px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors">
+                                    <Link href="/boutique?back=/client/services" className="text-[11px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors">
                                         Boutique <ExternalLink size={10} />
                                     </Link>
                                 </div>

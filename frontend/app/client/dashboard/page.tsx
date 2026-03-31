@@ -44,6 +44,7 @@ export default function ClientDashboardPage() {
     const [stats, setStats] = useState<Stats>({ devisEnAttente: 0, facturesToPay: 0, dossierActif: false, messagesNonLus: 0, totalDépenses: 0 })
     const [recentDocs, setRecentDocs] = useState<RecentDoc[]>([])
     const [clientEmail, setClientEmail] = useState('')
+    const [clientId, setClientId] = useState('')
     const [clientNom, setClientNom] = useState('')
     const [loading, setLoading] = useState(true)
 
@@ -64,6 +65,7 @@ export default function ClientDashboardPage() {
             if (profile) setClientNom([profile.prenom, profile.nom].filter(Boolean).join(' '))
 
             const uid = session.user.id
+            setClientId(uid)
 
             // Documents récents (affichage uniquement)
             const { data: docs } = await supabase
@@ -139,6 +141,54 @@ export default function ClientDashboardPage() {
         }
         load()
     }, [])
+
+    // Realtime : mise à jour auto des stats dès qu'un document financier change
+    useEffect(() => {
+        if (!clientId || !clientEmail) return
+        const uid = clientId
+        const email = clientEmail
+
+        const refresh = async () => {
+            const [
+                { count: devisCount },
+                { count: facturesCount },
+                { data: dossier },
+                { data: paidDocs },
+                { data: docs },
+            ] = await Promise.all([
+                supabase.from('documents_financiers').select('id', { count: 'exact', head: true })
+                    .or(`client_id.eq.${uid},client_email.eq.${email}`).eq('type', 'devis').in('status', ['envoye', 'brouillon']),
+                supabase.from('documents_financiers').select('id', { count: 'exact', head: true })
+                    .or(`client_id.eq.${uid},client_email.eq.${email}`).eq('type', 'facture').eq('status', 'envoye'),
+                supabase.from('dossier_tracking').select('id, statut')
+                    .or(`client_id.eq.${uid},client_email.eq.${email}`).neq('statut', 'termine').neq('statut', 'annule').limit(1),
+                supabase.from('documents_financiers').select('total')
+                    .or(`client_id.eq.${uid},client_email.eq.${email}`).eq('status', 'paye'),
+                supabase.from('documents_financiers').select('id, type, numero, total, status, currency, created_at')
+                    .or(`client_id.eq.${uid},client_email.eq.${email}`).order('created_at', { ascending: false }).limit(5),
+            ])
+            const totalPayé = (paidDocs || []).reduce((s: number, d: { total: number }) => s + (d.total || 0), 0)
+            setStats(prev => ({
+                ...prev,
+                devisEnAttente: devisCount || 0,
+                facturesToPay: facturesCount || 0,
+                dossierActif: (dossier?.length || 0) > 0,
+                totalDépenses: totalPayé,
+            }))
+            setRecentDocs(docs || [])
+        }
+
+        const channel = supabase
+            .channel(`client-dashboard-${clientId}`)
+            .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'documents_financiers', filter: `client_id=eq.${uid}` },
+                () => refresh()
+            )
+            .subscribe()
+
+        return () => { supabase.removeChannel(channel) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [clientId, clientEmail])
 
     const cards = [
         { title: 'Devis en attente', value: stats.devisEnAttente, icon: FileText, color: 'from-blue-500 to-blue-600', href: '/client/documents', desc: 'À signer' },

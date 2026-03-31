@@ -1,10 +1,12 @@
 'use client'
 
+import { Suspense } from 'react'
 import Script from 'next/script'
 import { CartDrawer } from '@/components/boutique/CartDrawer'
 import { CartFloatingButton } from '@/components/boutique/CartFloatingButton'
 import { CartFlyAnimation } from '@/components/boutique/CartFlyAnimation'
 import { MaintenanceGuard } from '@/components/boutique/MaintenanceGuard'
+import { ClientReturnBanner } from '@/components/shared/ClientReturnBanner'
 
 export default function BoutiqueLayout({
     children,
@@ -30,6 +32,11 @@ export default function BoutiqueLayout({
                 src="https://js.stripe.com/v3/"
                 strategy="afterInteractive"
             />
+
+            {/* Bannière retour espace client (si ?back=/client/* présent) */}
+            <Suspense fallback={null}>
+                <ClientReturnBanner />
+            </Suspense>
 
             <MaintenanceGuard>
                 {children}
