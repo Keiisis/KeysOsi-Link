@@ -1,10 +1,59 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { Mail, Lock, Loader2, ArrowRight, Eye, EyeOff, AlertCircle, CheckCircle2, User, Phone } from 'lucide-react'
+import { Mail, Lock, Loader2, ArrowRight, Eye, EyeOff, AlertCircle, CheckCircle2, User, Phone, ShieldCheck } from 'lucide-react'
+
+// ── Critères de sécurité du mot de passe ──────────────────────────────────────
+const PWD_CRITERIA = [
+    { id: 'length',    label: '12 caractères minimum',    test: (p: string) => p.length >= 12 },
+    { id: 'upper',     label: '1 lettre majuscule',        test: (p: string) => /[A-Z]/.test(p) },
+    { id: 'digits',    label: '2 chiffres minimum',        test: (p: string) => (p.match(/\d/g) || []).length >= 2 },
+    { id: 'special',   label: '1 caractère spécial (!@#$…)', test: (p: string) => /[^A-Za-z0-9]/.test(p) },
+]
+
+function PasswordStrength({ password }: { password: string }) {
+    const results = useMemo(() => PWD_CRITERIA.map(c => ({ ...c, ok: c.test(password) })), [password])
+    const score = results.filter(r => r.ok).length
+    const bars = [
+        { min: 0, color: 'bg-red-500' },
+        { min: 1, color: 'bg-orange-500' },
+        { min: 2, color: 'bg-yellow-400' },
+        { min: 3, color: 'bg-blue-400' },
+        { min: 4, color: 'bg-emerald-400' },
+    ]
+    const barColor = bars.slice().reverse().find(b => score >= b.min)?.color || 'bg-gray-700'
+    const label = ['', 'Très faible', 'Faible', 'Moyen', 'Fort', 'Excellent'][score]
+
+    if (!password) return null
+
+    return (
+        <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="mt-2 space-y-2">
+            {/* Barre de progression */}
+            <div className="flex gap-1 items-center">
+                {[0, 1, 2, 3].map(i => (
+                    <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${i < score ? barColor : 'bg-white/10'}`} />
+                ))}
+                <span className={`text-[10px] font-bold ml-1.5 transition-colors duration-300 ${
+                    score <= 1 ? 'text-red-400' : score === 2 ? 'text-yellow-400' : score === 3 ? 'text-blue-400' : 'text-emerald-400'
+                }`}>{label}</span>
+            </div>
+            {/* Critères */}
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                {results.map(r => (
+                    <motion.div key={r.id} className="flex items-center gap-1.5"
+                        animate={{ opacity: r.ok ? 1 : 0.5 }}>
+                        <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${r.ok ? 'bg-emerald-500/20 border border-emerald-500/40' : 'bg-white/5 border border-white/10'}`}>
+                            {r.ok && <CheckCircle2 size={9} className="text-emerald-400" />}
+                        </div>
+                        <span className={`text-[9.5px] font-medium transition-colors duration-200 ${r.ok ? 'text-emerald-300' : 'text-gray-500'}`}>{r.label}</span>
+                    </motion.div>
+                ))}
+            </div>
+        </motion.div>
+    )
+}
 
 export default function ClientRegisterPage() {
     const [form, setForm] = useState({ nom: '', prenom: '', email: '', phone: '', password: '', confirm: '' })
@@ -33,8 +82,9 @@ export default function ClientRegisterPage() {
             setError('Les mots de passe ne correspondent pas.')
             return
         }
-        if (form.password.length < 8) {
-            setError('Le mot de passe doit contenir au moins 8 caractères.')
+        const failedCriteria = PWD_CRITERIA.filter(c => !c.test(form.password))
+        if (failedCriteria.length > 0) {
+            setError(`Mot de passe insuffisant : ${failedCriteria.map(c => c.label).join(', ')}.`)
             return
         }
 
@@ -57,16 +107,8 @@ export default function ClientRegisterPage() {
             if (!res.ok) throw new Error(json.error || 'Erreur lors de la configuration du compte.')
 
             setLinkedDocs(json.linked?.documents || 0)
+            setNeedsEmailConfirm(json.needsEmailConfirm !== false)
             setSuccess(true)
-
-            // Compte auto-confirmé côté serveur — connexion directe
-            await supabase.auth.signInWithPassword({
-                email: form.email.trim().toLowerCase(),
-                password: form.password
-            })
-            const from = new URLSearchParams(window.location.search).get('from')
-            const safeFrom = (from && /^\/(client|portail)\//.test(from)) ? from : '/client/dashboard'
-            setTimeout(() => { window.location.href = safeFrom }, 1800)
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Erreur lors de l\'inscription.')
         } finally {
@@ -102,25 +144,27 @@ export default function ClientRegisterPage() {
                     {success ? (
                         <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-8 text-center shadow-[0_20px_60px_rgba(0,0,0,0.4)]">
                             <div className="w-16 h-16 rounded-full bg-blue-500/15 border border-blue-500/30 flex items-center justify-center mx-auto mb-4">
-                                <CheckCircle2 size={32} className="text-blue-400" />
+                                <Mail size={32} className="text-blue-400" />
                             </div>
-                            <h2 className="text-xl font-black text-white mb-2">Compte créé !</h2>
+                            <h2 className="text-xl font-black text-white mb-2">Vérifiez votre email !</h2>
                             <p className="text-gray-400 text-sm mb-4">
-                                Bienvenue, <strong className="text-white">{form.prenom || form.nom}</strong> !
+                                Un email de confirmation a été envoyé à<br />
+                                <strong className="text-white">{form.email}</strong>
                             </p>
                             {linkedDocs > 0 && (
                                 <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 mb-4">
                                     <p className="text-blue-300 text-sm font-bold">
-                                        🎉 {linkedDocs} document{linkedDocs > 1 ? 's' : ''} retrouvé{linkedDocs > 1 ? 's' : ''} et lié{linkedDocs > 1 ? 's' : ''} à votre compte.
+                                        {linkedDocs} document{linkedDocs > 1 ? 's' : ''} retrouvé{linkedDocs > 1 ? 's' : ''} et lié{linkedDocs > 1 ? 's' : ''} à votre compte.
                                     </p>
                                 </div>
                             )}
-                            <div className="mt-2 space-y-3">
-                                <p className="text-gray-400 text-xs">Votre compte est <strong className="text-emerald-400">activé</strong>. Redirection vers votre espace en cours...</p>
-                                <div>
-                                    <Loader2 className="animate-spin text-blue-400 mx-auto" size={20} />
-                                </div>
+                            <div className="bg-amber-500/8 border border-amber-500/20 rounded-xl p-4 mb-4">
+                                <p className="text-amber-300 text-[12px] font-bold mb-1">Action requise</p>
+                                <p className="text-gray-400 text-[11px] leading-relaxed">
+                                    Cliquez sur le lien dans l'email pour <strong className="text-white">activer votre compte</strong>. Le lien est valable 24h.
+                                </p>
                             </div>
+                            <p className="text-gray-600 text-[10px]">Vérifiez vos spams si vous ne voyez pas l'email.</p>
                         </motion.div>
                     ) : (
                         <motion.div key="form" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
@@ -170,24 +214,43 @@ export default function ClientRegisterPage() {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.1em]">Mot de passe</label>
-                                        <div className="relative">
-                                            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-600" size={15} />
-                                            <input type={showPassword ? 'text' : 'password'} required minLength={8} value={form.password} onChange={e => update('password', e.target.value)}
-                                                placeholder="Min. 8 car."
-                                                className="w-full bg-white/[0.04] border border-white/[0.08] focus:border-blue-500/50 rounded-xl py-3 pl-11 pr-10 text-white placeholder:text-gray-600 focus:outline-none text-[13px] transition-colors" />
-                                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-blue-400 transition-colors" tabIndex={-1}>
-                                                {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                                            </button>
-                                        </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.1em] flex items-center gap-1.5">
+                                        <ShieldCheck size={10} />Mot de passe
+                                    </label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-600" size={15} />
+                                        <input type={showPassword ? 'text' : 'password'} required minLength={12} value={form.password} onChange={e => update('password', e.target.value)}
+                                            placeholder="Min. 12 car., maj., chiffres, spécial"
+                                            className="w-full bg-white/[0.04] border border-white/[0.08] focus:border-blue-500/50 rounded-xl py-3 pl-11 pr-10 text-white placeholder:text-gray-600 focus:outline-none text-[13px] transition-colors" />
+                                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-blue-400 transition-colors" tabIndex={-1}>
+                                            {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                                        </button>
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.1em]">Confirmer</label>
+                                    <PasswordStrength password={form.password} />
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.1em]">Confirmer le mot de passe</label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-600" size={15} />
                                         <input type={showPassword ? 'text' : 'password'} required value={form.confirm} onChange={e => update('confirm', e.target.value)}
-                                            placeholder="Confirmer"
-                                            className="w-full bg-white/[0.04] border border-white/[0.08] focus:border-blue-500/50 rounded-xl py-3 px-4 text-white placeholder:text-gray-600 focus:outline-none text-[13px] transition-colors" />
+                                            placeholder="Répéter le mot de passe"
+                                            className={`w-full bg-white/[0.04] border rounded-xl py-3 pl-11 pr-4 text-white placeholder:text-gray-600 focus:outline-none text-[13px] transition-colors ${
+                                                form.confirm && form.confirm !== form.password
+                                                    ? 'border-red-500/40 focus:border-red-500/60'
+                                                    : form.confirm && form.confirm === form.password
+                                                    ? 'border-emerald-500/40 focus:border-emerald-500/60'
+                                                    : 'border-white/[0.08] focus:border-blue-500/50'
+                                            }`} />
+                                        {form.confirm && (
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                                {form.confirm === form.password
+                                                    ? <CheckCircle2 size={14} className="text-emerald-400" />
+                                                    : <AlertCircle size={14} className="text-red-400" />
+                                                }
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
