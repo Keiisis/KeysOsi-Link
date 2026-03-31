@@ -19,67 +19,66 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'email et mot de passe requis' }, { status: 400 })
         }
 
-        // Toujours utiliser NEXT_PUBLIC_SITE_URL pour le redirectTo des emails — jamais le header origin
-        // (en dev, origin = localhost:3000 → les liens email pointeraient vers localhost)
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.retourgagnantbenin.bj'
+        const loginUrl = `${siteUrl}/client/login`
 
-        // 1. Créer le compte et générer le lien de confirmation (Bypass SMTP Supabase)
-        const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-            type: 'signup',
+        // 1. Créer le compte avec email_confirm: true — auto-confirmation côté serveur,
+        //    aucun lien de redirection envoyé par Supabase, aucun problème de localhost.
+        const { data: userData, error: createError } = await supabase.auth.admin.createUser({
             email: email.toLowerCase().trim(),
-            password: password,
-            options: {
-                data: { nom: nom || '', prenom: prenom || '', phone: phone || '' },
-                redirectTo: `${siteUrl}/auth/callback?next=/client/auth-confirm`
-            }
+            password,
+            email_confirm: true,
+            user_metadata: { nom: nom || '', prenom: prenom || '', phone: phone || '' },
         })
 
-        if (linkError) {
-            // Si l'utilisateur existe déjà, l'erreur correspond sera levée
-            throw new Error(`Erreur inscription: ${linkError.message}`)
+        if (createError) {
+            throw new Error(`Erreur inscription: ${createError.message}`)
         }
 
-        const user_id = linkData.user.id
-        const actionLink = linkData.properties?.action_link
+        const user_id = userData.user.id
         let emailSent = false
 
-        // 2. Envoyer l'email via notre propre SMTP (Nodemailer) avec le template HTML
+        // 2. Envoyer un email de bienvenue via notre SMTP — compte déjà actif, lien direct vers login
         try {
             const { data: settingsData } = await supabase.from('settings').select('key, value').in('key', ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_from_email', 'smtp_from_name'])
             const settings: Record<string, string> = {}
             for (const s of settingsData || []) settings[s.key] = s.value
 
-            if (settings.smtp_host && actionLink) {
+            if (settings.smtp_host) {
                 const transporter = nodemailer.createTransport({
                     host: settings.smtp_host,
                     port: Number(settings.smtp_port) || 465,
-                    secure: Number(settings.smtp_port) === 465, // true for 465, false for other ports
+                    secure: Number(settings.smtp_port) === 465,
                     auth: { user: settings.smtp_user, pass: settings.smtp_pass },
                     tls: { rejectUnauthorized: process.env.NODE_ENV === 'production' }
                 })
-                
+
                 const fromString = `"${settings.smtp_from_name || 'Retour Gagnant Bénin'}" <${settings.smtp_from_email || settings.smtp_user}>`
-                let htmlContent = `<a href="${actionLink}">Confirmer l'inscription</a>`
-                
+
+                // Essayer d'utiliser le template HTML existant avec le lien de connexion
+                let htmlContent = `<p>Bienvenue ${prenom || ''} ! Votre compte est activé. <a href="${loginUrl}">Se connecter</a></p>`
                 try {
                     const templatePath = path.join(process.cwd(), 'public', 'email_confirm_template.html')
                     const rawTemplate = fs.readFileSync(templatePath, 'utf8')
-                    htmlContent = rawTemplate.replace(/\{\{\s*\.ConfirmationURL\s*\}\}/g, actionLink)
-                } catch (readErr) {
-                    console.warn("Impossible de lire email_confirm_template.html", readErr)
+                    // Remplacer le placeholder de confirmation par le lien de connexion direct
+                    htmlContent = rawTemplate
+                        .replace(/\{\{\s*\.ConfirmationURL\s*\}\}/g, loginUrl)
+                        .replace(/Confirmez votre (email|inscription|adresse)/gi, 'Accéder à mon espace client')
+                        .replace(/Confirmer/gi, 'Se connecter')
+                } catch {
+                    // fallback inline si template absent
                 }
 
                 await transporter.sendMail({
                     from: fromString,
                     to: email,
-                    subject: "Confirmez votre inscription — Retour Gagnant Bénin",
+                    subject: "Bienvenue — Votre compte Retour Gagnant Bénin est activé",
                     html: htmlContent
                 })
                 emailSent = true
             }
         } catch (mailErr) {
-            console.error('Erreur lors de l\'envoi de l\'email de confirmation :', mailErr)
-            // On ne bloque pas si l'email échoue, mais on veut quand même alerter s'il faut
+            console.error('Erreur envoi email bienvenue :', mailErr)
         }
 
         // 3. Créer le profil client
@@ -138,7 +137,7 @@ export async function POST(req: NextRequest) {
                 documents: docsCount || 0,
                 dossiers: dossiersCount || 0,
             },
-            needsEmailConfirm: true, // we tell the client we need email confirmation
+            needsEmailConfirm: false, // compte déjà confirmé côté serveur, connexion directe possible
             emailSent
         })
 

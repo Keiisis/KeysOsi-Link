@@ -59,21 +59,14 @@ export default function ClientRegisterPage() {
             setLinkedDocs(json.linked?.documents || 0)
             setSuccess(true)
 
-            if (json.needsEmailConfirm) {
-                // Email confirmation requise
-                setNeedsEmailConfirm(true)
-            } else {
-                // Connecter l'utilisateur s'il n'a pas besoin de confirmer l'email (très rare dans cette configuration)
-                if (json.autoSignIn) {
-                    await supabase.auth.signInWithPassword({
-                        email: form.email.trim().toLowerCase(),
-                        password: form.password
-                    })
-                }
-                const from = new URLSearchParams(window.location.search).get('from')
-                const safeFrom = (from && /^\/(client|portail)\//.test(from)) ? from : '/client/dashboard'
-                setTimeout(() => { window.location.href = safeFrom }, 1800)
-            }
+            // Compte auto-confirmé côté serveur — connexion directe
+            await supabase.auth.signInWithPassword({
+                email: form.email.trim().toLowerCase(),
+                password: form.password
+            })
+            const from = new URLSearchParams(window.location.search).get('from')
+            const safeFrom = (from && /^\/(client|portail)\//.test(from)) ? from : '/client/dashboard'
+            setTimeout(() => { window.location.href = safeFrom }, 1800)
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Erreur lors de l\'inscription.')
         } finally {
@@ -122,22 +115,12 @@ export default function ClientRegisterPage() {
                                     </p>
                                 </div>
                             )}
-                            {needsEmailConfirm ? (
-                                <div className="mt-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-                                    <p className="text-blue-300 text-sm font-bold mb-1">Vérifiez votre email</p>
-                                    <p className="text-gray-400 text-xs">Un lien de confirmation a été envoyé à <strong className="text-white">{form.email}</strong>. Cliquez dessus pour activer votre compte.</p>
-                                    <Link href="/client/login" className="inline-flex items-center gap-1 mt-3 text-blue-400 text-xs font-bold hover:text-blue-300 transition-colors">
-                                        <ArrowRight size={12} /> Aller à la connexion
-                                    </Link>
+                            <div className="mt-2 space-y-3">
+                                <p className="text-gray-400 text-xs">Votre compte est <strong className="text-emerald-400">activé</strong>. Redirection vers votre espace en cours...</p>
+                                <div>
+                                    <Loader2 className="animate-spin text-blue-400 mx-auto" size={20} />
                                 </div>
-                            ) : (
-                                <>
-                                    <p className="text-gray-500 text-xs">Redirection vers votre espace...</p>
-                                    <div className="mt-4">
-                                        <Loader2 className="animate-spin text-blue-400 mx-auto" size={20} />
-                                    </div>
-                                </>
-                            )}
+                            </div>
                         </motion.div>
                     ) : (
                         <motion.div key="form" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
