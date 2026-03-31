@@ -23,6 +23,7 @@ declare global {
             event: string,
             callback: (data: Record<string, unknown>) => void
         ) => void
+        removeKkiapayListener: (event: string) => void
         FedaPay: {
             init: (selector: string, config: Record<string, unknown>) => void
         }
@@ -596,6 +597,11 @@ export function PaymentModal({ product, quantity, isOpen, onClose }: PaymentModa
         const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : firstName
 
         try {
+            // Nettoyer les anciens listeners avant d'en ajouter de nouveaux
+            if (typeof window.removeKkiapayListener === 'function') {
+                try { window.removeKkiapayListener('success') } catch { /* ignore */ }
+                try { window.removeKkiapayListener('failed') } catch { /* ignore */ }
+            }
             window.openKkiapayWidget({
                 amount: kkAmount,
                 position: 'center',
