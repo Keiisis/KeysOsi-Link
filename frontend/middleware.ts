@@ -254,7 +254,7 @@ export async function middleware(request: NextRequest) {
 
         // Strict Role Isolation
         const role = agentProfile.role
-        const ADMIN_ROLES = ['admin', 'super_admin', 'superadmin']
+        const ADMIN_ROLES = ['admin', 'super_admin', 'superadmin', 'ceo']
 
         if (isAdminRoute && !ADMIN_ROLES.includes(role)) {
             return redirectTo(new URL('/admin/login?error=unauthorized', request.url))
