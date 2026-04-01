@@ -63,13 +63,28 @@ export function invalidateIpCache(ip: string): void {
 }
 
 // ── Extraction IP ─────────────────────────────────────────────
+// SÉCURITÉ : x-forwarded-for peut être spoofé par le client.
+// Sur Vercel, x-real-ip et cf-connecting-ip sont injectés par l'infra → fiables.
+// x-forwarded-for n'est utilisé qu'en dernier recours (dev local).
+const VALID_IP_RE = /^(?:(?:25[0-5]|2[0-4]\d|\d{1,3})\.){3}(?:25[0-5]|2[0-4]\d|\d{1,3})$|^[0-9a-f:]+$/i
+
 export function extractIp(headers: Headers): string {
-    return (
-        headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-        headers.get('x-real-ip') ||
-        headers.get('cf-connecting-ip') ||
-        'unknown'
-    )
+    // Priorité : headers injectés par Vercel/Cloudflare (non spoofables)
+    const realIp = headers.get('x-real-ip')?.trim()
+    if (realIp && VALID_IP_RE.test(realIp)) return realIp
+
+    const cfIp = headers.get('cf-connecting-ip')?.trim()
+    if (cfIp && VALID_IP_RE.test(cfIp)) return cfIp
+
+    // Vercel injecte aussi x-vercel-forwarded-for (différent du XFF client)
+    const vercelIp = headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim()
+    if (vercelIp && VALID_IP_RE.test(vercelIp)) return vercelIp
+
+    // En dernier recours (dev local uniquement) — NE PAS faire confiance en prod
+    const xff = headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    if (xff && VALID_IP_RE.test(xff)) return xff
+
+    return 'unknown'
 }
 
 // ── Log WAF event (fire-and-forget) ───────────────────────────

@@ -78,12 +78,45 @@ function normalizePaths(input: string): string {
 
 function removeSqlEvasions(input: string): string {
     return input
+        // MySQL versioned comments /*!50000 SELECT*/
         .replace(/\/\*!\s*\d*\s*/g, '')
+        // Opérateurs logiques symboliques
         .replace(/\|\|/g, ' OR ').replace(/&&/g, ' AND ')
+        // Normaliser UNION ALL SELECT → UNION SELECT
         .replace(/\bUNION\s+ALL\s+SELECT/gi, 'UNION SELECT')
+        // Décoder hex MySQL 0x414243
         .replace(/0x[0-9a-f]+/gi, (hex) => {
             try { return Buffer.from(hex.slice(2), 'hex').toString('ascii') } catch { return hex }
         })
+        // Supprimer les commentaires multi-niveaux imbriqués /**/
+        .replace(/\/\*[^*]*(?:\*(?!\/)[^*]*)*\*\//g, ' ')
+        // Supprimer les espaces insérés dans les mots-clés SQL (U/**/NION → UNION)
+        .replace(/\b(u)\s*\/\*+\*\/\s*(nion)\b/gi, 'union')
+        .replace(/\b(s)\s*\/\*+\*\/\s*(elect)\b/gi, 'select')
+        // Normaliser encodage %uXXXX (IIS unicode)
+        .replace(/%u([0-9a-fA-F]{4})/g, (_, code) => {
+            try { return String.fromCharCode(parseInt(code, 16)) } catch { return _ }
+        })
+        // Tirets multiples (-- commentaire SQL) → espace
+        .replace(/--[^\r\n]*/g, ' ')
+}
+
+// ── Normalisation anti-bypass avancée ────────────────────────
+// Résistance aux caractères Unicode lookalike (ſ→s, ＵＮＩＯＮfullwidth, etc.)
+function normalizeAsciiLookalikes(input: string): string {
+    return input
+        // Fullwidth ASCII (ｓｅｌｅｃｔ → select)
+        .replace(/[\uFF01-\uFF5E]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+        // Latin lookalikes pour les lettres SQL critiques
+        .replace(/\u017F/g, 's')   // ſ → s
+        .replace(/\u0131/g, 'i')   // ı → i
+        .replace(/\u0261/g, 'g')   // ɡ → g
+        .replace(/\u1D0F/g, 'o')   // ᴏ → o
+        .replace(/\u1D07/g, 'e')   // ᴇ → e
+        // Supprimer les zero-width spaces et joiners
+        .replace(/[\u200B-\u200D\u2060\uFEFF]/g, '')
+        // Supprimer les soft hyphens
+        .replace(/\u00AD/g, '')
 }
 
 // ── Pipeline de décodage complet ──────────────────────────────
@@ -97,6 +130,7 @@ export function decode(input: string): DecodedInput {
     const layers: string[] = [input]
     let s = removeNullBytes(input); layers.push(s)
     s = normalizeUnicode(s); layers.push(s)
+    s = normalizeAsciiLookalikes(s); layers.push(s)   // ← anti-lookalike bypass
     s = decodeHtmlEntities(s); layers.push(s)
     let prev = ''
     let count = 0
@@ -104,7 +138,7 @@ export function decode(input: string): DecodedInput {
     layers.push(s)
     s = decodeBase64Fragments(s); layers.push(s)
     s = removeComments(s); layers.push(s)
-    s = removeSqlEvasions(s); layers.push(s)
+    s = removeSqlEvasions(s); layers.push(s)           // ← commentaires imbriqués + IIS %u
     s = normalizePaths(s); layers.push(s)
     s = collapseWhitespace(s); layers.push(s)
     s = s.toLowerCase(); layers.push(s)

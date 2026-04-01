@@ -742,6 +742,118 @@ const ENUMERATION_RULES: WafRule[] = [
 ]
 
 // ══════════════════════════════════════════════════════════════
+// ANTI-BYPASS — Règles résistantes aux techniques d'évasion avancées
+// ══════════════════════════════════════════════════════════════
+const ANTI_BYPASS_RULES: WafRule[] = [
+    // ── XSS bypass : <svg/onload= (slash au lieu d'espace) ───────
+    {
+        id: 970100, category: 'xss', severity: 1,
+        description: 'XSS bypass: balise avec slash (svg/onload, img/onerror)',
+        pattern: /<(?:svg|img|body|input|details|video|audio|source|iframe)[/\s][^>]*on\w+\s*=/i,
+        targets: ALL_DECODED, paranoia: 1,
+    },
+    // ── XSS bypass : <script> avec attributs ou type alternatif ──
+    {
+        id: 970110, category: 'xss', severity: 1,
+        description: 'XSS bypass: <script type=text/javascript> variantes',
+        pattern: /<script[^>]*(?:type\s*=\s*['"]?(?:text\/(?:javascript|vbscript|jscript|livescript)|application\/(?:javascript|ecmascript))|src\s*=)[^>]*/i,
+        targets: ALL_DECODED, paranoia: 1,
+    },
+    // ── SQL bypass : commentaires entre mots-clés (U/**/NION) ────
+    // Note : le decoder normalise déjà les commentaires, mais protection double
+    {
+        id: 970120, category: 'sql_injection', severity: 1,
+        description: 'SQL bypass: mots-clés SQL fragmentés par commentaires',
+        pattern: /(?:u\s*\/\*+\s*\*\/\s*n\s*i\s*o\s*n|s\s*\/\*+\s*\*\/\s*e\s*l\s*e\s*c\s*t)/i,
+        targets: DATA_DECODED, paranoia: 1,
+    },
+    // ── SQL bypass : encodage char() pour contourner les filtres ─
+    {
+        id: 970130, category: 'sql_injection', severity: 1,
+        description: 'SQL bypass: CHAR()/CHR() pour encoder chaînes SQL',
+        pattern: /(?:char|chr)\s*\(\s*\d+(?:\s*,\s*\d+){2,}\s*\)/i,
+        targets: DATA_DECODED, paranoia: 1,
+    },
+    // ── SQL bypass : encodage binaire/octal ──────────────────────
+    {
+        id: 970140, category: 'sql_injection', severity: 2,
+        description: 'SQL bypass: encodage binaire ou octal dans requête',
+        pattern: /(?:b'[01]{8,}'|0b[01]{8,}|\\(?:[0-9]{3}){3,})/i,
+        targets: DATA_DECODED, paranoia: 2,
+    },
+    // ── NoSQL bypass : opérateurs dans body JSON ──────────────────
+    {
+        id: 970150, category: 'sql_injection', severity: 1,
+        description: 'NoSQL bypass: opérateurs MongoDB imbriqués dans body',
+        pattern: /["']?\s*\$(?:where|ne|gt|lt|gte|lte|in|nin|regex|exists|expr|jsonSchema)\s*["']?\s*:/i,
+        targets: ['body', 'cookie'], paranoia: 1,
+    },
+    // ── Path traversal encodé avancé ─────────────────────────────
+    {
+        id: 970160, category: 'lfi', severity: 1,
+        description: 'LFI bypass: traversal avec encodage avancé (.%2e, %252e)',
+        pattern: /(?:\.%2e|%2e\.|\.%252e|%252e\.|\.%c0%ae|%c0%ae\.)/i,
+        targets: ['urlPath', 'query'], paranoia: 1,
+    },
+    // ── RCE bypass : variable expansion bash $'\x...' ─────────────
+    {
+        id: 970170, category: 'rce', severity: 1,
+        description: 'RCE bypass: bash ANSI-C quoting $\'\\x...\' / $\'\\n...',
+        pattern: /\$'\s*(?:\\x[0-9a-f]{2}|\\[0-9]{3}|\\u[0-9a-f]{4})+/i,
+        targets: QUERY_BODY, paranoia: 2,
+    },
+    // ── Header injection multi-lignes ─────────────────────────────
+    {
+        id: 970180, category: 'http_smuggling', severity: 1,
+        description: 'Header injection: caractères CRLF dans paramètres',
+        pattern: /(?:%0d|%0a|%0D|%0A|\r|\n)(?:%0d|%0a|%0D|%0A|\r|\n)?(?:content-type|set-cookie|location|x-|authorization)/i,
+        targets: ['query', 'referer', 'cookie'], paranoia: 1,
+    },
+    // ── Prototype pollution via JSON keys ─────────────────────────
+    {
+        id: 970190, category: 'nodejs_injection', severity: 1,
+        description: 'Prototype pollution: __proto__ ou constructor dans JSON body',
+        pattern: /["'](?:__proto__|constructor|prototype)["']\s*:/i,
+        targets: ['body'], paranoia: 1,
+    },
+    // ── SSRF via redirecteurs DNS/IPv6 ───────────────────────────
+    {
+        id: 970200, category: 'ssrf', severity: 1,
+        description: 'SSRF bypass: adresses IPv6 loopback ou link-local',
+        pattern: /(?:\[::1\]|\[::ffff:127\.|\[fe80:|\[fc00:|0{4}:0{4}:0{4}:0{4}:0{4}:0{4}:0{4}:0001)/i,
+        targets: QUERY_BODY, paranoia: 1,
+    },
+    // ── SSRF via @ dans URL ──────────────────────────────────────
+    {
+        id: 970210, category: 'ssrf', severity: 2,
+        description: 'SSRF bypass: URL credentials pour confondre le parser (user@host)',
+        pattern: /https?:\/\/[^@\s/]+@(?:localhost|127\.|10\.|192\.168\.|169\.254\.)/i,
+        targets: QUERY_BODY, paranoia: 1,
+    },
+    // ── Open redirect générique ───────────────────────────────────
+    {
+        id: 970220, category: 'protocol_violation', severity: 2,
+        description: 'Open redirect: paramètre de redirection vers URL externe',
+        pattern: /(?:redirect|return|next|from|url|goto|destination)\s*=\s*(?:https?:\/\/|\/\/)[^/]/i,
+        targets: ['query'], paranoia: 2,
+    },
+    // ── Log4Shell / JNDI injection ────────────────────────────────
+    {
+        id: 970230, category: 'rce', severity: 1,
+        description: 'Log4Shell: JNDI lookup injection',
+        pattern: /\$\{.*j.*n.*d.*i.*(?:ldap|rmi|dns|iiop|corba|nds|http|nis|cosnaming)/i,
+        targets: ALL_DECODED, paranoia: 1,
+    },
+    // ── Spring4Shell ─────────────────────────────────────────────
+    {
+        id: 970240, category: 'rce', severity: 1,
+        description: 'Spring4Shell: class.classLoader injection',
+        pattern: /class\.(?:classLoader|module|forName)|(?:getRuntime|getClass)\(\s*\)\.exec/i,
+        targets: ALL_DECODED, paranoia: 1,
+    },
+]
+
+// ══════════════════════════════════════════════════════════════
 // EXPORT — toutes les règles consolidées
 // ══════════════════════════════════════════════════════════════
 export const ALL_RULES: WafRule[] = [
@@ -762,6 +874,7 @@ export const ALL_RULES: WafRule[] = [
     ...SESSION_RULES,
     ...HONEYPOT_RULES,
     ...ENUMERATION_RULES,
+    ...ANTI_BYPASS_RULES,
 ]
 
 // Règles par catégorie pour accès rapide
