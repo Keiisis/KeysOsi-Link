@@ -4,7 +4,7 @@ import { useTranslation, T } from '@/lib/translation';
 import { useList, useUpdate } from '@refinedev/core'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, FileText, Clock, CheckCircle2, Zap, AlertTriangle, ChevronDown, ChevronUp, Save, Plus, X, Download, RefreshCw } from 'lucide-react'
+import { Search, FileText, Clock, CheckCircle2, Zap, AlertTriangle, ChevronDown, ChevronUp, Save, Plus, X, Download, RefreshCw, MessageSquare } from 'lucide-react'
 import { exportToExcel } from '@/lib/exportExcel'
 import { cn } from '@/lib/utils'
 
@@ -331,6 +331,26 @@ export default function AdminDossiersPage() {
                                                         </select>
                                                     </div>
                                                 </div>
+
+                                                {/* Message client */}
+                                                {(dossier.client_message || dossier.notes_internes) && (
+                                                    <div className="p-4 rounded-xl border border-[#FCD116]/20 bg-[#FCD116]/5">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <MessageSquare size={14} className="text-[#FCD116]" />
+                                                            <p className="text-[10px] font-black uppercase tracking-widest text-[#FCD116]">Message du client</p>
+                                                        </div>
+                                                        <p className="text-sm text-gray-200 whitespace-pre-wrap leading-relaxed">
+                                                            {(dossier.client_message as string) ||
+                                                                // Fallback : extraire depuis notes_internes pour les anciens dossiers
+                                                                ((dossier.notes_internes as string) || '')
+                                                                    .split('\n')
+                                                                    .find(line => line.startsWith('Message client:') || line.startsWith('Description:'))
+                                                                    ?.replace(/^(Message client:|Description:)\s*/, '')
+                                                                || (dossier.notes_internes as string)
+                                                            }
+                                                        </p>
+                                                    </div>
+                                                )}
 
                                                 {/* Steps Management */}
                                                 <div>

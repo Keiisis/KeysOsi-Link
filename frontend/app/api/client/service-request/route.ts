@@ -68,7 +68,8 @@ export async function POST(request: NextRequest) {
             etapes,
             progression: 20,
             documents_manquants: [],
-            notes_internes: `Demande depuis l'espace client.\nService: ${service_title}\nDescription: ${description.trim()}\nTél: ${phone || 'Non fourni'}`,
+            client_message: description.trim(),
+            notes_internes: `Demande depuis l'espace client.\nService: ${service_title}\nMessage client: ${description.trim()}\nTél: ${phone || 'Non fourni'}`,
         })
         .select()
         .single()
