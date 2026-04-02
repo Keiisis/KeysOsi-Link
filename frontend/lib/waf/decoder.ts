@@ -60,10 +60,21 @@ function collapseWhitespace(input: string): string {
 }
 
 function decodeBase64Fragments(input: string): string {
-    return input.replace(/[A-Za-z0-9+/]{20,}={0,2}/g, (match) => {
+    // ⚠️  Ne PAS utiliser le `/` comme char Base64 ici :
+    //    Les chemins URL type /admin/messages/show/uuid seraient faussement
+    //    décodés car ils contiennent des séquences de 20+ chars alphanumériques+/
+    //    → Utiliser uniquement [A-Za-z0-9+] sans / pour éviter les faux positifs
+    return input.replace(/[A-Za-z0-9+]{20,}={0,2}/g, (match) => {
+        // Ignorer les séquences qui ressemblent à des UUIDs ou identifiants hex
+        if (/^[0-9a-f-]{30,}$/.test(match)) return match
         try {
             const decoded = Buffer.from(match, 'base64').toString('utf8')
-            if (/^[\x20-\x7E]+$/.test(decoded)) return decoded
+            // Vérifier que le décodage produit du texte ASCII lisible
+            // ET qu'il contient des mots-clés suspects (sinon pas la peine de remplacer)
+            if (
+                /^[\x20-\x7E]+$/.test(decoded) &&
+                /(?:select|union|script|eval|exec|passwd|cmd|shell)/i.test(decoded)
+            ) return decoded
         } catch { /* ignore */ }
         return match
     })
