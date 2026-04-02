@@ -15,6 +15,12 @@ import {
     setWafConfig,
     setCustomRulesCache,
     getCustomRulesCache,
+    checkIpTrustScore,
+    checkSubnetBanned,
+    isHoneypotPath,
+    triggerHoneypot,
+    updateIpMemory,
+    createAlert,
     type ThreatType,
 } from '@/lib/waf'
 
@@ -56,6 +62,8 @@ const ABSOLUTE_BYPASS = [
     '/client/register',
     '/client/reset-password',
     '/client/forgot-password',
+    '/ceo/login',
+    '/ceo/reset-password',
 ]
 
 function isAbsoluteBypass(pathname: string): boolean {
@@ -158,31 +166,63 @@ export async function middleware(request: NextRequest) {
         refreshWafConfig().catch(() => {})
     }
 
-    // ─── 2. IP BLOQUÉE (après absolute bypass) ───────────────
+    // ─── 2. HONEYPOT — Ban immédiat si chemin piège ──────────
+    // Ces chemins ne sont jamais accédés légitimement — uniquement par des bots/scanners
+    if (!emergencyBypass && isHoneypotPath(pathname)) {
+        if (SUPA_URL && SUPA_KEY) triggerHoneypot(ip, pathname, SUPA_URL, SUPA_KEY)
+        return wafBlock('Not Found.', 404)   // Retourner 404 pour ne pas alerter le hacker
+    }
+
+    // ─── 3. IP BLOQUÉE + TRUST SCORE + SOUS-RÉSEAU ───────────
     //
-    // IMPORTANT : Les panels internes (/admin/*, /agent/*, /client/*)
+    // IMPORTANT : Les panels internes (/admin/*, /agent/*, /client/*, /ceo/*)
     // sont EXEMPTÉS du check IP bloquée.
     // Raison : Ces panels sont protégés par l'auth Supabase (étape 6).
-    // Un admin dont l'IP est bloquée doit toujours pouvoir accéder
-    // à son panel pour se débloquer depuis /admin/securite.
-    // Les bots qui atteignent /admin/* sans session sont rejetés par l'auth.
     //
     const isInternalPanelPath = (
         pathname.startsWith('/admin') ||
         pathname.startsWith('/agent') ||
-        pathname.startsWith('/client')
+        pathname.startsWith('/client') ||
+        pathname.startsWith('/ceo')
     )
 
-    if (!emergencyBypass && !isInternalPanelPath && ip !== 'unknown' && await isIpBlocked(ip)) {
-        if (SUPA_URL && SUPA_KEY) logWafEvent({
-            ip, method, path: pathname, userAgent,
-            threatType: 'blocked_ip', detail: 'IP dans la liste de blocage',
-            supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
-        })
-        return wafBlock('Accès refusé.', 403)
+    if (!emergencyBypass && !isInternalPanelPath) {
+        // 3a. Check sous-réseau banni (en mémoire, ultra-rapide)
+        if (checkSubnetBanned(ip)) {
+            return wafBlock('Accès refusé.', 403)
+        }
+
+        // 3b. Check IP bloquée (cache + Supabase)
+        if (ip !== 'unknown' && await isIpBlocked(ip)) {
+            if (SUPA_URL && SUPA_KEY) logWafEvent({
+                ip, method, path: pathname, userAgent,
+                threatType: 'blocked_ip', detail: 'IP dans la liste de blocage',
+                supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+            })
+            return wafBlock('Accès refusé.', 403)
+        }
+
+        // 3c. Check trust score (mémoire comportementale)
+        // Si trust_score < seuil → blocage autonome sans attendre N violations
+        if (ip !== 'unknown' && SUPA_URL && SUPA_KEY) {
+            const { trusted } = await checkIpTrustScore(ip, SUPA_URL, SUPA_KEY)
+            if (!trusted) {
+                logWafEvent({
+                    ip, method, path: pathname, userAgent,
+                    threatType: 'blocked_ip', detail: 'Trust score insuffisant (mémoire comportementale)',
+                    supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                })
+                return wafBlock('Accès refusé.', 403)
+            }
+        }
+    } else if (!emergencyBypass && isInternalPanelPath) {
+        // Pour les panels : vérifier uniquement le sous-réseau banni
+        if (checkSubnetBanned(ip)) {
+            return wafBlock('Accès refusé.', 403)
+        }
     }
 
-    // ─── 3. GÉO-BLOCAGE ──────────────────────────────────────
+    // ─── 4b. GÉO-BLOCAGE ─────────────────────────────────────
     if (!emergencyBypass) {
         const geo = checkGeoBlock(request.headers)
         if (geo.blocked) {
@@ -205,7 +245,7 @@ export async function middleware(request: NextRequest) {
                     threatType: 'rate_limit', detail: `Catégorie: ${rlCategory}`,
                     supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
                 })
-                trackViolation(ip, SUPA_URL, SUPA_KEY)
+                trackViolation(ip, SUPA_URL, SUPA_KEY, { threatType: 'rate_limit' })
             }
             return wafBlock('Trop de requêtes. Réessayez dans quelques instants.', 429)
         }
@@ -249,19 +289,33 @@ export async function middleware(request: NextRequest) {
             const searchParams = request.nextUrl.searchParams.toString()
             const verdict = analyzeRequestFast(method, pathname, searchParams, userAgent)
             if (verdict.blocked) {
+                const topMatch  = verdict.matches[0]
+                const detailStr = verdict.matches.slice(0, 3).map(m =>
+                    `[R${m.ruleId}:${m.target}] ${m.description} — "${m.snippet}"`
+                ).join(' | ')
+
                 if (SUPA_URL && SUPA_KEY) {
                     logWafEvent({
                         ip, method, path: pathname, userAgent,
                         threatType: verdict.topThreat as ThreatType || 'sql_injection',
-                        detail: verdict.matches.slice(0, 3).map(m =>
-                            `[R${m.ruleId}:${m.target}] ${m.description} — "${m.snippet}"`
-                        ).join(' | '),
+                        detail: detailStr,
                         score: verdict.score,
                         supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
                     })
-                    trackViolation(ip, SUPA_URL, SUPA_KEY)
+                    trackViolation(ip, SUPA_URL, SUPA_KEY, {
+                        threatType:  verdict.topThreat || 'waf_block',
+                        payloadHash: topMatch?.snippet
+                            ? Buffer.from(topMatch.snippet.slice(0, 64)).toString('base64').slice(0, 32)
+                            : undefined,
+                        snippet:     topMatch?.snippet?.slice(0, 120),
+                    })
                 }
                 return wafBlock('Requête bloquée par le pare-feu applicatif.', 403)
+            }
+
+            // Récompenser les IPs légitimes (trust score +1 en arrière-plan)
+            if (SUPA_URL && SUPA_KEY && ip !== 'unknown') {
+                updateIpMemory({ ip, isAttack: false, supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY })
             }
         }
     }
@@ -270,7 +324,8 @@ export async function middleware(request: NextRequest) {
     const isAgentRoute  = pathname.startsWith('/agent')
     const isAdminRoute  = pathname.startsWith('/admin')
     const isClientRoute = pathname.startsWith('/client')
-    if (!isAgentRoute && !isAdminRoute && !isClientRoute) return response
+    const isCeoRoute    = pathname.startsWith('/ceo')
+    if (!isAgentRoute && !isAdminRoute && !isClientRoute && !isCeoRoute) return response
 
     let supabaseResponse = response
 
@@ -310,6 +365,7 @@ export async function middleware(request: NextRequest) {
         if (userError || !user) {
             const loginUrl = isAdminRoute ? '/admin/login'
                 : isClientRoute ? '/client/login'
+                : isCeoRoute ? '/ceo/login'
                 : '/agent/login'
             return redirectTo(new URL(loginUrl, request.url))
         }
@@ -344,10 +400,10 @@ export async function middleware(request: NextRequest) {
         }
 
         if (!agentProfile) {
-            return redirectTo(new URL(
-                isAdminRoute ? '/admin/login?error=unauthorized' : '/agent/login?error=unauthorized',
-                request.url
-            ))
+            const loginUrl = isAdminRoute ? '/admin/login?error=unauthorized'
+                : isCeoRoute ? '/ceo/login?error=unauthorized'
+                : '/agent/login?error=unauthorized'
+            return redirectTo(new URL(loginUrl, request.url))
         }
 
         // Isolation stricte des rôles
@@ -359,6 +415,10 @@ export async function middleware(request: NextRequest) {
         }
         if (isAgentRoute && role !== 'agent') {
             return redirectTo(new URL('/agent/login?error=unauthorized', request.url))
+        }
+        // CEO panel : uniquement le rôle 'ceo'
+        if (isCeoRoute && role !== 'ceo') {
+            return redirectTo(new URL('/ceo/login?error=unauthorized', request.url))
         }
 
         // ─── 2FA Check admins ────────────────────────────────
@@ -395,5 +455,6 @@ export const config = {
         '/agent/:path*',
         '/admin/:path*',
         '/client/:path*',
+        '/ceo/:path*',
     ],
 }
