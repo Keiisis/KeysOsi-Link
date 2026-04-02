@@ -8,7 +8,7 @@ import {
     Crown, LayoutDashboard, ShieldCheck, Users, MessageSquare,
     ShoppingBag, Receipt, BarChart3, Settings, LogOut,
     Bell, Menu, X, ChevronRight, Activity, Globe,
-    TrendingUp, Zap, Lock, FileText,
+    TrendingUp, Zap, Lock, FileText, type LucideProps,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
@@ -192,7 +192,7 @@ function WelcomeAnimation({ name, onDone }: { name: string; onDone: () => void }
 
 // ── Nav Item ──────────────────────────────────────────────────
 function NavItem({ href, icon: Icon, label, active, collapsed, onClick }: {
-    href: string; icon: React.ElementType; label: string
+    href: string; icon: React.ForwardRefExoticComponent<LucideProps>; label: string
     active: boolean; collapsed: boolean; onClick?: () => void
 }) {
     return (

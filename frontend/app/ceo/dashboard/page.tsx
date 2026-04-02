@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import {
     TrendingUp, Users, ShoppingBag, ShieldCheck, MessageSquare,
     Activity, AlertTriangle, CheckCircle2, Crown, ArrowUpRight,
-    Clock, Globe, Receipt, Zap, ArrowDownRight,
+    Clock, Globe, Receipt, Zap, ArrowDownRight, type LucideProps,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
@@ -91,7 +91,7 @@ function formatXOF(n: number): string {
 // ── KPI Card ─────────────────────────────────────────────────
 function KpiCard({ title, value, sub, icon: Icon, color, href, trend, delay = 0 }: {
     title: string; value: string; sub?: string
-    icon: React.ElementType; color: string
+    icon: React.ForwardRefExoticComponent<LucideProps>; color: string
     href?: string; trend?: 'up' | 'down' | 'neutral'; delay?: number
 }) {
     const inner = (
