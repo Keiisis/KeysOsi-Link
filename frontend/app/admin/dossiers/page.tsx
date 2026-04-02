@@ -333,7 +333,7 @@ export default function AdminDossiersPage() {
                                                 </div>
 
                                                 {/* Message client */}
-                                                {(dossier.client_message || dossier.notes_internes) && (
+                                                {Boolean(dossier.client_message || dossier.notes_internes) && (
                                                     <div className="p-4 rounded-xl border border-[#FCD116]/20 bg-[#FCD116]/5">
                                                         <div className="flex items-center gap-2 mb-2">
                                                             <MessageSquare size={14} className="text-[#FCD116]" />
