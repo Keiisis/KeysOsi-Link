@@ -21,8 +21,8 @@ export interface CardData {
 
 const GOLD   = '#C9A84C'
 const GOLD_L = '#E2C97E'
-const DARK   = '#030A18' // Nuit extrêmement profonde
-const DARK2  = '#0A1C3A' // Reflet bleu nuit
+const DARK   = '#030A18'
+const DARK2  = '#0A1C3A'
 
 /* ══════════════════════════════════════════════════════════════
    ICÔNES SVG PREMIUM — rendu inline (compatible html-to-image)
@@ -74,7 +74,7 @@ function QRCodeDisplay({ size }: { size: number }) {
             } catch { setQrSrc(null) }
         }
         img.onerror = () => setQrSrc(null)
-        img.src = '/images/qr-code.png' // Assurez-vous d'avoir une image statique en fallback si besoin
+        img.src = '/images/qr-code.png'
     }, [])
 
     if (qrSrc) {
@@ -85,26 +85,19 @@ function QRCodeDisplay({ size }: { size: number }) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   COMPOSANTS PARTAGÉS (FOND ET FILIGRANE)
+   FOND & FILIGRANE
 ══════════════════════════════════════════════════════════════ */
 
 const CardBackground = ({ s }: { s: number }) => (
     <>
-        {/* Fond Nuit Etoilée */}
         <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at center, ${DARK2} 0%, ${DARK} 100%)`, zIndex: 0 }} />
-        
-        {/* Lueur d'ambiance super subtile cyan/or */}
         <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: 200 * s, height: 200 * s, background: `radial-gradient(circle, rgba(201,168,76,0.04) 0%, transparent 70%)`, pointerEvents: 'none', zIndex: 0 }} />
         <div style={{ position: 'absolute', bottom: '-20%', right: '-10%', width: 200 * s, height: 200 * s, background: `radial-gradient(circle, rgba(0,135,81,0.03) 0%, transparent 70%)`, pointerEvents: 'none', zIndex: 0 }} />
-
-        {/* Bordure intérieure extrêmement fine et discrète */}
         <div style={{ position: 'absolute', top: 5 * s, bottom: 5 * s, left: 5 * s, right: 5 * s, border: `0.5px solid ${GOLD}25`, borderRadius: 6 * s, pointerEvents: 'none', zIndex: 1 }} />
-
-        {/* Le Filigrane RGB (Titanesque mais presque invisible : 3% opacité) */}
-        <div style={{ 
-            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%) rotate(-15deg)', 
-            color: '#ffffff', opacity: 0.025, fontSize: 130 * s, fontWeight: 900, 
-            fontFamily: "'Cinzel','Georgia',serif", pointerEvents: 'none', userSelect: 'none', whiteSpace: 'nowrap', zIndex: 1 
+        <div style={{
+            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%) rotate(-15deg)',
+            color: '#ffffff', opacity: 0.025, fontSize: 130 * s, fontWeight: 900,
+            fontFamily: "'Cinzel','Georgia',serif", pointerEvents: 'none', userSelect: 'none', whiteSpace: 'nowrap', zIndex: 1
         }}>
             RGB
         </div>
@@ -128,33 +121,46 @@ export const CardRecto = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
             }}>
                 <CardBackground s={s} />
 
-                {/* ── CONTENU CENTRAL ── */}
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
-                    
-                    {/* Glow divin derrière le logo géant */}
+
+                    {/* Glow derrière le logo */}
                     <div style={{ position: 'absolute', top: '38%', left: '50%', transform: 'translate(-50%, -50%)', width: 160 * s, height: 160 * s, background: `radial-gradient(circle, ${GOLD}20 0%, transparent 60%)`, pointerEvents: 'none' }} />
 
-                    {/* Logo Géant & Majestueux */}
+                    {/* Logo */}
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/logo-transparent.png" alt="RGB" style={{ width: 90 * s, height: 90 * s, objectFit: 'contain', marginBottom: 6 * s, filter: 'drop-shadow(0px 8px 16px rgba(0,0,0,0.4))' }} />
+                    <img src="/images/logo-transparent.png" alt="RGB" style={{ width: 86 * s, height: 86 * s, objectFit: 'contain', marginBottom: 8 * s, filter: 'drop-shadow(0px 8px 16px rgba(0,0,0,0.4))' }} />
 
-                    {/* Ornement Royal (Diamant & Lignes) */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 * s, marginBottom: 8 * s }}>
-                        <div style={{ width: 60 * s, height: 1 * s, background: `linear-gradient(90deg, transparent, ${GOLD}70)` }} />
-                        <div style={{ width: 4.5 * s, height: 4.5 * s, background: GOLD_L, transform: 'rotate(45deg)', boxShadow: `0 0 12px ${GOLD}80` }} />
-                        <div style={{ width: 60 * s, height: 1 * s, background: `linear-gradient(270deg, transparent, ${GOLD}70)` }} />
+                    {/* Ornement */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 * s, marginBottom: 10 * s }}>
+                        <div style={{ width: 56 * s, height: 1 * s, background: `linear-gradient(90deg, transparent, ${GOLD}70)` }} />
+                        <div style={{ width: 5 * s, height: 5 * s, background: GOLD_L, transform: 'rotate(45deg)', boxShadow: `0 0 12px ${GOLD}80` }} />
+                        <div style={{ width: 56 * s, height: 1 * s, background: `linear-gradient(270deg, transparent, ${GOLD}70)` }} />
                     </div>
 
-                    {/* Nom Agence avec fort letter-spacing (Titanesque) */}
-                    <div style={{ color: GOLD_L, fontSize: 10.5 * s, fontWeight: 700, letterSpacing: '0.38em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif", textAlign: 'center', marginLeft: `${0.38 * 10.5 * s}px` /* Compense le letter-spacing */ }}>
+                    {/* Nom Agence — AGRANDI pour impression */}
+                    <div style={{
+                        color: GOLD_L, fontSize: 14 * s, fontWeight: 700,
+                        letterSpacing: '0.28em', textTransform: 'uppercase',
+                        fontFamily: "'Cinzel','Georgia',serif", textAlign: 'center',
+                        marginLeft: `${0.28 * 14 * s}px`,
+                    }}>
                         Retour Gagnant
                     </div>
-                    <div style={{ color: GOLD_L, fontSize: 10.5 * s, fontWeight: 700, letterSpacing: '0.38em', textTransform: 'uppercase', fontFamily: "'Cinzel','Georgia',serif", textAlign: 'center', marginTop: 4 * s, marginLeft: `${0.38 * 10.5 * s}px` }}>
+                    <div style={{
+                        color: GOLD_L, fontSize: 14 * s, fontWeight: 700,
+                        letterSpacing: '0.28em', textTransform: 'uppercase',
+                        fontFamily: "'Cinzel','Georgia',serif", textAlign: 'center',
+                        marginTop: 5 * s, marginLeft: `${0.28 * 14 * s}px`,
+                    }}>
                         Bénin
                     </div>
 
-                    {/* Tagline en or pâle italique (Très élégante) */}
-                    <div style={{ color: `${GOLD_L}85`, fontSize: 5.5 * s, letterSpacing: '0.22em', textAlign: 'center', fontStyle: 'italic', marginTop: 10 * s, fontWeight: 300 }}>
+                    {/* Tagline — AGRANDIE pour impression */}
+                    <div style={{
+                        color: `${GOLD_L}85`, fontSize: 8 * s,
+                        letterSpacing: '0.15em', textAlign: 'center',
+                        fontStyle: 'italic', marginTop: 10 * s, fontWeight: 300,
+                    }}>
                         L&apos;Agence du Retour des Afro-descendants
                     </div>
                 </div>
@@ -174,19 +180,22 @@ const ContactRow = ({ Icon, value, dim = false, s }: {
     dim?: boolean;
     s: number;
 }) => {
-    const ico = Math.round(7 * s)
+    const ico = Math.round(10 * s)
     return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5 * s, marginBottom: 3.5 * s }}>
-            <Icon sz={ico} col={dim ? `${GOLD}90` : GOLD_L} />
-            <span style={{ 
-                color: '#ffffff', 
-                opacity: dim ? 0.75 : 1, 
-                fontSize: dim ? 5 * s : 5.8 * s, 
-                lineHeight: 1.3, 
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7 * s, marginBottom: 5 * s }}>
+            {/* Icône alignée en haut du texte */}
+            <div style={{ paddingTop: 1 * s, flexShrink: 0 }}>
+                <Icon sz={ico} col={dim ? `${GOLD}90` : GOLD_L} />
+            </div>
+            <span style={{
+                color: '#ffffff',
+                opacity: dim ? 0.80 : 1,
+                fontSize: dim ? 8 * s : 10 * s,
+                lineHeight: 1.4,
                 fontWeight: dim ? 400 : 500,
-                fontFamily: "'Inter','Arial',sans-serif", 
+                fontFamily: "'Inter','Arial',sans-serif",
                 letterSpacing: '0.02em',
-                whiteSpace: 'pre-line' 
+                whiteSpace: 'pre-line',
             }}>
                 {value}
             </span>
@@ -207,53 +216,86 @@ export const CardVerso = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
             }}>
                 <CardBackground s={s} />
 
-                {/* Séparateur Vertical Ultra-Fin en fond pour structurer (optionnel, on le garde délicat) */}
-                <div style={{ position: 'absolute', top: 25 * s, bottom: 45 * s, left: 220 * s, width: '1px', background: `linear-gradient(180deg, transparent, ${GOLD}30, transparent)`, zIndex: 1 }} />
+                {/* Séparateur vertical entre agent et QR */}
+                <div style={{ position: 'absolute', top: 22 * s, bottom: 50 * s, left: 220 * s, width: '1px', background: `linear-gradient(180deg, transparent, ${GOLD}30, transparent)`, zIndex: 1 }} />
 
                 <div style={{ position: 'absolute', inset: 0, zIndex: 2 }}>
-                    
-                    {/* 1. Bloc Agent (Nom + Titre TRÈS VISIBLE) */}
-                    <div style={{ position: 'absolute', top: 20 * s, left: 20 * s, width: 190 * s }}>
-                        <div style={{ color: GOLD_L, fontSize: 13.5 * s, fontWeight: 700, letterSpacing: '0.05em', fontFamily: "'Cinzel','Georgia',serif", lineHeight: 1.1 }}>
+
+                    {/* ── 1. Bloc Agent : Nom + Titre ── */}
+                    <div style={{ position: 'absolute', top: 18 * s, left: 18 * s, width: 192 * s }}>
+                        {/* Nom — AGRANDI pour impression */}
+                        <div style={{
+                            color: GOLD_L, fontSize: 18 * s, fontWeight: 700,
+                            letterSpacing: '0.04em', fontFamily: "'Cinzel','Georgia',serif",
+                            lineHeight: 1.15,
+                        }}>
                             {data.prenom} {data.nom}
                         </div>
-                        <div style={{ width: 45 * s, height: 1.5 * s, background: GOLD, marginTop: 4.5 * s, marginBottom: 4.5 * s }} />
-                        <div style={{ color: GOLD_L, opacity: 0.9, fontSize: 6.5 * s, letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 600 }}>
+                        {/* Filet doré */}
+                        <div style={{ width: 48 * s, height: 1.5 * s, background: GOLD, marginTop: 5.5 * s, marginBottom: 5.5 * s }} />
+                        {/* Poste — AGRANDI pour impression */}
+                        <div style={{
+                            color: GOLD_L, opacity: 0.90, fontSize: 10 * s,
+                            letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600,
+                        }}>
                             {data.position || 'CONSULTANT(E)'}
                         </div>
                     </div>
 
-                    {/* 2. Contacts Agent (Milieu - plus aéré) */}
-                    <div style={{ position: 'absolute', top: 80 * s, left: 20 * s, width: 190 * s }}>
+                    {/* ── 2. Contacts Agent ── */}
+                    <div style={{ position: 'absolute', top: 95 * s, left: 18 * s, width: 192 * s }}>
                         {data.phone && <ContactRow Icon={IcoPhone} value={data.phone} s={s} />}
                         {data.email && <ContactRow Icon={IcoMail} value={data.email} s={s} />}
                     </div>
 
-                    {/* 3. Séparateur Horizontal Agent / Agence */}
-                    <div style={{ position: 'absolute', bottom: 33 * s, left: 20 * s, width: 100 * s, height: 0.5 * s, background: `${GOLD}20` }} />
+                    {/* ── 3. Séparateur Agent / Agence ── */}
+                    <div style={{ position: 'absolute', bottom: 88 * s, left: 18 * s, width: 96 * s, height: 0.5 * s, background: `${GOLD}25` }} />
 
-                    {/* 4. Contacts Agence (Bas - bien en bas et visible) */}
-                    <div style={{ position: 'absolute', bottom: 12 * s, left: 20 * s, width: 300 * s }}>
-                        <ContactRow Icon={IcoPhone} value="+229 01 60 32 21 21 / +229 01 94 35 50 50" dim s={s} />
-                        <ContactRow Icon={IcoGlobe} value="contact@retourgagnantbenin.bj — www.retourgagnantbenin.bj" dim s={s} />
-                        <ContactRow Icon={IcoPin} value="Haie-Vive Cocotiers, Carré N°1158, Cotonou — BÉNIN" dim s={s} />
+                    {/* ── 4. Contacts Agence (bas de carte) ── */}
+                    <div style={{ position: 'absolute', bottom: 10 * s, left: 18 * s, width: 192 * s }}>
+                        {/* Téléphones agence — sur 2 lignes */}
+                        <ContactRow
+                            Icon={IcoPhone}
+                            value={"+229 01 60 32 21 21\n+229 01 94 35 50 50"}
+                            dim
+                            s={s}
+                        />
+                        {/* Web & Email — sur 2 lignes */}
+                        <ContactRow
+                            Icon={IcoGlobe}
+                            value={"contact@retourgagnantbenin.bj\nwww.retourgagnantbenin.bj"}
+                            dim
+                            s={s}
+                        />
+                        {/* Adresse */}
+                        <ContactRow
+                            Icon={IcoPin}
+                            value={"Haie-Vive Cocotiers, Carré N°1158\nCotonou — BÉNIN"}
+                            dim
+                            s={s}
+                        />
                     </div>
 
-                    {/* 5. QR CODE (Droite, aligné sur le haut) */}
-                    <div style={{ position: 'absolute', top: 22 * s, right: 20 * s, width: 85 * s, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <div style={{ 
-                            background: '#ffffff', 
-                            padding: 4.5 * s, 
-                            borderRadius: 4 * s, 
-                            boxShadow: `0 0 0 1px ${GOLD}50, 0 8px 30px rgba(0,0,0,0.6)` 
+                    {/* ── 5. QR CODE ── */}
+                    <div style={{ position: 'absolute', top: 20 * s, right: 18 * s, width: 88 * s, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <div style={{
+                            background: '#ffffff',
+                            padding: 5 * s,
+                            borderRadius: 4 * s,
+                            boxShadow: `0 0 0 1px ${GOLD}50, 0 8px 30px rgba(0,0,0,0.6)`,
                         }}>
                             <QRCodeDisplay size={Math.round(65 * s)} />
                         </div>
-                        <div style={{ marginTop: 6 * s, color: `${GOLD}70`, fontSize: 4.2 * s, letterSpacing: '0.25em', textTransform: 'uppercase', fontFamily: "'Cinzel',serif", textAlign: 'center' }}>
+                        {/* Label QR — AGRANDI pour impression */}
+                        <div style={{
+                            marginTop: 8 * s, color: `${GOLD}80`, fontSize: 7 * s,
+                            letterSpacing: '0.18em', textTransform: 'uppercase',
+                            fontFamily: "'Cinzel',serif", textAlign: 'center',
+                        }}>
                             Scannez-moi
                         </div>
                     </div>
-                    
+
                 </div>
             </div>
         )
