@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Send, Loader2, Bot, User, Trash2, Copy, CheckCheck, Sparkles, RefreshCw } from 'lucide-react'
+import { Send, Loader2, Bot, User, Trash2, Copy, CheckCheck, Sparkles, RefreshCw, Database, Brain, Plus, X } from 'lucide-react'
 
 const GOLD = '#D4AF37'; const YELLOW = '#FCD116'; const GREEN = '#008751'
 const GREEN_L = '#00A86B'; const BG = '#0B1F0D'; const TEXT = '#F0EBD8'
@@ -17,12 +17,14 @@ interface Message {
 }
 
 const SUGGESTIONS = [
-    'Analyse les performances de ce mois et donne-moi 3 actions prioritaires',
-    'Rédige un rapport exécutif hebdomadaire pour les actionnaires',
-    'Quelles stratégies pour augmenter le revenu de 20% ce trimestre ?',
-    'Comment optimiser le tunnel de conversion pour les demandes de nationalité ?',
-    'Rédige un email de relance professionnel pour les clients inactifs',
-    'Analyse les risques sécurité actuels et recommande des mesures',
+    'Quel est le revenu total et le revenu de ce mois ?',
+    'Analyse les commandes en attente et donne-moi les priorités',
+    'Combien de clients et de nouveaux clients ce mois ?',
+    'Y a-t-il des messages non lus ? Résume-les moi',
+    'Quel est le score de sécurité actuel et les alertes en cours ?',
+    'Rédige un rapport exécutif complet basé sur les données du jour',
+    'Quelles sont les candidatures partenaires en attente ?',
+    'Analyse les dossiers récents et donne-moi les points d\'attention',
 ]
 
 function parseThinking(raw: string): { thinking: string; content: string } {
@@ -67,8 +69,35 @@ export default function CeoAssistant() {
     const [input, setInput] = useState('')
     const [loading, setLoading] = useState(false)
     const [copied, setCopied] = useState<string | null>(null)
+    const [memoryOpen, setMemoryOpen] = useState(false)
+    const [memories, setMemories] = useState<Array<{ id: string; type: string; content: string; importance: number }>>([])
+    const [newMemory, setNewMemory] = useState('')
+    const [memType, setMemType] = useState<'fact' | 'decision' | 'note' | 'alert'>('note')
     const bottomRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLTextAreaElement>(null)
+
+    const loadMemory = useCallback(async () => {
+        const res = await fetch('/api/ai/gemma/memory')
+        if (res.ok) { const d = await res.json(); setMemories(d.memory || []) }
+    }, [])
+
+    const saveMemory = async () => {
+        if (!newMemory.trim()) return
+        await fetch('/api/ai/gemma/memory', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: memType, content: newMemory.trim(), importance: 4 }),
+        })
+        setNewMemory('')
+        loadMemory()
+    }
+
+    const deleteMemory = async (id: string) => {
+        await fetch('/api/ai/gemma/memory', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+        setMemories(prev => prev.filter(m => m.id !== id))
+    }
+
+    useEffect(() => { loadMemory() }, [loadMemory])
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -166,18 +195,88 @@ export default function CeoAssistant() {
                     <div>
                         <p className="font-black text-sm tracking-wider" style={{ color: GOLD }}>GEMMA 4</p>
                         <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: `${GREEN_L}80` }}>
-                            31B · NVIDIA NIM · Thinking Mode
+                            31B · NVIDIA NIM · Connectée DB
                         </p>
                     </div>
+                    {/* Indicateurs connexion */}
+                    <div className="flex items-center gap-1.5 ml-2">
+                        <div className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold" style={{ background: `${GREEN}15`, color: GREEN_L }}>
+                            <Database size={9} /> DB Live
+                        </div>
+                        <div className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold" style={{ background: `${GOLD}15`, color: GOLD }}>
+                            <Brain size={9} /> {memories.length} mémoires
+                        </div>
+                    </div>
                 </div>
-                {messages.length > 0 && (
-                    <button onClick={() => setMessages([])} title="Effacer la conversation"
+                <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => setMemoryOpen(o => !o)}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all hover:opacity-80"
-                        style={{ background: `${GOLD}12`, color: `${TEXT}50` }}>
-                        <Trash2 size={12} /> Effacer
+                        style={{ background: `${GOLD}15`, color: GOLD }}>
+                        <Brain size={12} /> Mémoire
                     </button>
-                )}
+                    {messages.length > 0 && (
+                        <button type="button" onClick={() => setMessages([])}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all hover:opacity-80"
+                            style={{ background: `${GOLD}12`, color: `${TEXT}50` }}>
+                            <Trash2 size={12} /> Effacer
+                        </button>
+                    )}
+                </div>
             </div>
+
+            {/* Panneau mémoire */}
+            <AnimatePresence>
+                {memoryOpen && (
+                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden border-b shrink-0" style={{ borderColor: `${GOLD}15`, background: '#0A1C0C' }}>
+                        <div className="p-4">
+                            <p className="text-xs font-black uppercase tracking-widest mb-3" style={{ color: GOLD }}>
+                                Mémoire persistante — {memories.length} entrées
+                            </p>
+                            {/* Ajouter une mémoire */}
+                            <div className="flex gap-2 mb-3">
+                                <select value={memType} onChange={e => setMemType(e.target.value as typeof memType)}
+                                    title="Type de mémoire"
+                                    className="px-2 py-1.5 rounded-lg text-xs outline-none"
+                                    style={{ background: PANEL, border: `1px solid ${GOLD}20`, color: TEXT }}>
+                                    <option value="fact">Fait</option>
+                                    <option value="decision">Décision</option>
+                                    <option value="note">Note</option>
+                                    <option value="alert">Alerte</option>
+                                </select>
+                                <input value={newMemory} onChange={e => setNewMemory(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && saveMemory()}
+                                    placeholder="Ajouter un fait, décision ou note important..."
+                                    className="flex-1 px-3 py-1.5 rounded-lg text-xs outline-none"
+                                    style={{ background: PANEL, border: `1px solid ${GOLD}20`, color: TEXT }} />
+                                <button type="button" onClick={saveMemory} title="Enregistrer"
+                                    className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:opacity-80"
+                                    style={{ background: `${GOLD}25`, color: GOLD }}>
+                                    <Plus size={12} />
+                                </button>
+                            </div>
+                            {/* Liste des mémoires */}
+                            <div className="space-y-1 max-h-40 overflow-y-auto">
+                                {memories.slice(0, 15).map(m => (
+                                    <div key={m.id} className="flex items-start justify-between gap-2 px-3 py-1.5 rounded-lg"
+                                        style={{ background: PANEL, border: `1px solid ${GOLD}10` }}>
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded shrink-0"
+                                                style={{ background: `${GOLD}20`, color: GOLD }}>{m.type}</span>
+                                            <span className="text-xs truncate" style={{ color: `${TEXT}80` }}>{m.content}</span>
+                                        </div>
+                                        <button type="button" onClick={() => deleteMemory(m.id)} title="Supprimer"
+                                            className="shrink-0 opacity-30 hover:opacity-70 transition-opacity">
+                                            <X size={11} style={{ color: TEXT }} />
+                                        </button>
+                                    </div>
+                                ))}
+                                {memories.length === 0 && <p className="text-xs opacity-30 text-center py-2">Aucune mémoire enregistrée</p>}
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
