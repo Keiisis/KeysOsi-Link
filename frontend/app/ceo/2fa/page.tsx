@@ -26,11 +26,12 @@ function copyToClipboard(text: string, setCopied: (v: string) => void, key: stri
 
 interface MfaFactor {
     id: string
-    type: string
+    factor_type: string
     status: string
     friendly_name?: string
     created_at: string
     updated_at: string
+    last_challenged_at?: string
 }
 
 interface AuthLog {
@@ -225,10 +226,10 @@ export default function Ceo2fa() {
         try {
             // Facteurs MFA actifs
             const { data: mfaData } = await supabase.auth.mfa.listFactors()
-            const allFactors: MfaFactor[] = [
+            const allFactors = [
                 ...(mfaData?.totp || []),
                 ...(mfaData?.phone || []),
-            ]
+            ] as MfaFactor[]
             setFactors(allFactors)
 
             // Logs d'authentification (depuis la table auth_logs si elle existe)
@@ -378,7 +379,7 @@ export default function Ceo2fa() {
                             <div key={f.id} className="px-5 py-4 flex items-center gap-4 hover:bg-white/[0.02] transition-colors">
                                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                                     style={{ background: f.status === 'verified' ? `${GREEN_L}18` : `${YELLOW}18` }}>
-                                    {f.type === 'totp'
+                                    {f.factor_type === 'totp'
                                         ? <Smartphone size={18} style={{ color: f.status === 'verified' ? GREEN_L : YELLOW }} />
                                         : <KeyRound size={18} style={{ color: f.status === 'verified' ? GREEN_L : YELLOW }} />
                                     }
@@ -388,7 +389,7 @@ export default function Ceo2fa() {
                                         {f.friendly_name || (f.type === 'totp' ? 'Application Authenticator' : 'SMS / Téléphone')}
                                     </div>
                                     <div className="text-xs opacity-40 mt-0.5">
-                                        {f.type.toUpperCase()} · Enregistré le {fmtDate(f.created_at)}
+                                        {f.factor_type.toUpperCase()} · Enregistré le {fmtDate(f.created_at)}
                                     </div>
                                 </div>
                                 <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider flex-shrink-0"
