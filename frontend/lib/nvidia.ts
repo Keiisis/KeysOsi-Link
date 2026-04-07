@@ -15,14 +15,12 @@ export interface NvidiaPayload {
     enable_thinking?: boolean
 }
 
-/**
- * Appel simple (non-stream) à Gemma 4 31B via NVIDIA NIM
- */
 export async function fetchGemma(payload: NvidiaPayload): Promise<Response> {
     const apiKey = process.env.NVIDIA_API_KEY
-    if (!apiKey) throw new Error('NVIDIA_API_KEY manquante dans les variables d\'environnement')
+    if (!apiKey) throw new Error('NVIDIA_API_KEY manquante')
 
-    const { enable_thinking = true, stream = false, ...rest } = payload
+    // enable_thinking=false par défaut — thinking mode multiplie le temps par 5-10x → 504
+    const { enable_thinking = false, stream = true, ...rest } = payload
 
     return fetch(NVIDIA_API_URL, {
         method: 'POST',
@@ -33,9 +31,9 @@ export async function fetchGemma(payload: NvidiaPayload): Promise<Response> {
         },
         body: JSON.stringify({
             model: 'google/gemma-4-31b-it',
-            max_tokens: 16384,
-            temperature: 1.0,
-            top_p: 0.95,
+            max_tokens: 2048,        // 16384 → 2048 : premier token arrive 8x plus vite
+            temperature: 0.7,
+            top_p: 0.9,
             stream,
             chat_template_kwargs: { enable_thinking },
             ...rest,
@@ -43,9 +41,6 @@ export async function fetchGemma(payload: NvidiaPayload): Promise<Response> {
     })
 }
 
-/**
- * Extrait le texte d'une réponse NVIDIA non-stream
- */
 export async function getGemmaText(messages: NvidiaMessage[], systemPrompt?: string): Promise<string> {
     const msgs: NvidiaMessage[] = systemPrompt
         ? [{ role: 'system', content: systemPrompt }, ...messages]
