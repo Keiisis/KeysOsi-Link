@@ -386,7 +386,7 @@ export default function Ceo2fa() {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="font-bold text-sm truncate">
-                                        {f.friendly_name || (f.type === 'totp' ? 'Application Authenticator' : 'SMS / Téléphone')}
+                                        {f.friendly_name || (f.factor_type === 'totp' ? 'Application Authenticator' : 'SMS / Téléphone')}
                                     </div>
                                     <div className="text-xs opacity-40 mt-0.5">
                                         {f.factor_type.toUpperCase()} · Enregistré le {fmtDate(f.created_at)}
