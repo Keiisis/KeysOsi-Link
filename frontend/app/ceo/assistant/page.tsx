@@ -68,13 +68,32 @@ export default function CeoAssistant() {
     const [messages, setMessages] = useState<Message[]>([])
     const [input, setInput] = useState('')
     const [loading, setLoading] = useState(false)
+    const [loadingCtx, setLoadingCtx] = useState(false)
     const [copied, setCopied] = useState<string | null>(null)
     const [memoryOpen, setMemoryOpen] = useState(false)
     const [memories, setMemories] = useState<Array<{ id: string; type: string; content: string; importance: number }>>([])
     const [newMemory, setNewMemory] = useState('')
     const [memType, setMemType] = useState<'fact' | 'decision' | 'note' | 'alert'>('note')
+    const rgbContextRef = useRef<string>('')
+    const ctxLoadedAt = useRef<number>(0)
     const bottomRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLTextAreaElement>(null)
+
+    // Pré-chargement du contexte RGB (et refresh toutes les 5 min)
+    const loadContext = useCallback(async () => {
+        const now = Date.now()
+        if (now - ctxLoadedAt.current < 5 * 60 * 1000 && rgbContextRef.current) return
+        setLoadingCtx(true)
+        try {
+            const res = await fetch('/api/ai/gemma/context', { cache: 'no-store' })
+            if (res.ok) {
+                const d = await res.json()
+                rgbContextRef.current = d.context || ''
+                ctxLoadedAt.current = now
+            }
+        } catch { /* contexte vide, Gemma répondra sans données */ }
+        setLoadingCtx(false)
+    }, [])
 
     const loadMemory = useCallback(async () => {
         const res = await fetch('/api/ai/gemma/memory')
@@ -97,7 +116,7 @@ export default function CeoAssistant() {
         setMemories(prev => prev.filter(m => m.id !== id))
     }
 
-    useEffect(() => { loadMemory() }, [loadMemory])
+    useEffect(() => { loadMemory(); loadContext() }, [loadMemory, loadContext])
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -117,11 +136,15 @@ export default function CeoAssistant() {
         setLoading(true)
 
         try {
+            // Rafraîchir contexte si expiré (async, n'attend pas)
+            loadContext()
+
             const history = [...messages, userMsg].map(m => ({ role: m.role, content: m.content }))
             const res = await fetch('/api/ai/gemma', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messages: history }),
+                // Envoie le contexte déjà chargé — la route NVIDIA ne fait plus de requêtes DB
+                body: JSON.stringify({ messages: history, context: rgbContextRef.current }),
             })
 
             if (!res.ok) throw new Error(`Erreur ${res.status}`)
@@ -141,12 +164,13 @@ export default function CeoAssistant() {
 
                 for (const line of lines) {
                     const trimmed = line.trim()
-                    if (!trimmed || trimmed === 'data: [DONE]') continue
+                    if (!trimmed || trimmed === 'data: [DONE]' || trimmed.startsWith(': ')) continue
                     if (trimmed.startsWith('data: ')) {
                         try {
-                            const { t } = JSON.parse(trimmed.slice(6))
-                            if (t) {
-                                accumulated += t
+                            const json = JSON.parse(trimmed.slice(6))
+                            if (json.error) throw new Error(json.error)
+                            if (json.t) {
+                                accumulated += json.t
                                 const { thinking, content: answer } = parseThinking(accumulated)
                                 setMessages(prev => prev.map(m =>
                                     m.id === assistantId
@@ -154,7 +178,11 @@ export default function CeoAssistant() {
                                         : m
                                 ))
                             }
-                        } catch { /* chunk incomplet */ }
+                        } catch (parseErr) {
+                            if (parseErr instanceof Error && parseErr.message !== 'Unexpected end of JSON input') {
+                                throw parseErr
+                            }
+                        }
                     }
                 }
             }
@@ -200,8 +228,10 @@ export default function CeoAssistant() {
                     </div>
                     {/* Indicateurs connexion */}
                     <div className="flex items-center gap-1.5 ml-2">
-                        <div className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold" style={{ background: `${GREEN}15`, color: GREEN_L }}>
-                            <Database size={9} /> DB Live
+                        <div className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold"
+                            style={{ background: loadingCtx ? `${YELLOW}15` : `${GREEN}15`, color: loadingCtx ? YELLOW : GREEN_L }}>
+                            {loadingCtx ? <Loader2 size={9} className="animate-spin" /> : <Database size={9} />}
+                            {loadingCtx ? 'Chargement...' : 'DB Connectée'}
                         </div>
                         <div className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold" style={{ background: `${GOLD}15`, color: GOLD }}>
                             <Brain size={9} /> {memories.length} mémoires

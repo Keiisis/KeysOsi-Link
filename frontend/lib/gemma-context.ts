@@ -3,8 +3,23 @@
  * Assemble le contexte temps réel de Retour Gagnant Bénin
  * pour l'injection dans le system prompt de Gemma 4.
  * Toutes les requêtes utilisent le service role → bypass RLS complet.
+ * Cache 5 minutes pour éviter les timeouts Vercel.
  */
 import { createClient } from '@supabase/supabase-js'
+
+// ─── Cache module-level (évite 23 requêtes à chaque message) ─────────────────
+let _cache: { data: string; ts: number } | null = null
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+export async function getCachedRgbContext(): Promise<string> {
+    const now = Date.now()
+    if (_cache && now - _cache.ts < CACHE_TTL) return _cache.data
+    const data = await buildRgbContext()
+    _cache = { data, ts: now }
+    return data
+}
+
+export function invalidateContextCache() { _cache = null }
 
 function sb() {
     return createClient(
