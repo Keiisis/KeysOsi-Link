@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Receipt, Search, RefreshCw, Loader2, Eye, CheckCircle2, Clock, AlertTriangle, X } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 
 const GOLD = '#D4AF37'; const YELLOW = '#FCD116'; const GREEN = '#008751'
 const GREEN_L = '#00A86B'; const RED = '#E8112D'; const BG = '#0B1F0D'; const TEXT = '#F0EBD8'
@@ -30,24 +29,13 @@ export default function CeoFacturation() {
 
     const load = useCallback(async () => {
         setLoading(true)
-        const results: Doc[] = []
-
-        // Essai invoices
-        const { data: invData } = await supabase.from('invoices').select('*').order('created_at', { ascending: false }).limit(300)
-        if (invData) results.push(...invData.map((d: Doc) => ({ ...d, type: 'invoice' })))
-
-        // Essai quotes
-        const { data: quoteData } = await supabase.from('quotes').select('*').order('created_at', { ascending: false }).limit(300)
-        if (quoteData) results.push(...quoteData.map((d: Doc) => ({ ...d, type: 'quote' })))
-
-        // Fallback: orders comme base
-        if (results.length === 0) {
-            const { data: ordData } = await supabase.from('orders').select('id, created_at, total_amount, status, client_email').order('created_at', { ascending: false }).limit(300)
-            if (ordData) results.push(...ordData.map((d: { id: string; created_at: string; total_amount?: number; status?: string; client_email?: string }) => ({ ...d, type: 'invoice', number: d.id.slice(0, 8).toUpperCase() })))
-        }
-
-        results.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        setDocs(results)
+        try {
+            const res = await fetch('/api/ceo/facturation', { cache: 'no-store' })
+            if (res.ok) {
+                const d = await res.json()
+                setDocs(d.docs || [])
+            }
+        } catch { /* silent */ }
         setLoading(false)
     }, [refresh])
 

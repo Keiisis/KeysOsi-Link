@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { ShoppingBag, Search, RefreshCw, Loader2, Eye, CheckCircle2, XCircle, Clock, Filter } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 
 const GOLD = '#D4AF37'; const YELLOW = '#FCD116'; const GREEN = '#008751'
 const GREEN_L = '#00A86B'; const RED = '#E8112D'; const BG = '#0B1F0D'; const TEXT = '#F0EBD8'
@@ -42,10 +41,11 @@ export default function CeoCommandes() {
 
     const load = useCallback(async () => {
         setLoading(true)
-        let q = supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(500)
-        if (statusFilter !== 'all') q = q.eq('status', statusFilter)
-        const { data } = await q
-        setOrders(data || [])
+        const params = new URLSearchParams({ limit: '500' })
+        if (statusFilter !== 'all') params.set('status', statusFilter)
+        const res = await fetch(`/api/ceo/orders?${params}`, { cache: 'no-store' })
+        const data = res.ok ? await res.json() : { orders: [] }
+        setOrders(data.orders || [])
         setLoading(false)
     }, [statusFilter, refresh])
 

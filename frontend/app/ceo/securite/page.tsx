@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { ShieldCheck, AlertTriangle, Ban, RefreshCw, Loader2, Globe, Zap, Eye, Lock } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { ShieldCheck, Ban, RefreshCw, Loader2, Globe, Zap, Lock } from 'lucide-react'
 
 const GOLD = '#D4AF37'; const YELLOW = '#FCD116'; const GREEN = '#008751'
 const GREEN_L = '#00A86B'; const RED = '#E8112D'; const BG = '#0B1F0D'; const TEXT = '#F0EBD8'
@@ -23,18 +22,16 @@ export default function CeoSecurite() {
 
     const load = useCallback(async () => {
         setLoading(true)
-        const h24 = new Date(Date.now() - 86_400_000).toISOString()
-        const [logsRes, blocksRes, memRes] = await Promise.allSettled([
-            supabase.from('waf_logs').select('id, created_at, ip, threat_type, path, is_blocked, country_code').gte('created_at', h24).order('created_at', { ascending: false }).limit(200),
-            supabase.from('ip_blocks').select('*').is('unblocked_at', null).order('created_at', { ascending: false }).limit(100),
-            supabase.from('waf_ip_memory').select('id, trust_score', { count: 'exact' }),
-        ])
-        if (logsRes.status === 'fulfilled') setLogs(logsRes.value.data || [])
-        if (blocksRes.status === 'fulfilled') setBlocks(blocksRes.value.data || [])
-        if (memRes.status === 'fulfilled') {
-            const data = memRes.value.data || []
-            setMemStats({ total: data.length, dangerous: data.filter((r: { trust_score: number }) => r.trust_score < 20).length })
-        }
+        try {
+            const res = await fetch('/api/ceo/securite?hours=24', { cache: 'no-store' })
+            if (res.ok) {
+                const d = await res.json()
+                setLogs(d.logs || [])
+                setBlocks(d.blocks || [])
+                const mem = d.memory || []
+                setMemStats({ total: mem.length, dangerous: mem.filter((r: { trust_score: number }) => r.trust_score < 20).length })
+            }
+        } catch { /* silent */ }
         setLoading(false)
     }, [refresh])
 

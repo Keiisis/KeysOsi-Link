@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { BarChart3, TrendingUp, Users, ShoppingBag, ShieldCheck, Download, RefreshCw, Loader2, FileText } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 
 const GOLD = '#D4AF37'; const YELLOW = '#FCD116'; const GREEN = '#008751'
 const GREEN_L = '#00A86B'; const RED = '#E8112D'; const BG = '#0B1F0D'; const TEXT = '#F0EBD8'
@@ -30,40 +29,24 @@ export default function CeoRapports() {
     useEffect(() => {
         const load = async () => {
             setLoading(true)
-            const now = new Date()
-            const month = new Date(now); month.setDate(1); month.setHours(0, 0, 0, 0)
-            const monthIso = month.toISOString()
-
-            const [rAll, rMonth, oAll, oMonth, cAll, cMonth, agents, msgs, dossiers, wafBlocks] = await Promise.allSettled([
-                supabase.from('orders').select('total_amount').in('status', ['completed', 'paid']),
-                supabase.from('orders').select('total_amount').in('status', ['completed', 'paid']).gte('created_at', monthIso),
-                supabase.from('orders').select('id', { count: 'exact', head: true }),
-                supabase.from('orders').select('id', { count: 'exact', head: true }).gte('created_at', monthIso),
-                supabase.from('client_profiles').select('id', { count: 'exact', head: true }),
-                supabase.from('client_profiles').select('id', { count: 'exact', head: true }).gte('created_at', monthIso),
-                supabase.from('user_profiles').select('id', { count: 'exact', head: true }).eq('role', 'agent'),
-                supabase.from('contact_messages').select('id', { count: 'exact', head: true }),
-                supabase.from('dossiers').select('id', { count: 'exact', head: true }),
-                supabase.from('ip_blocks').select('id', { count: 'exact', head: true }).is('unblocked_at', null),
-            ])
-
-            const sum = (r: PromiseSettledResult<{ data: Array<{ total_amount: number }> | null }>) =>
-                r.status === 'fulfilled' ? (r.value.data || []).reduce((a, x) => a + (x.total_amount || 0), 0) : 0
-            const cnt = (r: PromiseSettledResult<{ count: number | null }>) =>
-                r.status === 'fulfilled' ? (r.value.count || 0) : 0
-
-            setStats({
-                revenue_total: sum(rAll as PromiseSettledResult<{ data: Array<{ total_amount: number }> | null }>),
-                revenue_month: sum(rMonth as PromiseSettledResult<{ data: Array<{ total_amount: number }> | null }>),
-                orders_total: cnt(oAll as PromiseSettledResult<{ count: number | null }>),
-                orders_month: cnt(oMonth as PromiseSettledResult<{ count: number | null }>),
-                clients_total: cnt(cAll as PromiseSettledResult<{ count: number | null }>),
-                clients_month: cnt(cMonth as PromiseSettledResult<{ count: number | null }>),
-                agents_count: cnt(agents as PromiseSettledResult<{ count: number | null }>),
-                messages_total: cnt(msgs as PromiseSettledResult<{ count: number | null }>),
-                dossiers_total: cnt(dossiers as PromiseSettledResult<{ count: number | null }>),
-                waf_blocks: cnt(wafBlocks as PromiseSettledResult<{ count: number | null }>),
-            })
+            try {
+                const res = await fetch('/api/ceo/rapports', { cache: 'no-store' })
+                if (res.ok) {
+                    const d = await res.json()
+                    setStats({
+                        revenue_total:  d.total_revenue   || 0,
+                        revenue_month:  d.monthly?.[d.monthly.length - 1]?.revenue || 0,
+                        orders_total:   d.total_orders    || 0,
+                        orders_month:   d.monthly?.[d.monthly.length - 1]?.orders  || 0,
+                        clients_total:  d.total_clients   || 0,
+                        clients_month:  0,
+                        agents_count:   0,
+                        messages_total: 0,
+                        dossiers_total: d.dossiers_total  || 0,
+                        waf_blocks:     0,
+                    })
+                }
+            } catch { /* silent */ }
             setLoading(false)
         }
         load()

@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { TrendingUp, TrendingDown, ArrowUpRight, DollarSign, Calendar, ShoppingBag, CreditCard, RefreshCw, Loader2 } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 
 const GOLD = '#D4AF37'; const YELLOW = '#FCD116'; const GREEN = '#008751'
 const GREEN_L = '#00A86B'; const RED = '#E8112D'; const BG = '#0B1F0D'; const TEXT = '#F0EBD8'
@@ -42,10 +41,11 @@ export default function CeoRevenus() {
             else if (period === 'month') { since = new Date(now); since.setDate(1); since.setHours(0, 0, 0, 0) }
             else if (period === 'year') { since = new Date(now); since.setMonth(0, 1); since.setHours(0, 0, 0, 0) }
 
-            let q = supabase.from('orders').select('id, created_at, total_amount, status, client_email').order('created_at', { ascending: false }).limit(200)
-            if (since) q = q.gte('created_at', since.toISOString())
-            const { data } = await q
-            setOrders(data || [])
+                const params = new URLSearchParams({ limit: '500' })
+            if (since) params.set('since', since.toISOString())
+            const res = await fetch(`/api/ceo/orders?${params}`, { cache: 'no-store' })
+            const data = res.ok ? await res.json() : { orders: [] }
+            setOrders(data.orders || [])
             setLoading(false)
         }
         load()

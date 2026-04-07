@@ -7,7 +7,6 @@ import {
     Activity, AlertTriangle, CheckCircle2, Crown, ArrowUpRight,
     Clock, Globe, Receipt, Zap, ArrowDownRight, type LucideProps,
 } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 
 // ══════════════════════════════════════════════════════════════
@@ -34,52 +33,15 @@ interface KpiData {
     waf_blocked_24h: number
     ip_blocked:      number
     security_score:  number
+    partner_apps_pending?: number
+    nationalite_pending?:  number
+    dossiers_total?:       number
 }
 
 async function fetchKpis(): Promise<KpiData> {
-    const now   = new Date()
-    const day   = new Date(now); day.setHours(0, 0, 0, 0)
-    const month = new Date(now); month.setDate(1); month.setHours(0, 0, 0, 0)
-    const h24   = new Date(Date.now() - 86_400_000).toISOString()
-
-    const [rAll, rMonth, rToday, oPending, clients, agents, msgs, wafAll, wafBlk, ips] =
-        await Promise.allSettled([
-            supabase.from('orders').select('total_amount').in('status', ['completed', 'paid']),
-            supabase.from('orders').select('total_amount').in('status', ['completed', 'paid']).gte('created_at', month.toISOString()),
-            supabase.from('orders').select('total_amount').in('status', ['completed', 'paid']).gte('created_at', day.toISOString()),
-            supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-            supabase.from('client_profiles').select('id', { count: 'exact', head: true }),
-            supabase.from('user_profiles').select('id', { count: 'exact', head: true }).eq('role', 'agent'),
-            supabase.from('contact_messages').select('id', { count: 'exact', head: true }).eq('is_read', false),
-            supabase.from('waf_logs').select('id', { count: 'exact', head: true }).gte('created_at', h24),
-            supabase.from('waf_logs').select('id', { count: 'exact', head: true }).eq('is_blocked', true).gte('created_at', h24),
-            supabase.from('ip_blocks').select('id', { count: 'exact', head: true }).is('unblocked_at', null),
-        ])
-
-    type SumRes = PromiseSettledResult<{ data: Array<{ total_amount: number }> | null }>
-    type CntRes = PromiseSettledResult<{ count: number | null }>
-
-    const sum = (r: SumRes) => r.status === 'fulfilled' ? (r.value.data || []).reduce((a, x) => a + (x.total_amount || 0), 0) : 0
-    const cnt = (r: CntRes) => r.status === 'fulfilled' ? (r.value.count || 0) : 0
-
-    const wafBlkCount = cnt(wafBlk as CntRes)
-    const ipCount     = cnt(ips as CntRes)
-    const score       = Math.round(Math.max(0, 100 - Math.min(50, ipCount * 5) - Math.min(30, wafBlkCount / 10)))
-
-    return {
-        revenue_total:   sum(rAll as SumRes),
-        revenue_month:   sum(rMonth as SumRes),
-        revenue_today:   sum(rToday as SumRes),
-        orders_total:    (rAll.status === 'fulfilled' ? rAll.value.data?.length : 0) || 0,
-        orders_pending:  cnt(oPending as CntRes),
-        clients_total:   cnt(clients as CntRes),
-        agents_count:    cnt(agents as CntRes),
-        messages_unread: cnt(msgs as CntRes),
-        waf_events_24h:  cnt(wafAll as CntRes),
-        waf_blocked_24h: wafBlkCount,
-        ip_blocked:      ipCount,
-        security_score:  score,
-    }
+    const res = await fetch('/api/ceo/kpis', { cache: 'no-store' })
+    if (!res.ok) throw new Error('Erreur API KPIs')
+    return res.json()
 }
 
 function formatXOF(n: number): string {
@@ -361,10 +323,10 @@ export default function CeoDashboardPage() {
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {[
-                        { label: 'Panel Admin',  href: '/admin/dashboard', icon: Globe,        color: GOLD },
-                        { label: 'WAF Sécurité', href: '/admin/securite',  icon: ShieldCheck,  color: GREEN_L },
-                        { label: 'Commandes',    href: '/admin/orders',    icon: ShoppingBag,  color: YELLOW },
-                        { label: 'Utilisateurs', href: '/admin/users',     icon: Users,        color: RED },
+                        { label: 'Revenus',      href: '/ceo/revenus',    icon: Receipt,      color: GOLD },
+                        { label: 'WAF Sécurité', href: '/ceo/securite',   icon: ShieldCheck,  color: GREEN_L },
+                        { label: 'Commandes',    href: '/ceo/commandes',  icon: ShoppingBag,  color: YELLOW },
+                        { label: 'Clients',      href: '/ceo/clients',    icon: Users,        color: RED },
                     ].map(action => (
                         <Link key={action.href} href={action.href}
                             className="flex items-center gap-2.5 p-3 rounded-xl transition-all group border"

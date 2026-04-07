@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Activity, RefreshCw, Loader2, ShoppingBag, Users, MessageSquare, FileText, UserCheck, Globe } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 
 const GOLD = '#D4AF37'; const YELLOW = '#FCD116'; const GREEN = '#008751'
 const GREEN_L = '#00A86B'; const RED = '#E8112D'; const BG = '#0B1F0D'; const TEXT = '#F0EBD8'
@@ -22,64 +21,47 @@ export default function CeoActivite() {
 
     const load = useCallback(async () => {
         setLoading(true)
-        const h72 = new Date(Date.now() - 72 * 3600000).toISOString()
+        try {
+            const res = await fetch('/api/ceo/activity', { cache: 'no-store' })
+            if (!res.ok) { setLoading(false); return }
+            const d = await res.json()
 
-        const [orders, clients, msgs, dossiers, natReqs, partApps] = await Promise.allSettled([
-            supabase.from('orders').select('id, created_at, total_amount, status, client_email').gte('created_at', h72).order('created_at', { ascending: false }).limit(30),
-            supabase.from('client_profiles').select('id, created_at, full_name, email').gte('created_at', h72).order('created_at', { ascending: false }).limit(30),
-            supabase.from('contact_messages').select('id, created_at, name, subject').gte('created_at', h72).order('created_at', { ascending: false }).limit(30),
-            supabase.from('dossiers').select('id, created_at, client_name, type').gte('created_at', h72).order('created_at', { ascending: false }).limit(20),
-            supabase.from('nationalite_requests').select('id, created_at, full_name').gte('created_at', h72).order('created_at', { ascending: false }).limit(20),
-            supabase.from('partner_applications').select('id, created_at, company_name, status').gte('created_at', h72).order('created_at', { ascending: false }).limit(20),
-        ])
+            const all: ActivityItem[] = []
 
-        const all: ActivityItem[] = []
-
-        if (orders.status === 'fulfilled') {
-            ;(orders.value.data || []).forEach((o: { id: string; created_at: string; total_amount: number; client_email?: string; status: string }) => all.push({
+            ;(d.orders || []).forEach((o: { id: string; created_at: string; total_amount: number; client_email?: string; status: string }) => all.push({
                 id: `order-${o.id}`, type: 'order',
                 label: `Nouvelle commande ${o.total_amount?.toLocaleString('fr-FR')} FCFA`,
                 sub: o.client_email || o.status, date: o.created_at, color: GREEN_L, icon: ShoppingBag,
             }))
-        }
-        if (clients.status === 'fulfilled') {
-            ;((clients.value as { data: Array<{ id: string; created_at: string; full_name?: string; email?: string }> | null }).data || []).forEach(c => all.push({
+            ;(d.clients || []).forEach((c: { id: string; created_at: string; full_name?: string; email?: string }) => all.push({
                 id: `client-${c.id}`, type: 'client',
                 label: `Nouveau client : ${c.full_name || c.email || 'Inconnu'}`,
                 date: c.created_at, color: GOLD, icon: Users,
             }))
-        }
-        if (msgs.status === 'fulfilled') {
-            ;(msgs.value.data || []).forEach((m: { id: string; created_at: string; name?: string; subject?: string }) => all.push({
+            ;(d.messages || []).forEach((m: { id: string; created_at: string; name?: string; sujet?: string; subject?: string }) => all.push({
                 id: `msg-${m.id}`, type: 'message',
                 label: `Message de ${m.name || 'Inconnu'}`,
-                sub: m.subject, date: m.created_at, color: RED, icon: MessageSquare,
+                sub: m.sujet || m.subject, date: m.created_at, color: RED, icon: MessageSquare,
             }))
-        }
-        if (dossiers.status === 'fulfilled') {
-            ;(dossiers.value.data || []).forEach((d: { id: string; created_at: string; client_name?: string; type?: string }) => all.push({
-                id: `dos-${d.id}`, type: 'dossier',
-                label: `Dossier ouvert : ${d.client_name || d.type || 'N/A'}`,
-                date: d.created_at, color: '#60a5fa', icon: FileText,
+            ;(d.dossiers || []).forEach((dos: { id: string; created_at: string; client_name?: string; type?: string }) => all.push({
+                id: `dos-${dos.id}`, type: 'dossier',
+                label: `Dossier ouvert : ${dos.client_name || dos.type || 'N/A'}`,
+                date: dos.created_at, color: '#60a5fa', icon: FileText,
             }))
-        }
-        if (natReqs.status === 'fulfilled') {
-            ;(natReqs.value.data || []).forEach((r: { id: string; created_at: string; full_name?: string }) => all.push({
+            ;(d.nationalite_requests || []).forEach((r: { id: string; created_at: string; full_name?: string }) => all.push({
                 id: `nat-${r.id}`, type: 'nationalite',
                 label: `Demande nationalité : ${r.full_name || 'N/A'}`,
                 date: r.created_at, color: YELLOW, icon: Globe,
             }))
-        }
-        if (partApps.status === 'fulfilled') {
-            ;(partApps.value.data || []).forEach((p: { id: string; created_at: string; company_name?: string; status?: string }) => all.push({
+            ;(d.partner_applications || []).forEach((p: { id: string; created_at: string; company_name?: string; status?: string }) => all.push({
                 id: `part-${p.id}`, type: 'partenaire',
                 label: `Candidature partenaire : ${p.company_name || 'N/A'}`,
                 sub: p.status, date: p.created_at, color: '#a78bfa', icon: UserCheck,
             }))
-        }
 
-        all.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        setItems(all)
+            all.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            setItems(all)
+        } catch { /* silent */ }
         setLoading(false)
     }, [refresh])
 

@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { FolderOpen, Search, RefreshCw, Loader2, Eye, Download, FileText, File, Image, Film, Archive, X } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 
 const GOLD = '#D4AF37'; const YELLOW = '#FCD116'; const GREEN = '#008751'
 const GREEN_L = '#00A86B'; const RED = '#E8112D'; const BG = '#0B1F0D'; const TEXT = '#F0EBD8'
@@ -49,26 +48,13 @@ export default function CeoDocuments() {
 
     const load = useCallback(async () => {
         setLoading(true)
-        const results: Doc[] = []
-
-        const { data: clientDocs } = await supabase
-            .from('client_documents')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(500)
-        if (clientDocs) results.push(...clientDocs)
-
-        if (results.length === 0) {
-            const { data: docData } = await supabase
-                .from('documents')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(500)
-            if (docData) results.push(...docData)
-        }
-
-        results.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        setDocs(results)
+        try {
+            const res = await fetch('/api/ceo/documents', { cache: 'no-store' })
+            if (res.ok) {
+                const d = await res.json()
+                setDocs(d.docs || [])
+            }
+        } catch { /* silent */ }
         setLoading(false)
     }, [refresh])
 

@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MessageSquare, RefreshCw, Loader2, Mail, Phone, Clock, CheckCircle2, Eye, X } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 
 const GOLD = '#D4AF37'; const YELLOW = '#FCD116'; const GREEN = '#008751'
 const GREEN_L = '#00A86B'; const RED = '#E8112D'; const BG = '#0B1F0D'; const TEXT = '#F0EBD8'
@@ -21,18 +20,29 @@ export default function CeoMessages() {
     const [filter, setFilter] = useState<'all' | 'unread'>('all')
     const [selected, setSelected] = useState<Msg | null>(null)
     const [refresh, setRefresh] = useState(0)
+    const [msgTable, setMsgTable] = useState('messages')
 
     const load = useCallback(async () => {
         setLoading(true)
-        const { data } = await supabase.from('contact_messages').select('*').order('created_at', { ascending: false }).limit(300)
-        setMsgs(data || [])
+        try {
+            const res = await fetch('/api/ceo/messages', { cache: 'no-store' })
+            if (res.ok) {
+                const data = await res.json()
+                setMsgs(data.messages || [])
+                setMsgTable(data.table || 'messages')
+            }
+        } catch { /* silent */ }
         setLoading(false)
     }, [refresh])
 
     useEffect(() => { load() }, [load])
 
     const markRead = async (id: string) => {
-        await supabase.from('contact_messages').update({ is_read: true }).eq('id', id)
+        await fetch('/api/ceo/messages', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, table: msgTable }),
+        })
         setMsgs(prev => prev.map(m => m.id === id ? { ...m, is_read: true } : m))
     }
 

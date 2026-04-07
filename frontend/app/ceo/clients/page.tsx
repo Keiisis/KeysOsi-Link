@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Users, Search, RefreshCw, Loader2, MapPin, Mail, Phone, Calendar } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 
 const GOLD = '#D4AF37'; const YELLOW = '#FCD116'; const GREEN = '#008751'
 const GREEN_L = '#00A86B'; const RED = '#E8112D'; const BG = '#0B1F0D'; const TEXT = '#F0EBD8'
@@ -23,12 +22,9 @@ export default function CeoClients() {
 
     const load = useCallback(async () => {
         setLoading(true)
-        // Essai client_profiles puis user_profiles filtrés role=client
-        const { data: cp } = await supabase.from('client_profiles').select('*').order('created_at', { ascending: false }).limit(500)
-        if (cp && cp.length > 0) { setClients(cp); setLoading(false); return }
-        // Fallback : user_profiles
-        const { data: up } = await supabase.from('user_profiles').select('id, created_at, email, full_name, phone, city, country, avatar_url').eq('role', 'client').order('created_at', { ascending: false }).limit(500)
-        setClients(up || [])
+        const res = await fetch('/api/ceo/clients', { cache: 'no-store' })
+        const data = res.ok ? await res.json() : { clients: [] }
+        setClients(data.clients || [])
         setLoading(false)
     }, [refresh])
 

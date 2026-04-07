@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Globe, RefreshCw, Loader2, Settings, Image, FileText, Palette, Star, Users, ChevronRight, ExternalLink } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 
 const GOLD = '#D4AF37'; const YELLOW = '#FCD116'; const GREEN = '#008751'
@@ -20,24 +19,19 @@ export default function CeoSite() {
     useEffect(() => {
         const load = async () => {
             setLoading(true)
-            const [blogRes, testRes, galRes, svcRes, settRes] = await Promise.allSettled([
-                supabase.from('blog_posts').select('id', { count: 'exact', head: true }),
-                supabase.from('testimonials').select('id', { count: 'exact', head: true }),
-                supabase.from('gallery_items').select('id', { count: 'exact', head: true }),
-                supabase.from('services').select('id', { count: 'exact', head: true }),
-                supabase.from('settings').select('key, value, category').in('category', ['general', 'frontend', 'seo']).limit(30),
-            ])
-
-            const cnt = (r: PromiseSettledResult<{ count: number | null }>) => r.status === 'fulfilled' ? (r.value.count || 0) : 0
-
-            setStats([
-                { label: 'Articles de blog', value: cnt(blogRes as PromiseSettledResult<{ count: number | null }>), color: '#60a5fa', icon: FileText },
-                { label: 'Témoignages', value: cnt(testRes as PromiseSettledResult<{ count: number | null }>), color: YELLOW, icon: Star },
-                { label: 'Galerie', value: cnt(galRes as PromiseSettledResult<{ count: number | null }>), color: '#a78bfa', icon: Image },
-                { label: 'Services actifs', value: cnt(svcRes as PromiseSettledResult<{ count: number | null }>), color: GREEN_L, icon: Settings },
-            ])
-
-            if (settRes.status === 'fulfilled') setSettings(settRes.value.data || [])
+            try {
+                const res = await fetch('/api/ceo/site', { cache: 'no-store' })
+                if (res.ok) {
+                    const d = await res.json()
+                    setStats([
+                        { label: 'Articles de blog', value: d.blog_posts   || 0, color: '#60a5fa', icon: FileText },
+                        { label: 'Témoignages',      value: d.testimonials  || 0, color: YELLOW,   icon: Star    },
+                        { label: 'Galerie',           value: d.gallery       || 0, color: '#a78bfa', icon: Image   },
+                        { label: 'Services actifs',   value: d.services      || 0, color: GREEN_L,  icon: Settings },
+                    ])
+                    setSettings(d.settings || [])
+                }
+            } catch { /* silent */ }
             setLoading(false)
         }
         load()
