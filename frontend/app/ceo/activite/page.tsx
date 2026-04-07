@@ -25,8 +25,7 @@ export default function CeoActivite() {
 
         const [orders, clients, msgs, dossiers, natReqs, partApps] = await Promise.allSettled([
             supabase.from('orders').select('id, created_at, total_amount, status, client_email').gte('created_at', h72).order('created_at', { ascending: false }).limit(30),
-            supabase.from('client_profiles').select('id, created_at, full_name, email').gte('created_at', h72).order('created_at', { ascending: false }).limit(30)
-                .catch(() => supabase.from('user_profiles').select('id, created_at, full_name, email').eq('role', 'client').gte('created_at', h72).order('created_at', { ascending: false }).limit(30)),
+            supabase.from('client_profiles').select('id, created_at, full_name, email').gte('created_at', h72).order('created_at', { ascending: false }).limit(30),
             supabase.from('contact_messages').select('id, created_at, name, subject').gte('created_at', h72).order('created_at', { ascending: false }).limit(30),
             supabase.from('dossiers').select('id, created_at, client_name, type').gte('created_at', h72).order('created_at', { ascending: false }).limit(20),
             supabase.from('nationalite_requests').select('id, created_at, full_name').gte('created_at', h72).order('created_at', { ascending: false }).limit(20),
