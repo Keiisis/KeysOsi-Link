@@ -9,7 +9,7 @@ import Link from 'next/link'
 const GOLD = '#D4AF37'; const YELLOW = '#FCD116'; const GREEN = '#008751'
 const GREEN_L = '#00A86B'; const RED = '#E8112D'; const BG = '#0B1F0D'; const TEXT = '#F0EBD8'
 
-interface SiteStat { label: string; value: string | number; color: string; icon: React.ElementType }
+interface SiteStat { label: string; value: string | number; color: string; icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }> }
 
 export default function CeoSite() {
     const [stats, setStats] = useState<SiteStat[]>([])

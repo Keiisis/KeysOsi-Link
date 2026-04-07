@@ -21,7 +21,7 @@ interface Order {
     updated_at?: string
 }
 
-const STATUS_META: Record<string, { label: string; color: string; bg: string; icon: React.ElementType }> = {
+const STATUS_META: Record<string, { label: string; color: string; bg: string; icon: React.ComponentType<{ size?: number }> }> = {
     completed:  { label: 'Complétée',   color: GREEN_L, bg: `${GREEN_L}20`, icon: CheckCircle2 },
     paid:       { label: 'Payée',        color: GREEN_L, bg: `${GREEN_L}20`, icon: CheckCircle2 },
     pending:    { label: 'En attente',   color: YELLOW,  bg: `${YELLOW}20`,  icon: Clock },
