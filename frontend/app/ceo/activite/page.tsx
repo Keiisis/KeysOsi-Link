@@ -11,7 +11,8 @@ const GREEN_L = '#00A86B'; const RED = '#E8112D'; const BG = '#0B1F0D'; const TE
 function fmtDate(d: string) { return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) }
 
 interface ActivityItem {
-    id: string; type: string; label: string; sub?: string; date: string; color: string; icon: React.ElementType
+    id: string; type: string; label: string; sub?: string; date: string; color: string
+    icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }>
 }
 
 export default function CeoActivite() {
