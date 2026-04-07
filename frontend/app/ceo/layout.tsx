@@ -8,7 +8,7 @@ import {
     Crown, LayoutDashboard, ShieldCheck, Users, MessageSquare,
     ShoppingBag, Receipt, BarChart3, Settings, LogOut,
     Bell, Menu, X, ChevronRight, Activity, Globe,
-    TrendingUp, Zap, Lock, FileText, type LucideProps,
+    TrendingUp, Zap, Lock, FileText, Sparkles, type LucideProps,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
@@ -27,6 +27,7 @@ const TEXT    = '#F0EBD8'   // Blanc crème chaud
 
 const CEO_NAV = [
     { label: 'Dashboard',   href: '/ceo/dashboard',  icon: LayoutDashboard },
+    { label: 'Gemma 4 IA',  href: '/ceo/assistant',  icon: Sparkles },
     { label: 'Revenus',     href: '/ceo/revenus',    icon: TrendingUp },
     { label: 'Commandes',   href: '/ceo/commandes',  icon: ShoppingBag },
     { label: 'Clients',     href: '/ceo/clients',    icon: Users },
