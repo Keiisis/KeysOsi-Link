@@ -71,9 +71,11 @@ export async function buildRgbContext(): Promise<string> {
     type Mem   = { type: string; content: string; importance: number }
     type Set   = { key: string; value: string }
 
-    const g = <T>(r: PromiseSettledResult<{ data: T | null }>): T[] =>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const g = <T>(r: PromiseSettledResult<any>): T[] =>
         r.status === 'fulfilled' ? (r.value.data as T[]) || [] : []
-    const gc = (r: PromiseSettledResult<{ count: number | null }>): number =>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const gc = (r: PromiseSettledResult<any>): number =>
         r.status === 'fulfilled' ? r.value.count || 0 : 0
 
     const allPaidOrders = g<Order>(r1)
@@ -83,7 +85,7 @@ export async function buildRgbContext(): Promise<string> {
     const dossiers      = g<Dos>(r5)
     const partApps      = g<App>(r6)
     const natReqs       = g<Nat>(r7)
-    const wafCount      = gc(r8 as PromiseSettledResult<{ count: number | null }>)
+    const wafCount      = gc(r8)
     const settings      = g<Set>(r9)
     const memory        = g<Mem>(r10)
 
