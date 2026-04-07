@@ -286,7 +286,7 @@ export default function CeoParametres() {
     const load = useCallback(async () => {
         setLoading(true)
         try {
-            const res = await fetch('/api/admin/settings')
+            const res = await fetch('/api/ceo/settings')
             if (res.ok) {
                 const data = await res.json()
                 const map: Record<string, string> = {}
@@ -328,7 +328,7 @@ export default function CeoParametres() {
             const keys = section.fields.map(f => f.key)
             const promises = keys.map(key => {
                 const value = settings[key] || ''
-                return fetch('/api/admin/settings', {
+                return fetch('/api/ceo/settings', {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ key, value, category }),

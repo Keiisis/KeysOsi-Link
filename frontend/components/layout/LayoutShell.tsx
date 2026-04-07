@@ -11,12 +11,13 @@ import { VisitorTracker } from '@/components/analytics/VisitorTracker'
 export function LayoutShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
 
-    // Les routes /admin, /agent et /client ont leurs propres layouts dédiés
+    // Les routes /admin, /agent, /client et /ceo ont leurs propres layouts dédiés
     const isAdminRoute = pathname.startsWith('/admin')
     const isAgentRoute = pathname.startsWith('/agent')
     const isClientRoute = pathname.startsWith('/client')
     const isPortfolioRoute = pathname.startsWith('/portfolio')
-    const isStandaloneRoute = isAdminRoute || isAgentRoute || isClientRoute || isPortfolioRoute
+    const isCeoRoute = pathname.startsWith('/ceo')
+    const isStandaloneRoute = isAdminRoute || isAgentRoute || isClientRoute || isPortfolioRoute || isCeoRoute
 
     if (isStandaloneRoute) {
         return <>{children}</>

@@ -38,13 +38,13 @@ export default function CeoSite() {
     }, [refresh])
 
     const QUICK_LINKS = [
-        { label: 'Contenu des pages', href: '/admin/page-content', icon: FileText },
-        { label: 'Paramètres généraux', href: '/admin/settings', icon: Settings },
-        { label: 'Design & Cartes', href: '/admin/design', icon: Palette },
-        { label: 'Blog & Articles', href: '/admin/blog', icon: FileText },
-        { label: 'Témoignages', href: '/admin/testimonials', icon: Star },
-        { label: 'Galerie', href: '/admin/gallery', icon: Image },
-        { label: 'Partenaires', href: '/admin/partenaires', icon: Users },
+        { label: 'Paramètres CEO', href: '/ceo/parametres', icon: Settings },
+        { label: 'Rapports', href: '/ceo/rapports', icon: FileText },
+        { label: 'Facturation', href: '/ceo/facturation', icon: Palette },
+        { label: 'Documents', href: '/ceo/documents', icon: FileText },
+        { label: 'Partenaires & Activité', href: '/ceo/activite', icon: Users },
+        { label: 'Témoignages (admin)', href: '/admin/testimonials', icon: Star },
+        { label: 'Galerie (admin)', href: '/admin/gallery', icon: Image },
         { label: 'Voir le site', href: 'https://www.retourgagnantbenin.bj', icon: ExternalLink },
     ]
 
