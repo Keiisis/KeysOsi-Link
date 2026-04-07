@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { fetchGemma, getGemmaText, type NvidiaMessage } from '@/lib/nvidia'
+import { fetchGemma, type NvidiaMessage } from '@/lib/nvidia'
+
+// Étend le timeout Vercel à 60s (Pro) ou 300s (edge)
+export const maxDuration = 60
 
 const CEO_SYSTEM_PROMPT = `Tu es GEMMA — l'IA Executive de Retour Gagnant Bénin, alimentée par Gemma 4 31B.
 Tu assistes le CEO dans toutes ses décisions stratégiques et opérationnelles.
@@ -35,27 +38,62 @@ export async function POST(request: NextRequest) {
         }
 
         const sysPrompt = systemPrompt || CEO_SYSTEM_PROMPT
+        const allMsgs: NvidiaMessage[] = [{ role: 'system', content: sysPrompt }, ...msgs]
 
-        // Mode streaming — renvoie le flux SSE NVIDIA directement
-        if (wantStream) {
-            const allMsgs: NvidiaMessage[] = [{ role: 'system', content: sysPrompt }, ...msgs]
-            const nvidiaRes = await fetchGemma({ messages: allMsgs, stream: true })
-            if (!nvidiaRes.ok) {
-                const err = await nvidiaRes.text()
-                return NextResponse.json({ error: err }, { status: nvidiaRes.status })
-            }
-            return new Response(nvidiaRes.body, {
-                headers: {
-                    'Content-Type': 'text/event-stream',
-                    'Cache-Control': 'no-cache',
-                    'Connection': 'keep-alive',
-                },
-            })
+        // Toujours streamer — évite le timeout Vercel
+        const nvidiaRes = await fetchGemma({ messages: allMsgs, stream: true })
+        if (!nvidiaRes.ok) {
+            const err = await nvidiaRes.text()
+            return NextResponse.json({ error: err }, { status: nvidiaRes.status })
         }
 
-        // Mode non-stream
-        const text = await getGemmaText(msgs, sysPrompt)
-        return NextResponse.json({ text })
+        // Transformer le flux SSE NVIDIA → flux SSE simplifié pour le client
+        const encoder = new TextEncoder()
+        const nvidiaBody = nvidiaRes.body!
+        const reader = nvidiaBody.getReader()
+
+        const stream = new ReadableStream({
+            async start(controller) {
+                const decoder = new TextDecoder()
+                let buffer = ''
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read()
+                        if (done) break
+                        buffer += decoder.decode(value, { stream: true })
+                        const lines = buffer.split('\n')
+                        buffer = lines.pop() ?? ''
+                        for (const line of lines) {
+                            const trimmed = line.trim()
+                            if (!trimmed || trimmed === 'data: [DONE]') continue
+                            if (trimmed.startsWith('data: ')) {
+                                try {
+                                    const json = JSON.parse(trimmed.slice(6))
+                                    const delta = json.choices?.[0]?.delta?.content
+                                    if (delta) {
+                                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ t: delta })}\n\n`))
+                                    }
+                                } catch { /* chunk partiel, ignoré */ }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error('[Gemma stream]', e)
+                } finally {
+                    controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+                    controller.close()
+                }
+            },
+        })
+
+        return new Response(stream, {
+            headers: {
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+                'X-Accel-Buffering': 'no',
+            },
+        })
 
     } catch (e) {
         const msg = e instanceof Error ? e.message : 'Erreur serveur inconnue'

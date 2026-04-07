@@ -79,7 +79,11 @@ export default function CeoAssistant() {
         if (!content || loading) return
 
         const userMsg: Message = { id: Date.now().toString(), role: 'user', content, ts: new Date() }
-        setMessages(prev => [...prev, userMsg])
+        const assistantId = (Date.now() + 1).toString()
+
+        setMessages(prev => [...prev, userMsg, {
+            id: assistantId, role: 'assistant', content: '', ts: new Date(),
+        }])
         setInput('')
         setLoading(true)
 
@@ -92,25 +96,48 @@ export default function CeoAssistant() {
             })
 
             if (!res.ok) throw new Error(`Erreur ${res.status}`)
-            const data = await res.json()
-            const raw = data.text || ''
-            const { thinking, content: answer } = parseThinking(raw)
 
-            const assistantMsg: Message = {
-                id: (Date.now() + 1).toString(),
-                role: 'assistant',
-                content: answer || raw,
-                thinking: thinking || undefined,
-                ts: new Date(),
+            // Lecture du flux SSE token par token
+            const reader = res.body!.getReader()
+            const decoder = new TextDecoder()
+            let buffer = ''
+            let accumulated = ''
+
+            while (true) {
+                const { done, value } = await reader.read()
+                if (done) break
+                buffer += decoder.decode(value, { stream: true })
+                const lines = buffer.split('\n')
+                buffer = lines.pop() ?? ''
+
+                for (const line of lines) {
+                    const trimmed = line.trim()
+                    if (!trimmed || trimmed === 'data: [DONE]') continue
+                    if (trimmed.startsWith('data: ')) {
+                        try {
+                            const { t } = JSON.parse(trimmed.slice(6))
+                            if (t) {
+                                accumulated += t
+                                const { thinking, content: answer } = parseThinking(accumulated)
+                                setMessages(prev => prev.map(m =>
+                                    m.id === assistantId
+                                        ? { ...m, content: answer || accumulated, thinking: thinking || undefined }
+                                        : m
+                                ))
+                            }
+                        } catch { /* chunk incomplet */ }
+                    }
+                }
             }
-            setMessages(prev => [...prev, assistantMsg])
         } catch (e) {
-            setMessages(prev => [...prev, {
-                id: (Date.now() + 1).toString(),
-                role: 'assistant',
-                content: `Erreur de connexion à Gemma 4. ${e instanceof Error ? e.message : ''}`,
-                ts: new Date(),
-            }])
+            setMessages(prev => prev.map(m =>
+                m.id === (Date.now() + 1).toString()
+                    ? { ...m, content: `Erreur : ${e instanceof Error ? e.message : 'inconnue'}` }
+                    : m
+            ).map(m => m.content === '' && m.role === 'assistant'
+                ? { ...m, content: `Erreur de connexion à Gemma 4. ${e instanceof Error ? e.message : ''}` }
+                : m
+            ))
         }
         setLoading(false)
         inputRef.current?.focus()
