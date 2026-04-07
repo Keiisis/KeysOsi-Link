@@ -58,10 +58,17 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ text })
 
     } catch (e) {
-        console.error('[Gemma API]', e)
-        return NextResponse.json(
-            { error: e instanceof Error ? e.message : 'Erreur serveur' },
-            { status: 500 }
-        )
+        const msg = e instanceof Error ? e.message : 'Erreur serveur inconnue'
+        console.error('[Gemma API]', msg)
+        return NextResponse.json({ error: msg, detail: String(e) }, { status: 500 })
     }
+}
+
+// GET — diagnostic : vérifie si la clé est présente
+export async function GET() {
+    const key = process.env.NVIDIA_API_KEY
+    if (!key) {
+        return NextResponse.json({ ok: false, error: 'NVIDIA_API_KEY manquante sur le serveur' }, { status: 500 })
+    }
+    return NextResponse.json({ ok: true, key_prefix: key.slice(0, 12) + '...' })
 }
