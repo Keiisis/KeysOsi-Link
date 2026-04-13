@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Share2, RefreshCw, Loader2, Plus, X, Save, Trash2, Eye,
-    Instagram, Facebook, Linkedin, Globe, Send, Clock, CheckCircle2, Edit3
+    Instagram, Facebook, Linkedin, Globe, Send, Clock, CheckCircle2, Edit3,
+    type LucideIcon,
 } from 'lucide-react'
 
 const GOLD = '#D4AF37'; const GREEN = '#008751'; const GREEN_L = '#00A86B'
@@ -19,7 +20,7 @@ interface SocialPost {
     hashtags?: string; created_at: string
 }
 
-const PLATFORM_META: Record<string, { label: string; color: string; bg: string; icon: React.ElementType }> = {
+const PLATFORM_META: Record<string, { label: string; color: string; bg: string; icon: LucideIcon }> = {
     facebook:  { label: 'Facebook',  color: '#1877f2', bg: '#1877f215', icon: Facebook },
     instagram: { label: 'Instagram', color: '#e1306c', bg: '#e1306c15', icon: Instagram },
     linkedin:  { label: 'LinkedIn',  color: '#0077b5', bg: '#0077b515', icon: Linkedin },
@@ -28,7 +29,7 @@ const PLATFORM_META: Record<string, { label: string; color: string; bg: string; 
     all:       { label: 'Tous canaux', color: GOLD,    bg: `${GOLD}15`,   icon: Share2 },
 }
 
-const STATUS_META: Record<string, { label: string; color: string; icon: React.ElementType }> = {
+const STATUS_META: Record<string, { label: string; color: string; icon: LucideIcon }> = {
     draft:     { label: 'Brouillon',  color: '#94a3b8', icon: Edit3 },
     scheduled: { label: 'Planifié',   color: GOLD,      icon: Clock },
     published: { label: 'Publié',     color: GREEN_L,   icon: CheckCircle2 },
