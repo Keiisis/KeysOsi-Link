@@ -40,7 +40,11 @@ export default function CeoBlog() {
 
     useEffect(() => { load() }, [load])
 
-    const open = (p: Post) => { setSelected(p); setEditData({ ...p, tags: Array.isArray(p.tags) ? p.tags.join(', ') : '' }) }
+    const open = (p: Post) => {
+        const { tags: _t, ...rest } = p
+        setSelected(p)
+        setEditData({ ...rest, tags: Array.isArray(_t) ? _t.join(', ') : '' })
+    }
 
     const save = async () => {
         if (!selected) return
