@@ -5,8 +5,9 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
-import { supabase } from '../../config/supabase'
 import { useAuth } from '../../contexts/AuthContext'
+
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
 
 /* ═══════════════════════════════════════════════════════════
    Service Details Screen — Commander + créer dossier en DB
@@ -42,17 +43,24 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
                     onPress: async () => {
                         setLoading(true)
                         try {
-                            // Vérifier si un dossier actif existe déjà pour ce service
-                            const { data: existing } = await supabase
-                                .from('dossiers')
-                                .select('id')
-                                .eq('client_id', profile.id)
-                                .eq('service_type', title)
-                                .in('status', ['en_cours', 'en_attente', 'soumis'])
-                                .limit(1)
-                                .single()
+                            const res = await fetch(`${API_BASE}/api/mobile/dossiers`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    client_id: profile.id,
+                                    service_type: title,
+                                    service_id: serviceId || null,
+                                    notes: `Commande initiée via l'application mobile le ${new Date().toLocaleDateString('fr-FR')}`,
+                                }),
+                            })
 
-                            if (existing) {
+                            const json = await res.json()
+
+                            if (!res.ok) {
+                                throw new Error(json.error || `Erreur ${res.status}`)
+                            }
+
+                            if (json.exists) {
                                 Alert.alert(
                                     'Dossier existant',
                                     'Vous avez déjà un dossier en cours pour ce service. Consultez la section "Mon Dossier" pour suivre son avancement.',
@@ -60,31 +68,6 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
                                 )
                                 return
                             }
-
-                            // Créer le dossier
-                            const { error } = await supabase
-                                .from('dossiers')
-                                .insert({
-                                    client_id: profile.id,
-                                    service_type: title,
-                                    service_id: serviceId || null,
-                                    status: 'soumis',
-                                    progress: 0,
-                                    notes: `Commande initiée via l'application mobile le ${new Date().toLocaleDateString('fr-FR')}`,
-                                    created_at: new Date().toISOString(),
-                                    updated_at: new Date().toISOString(),
-                                })
-                            if (error) throw error
-
-                            // Créer une notification pour l'équipe (table notifications)
-                            await supabase.from('notifications').insert({
-                                user_id: profile.id,
-                                title: 'Dossier créé',
-                                body: `Votre dossier "${title}" a été créé. Notre équipe vous contactera sous 24h.`,
-                                type: 'dossier',
-                                is_read: false,
-                                created_at: new Date().toISOString(),
-                            })
 
                             Alert.alert(
                                 'Dossier créé !',
