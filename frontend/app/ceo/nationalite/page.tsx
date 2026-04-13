@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Globe2, RefreshCw, Loader2, X, Save, ChevronDown, ChevronUp, Mail, Phone, CheckCircle2, Clock, Ban, AlertCircle, FileText } from 'lucide-react'
+import { Globe2, RefreshCw, Loader2, X, Save, ChevronDown, ChevronUp, Mail, Phone, CheckCircle2, Clock, Ban, AlertCircle, FileText, type LucideIcon } from 'lucide-react'
 
 const GOLD = '#D4AF37'; const GREEN = '#008751'; const GREEN_L = '#00A86B'
 const RED = '#E8112D'; const BG = '#0B1F0D'; const TEXT = '#F0EBD8'; const PANEL = '#0D2615'
@@ -20,7 +20,7 @@ const STATUS_META: Record<string, { label: string; color: string; bg: string }> 
     rejected:   { label: 'Rejeté',       color: RED,      bg: `${RED}15` },
 }
 
-const STATUS_ICON: Record<string, React.ElementType> = {
+const STATUS_ICON: Record<string, LucideIcon> = {
     pending: Clock, processing: AlertCircle, completed: CheckCircle2, rejected: Ban,
 }
 
