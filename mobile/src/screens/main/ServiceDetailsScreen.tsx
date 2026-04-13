@@ -54,10 +54,15 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
                                 }),
                             })
 
-                            const json = await res.json()
+                            // Lire la réponse comme texte d'abord pour éviter le crash JSON
+                            const text = await res.text()
+                            let json: Record<string, unknown> = {}
+                            try { json = JSON.parse(text) } catch {
+                                throw new Error(`Erreur serveur (${res.status}) — contactez le support`)
+                            }
 
                             if (!res.ok) {
-                                throw new Error(json.error || `Erreur ${res.status}`)
+                                throw new Error((json.error as string) || `Erreur ${res.status}`)
                             }
 
                             if (json.exists) {

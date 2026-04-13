@@ -115,7 +115,9 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
                 body: JSON.stringify({ texts: toTranslate, targetLang: currentLang }),
             })
             if (!res.ok) return
-            const data = await res.json()
+            const text = await res.text()
+            let data: { translations?: string[] } = {}
+            try { data = JSON.parse(text) } catch { return }
             const translations: string[] = data.translations || []
 
             setCache(prev => {
