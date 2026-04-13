@@ -3,10 +3,10 @@
 import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
-import { 
+import {
     Wallet, TrendingUp, ArrowUpRight, ArrowDownRight, Download, Activity, CheckCircle2,
-    BarChart3, Landmark, ArrowRight, FileText, X, TrendingDown, Zap, MessageCircle, 
-    RefreshCw, Plus, AlertTriangle
+    BarChart3, Landmark, ArrowRight, FileText, X, TrendingDown, Zap, MessageCircle,
+    RefreshCw, Plus, AlertTriangle, Banknote, CreditCard, Bell
 } from 'lucide-react'
 import { useTranslation } from '@/lib/translation'
 import { exportToExcel } from '@/lib/exportExcel'
@@ -86,6 +86,12 @@ export default function AgentComptabilitePage() {
     const [showExpenseModal, setShowExpenseModal] = useState(false)
     const [newExpense, setNewExpense] = useState({ titre: '', categorie: 'operationnel', montant: '' })
     const [savingExpense, setSavingExpense] = useState(false)
+    // Paiements manuels
+    const [paiements, setPaiements] = useState<Record<string, number>>({}) // document_id → montant total payé
+    const [showPaymentModal, setShowPaymentModal] = useState(false)
+    const [paymentDoc, setPaymentDoc] = useState<DocumentFinancier | null>(null)
+    const [newPayment, setNewPayment] = useState({ type: 'virement', montant: '', reference: '', notes: '', date: new Date().toISOString().split('T')[0] })
+    const [savingPayment, setSavingPayment] = useState(false)
     const [currentPage, setCurrentPage] = useState(1)
     const ITEMS_PER_PAGE = 8
 
@@ -119,6 +125,20 @@ export default function AgentComptabilitePage() {
 
         if (settings?.value) {
             setCommissionRate(parseFloat(settings.value))
+        }
+
+        // Fetch paiements manuels pour cet agent
+        const { data: paiem } = await supabase
+            .from('paiements_manuels')
+            .select('document_id, montant')
+            .eq('agent_id', user.id)
+
+        if (paiem) {
+            const map: Record<string, number> = {}
+            paiem.forEach(p => {
+                map[p.document_id] = (map[p.document_id] || 0) + Number(p.montant)
+            })
+            setPaiements(map)
         }
 
         if (docs) setAllDocs(docs)
@@ -246,6 +266,32 @@ export default function AgentComptabilitePage() {
             fetchAllData()
         }
         setSavingExpense(false)
+    }
+
+    const handleAddPayment = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!paymentDoc) return
+        setSavingPayment(true)
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        const { error } = await supabase.from('paiements_manuels').insert({
+            agent_id: user.id,
+            document_id: paymentDoc.id,
+            type: newPayment.type,
+            montant: Number(newPayment.montant),
+            date_paiement: newPayment.date,
+            reference: newPayment.reference || null,
+            notes: newPayment.notes || null,
+        })
+
+        if (!error) {
+            setShowPaymentModal(false)
+            setPaymentDoc(null)
+            setNewPayment({ type: 'virement', montant: '', reference: '', notes: '', date: new Date().toISOString().split('T')[0] })
+            fetchAllData()
+        }
+        setSavingPayment(false)
     }
 
     const handleExport = async () => {
@@ -467,19 +513,26 @@ export default function AgentComptabilitePage() {
                                 <tr className="bg-white/[0.02] border-b border-white/5 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
                                     <th className="py-4 px-6">Document</th>
                                     <th className="py-4 px-6">Client</th>
-                                    <th className="py-4 px-6 text-right">Montant</th>
+                                    <th className="py-4 px-6 text-right">Total</th>
+                                    <th className="py-4 px-6 text-right">Payé</th>
+                                    <th className="py-4 px-6 text-right">Solde</th>
                                     <th className="py-4 px-6 text-center">État</th>
+                                    <th className="py-4 px-4 text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
                                 {paginatedDocs.length === 0 ? (
                                     <tr>
-                                        <td colSpan={4} className="py-16 text-center text-gray-500 italic text-sm">
+                                        <td colSpan={7} className="py-16 text-center text-gray-500 italic text-sm">
                                             Aucun document trouvé pour cette sélection.
                                         </td>
                                     </tr>
-                                ) : paginatedDocs.map((tx) => (
-                                    <tr key={tx.id} className="hover:bg-white/[0.02] transition-colors group">
+                                ) : paginatedDocs.map((tx) => {
+                                    const montantPaye = paiements[tx.id] || 0
+                                    const solde = Math.max(0, tx.total - montantPaye)
+                                    const isSolde = solde === 0 && tx.type === 'facture'
+                                    return (
+                                    <tr key={tx.id} className={`hover:bg-white/[0.02] transition-colors group ${solde > 0 && tx.type === 'facture' ? 'border-l-2 border-amber-500/40' : ''}`}>
                                         <td className="py-4 px-6">
                                             <div className="flex items-center gap-3">
                                                 <FileText size={15} className="text-emerald-400" />
@@ -490,19 +543,29 @@ export default function AgentComptabilitePage() {
                                             </div>
                                         </td>
                                         <td className="py-4 px-6 text-sm text-gray-300">{tx.client_nom} {tx.client_prenom}</td>
-                                        <td className="py-4 px-6 text-right font-mono text-sm font-bold">{formatCurrency(tx.total)}</td>
+                                        <td className="py-4 px-6 text-right font-mono text-sm font-bold text-white">{formatCurrency(tx.total)}</td>
+                                        <td className="py-4 px-6 text-right font-mono text-sm text-emerald-400">
+                                            {montantPaye > 0 ? formatCurrency(montantPaye) : <span className="text-gray-600">—</span>}
+                                        </td>
+                                        <td className="py-4 px-6 text-right font-mono text-sm">
+                                            {tx.type === 'facture' ? (
+                                                <span className={solde > 0 ? 'text-amber-400 font-bold' : 'text-gray-600'}>
+                                                    {solde > 0 ? formatCurrency(solde) : '✓ Soldé'}
+                                                </span>
+                                            ) : <span className="text-gray-600">—</span>}
+                                        </td>
                                         <td className="py-4 px-6 text-center">
                                             <div className="flex items-center justify-center gap-1">
                                                 <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg uppercase border ${
-                                                    tx.status === 'paye' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                                    isSolde || tx.status === 'paye' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                                                     tx.status === 'envoye' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
                                                     tx.status === 'accepte' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
                                                     'bg-gray-500/10 text-gray-400 border-white/10'
                                                 }`}>
-                                                    {tx.status}
+                                                    {isSolde ? 'payé' : tx.status}
                                                 </span>
                                                 {(tx.status === 'envoye' || tx.status === 'accepte') && (
-                                                    <button 
+                                                    <button
                                                         onClick={() => handleWhatsAppReminder(tx)}
                                                         className="p-1.5 text-amber-500 hover:bg-amber-500/10 rounded-lg transition-all"
                                                         title="Envoyer une relance WhatsApp"
@@ -512,8 +575,22 @@ export default function AgentComptabilitePage() {
                                                 )}
                                             </div>
                                         </td>
+                                        <td className="py-4 px-4 text-center">
+                                            {tx.type === 'facture' && solde > 0 && (
+                                                <button
+                                                    type="button"
+                                                    title="Enregistrer un paiement"
+                                                    onClick={() => { setPaymentDoc(tx); setNewPayment(p => ({ ...p, montant: String(solde) })); setShowPaymentModal(true) }}
+                                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 transition-all text-[10px] font-bold border border-emerald-500/20"
+                                                >
+                                                    <Banknote size={12} />
+                                                    Encaisser
+                                                </button>
+                                            )}
+                                        </td>
                                     </tr>
-                                ))}
+                                    )
+                                })}
                             </tbody>
                         </table>
                     </div>
@@ -576,6 +653,36 @@ export default function AgentComptabilitePage() {
                 </div>
             </div>
 
+            {/* ALARM BANNER — Factures non soldées */}
+            {(() => {
+                const nonSoldees = allDocs.filter(d => d.type === 'facture' && (paiements[d.id] || 0) < d.total && d.status !== 'annule')
+                const totalRestant = nonSoldees.reduce((a, d) => a + Math.max(0, d.total - (paiements[d.id] || 0)), 0)
+                if (nonSoldees.length === 0) return null
+                return (
+                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+                        className="mb-6 flex items-center justify-between gap-4 p-4 rounded-2xl border"
+                        style={{ background: 'rgba(245, 158, 11, 0.08)', borderColor: 'rgba(245, 158, 11, 0.25)' }}>
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-amber-500/15 flex items-center justify-center flex-shrink-0">
+                                <Bell size={16} className="text-amber-400" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-black text-amber-300">
+                                    {nonSoldees.length} facture{nonSoldees.length > 1 ? 's' : ''} non soldée{nonSoldees.length > 1 ? 's' : ''}
+                                </p>
+                                <p className="text-xs text-amber-500/70">{formatCurrency(totalRestant)} restants à encaisser</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setShowRelancesOnly(true)}
+                            className="px-3 py-1.5 rounded-xl text-xs font-bold text-amber-400 border border-amber-500/30 hover:bg-amber-500/15 transition-all flex-shrink-0"
+                        >
+                            Voir tout
+                        </button>
+                    </motion.div>
+                )
+            })()}
+
             {/* EXPENSE MODAL */}
             <AnimatePresence>
                 {showExpenseModal && (
@@ -607,6 +714,74 @@ export default function AgentComptabilitePage() {
                                 </div>
                                 <button disabled={savingExpense} type="submit" className="w-full py-4 bg-emerald-500 text-white font-black rounded-xl hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2 mt-4">
                                     {savingExpense ? <RefreshCw size={18} className="animate-spin" /> : <Plus size={18} />} Enregistrer la dépense
+                                </button>
+                            </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* PAYMENT MODAL */}
+            <AnimatePresence>
+                {showPaymentModal && paymentDoc && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowPaymentModal(false)}>
+                        <motion.div initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 10 }} onClick={e => e.stopPropagation()} className="glass-nexus-card w-full max-w-md overflow-hidden bg-[#0c1420]">
+                            <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-lg font-black text-white">Enregistrer un Paiement</h3>
+                                    <p className="text-xs text-gray-500 mt-0.5">{paymentDoc.numero} — {paymentDoc.client_nom} {paymentDoc.client_prenom}</p>
+                                </div>
+                                <button title="Fermer" onClick={() => setShowPaymentModal(false)} className="text-gray-500 hover:text-white"><X size={20} /></button>
+                            </div>
+                            <div className="px-6 pt-4 pb-0">
+                                <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/10">
+                                    <span className="text-xs text-gray-500">Solde restant</span>
+                                    <span className="text-base font-black text-amber-400">{formatCurrency(Math.max(0, paymentDoc.total - (paiements[paymentDoc.id] || 0)))}</span>
+                                </div>
+                            </div>
+                            <form onSubmit={handleAddPayment} className="p-6 space-y-4">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Mode de paiement</label>
+                                    <div className="grid grid-cols-4 gap-2">
+                                        {[
+                                            { val: 'virement', icon: CreditCard, label: 'Virement' },
+                                            { val: 'especes', icon: Banknote, label: 'Espèces' },
+                                            { val: 'cheque', icon: FileText, label: 'Chèque' },
+                                            { val: 'autre', icon: Wallet, label: 'Autre' },
+                                        ].map(opt => (
+                                            <button key={opt.val} type="button" onClick={() => setNewPayment(p => ({ ...p, type: opt.val }))}
+                                                className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border text-[10px] font-bold transition-all ${newPayment.type === opt.val ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/20 hover:text-white'}`}>
+                                                <opt.icon size={16} />
+                                                {opt.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Montant (XOF)</label>
+                                        <input required type="number" min="1" value={newPayment.montant} onChange={e => setNewPayment(p => ({ ...p, montant: e.target.value }))}
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-emerald-500/50 outline-none text-sm font-mono" placeholder="0" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Date</label>
+                                        <input type="date" title="Date du paiement" value={newPayment.date} onChange={e => setNewPayment(p => ({ ...p, date: e.target.value }))}
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-emerald-500/50 outline-none text-sm" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Référence <span className="normal-case text-gray-600">(optionnel)</span></label>
+                                    <input type="text" value={newPayment.reference} onChange={e => setNewPayment(p => ({ ...p, reference: e.target.value }))}
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-emerald-500/50 outline-none text-sm" placeholder="N° de virement, chèque..." />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Notes <span className="normal-case text-gray-600">(optionnel)</span></label>
+                                    <textarea rows={2} value={newPayment.notes} onChange={e => setNewPayment(p => ({ ...p, notes: e.target.value }))}
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-emerald-500/50 outline-none text-sm resize-none" placeholder="Commentaire..." />
+                                </div>
+                                <button disabled={savingPayment || !newPayment.montant} type="submit"
+                                    className="w-full py-4 bg-emerald-500 text-white font-black rounded-xl hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2 mt-4">
+                                    {savingPayment ? <RefreshCw size={18} className="animate-spin" /> : <Banknote size={18} />} Confirmer l&apos;encaissement
                                 </button>
                             </form>
                         </motion.div>

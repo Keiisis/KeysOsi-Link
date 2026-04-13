@@ -11,7 +11,7 @@ import {
     Calculator, Landmark, Receipt, ChevronLeft, ChevronRight,
     Zap, PieChart, CheckCircle2, Clock, TrendingUp, X,
     Shield, Mail, Phone, MapPin, Hash, Package,
-    EyeOff, Eye, ExternalLink
+    EyeOff, Eye, ExternalLink, Banknote, CreditCard, Bell
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -329,6 +329,12 @@ export default function AdminComptabilitePage() {
     const [showAllAgents, setShowAllAgents] = useState(false)
     const [detailDoc, setDetailDoc]     = useState<DocRow | null>(null)
     const [alertFilter, setAlertFilter] = useState<string | null>(null)
+    // Paiements manuels (virement/espèces)
+    const [paiements, setPaiements] = useState<Record<string, number>>({})
+    const [showPaymentModal, setShowPaymentModal] = useState(false)
+    const [paymentDoc, setPaymentDoc] = useState<DocRow | null>(null)
+    const [newPayment, setNewPayment] = useState({ type: 'virement', montant: '', reference: '', notes: '', date: new Date().toISOString().split('T')[0] })
+    const [savingPayment, setSavingPayment] = useState(false)
     const ITEMS = 15
 
     // ── Fetch ─────────────────────────────────────────────────────
@@ -347,6 +353,13 @@ export default function AdminComptabilitePage() {
         setDepenses(erpRes.depenses || [])
         if (typeof erpRes.commissionRate === 'number' && !isNaN(erpRes.commissionRate)) {
             setCommissionRate(erpRes.commissionRate)
+        }
+        if (erpRes.paiements) {
+            const map: Record<string, number> = {}
+            ;(erpRes.paiements as { document_id: string; montant: number }[]).forEach(p => {
+                map[p.document_id] = (map[p.document_id] || 0) + Number(p.montant)
+            })
+            setPaiements(map)
         }
         setLoading(false)
         setRefreshing(false)
@@ -551,6 +564,35 @@ export default function AdminComptabilitePage() {
     const pgDocs     = jDocs.slice((journalPage - 1) * ITEMS, journalPage * ITEMS)
     const pgOrders   = jOrders.slice((journalPage - 1) * ITEMS, journalPage * ITEMS)
     const pgDeps     = jDeps.slice((journalPage - 1) * ITEMS, journalPage * ITEMS)
+
+    const handleAddPayment = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!paymentDoc) return
+        setSavingPayment(true)
+        try {
+            const res = await fetch('/api/admin/paiements-manuels', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    document_id: paymentDoc.id,
+                    agent_id: paymentDoc.agent_id,
+                    type: newPayment.type,
+                    montant: Number(newPayment.montant),
+                    date_paiement: newPayment.date,
+                    reference: newPayment.reference || null,
+                    notes: newPayment.notes || null,
+                })
+            })
+            if (res.ok) {
+                setShowPaymentModal(false)
+                setPaymentDoc(null)
+                setNewPayment({ type: 'virement', montant: '', reference: '', notes: '', date: new Date().toISOString().split('T')[0] })
+                await fetchAll()
+            }
+        } finally {
+            setSavingPayment(false)
+        }
+    }
 
     const handleAlertAction = (action?: string) => {
         if (!action) return
@@ -1039,6 +1081,35 @@ export default function AdminComptabilitePage() {
             </div>
 
             {/* ── JOURNAL COMPLET ── */}
+            {(() => {
+                const nonSoldees = docs.filter(d => d.type === 'facture' && d.status !== 'annule' && (paiements[d.id] || 0) < d.total)
+                const totalRestant = nonSoldees.reduce((a, d) => a + Math.max(0, d.total - (paiements[d.id] || 0)), 0)
+                if (nonSoldees.length === 0) return null
+                return (
+                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center justify-between gap-4 p-4 rounded-2xl border border-amber-500/20 bg-amber-500/5 mb-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-amber-500/15 flex items-center justify-center flex-shrink-0">
+                                <Bell size={14} className="text-amber-400" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-black text-amber-300">
+                                    {nonSoldees.length} facture{nonSoldees.length > 1 ? 's' : ''} non soldée{nonSoldees.length > 1 ? 's' : ''}
+                                </p>
+                                <p className="text-xs text-amber-500/70">{fmt(totalRestant)} restants à encaisser (tous agents)</p>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => { setJournalTab('docs'); setAlertFilter('retard'); setJournalPage(1); document.getElementById('journal-section')?.scrollIntoView({ behavior: 'smooth' }) }}
+                            className="px-3 py-1.5 rounded-xl text-xs font-bold text-amber-400 border border-amber-500/30 hover:bg-amber-500/15 transition-all flex-shrink-0"
+                        >
+                            Voir tout
+                        </button>
+                    </motion.div>
+                )
+            })()}
+
             <div id="journal-section" className="bg-[#0a0f18] border border-white/5 rounded-2xl overflow-hidden">
                 <div className="p-5 border-b border-white/5 space-y-4">
                     <div className="flex items-center justify-between">
@@ -1092,20 +1163,19 @@ export default function AdminComptabilitePage() {
                     {journalTab === 'docs' && (
                         <table className="w-full min-w-[700px]">
                             <thead><tr className="text-[9px] font-black text-gray-500 uppercase tracking-widest border-b border-white/5">
-                                {['N° Document', 'Client', 'Agent', 'HT / TVA / Remise', 'Total TTC', 'Statut', 'Sig.', 'Date'].map((h, i) => (
-                                    <th key={h} className={cn('p-4 font-black', i === 0 ? 'pl-5 text-left' : i === 7 ? 'text-right pr-5' : i === 4 || i === 3 ? 'text-right' : i === 5 || i === 6 ? 'text-center' : 'text-left')}>{h}</th>
+                                {['N° Document', 'Client', 'Agent', 'Total TTC', 'Solde', 'Statut', 'Sig.', 'Date', ''].map((h, i) => (
+                                    <th key={i} className={cn('p-4 font-black', i === 0 ? 'pl-5 text-left' : i === 3 || i === 4 ? 'text-right' : i === 5 || i === 6 ? 'text-center' : i === 7 ? 'text-right' : i === 8 ? 'text-center pr-5' : 'text-left')}>{h}</th>
                                 ))}
                             </tr></thead>
                             <tbody className="divide-y divide-white/[0.03]">
-                                {pgDocs.length === 0 && <tr><td colSpan={8} className="text-center py-12 text-gray-600 text-sm">Aucune facture</td></tr>}
+                                {pgDocs.length === 0 && <tr><td colSpan={9} className="text-center py-12 text-gray-600 text-sm">Aucune facture</td></tr>}
                                 {pgDocs.map(d => {
                                     const ag = agents.find(a => a.id === d.agent_id)
                                     const st = DOC_STATUS[d.status] || { label: d.status, cls: 'bg-gray-500/20 text-gray-400' }
-                                    const ht = Number(d.sous_total) || 0
-                                    const tva = Number(d.total_tva) || 0
-                                    const remise = Number(d.remise) || 0
+                                    const montantPaye = paiements[d.id] || 0
+                                    const solde = d.type === 'facture' ? Math.max(0, d.total - montantPaye) : null
                                     return (
-                                        <tr key={d.id} className="hover:bg-white/[0.02] transition-colors cursor-pointer" onClick={() => setDetailDoc(d)}>
+                                        <tr key={d.id} className={cn('hover:bg-white/[0.02] transition-colors cursor-pointer', solde !== null && solde > 0 ? 'border-l-2 border-amber-500/30' : '')} onClick={() => setDetailDoc(d)}>
                                             <td className="p-4 pl-5">
                                                 <p className="text-xs font-bold text-white font-mono">{d.numero}</p>
                                                 <p className="text-[9px] text-gray-600 capitalize">{d.type}</p>
@@ -1115,21 +1185,31 @@ export default function AdminComptabilitePage() {
                                                 <p className="text-[9px] text-gray-600 truncate max-w-[140px]">{d.client_email || d.client_phone || '—'}</p>
                                             </td>
                                             <td className="p-4 text-[10px] text-gray-400 truncate max-w-[110px]">{ag?.full_name || ag?.email || '—'}</td>
-                                            <td className="p-4 text-right">
-                                                {ht > 0 ? (
-                                                    <div className="text-[9px] text-gray-500 space-y-0.5">
-                                                        <div>HT {fmt(ht)}</div>
-                                                        {tva > 0 && <div className="text-yellow-600">TVA {fmt(tva)}</div>}
-                                                        {remise > 0 && <div className="text-orange-600">-{fmt(remise)}</div>}
-                                                    </div>
-                                                ) : <span className="text-[9px] text-gray-600">—</span>}
-                                            </td>
                                             <td className="p-4 text-right font-mono text-sm text-white font-bold">{fmt(d.total, d.currency)}</td>
+                                            <td className="p-4 text-right font-mono text-xs">
+                                                {solde !== null ? (
+                                                    solde > 0
+                                                        ? <span className="text-amber-400 font-bold">{fmt(solde)}</span>
+                                                        : <span className="text-[#00c870]">✓ Soldé</span>
+                                                ) : <span className="text-gray-600">—</span>}
+                                            </td>
                                             <td className="p-4 text-center"><span className={cn('text-[9px] font-bold px-2 py-0.5 rounded-full', st.cls)}>{st.label}</span></td>
                                             <td className="p-4 text-center">
                                                 {d.signed_at ? <Shield size={11} className="text-purple-400 mx-auto" /> : <span className="text-gray-700">—</span>}
                                             </td>
-                                            <td className="p-4 pr-5 text-right text-[10px] text-gray-500 font-mono">{fmtDate(d.created_at)}</td>
+                                            <td className="p-4 text-right text-[10px] text-gray-500 font-mono">{fmtDate(d.created_at)}</td>
+                                            <td className="p-4 pr-5 text-center" onClick={e => e.stopPropagation()}>
+                                                {d.type === 'facture' && solde !== null && solde > 0 && (
+                                                    <button
+                                                        type="button"
+                                                        title="Enregistrer un paiement"
+                                                        onClick={() => { setPaymentDoc(d); setNewPayment(p => ({ ...p, montant: String(solde) })); setShowPaymentModal(true) }}
+                                                        className="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 transition-all text-[9px] font-bold border border-emerald-500/20 whitespace-nowrap"
+                                                    >
+                                                        <Banknote size={11} /> Encaisser
+                                                    </button>
+                                                )}
+                                            </td>
                                         </tr>
                                     )
                                 })}
@@ -1225,6 +1305,74 @@ export default function AdminComptabilitePage() {
                     </div>
                 )}
             </div>
+
+            {/* PAYMENT MODAL — Admin */}
+        <AnimatePresence>
+            {showPaymentModal && paymentDoc && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+                    onClick={() => setShowPaymentModal(false)}>
+                    <motion.div initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 10 }}
+                        onClick={e => e.stopPropagation()}
+                        className="bg-[#0d1421] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden">
+                        <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                            <div>
+                                <h3 className="text-lg font-black text-white">Enregistrer un Paiement</h3>
+                                <p className="text-xs text-gray-500 mt-0.5">{paymentDoc.numero} — {paymentDoc.client_nom} {paymentDoc.client_prenom || ''}</p>
+                            </div>
+                            <button type="button" title="Fermer" onClick={() => setShowPaymentModal(false)} className="text-gray-500 hover:text-white"><X size={20} /></button>
+                        </div>
+                        <div className="px-6 pt-4 pb-0">
+                            <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/10">
+                                <span className="text-xs text-gray-500">Solde restant</span>
+                                <span className="text-base font-black text-amber-400">{fmt(Math.max(0, paymentDoc.total - (paiements[paymentDoc.id] || 0)), paymentDoc.currency)}</span>
+                            </div>
+                        </div>
+                        <form onSubmit={handleAddPayment} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Mode de paiement</label>
+                                <div className="grid grid-cols-4 gap-2">
+                                    {[
+                                        { val: 'virement', icon: CreditCard, label: 'Virement' },
+                                        { val: 'especes', icon: Banknote, label: 'Espèces' },
+                                        { val: 'cheque', icon: FileText, label: 'Chèque' },
+                                        { val: 'autre', icon: Wallet, label: 'Autre' },
+                                    ].map(opt => (
+                                        <button key={opt.val} type="button" onClick={() => setNewPayment(p => ({ ...p, type: opt.val }))}
+                                            className={cn('flex flex-col items-center gap-1.5 py-3 rounded-xl border text-[10px] font-bold transition-all',
+                                                newPayment.type === opt.val ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/20 hover:text-white')}>
+                                            <opt.icon size={16} />
+                                            {opt.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Montant</label>
+                                    <input required type="number" min="1" value={newPayment.montant} onChange={e => setNewPayment(p => ({ ...p, montant: e.target.value }))}
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-emerald-500/50 outline-none text-sm font-mono" placeholder="0" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Date</label>
+                                    <input type="date" title="Date du paiement" value={newPayment.date} onChange={e => setNewPayment(p => ({ ...p, date: e.target.value }))}
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-emerald-500/50 outline-none text-sm" />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Référence <span className="normal-case text-gray-600">(optionnel)</span></label>
+                                <input type="text" value={newPayment.reference} onChange={e => setNewPayment(p => ({ ...p, reference: e.target.value }))}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-emerald-500/50 outline-none text-sm" placeholder="N° de virement, chèque..." />
+                            </div>
+                            <button disabled={savingPayment || !newPayment.montant} type="submit"
+                                className="w-full py-4 bg-emerald-500 text-white font-black rounded-xl hover:bg-emerald-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-2">
+                                {savingPayment ? <RefreshCw size={18} className="animate-spin" /> : <Banknote size={18} />} Confirmer l&apos;encaissement
+                            </button>
+                        </form>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
         </div>
     )
 }

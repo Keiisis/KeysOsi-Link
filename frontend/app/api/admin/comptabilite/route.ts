@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = createClient(supabaseUrl, serviceKey)
 
-    const [docsRes, ordersRes, depsRes, settingsRes] = await Promise.all([
+    const [docsRes, ordersRes, depsRes, settingsRes, paiemRes] = await Promise.all([
         supabase
             .from('documents_financiers')
             .select(`
@@ -44,6 +44,10 @@ export async function GET(request: NextRequest) {
             .select('key,value')
             .eq('key', 'commission_rate')
             .maybeSingle(),
+        supabase
+            .from('paiements_manuels')
+            .select('document_id,montant,agent_id')
+            .limit(10000),
     ])
 
     // Validation commissionRate : doit être entre 0 et 1 (pas un % comme 10)
@@ -61,6 +65,7 @@ export async function GET(request: NextRequest) {
         docs:           docsRes.data     || [],
         orders:         ordersRes.data   || [],
         depenses:       depsRes.data     || [],
+        paiements:      paiemRes.data    || [],
         commissionRate,
         errors: {
             docs:     docsRes.error?.message     || null,

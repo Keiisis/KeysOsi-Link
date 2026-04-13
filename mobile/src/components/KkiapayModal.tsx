@@ -1,0 +1,348 @@
+import React, { useState, useEffect, useCallback } from 'react'
+import {
+    View, Text, StyleSheet, Modal, TouchableOpacity,
+    ActivityIndicator, Alert, Platform
+} from 'react-native'
+import { Briefcase, CreditCard, Info, Lock, ShieldCheck, Smartphone, X } from 'lucide-react-native'
+import { useKkiapay } from '@kkiapay-org/react-native-sdk'
+import { supabase } from '../config/supabase'
+import { useAuth } from '../contexts/AuthContext'
+import { colors, spacing, shadows, typography, radius } from '../config/theme'
+
+/* ═══════════════════════════════════════════════════════════
+   KkiapayModal — Paiement natif via SDK Kkiapay React Native
+   Fonctionne sur Android & iOS (via react-native-webview)
+   Widget intégré in-app — plus besoin d'ouvrir le navigateur !
+═══════════════════════════════════════════════════════════ */
+
+interface KkiapayModalProps {
+    visible: boolean
+    amount: string
+    serviceName: string
+    onClose: () => void
+    onSuccess: (transactionId: string) => void
+}
+
+export default function KkiapayModal({ visible, amount, serviceName, onClose, onSuccess }: KkiapayModalProps) {
+    const [loading, setLoading] = useState(false)
+    const [kkiapayKey, setKkiapayKey] = useState<string | null>(null)
+    const { profile } = useAuth()
+    const { openKkiapayWidget, addSuccessListener, addFailedListener } = useKkiapay()
+
+    // ── Charger la clé publique Kkiapay depuis Supabase settings ──
+    useEffect(() => {
+        const fetchKey = async () => {
+            try {
+                const { data } = await supabase
+                    .from('settings')
+                    .select('value')
+                    .eq('key', 'kkiapay_public_key')
+                    .single()
+                if (data?.value) setKkiapayKey(data.value)
+            } catch { /* silent */ }
+        }
+        fetchKey()
+    }, [])
+
+    // ── Listeners Kkiapay (succès / échec) ──
+    useEffect(() => {
+        addSuccessListener((data: any) => {
+            console.log('✅ Paiement Kkiapay réussi:', data)
+            const transactionId = data?.transactionId || data?.transaction_id || `KK-${Date.now()}`
+            onSuccess(String(transactionId))
+        })
+
+        addFailedListener((data: any) => {
+            console.log('❌ Paiement Kkiapay échoué:', data)
+            Alert.alert(
+                'Paiement échoué',
+                'Le paiement n\'a pas pu être finalisé. Veuillez réessayer.',
+                [{ text: 'OK', onPress: onClose }]
+            )
+        })
+    }, [])
+
+    // ── Extrait le montant numérique depuis un texte comme "À partir de 150 000 FCFA" ──
+    const getNumericAmount = (): number => {
+        const matches = amount.match(/\d+([\s]?\d+)*/g)
+        if (matches && matches.length > 0) {
+            return parseInt(matches[0].replace(/\s/g, ''), 10)
+        }
+        return 1000
+    }
+
+    const numericAmount = getNumericAmount()
+    const formattedAmount = numericAmount.toLocaleString('fr-FR') + ' FCFA'
+
+    // ── Ouvrir le widget Kkiapay natif ──
+    const handlePayNow = useCallback(() => {
+        if (!kkiapayKey) {
+            Alert.alert('Configuration manquante', 'La clé de paiement Kkiapay n\'est pas configurée.')
+            return
+        }
+
+        setLoading(true)
+
+        try {
+            openKkiapayWidget({
+                amount: numericAmount,
+                api_key: kkiapayKey,
+                sandbox: false, // Production mode
+                email: profile?.email || '',
+                phone: profile?.phone || '',
+                reason: serviceName || 'Paiement de service',
+            })
+        } catch (e) {
+            console.error('Erreur ouverture widget Kkiapay:', e)
+            Alert.alert('Erreur', 'Impossible d\'ouvrir le paiement. Veuillez réessayer.')
+        } finally {
+            setLoading(false)
+        }
+    }, [kkiapayKey, numericAmount, profile])
+
+    return (
+        <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+            <View style={styles.overlay}>
+                <View style={styles.sheet}>
+                    {/* Header */}
+                    <View style={styles.header}>
+                        <View style={styles.headerLeft}>
+                            <View style={styles.kkiapayBadge}>
+                                <Text style={styles.kkiapayText}>KKIAPAY</Text>
+                            </View>
+                            <View style={styles.securedRow}>
+                                <ShieldCheck size={11} color={colors.primary} strokeWidth={2} />
+                                <Text style={styles.securedLabel}>Paiement sécurisé in-app</Text>
+                            </View>
+                        </View>
+                        <TouchableOpacity onPress={onClose} style={styles.closeBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                            <X size={24} color={colors.textSecondary} strokeWidth={1.75} />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Service info */}
+                    <View style={styles.serviceBox}>
+                        <Briefcase size={20} color={colors.gold} strokeWidth={1.75} />
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.serviceLabel}>Service</Text>
+                            <Text style={styles.serviceName} numberOfLines={2}>{serviceName}</Text>
+                        </View>
+                    </View>
+
+                    {/* Montant */}
+                    <View style={styles.amountCard}>
+                        <Text style={styles.amountLabel}>Montant à payer</Text>
+                        <Text style={styles.amountValue}>{formattedAmount}</Text>
+                    </View>
+
+                    {/* Moyens de paiement */}
+                    <Text style={styles.sectionTitle}>Moyens de paiement acceptés</Text>
+                    <View style={styles.methodsRow}>
+                        <View style={styles.methodChip}>
+                            <Smartphone size={16} color="#F59E0B" strokeWidth={1.75} />
+                            <Text style={styles.methodText}>MTN MoMo</Text>
+                        </View>
+                        <View style={styles.methodChip}>
+                            <Smartphone size={16} color="#3B82F6" strokeWidth={1.75} />
+                            <Text style={styles.methodText}>Moov Money</Text>
+                        </View>
+                        <View style={styles.methodChip}>
+                            <CreditCard size={16} color="#8B5CF6" strokeWidth={1.75} />
+                            <Text style={styles.methodText}>Visa / MC</Text>
+                        </View>
+                    </View>
+
+                    {/* CTA */}
+                    <TouchableOpacity
+                        style={[styles.payBtn, loading && { opacity: 0.6 }]}
+                        onPress={handlePayNow}
+                        disabled={loading || !kkiapayKey}
+                        activeOpacity={0.85}
+                    >
+                        {loading ? (
+                            <ActivityIndicator color="#FFF" size="small" />
+                        ) : (
+                            <>
+                                <Lock size={18} color="#FFF" strokeWidth={1.75} />
+                                <Text style={styles.payBtnText}>Payer {formattedAmount}</Text>
+                            </>
+                        )}
+                    </TouchableOpacity>
+
+                    {/* Footer info */}
+                    <View style={styles.footerNote}>
+                        <Info size={13} color={colors.textMuted} strokeWidth={1.75} />
+                        <Text style={styles.footerText}>
+                            Le widget de paiement Kkiapay s'ouvrira directement dans l'application. Android & iOS supportés.
+                        </Text>
+                    </View>
+                </View>
+            </View>
+        </Modal>
+    )
+}
+
+const styles = StyleSheet.create({
+    overlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.55)',
+        justifyContent: 'flex-end',
+    },
+    sheet: {
+        backgroundColor: colors.surface,
+        borderTopLeftRadius: 28,
+        borderTopRightRadius: 28,
+        padding: spacing.xl,
+        paddingBottom: Platform.OS === 'ios' ? 44 : 28,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+        borderBottomWidth: 0,
+    },
+
+    /* Header */
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 20,
+    },
+    headerLeft: { gap: 6 },
+    kkiapayBadge: {
+        backgroundColor: colors.primaryMuted,
+        paddingHorizontal: 12,
+        paddingVertical: 5,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: colors.primary,
+        alignSelf: 'flex-start',
+    },
+    kkiapayText: {
+        fontSize: 13,
+        fontFamily: 'Outfit_700Bold',
+        color: colors.primary,
+        letterSpacing: 1.2,
+    },
+    securedRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    securedLabel: {
+        fontSize: 11,
+        fontFamily: 'Outfit_500Medium',
+        color: colors.primary,
+    },
+    closeBtn: { padding: 4 },
+
+    /* Service */
+    serviceBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        backgroundColor: colors.surfaceWarm,
+        padding: 14,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+        marginBottom: 16,
+    },
+    serviceLabel: {
+        fontSize: 10,
+        fontFamily: 'Outfit_600SemiBold',
+        color: colors.textMuted,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    serviceName: {
+        ...typography.label,
+        color: colors.textPrimary,
+        marginTop: 2,
+    },
+
+    /* Amount */
+    amountCard: {
+        backgroundColor: colors.headerBg,
+        padding: 20,
+        borderRadius: radius.lg,
+        alignItems: 'center',
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: colors.primary + '30',
+        ...shadows.glow,
+    },
+    amountLabel: {
+        fontSize: 11,
+        fontFamily: 'Outfit_600SemiBold',
+        color: 'rgba(255,255,255,0.6)',
+        letterSpacing: 0.5,
+        textTransform: 'uppercase',
+    },
+    amountValue: {
+        fontSize: 28,
+        fontFamily: 'PlayfairDisplay_700Bold',
+        color: colors.primary,
+        marginTop: 4,
+    },
+
+    /* Methods */
+    sectionTitle: {
+        ...typography.caption,
+        color: colors.textSecondary,
+        fontFamily: 'Outfit_600SemiBold',
+        marginBottom: 10,
+    },
+    methodsRow: {
+        flexDirection: 'row',
+        gap: 8,
+        marginBottom: 24,
+    },
+    methodChip: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        paddingVertical: 10,
+        backgroundColor: colors.surfaceWarm,
+        borderRadius: radius.sm,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+    },
+    methodText: {
+        fontSize: 11,
+        fontFamily: 'Outfit_600SemiBold',
+        color: colors.textPrimary,
+    },
+
+    /* CTA */
+    payBtn: {
+        backgroundColor: colors.primary,
+        borderRadius: radius.md,
+        paddingVertical: 17,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 10,
+        ...shadows.glow,
+    },
+    payBtnText: {
+        ...typography.button,
+        color: '#FFF',
+        fontSize: 16,
+    },
+
+    /* Footer */
+    footerNote: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        marginTop: 16,
+    },
+    footerText: {
+        fontSize: 11,
+        fontFamily: 'Outfit_400Regular',
+        color: colors.textMuted,
+        flex: 1,
+    },
+})

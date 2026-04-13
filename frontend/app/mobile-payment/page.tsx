@@ -1,0 +1,81 @@
+"use client"
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { Loader2 } from 'lucide-react'
+
+export default function MobilePaymentPage() {
+    const searchParams = useSearchParams()
+    const amount = searchParams.get('amount')
+    const serviceName = searchParams.get('service')
+    const clientId = searchParams.get('clientId')
+    const callbackUrl = searchParams.get('callbackUrl')
+    const isSandbox = process.env.NEXT_PUBLIC_KKIAPAY_SANDBOX === 'true'
+    const publicKey = isSandbox ? process.env.NEXT_PUBLIC_KKIAPAY_SANDBOX_PUBLIC_KEY : process.env.NEXT_PUBLIC_KKIAPAY_PUBLIC_KEY
+
+    const [status, setStatus] = useState('Chargement du module de paiement...')
+
+    useEffect(() => {
+        if (!amount || !publicKey) {
+            setStatus("Paramètres de paiement invalides.")
+            return
+        }
+
+        // Script injection
+        const script = document.createElement('script')
+        script.src = 'https://cdn.kkiapay.me/k.js'
+        script.onload = () => {
+             // @ts-ignore
+             if (window.openKkiapayWidget) {
+                 // @ts-ignore
+                 window.openKkiapayWidget({
+                     amount: parseInt(amount, 10),
+                     position: "center",
+                     theme: "#0E9F6E",
+                     sandbox: isSandbox,
+                     key: publicKey,
+                     name: "Retour Gagnant",
+                     reason: `Service : ${serviceName}`,
+                 })
+
+                 // @ts-ignore
+                 window.addKkiapayListener('success', function (response) {
+                     setStatus("Paiement réussi ! Redirection vers l'application...")
+                     if (callbackUrl) {
+                         window.location.href = `${callbackUrl}?status=success&transactionId=${response.transactionId}`
+                     } else {
+                         window.location.href = `retourgagnant://payment-success?transactionId=${response.transactionId}`
+                     }
+                 })
+
+                 // @ts-ignore
+                 window.addKkiapayListener('failed', function () {
+                     setStatus("Le paiement a échoué.")
+                     if (callbackUrl) {
+                         window.location.href = `${callbackUrl}?status=failed`
+                     } else {
+                         window.location.href = `retourgagnant://payment-failed`
+                     }
+                 })
+
+                 // @ts-ignore
+                 window.addKkiapayListener('close', function () {
+                     if (callbackUrl) {
+                         window.location.href = `${callbackUrl}?status=canceled`
+                     } else {
+                         window.location.href = `retourgagnant://payment-canceled`
+                     }
+                 })
+             }
+        }
+        document.body.appendChild(script)
+
+        return () => { document.body.removeChild(script) }
+    }, [amount, serviceName, clientId, publicKey, isSandbox])
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
+            <Loader2 className="animate-spin text-emerald-500 mb-4" size={48} />
+            <p style={{ color: 'white', fontFamily: 'sans-serif' }}>{status}</p>
+        </div>
+    )
+}

@@ -1,11 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-// Service role — bypasse RLS pour créer les dossiers depuis l'app mobile
+// Service role — bypasse RLS pour créer/lire les dossiers depuis l'app mobile
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
+
+// ─── GET : tous les dossiers d'un client avec leurs documents ────────────────
+export async function GET(req: NextRequest) {
+    try {
+        const { searchParams } = new URL(req.url)
+        const clientId = searchParams.get('client_id')
+        if (!clientId) return NextResponse.json({ error: 'client_id manquant' }, { status: 400 })
+
+        const { data: dossiers, error } = await supabase
+            .from('dossiers')
+            .select('id, status, progress, service_type, notes, created_at, updated_at')
+            .eq('client_id', clientId)
+            .order('created_at', { ascending: false })
+
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+        // Pour chaque dossier, charger ses documents
+        const dossiersWithDocs = await Promise.all((dossiers || []).map(async (d) => {
+            const { data: docs } = await supabase
+                .from('dossier_documents')
+                .select('id, file_name, file_url, file_type, status, created_at')
+                .eq('dossier_id', d.id)
+                .order('created_at', { ascending: false })
+
+            // Fallback sur table "documents" si dossier_documents vide
+            let finalDocs = docs || []
+            if (finalDocs.length === 0) {
+                const { data: docs2 } = await supabase
+                    .from('documents')
+                    .select('id, file_name, file_url, file_type, status, created_at')
+                    .eq('dossier_id', d.id)
+                    .order('created_at', { ascending: false })
+                finalDocs = docs2 || []
+            }
+
+            return { ...d, documents: finalDocs }
+        }))
+
+        return NextResponse.json({ dossiers: dossiersWithDocs })
+    } catch (e) {
+        return NextResponse.json({ error: e instanceof Error ? e.message : 'Erreur serveur' }, { status: 500 })
+    }
+}
 
 // ─── POST : créer un dossier (commande service depuis mobile) ─────────────────
 export async function POST(req: NextRequest) {

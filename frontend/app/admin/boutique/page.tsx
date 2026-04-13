@@ -174,12 +174,30 @@ export default function AdminBoutiquePage() {
 
                                     {/* Stock */}
                                     <div className="col-span-1">
-                                        <span className={cn(
-                                            'text-sm font-black',
-                                            (item.stock || 0) > 10 ? 'text-[#008751]' : (item.stock || 0) > 0 ? 'text-[#FCD116]' : 'text-[#E8112D]'
-                                        )}>
-                                            {item.stock}
-                                        </span>
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                type="button"
+                                                title="Diminuer le stock"
+                                                disabled={(item.stock || 0) <= 0}
+                                                onClick={() => updateItem({ resource: 'products', id: item.id, values: { stock: Math.max(0, (item.stock || 0) - 1) } })}
+                                                className="w-5 h-5 rounded-md bg-white/5 text-gray-400 hover:bg-red-500/20 hover:text-red-400 disabled:opacity-20 disabled:cursor-not-allowed transition-all text-xs font-black flex items-center justify-center"
+                                            >−</button>
+                                            <span className={cn(
+                                                'text-sm font-black min-w-[24px] text-center',
+                                                (item.stock || 0) > 10 ? 'text-[#008751]' : (item.stock || 0) > 0 ? 'text-[#FCD116]' : 'text-[#E8112D]'
+                                            )}>
+                                                {item.stock ?? 0}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                title="Augmenter le stock"
+                                                onClick={() => updateItem({ resource: 'products', id: item.id, values: { stock: (item.stock || 0) + 1 } })}
+                                                className="w-5 h-5 rounded-md bg-white/5 text-gray-400 hover:bg-green-500/20 hover:text-green-400 transition-all text-xs font-black flex items-center justify-center"
+                                            >+</button>
+                                        </div>
+                                        {(item.stock || 0) === 0 && (
+                                            <span className="text-[8px] font-black text-[#E8112D] uppercase tracking-wide">Rupture</span>
+                                        )}
                                     </div>
 
                                     {/* Status */}

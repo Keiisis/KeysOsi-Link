@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Calculator, RefreshCw, Loader2, TrendingUp, TrendingDown, DollarSign, FileText, Download } from 'lucide-react'
 
-const GOLD = '#D4AF37'; const YELLOW = '#FCD116'; const GREEN = '#008751'
-const GREEN_L = '#00A86B'; const RED = '#E8112D'; const BG = '#0B1F0D'; const TEXT = '#F0EBD8'
-const PANEL = '#0D2615'
+const GOLD = '#C9A84C'; const YELLOW = '#FCD116'; const GREEN = '#008751'
+const GREEN_L = '#008751'; const RED = '#E8112D'; const BG = '#FAF8F4'; const TEXT = '#1B2A4A'
+const PANEL = '#FFFFFF'
 
 function fmt(n: number) {
     if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M FCFA`
@@ -148,7 +148,7 @@ export default function CeoComptabilite() {
                         ].map(tab => (
                             <button key={tab.key} onClick={() => setActiveTab(tab.key as typeof activeTab)}
                                 className="px-4 py-2 rounded-xl text-sm font-bold transition-all"
-                                style={{ background: activeTab === tab.key ? GOLD : `${GOLD}15`, color: activeTab === tab.key ? BG : GOLD }}>
+                                style={{ background: activeTab === tab.key ? GOLD : `${GOLD}18`, color: activeTab === tab.key ? '#FFFFFF' : GOLD }}>
                                 {tab.label}
                             </button>
                         ))}

@@ -2,8 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseKey;
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 export async function POST(request: Request) {
     try {
@@ -16,35 +15,45 @@ export async function POST(request: Request) {
 
         const supabase = createClient(supabaseUrl, serviceKey);
 
-        // 1. Create the session in `messages` table
+        // 1. Créer la session dans `support_sessions`
+        //    (table dédiée au live chat, voir SQL ci-dessous)
         const { data: sessionData, error: sessionError } = await supabase
-            .from('messages')
+            .from('support_sessions')
             .insert({
-                nom: nom,
-                prenom: "",
-                email: email || "anonyme@livechat.com",
-                sujet: "Live Chat Session",
-                message: question,
-                type: 'support',
-                lu: false
+                email: (email || 'anonyme@livechat.com').toLowerCase().trim(),
+                name: nom.trim(),
+                status: 'open',
             })
             .select('id')
             .single();
 
-        if (sessionError) throw sessionError;
+        if (sessionError) {
+            // Fallback: la table support_sessions n'existe pas encore
+            // → on génère un UUID côté serveur et on l'insère directement
+            // dans chat_messages comme "message fantôme" de session
+            console.error('[start_live] support_sessions error:', sessionError.message);
+            return NextResponse.json({
+                error: `Table support_sessions manquante. Exécutez le SQL de migration.\n${sessionError.message}`
+            }, { status: 500 });
+        }
 
-        // 2. Insert the first message into `chat_messages`
+        const sessionId = sessionData.id;
+
+        // 2. Insérer le premier message dans `chat_messages`
         const { error: msgError } = await supabase
             .from('chat_messages')
             .insert({
-                conversation_id: sessionData.id,
+                conversation_id: sessionId,
                 role: 'client',
-                content: question
+                content: question.trim(),
             });
 
-        if (msgError) throw msgError;
+        if (msgError) {
+            console.error('[start_live] chat_messages error:', msgError.message);
+            // On retourne quand même le sessionId — le message sera renvoyé via send_message
+        }
 
-        return NextResponse.json({ sessionId: sessionData.id });
+        return NextResponse.json({ sessionId });
     } catch (error) {
         console.error("Live Chat Start Error:", error);
         const message = error instanceof Error ? error.message : 'Unknown error'
