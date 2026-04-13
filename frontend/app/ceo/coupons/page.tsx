@@ -14,7 +14,7 @@ interface Coupon {
 }
 
 function randomCode() { return Math.random().toString(36).slice(2, 8).toUpperCase() }
-const EMPTY = { code: randomCode(), discount_type: 'percent' as const, discount_value: 10, min_order: 0, max_uses: 0, is_active: true, expires_at: '' }
+const EMPTY = { code: randomCode(), discount_type: 'percent' as 'percent' | 'fixed', discount_value: 10, min_order: 0, max_uses: 0, is_active: true, expires_at: '' }
 
 export default function CeoCoupons() {
     const [items, setItems] = useState<Coupon[]>([])
