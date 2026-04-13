@@ -22,7 +22,7 @@ export default function CeoBlog() {
     const [posts, setPosts] = useState<Post[]>([])
     const [loading, setLoading] = useState(true)
     const [selected, setSelected] = useState<Post | null>(null)
-    const [editData, setEditData] = useState<Partial<Post> & { tags?: string }>({})
+    const [editData, setEditData] = useState<Omit<Partial<Post>, 'tags'> & { tags?: string }>({})
     const [showCreate, setShowCreate] = useState(false)
     const [newPost, setNewPost] = useState(EMPTY)
     const [saving, setSaving] = useState(false)
