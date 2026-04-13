@@ -14,17 +14,22 @@ const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbe
 ═══════════════════════════════════════════════════════════ */
 
 export default function ServiceDetailsScreen({ route, navigation }: any) {
-    const { serviceId, title, desc, color, icon } = route.params || {}
+    const { serviceId, title, desc, fullDescription, color, icon, duration, price, documents, features: paramFeatures } = route.params || {}
     const { profile } = useAuth()
     const [loading, setLoading] = useState(false)
 
     const serviceColor = color || colors.gold
 
-    const features: string[] = [
+    const features: string[] = paramFeatures?.length ? paramFeatures : [
         'Consultation initiale avec nos experts',
         'Analyse complète de votre dossier',
         'Accompagnement administratif personnalisé',
         'Suivi en temps réel via l\'application',
+    ]
+
+    const requiredDocs: string[] = documents?.length ? documents : [
+        'Pièce d\'identité valide (passeport ou CNI)',
+        'Justificatif selon le service demandé',
     ]
 
     const handleOrder = async () => {
@@ -118,22 +123,22 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
             {/* Carte contenu */}
             <View style={styles.card}>
                 <Text style={styles.title}>{title || 'Détails du Service'}</Text>
-                <Text style={styles.desc}>{desc || 'Informations concernant ce service et accompagnement personnalisé.'}</Text>
+                <Text style={styles.desc}>{fullDescription || desc || 'Informations concernant ce service et accompagnement personnalisé.'}</Text>
 
-                {/* Délai estimé */}
+                {/* Infos clés */}
                 <View style={styles.infoRow}>
                     <View style={styles.infoItem}>
                         <Ionicons name="time-outline" size={18} color={serviceColor} />
                         <View>
                             <Text style={styles.infoLabel}>Délai moyen</Text>
-                            <Text style={styles.infoValue}>4–8 semaines</Text>
+                            <Text style={styles.infoValue} numberOfLines={2}>{duration || '4–8 semaines'}</Text>
                         </View>
                     </View>
                     <View style={[styles.infoItem, styles.infoItemBorder]}>
-                        <Ionicons name="shield-checkmark-outline" size={18} color={serviceColor} />
+                        <Ionicons name="pricetag-outline" size={18} color={serviceColor} />
                         <View>
-                            <Text style={styles.infoLabel}>Garantie</Text>
-                            <Text style={styles.infoValue}>Satisfaction</Text>
+                            <Text style={styles.infoLabel}>Tarif</Text>
+                            <Text style={styles.infoValue} numberOfLines={2}>{price || 'Sur devis'}</Text>
                         </View>
                     </View>
                     <View style={styles.infoItem}>
@@ -173,6 +178,19 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
                         </View>
                         <Ionicons name={item.icon} size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
                         <Text style={styles.processLabel}>{item.label}</Text>
+                    </View>
+                ))}
+
+                <View style={styles.divider} />
+
+                {/* Pièces à fournir */}
+                <Text style={styles.sectionTitle}>Pièces à fournir</Text>
+                {requiredDocs.map((doc, i) => (
+                    <View key={i} style={styles.docRow}>
+                        <View style={[styles.docBullet, { backgroundColor: serviceColor + '18', borderColor: serviceColor + '30' }]}>
+                            <Text style={[styles.docNum, { color: serviceColor }]}>{i + 1}</Text>
+                        </View>
+                        <Text style={styles.docText}>{doc}</Text>
                     </View>
                 ))}
 
@@ -301,4 +319,14 @@ const styles = StyleSheet.create({
         marginTop: 12,
         lineHeight: 18,
     },
+
+    docRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 10 },
+    docBullet: {
+        width: 24, height: 24, borderRadius: 7,
+        borderWidth: 1,
+        alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0, marginTop: 1,
+    },
+    docNum: { fontSize: 11, fontFamily: 'Inter_700Bold' },
+    docText: { ...typography.bodySmall, color: colors.textSecondary, flex: 1, lineHeight: 20 },
 })

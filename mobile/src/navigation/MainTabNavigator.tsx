@@ -9,11 +9,13 @@ import ServicesScreen from '../screens/main/ServicesScreen'
 import DossierScreen from '../screens/main/DossierScreen'
 import MessagesScreen from '../screens/main/MessagesScreen'
 import ProfilScreen from '../screens/main/ProfilScreen'
+import EventsScreen from '../screens/main/EventsScreen'
 
 export type MainTabParamList = {
     Home: undefined
     Services: undefined
     Dossier: undefined
+    Events: undefined
     Messages: undefined
     Profil: undefined
 }
@@ -34,6 +36,8 @@ export default function MainTabNavigator() {
                         iconName = focused ? 'briefcase' : 'briefcase-outline'
                     } else if (route.name === 'Dossier') {
                         iconName = focused ? 'folder-open' : 'folder-open-outline'
+                    } else if (route.name === 'Events') {
+                        iconName = focused ? 'calendar' : 'calendar-outline'
                     } else if (route.name === 'Messages') {
                         iconName = focused ? 'chatbubbles' : 'chatbubbles-outline'
                     } else if (route.name === 'Profil') {
@@ -59,11 +63,12 @@ export default function MainTabNavigator() {
                 },
             })}
         >
-            <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarLabel: 'Accueil' }} />
-            <Tab.Screen name="Dossier" component={DossierScreen} />
-            <Tab.Screen name="Services" component={ServicesScreen} />
-            <Tab.Screen name="Messages" component={MessagesScreen} />
-            <Tab.Screen name="Profil" component={ProfilScreen} />
+            <Tab.Screen name="Home"     component={HomeScreen}     options={{ tabBarLabel: 'Accueil' }} />
+            <Tab.Screen name="Dossier"  component={DossierScreen}  options={{ tabBarLabel: 'Dossier' }} />
+            <Tab.Screen name="Services" component={ServicesScreen}  options={{ tabBarLabel: 'Services' }} />
+            <Tab.Screen name="Events"   component={EventsScreen}   options={{ tabBarLabel: 'Événements' }} />
+            <Tab.Screen name="Messages" component={MessagesScreen}  options={{ tabBarLabel: 'Messages' }} />
+            <Tab.Screen name="Profil"   component={ProfilScreen}   options={{ tabBarLabel: 'Profil' }} />
         </Tab.Navigator>
     )
 }

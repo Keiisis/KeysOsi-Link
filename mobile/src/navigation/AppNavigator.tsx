@@ -10,6 +10,7 @@ import MainTabNavigator from './MainTabNavigator'
 import SplashScreen from '../screens/SplashScreen'
 import OnboardingScreen from '../screens/OnboardingScreen'
 import ServiceDetailsScreen from '../screens/main/ServiceDetailsScreen'
+import EventDetailScreen from '../screens/main/EventDetailScreen'
 import EditProfilScreen from '../screens/main/EditProfilScreen'
 import SecurityScreen from '../screens/main/SecurityScreen'
 import NotificationsScreen from '../screens/main/NotificationsScreen'
@@ -32,6 +33,7 @@ export type RootStackParamList = {
         color: string
         icon: string
     }
+    EventDetail: { event: Record<string, unknown> }
     EditProfil: undefined
     Security: undefined
     Notifications: undefined
@@ -99,6 +101,11 @@ export default function AppNavigator() {
                     <Stack.Screen
                         name="ServiceDetails"
                         component={ServiceDetailsScreen}
+                        options={{ animation: 'slide_from_right' }}
+                    />
+                    <Stack.Screen
+                        name="EventDetail"
+                        component={EventDetailScreen}
                         options={{ animation: 'slide_from_right' }}
                     />
                     <Stack.Screen
