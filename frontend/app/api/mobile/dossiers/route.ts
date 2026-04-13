@@ -20,6 +20,28 @@ export async function POST(req: NextRequest) {
             )
         }
 
+        // S'assurer que le client existe dans client_profiles (cas inscription mobile)
+        const { data: cp } = await supabase
+            .from('client_profiles')
+            .select('id')
+            .eq('id', client_id)
+            .single()
+
+        if (!cp) {
+            // Récupérer l'email depuis auth.users et créer le profil manquant
+            const { data: authUser } = await supabase.auth.admin.getUserById(client_id)
+            if (authUser?.user) {
+                await supabase.from('client_profiles').upsert({
+                    id: client_id,
+                    email: authUser.user.email || '',
+                    nom: authUser.user.user_metadata?.nom || null,
+                    prenom: authUser.user.user_metadata?.prenom || null,
+                    phone: authUser.user.user_metadata?.phone || null,
+                    pays: 'France',
+                }, { onConflict: 'id' })
+            }
+        }
+
         // Vérifier si un dossier actif existe déjà
         const { data: existing } = await supabase
             .from('dossiers')
