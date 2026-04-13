@@ -1,9 +1,9 @@
 "use client"
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 
-export default function MobilePaymentPage() {
+function MobilePaymentContent() {
     const searchParams = useSearchParams()
     const amount = searchParams.get('amount')
     const serviceName = searchParams.get('service')
@@ -20,52 +20,48 @@ export default function MobilePaymentPage() {
             return
         }
 
-        // Script injection
         const script = document.createElement('script')
         script.src = 'https://cdn.kkiapay.me/k.js'
         script.onload = () => {
-             // @ts-ignore
-             if (window.openKkiapayWidget) {
-                 // @ts-ignore
-                 window.openKkiapayWidget({
-                     amount: parseInt(amount, 10),
-                     position: "center",
-                     theme: "#0E9F6E",
-                     sandbox: isSandbox,
-                     key: publicKey,
-                     name: "Retour Gagnant",
-                     reason: `Service : ${serviceName}`,
-                 })
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const w = window as any
+            if (w.openKkiapayWidget) {
+                w.openKkiapayWidget({
+                    amount: parseInt(amount, 10),
+                    position: "center",
+                    theme: "#0E9F6E",
+                    sandbox: isSandbox,
+                    key: publicKey,
+                    name: "Retour Gagnant",
+                    reason: `Service : ${serviceName}`,
+                })
 
-                 // @ts-ignore
-                 window.addKkiapayListener('success', function (response) {
-                     setStatus("Paiement réussi ! Redirection vers l'application...")
-                     if (callbackUrl) {
-                         window.location.href = `${callbackUrl}?status=success&transactionId=${response.transactionId}`
-                     } else {
-                         window.location.href = `retourgagnant://payment-success?transactionId=${response.transactionId}`
-                     }
-                 })
+                w.addKkiapayListener('success', function (response: { transactionId: string }) {
+                    setStatus("Paiement réussi ! Redirection vers l'application...")
+                    if (callbackUrl) {
+                        window.location.href = `${callbackUrl}?status=success&transactionId=${response.transactionId}`
+                    } else {
+                        window.location.href = `retourgagnant://payment-success?transactionId=${response.transactionId}`
+                    }
+                })
 
-                 // @ts-ignore
-                 window.addKkiapayListener('failed', function () {
-                     setStatus("Le paiement a échoué.")
-                     if (callbackUrl) {
-                         window.location.href = `${callbackUrl}?status=failed`
-                     } else {
-                         window.location.href = `retourgagnant://payment-failed`
-                     }
-                 })
+                w.addKkiapayListener('failed', function () {
+                    setStatus("Le paiement a échoué.")
+                    if (callbackUrl) {
+                        window.location.href = `${callbackUrl}?status=failed`
+                    } else {
+                        window.location.href = `retourgagnant://payment-failed`
+                    }
+                })
 
-                 // @ts-ignore
-                 window.addKkiapayListener('close', function () {
-                     if (callbackUrl) {
-                         window.location.href = `${callbackUrl}?status=canceled`
-                     } else {
-                         window.location.href = `retourgagnant://payment-canceled`
-                     }
-                 })
-             }
+                w.addKkiapayListener('close', function () {
+                    if (callbackUrl) {
+                        window.location.href = `${callbackUrl}?status=canceled`
+                    } else {
+                        window.location.href = `retourgagnant://payment-canceled`
+                    }
+                })
+            }
         }
         document.body.appendChild(script)
 
@@ -77,5 +73,17 @@ export default function MobilePaymentPage() {
             <Loader2 className="animate-spin text-emerald-500 mb-4" size={48} />
             <p style={{ color: 'white', fontFamily: 'sans-serif' }}>{status}</p>
         </div>
+    )
+}
+
+export default function MobilePaymentPage() {
+    return (
+        <Suspense fallback={
+            <div style={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
+                <Loader2 className="animate-spin text-emerald-500" size={48} />
+            </div>
+        }>
+            <MobilePaymentContent />
+        </Suspense>
     )
 }
