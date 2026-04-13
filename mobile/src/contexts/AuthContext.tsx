@@ -77,13 +77,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const fetchProfile = async (userId: string) => {
         try {
             const { data, error } = await supabase
-                .from('profiles')
-                .select('id, prenom, nom, email, role, avatar_url, phone, ville, push_token')
+                .from('client_profiles')
+                .select('id, prenom, nom, email, phone, ville, pays, avatar_url')
                 .eq('id', userId)
                 .single()
 
             if (!error && data) {
-                setState(prev => ({ ...prev, profile: data as UserProfile }))
+                setState(prev => ({
+                    ...prev,
+                    profile: {
+                        ...data,
+                        role: 'client',
+                        avatar_url: data.avatar_url ?? undefined,
+                        push_token: undefined,
+                    } as UserProfile,
+                }))
             }
         } catch {
             // Profil introuvable — pas bloquant
@@ -117,9 +125,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const updateProfile = async (data: Partial<UserProfile>) => {
         if (!state.user?.id) return { error: new Error('Non authentifié') }
 
+        const { role: _role, ...updateData } = data
         const { error } = await supabase
-            .from('profiles')
-            .update(data)
+            .from('client_profiles')
+            .update(updateData)
             .eq('id', state.user.id)
 
         if (!error) {
