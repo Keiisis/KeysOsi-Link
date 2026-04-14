@@ -259,14 +259,12 @@ export default function AgentMessagesPage() {
         setChatHistory(prev => [...prev, tempMsg])
         setTimeout(scrollToBottom, 100)
 
-        // Insert into chat_messages
-        await supabase
-            .from('chat_messages')
-            .insert({
-                conversation_id: selected.id,
-                role: 'agent',
-                content: content
-            })
+        // Insert into chat_messages via API (bypasses RLS for reliability)
+        await fetch('/api/support/agent_reply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: selected.id, content }),
+        })
 
         // Also mark as read if it wasn't
         if (!selected.lu) {
@@ -302,7 +300,7 @@ export default function AgentMessagesPage() {
 
         if (filter === 'unread') return matchSearch && !m.lu
         if (filter === 'contact') return matchSearch && m.type === 'contact'
-        if (filter === 'support') return matchSearch && m.type === 'support'
+        if (filter === 'support') return matchSearch && (m.type === 'support' || m.type === 'live_chat')
         return matchSearch
     })
 
@@ -386,8 +384,8 @@ export default function AgentMessagesPage() {
                                         <p className={`text-xs pl-8 ${!m.lu ? 'text-gray-300 font-medium' : 'text-gray-500'} truncate`}>{m.sujet}</p>
                                         <div className="flex justify-between items-center pl-8 mt-2">
                                             <span className="text-[10px] text-gray-600 truncate mr-2">{m.message}</span>
-                                            <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full flex-shrink-0 ${m.type === 'support' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                                                {m.type}
+                                            <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full flex-shrink-0 ${m.type === 'support' ? 'bg-purple-500/20 text-purple-400' : m.type === 'live_chat' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                                                {m.type === 'live_chat' ? '💬 Live' : m.type}
                                             </span>
                                         </div>
                                     </motion.div>

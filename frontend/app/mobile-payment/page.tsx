@@ -1,4 +1,8 @@
 "use client"
+
+// Force dynamic rendering — useSearchParams() requires it even with Suspense (Next.js 15)
+export const dynamic = 'force-dynamic'
+
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
@@ -12,13 +16,14 @@ function MobilePaymentContent() {
     const isSandbox = process.env.NEXT_PUBLIC_KKIAPAY_SANDBOX === 'true'
     const publicKey = isSandbox ? process.env.NEXT_PUBLIC_KKIAPAY_SANDBOX_PUBLIC_KEY : process.env.NEXT_PUBLIC_KKIAPAY_PUBLIC_KEY
 
-    const [status, setStatus] = useState('Chargement du module de paiement...')
+    // Dérive l'état initial directement — évite setState synchrone dans l'effet
+    const isInvalid = !amount || !publicKey
+    const [status, setStatus] = useState(
+        isInvalid ? 'Paramètres de paiement invalides.' : 'Chargement du module de paiement...'
+    )
 
     useEffect(() => {
-        if (!amount || !publicKey) {
-            setStatus("Paramètres de paiement invalides.")
-            return
-        }
+        if (isInvalid) return
 
         const script = document.createElement('script')
         script.src = 'https://cdn.kkiapay.me/k.js'
@@ -66,7 +71,7 @@ function MobilePaymentContent() {
         document.body.appendChild(script)
 
         return () => { document.body.removeChild(script) }
-    }, [amount, serviceName, clientId, publicKey, isSandbox])
+    }, [amount, serviceName, clientId, callbackUrl, publicKey, isSandbox, isInvalid])
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>

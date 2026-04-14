@@ -15,12 +15,14 @@ export async function GET(request: Request) {
 
         const supabase = createClient(supabaseUrl, serviceKey);
 
-        // Cherche la session live ouverte la plus récente pour cet email
+        // Cherche la session live_chat la plus récente (< 24h) pour cet email dans `messages`
+        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         const { data } = await supabase
-            .from('support_sessions')
+            .from('messages')
             .select('id')
             .eq('email', email.toLowerCase().trim())
-            .eq('status', 'open')
+            .eq('type', 'live_chat')
+            .gte('created_at', yesterday)
             .order('created_at', { ascending: false })
             .limit(1);
 
