@@ -3,7 +3,7 @@ import {
     View, Text, ScrollView, StyleSheet, Image,
     TouchableOpacity, RefreshControl, Dimensions, Platform
 } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
+import { Shield, Star, ArrowRight, Folder, MessageSquare, Bell, CreditCard, ShoppingBag, Award } from 'lucide-react-native'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../config/supabase'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
@@ -53,23 +53,23 @@ export default function HomeScreen({ navigation }: any) {
     const initials = ((profile?.prenom?.[0] || '') + (profile?.nom?.[0] || '')).toUpperCase() || 'C'
 
     const SHORTCUTS = [
-        { icon: 'ribbon-outline' as const, label: 'Nationalité', color: colors.gold, dest: 'Services' },
-        { icon: 'folder-open-outline' as const, label: 'Dossier', color: '#1B2A4A', dest: 'Dossier' },
-        { icon: 'chatbubbles-outline' as const, label: 'Messages', color: '#7C5CCA', badge: unreadMessages, dest: 'Messages' },
-        { icon: 'notifications-outline' as const, label: 'Alertes', color: '#E07B54', badge: unreadNotifs, dest: 'Notifications' },
-        { icon: 'card-outline' as const, label: 'Paiements', color: '#3B82C4', dest: 'Payments' },
-        { icon: 'bag-handle-outline' as const, label: 'Boutique', color: '#0F766E', dest: 'Services' },
+        { Icon: Award, label: 'Nationalité', color: colors.primary, dest: 'Services' },
+        { Icon: Folder, label: 'Dossier', color: '#1B2A4A', dest: 'Dossier' },
+        { Icon: MessageSquare, label: 'Messages', color: '#7C5CCA', badge: unreadMessages, dest: 'Messages' },
+        { Icon: Bell, label: 'Alertes', color: '#E07B54', badge: unreadNotifs, dest: 'Notifications' },
+        { Icon: CreditCard, label: 'Paiements', color: '#3B82C4', dest: 'Payments' },
+        { Icon: ShoppingBag, label: 'Boutique', color: '#0F766E', dest: 'Services' },
     ]
 
     const statusConfig: Record<string, { label: string; color: string }> = {
         'soumis':     { label: 'Dossier soumis',           color: colors.info },
         'verifie':    { label: 'En cours de vérification', color: colors.warning },
-        'traitement': { label: 'En cours de traitement',   color: colors.gold },
+        'traitement': { label: 'En cours de traitement',   color: colors.primary },
         'validation': { label: 'En attente de validation', color: '#7C5CCA' },
         'termine':    { label: 'Terminé',                  color: colors.success },
         'annule':     { label: 'Annulé',                   color: colors.danger },
         // anciennes valeurs (rétrocompatibilité)
-        'en_cours':   { label: 'En cours de traitement',   color: colors.gold },
+        'en_cours':   { label: 'En cours de traitement',   color: colors.primary },
         'en_attente': { label: 'En attente de documents',  color: colors.warning },
     }
 
@@ -77,7 +77,7 @@ export default function HomeScreen({ navigation }: any) {
         <ScrollView
             style={styles.container}
             showsVerticalScrollIndicator={false}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.gold} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         >
             {/* ── Header Bleu Nuit Premium ── */}
             <View style={styles.header}>
@@ -106,7 +106,7 @@ export default function HomeScreen({ navigation }: any) {
             <View style={styles.dossierBanner}>
                 <View style={styles.dossierBannerLeft}>
                     <View style={styles.dossierBannerBadge}>
-                        <Ionicons name="shield-checkmark" size={12} color={colors.gold} />
+                        <Shield size={12} color={colors.primary} strokeWidth={2.5} />
                         <Text style={styles.dossierBannerBadgeText}>ESPACE SÉCURISÉ</Text>
                     </View>
                     <Text style={styles.dossierBannerTitle}>
@@ -143,7 +143,7 @@ export default function HomeScreen({ navigation }: any) {
                         onPress={() => navigation.navigate(action.dest)}
                     >
                         <View style={[styles.actionIconWrap, { backgroundColor: action.color + '10' }]}>
-                            <Ionicons name={action.icon} size={24} color={action.color} />
+                            <action.Icon size={24} color={action.color} strokeWidth={1.75} />
                             {action.badge && action.badge > 0 ? (
                                 <View style={styles.actionBadge}>
                                     <Text style={styles.actionBadgeText}>{action.badge}</Text>
@@ -163,14 +163,14 @@ export default function HomeScreen({ navigation }: any) {
             <TouchableOpacity style={styles.vipCard} activeOpacity={0.85} onPress={() => navigation.navigate('Services')}>
                 <View style={styles.vipContent}>
                     <View style={styles.vipBadge}>
-                        <Ionicons name="star" size={12} color="#FFF" />
+                        <Star size={12} color="#FFF" fill="#FFF" strokeWidth={2} />
                         <Text style={styles.vipBadgeText}>EXCLUSIF</Text>
                     </View>
                     <Text style={styles.vipTitle}>Nationalité Béninoise VIP</Text>
                     <Text style={styles.vipDesc}>Récupérez votre nationalité avec un accompagnement prioritaire de A à Z par nos experts.</Text>
                     <View style={styles.vipFooter}>
                         <Text style={styles.vipActionText}>En savoir plus</Text>
-                        <Ionicons name="arrow-forward" size={14} color={colors.gold} />
+                        <ArrowRight size={14} color={colors.primary} strokeWidth={2} />
                     </View>
                 </View>
             </TouchableOpacity>
@@ -194,20 +194,20 @@ const styles = StyleSheet.create({
     },
     headerGoldTop: {
         position: 'absolute', top: 0, left: 0, right: 0,
-        height: 4, backgroundColor: colors.gold,
+        height: 4, backgroundColor: colors.primary,
     },
     headerContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     headerLeft: { flex: 1, marginRight: 16 },
-    greeting: { fontSize: 13, color: colors.goldLight, fontFamily: 'Inter_600SemiBold', opacity: 0.9, letterSpacing: 0.5 },
+    greeting: { fontSize: 13, color: colors.primaryLight, fontFamily: 'Inter_600SemiBold', opacity: 0.9, letterSpacing: 0.5 },
     userName: { ...typography.h2, color: '#FFF', marginTop: 4, letterSpacing: 0.5 },
     avatarWrap: { position: 'relative' },
-    avatar: { width: 54, height: 54, borderRadius: 27, borderWidth: 2, borderColor: colors.gold },
+    avatar: { width: 54, height: 54, borderRadius: 27, borderWidth: 2, borderColor: colors.primary },
     avatarPlaceholder: {
         width: 54, height: 54, borderRadius: 27,
-        backgroundColor: colors.gold + '25', borderWidth: 2, borderColor: colors.gold + '60',
+        backgroundColor: colors.primary + '25', borderWidth: 2, borderColor: colors.primary + '60',
         alignItems: 'center', justifyContent: 'center',
     },
-    avatarInitial: { fontSize: 20, fontFamily: 'Inter_700Bold', color: colors.goldLight },
+    avatarInitial: { fontSize: 20, fontFamily: 'Inter_700Bold', color: colors.primaryLight },
     onlineDot: {
         position: 'absolute', bottom: 2, right: 2,
         width: 14, height: 14, borderRadius: 7,
@@ -225,11 +225,11 @@ const styles = StyleSheet.create({
     dossierBannerLeft: { zIndex: 1 },
     dossierBannerBadge: {
         flexDirection: 'row', alignItems: 'center', gap: 6,
-        backgroundColor: colors.goldMuted, borderRadius: 8,
+        backgroundColor: colors.primaryMuted, borderRadius: 8,
         paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start',
         marginBottom: 12,
     },
-    dossierBannerBadgeText: { ...typography.overline, fontSize: 10, color: colors.goldDark },
+    dossierBannerBadgeText: { ...typography.overline, fontSize: 10, color: colors.primaryDark },
     dossierBannerTitle: { ...typography.h3, color: colors.textPrimary, marginBottom: 6 },
     dossierBannerSub: { ...typography.bodySmall, color: colors.textSecondary },
     progressContainer: { flexDirection: 'row', alignItems: 'center', marginTop: 16, gap: 12 },
@@ -237,8 +237,8 @@ const styles = StyleSheet.create({
         flex: 1, height: 8, backgroundColor: colors.borderLight,
         borderRadius: 4, overflow: 'hidden',
     },
-    progressBar: { height: '100%', backgroundColor: colors.gold, borderRadius: 4 },
-    progressText: { ...typography.label, color: colors.gold, width: 36, textAlign: 'right' },
+    progressBar: { height: '100%', backgroundColor: colors.primary, borderRadius: 4 },
+    progressText: { ...typography.label, color: colors.primary, width: 36, textAlign: 'right' },
 
     // Section
     sectionHeader: {
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     vipContent: { padding: spacing.xl },
     vipBadge: {
         flexDirection: 'row', alignItems: 'center', gap: 4,
-        backgroundColor: colors.gold, borderRadius: 4,
+        backgroundColor: colors.primary, borderRadius: 4,
         paddingHorizontal: 8, paddingVertical: 4, alignSelf: 'flex-start',
         marginBottom: 12,
     },
@@ -295,5 +295,5 @@ const styles = StyleSheet.create({
     vipTitle: { ...typography.h3, color: colors.textPrimary, marginBottom: 8 },
     vipDesc: { ...typography.bodySmall, color: colors.textSecondary, lineHeight: 22, marginBottom: 16 },
     vipFooter: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    vipActionText: { ...typography.label, color: colors.gold },
+    vipActionText: { ...typography.label, color: colors.primary },
 })

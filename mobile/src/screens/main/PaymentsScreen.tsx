@@ -3,9 +3,12 @@ import {
     View, Text, ScrollView, StyleSheet, TouchableOpacity,
     RefreshControl, Platform, Alert, ActivityIndicator, Linking,
 } from 'react-native'
+import { ArrowLeft, CreditCard, PlusCircle, Receipt, ShieldCheck } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { useKkiapay } from '@kkiapay-org/react-native-sdk'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../../contexts/AuthContext'
+import { useLang } from '../../contexts/LangContext'
 import { supabase } from '../../config/supabase'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
 import { RootStackParamList } from '../../navigation/AppNavigator'
@@ -24,11 +27,18 @@ interface Payment {
     created_at: string
 }
 
+const STATUS_LABELS = {
+    success:  'Payé',
+    pending:  'En attente',
+    failed:   'Échoué',
+    refunded: 'Remboursé',
+}
+
 const STATUS_CONFIG = {
-    success:  { label: 'Payé',       icon: 'checkmark-circle'  as const, color: colors.success },
-    pending:  { label: 'En attente', icon: 'time-outline'       as const, color: colors.warning },
-    failed:   { label: 'Échoué',     icon: 'close-circle'       as const, color: colors.danger  },
-    refunded: { label: 'Remboursé',  icon: 'arrow-undo-circle'  as const, color: colors.info    },
+    success:  { icon: 'checkmark-circle'  as const, color: colors.success },
+    pending:  { icon: 'time-outline'       as const, color: colors.warning },
+    failed:   { icon: 'close-circle'       as const, color: colors.danger  },
+    refunded: { icon: 'arrow-undo-circle'  as const, color: colors.info    },
 }
 
 /* NOTE: Pour une intégration Kkiapay in-app (WebView),
@@ -42,6 +52,7 @@ const STATUS_CONFIG = {
 
 export default function PaymentsScreen({ navigation }: { navigation: Nav }) {
     const { profile } = useAuth()
+    const { t } = useLang()
     const [payments, setPayments] = useState<Payment[]>([])
     const [loading, setLoading] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
@@ -86,25 +97,17 @@ export default function PaymentsScreen({ navigation }: { navigation: Nav }) {
         setRefreshing(false)
     }
 
-    /* ── Initier un paiement Kkiapay ── */
+    /* ── Hook Kkiapay natif ── */
+    const { openKkiapayWidget, addSuccessListener } = useKkiapay()
+
+    /* ── Initier un paiement Kkiapay (natif in-app) ── */
     const handleInitPayment = async (amount: number, description: string, dossierId?: string) => {
         if (!profile || !kkiapayKey) {
             Alert.alert('Configuration', 'La passerelle de paiement n\'est pas configurée. Veuillez contacter le support.')
             return
         }
 
-        // Construire l'URL Kkiapay (checkout web)
         const transactionId = `RG-${profile.id.slice(0, 8)}-${Date.now()}`
-        const callbackUrl = `retour-gagnant://payment-callback?ref=${transactionId}`
-        const kkiapayUrl = `https://kkiapay.me/pay?`
-            + `amount=${amount}`
-            + `&key=${kkiapayKey}`
-            + `&reason=${encodeURIComponent(description)}`
-            + `&fullname=${encodeURIComponent(`${profile.prenom} ${profile.nom}`)}`
-            + `&email=${encodeURIComponent(profile.email)}`
-            + `&phone=${encodeURIComponent(profile.phone || '')}`
-            + `&callback=${encodeURIComponent(callbackUrl)}`
-            + `&data=${encodeURIComponent(JSON.stringify({ transaction_id: transactionId, client_id: profile.id, dossier_id: dossierId }))}`
 
         // Enregistrer le paiement en attente
         await supabase.from('paiements').insert({
@@ -118,18 +121,26 @@ export default function PaymentsScreen({ navigation }: { navigation: Nav }) {
             gateway: 'kkiapay',
         })
 
-        // Ouvrir Kkiapay dans le navigateur
-        const canOpen = await Linking.canOpenURL(kkiapayUrl)
-        if (canOpen) {
-            await Linking.openURL(kkiapayUrl)
-            Alert.alert(
-                'Paiement initié',
-                'Vous avez été redirigé vers Kkiapay pour finaliser le paiement. Actualisez cet écran après le paiement.',
-                [{ text: 'OK' }]
-            )
-        } else {
-            Alert.alert('Erreur', 'Impossible d\'ouvrir la page de paiement.')
-        }
+        // Écouter le succès du paiement
+        addSuccessListener(async (data: any) => {
+            const kkTxId = data?.transactionId || data?.transaction_id || transactionId
+            // Mettre à jour le paiement en base
+            await supabase.from('paiements')
+                .update({ status: 'completed', transaction_id: String(kkTxId) })
+                .eq('transaction_id', transactionId)
+            Alert.alert('✅ Paiement confirmé', `Votre paiement de ${amount.toLocaleString('fr-FR')} FCFA a été reçu.`)
+            await fetchPayments()
+        })
+
+        // Ouvrir le widget Kkiapay natif (in-app)
+        openKkiapayWidget({
+            amount,
+            api_key: kkiapayKey,
+            sandbox: false,
+            email: profile.email || '',
+            phone: profile.phone || '',
+            reason: description || 'Paiement',
+        })
 
         await fetchPayments()
     }
@@ -154,27 +165,27 @@ export default function PaymentsScreen({ navigation }: { navigation: Nav }) {
         <ScrollView
             style={styles.container}
             showsVerticalScrollIndicator={false}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.gold} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         >
             {/* Header */}
             <View style={styles.header}>
-                <View style={styles.goldLine} />
+                <View style={styles.primaryLine} />
                 <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <Ionicons name="arrow-back" size={22} color={colors.textOnDark} />
+                    <ArrowLeft size={22} color={colors.textOnDark} strokeWidth={1.75} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Paiements</Text>
-                <Text style={styles.headerSub}>Historique et facturation</Text>
+                <Text style={styles.headerTitle}>{t('Paiements')}</Text>
+                <Text style={styles.headerSub}>{t('Historique et facturation')}</Text>
             </View>
 
             {/* Résumé */}
             <View style={styles.summaryCard}>
                 <View style={styles.summaryLeft}>
-                    <Text style={styles.summaryLabel}>Total payé</Text>
+                    <Text style={styles.summaryLabel}>{t('Total payé')}</Text>
                     <Text style={styles.summaryAmount}>{formatAmount(totalPaid, 'XOF')}</Text>
-                    <Text style={styles.summaryCount}>{payments.filter(p => p.status === 'success').length} transaction(s)</Text>
+                    <Text style={styles.summaryCount}>{payments.filter(p => p.status === 'success').length} {t('transaction(s)')}</Text>
                 </View>
                 <View style={styles.summaryIcon}>
-                    <Ionicons name="card" size={28} color={colors.gold} />
+                    <CreditCard size={28} color={colors.primary} strokeWidth={1.75} />
                 </View>
             </View>
 
@@ -190,7 +201,7 @@ export default function PaymentsScreen({ navigation }: { navigation: Nav }) {
                             { text: 'Annuler', style: 'cancel' },
                             {
                                 text: 'Payer via Kkiapay',
-                                onPress: (value) => {
+                                onPress: (value: string | undefined) => {
                                     const amount = parseInt(value || '0', 10)
                                     if (!amount || amount < 100) {
                                         Alert.alert('Montant invalide', 'Veuillez entrer un montant valide.')
@@ -209,28 +220,28 @@ export default function PaymentsScreen({ navigation }: { navigation: Nav }) {
                     )
                 }}
             >
-                <Ionicons name="add-circle-outline" size={20} color="#FFF" />
-                <Text style={styles.newPaymentBtnText}>Effectuer un paiement</Text>
+                <PlusCircle size={20} color="#FFF" strokeWidth={1.75} />
+                <Text style={styles.newPaymentBtnText}>{t('Effectuer un paiement')}</Text>
             </TouchableOpacity>
 
             {/* Liste */}
             <View style={styles.listHeader}>
-                <Ionicons name="receipt-outline" size={18} color={colors.gold} />
-                <Text style={styles.listTitle}>Transactions ({payments.length})</Text>
+                <Receipt size={18} color={colors.primary} strokeWidth={1.75} />
+                <Text style={styles.listTitle}>{t('Transactions')} ({payments.length})</Text>
             </View>
 
             {loading ? (
                 <View style={styles.centerState}>
-                    <ActivityIndicator color={colors.gold} size="large" />
+                    <ActivityIndicator color={colors.primary} size="large" />
                 </View>
             ) : payments.length === 0 ? (
                 <View style={styles.emptyCard}>
                     <View style={styles.emptyIconWrap}>
-                        <Ionicons name="receipt-outline" size={36} color={colors.textMuted} />
+                        <Receipt size={36} color={colors.textMuted} strokeWidth={1.75} />
                     </View>
-                    <Text style={styles.emptyTitle}>Aucune transaction</Text>
+                    <Text style={styles.emptyTitle}>{t('Aucune transaction')}</Text>
                     <Text style={styles.emptyText}>
-                        Vos paiements apparaîtront ici. Utilisez le bouton ci-dessus pour effectuer un paiement sécurisé via Kkiapay.
+                        {t('Vos paiements apparaîtront ici. Utilisez le bouton ci-dessus pour effectuer un paiement sécurisé via Kkiapay.')}
                     </Text>
                 </View>
             ) : (
@@ -249,7 +260,7 @@ export default function PaymentsScreen({ navigation }: { navigation: Nav }) {
                                     <Text style={styles.paymentDesc} numberOfLines={1}>
                                         {payment.reason || 'Paiement service'}
                                     </Text>
-                                    <Text style={styles.paymentRef}>Réf : {payment.transaction_id || '—'}</Text>
+                                    <Text style={styles.paymentRef}>{t('Réf')} : {payment.transaction_id || '—'}</Text>
                                     <Text style={styles.paymentDate}>{formatDate(payment.created_at)}</Text>
                                 </View>
                                 <View style={styles.paymentRight}>
@@ -257,7 +268,7 @@ export default function PaymentsScreen({ navigation }: { navigation: Nav }) {
                                         {formatAmount(payment.amount, payment.currency)}
                                     </Text>
                                     <View style={[styles.statusBadge, { backgroundColor: st.color + '12' }]}>
-                                        <Text style={[styles.statusText, { color: st.color }]}>{st.label}</Text>
+                                        <Text style={[styles.statusText, { color: st.color }]}>{t(STATUS_LABELS[payment.status] || STATUS_LABELS.pending)}</Text>
                                     </View>
                                 </View>
                             </View>
@@ -268,9 +279,9 @@ export default function PaymentsScreen({ navigation }: { navigation: Nav }) {
 
             {/* Note Kkiapay */}
             <View style={styles.kkiapayNote}>
-                <Ionicons name="shield-checkmark-outline" size={14} color={colors.textMuted} />
+                <ShieldCheck size={14} color={colors.textMuted} strokeWidth={1.75} />
                 <Text style={styles.kkiapayNoteText}>
-                    Paiements sécurisés par Kkiapay — Mobile Money, cartes bancaires
+                    {t('Paiements sécurisés par Kkiapay — Mobile Money, cartes bancaires')}
                 </Text>
             </View>
 
@@ -290,10 +301,10 @@ const styles = StyleSheet.create({
         borderBottomLeftRadius: 28,
         borderBottomRightRadius: 28,
     },
-    goldLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.gold },
+    primaryLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.primary },
     backBtn: { marginBottom: spacing.md },
     headerTitle: { ...typography.h2, color: colors.textOnDark },
-    headerSub: { ...typography.bodySmall, color: colors.gold + 'AA', marginTop: 4 },
+    headerSub: { ...typography.bodySmall, color: colors.primary + 'AA', marginTop: 4 },
 
     summaryCard: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -301,25 +312,25 @@ const styles = StyleSheet.create({
         backgroundColor: colors.headerBg,
         borderRadius: radius.lg,
         padding: spacing.lg,
-        borderWidth: 1, borderColor: colors.gold + '25',
+        borderWidth: 1, borderColor: colors.primary + '25',
         ...shadows.md,
     },
     summaryLeft: { gap: 4 },
-    summaryLabel: { ...typography.caption, color: colors.gold + 'AA' },
+    summaryLabel: { ...typography.caption, color: colors.primary + 'AA' },
     summaryAmount: { ...typography.h2, color: colors.textOnDark },
     summaryCount: { ...typography.caption, color: colors.textMuted },
     summaryIcon: {
         width: 52, height: 52, borderRadius: 26,
-        backgroundColor: colors.gold + '15',
+        backgroundColor: colors.primary + '15',
         alignItems: 'center', justifyContent: 'center',
     },
 
     newPaymentBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
         marginHorizontal: spacing.lg, marginBottom: spacing.lg,
-        backgroundColor: colors.gold,
+        backgroundColor: colors.primary,
         borderRadius: radius.md, paddingVertical: 15,
-        ...shadows.gold,
+        ...shadows.primary,
     },
     newPaymentBtnText: { ...typography.button, color: '#FFF' },
 

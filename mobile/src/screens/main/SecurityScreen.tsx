@@ -4,6 +4,7 @@ import {
     ScrollView, KeyboardAvoidingView, Platform,
     ActivityIndicator, Alert,
 } from 'react-native'
+import { ArrowLeft, Lock, LogOut, ShieldCheck } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { supabase } from '../../config/supabase'
@@ -79,12 +80,7 @@ export default function SecurityScreen({ navigation }: { navigation: Nav }) {
         <View style={styles.inputGroup}>
             <Text style={styles.label}>{label}</Text>
             <View style={[styles.inputWrapper, focused === field && styles.inputFocused]}>
-                <Ionicons
-                    name="lock-closed-outline"
-                    size={18}
-                    color={focused === field ? colors.gold : colors.textMuted}
-                    style={styles.inputIcon}
-                />
+                <Lock size={18} color={focused === field ? colors.primary : colors.textMuted} strokeWidth={1.75} style={styles.inputIcon}/>
                 <TextInput
                     style={[styles.input, { flex: 1 }]}
                     value={value}
@@ -118,9 +114,9 @@ export default function SecurityScreen({ navigation }: { navigation: Nav }) {
         >
             {/* Header */}
             <View style={styles.header}>
-                <View style={styles.goldLine} />
+                <View style={styles.primaryLine} />
                 <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <Ionicons name="arrow-back" size={22} color={colors.textOnDark} />
+                    <ArrowLeft size={22} color={colors.textOnDark} strokeWidth={1.75} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Sécurité</Text>
                 <Text style={styles.headerSub}>Gérez votre mot de passe</Text>
@@ -133,7 +129,7 @@ export default function SecurityScreen({ navigation }: { navigation: Nav }) {
             >
                 {/* Info banner */}
                 <View style={styles.infoBanner}>
-                    <Ionicons name="shield-checkmark" size={20} color={colors.gold} />
+                    <ShieldCheck size={20} color={colors.primary} strokeWidth={1.75} />
                     <Text style={styles.infoText}>
                         Choisissez un mot de passe fort : au moins 8 caractères, avec majuscules, chiffres et symboles.
                     </Text>
@@ -228,7 +224,7 @@ export default function SecurityScreen({ navigation }: { navigation: Nav }) {
                             <ActivityIndicator color="#FFF" size="small" />
                         ) : (
                             <>
-                                <Ionicons name="shield-checkmark-outline" size={20} color="#FFF" />
+                                <ShieldCheck size={20} color="#FFF" strokeWidth={1.75} />
                                 <Text style={styles.saveBtnText}>Modifier le mot de passe</Text>
                             </>
                         )}
@@ -238,7 +234,7 @@ export default function SecurityScreen({ navigation }: { navigation: Nav }) {
                 {/* Section sessions */}
                 <View style={styles.card2}>
                     <View style={styles.card2Header}>
-                        <Ionicons name="log-out-outline" size={20} color={colors.gold} />
+                        <LogOut size={20} color={colors.primary} strokeWidth={1.75} />
                         <Text style={styles.card2Title}>Déconnexion sécurisée</Text>
                     </View>
                     <Text style={styles.card2Text}>
@@ -260,10 +256,10 @@ const styles = StyleSheet.create({
         borderBottomLeftRadius: 28,
         borderBottomRightRadius: 28,
     },
-    goldLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.gold },
+    primaryLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.primary },
     backBtn: { marginBottom: spacing.md },
     headerTitle: { ...typography.h2, color: colors.textOnDark },
-    headerSub: { ...typography.bodySmall, color: colors.gold + 'AA', marginTop: 4 },
+    headerSub: { ...typography.bodySmall, color: colors.primary + 'AA', marginTop: 4 },
 
     scroll: { padding: spacing.lg, paddingBottom: 60 },
 
@@ -271,10 +267,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'flex-start',
         gap: 10,
-        backgroundColor: colors.gold + '15',
+        backgroundColor: colors.primary + '15',
         borderRadius: radius.md,
         borderWidth: 1,
-        borderColor: colors.gold + '30',
+        borderColor: colors.primary + '30',
         padding: spacing.md,
         marginBottom: spacing.lg,
     },
@@ -299,7 +295,7 @@ const styles = StyleSheet.create({
         borderWidth: 1.5, borderColor: colors.border,
         paddingHorizontal: spacing.md, minHeight: 52,
     },
-    inputFocused: { borderColor: colors.gold, backgroundColor: colors.goldShimmer },
+    inputFocused: { borderColor: colors.primary, backgroundColor: colors.primaryMuted },
     inputIcon: { marginRight: 10 },
     input: { fontSize: 16, color: colors.textPrimary, fontFamily: 'Inter_400Regular' },
     eyeBtn: { padding: 4 },
@@ -323,7 +319,7 @@ const styles = StyleSheet.create({
     matchText: { ...typography.caption },
 
     saveBtn: {
-        backgroundColor: colors.gold,
+        backgroundColor: colors.primary,
         borderRadius: radius.md,
         paddingVertical: 16,
         flexDirection: 'row',
@@ -331,7 +327,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: 10,
         marginTop: spacing.sm,
-        shadowColor: colors.gold,
+        shadowColor: colors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 10,

@@ -4,7 +4,7 @@ import {
     View, Text, ScrollView, StyleSheet, TouchableOpacity,
     RefreshControl, Platform, ActivityIndicator, Dimensions,
 } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
+import { ArrowRight, Calendar, CheckCircle, Clock, MapPin, Star } from 'lucide-react-native'
 import { useAuth } from '../../contexts/AuthContext'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
 
@@ -113,7 +113,7 @@ const FALLBACK_EVENTS: AppEvent[] = [
 const CATEGORIES = ['Tous', 'Gala', 'Forum', 'Tourisme', 'Séminaire', 'Conférence']
 
 const CATEGORY_COLORS: Record<string, string> = {
-    'Gala': colors.gold,
+    'Gala': colors.primary,
     'Forum': '#3B82C4',
     'Tourisme': '#E07B54',
     'Séminaire': '#7C5CCA',
@@ -143,7 +143,7 @@ function isFuture(iso: string) {
 // ─── EventCard ────────────────────────────────────────────────────────────────
 
 function EventCard({ event, onPress }: { event: AppEvent; onPress: () => void }) {
-    const catColor = CATEGORY_COLORS[event.category || ''] || colors.gold
+    const catColor = CATEGORY_COLORS[event.category || ''] || colors.primary
     const isFree = event.price_standard === 0
     const isRegistered = !!event.my_registration
 
@@ -154,7 +154,7 @@ function EventCard({ event, onPress }: { event: AppEvent; onPress: () => void })
         'Séminaire': ['#7C5CCA', '#4F46E5'],
         'Conférence':['#2D9F63', '#0F766E'],
     }
-    const grad = gradients[event.category || ''] || [colors.gold, colors.goldDark]
+    const grad = gradients[event.category || ''] || [colors.primary, colors.primaryDark]
 
     return (
         <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={onPress}>
@@ -167,7 +167,7 @@ function EventCard({ event, onPress }: { event: AppEvent; onPress: () => void })
                 <View style={styles.cardBadgesRow}>
                     {event.is_featured && (
                         <View style={styles.featuredBadge}>
-                            <Ionicons name="star" size={9} color={colors.gold} />
+                            <Star size={9} color={colors.primary} strokeWidth={1.75} />
                             <Text style={styles.featuredText}>À la une</Text>
                         </View>
                     )}
@@ -186,7 +186,7 @@ function EventCard({ event, onPress }: { event: AppEvent; onPress: () => void })
 
                 {isRegistered && (
                     <View style={styles.registeredBadge}>
-                        <Ionicons name="checkmark-circle" size={12} color={colors.success} />
+                        <CheckCircle size={12} color={colors.success} strokeWidth={1.75} />
                         <Text style={styles.registeredText}>Inscrit</Text>
                     </View>
                 )}
@@ -199,11 +199,11 @@ function EventCard({ event, onPress }: { event: AppEvent; onPress: () => void })
 
                 <View style={styles.cardInfoRow}>
                     <View style={styles.cardInfoItem}>
-                        <Ionicons name="location-outline" size={12} color={colors.textMuted} />
+                        <MapPin size={12} color={colors.textMuted} strokeWidth={1.75} />
                         <Text style={styles.cardInfoText} numberOfLines={1}>{event.location}</Text>
                     </View>
                     <View style={styles.cardInfoItem}>
-                        <Ionicons name="time-outline" size={12} color={colors.textMuted} />
+                        <Clock size={12} color={colors.textMuted} strokeWidth={1.75} />
                         <Text style={styles.cardInfoText}>{formatTime(event.start_date)}</Text>
                     </View>
                 </View>
@@ -215,8 +215,8 @@ function EventCard({ event, onPress }: { event: AppEvent; onPress: () => void })
                                 <Text style={[styles.priceText, { color: colors.success }]}>Gratuit</Text>
                             </View>
                         ) : (
-                            <View style={[styles.priceBadge, { backgroundColor: colors.goldMuted }]}>
-                                <Text style={[styles.priceText, { color: colors.goldDark }]}>
+                            <View style={[styles.priceBadge, { backgroundColor: colors.primaryMuted }]}>
+                                <Text style={[styles.priceText, { color: colors.primaryDark }]}>
                                     {formatPrice(event.price_standard, event.currency)}
                                 </Text>
                             </View>
@@ -224,7 +224,7 @@ function EventCard({ event, onPress }: { event: AppEvent; onPress: () => void })
                     </View>
                     <View style={[styles.cardBtn, { backgroundColor: catColor }]}>
                         <Text style={styles.cardBtnText}>Voir</Text>
-                        <Ionicons name="arrow-forward" size={11} color="#FFF" />
+                        <ArrowRight size={11} color="#FFF" strokeWidth={1.75} />
                     </View>
                 </View>
             </View>
@@ -267,18 +267,18 @@ export default function EventsScreen({ navigation }: any) {
         <ScrollView
             style={styles.container}
             showsVerticalScrollIndicator={false}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.gold} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         >
             {/* Header */}
             <View style={styles.header}>
-                <View style={styles.goldLine} />
+                <View style={styles.primaryLine} />
                 <Text style={styles.headerTitle}>Événements</Text>
                 <Text style={styles.headerSub}>Galas, forums, circuits culturels et séminaires</Text>
             </View>
 
             {loading ? (
                 <View style={styles.loadingWrap}>
-                    <ActivityIndicator color={colors.gold} size="large" />
+                    <ActivityIndicator color={colors.primary} size="large" />
                     <Text style={styles.loadingText}>Chargement des événements…</Text>
                 </View>
             ) : (
@@ -290,16 +290,16 @@ export default function EventsScreen({ navigation }: any) {
                             activeOpacity={0.88}
                             onPress={() => navigation.navigate('EventDetail', { event: featured })}
                         >
-                            <View style={[styles.featuredCover, { backgroundColor: colors.navy }]}>
+                            <View style={[styles.featuredCover, { backgroundColor: colors.surface }]}>
                                 <View style={styles.featuredPattern} />
                                 <View style={styles.featuredTopRow}>
                                     <View style={styles.featuredLabel}>
-                                        <Ionicons name="star" size={10} color={colors.gold} />
+                                        <Star size={10} color={colors.primary} strokeWidth={1.75} />
                                         <Text style={styles.featuredLabelText}>Événement Phare</Text>
                                     </View>
                                     {featured.my_registration && (
                                         <View style={styles.registeredBadgeLg}>
-                                            <Ionicons name="checkmark-circle" size={13} color={colors.success} />
+                                            <CheckCircle size={13} color={colors.success} strokeWidth={1.75} />
                                             <Text style={styles.registeredTextLg}>Inscrit</Text>
                                         </View>
                                     )}
@@ -307,11 +307,11 @@ export default function EventsScreen({ navigation }: any) {
                                 <View style={styles.featuredInfo}>
                                     <Text style={styles.featuredTitle} numberOfLines={2}>{featured.title}</Text>
                                     <View style={styles.featuredMeta}>
-                                        <Ionicons name="calendar-outline" size={13} color={colors.gold + 'BB'} />
+                                        <Calendar size={13} color={colors.primary + 'BB'} strokeWidth={1.75} />
                                         <Text style={styles.featuredMetaText}>{formatDate(featured.start_date)} · {formatTime(featured.start_date)}</Text>
                                     </View>
                                     <View style={styles.featuredMeta}>
-                                        <Ionicons name="location-outline" size={13} color={colors.gold + 'BB'} />
+                                        <MapPin size={13} color={colors.primary + 'BB'} strokeWidth={1.75} />
                                         <Text style={styles.featuredMetaText}>{featured.address || featured.location}</Text>
                                     </View>
                                     <View style={styles.featuredBottom}>
@@ -323,7 +323,7 @@ export default function EventsScreen({ navigation }: any) {
                                         </Text>
                                         <View style={styles.featuredBtn}>
                                             <Text style={styles.featuredBtnText}>S'inscrire</Text>
-                                            <Ionicons name="arrow-forward" size={13} color="#FFF" />
+                                            <ArrowRight size={13} color="#FFF" strokeWidth={1.75} />
                                         </View>
                                     </View>
                                 </View>
@@ -355,7 +355,7 @@ export default function EventsScreen({ navigation }: any) {
                     <View style={styles.listWrap}>
                         {filtered.length === 0 ? (
                             <View style={styles.emptyWrap}>
-                                <Ionicons name="calendar-outline" size={40} color={colors.textMuted} />
+                                <Calendar size={40} color={colors.textMuted} strokeWidth={1.75} />
                                 <Text style={styles.emptyText}>Aucun événement dans cette catégorie</Text>
                             </View>
                         ) : (
@@ -389,9 +389,9 @@ const styles = StyleSheet.create({
         borderBottomLeftRadius: 28,
         borderBottomRightRadius: 28,
     },
-    goldLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.gold },
+    primaryLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.primary },
     headerTitle: { ...typography.h1, color: colors.textOnDark },
-    headerSub: { ...typography.bodySmall, color: colors.gold + 'AA', marginTop: 4 },
+    headerSub: { ...typography.bodySmall, color: colors.primary + 'AA', marginTop: 4 },
 
     loadingWrap: { paddingTop: 60, alignItems: 'center', gap: 12 },
     loadingText: { ...typography.bodySmall, color: colors.textSecondary },
@@ -407,10 +407,10 @@ const styles = StyleSheet.create({
     featuredTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     featuredLabel: {
         flexDirection: 'row', alignItems: 'center', gap: 5,
-        backgroundColor: colors.gold + '20', borderRadius: 20,
+        backgroundColor: colors.primary + '20', borderRadius: 20,
         paddingHorizontal: 10, paddingVertical: 5,
     },
-    featuredLabelText: { fontSize: 10, fontFamily: 'Inter_700Bold', color: colors.gold, letterSpacing: 0.5 },
+    featuredLabelText: { fontSize: 10, fontFamily: 'Inter_700Bold', color: colors.primary, letterSpacing: 0.5 },
     registeredBadgeLg: {
         flexDirection: 'row', alignItems: 'center', gap: 4,
         backgroundColor: colors.successBg, borderRadius: 12,
@@ -421,12 +421,12 @@ const styles = StyleSheet.create({
     featuredInfo: { gap: 8, marginTop: 16 },
     featuredTitle: { ...typography.h2, color: '#FFF', lineHeight: 28 },
     featuredMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    featuredMetaText: { ...typography.caption, color: colors.gold + 'BB', flex: 1 },
+    featuredMetaText: { ...typography.caption, color: colors.primary + 'BB', flex: 1 },
     featuredBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
-    featuredPrice: { ...typography.label, color: colors.gold },
+    featuredPrice: { ...typography.label, color: colors.primary },
     featuredBtn: {
         flexDirection: 'row', alignItems: 'center', gap: 6,
-        backgroundColor: colors.gold, borderRadius: radius.md,
+        backgroundColor: colors.primary, borderRadius: radius.md,
         paddingHorizontal: 16, paddingVertical: 10,
     },
     featuredBtnText: { fontSize: 13, fontFamily: 'Inter_700Bold', color: '#FFF' },
@@ -440,9 +440,9 @@ const styles = StyleSheet.create({
         borderColor: colors.borderLight,
         backgroundColor: colors.surface,
     },
-    filterPillActive: { borderColor: colors.gold, backgroundColor: colors.goldMuted },
+    filterPillActive: { borderColor: colors.primary, backgroundColor: colors.primaryMuted },
     filterText: { ...typography.caption, color: colors.textSecondary },
-    filterTextActive: { color: colors.goldDark, fontFamily: 'Inter_700Bold' },
+    filterTextActive: { color: colors.primaryDark, fontFamily: 'Inter_700Bold' },
 
     // Liste
     listWrap: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: 14 },
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 10,
         paddingHorizontal: 7, paddingVertical: 4,
     },
-    featuredText: { fontSize: 9, fontFamily: 'Inter_700Bold', color: colors.gold },
+    featuredText: { fontSize: 9, fontFamily: 'Inter_700Bold', color: colors.primary },
     catBadge: { borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4 },
     catText: { fontSize: 10, fontFamily: 'Inter_700Bold' },
     dateBadge: {

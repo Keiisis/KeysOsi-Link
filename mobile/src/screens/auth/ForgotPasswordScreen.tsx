@@ -4,30 +4,33 @@ import {
     StyleSheet, KeyboardAvoidingView, Platform,
     ActivityIndicator, Alert, Image, ScrollView
 } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
+import { ArrowLeft, Key, Mail, Send } from 'lucide-react-native'
+import { LinearGradient } from 'expo-linear-gradient'
 import { useAuth } from '../../contexts/AuthContext'
+import { useLang } from '../../contexts/LangContext'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
 
 export default function ForgotPasswordScreen({ navigation }: any) {
     const { resetPassword } = useAuth()
+    const { t } = useLang()
     const [email, setEmail] = useState('')
     const [loading, setLoading] = useState(false)
     const [focused, setFocused] = useState(false)
 
     const handleReset = async () => {
         if (!email.trim()) {
-            Alert.alert('Champs requis', 'Veuillez entrer votre adresse email.')
+            Alert.alert(t('Champs requis'), t('Veuillez entrer votre adresse email.'))
             return
         }
         setLoading(true)
         const { error } = await resetPassword(email.trim())
         setLoading(false)
         if (error) {
-            Alert.alert('Erreur', error.message)
+            Alert.alert(t('Erreur'), error.message)
         } else {
             Alert.alert(
-                'Email envoyé',
-                'Vérifiez votre boîte de réception pour réinitialiser votre mot de passe.',
+                t('Email envoyé'),
+                t('Vérifiez votre boîte de réception pour réinitialiser votre mot de passe.'),
                 [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
             )
         }
@@ -36,27 +39,31 @@ export default function ForgotPasswordScreen({ navigation }: any) {
     return (
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
             <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-                {/* Header band */}
-                <View style={styles.headerBand}>
-                    <View style={styles.goldLine} />
+                <LinearGradient colors={['#070D1A', '#0C1B33', '#132846']} style={styles.headerBand}>
+                    <View style={styles.flagStripe}>
+                        <View style={[styles.flagSeg, { backgroundColor: colors.flagGreen }]} />
+                        <View style={[styles.flagSeg, { backgroundColor: colors.flagYellow }]} />
+                        <View style={[styles.flagSeg, { backgroundColor: colors.flagRed }]} />
+                    </View>
                     <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                        <Ionicons name="arrow-back" size={24} color={colors.goldLight} />
+                        <ArrowLeft size={24} color="#FFFFFF" strokeWidth={1.75} />
                     </TouchableOpacity>
                     <Image source={require('../../../assets/icon.png')} style={styles.logo} resizeMode="contain" />
-                </View>
+                </LinearGradient>
 
-                {/* Card */}
                 <View style={styles.card}>
-                    <Ionicons name="key-outline" size={32} color={colors.gold} style={styles.cardIcon} />
-                    <Text style={styles.title}>Mot de passe oublié</Text>
+                    <View style={styles.cardIconWrap}>
+                        <Key size={28} color={colors.primary} strokeWidth={1.75} />
+                    </View>
+                    <Text style={styles.title}>{t('Mot de passe oublié')}</Text>
                     <Text style={styles.subtitle}>
-                        Entrez votre adresse email et nous vous enverrons un lien de réinitialisation sécurisé.
+                        {t('Entrez votre adresse email et nous vous enverrons un lien de réinitialisation sécurisé.')}
                     </Text>
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Adresse email</Text>
+                        <Text style={styles.label}>{t('Adresse email')}</Text>
                         <View style={[styles.inputWrapper, focused && styles.inputFocused]}>
-                            <Ionicons name="mail-outline" size={18} color={focused ? colors.gold : colors.textMuted} style={styles.inputIcon} />
+                            <Mail size={18} color={focused ? colors.primary : colors.textMuted} strokeWidth={1.75} style={styles.inputIcon}/>
                             <TextInput
                                 style={styles.input}
                                 placeholder="votre@email.com"
@@ -72,8 +79,8 @@ export default function ForgotPasswordScreen({ navigation }: any) {
                     <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={handleReset} disabled={loading} activeOpacity={0.85}>
                         {loading ? <ActivityIndicator color="#FFFFFF" size="small" /> : (
                             <>
-                                <Text style={styles.buttonText}>Envoyer le lien</Text>
-                                <Ionicons name="send-outline" size={18} color="#FFFFFF" />
+                                <Text style={styles.buttonText}>{t('Envoyer le lien')}</Text>
+                                <Send size={18} color="#FFFFFF" strokeWidth={1.75} />
                             </>
                         )}
                     </TouchableOpacity>
@@ -90,24 +97,27 @@ const styles = StyleSheet.create({
     scroll: { flexGrow: 1 },
 
     headerBand: {
-        backgroundColor: colors.headerBg,
         paddingTop: Platform.OS === 'ios' ? 64 : 48,
         paddingBottom: 40, alignItems: 'center',
-        borderBottomLeftRadius: 32, borderBottomRightRadius: 32,
+        borderBottomLeftRadius: 28, borderBottomRightRadius: 28,
         position: 'relative',
     },
-    goldLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.gold },
+    flagStripe: { position: 'absolute', top: 0, left: 0, right: 0, height: 4, flexDirection: 'row' },
+    flagSeg: { flex: 1 },
     backBtn: { position: 'absolute', left: 20, top: Platform.OS === 'ios' ? 54 : 38, padding: 8 },
     logo: { width: 60, height: 60 },
 
     card: {
         marginHorizontal: spacing.lg, marginTop: -24,
-        backgroundColor: colors.surface, borderRadius: radius.lg,
+        backgroundColor: colors.surface, borderRadius: radius.xl,
         padding: spacing.lg, paddingTop: 28, ...shadows.lg,
         borderWidth: 1, borderColor: colors.borderLight,
         alignItems: 'center',
     },
-    cardIcon: { marginBottom: 12, backgroundColor: colors.goldMuted, padding: 12, borderRadius: 24 },
+    cardIconWrap: {
+        marginBottom: 12, backgroundColor: colors.primaryMuted,
+        padding: 14, borderRadius: radius.lg,
+    },
     title: { ...typography.h2, color: colors.textPrimary, marginBottom: 8, textAlign: 'center' },
     subtitle: { ...typography.bodySmall, color: colors.textSecondary, marginBottom: spacing.xl, textAlign: 'center', lineHeight: 22 },
     
@@ -118,13 +128,13 @@ const styles = StyleSheet.create({
         backgroundColor: colors.surfaceElevated, borderRadius: radius.md,
         borderWidth: 1.5, borderColor: colors.border, paddingHorizontal: spacing.md, minHeight: 52,
     },
-    inputFocused: { borderColor: colors.gold, backgroundColor: colors.goldShimmer },
+    inputFocused: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
     inputIcon: { marginRight: 10 },
     input: { flex: 1, fontSize: 16, color: colors.textPrimary, paddingVertical: Platform.OS === 'ios' ? 14 : 12 },
 
     button: {
-        width: '100%', backgroundColor: colors.gold, borderRadius: radius.md, paddingVertical: 16,
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, ...shadows.gold,
+        width: '100%', backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: 16,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, ...shadows.primary,
     },
     buttonDisabled: { opacity: 0.65 },
     buttonText: { ...typography.button, color: '#FFFFFF' },

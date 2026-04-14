@@ -4,6 +4,7 @@ import {
     View, Text, ScrollView, StyleSheet, TouchableOpacity,
     Platform, Alert, ActivityIndicator, Modal,
 } from 'react-native'
+import { ArrowLeft, CheckCircle, HelpCircle, Info, Star } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../../contexts/AuthContext'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
@@ -27,7 +28,7 @@ function formatPrice(price: number, currency: string) {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-    'Gala': colors.gold, 'Forum': '#3B82C4',
+    'Gala': colors.primary, 'Forum': '#3B82C4',
     'Tourisme': '#E07B54', 'Séminaire': '#7C5CCA', 'Conférence': '#2D9F63',
 }
 
@@ -42,7 +43,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
     const [showModal, setShowModal] = useState(false)
     const [registration, setRegistration] = useState(event.my_registration || null)
 
-    const catColor = CATEGORY_COLORS[event.category || ''] || colors.gold
+    const catColor = CATEGORY_COLORS[event.category || ''] || colors.primary
     const isFree = event.price_standard === 0
     const hasVip = (event.price_vip ?? 0) > 0
     const isRegistered = !!registration
@@ -125,7 +126,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
                 <View style={[styles.header, { backgroundColor: catColor }]}>
                     <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                         <View style={styles.backCircle}>
-                            <Ionicons name="arrow-back" size={20} color="#FFF" />
+                            <ArrowLeft size={20} color="#FFF" strokeWidth={1.75} />
                         </View>
                     </TouchableOpacity>
 
@@ -136,7 +137,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
                     <View style={styles.headerBadges}>
                         {event.is_featured && (
                             <View style={styles.featuredBadge}>
-                                <Ionicons name="star" size={9} color={catColor} />
+                                <Star size={9} color={catColor} strokeWidth={1.75} />
                                 <Text style={[styles.featuredText, { color: catColor }]}>À la une</Text>
                             </View>
                         )}
@@ -157,7 +158,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
 
                     {isRegistered && (
                         <View style={styles.registeredBanner}>
-                            <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                            <CheckCircle size={16} color={colors.success} strokeWidth={1.75} />
                             <Text style={styles.registeredText}>Vous êtes inscrit</Text>
                         </View>
                     )}
@@ -230,7 +231,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
                                 <View style={styles.vipRow}>
                                     <Text style={styles.ticketName}>Billet VIP</Text>
                                     <View style={[styles.vipBadge, { backgroundColor: catColor + '20' }]}>
-                                        <Ionicons name="star" size={8} color={catColor} />
+                                        <Star size={8} color={catColor} strokeWidth={1.75} />
                                         <Text style={[styles.vipBadgeText, { color: catColor }]}>VIP</Text>
                                     </View>
                                 </View>
@@ -250,7 +251,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
             <View style={styles.stickyBtn}>
                 {isRegistered ? (
                     <View style={[styles.btnRegistered, { backgroundColor: colors.successBg, borderColor: colors.success + '40' }]}>
-                        <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+                        <CheckCircle size={20} color={colors.success} strokeWidth={1.75} />
                         <Text style={[styles.btnText, { color: colors.success }]}>Inscription confirmée</Text>
                     </View>
                 ) : (
@@ -294,7 +295,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
 
                         {!isFreeTicket && (
                             <View style={styles.payNotice}>
-                                <Ionicons name="information-circle-outline" size={15} color={colors.info} />
+                                <Info size={15} color={colors.info} strokeWidth={1.75} />
                                 <Text style={styles.payNoticeText}>
                                     Après inscription, vous recevrez les instructions de paiement par WhatsApp ou email.
                                 </Text>

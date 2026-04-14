@@ -3,6 +3,7 @@ import {
     View, Text, StyleSheet, TouchableOpacity,
     FlatList, Dimensions, Platform, Image,
 } from 'react-native'
+import { ArrowRight, ChevronRight } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { colors, spacing, radius, typography, gradients } from '../config/theme'
@@ -17,11 +18,11 @@ const SLIDES = [
     {
         key: '1',
         icon: 'ribbon' as const,
-        iconColor: colors.gold,
+        iconColor: colors.primary,
         title: 'Votre Retour au Bénin,\nSimplifiée',
         subtitle: 'Nationalité béninoise, passeport, recherche ancestrale… Nous vous accompagnons à chaque étape avec expertise et proximité.',
         bg: ['#1B2A4A', '#2A3F66'] as [string, string],
-        accent: colors.gold,
+        accent: colors.primary,
     },
     {
         key: '2',
@@ -75,7 +76,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
                         style={styles.slide}
                     >
                         {/* Gold top line */}
-                        <View style={styles.goldLine} />
+                        <View style={styles.primaryLine} />
 
                         {/* Icon */}
                         <View style={[styles.iconWrap, { borderColor: item.accent + '40', backgroundColor: item.accent + '15' }]}>
@@ -126,10 +127,10 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
                         {isLast ? (
                             <>
                                 <Text style={styles.nextText}>Commencer</Text>
-                                <Ionicons name="arrow-forward" size={18} color="#FFF" />
+                                <ArrowRight size={18} color="#FFF" strokeWidth={1.75} />
                             </>
                         ) : (
-                            <Ionicons name="chevron-forward" size={22} color="#FFF" />
+                            <ChevronRight size={22} color="#FFF" strokeWidth={1.75} />
                         )}
                     </TouchableOpacity>
                 </View>
@@ -139,7 +140,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.navy },
+    container: { flex: 1, backgroundColor: colors.background },
     slide: {
         width,
         height,
@@ -148,9 +149,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.xl,
         paddingBottom: 160,
     },
-    goldLine: {
+    primaryLine: {
         position: 'absolute', top: 0, left: 0, right: 0,
-        height: 3, backgroundColor: colors.gold,
+        height: 3, backgroundColor: colors.primary,
     },
     iconWrap: {
         width: 110, height: 110, borderRadius: 32,
@@ -182,7 +183,7 @@ const styles = StyleSheet.create({
     footer: {
         position: 'absolute',
         bottom: 0, left: 0, right: 0,
-        backgroundColor: colors.navy,
+        backgroundColor: colors.background,
         paddingHorizontal: spacing.xl,
         paddingTop: spacing.lg,
         paddingBottom: Platform.OS === 'ios' ? 44 : spacing.xl,
@@ -200,7 +201,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.2)',
     },
     dotActive: {
-        width: 24, backgroundColor: colors.gold,
+        width: 24, backgroundColor: colors.primary,
     },
     btns: {
         flexDirection: 'row',
@@ -216,13 +217,13 @@ const styles = StyleSheet.create({
     },
     skipText: {
         ...typography.button,
-        color: colors.gold + 'CC',
+        color: colors.primary + 'CC',
     },
     nextBtn: {
         width: 54, height: 54, borderRadius: 27,
-        backgroundColor: colors.gold,
+        backgroundColor: colors.primary,
         alignItems: 'center', justifyContent: 'center',
-        shadowColor: colors.gold,
+        shadowColor: colors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.35,
         shadowRadius: 10,

@@ -4,12 +4,16 @@ import {
     StyleSheet, Image, KeyboardAvoidingView,
     Platform, ScrollView, ActivityIndicator, Alert
 } from 'react-native'
+import { ArrowLeft, HelpCircle, Lock, Mail } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { LinearGradient } from 'expo-linear-gradient'
 import { useAuth } from '../../contexts/AuthContext'
+import { useLang } from '../../contexts/LangContext'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
 
 export default function RegisterScreen({ navigation }: any) {
     const { signUp } = useAuth()
+    const { t } = useLang()
     const [prenom, setPrenom] = useState('')
     const [nom, setNom] = useState('')
     const [email, setEmail] = useState('')
@@ -20,11 +24,11 @@ export default function RegisterScreen({ navigation }: any) {
 
     const handleRegister = async () => {
         if (!prenom.trim() || !nom.trim() || !email.trim() || !password.trim()) {
-            Alert.alert('Champs requis', 'Veuillez remplir tous les champs.')
+            Alert.alert(t('Champs requis'), t('Veuillez remplir tous les champs.'))
             return
         }
         if (password.length < 6) {
-            Alert.alert('Erreur', 'Le mot de passe doit contenir au moins 6 caractères.')
+            Alert.alert(t('Erreur'), t('Le mot de passe doit contenir au moins 6 caractères.'))
             return
         }
         setLoading(true)
@@ -34,11 +38,11 @@ export default function RegisterScreen({ navigation }: any) {
         })
         setLoading(false)
         if (error) {
-            Alert.alert('Erreur', error.message)
+            Alert.alert(t('Erreur'), error.message)
         } else {
             Alert.alert(
-                'Inscription réussie',
-                'Vérifiez votre email pour confirmer votre compte.',
+                t('Inscription réussie'),
+                t('Vérifiez votre email pour confirmer votre compte.'),
                 [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
             )
         }
@@ -47,25 +51,27 @@ export default function RegisterScreen({ navigation }: any) {
     return (
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
             <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-                {/* Header band */}
-                <View style={styles.headerBand}>
-                    <View style={styles.goldLine} />
+                <LinearGradient colors={['#070D1A', '#0C1B33', '#132846']} style={styles.headerBand}>
+                    <View style={styles.flagStripe}>
+                        <View style={[styles.flagSeg, { backgroundColor: colors.flagGreen }]} />
+                        <View style={[styles.flagSeg, { backgroundColor: colors.flagYellow }]} />
+                        <View style={[styles.flagSeg, { backgroundColor: colors.flagRed }]} />
+                    </View>
                     <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                        <Ionicons name="arrow-back" size={24} color={colors.goldLight} />
+                        <ArrowLeft size={24} color="#FFFFFF" strokeWidth={1.75} />
                     </TouchableOpacity>
                     <Image source={require('../../../assets/icon.png')} style={styles.logo} resizeMode="contain" />
                     <Text style={styles.brandName}>RETOUR GAGNANT</Text>
                     <Text style={styles.brandSub}>BÉNIN</Text>
-                </View>
+                </LinearGradient>
 
-                {/* Card */}
                 <View style={styles.card}>
-                    <Text style={styles.title}>Créer un compte</Text>
-                    <Text style={styles.subtitle}>Rejoignez la communauté Retour Gagnant</Text>
+                    <Text style={styles.title}>{t('Créer un compte')}</Text>
+                    <Text style={styles.subtitle}>{t('Rejoignez la communauté Retour Gagnant')}</Text>
 
                     <View style={styles.row}>
                         <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-                            <Text style={styles.label}>Prénom</Text>
+                            <Text style={styles.label}>{t('Prénom')}</Text>
                             <View style={[styles.inputWrapper, focused === 'prenom' && styles.inputFocused]}>
                                 <TextInput
                                     style={styles.input}
@@ -78,7 +84,7 @@ export default function RegisterScreen({ navigation }: any) {
                             </View>
                         </View>
                         <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-                            <Text style={styles.label}>Nom</Text>
+                            <Text style={styles.label}>{t('Nom')}</Text>
                             <View style={[styles.inputWrapper, focused === 'nom' && styles.inputFocused]}>
                                 <TextInput
                                     style={styles.input}
@@ -93,9 +99,9 @@ export default function RegisterScreen({ navigation }: any) {
                     </View>
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Adresse email</Text>
+                        <Text style={styles.label}>{t('Adresse email')}</Text>
                         <View style={[styles.inputWrapper, focused === 'email' && styles.inputFocused]}>
-                            <Ionicons name="mail-outline" size={18} color={focused === 'email' ? colors.gold : colors.textMuted} style={styles.inputIcon} />
+                            <Mail size={18} color={focused === 'email' ? colors.primary : colors.textMuted} strokeWidth={1.75} style={styles.inputIcon}/>
                             <TextInput
                                 style={styles.input}
                                 placeholder="votre@email.com"
@@ -109,9 +115,9 @@ export default function RegisterScreen({ navigation }: any) {
                     </View>
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Mot de passe</Text>
+                        <Text style={styles.label}>{t('Mot de passe')}</Text>
                         <View style={[styles.inputWrapper, focused === 'password' && styles.inputFocused]}>
-                            <Ionicons name="lock-closed-outline" size={18} color={focused === 'password' ? colors.gold : colors.textMuted} style={styles.inputIcon} />
+                            <Lock size={18} color={focused === 'password' ? colors.primary : colors.textMuted} strokeWidth={1.75} style={styles.inputIcon}/>
                             <TextInput
                                 style={[styles.input, { flex: 1 }]}
                                 placeholder="Min. 6 caractères"
@@ -136,9 +142,9 @@ export default function RegisterScreen({ navigation }: any) {
                     </TouchableOpacity>
 
                     <View style={styles.loginRow}>
-                        <Text style={styles.loginText}>Déjà un compte ? </Text>
+                        <Text style={styles.loginText}>{t('Déjà un compte ?')} </Text>
                         <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                            <Text style={styles.loginLink}>Se connecter</Text>
+                            <Text style={styles.loginLink}>{t('Se connecter')}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -154,21 +160,21 @@ const styles = StyleSheet.create({
     scroll: { flexGrow: 1 },
 
     headerBand: {
-        backgroundColor: colors.headerBg,
         paddingTop: Platform.OS === 'ios' ? 64 : 48,
         paddingBottom: 40, alignItems: 'center',
-        borderBottomLeftRadius: 32, borderBottomRightRadius: 32,
+        borderBottomLeftRadius: 28, borderBottomRightRadius: 28,
         position: 'relative',
     },
-    goldLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.gold },
+    flagStripe: { position: 'absolute', top: 0, left: 0, right: 0, height: 4, flexDirection: 'row' },
+    flagSeg: { flex: 1 },
     backBtn: { position: 'absolute', left: 20, top: Platform.OS === 'ios' ? 54 : 38, padding: 8 },
     logo: { width: 70, height: 70, marginBottom: 12 },
-    brandName: { color: colors.goldLight, fontSize: 18, fontWeight: '700', letterSpacing: 4 },
-    brandSub: { color: colors.goldLight, fontSize: 18, fontWeight: '700', letterSpacing: 4, marginTop: 2 },
+    brandName: { color: '#FFFFFF', fontSize: 18, fontWeight: '700', letterSpacing: 4 },
+    brandSub: { color: colors.primary, fontSize: 18, fontWeight: '700', letterSpacing: 4, marginTop: 2 },
 
     card: {
         marginHorizontal: spacing.lg, marginTop: -24,
-        backgroundColor: colors.surface, borderRadius: radius.lg,
+        backgroundColor: colors.surface, borderRadius: radius.xl,
         padding: spacing.lg, paddingTop: 28, ...shadows.lg,
         borderWidth: 1, borderColor: colors.borderLight,
     },
@@ -183,21 +189,21 @@ const styles = StyleSheet.create({
         backgroundColor: colors.surfaceElevated, borderRadius: radius.md,
         borderWidth: 1.5, borderColor: colors.border, paddingHorizontal: spacing.md, minHeight: 52,
     },
-    inputFocused: { borderColor: colors.gold, backgroundColor: colors.goldShimmer },
+    inputFocused: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
     inputIcon: { marginRight: 10 },
     input: { flex: 1, fontSize: 16, color: colors.textPrimary, paddingVertical: Platform.OS === 'ios' ? 14 : 12 },
     eyeBtn: { padding: 4 },
 
     button: {
-        backgroundColor: colors.gold, borderRadius: radius.md, paddingVertical: 16,
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 8, ...shadows.gold,
+        backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: 16,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 8, ...shadows.primary,
     },
     buttonDisabled: { opacity: 0.65 },
     buttonText: { ...typography.button, color: '#FFFFFF' },
 
     loginRow: { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.lg },
     loginText: { ...typography.bodySmall, color: colors.textSecondary },
-    loginLink: { ...typography.label, color: colors.gold },
+    loginLink: { ...typography.label, color: colors.primary },
     
     footer: { ...typography.caption, color: colors.textMuted, textAlign: 'center', marginTop: spacing.lg, marginBottom: spacing.xxl },
 })

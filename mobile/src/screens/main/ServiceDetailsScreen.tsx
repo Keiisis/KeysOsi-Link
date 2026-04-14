@@ -3,22 +3,38 @@ import {
     View, Text, ScrollView, StyleSheet, TouchableOpacity,
     Platform, Alert, ActivityIndicator,
 } from 'react-native'
+import { ArrowLeft, Calendar, Check, Clock, CreditCard, HelpCircle, Star, Tag, Users } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
 import { useAuth } from '../../contexts/AuthContext'
+import { useLang } from '../../contexts/LangContext'
+import KkiapayModal from '../../components/KkiapayModal'
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
 
 /* ═══════════════════════════════════════════════════════════
-   Service Details Screen — Commander + créer dossier en DB
+   Service Details Screen — Synchronisé avec le site web
+   Affiche : description, features/pièces, tarifs, processus
 ═══════════════════════════════════════════════════════════ */
 
-export default function ServiceDetailsScreen({ route, navigation }: any) {
-    const { serviceId, title, desc, fullDescription, color, icon, duration, price, documents, features: paramFeatures } = route.params || {}
-    const { profile } = useAuth()
-    const [loading, setLoading] = useState(false)
+interface PricingOption {
+    label: string
+    price: string
+}
 
-    const serviceColor = color || colors.gold
+export default function ServiceDetailsScreen({ route, navigation }: any) {
+    const {
+        serviceId, title, subtitle, desc, fullDescription,
+        color, icon, duration, price, documents,
+        features: paramFeatures,
+        pricing_options: paramPricingOptions,
+    } = route.params || {}
+
+    const { profile } = useAuth()
+    const { t } = useLang()
+    const [loading, setLoading] = useState(false)
+    const [showKkiapay, setShowKkiapay] = useState(false)
+    const serviceColor = color || colors.primary
 
     const features: string[] = paramFeatures?.length ? paramFeatures : [
         'Consultation initiale avec nos experts',
@@ -32,68 +48,67 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
         'Justificatif selon le service demandé',
     ]
 
-    const handleOrder = async () => {
+    const pricingOptions: PricingOption[] = paramPricingOptions?.length ? paramPricingOptions : []
+
+    // Le titre de la section "features" change selon le service (comme sur le site web)
+    const featuresTitle = serviceId === 'passeport'
+        ? t('Pièces à fournir pour les afro-descendants')
+        : t('Ce que nous proposons')
+
+    const initiateCheckout = () => {
         if (!profile) {
-            Alert.alert('Non connecté', 'Veuillez vous connecter pour commander ce service.')
+            Alert.alert(t('Non connecté'), t('Veuillez vous connecter pour commander ce service.'))
             return
         }
+        setShowKkiapay(true)
+    }
 
-        Alert.alert(
-            'Confirmer la commande',
-            `Souhaitez-vous initier le service "${title}" ?\n\nUn dossier sera créé et notre équipe vous contactera sous 24h.`,
-            [
-                { text: 'Annuler', style: 'cancel' },
-                {
-                    text: 'Confirmer',
-                    onPress: async () => {
-                        setLoading(true)
-                        try {
-                            const res = await fetch(`${API_BASE}/api/mobile/dossiers`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    client_id: profile.id,
-                                    service_type: title,
-                                    service_id: serviceId || null,
-                                    notes: `Commande initiée via l'application mobile le ${new Date().toLocaleDateString('fr-FR')}`,
-                                }),
-                            })
+    const handlePaymentSuccess = async (transactionId: string) => {
+        setShowKkiapay(false)
+        setLoading(true)
+        try {
+            const res = await fetch(`${API_BASE}/api/mobile/dossiers`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    client_id: profile?.id,
+                    service_type: title,
+                    service_id: serviceId || null,
+                    payment_tx_id: transactionId,
+                    notes: `Commande initiée via l'application mobile le ${new Date().toLocaleDateString('fr-FR')}\nTransaction: ${transactionId}`,
+                }),
+            })
 
-                            // Lire la réponse comme texte d'abord pour éviter le crash JSON
-                            const text = await res.text()
-                            let json: Record<string, unknown> = {}
-                            try { json = JSON.parse(text) } catch {
-                                throw new Error(`Erreur serveur (${res.status}) — contactez le support`)
-                            }
+            const text = await res.text()
+            let json: Record<string, unknown> = {}
+            try { json = JSON.parse(text) } catch {
+                throw new Error(`Erreur serveur (${res.status}) — contactez le support`)
+            }
 
-                            if (!res.ok) {
-                                throw new Error((json.error as string) || `Erreur ${res.status}`)
-                            }
+            if (!res.ok) {
+                throw new Error((json.error as string) || `Erreur ${res.status}`)
+            }
 
-                            if (json.exists) {
-                                Alert.alert(
-                                    'Dossier existant',
-                                    'Vous avez déjà un dossier en cours pour ce service. Consultez la section "Mon Dossier" pour suivre son avancement.',
-                                    [{ text: 'Voir mon dossier', onPress: () => navigation.goBack() }]
-                                )
-                                return
-                            }
+            if (json.exists) {
+                Alert.alert(
+                    'Dossier existant',
+                    'Vous avez déjà un dossier en cours pour ce service. Consultez la section "Mon Dossier" pour suivre son avancement.',
+                    [{ text: 'Voir mon dossier', onPress: () => navigation.goBack() }]
+                )
+                return
+            }
 
-                            Alert.alert(
-                                'Dossier créé !',
-                                `Votre demande pour "${title}" a été enregistrée avec succès.\n\nNotre équipe vous contactera dans les 24 heures pour la suite de votre dossier.`,
-                                [{ text: 'Parfait', onPress: () => navigation.goBack() }]
-                            )
-                        } catch (e: unknown) {
-                            const msg = e instanceof Error ? e.message : 'Erreur lors de la création du dossier'
-                            Alert.alert('Erreur', msg)
-                        } finally {
-                            setLoading(false)
-                        }
-                    },
-                },
-            ]
-        )
+            Alert.alert(
+                'Paiement Réussi !',
+                `Votre dossier pour "${title}" a été créé avec succès.\n\nNotre équipe vous contactera dans les 24 heures pour la suite.`,
+                [{ text: 'Voir mon espace', onPress: () => navigation.navigate('Dossier') }]
+            )
+        } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : 'Erreur lors de la création du dossier'
+            Alert.alert('Erreur', msg)
+        } finally {
+            setLoading(false)
+        }
     }
 
     return (
@@ -106,7 +121,7 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
             <View style={[styles.header, { backgroundColor: serviceColor }]}>
                 <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                     <View style={styles.backBtnCircle}>
-                        <Ionicons name="arrow-back" size={20} color="#FFF" />
+                        <ArrowLeft size={20} color="#FFF" strokeWidth={1.75} />
                     </View>
                 </TouchableOpacity>
 
@@ -115,62 +130,113 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
                 </View>
 
                 <View style={styles.headerBadge}>
-                    <Ionicons name="star" size={10} color={serviceColor} />
-                    <Text style={[styles.headerBadgeText, { color: serviceColor }]}>Service Premium</Text>
+                    <Star size={10} color={serviceColor} strokeWidth={1.75} />
+                    <Text style={[styles.headerBadgeText, { color: serviceColor }]}>{t('Service Premium')}</Text>
                 </View>
             </View>
 
             {/* Carte contenu */}
             <View style={styles.card}>
-                <Text style={styles.title}>{title || 'Détails du Service'}</Text>
-                <Text style={styles.desc}>{fullDescription || desc || 'Informations concernant ce service et accompagnement personnalisé.'}</Text>
+                <Text style={styles.title}>{t(title || 'Détails du Service')}</Text>
+                {subtitle ? (
+                    <Text style={styles.subtitle}>{t(subtitle)}</Text>
+                ) : null}
+                <Text style={styles.desc}>
+                    {t(fullDescription || desc || 'Informations concernant ce service et accompagnement personnalisé.')}
+                </Text>
 
                 {/* Infos clés */}
                 <View style={styles.infoRow}>
                     <View style={styles.infoItem}>
-                        <Ionicons name="time-outline" size={18} color={serviceColor} />
+                        <Clock size={18} color={serviceColor} strokeWidth={1.75} />
                         <View>
-                            <Text style={styles.infoLabel}>Délai moyen</Text>
+                            <Text style={styles.infoLabel}>{t('Délai moyen')}</Text>
                             <Text style={styles.infoValue} numberOfLines={2}>{duration || '4–8 semaines'}</Text>
                         </View>
                     </View>
                     <View style={[styles.infoItem, styles.infoItemBorder]}>
-                        <Ionicons name="pricetag-outline" size={18} color={serviceColor} />
+                        <Tag size={18} color={serviceColor} strokeWidth={1.75} />
                         <View>
-                            <Text style={styles.infoLabel}>Tarif</Text>
+                            <Text style={styles.infoLabel}>{t('Tarif')}</Text>
                             <Text style={styles.infoValue} numberOfLines={2}>{price || 'Sur devis'}</Text>
                         </View>
                     </View>
                     <View style={styles.infoItem}>
-                        <Ionicons name="people-outline" size={18} color={serviceColor} />
+                        <Users size={18} color={serviceColor} strokeWidth={1.75} />
                         <View>
-                            <Text style={styles.infoLabel}>Support</Text>
-                            <Text style={styles.infoValue}>Dédié</Text>
+                            <Text style={styles.infoLabel}>{t('Support')}</Text>
+                            <Text style={styles.infoValue}>{t('Dédié')}</Text>
                         </View>
                     </View>
                 </View>
 
                 <View style={styles.divider} />
 
-                <Text style={styles.sectionTitle}>Ce qui est inclus</Text>
-                {features.map((feature, i) => (
+                {/* Features / Pièces à fournir — titre dynamique comme le site web */}
+                <Text style={styles.sectionTitle}>{featuresTitle}</Text>
+                {features.map((feature: string, i: number) => (
                     <View key={i} style={styles.featureRow}>
                         <View style={[styles.featureCheck, { backgroundColor: serviceColor + '15' }]}>
-                            <Ionicons name="checkmark" size={14} color={serviceColor} />
+                            <Check size={14} color={serviceColor} strokeWidth={1.75} />
                         </View>
-                        <Text style={styles.featureText}>{feature}</Text>
+                        <Text style={styles.featureText}>{t(feature)}</Text>
                     </View>
                 ))}
 
+                {/* Section Pack VIP — uniquement pour le passeport (comme le site web) */}
+                {serviceId === 'passeport' && (
+                    <>
+                        <View style={styles.divider} />
+                        <View style={styles.vipSection}>
+                            <View style={styles.vipSectionHeader}>
+                                <Ionicons name="sparkles" size={18} color={colors.primary} />
+                                <Text style={styles.vipSectionTitle}>{t('Pack VIP Retour Gagnant')}</Text>
+                            </View>
+                            <Text style={styles.vipSectionDesc}>
+                                Un accompagnement intégral en une seule journée — de l'état civil à la délivrance de votre passeport.
+                            </Text>
+                            {[
+                                { num: '01', title: 'Enrôlement État Civil', desc: "Obtention de votre extrait de naissance certifié conforme auprès des autorités de l'état civil béninois." },
+                                { num: '02', title: "Carte d'Identité Personnelle (CIP A)", desc: "Constitution du dossier et enrôlement biométrique pour votre titre d'identité officiel béninois." },
+                                { num: '03', title: 'Passeport Express Jour-J', desc: "Prise en charge prioritaire de votre demande de passeport biométrique — déposée et traitée le jour même." },
+                            ].map((step) => (
+                                <View key={step.num} style={styles.vipStep}>
+                                    <Text style={styles.vipStepNum}>{step.num}</Text>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.vipStepTitle}>{t(step.title)}</Text>
+                                        <Text style={styles.vipStepDesc}>{t(step.desc)}</Text>
+                                    </View>
+                                </View>
+                            ))}
+                        </View>
+                    </>
+                )}
+
                 <View style={styles.divider} />
 
+                {/* Grille de tarifs — synchronisée avec le pricing_options du site */}
+                {pricingOptions.length > 0 && (
+                    <>
+                        <Text style={styles.sectionTitle}>{t('Tarification')}</Text>
+                        <View style={styles.pricingList}>
+                            {pricingOptions.map((opt: PricingOption, i: number) => (
+                                <View key={i} style={[styles.pricingCard, { borderLeftColor: serviceColor }]}>
+                                    <Text style={styles.pricingLabel}>{t(opt.label)}</Text>
+                                    <Text style={[styles.pricingPrice, { color: serviceColor }]}>{opt.price}</Text>
+                                </View>
+                            ))}
+                        </View>
+                        <View style={styles.divider} />
+                    </>
+                )}
+
                 {/* Processus */}
-                <Text style={styles.sectionTitle}>Comment ça marche ?</Text>
+                <Text style={styles.sectionTitle}>{t('Comment ça marche ?')}</Text>
                 {[
-                    { step: '1', label: 'Commandez le service', icon: 'cart-outline' as const },
-                    { step: '2', label: 'Déposez vos documents', icon: 'cloud-upload-outline' as const },
-                    { step: '3', label: 'Suivi en temps réel', icon: 'pulse-outline' as const },
-                    { step: '4', label: 'Résultat final', icon: 'ribbon-outline' as const },
+                    { step: '1', label: t('Commandez le service'), icon: 'cart-outline' as const },
+                    { step: '2', label: t('Déposez vos documents'), icon: 'cloud-upload-outline' as const },
+                    { step: '3', label: t('Suivi en temps réel'), icon: 'pulse-outline' as const },
+                    { step: '4', label: t('Résultat final'), icon: 'ribbon-outline' as const },
                 ].map((item) => (
                     <View key={item.step} style={styles.processRow}>
                         <View style={[styles.processStep, { backgroundColor: serviceColor + '15', borderColor: serviceColor + '30' }]}>
@@ -184,37 +250,57 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
                 <View style={styles.divider} />
 
                 {/* Pièces à fournir */}
-                <Text style={styles.sectionTitle}>Pièces à fournir</Text>
-                {requiredDocs.map((doc, i) => (
+                <Text style={styles.sectionTitle}>{t('Documents requis')}</Text>
+                {requiredDocs.map((doc: string, i: number) => (
                     <View key={i} style={styles.docRow}>
                         <View style={[styles.docBullet, { backgroundColor: serviceColor + '18', borderColor: serviceColor + '30' }]}>
                             <Text style={[styles.docNum, { color: serviceColor }]}>{i + 1}</Text>
                         </View>
-                        <Text style={styles.docText}>{doc}</Text>
+                        <Text style={styles.docText}>{t(doc)}</Text>
                     </View>
                 ))}
 
-                {/* Bouton commander */}
-                <TouchableOpacity
-                    style={[styles.btn, { backgroundColor: serviceColor }, loading && styles.btnDisabled]}
-                    activeOpacity={0.85}
-                    onPress={handleOrder}
-                    disabled={loading}
-                >
-                    {loading ? (
-                        <ActivityIndicator color="#FFF" size="small" />
-                    ) : (
-                        <>
-                            <Ionicons name="cart-outline" size={20} color="#FFF" />
-                            <Text style={styles.btnText}>Commander ce service</Text>
-                        </>
-                    )}
-                </TouchableOpacity>
+                {/* Section CTA — comme le site "Prêt à démarrer ?" */}
+                <View style={[styles.ctaSection, { borderColor: serviceColor + '30' }]}>
+                    <View style={[styles.ctaBar, { backgroundColor: serviceColor }]} />
+                    <Calendar size={18} color={serviceColor} strokeWidth={1.75} />
+                    <Text style={styles.ctaTitle}>{t('Prêt à démarrer ?')}</Text>
+                    <Text style={styles.ctaSubtitle}>
+                        {t('Réservez un créneau avec nos experts pour concrétiser votre projet.')}
+                    </Text>
+
+                    {/* Bouton commander / payer */}
+                    <TouchableOpacity
+                        style={[styles.btn, { backgroundColor: serviceColor }, loading && styles.btnDisabled]}
+                        activeOpacity={0.85}
+                        onPress={initiateCheckout}
+                        disabled={loading}
+                    >
+                        {loading ? (
+                            <ActivityIndicator color="#FFF" size="small" />
+                        ) : (
+                            <>
+                                <CreditCard size={20} color="#FFF" strokeWidth={1.75} />
+                                <Text style={styles.btnText}>{t('Payer avec Kkiapay')}</Text>
+                            </>
+                        )}
+                    </TouchableOpacity>
+
+                    <Text style={styles.ctaFreeNote}>{t('Premier appel de 15 min gratuit')}</Text>
+                </View>
 
                 <Text style={styles.btnNote}>
-                    En commandant, vous serez contacté par notre équipe dans les 24h pour démarrer votre dossier.
+                    {t('Paiement 100% sécurisé via Mobile Money ou Carte Bancaire.')}
                 </Text>
             </View>
+
+            <KkiapayModal
+                visible={showKkiapay}
+                amount={price || 'Sur devis'}
+                serviceName={title}
+                onClose={() => setShowKkiapay(false)}
+                onSuccess={handlePaymentSuccess}
+            />
 
             <View style={{ height: 60 }} />
         </ScrollView>
@@ -262,7 +348,11 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: colors.borderLight,
     },
 
-    title: { ...typography.h2, color: colors.textPrimary, marginBottom: 8, textAlign: 'center' },
+    title: { ...typography.h2, color: colors.textPrimary, marginBottom: 4, textAlign: 'center' },
+    subtitle: {
+        ...typography.bodySmall, color: colors.primary, textAlign: 'center',
+        fontFamily: 'Inter_600SemiBold', marginBottom: 8, lineHeight: 20,
+    },
     desc: { ...typography.bodySmall, color: colors.textSecondary, textAlign: 'center', lineHeight: 22 },
 
     infoRow: {
@@ -288,6 +378,35 @@ const styles = StyleSheet.create({
     },
     featureText: { ...typography.bodySmall, color: colors.textSecondary, flex: 1, lineHeight: 20 },
 
+    /* Pack VIP Section */
+    vipSection: {
+        backgroundColor: colors.surfaceWarm,
+        borderRadius: radius.lg, padding: spacing.lg,
+        borderWidth: 1, borderColor: colors.primary + '30',
+    },
+    vipSectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+    vipSectionTitle: { ...typography.h3, fontSize: 16, color: colors.textPrimary },
+    vipSectionDesc: { ...typography.caption, color: colors.textMuted, marginBottom: 16 },
+    vipStep: {
+        flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 14,
+        backgroundColor: colors.surface, borderRadius: radius.md, padding: 14,
+        borderWidth: 1, borderColor: colors.primary + '20',
+    },
+    vipStepNum: { fontSize: 28, fontFamily: 'Inter_800ExtraBold', color: colors.primary + '40' },
+    vipStepTitle: { ...typography.label, color: colors.textPrimary, marginBottom: 2 },
+    vipStepDesc: { ...typography.caption, color: colors.textMuted, lineHeight: 17 },
+
+    /* Pricing */
+    pricingList: { gap: 10 },
+    pricingCard: {
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+        backgroundColor: colors.surfaceElevated, borderRadius: radius.md,
+        padding: 14, borderLeftWidth: 4,
+        borderWidth: 1, borderColor: colors.borderLight,
+    },
+    pricingLabel: { ...typography.bodySmall, color: colors.textPrimary, flex: 1, marginRight: 12 },
+    pricingPrice: { fontFamily: 'Inter_800ExtraBold', fontSize: 14 },
+
     processRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
     processStep: {
         width: 28, height: 28, borderRadius: 8,
@@ -297,8 +416,20 @@ const styles = StyleSheet.create({
     processStepNum: { fontSize: 13, fontFamily: 'Inter_700Bold' },
     processLabel: { ...typography.bodySmall, color: colors.textPrimary, flex: 1 },
 
+    /* CTA section — comme le site "Prêt à démarrer ?" */
+    ctaSection: {
+        backgroundColor: colors.surfaceElevated,
+        borderRadius: radius.lg, padding: spacing.lg,
+        alignItems: 'center', marginTop: spacing.sm,
+        borderWidth: 1, overflow: 'hidden',
+    },
+    ctaBar: { position: 'absolute', top: 0, left: 0, right: 0, height: 3 },
+    ctaTitle: { ...typography.h3, fontSize: 16, color: colors.textPrimary, marginTop: 8, marginBottom: 4 },
+    ctaSubtitle: { ...typography.caption, color: colors.textMuted, textAlign: 'center', marginBottom: 16 },
+    ctaFreeNote: { ...typography.caption, color: colors.textMuted, marginTop: 10 },
+
     btn: {
-        marginTop: spacing.lg,
+        width: '100%',
         paddingVertical: 16,
         borderRadius: radius.md,
         flexDirection: 'row',

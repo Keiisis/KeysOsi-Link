@@ -4,6 +4,7 @@ import {
     RefreshControl, Platform, Alert, ActivityIndicator, Modal,
     TextInput,
 } from 'react-native'
+import { ArrowLeft, Calendar, Clock, Plus, Send, User, XCircle } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../../contexts/AuthContext'
@@ -26,7 +27,7 @@ interface Appointment {
 const TYPE_CONFIG = {
     video:     { icon: 'videocam-outline'     as const, label: 'Visioconférence', color: '#7C5CCA' },
     phone:     { icon: 'call-outline'         as const, label: 'Appel téléphonique', color: colors.info },
-    in_person: { icon: 'location-outline'     as const, label: 'En présentiel', color: colors.gold },
+    in_person: { icon: 'location-outline'     as const, label: 'En présentiel', color: colors.primary },
 }
 
 const STATUS_CONFIG = {
@@ -147,7 +148,7 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
         )
     }
 
-    const formatDateTime = (iso: string) => {
+    const formatDateTime = (iso: string | null) => {
         if (!iso) return 'Date à confirmer'
         const d = new Date(iso)
         return d.toLocaleDateString('fr-FR', {
@@ -155,7 +156,7 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
         }) + ' à ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
     }
 
-    const formatDateShort = (iso: string) => {
+    const formatDateShort = (iso: string | null) => {
         if (!iso) return '—'
         const d = new Date(iso)
         return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
@@ -165,13 +166,13 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
         <ScrollView
             style={styles.container}
             showsVerticalScrollIndicator={false}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.gold} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         >
             {/* Header */}
             <View style={styles.header}>
-                <View style={styles.goldLine} />
+                <View style={styles.primaryLine} />
                 <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <Ionicons name="arrow-back" size={22} color={colors.textOnDark} />
+                    <ArrowLeft size={22} color={colors.textOnDark} strokeWidth={1.75} />
                 </TouchableOpacity>
                 <View style={styles.headerRow}>
                     <View>
@@ -183,7 +184,7 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
                         </Text>
                     </View>
                     <TouchableOpacity style={styles.newRdvBtn} onPress={() => setShowModal(true)} activeOpacity={0.8}>
-                        <Ionicons name="add" size={18} color="#FFF" />
+                        <Plus size={18} color="#FFF" strokeWidth={1.75} />
                         <Text style={styles.newRdvText}>Demander</Text>
                     </TouchableOpacity>
                 </View>
@@ -193,17 +194,17 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
             {upcoming[0] && (
                 <View style={styles.nextRdvCard}>
                     <View style={styles.nextRdvBadge}>
-                        <Ionicons name="time" size={12} color={colors.gold} />
+                        <Clock size={12} color={colors.primary} strokeWidth={1.75} />
                         <Text style={styles.nextRdvBadgeText}>Prochain rendez-vous</Text>
                     </View>
                     <Text style={styles.nextRdvTitle}>{TYPE_CONFIG[upcoming[0].type]?.label || 'Rendez-vous'}</Text>
                     <View style={styles.nextRdvRow}>
-                        <Ionicons name="calendar-outline" size={14} color={colors.gold + 'AA'} />
+                        <Calendar size={14} color={colors.primary + 'AA'} strokeWidth={1.75} />
                         <Text style={styles.nextRdvDate}>{formatDateTime(upcoming[0].scheduled_at)}</Text>
                     </View>
                     {upcoming[0].agent_name && (
                         <View style={styles.nextRdvRow}>
-                            <Ionicons name="person-outline" size={14} color={colors.gold + 'AA'} />
+                            <User size={14} color={colors.primary + 'AA'} strokeWidth={1.75} />
                             <Text style={styles.nextRdvDate}>Avec {upcoming[0].agent_name}</Text>
                         </View>
                     )}
@@ -211,7 +212,7 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
                         <Ionicons
                             name={TYPE_CONFIG[upcoming[0].type]?.icon || 'call-outline'}
                             size={14}
-                            color={TYPE_CONFIG[upcoming[0].type]?.color || colors.gold}
+                            color={TYPE_CONFIG[upcoming[0].type]?.color || colors.primary}
                         />
                         <Text style={[styles.nextRdvTypeText, { color: TYPE_CONFIG[upcoming[0].type]?.color }]}>
                             {TYPE_CONFIG[upcoming[0].type]?.label}
@@ -239,12 +240,12 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
             {/* Liste */}
             {loading ? (
                 <View style={styles.centerState}>
-                    <ActivityIndicator color={colors.gold} size="large" />
+                    <ActivityIndicator color={colors.primary} size="large" />
                 </View>
             ) : displayed.length === 0 ? (
                 <View style={styles.emptyCard}>
                     <View style={styles.emptyIconWrap}>
-                        <Ionicons name="calendar-outline" size={36} color={colors.textMuted} />
+                        <Calendar size={36} color={colors.textMuted} strokeWidth={1.75} />
                     </View>
                     <Text style={styles.emptyTitle}>
                         {tab === 'upcoming' ? 'Aucun rendez-vous à venir' : 'Aucun rendez-vous passé'}
@@ -256,7 +257,7 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
                     </Text>
                     {tab === 'upcoming' && (
                         <TouchableOpacity style={styles.emptyBtn} onPress={() => setShowModal(true)} activeOpacity={0.8}>
-                            <Ionicons name="calendar-outline" size={16} color="#FFF" />
+                            <Calendar size={16} color="#FFF" strokeWidth={1.75} />
                             <Text style={styles.emptyBtnText}>Prendre rendez-vous</Text>
                         </TouchableOpacity>
                     )}
@@ -291,7 +292,7 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
                                     </View>
                                     {canCancel && (
                                         <TouchableOpacity onPress={() => handleCancel(appt.id)} style={styles.cancelBtn}>
-                                            <Ionicons name="close-circle-outline" size={18} color={colors.danger} />
+                                            <XCircle size={18} color={colors.danger} strokeWidth={1.75} />
                                         </TouchableOpacity>
                                     )}
                                 </View>
@@ -352,7 +353,7 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
                                 <ActivityIndicator color="#FFF" size="small" />
                             ) : (
                                 <>
-                                    <Ionicons name="send-outline" size={18} color="#FFF" />
+                                    <Send size={18} color="#FFF" strokeWidth={1.75} />
                                     <Text style={styles.submitBtnText}>Envoyer la demande</Text>
                                 </>
                             )}
@@ -375,14 +376,14 @@ const styles = StyleSheet.create({
         borderBottomLeftRadius: 28,
         borderBottomRightRadius: 28,
     },
-    goldLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.gold },
+    primaryLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.primary },
     backBtn: { marginBottom: spacing.md },
     headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
     headerTitle: { ...typography.h2, color: colors.textOnDark },
-    headerSub: { ...typography.bodySmall, color: colors.gold + 'AA', marginTop: 4 },
+    headerSub: { ...typography.bodySmall, color: colors.primary + 'AA', marginTop: 4 },
     newRdvBtn: {
         flexDirection: 'row', alignItems: 'center', gap: 6,
-        backgroundColor: colors.gold, borderRadius: radius.md,
+        backgroundColor: colors.primary, borderRadius: radius.md,
         paddingHorizontal: 14, paddingVertical: 9,
     },
     newRdvText: { ...typography.caption, color: '#FFF', fontFamily: 'Inter_700Bold' },
@@ -391,17 +392,17 @@ const styles = StyleSheet.create({
         margin: spacing.lg,
         backgroundColor: colors.headerBg,
         borderRadius: radius.lg, padding: spacing.lg,
-        borderWidth: 1, borderColor: colors.gold + '30',
+        borderWidth: 1, borderColor: colors.primary + '30',
         ...shadows.md,
     },
     nextRdvBadge: {
         flexDirection: 'row', alignItems: 'center', gap: 5,
         marginBottom: spacing.sm,
     },
-    nextRdvBadgeText: { fontSize: 10, fontFamily: 'Inter_700Bold', color: colors.gold, letterSpacing: 0.8 },
+    nextRdvBadgeText: { fontSize: 10, fontFamily: 'Inter_700Bold', color: colors.primary, letterSpacing: 0.8 },
     nextRdvTitle: { ...typography.h3, color: colors.textOnDark, marginBottom: 8 },
     nextRdvRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-    nextRdvDate: { ...typography.bodySmall, color: colors.gold + 'CC' },
+    nextRdvDate: { ...typography.bodySmall, color: colors.primary + 'CC' },
     nextRdvType: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
     nextRdvTypeText: { ...typography.caption, fontFamily: 'Inter_600SemiBold' },
     nextRdvDuration: { ...typography.caption, color: colors.textMuted },
@@ -416,7 +417,7 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     tab: { flex: 1, paddingVertical: 12, alignItems: 'center' },
-    tabActive: { backgroundColor: colors.gold },
+    tabActive: { backgroundColor: colors.primary },
     tabText: { ...typography.label, color: colors.textMuted },
     tabTextActive: { color: '#FFF' },
 
@@ -438,7 +439,7 @@ const styles = StyleSheet.create({
     emptyText: { ...typography.bodySmall, color: colors.textSecondary, textAlign: 'center', lineHeight: 20, marginBottom: 16 },
     emptyBtn: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: colors.gold, borderRadius: radius.md,
+        backgroundColor: colors.primary, borderRadius: radius.md,
         paddingHorizontal: 20, paddingVertical: 12, ...shadows.gold,
     },
     emptyBtnText: { ...typography.button, color: '#FFF', fontSize: 14 },
@@ -455,11 +456,11 @@ const styles = StyleSheet.create({
     rdvCardBorder: { borderBottomWidth: 0 },
     rdvDateCol: {
         width: 44, alignItems: 'center',
-        backgroundColor: colors.gold + '12',
+        backgroundColor: colors.primary + '12',
         borderRadius: 10, paddingVertical: 8, marginRight: 12,
     },
-    rdvDay: { fontSize: 18, fontFamily: 'Inter_700Bold', color: colors.gold },
-    rdvMonth: { fontSize: 10, fontFamily: 'Inter_600SemiBold', color: colors.gold + 'AA', textTransform: 'uppercase' },
+    rdvDay: { fontSize: 18, fontFamily: 'Inter_700Bold', color: colors.primary },
+    rdvMonth: { fontSize: 10, fontFamily: 'Inter_600SemiBold', color: colors.primary + 'AA', textTransform: 'uppercase' },
     rdvInfo: { flex: 1 },
     rdvTitle: { ...typography.label, color: colors.textPrimary, marginBottom: 4 },
     rdvMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -503,7 +504,7 @@ const styles = StyleSheet.create({
         marginBottom: spacing.lg,
     },
     submitBtn: {
-        backgroundColor: colors.gold, borderRadius: radius.md, paddingVertical: 16,
+        backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: 16,
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
         ...shadows.gold,
     },

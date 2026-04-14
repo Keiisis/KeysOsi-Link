@@ -3,7 +3,7 @@ import {
     View, Text, StyleSheet, TouchableOpacity,
     Modal, Animated, Dimensions, Platform, Pressable,
 } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
+import { Check, ChevronRight, Globe, X } from 'lucide-react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useLang, SUPPORTED_LANGUAGES, type LangCode } from '../contexts/LangContext'
 import { colors, spacing, radius, typography, shadows } from '../config/theme'
@@ -66,7 +66,7 @@ export default function LanguagePicker({ visible, onClose }: LanguagePickerProps
                 <View style={styles.handle}/>
 
                 {/* Header */}
-                <LinearGradient colors={[colors.navy, '#2A3F66']} style={styles.sheetHeader}>
+                <LinearGradient colors={[colors.primary, colors.primaryDark]} style={styles.sheetHeader}>
                     {/* Gold accent line */}
                     <View style={styles.goldAccent}/>
 
@@ -78,7 +78,7 @@ export default function LanguagePicker({ visible, onClose }: LanguagePickerProps
                             </Text>
                         </View>
                         <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
-                            <Ionicons name="close" size={18} color={colors.gold}/>
+                            <X size={18} color={colors.gold} strokeWidth={1.75} />
                         </TouchableOpacity>
                     </View>
 
@@ -131,11 +131,11 @@ export default function LanguagePicker({ visible, onClose }: LanguagePickerProps
                                             colors={[colors.gold, colors.goldDark]}
                                             style={styles.checkGradient}
                                         >
-                                            <Ionicons name="checkmark" size={14} color="#FFF"/>
+                                            <Check size={14} color="#FFF" strokeWidth={1.75} />
                                         </LinearGradient>
                                     </View>
                                 ) : (
-                                    <Ionicons name="chevron-forward" size={16} color={colors.border}/>
+                                    <ChevronRight size={16} color={colors.border} strokeWidth={1.75} />
                                 )}
                             </TouchableOpacity>
                         )
@@ -144,7 +144,7 @@ export default function LanguagePicker({ visible, onClose }: LanguagePickerProps
 
                 {/* Footer note */}
                 <View style={styles.footer}>
-                    <Ionicons name="globe-outline" size={13} color={colors.textMuted}/>
+                    <Globe size={13} color={colors.textMuted} strokeWidth={1.75} />
                     <Text style={styles.footerText}>
                         La traduction est automatique et propulsée par IA
                     </Text>

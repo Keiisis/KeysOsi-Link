@@ -164,7 +164,7 @@ export default function MaCarteDeVisite() {
                         transition={{ duration: 0.2 }}
                         style={{ transformOrigin: 'center' }}
                     >
-                        <div style={{ transform: 'scale(0.9)', transformOrigin: 'top center' }}>
+                        <div style={{ transform: 'scale(0.82)', transformOrigin: 'top center' }}>
                             {view === 'recto' ? <CardRecto data={card} /> : <CardVerso data={card} />}
                         </div>
                     </motion.div>

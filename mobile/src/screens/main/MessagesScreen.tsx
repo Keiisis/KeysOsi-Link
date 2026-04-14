@@ -4,6 +4,7 @@ import {
     StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
     Alert,
 } from 'react-native'
+import { Clock, HelpCircle, MessageCircle, Send, Users } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../config/supabase'
@@ -171,7 +172,7 @@ export default function MessagesScreen() {
                 <View style={[styles.row, isMe ? styles.rowMe : styles.rowThem]}>
                     {!isMe && (
                         <View style={styles.agentAvatar}>
-                            <Ionicons name="people" size={14} color={colors.gold} />
+                            <Users size={14} color={colors.primary} strokeWidth={1.75} />
                         </View>
                     )}
                     <View style={[styles.bubble, isMe ? styles.myBubble : styles.theirBubble]}>
@@ -187,7 +188,7 @@ export default function MessagesScreen() {
                             </Text>
                             {isMe && (
                                 isTemp
-                                    ? <Ionicons name="time-outline" size={12} color="rgba(255,255,255,0.5)" />
+                                    ? <Clock size={12} color="rgba(255,255,255,0.5)" strokeWidth={1.75} />
                                     : <Ionicons
                                         name={item.is_read ? 'checkmark-done' : 'checkmark'}
                                         size={13}
@@ -209,10 +210,10 @@ export default function MessagesScreen() {
         >
             {/* Header */}
             <View style={styles.header}>
-                <View style={styles.goldLine} />
+                <View style={styles.primaryLine} />
                 <View style={styles.headerRow}>
                     <View style={styles.headerAvatarWrap}>
-                        <Ionicons name="people" size={18} color={colors.gold} />
+                        <Users size={18} color={colors.primary} strokeWidth={1.75} />
                     </View>
                     <View style={{ flex: 1 }}>
                         <Text style={styles.headerTitle}>Équipe Retour Gagnant</Text>
@@ -227,13 +228,13 @@ export default function MessagesScreen() {
             {/* Zone messages */}
             {loading ? (
                 <View style={styles.loadingState}>
-                    <ActivityIndicator color={colors.gold} size="large" />
+                    <ActivityIndicator color={colors.primary} size="large" />
                     <Text style={styles.loadingText}>Chargement des messages…</Text>
                 </View>
             ) : messages.length === 0 ? (
                 <View style={styles.empty}>
                     <View style={styles.emptyIconWrap}>
-                        <Ionicons name="chatbubbles-outline" size={40} color={colors.gold} />
+                        <MessageCircle size={40} color={colors.primary} strokeWidth={1.75} />
                     </View>
                     <Text style={styles.emptyTitle}>Démarrez la conversation</Text>
                     <Text style={styles.emptyText}>
@@ -252,7 +253,7 @@ export default function MessagesScreen() {
                                 onPress={() => setNewMessage(s)}
                                 activeOpacity={0.7}
                             >
-                                <Ionicons name="chatbubble-ellipses-outline" size={13} color={colors.gold} />
+                                <Ionicons name="chatbubble-ellipses-outline" size={13} color={colors.primary} />
                                 <Text style={styles.suggestionText}>{s}</Text>
                             </TouchableOpacity>
                         ))}
@@ -297,7 +298,7 @@ export default function MessagesScreen() {
                     {sending ? (
                         <ActivityIndicator color="#FFF" size="small" />
                     ) : (
-                        <Ionicons name="send" size={18} color="#FFF" />
+                        <Send size={18} color="#FFF" strokeWidth={1.75} />
                     )}
                 </TouchableOpacity>
             </View>
@@ -314,18 +315,18 @@ const styles = StyleSheet.create({
         paddingBottom: 16,
         paddingHorizontal: spacing.lg,
     },
-    goldLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.gold },
+    primaryLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.primary },
     headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     headerAvatarWrap: {
         width: 42, height: 42, borderRadius: 21,
-        backgroundColor: colors.goldMuted,
+        backgroundColor: colors.primaryMuted,
         alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1.5, borderColor: colors.gold + '40',
+        borderWidth: 1.5, borderColor: colors.primary + '40',
     },
     headerTitle: { ...typography.label, fontSize: 15, color: colors.textOnDark },
     onlineRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 },
     onlineDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#4ADE80' },
-    onlineText: { fontSize: 11, color: colors.gold + 'AA', fontFamily: 'Inter_500Medium' },
+    onlineText: { fontSize: 11, color: colors.primary + 'AA', fontFamily: 'Inter_500Medium' },
 
     loadingState: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
     loadingText: { ...typography.bodySmall, color: colors.textSecondary },
@@ -333,7 +334,7 @@ const styles = StyleSheet.create({
     empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
     emptyIconWrap: {
         width: 80, height: 80, borderRadius: 40,
-        backgroundColor: colors.goldMuted,
+        backgroundColor: colors.primaryMuted,
         alignItems: 'center', justifyContent: 'center', marginBottom: 16,
     },
     emptyTitle: { ...typography.h3, color: colors.textPrimary, marginBottom: 8 },
@@ -346,7 +347,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'flex-start', gap: 8,
         backgroundColor: colors.surface,
         borderRadius: radius.md, padding: 12,
-        borderWidth: 1, borderColor: colors.gold + '25',
+        borderWidth: 1, borderColor: colors.primary + '25',
     },
     suggestionText: {
         ...typography.caption, color: colors.textSecondary,
@@ -370,13 +371,13 @@ const styles = StyleSheet.create({
     rowThem: { justifyContent: 'flex-start', gap: 8 },
     agentAvatar: {
         width: 28, height: 28, borderRadius: 14,
-        backgroundColor: colors.goldMuted,
+        backgroundColor: colors.primaryMuted,
         alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1, borderColor: colors.gold + '30',
+        borderWidth: 1, borderColor: colors.primary + '30',
     },
     agentName: {
         fontSize: 10, fontFamily: 'Inter_600SemiBold',
-        color: colors.gold, marginBottom: 3,
+        color: colors.primary, marginBottom: 3,
     },
 
     bubble: {
@@ -384,7 +385,7 @@ const styles = StyleSheet.create({
         borderRadius: 18, marginBottom: 0,
     },
     myBubble: {
-        backgroundColor: colors.gold,
+        backgroundColor: colors.primary,
         borderBottomRightRadius: 4,
     },
     theirBubble: {
@@ -426,9 +427,9 @@ const styles = StyleSheet.create({
     },
     sendBtn: {
         width: 46, height: 46, borderRadius: 23,
-        backgroundColor: colors.gold,
+        backgroundColor: colors.primary,
         alignItems: 'center', justifyContent: 'center',
-        ...shadows.gold,
+        ...shadows.primary,
     },
     sendBtnDisabled: { opacity: 0.35 },
 })

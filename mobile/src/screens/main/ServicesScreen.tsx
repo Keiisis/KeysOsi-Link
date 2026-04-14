@@ -4,8 +4,11 @@ import {
     View, Text, ScrollView, StyleSheet, TouchableOpacity,
     Dimensions, Platform, RefreshControl, ActivityIndicator,
 } from 'react-native'
+import { ArrowRight, Star, Tag } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { LinearGradient } from 'expo-linear-gradient'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
+import { useLang } from '../../contexts/LangContext'
 import { supabase } from '../../config/supabase'
 
 const { width } = Dimensions.get('window')
@@ -14,38 +17,240 @@ const CARD_W = (width - spacing.lg * 2 - CARD_GAP) / 2
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+export interface PricingOption {
+    label: string
+    price: string
+}
+
 export interface ServiceFull {
     id: string
     icon: keyof typeof Ionicons.glyphMap
     title: string
-    desc: string           // court (carte grid)
-    fullDescription: string
+    subtitle: string          // sous-titre du site web
+    desc: string              // court (carte grid)
+    fullDescription: string   // description complète
     duration: string
     price: string
     documents: string[]
     features: string[]
+    pricing_options: PricingOption[]
     color: string
 }
 
-// ─── 9 Services complets ──────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// DONNÉES SYNCHRONISÉES AVEC LE SITE WEB (frontend/app/(routes)/services/[slug]/page.tsx)
+// Chaque titre, description, feature, document et prix est IDENTIQUE au site.
+// ═══════════════════════════════════════════════════════════════════════════════
 
 export const SERVICES_DATA: ServiceFull[] = [
     {
+        id: 'passeport',
+        icon: 'document-text-outline',
+        title: 'Passeport & Documents',
+        subtitle: 'Documents officiels et accompagnement pour la diaspora béninoise',
+        desc: 'Obtention et renouvellement de passeport, acte de naissance, légalisation et apostille — accompagnement complet pour vos démarches officielles.',
+        fullDescription: "Nous prenons en charge l'ensemble des démarches liées à l'obtention ou au renouvellement de votre passeport biométrique béninois. Constitution du dossier, coordination avec les autorités compétentes et suivi jusqu'à la remise de votre titre — un accompagnement structuré, sans improvisation.",
+        duration: '2 à 4 semaines',
+        price: 'À partir de 50 000 FCFA',
+        color: '#008751',
+        features: [
+            "Copie intégrale du passeport en cours de validité",
+            "Acte de naissance certifié conforme délivré par la mairie béninoise",
+            "Certificat de nationalité béninoise (Tribunal de Première Instance)",
+            "Carte d'Identité Personnelle (CIP A) en cours de validité",
+            "Extrait de casier judiciaire béninois — Bulletin n°3 (moins de 3 mois)",
+            "Justificatif de domicile de moins de 3 mois (quittance ou bail)",
+            "4 photos d'identité biométriques (fond blanc, 3,5 × 4,5 cm, sans lunettes)",
+            "Formulaire officiel de demande de passeport rempli et signé",
+        ],
+        documents: [
+            "Copie intégrale du passeport en cours de validité",
+            "Acte de naissance certifié conforme délivré par la mairie béninoise",
+            "Certificat de nationalité béninoise (Tribunal de Première Instance)",
+            "Carte d'Identité Personnelle (CIP A) en cours de validité",
+            "Extrait de casier judiciaire béninois — Bulletin n°3 (moins de 3 mois)",
+            "Justificatif de domicile de moins de 3 mois (quittance ou bail)",
+            "4 photos d'identité biométriques (fond blanc, 3,5 × 4,5 cm, sans lunettes)",
+            "Formulaire officiel de demande de passeport rempli et signé",
+        ],
+        pricing_options: [
+            { label: 'Pack Standard — Passeport ordinaire', price: '75 000 FCFA' },
+            { label: 'Pack VIP — Traitement express jour-J', price: '350 000 FCFA' },
+            { label: 'Renouvellement accompagné', price: '50 000 FCFA' },
+        ],
+    },
+    {
+        id: 'logement',
+        icon: 'home-outline',
+        title: 'Acheter ou Louer',
+        subtitle: 'Vérifiez, informez-vous et Sécurisez vos transactions foncières et immobilières',
+        desc: 'Acquisition immobilière, location longue durée, sécurisation foncière et vérification juridique de vos biens au Bénin.',
+        fullDescription: "L'immobilier au Bénin offre de réelles opportunités — à condition de savoir naviguer dans un marché foncier qui requiert vigilance et expertise juridique. Nous vous accompagnons de la sélection du bien à la signature de l'acte notarié, en veillant à chaque étape à la solidité juridique de votre acquisition.",
+        duration: '4 à 12 semaines',
+        price: 'À partir de 25 000 FCFA',
+        color: '#FCD116',
+        features: [
+            "Vérification du Titre Foncier (TF) et purge des oppositions cadastrales",
+            "Bornage et identification parcellaire auprès de l'ANDF",
+            "Due diligence juridique sur la chaîne de propriété",
+            "Accompagnement notarial et rédaction des actes de vente ou de bail",
+            "Gestion locative et suivi des relations bailleurs-locataires",
+            "Conseil en fiscalité immobilière (droits de mutation, impôts fonciers)",
+        ],
+        documents: [
+            "Pièce d'identité valide (passeport ou CNI)",
+            "Justificatif de revenus ou preuve de fonds disponibles",
+            "Lettre d'intention d'achat ou de location",
+            "Budget précis et critères de recherche",
+        ],
+        pricing_options: [
+            { label: 'Accompagnement en Acquisition Foncière', price: '3% du montant' },
+            { label: 'Gestion locative mensuelle', price: '8% des loyers' },
+            { label: 'Consultation juridique', price: '25 000 FCFA' },
+        ],
+    },
+    {
+        id: 'business',
+        icon: 'briefcase-outline',
+        title: "Création d'Entreprise",
+        subtitle: "Création et immatriculation d'entreprise au Bénin pour la diaspora.",
+        desc: "Immatriculation RCCM, ouverture de compte professionnel, conseils fiscaux et accompagnement des formalités de création.",
+        fullDescription: "Nous facilitons l'implantation économique des entrepreneurs de la diaspora au Bénin. De la création juridique de votre structure à l'ouverture de votre compte bancaire, en passant par les démarches fiscales, notre équipe vous accompagne à chaque étape.",
+        duration: '3 à 6 semaines',
+        price: 'À partir de 150 000 FCFA',
+        color: '#008751',
+        features: [
+            "Création SARL / SA / SASU clé en main",
+            "Immatriculation RCCM et formalités fiscales",
+            "Ouverture de compte bancaire professionnel",
+            "Domiciliation commerciale à Cotonou",
+            "Cabinet de recrutement — sélection de talents locaux",
+            "Mise en relation avec les acteurs économiques locaux",
+        ],
+        documents: [
+            "Pièce d'identité de tous les associés (passeport)",
+            "Projet de statuts ou intentions (forme juridique, capital)",
+            "Justificatif de siège social (bail ou titre de propriété)",
+            "Capital social disponible (preuve de dépôt)",
+            "Casier judiciaire des gérants (moins de 3 mois)",
+        ],
+        pricing_options: [
+            { label: 'Création SARL', price: '150 000 FCFA' },
+            { label: 'Création SA', price: '250 000 FCFA' },
+            { label: 'Accompagnement complet', price: 'Sur devis' },
+        ],
+    },
+    {
+        id: 'culture',
+        icon: 'map-outline',
+        title: 'Tourisme & Culture',
+        subtitle: 'Reconnectez-vous avec vos racines. La richesse des Cauris.',
+        desc: 'Circuits touristiques, visites patrimoniales, organisation de séjours et découverte du Bénin authentique.',
+        fullDescription: "Le Bénin est l'un des berceaux les plus vivants de la culture africaine. Loin des circuits touristiques standardisés, nous vous proposons une immersion sincère dans les traditions, les savoirs et les rencontres qui font l'identité profonde de ce pays. Ici, la culture se vit, elle ne se contemple pas de loin.",
+        duration: 'De 1 à 14 jours',
+        price: 'À partir de 80 000 FCFA/pers',
+        color: '#E8112D',
+        features: [
+            'Consultation du Fa — oracle traditionnel yoruba-fon',
+            "Cérémonie du Nom et validation à l'état civil",
+            'Soins par les plantes et approche de la médecine ancestrale',
+            'Audience privée avec dignitaires et rois traditionnels',
+            'Initiation et sensibilisation à la culture vodoun',
+            'Programmes de visite : Ganvié, Ouidah, Abomey, Porto-Novo',
+            "Guide historien expert et passionné par l'histoire du Bénin",
+            'Ateliers culinaires — recettes et saveurs béninoises',
+            "Découverte de l'artisanat local et des savoir-faire traditionnels",
+        ],
+        documents: [
+            'Passeport valide (6 mois de validité minimum)',
+            'Visa Bénin si nécessaire (selon nationalité)',
+            'Assurance voyage internationale',
+        ],
+        pricing_options: [
+            { label: 'Circuit culturel (3 jours)', price: '120 000 FCFA/pers' },
+            { label: 'Immersion complète (7 jours)', price: '280 000 FCFA/pers' },
+            { label: 'Programme sur mesure', price: 'Nous consulter' },
+        ],
+    },
+    {
+        id: 'construction',
+        icon: 'hammer-outline',
+        title: 'Suivi de Chantier',
+        subtitle: 'Bâtissez pour la postérité. Votre chantier, géré avec rigueur.',
+        desc: "Maîtrise d'ouvrage déléguée, contrôle des travaux et coordination des entreprises locales pour votre construction.",
+        fullDescription: "Construire au Bénin depuis l'étranger, c'est possible — à condition d'être bien entouré. Entre les devis approximatifs, les délais non respectés et les matériaux de qualité variable, les risques sont réels. Nous agissons comme votre représentant sur place : présents à chaque étape, exigeants sur la qualité, transparents dans nos rapports. Votre investissement mérite un suivi professionnel.",
+        duration: 'Selon durée des travaux',
+        price: 'À partir de 50 000 FCFA',
+        color: '#FCD116',
+        features: [
+            "Aide à l'achat et à la location de terrain ou de bien immobilier",
+            "Bureau d'architecte — conception et plans techniques",
+            'Surveillance et contrôle de chantier (visites régulières, tous moyens)',
+            'Vérification et validation des factures fournisseurs',
+            'Achats de matériaux — sélection et négociation',
+            'Rapports WhatsApp hebdomadaires (photos et vidéos)',
+            'Mise en relation et coordination des intervenants du chantier',
+            'Livraison et nettoyage du chantier clé en main',
+        ],
+        documents: [
+            'Plan architectural approuvé (fichier PDF/DWG)',
+            'Titre foncier ou contrat de bail du terrain',
+            'Budget détaillé des travaux',
+            'Permis de construire (si disponible)',
+        ],
+        pricing_options: [
+            { label: 'Suivi mensuel', price: '75 000 FCFA/mois' },
+            { label: 'Mission complète', price: '5% du montant travaux' },
+            { label: 'Audit ponctuel', price: '50 000 FCFA' },
+        ],
+    },
+    {
+        id: 'investissement',
+        icon: 'trending-up-outline',
+        title: 'Investissement',
+        subtitle: "Opportunités d'affaires rentables. Faites fructifier votre héritage.",
+        desc: "Identification d'opportunités d'affaires, partenariats locaux et accompagnement stratégique pour vos projets d'investissement au Bénin.",
+        fullDescription: "Le Bénin connaît une dynamique économique réelle, portée par des réformes structurelles et des investissements publics soutenus. Les opportunités existent — dans l'immobilier, l'agriculture, le commerce et les services — mais elles demandent une lecture fine du terrain. Nous vous aidons à identifier des projets sérieux, à évaluer les risques réels et à structurer vos investissements dans le respect du cadre juridique local.",
+        duration: 'Accompagnement continu',
+        price: 'À partir de 50 000 FCFA',
+        color: '#008751',
+        features: [
+            'Vente exclusive de particuliers à particuliers (terrain, immeuble, maison)',
+            'Projets agricoles rentables et autres secteurs porteurs',
+            'Évaluation approfondie des risques financiers, juridiques et opérationnels',
+            "Veilles d'opportunités — marchés, appels d'offres, partenariats",
+            'Suivi et optimisation de vos investissements au Bénin',
+            'Stratégies fiscales adaptées au contexte local',
+        ],
+        documents: [
+            "Lettre d'intention d'investissement",
+            'Budget disponible estimatif',
+            "Secteur(s) d'intérêt ciblé(s)",
+            "Pièce d'identité (passeport)",
+            'Justificatif de domicile fiscal dans le pays de résidence',
+        ],
+        pricing_options: [
+            { label: 'Étude de marché', price: '200 000 FCFA' },
+            { label: 'Accompagnement complet', price: 'Sur devis' },
+            { label: 'Consultation stratégique', price: '50 000 FCFA' },
+        ],
+    },
+    {
         id: 'nationalite-vip',
         icon: 'ribbon-outline',
-        title: 'Nationalité Béninoise VIP',
-        desc: 'Accompagnement premium de A à Z pour obtenir la nationalité béninoise.',
-        fullDescription: 'Obtenez votre nationalité béninoise avec un accompagnement complet par nos experts juridiques et administratifs. Nous gérons l\'intégralité des démarches en votre nom, de la constitution du dossier jusqu\'à la remise officielle du décret de naturalisation.',
+        title: 'Nationalité VIP',
+        subtitle: 'Obtenir la nationalité béninoise pour la diaspora afro-descendante',
+        desc: "Accompagnement personnalisé pour l'obtention de la nationalité béninoise — dossier complet, suivi administratif et prise en charge prioritaire.",
+        fullDescription: "Accompagnement personnalisé pour les membres de la diaspora souhaitant obtenir la nationalité béninoise. Suivi de dossier, coordination avec les autorités compétentes et prise en charge prioritaire.",
         duration: '3 à 6 mois',
         price: 'À partir de 150 000 FCFA',
-        color: colors.gold,
+        color: colors.primary,
         features: [
-            'Consultation juridique personnalisée',
             'Constitution et vérification du dossier complet',
-            'Dépôt et suivi auprès des autorités compétentes',
-            'Accompagnement jusqu\'au décret officiel',
-            'Traduction et légalisation des documents',
-            'Suivi en temps réel via l\'application',
+            'Liaison avec le Ministère de la Justice',
+            'Suivi administratif pas à pas',
+            "Accompagnement pour l'apostille et traductions certifiées",
+            'Pack VIP : suivi prioritaire avec référent dédié',
         ],
         documents: [
             'Acte de naissance + apostille (moins de 6 mois)',
@@ -53,215 +258,70 @@ export const SERVICES_DATA: ServiceFull[] = [
             'Justificatif de résidence au Bénin (3 mois min)',
             'Casier judiciaire du pays de résidence (moins de 3 mois)',
             'Preuve de lien ancestral ou appartenance à la diaspora',
-            'Photos d\'identité récentes (fond blanc, norme ICAO)',
-            'Formulaire de demande de nationalité rempli',
-            'Certificat médical (si requis)',
+            "Photos d'identité récentes (fond blanc, norme ICAO)",
+        ],
+        pricing_options: [
+            { label: 'Accompagnement dossier standard', price: '150 000 FCFA' },
+            { label: 'Pack VIP — suivi prioritaire', price: '350 000 FCFA' },
+            { label: 'Consultation initiale', price: 'Gratuit' },
         ],
     },
     {
         id: 'recherche-ancestrale',
         icon: 'search-circle-outline',
         title: 'Recherche Ancestrale',
-        desc: 'Retrouvez vos origines et construisez votre arbre généalogique certifié.',
-        fullDescription: 'Nos spécialistes en archives historiques, généalogie et tests ADN retrouvent la trace de vos ancêtres béninois. Vous recevez un rapport détaillé avec votre arbre généalogique certifié, accompagné d\'une carte de votre territoire ancestral.',
+        subtitle: "Retrouvez la trace de ceux que l'histoire a effacés",
+        desc: 'Retrouvez la trace de vos ancêtres réduits en esclavage — archives, bases de données spécialisées et accompagnement généalogique pour reconstituer votre lignée africaine.',
+        fullDescription: "Pour des millions de descendants de la diaspora africaine, une partie de l'arbre généalogique a été effacée par la traite transatlantique. Nous mobilisons archives, bases de données spécialisées et associations expertes pour reconstituer votre lignée africaine.",
         duration: '4 à 10 semaines',
-        price: 'À partir de 75 000 FCFA',
-        color: '#7C5CCA',
+        price: '250 €',
+        color: '#FCD116',
         features: [
-            'Recherche dans les archives nationales et religieuses',
-            'Reconstruction de l\'arbre généalogique certifié',
-            'Localisation de votre village / clan d\'origine',
-            'Rapport historique illustré (format PDF + impression)',
-            'Cérémonie de retour aux sources (option)',
-            'Test ADN avec analyse diaspora (option)',
+            "Extrait de naissance de vos deux parents (père et mère)",
+            "Extrait de naissance ou de décès de vos grands-parents (côté paternel et maternel)",
+            "Actes de mariage, notariés, militaires ou de décès des arrière-grands-parents",
+            "Consultation d'archives officielles et bases de données diasporiques",
+            "Partenariats avec associations spécialisées en généalogie afro-descendante",
         ],
         documents: [
             'Informations sur les ancêtres connus (noms, lieux, dates)',
             'Documents familiaux disponibles (photos, lettres, actes)',
             'Nom de jeune fille des grands-mères maternelles',
-            'Pays ou région d\'origine présumée',
+            "Pays ou région d'origine présumée",
             'Résultats de test ADN si déjà effectué (optionnel)',
         ],
-    },
-    {
-        id: 'passeport',
-        icon: 'document-text-outline',
-        title: 'Passeport & Docs Officiels',
-        desc: 'Passeport biométrique, actes d\'état civil, apostille et documents officiels.',
-        fullDescription: 'Obtenez rapidement votre passeport biométrique béninois, vos actes d\'état civil, actes de naissance, extrait de naissance, apostilles et tout document officiel auprès des autorités compétentes. Service express disponible.',
-        duration: '2 à 4 semaines',
-        price: 'Selon le document',
-        color: '#3B82C4',
-        features: [
-            'Passeport biométrique (ordinaire ou diplomatique)',
-            'Acte de naissance et extrait certifié',
-            'Légalisation et apostille de documents',
-            'Acte de mariage, de décès, de divorce',
-            'Certificat de nationalité',
-            'Service express disponible (+50%)',
-        ],
-        documents: [
-            'Acte de naissance original ou extrait certifié',
-            'Justificatif de nationalité béninoise',
-            'Photos d\'identité (fond blanc, 35x45 mm, norme ICAO)',
-            'Formulaire de demande rempli et signé',
-            'Justificatif de domicile (facture eau/électricité)',
-            'Ancien passeport si renouvellement',
-        ],
-    },
-    {
-        id: 'logement',
-        icon: 'home-outline',
-        title: 'Achat & Location Immobilier',
-        desc: 'Sécurisation foncière, achat de villa, terrain ou appartement.',
-        fullDescription: 'Sécurisez votre investissement immobilier au Bénin avec un accompagnement juridique, notarial et technique complet. De la recherche du bien à la signature de l\'acte authentique, nos experts fonciers vous protègent des arnaques et garantissent la légitimité de votre titre foncier.',
-        duration: '4 à 12 semaines',
-        price: 'Sur devis',
-        color: '#2D9F63',
-        features: [
-            'Recherche et sélection de biens selon vos critères',
-            'Vérification de la légitimité du titre foncier',
-            'Accompagnement notarial et juridique',
-            'Négociation du prix avec le vendeur',
-            'Gestion locative à distance (option)',
-            'Suivi des travaux de rénovation (option)',
-        ],
-        documents: [
-            'Pièce d\'identité valide (passeport ou CNI)',
-            'Justificatif de revenus ou preuve de fonds disponibles',
-            'Lettre d\'intention d\'achat ou de location',
-            'Budget précis et critères de recherche',
-            'Relevé bancaire des 3 derniers mois',
-            'Procuration notariée si achat par représentant',
-        ],
-    },
-    {
-        id: 'business',
-        icon: 'briefcase-outline',
-        title: "Création d'Entreprise",
-        desc: 'Immatriculation RCCM, NIF, statuts et toutes les démarches légales.',
-        fullDescription: 'Créez votre société au Bénin (SARL, SA, SAS, SURL) avec un accompagnement complet : rédaction des statuts, immatriculation au RCCM, obtention du NIF, ouverture de compte bancaire professionnel et toutes les autorisations sectorielles.',
-        duration: '3 à 6 semaines',
-        price: 'À partir de 60 000 FCFA',
-        color: '#1B2A4A',
-        features: [
-            'Rédaction et enregistrement des statuts de société',
-            'Immatriculation au Registre du Commerce (RCCM)',
-            'Obtention du NIF et registre de commerce',
-            'Ouverture de compte bancaire professionnel',
-            'Démarches CNSS et impôts',
-            'Conseils comptables et fiscaux (1 mois offert)',
-        ],
-        documents: [
-            'Pièce d\'identité de tous les associés (passeport)',
-            'Projet de statuts ou intentions (forme juridique, capital)',
-            'Justificatif de siège social (bail ou titre de propriété)',
-            'Capital social disponible (preuve de dépôt)',
-            'Casier judiciaire des gérants (moins de 3 mois)',
-            'Plan de localisation du siège social',
-        ],
-    },
-    {
-        id: 'culture',
-        icon: 'map-outline',
-        title: 'Tourisme & Circuits Culturels',
-        desc: 'Circuits guidés : Abomey, Ouidah, Ganvié, sites classés UNESCO.',
-        fullDescription: 'Vivez le Bénin de manière authentique avec nos circuits exclusifs : Palais Royaux d\'Abomey (UNESCO), Route des Esclaves à Ouidah, Cité lacustre de Ganvié, Forêt Sacrée de Kpassè, Pendjari. Guides francophones certifiés, véhicules climatisés et hébergements premium.',
-        duration: 'De 1 à 14 jours',
-        price: 'À partir de 25 000 FCFA/jour',
-        color: '#E07B54',
-        features: [
-            'Guides certifiés bilingues (français/anglais)',
-            'Véhicules climatisés avec chauffeur',
-            'Hébergement sélectionné (hôtels ou lodges)',
-            'Repas gastronomiques béninois inclus',
-            'Visites culturelles et cérémonies traditionnelles',
-            'Circuit personnalisé selon vos intérêts',
-        ],
-        documents: [
-            'Passeport valide (6 mois de validité minimum)',
-            'Visa Bénin si nécessaire (selon nationalité)',
-            'Assurance voyage internationale',
-            'Réservation vol confirmée (optionnel pour devis)',
-            'Vaccins à jour (carnet de vaccination)',
-        ],
-    },
-    {
-        id: 'construction',
-        icon: 'hammer-outline',
-        title: 'Suivi de Chantier',
-        desc: 'Contrôle des travaux à distance, coordination et reportings réguliers.',
-        fullDescription: 'Faites construire ou rénover depuis l\'étranger en toute sérénité. Nos techniciens qualifiés (architectes, ingénieurs) contrôlent la qualité des travaux, coordonnent les artisans locaux et vous transmettent des reportings photos/vidéos hebdomadaires.',
-        duration: 'Selon durée des travaux',
-        price: 'Sur devis mensuel',
-        color: colors.warning,
-        features: [
-            'Visites hebdomadaires du chantier',
-            'Reporting photos/vidéos chaque semaine',
-            'Vérification de la qualité des matériaux',
-            'Coordination avec architecte et maîtrise d\'ouvrage',
-            'Gestion des paiements aux artisans',
-            'Réception finale et levée des réserves',
-        ],
-        documents: [
-            'Plan architectural approuvé (fichier PDF/DWG)',
-            'Titre foncier ou contrat de bail du terrain',
-            'Budget détaillé des travaux',
-            'Coordonnées de l\'entrepreneur principal (si déjà choisi)',
-            'Permis de construire (si disponible)',
-        ],
-    },
-    {
-        id: 'investissement',
-        icon: 'trending-up-outline',
-        title: 'Investissement & Partenariats',
-        desc: 'Opportunités en agriculture, immobilier, startup et agro-industrie.',
-        fullDescription: 'Identifiez et sécurisez les meilleures opportunités d\'investissement au Bénin : agro-industrie, immobilier commercial, startups numériques, énergies renouvelables. Nous mettons en relation investisseurs diaspora et entrepreneurs locaux vérifiés.',
-        duration: 'Accompagnement continu',
-        price: 'Sur devis',
-        color: '#0F766E',
-        features: [
-            'Audit et sélection des projets d\'investissement',
-            'Mise en relation avec des entrepreneurs locaux vérifiés',
-            'Accompagnement juridique et fiscal',
-            'Structuration des montages financiers',
-            'Reporting trimestriel sur vos investissements',
-            'Gestion déléguée des participations (option)',
-        ],
-        documents: [
-            'Lettre d\'intention d\'investissement',
-            'Budget disponible estimatif',
-            'Secteur(s) d\'intérêt ciblé(s)',
-            'Pièce d\'identité (passeport)',
-            'Justificatif de domicile fiscal dans le pays de résidence',
+        pricing_options: [
+            { label: 'Recherche complète — archives, bases de données & associations', price: '250 €' },
         ],
     },
     {
         id: 'autres',
         icon: 'apps-outline',
-        title: 'Services à la Carte',
-        desc: 'Transport VIP, santé, scolarité, procurations et services personnalisés.',
-        fullDescription: 'Une gamme complète de services à la demande : transfert aéroport, transport VIP, prise en charge médicale, inscription scolaire de vos enfants, gestion de procurations, envoi et réception de colis, assistance lors de cérémonies familiales.',
+        title: 'Autres Services',
+        subtitle: 'Transport, santé, scolarité et démarches du quotidien',
+        desc: 'Transport, santé, scolarité et démarches administratives — des solutions complémentaires pour faciliter votre installation au Bénin.',
+        fullDescription: "Des solutions complémentaires pour faciliter chaque aspect de votre installation au Bénin — de l'aéroport à l'école de vos enfants, en passant par l'accès aux soins et les démarches administratives courantes.",
         duration: 'Selon la demande',
-        price: 'Sur devis',
+        price: 'Nous contacter',
         color: colors.textSecondary,
         features: [
-            'Transport aéroport et déplacements VIP',
-            'Assistance médicale et prise en charge hospitalière',
-            'Inscription scolaire et suivi académique des enfants',
-            'Gestion de procurations notariées',
-            'Envoi et réception de colis sécurisés',
-            'Assistance lors de cérémonies et événements familiaux',
+            'Transfert aéroport et location de véhicule avec chauffeur',
+            'Mise en relation avec médecins et cliniques partenaires',
+            'Inscription scolaire et suivi pédagogique',
+            'Accompagnement démarches administratives locales',
         ],
         documents: [
-            'Pièce d\'identité',
+            "Pièce d'identité",
             'Documents spécifiques selon le service demandé',
             'Contacter notre équipe pour plus de détails',
+        ],
+        pricing_options: [
+            { label: 'Consultation', price: 'Nous contacter' },
         ],
     },
 ]
 
-// ─── Mapping slug → service ───────────────────────────────────────────────────
+// ─── Mapping slug → icon ──────────────────────────────────────────────────────
 
 const ICON_MAP: Record<string, keyof typeof Ionicons.glyphMap> = {
     nationalite: 'ribbon-outline', nationalite_vip: 'ribbon-outline',
@@ -290,18 +350,19 @@ export default function ServicesScreen({ navigation }: any) {
     const [services, setServices] = useState<ServiceFull[]>(SERVICES_DATA)
     const [loading, setLoading] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
+    const { t } = useLang()
 
     const fetchServices = useCallback(async () => {
         try {
             const { data, error } = await supabase
                 .from('services')
-                .select('id, title, slug, subtitle, description, color, icon_type, is_active, order_index')
+                .select('id, title, slug, subtitle, description, color, icon_type, is_active, order_index, price_display, features, pricing_options')
                 .eq('is_active', true)
                 .order('order_index', { ascending: true })
 
             if (!error && data && data.length > 0) {
                 // Fusionner les données DB avec les données statiques enrichies
-                const mapped: ServiceFull[] = data.map((s: Record<string, string>) => {
+                const mapped: ServiceFull[] = data.map((s: Record<string, any>) => {
                     const staticMatch = SERVICES_DATA.find(sd =>
                         sd.id === s.slug ||
                         s.slug?.includes(sd.id.split('-')[0]) ||
@@ -310,14 +371,20 @@ export default function ServicesScreen({ navigation }: any) {
                     return {
                         id: s.slug || s.id,
                         icon: getIconForSlug(s.slug || '', s.icon_type),
-                        title: s.title,
+                        title: s.title || staticMatch?.title || '',
+                        subtitle: s.subtitle || staticMatch?.subtitle || '',
                         desc: s.subtitle || s.description || staticMatch?.desc || '',
-                        fullDescription: s.description || staticMatch?.fullDescription || s.subtitle || '',
+                        fullDescription: s.description || staticMatch?.fullDescription || '',
                         duration: staticMatch?.duration || '4–8 semaines',
-                        price: staticMatch?.price || 'Sur devis',
-                        documents: staticMatch?.documents || ['Pièce d\'identité valide', 'Documents selon le service'],
-                        features: staticMatch?.features || ['Consultation personnalisée', 'Accompagnement complet', 'Suivi en temps réel'],
-                        color: s.color || staticMatch?.color || colors.gold,
+                        price: s.price_display || staticMatch?.price || 'Sur devis',
+                        documents: staticMatch?.documents || ["Pièce d'identité valide", 'Documents selon le service'],
+                        features: (Array.isArray(s.features) && s.features.length > 0)
+                            ? s.features
+                            : (staticMatch?.features || ['Consultation personnalisée', 'Accompagnement complet']),
+                        pricing_options: (Array.isArray(s.pricing_options) && s.pricing_options.length > 0)
+                            ? s.pricing_options
+                            : (staticMatch?.pricing_options || [{ label: 'Standard', price: 'Nous consulter' }]),
+                        color: s.color || staticMatch?.color || colors.primary,
                     }
                 })
                 setServices(mapped)
@@ -334,12 +401,14 @@ export default function ServicesScreen({ navigation }: any) {
         navigation.navigate('ServiceDetails', {
             serviceId: svc.id,
             title: svc.title,
+            subtitle: svc.subtitle,
             desc: svc.desc,
             fullDescription: svc.fullDescription,
             duration: svc.duration,
             price: svc.price,
             documents: svc.documents,
             features: svc.features,
+            pricing_options: svc.pricing_options,
             color: svc.color,
             icon: svc.icon,
         })
@@ -350,27 +419,26 @@ export default function ServicesScreen({ navigation }: any) {
             style={styles.container}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.gold} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         >
             {/* Header */}
-            <View style={styles.header}>
-                <View style={styles.goldLine} />
+            <LinearGradient colors={['#070D1A', '#0C1B33', '#132846']} style={styles.header}>
+                <View style={styles.flagStripe}>
+                    <View style={[styles.flagSeg, { backgroundColor: colors.flagGreen }]} />
+                    <View style={[styles.flagSeg, { backgroundColor: colors.flagYellow }]} />
+                    <View style={[styles.flagSeg, { backgroundColor: colors.flagRed }]} />
+                </View>
                 <View style={styles.headerContent}>
-                    <View style={styles.ornament}>
-                        <View style={styles.ornamentLine} />
-                        <View style={styles.ornamentDot} />
-                        <View style={styles.ornamentLine} />
-                    </View>
-                    <Text style={styles.headerTitle}>Nos Services</Text>
+                    <Text style={styles.headerTitle}>{t('Nos Services')}</Text>
                     <Text style={styles.headerSub}>
-                        Des solutions complètes et sur-mesure pour votre retour au Bénin.
+                        {t('Des solutions complètes et sur-mesure pour votre retour au Bénin.')}
                     </Text>
                 </View>
-            </View>
+            </LinearGradient>
 
             {loading ? (
                 <View style={styles.loadingWrap}>
-                    <ActivityIndicator color={colors.gold} size="large" />
+                    <ActivityIndicator color={colors.primary} size="large" />
                 </View>
             ) : (
                 <View style={styles.grid}>
@@ -386,20 +454,20 @@ export default function ServicesScreen({ navigation }: any) {
                                 <View style={[styles.cardIconWrap, { borderColor: svc.color + '22' }]}>
                                     <Ionicons name={svc.icon} size={28} color={svc.color} />
                                 </View>
-                                <Text style={styles.cardTitle} numberOfLines={2}>{svc.title}</Text>
-                                <Text style={styles.cardDesc} numberOfLines={3}>{svc.desc}</Text>
+                                <Text style={styles.cardTitle} numberOfLines={2}>{t(svc.title)}</Text>
+                                <Text style={styles.cardDesc} numberOfLines={3}>{t(svc.desc)}</Text>
 
-                                {/* Badges durée + prix */}
+                                {/* Badge prix */}
                                 <View style={styles.cardMeta}>
                                     <View style={[styles.metaBadge, { backgroundColor: svc.color + '12' }]}>
-                                        <Ionicons name="time-outline" size={9} color={svc.color} />
-                                        <Text style={[styles.metaText, { color: svc.color }]} numberOfLines={1}>{svc.duration}</Text>
+                                        <Tag size={9} color={svc.color} strokeWidth={1.75} />
+                                        <Text style={[styles.metaText, { color: svc.color }]} numberOfLines={1}>{svc.price}</Text>
                                     </View>
                                 </View>
 
                                 <View style={[styles.cardFooter, { backgroundColor: svc.color + '10' }]}>
-                                    <Text style={[styles.cardActionText, { color: svc.color }]}>Découvrir</Text>
-                                    <Ionicons name="arrow-forward" size={11} color={svc.color} />
+                                    <Text style={[styles.cardActionText, { color: svc.color }]}>{t('En savoir plus')}</Text>
+                                    <ArrowRight size={11} color={svc.color} strokeWidth={1.75} />
                                 </View>
                             </View>
                         </TouchableOpacity>
@@ -412,20 +480,20 @@ export default function ServicesScreen({ navigation }: any) {
                 <TouchableOpacity
                     style={styles.vipBanner}
                     activeOpacity={0.88}
-                    onPress={() => handlePress(services[0])}
+                    onPress={() => handlePress(services.find(s => s.id === 'nationalite-vip') || services[0])}
                 >
                     <View style={styles.vipBannerLeft}>
                         <View style={styles.vipBadge}>
-                            <Ionicons name="star" size={10} color={colors.gold} />
-                            <Text style={styles.vipBadgeText}>LE PLUS POPULAIRE</Text>
+                            <Star size={10} color={colors.primary} strokeWidth={1.75} />
+                            <Text style={styles.vipBadgeText}>{t('LE PLUS POPULAIRE')}</Text>
                         </View>
-                        <Text style={styles.vipTitle}>Nationalité Béninoise VIP</Text>
+                        <Text style={styles.vipTitle}>{t('Nationalité Béninoise VIP')}</Text>
                         <Text style={styles.vipDesc}>
-                            Accompagnement complet de A à Z · {services[0]?.price}
+                            {t('Accompagnement complet de A à Z · À partir de 150 000 FCFA')}
                         </Text>
                     </View>
                     <View style={styles.vipArrow}>
-                        <Ionicons name="arrow-forward" size={20} color={colors.gold} />
+                        <ArrowRight size={20} color={colors.primary} strokeWidth={1.75} />
                     </View>
                 </TouchableOpacity>
             )}
@@ -440,20 +508,17 @@ const styles = StyleSheet.create({
     scrollContent: { paddingBottom: spacing.xl },
 
     header: {
-        backgroundColor: colors.headerBg,
         paddingTop: Platform.OS === 'ios' ? 56 : 44,
         paddingBottom: 28,
         paddingHorizontal: spacing.lg,
         borderBottomLeftRadius: 28,
         borderBottomRightRadius: 28,
     },
-    goldLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.gold },
+    flagStripe: { position: 'absolute', top: 0, left: 0, right: 0, height: 4, flexDirection: 'row' },
+    flagSeg: { flex: 1 },
     headerContent: { alignItems: 'center', paddingTop: 8 },
-    ornament: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-    ornamentLine: { flex: 1, height: 1, backgroundColor: colors.gold + '40', maxWidth: 40 },
-    ornamentDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.gold },
-    headerTitle: { ...typography.h1, color: colors.textOnDark, textAlign: 'center' },
-    headerSub: { ...typography.bodySmall, color: colors.gold + 'AA', marginTop: 6, textAlign: 'center', lineHeight: 20 },
+    headerTitle: { ...typography.h1, color: '#FFFFFF', textAlign: 'center' },
+    headerSub: { ...typography.bodySmall, color: 'rgba(255,255,255,0.55)', marginTop: 6, textAlign: 'center', lineHeight: 20 },
 
     loadingWrap: { paddingTop: 60, alignItems: 'center' },
 
@@ -476,7 +541,7 @@ const styles = StyleSheet.create({
     cardTopBar: { height: 4 },
     cardInner: { padding: 14, gap: 6 },
     cardIconWrap: {
-        width: 48, height: 48, borderRadius: 12,
+        width: 48, height: 48, borderRadius: radius.md,
         borderWidth: 1, backgroundColor: colors.surfaceElevated,
         alignItems: 'center', justifyContent: 'center',
         marginBottom: 4,
@@ -485,33 +550,33 @@ const styles = StyleSheet.create({
     cardDesc: { ...typography.caption, color: colors.textSecondary, lineHeight: 17, fontSize: 11 },
     cardMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 2 },
     metaBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6 },
-    metaText: { fontSize: 9, fontFamily: 'Inter_600SemiBold', maxWidth: 80 },
+    metaText: { fontSize: 9, fontFamily: 'Inter_600SemiBold', maxWidth: 100 },
     cardFooter: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        gap: 4, paddingVertical: 8, borderRadius: 8, marginTop: 6,
+        gap: 4, paddingVertical: 8, borderRadius: radius.sm, marginTop: 6,
     },
     cardActionText: { fontSize: 11, fontFamily: 'Inter_700Bold' },
 
     vipBanner: {
         flexDirection: 'row', alignItems: 'center',
         marginHorizontal: spacing.lg, marginTop: spacing.lg,
-        backgroundColor: colors.navy,
+        backgroundColor: colors.surface,
         borderRadius: radius.lg, padding: spacing.lg,
-        borderWidth: 1, borderColor: colors.gold + '30',
-        ...shadows.md,
+        borderWidth: 1, borderColor: colors.primaryGlow,
+        ...shadows.primary,
     },
     vipBannerLeft: { flex: 1, gap: 6 },
     vipBadge: {
         flexDirection: 'row', alignItems: 'center', gap: 4,
-        backgroundColor: colors.gold + '20', borderRadius: 20,
+        backgroundColor: colors.primaryMuted, borderRadius: 20,
         paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start',
     },
-    vipBadgeText: { fontSize: 9, fontFamily: 'Inter_800ExtraBold', color: colors.gold, letterSpacing: 0.8 },
+    vipBadgeText: { fontSize: 9, fontFamily: 'Inter_700Bold', color: colors.primary, letterSpacing: 0.8 },
     vipTitle: { ...typography.h3, color: colors.textOnDark, fontSize: 16 },
-    vipDesc: { ...typography.caption, color: colors.gold + 'BB', lineHeight: 18 },
+    vipDesc: { ...typography.caption, color: 'rgba(255,255,255,0.55)', lineHeight: 18 },
     vipArrow: {
         width: 40, height: 40, borderRadius: 20,
-        backgroundColor: colors.gold + '20',
+        backgroundColor: colors.primaryMuted,
         alignItems: 'center', justifyContent: 'center',
     },
 })

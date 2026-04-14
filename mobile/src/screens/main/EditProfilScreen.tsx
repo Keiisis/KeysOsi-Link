@@ -4,6 +4,7 @@ import {
     ScrollView, KeyboardAvoidingView, Platform,
     ActivityIndicator, Alert,
 } from 'react-native'
+import { ArrowLeft, CheckCircle, Lock, Mail } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../../contexts/AuthContext'
@@ -59,12 +60,12 @@ export default function EditProfilScreen({ navigation }: { navigation: Nav }) {
         <View style={styles.inputGroup}>
             <Text style={styles.label}>{label}</Text>
             <View style={[styles.inputWrapper, focused === field && styles.inputFocused]}>
-                <Ionicons
-                    name={icon}
-                    size={18}
-                    color={focused === field ? colors.gold : colors.textMuted}
-                    style={styles.inputIcon}
-                />
+                    <Ionicons
+                        name={icon}
+                        size={18}
+                        color={focused === field ? colors.primary : colors.textMuted}
+                        style={styles.inputIcon}
+                    />
                 <TextInput
                     style={styles.input}
                     value={value}
@@ -87,9 +88,9 @@ export default function EditProfilScreen({ navigation }: { navigation: Nav }) {
         >
             {/* Header */}
             <View style={styles.header}>
-                <View style={styles.goldLine} />
+                <View style={styles.primaryLine} />
                 <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <Ionicons name="arrow-back" size={22} color={colors.textOnDark} />
+                    <ArrowLeft size={22} color={colors.textOnDark} strokeWidth={1.75} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Informations personnelles</Text>
                 <Text style={styles.headerSub}>Modifiez vos informations de profil</Text>
@@ -103,10 +104,10 @@ export default function EditProfilScreen({ navigation }: { navigation: Nav }) {
                 <View style={styles.card}>
                     {/* Email non modifiable */}
                     <View style={styles.emailRow}>
-                        <Ionicons name="mail" size={16} color={colors.textMuted} />
+                        <Mail size={16} color={colors.textMuted} strokeWidth={1.75} />
                         <Text style={styles.emailText}>{profile?.email}</Text>
                         <View style={styles.lockedBadge}>
-                            <Ionicons name="lock-closed" size={10} color={colors.textMuted} />
+                            <Lock size={10} color={colors.textMuted} strokeWidth={1.75} />
                             <Text style={styles.lockedText}>Non modifiable</Text>
                         </View>
                     </View>
@@ -157,7 +158,7 @@ export default function EditProfilScreen({ navigation }: { navigation: Nav }) {
                             <ActivityIndicator color="#FFF" size="small" />
                         ) : (
                             <>
-                                <Ionicons name="checkmark-circle-outline" size={20} color="#FFF" />
+                                <CheckCircle size={20} color="#FFF" strokeWidth={1.75} />
                                 <Text style={styles.saveBtnText}>Enregistrer les modifications</Text>
                             </>
                         )}
@@ -178,10 +179,10 @@ const styles = StyleSheet.create({
         borderBottomLeftRadius: 28,
         borderBottomRightRadius: 28,
     },
-    goldLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.gold },
+    primaryLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.primary },
     backBtn: { marginBottom: spacing.md },
     headerTitle: { ...typography.h2, color: colors.textOnDark },
-    headerSub: { ...typography.bodySmall, color: colors.gold + 'AA', marginTop: 4 },
+    headerSub: { ...typography.bodySmall, color: colors.primary + 'AA', marginTop: 4 },
 
     scroll: { padding: spacing.lg, paddingBottom: 60 },
     card: {
@@ -217,12 +218,12 @@ const styles = StyleSheet.create({
         borderWidth: 1.5, borderColor: colors.border,
         paddingHorizontal: spacing.md, minHeight: 52,
     },
-    inputFocused: { borderColor: colors.gold, backgroundColor: colors.goldShimmer },
+    inputFocused: { borderColor: colors.primary, backgroundColor: colors.primaryMuted },
     inputIcon: { marginRight: 10 },
     input: { flex: 1, fontSize: 16, color: colors.textPrimary, fontFamily: 'Inter_400Regular' },
 
     saveBtn: {
-        backgroundColor: colors.gold,
+        backgroundColor: colors.primary,
         borderRadius: radius.md,
         paddingVertical: 16,
         flexDirection: 'row',
@@ -230,7 +231,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: 10,
         marginTop: spacing.md,
-        shadowColor: colors.gold,
+        shadowColor: colors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 10,

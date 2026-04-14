@@ -3,6 +3,7 @@ import {
     View, Text, ScrollView, StyleSheet, TouchableOpacity,
     Platform, TextInput,
 } from 'react-native'
+import { ArrowLeft, ChevronRight, HelpCircle, Search, XCircle } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
@@ -14,7 +15,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList, 'FAQ'>
 const FAQ_DATA = [
     {
         category: 'Nationalité béninoise',
-        color: colors.gold,
+        color: colors.primary,
         icon: 'ribbon-outline' as const,
         items: [
             {
@@ -87,7 +88,7 @@ const FAQ_DATA = [
             },
             {
                 q: 'Comment contacter le support ?',
-                a: 'Notre équipe est disponible via la messagerie intégrée de l\'application, par email à contact@retour-gagnant.com, ou par téléphone/WhatsApp. Des rendez-vous peuvent être planifiés depuis l\'onglet "Rendez-vous".',
+                a: 'Notre équipe est disponible via la messagerie intégrée de l\'application, par email à contact@retourgagnantbenin.bj, ou par téléphone/WhatsApp. Des rendez-vous peuvent être planifiés depuis l\'onglet "Rendez-vous".',
             },
         ],
     },
@@ -114,9 +115,9 @@ export default function FAQScreen({ navigation }: { navigation: Nav }) {
         <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
             {/* Header */}
             <View style={styles.header}>
-                <View style={styles.goldLine} />
+                <View style={styles.primaryLine} />
                 <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <Ionicons name="arrow-back" size={22} color={colors.textOnDark} />
+                    <ArrowLeft size={22} color={colors.textOnDark} strokeWidth={1.75} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Aide & FAQ</Text>
                 <Text style={styles.headerSub}>Questions fréquentes</Text>
@@ -125,7 +126,7 @@ export default function FAQScreen({ navigation }: { navigation: Nav }) {
             {/* Barre de recherche */}
             <View style={styles.searchWrap}>
                 <View style={styles.searchBar}>
-                    <Ionicons name="search-outline" size={18} color={colors.textMuted} />
+                    <Search size={18} color={colors.textMuted} strokeWidth={1.75} />
                     <TextInput
                         style={styles.searchInput}
                         value={search}
@@ -137,7 +138,7 @@ export default function FAQScreen({ navigation }: { navigation: Nav }) {
                     />
                     {search.length > 0 && (
                         <TouchableOpacity onPress={() => setSearch('')}>
-                            <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+                            <XCircle size={16} color={colors.textMuted} strokeWidth={1.75} />
                         </TouchableOpacity>
                     )}
                 </View>
@@ -146,7 +147,7 @@ export default function FAQScreen({ navigation }: { navigation: Nav }) {
             {/* Résultats */}
             {filteredCategories.length === 0 ? (
                 <View style={styles.noResult}>
-                    <Ionicons name="search-outline" size={32} color={colors.textMuted} />
+                    <Search size={32} color={colors.textMuted} strokeWidth={1.75} />
                     <Text style={styles.noResultTitle}>Aucun résultat</Text>
                     <Text style={styles.noResultText}>Essayez avec d'autres mots-clés.</Text>
                 </View>
@@ -197,12 +198,12 @@ export default function FAQScreen({ navigation }: { navigation: Nav }) {
 
             {/* Contact support */}
             <View style={styles.contactCard}>
-                <Ionicons name="chatbubble-ellipses" size={24} color={colors.gold} />
+                <Ionicons name="chatbubble-ellipses" size={24} color={colors.primary} />
                 <View style={{ flex: 1 }}>
                     <Text style={styles.contactTitle}>Vous n'avez pas trouvé votre réponse ?</Text>
                     <Text style={styles.contactText}>Notre équipe est disponible pour vous aider.</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.75} />
             </View>
 
             <View style={{ height: 100 }} />
@@ -221,10 +222,10 @@ const styles = StyleSheet.create({
         borderBottomLeftRadius: 28,
         borderBottomRightRadius: 28,
     },
-    goldLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.gold },
+    primaryLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.primary },
     backBtn: { marginBottom: spacing.md },
     headerTitle: { ...typography.h2, color: colors.textOnDark },
-    headerSub: { ...typography.bodySmall, color: colors.gold + 'AA', marginTop: 4 },
+    headerSub: { ...typography.bodySmall, color: colors.primary + 'AA', marginTop: 4 },
 
     searchWrap: { padding: spacing.lg, paddingBottom: spacing.sm },
     searchBar: {
@@ -275,9 +276,9 @@ const styles = StyleSheet.create({
     contactCard: {
         flexDirection: 'row', alignItems: 'center', gap: 14,
         marginHorizontal: spacing.lg,
-        backgroundColor: colors.gold + '10',
+        backgroundColor: colors.primary + '10',
         borderRadius: radius.lg, padding: spacing.lg,
-        borderWidth: 1, borderColor: colors.gold + '25',
+        borderWidth: 1, borderColor: colors.primary + '25',
         marginTop: spacing.sm,
     },
     contactTitle: { ...typography.label, color: colors.textPrimary },

@@ -29,7 +29,7 @@ const CACHE_KEY_PREFIX = '@rg_trans_cache_'
 
 // ─── Translation API URL ──────────────────────────────────────────────────────
 // Update this to your deployed frontend URL in production
-const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://retour-gagnant.vercel.app'
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
 
 // ─── Context type ─────────────────────────────────────────────────────────────
 

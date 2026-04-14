@@ -3,6 +3,7 @@ import {
     View, Text, ScrollView, StyleSheet, TouchableOpacity,
     Platform, Linking, Image,
 } from 'react-native'
+import { ArrowLeft, ExternalLink, HelpCircle } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
@@ -14,17 +15,26 @@ const APP_VERSION = '1.0.0'
 const BUILD_NUMBER = '100'
 
 const LINKS = [
-    { label: 'Site officiel', icon: 'globe-outline' as const, url: 'https://retour-gagnant.com' },
-    { label: 'Conditions d\'utilisation', icon: 'document-text-outline' as const, url: 'https://retour-gagnant.com/cgu' },
-    { label: 'Politique de confidentialité', icon: 'shield-outline' as const, url: 'https://retour-gagnant.com/privacy' },
-    { label: 'Nous contacter', icon: 'mail-outline' as const, url: 'mailto:contact@retour-gagnant.com' },
+    { label: 'Site officiel', icon: 'globe-outline' as const, url: 'https://www.retourgagnantbenin.bj' },
+    { label: 'Conditions d\'utilisation', icon: 'document-text-outline' as const, url: 'https://www.retourgagnantbenin.bj/cgu' },
+    { label: 'Politique de confidentialité', icon: 'shield-outline' as const, url: 'https://www.retourgagnantbenin.bj/privacy' },
+    { label: 'Nous contacter', icon: 'mail-outline' as const, url: 'mailto:contact@retourgagnantbenin.bj' },
 ]
 
+// Valeurs synchronisées avec le site web (page /a-propos)
+const VALUES = [
+    { title: 'Excellence', desc: 'Un service irréprochable à chaque étape de votre retour.', icon: 'diamond-outline' as const, color: colors.primary },
+    { title: 'Engagement', desc: 'Votre réussite est notre mission première.', icon: 'heart-outline' as const, color: '#E8112D' },
+    { title: 'Proximité', desc: 'Présents au Bénin et dans la diaspora.', icon: 'globe-outline' as const, color: '#008751' },
+    { title: 'Confiance', desc: 'Plus de 500 familles nous ont fait confiance.', icon: 'people-outline' as const, color: '#3B82C4' },
+]
+
+// Équipe synchronisée avec le site web
 const TEAM = [
-    { name: 'Équipe juridique', role: 'Experts en droit béninois et international', icon: 'briefcase-outline' as const, color: colors.gold },
-    { name: 'Généalogistes', role: 'Spécialistes des archives et recherches ancestrales', icon: 'people-outline' as const, color: '#7C5CCA' },
-    { name: 'Agents administratifs', role: 'Coordination avec les institutions béninoises', icon: 'business-outline' as const, color: '#2D9F63' },
-    { name: 'Support client', role: 'Disponible 6j/7 pour vous accompagner', icon: 'headset-outline' as const, color: colors.info },
+    { name: 'Équipe Juridique', role: 'Passeports & Documents', icon: 'briefcase-outline' as const, color: colors.primary },
+    { name: 'Équipe Immobilier', role: 'Logement & Construction', icon: 'home-outline' as const, color: '#2D9F63' },
+    { name: 'Équipe Business', role: 'Investissement & Entreprise', icon: 'trending-up-outline' as const, color: '#1B2A4A' },
+    { name: 'Équipe Culture', role: 'Guide & Accompagnement', icon: 'map-outline' as const, color: '#E07B54' },
 ]
 
 /* ═══════════════════════════════════════════════════════════
@@ -42,9 +52,9 @@ export default function AboutScreen({ navigation }: { navigation: Nav }) {
         <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
             {/* Header */}
             <View style={styles.header}>
-                <View style={styles.goldLine} />
+                <View style={styles.primaryLine} />
                 <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <Ionicons name="arrow-back" size={22} color={colors.textOnDark} />
+                    <ArrowLeft size={22} color={colors.textOnDark} strokeWidth={1.75} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>À propos</Text>
                 <Text style={styles.headerSub}>Retour Gagnant Bénin</Text>
@@ -73,18 +83,30 @@ export default function AboutScreen({ navigation }: { navigation: Nav }) {
                 </View>
             </View>
 
-            {/* Mission */}
+            {/* Notre Histoire — synchronisé avec le site web /a-propos */}
             <View style={styles.missionCard}>
-                <Text style={styles.sectionTitle}>Notre Mission</Text>
+                <Text style={styles.sectionLabel}>NOTRE HISTOIRE</Text>
+                <Text style={styles.sectionTitle}>Née de la diaspora,{"\n"}pour la diaspora</Text>
                 <Text style={styles.missionText}>
-                    Retour Gagnant Bénin accompagne les membres de la diaspora africaine et afro-descendante dans leur retour aux sources.
-                    Nous facilitons l'obtention de la nationalité béninoise, le renouvellement de passeport, les recherches ancestrales
-                    et toutes les démarches administratives liées à un établissement au Bénin.
+                    Fondée par des membres de la diaspora béninoise ayant eux-mêmes vécu l'expérience du retour, Retour Gagnant est née d'un constat simple : rentrer au pays ne devrait pas être un parcours du combattant.
                 </Text>
                 <Text style={styles.missionText}>
-                    Fondée sur les valeurs d'excellence, de proximité et de respect de l'héritage culturel africain, notre agence
-                    place la diaspora au cœur de son action pour le développement du Bénin.
+                    Aujourd'hui, nous avons accompagné plus de 500 projets de retour réussis. Des passeports aux investissements immobiliers, en passant par la création d'entreprise, nous sommes le partenaire de confiance de la diaspora.
                 </Text>
+            </View>
+
+            {/* Nos Valeurs — synchronisé avec le site web */}
+            <Text style={styles.listSectionTitle}>NOS VALEURS</Text>
+            <View style={styles.valuesGrid}>
+                {VALUES.map((v, i) => (
+                    <View key={i} style={styles.valueCard}>
+                        <View style={[styles.valueIconWrap, { backgroundColor: v.color + '12' }]}>
+                            <Ionicons name={v.icon} size={22} color={v.color} />
+                        </View>
+                        <Text style={styles.valueTitle}>{v.title}</Text>
+                        <Text style={styles.valueDesc}>{v.desc}</Text>
+                    </View>
+                ))}
             </View>
 
             {/* Équipe */}
@@ -117,10 +139,10 @@ export default function AboutScreen({ navigation }: { navigation: Nav }) {
                         activeOpacity={0.6}
                     >
                         <View style={styles.linkIconWrap}>
-                            <Ionicons name={link.icon} size={18} color={colors.gold} />
+                            <Ionicons name={link.icon} size={18} color={colors.primary} />
                         </View>
                         <Text style={styles.linkLabel}>{link.label}</Text>
-                        <Ionicons name="open-outline" size={14} color={colors.textMuted} />
+                        <ExternalLink size={14} color={colors.textMuted} strokeWidth={1.75} />
                     </TouchableOpacity>
                 ))}
             </View>
@@ -162,43 +184,43 @@ const styles = StyleSheet.create({
         borderBottomLeftRadius: 28,
         borderBottomRightRadius: 28,
     },
-    goldLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.gold },
+    primaryLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.primary },
     backBtn: { marginBottom: spacing.md },
     headerTitle: { ...typography.h2, color: colors.textOnDark },
-    headerSub: { ...typography.bodySmall, color: colors.gold + 'AA', marginTop: 4 },
+    headerSub: { ...typography.bodySmall, color: colors.primary + 'AA', marginTop: 4 },
 
     brandCard: {
         margin: spacing.lg,
         backgroundColor: colors.headerBg,
         borderRadius: radius.lg, padding: spacing.xl,
         alignItems: 'center',
-        borderWidth: 1, borderColor: colors.gold + '25',
+        borderWidth: 1, borderColor: colors.primary + '25',
         ...shadows.md,
     },
     logoWrap: {
         width: 80, height: 80, borderRadius: 20,
-        backgroundColor: colors.gold + '15',
+        backgroundColor: colors.primary + '15',
         alignItems: 'center', justifyContent: 'center',
         marginBottom: spacing.md,
-        borderWidth: 1, borderColor: colors.gold + '30',
+        borderWidth: 1, borderColor: colors.primary + '30',
     },
     logo: { width: 60, height: 60 },
     brandName: {
-        color: colors.goldLight, fontSize: 18,
+        color: colors.primaryLight, fontSize: 18,
         fontFamily: 'Inter_700Bold', letterSpacing: 5,
     },
     brandSub: {
-        color: colors.goldLight, fontSize: 18,
+        color: colors.primaryLight, fontSize: 18,
         fontFamily: 'Inter_700Bold', letterSpacing: 5, marginTop: 2,
     },
     ornament: {
         flexDirection: 'row', alignItems: 'center',
         gap: 8, marginTop: 12, marginBottom: 8,
     },
-    ornamentLine: { width: 36, height: 1, backgroundColor: colors.gold + '50' },
-    ornamentDot: { width: 6, height: 6, backgroundColor: colors.goldLight, transform: [{ rotate: '45deg' }] },
+    ornamentLine: { width: 36, height: 1, backgroundColor: colors.primary + '50' },
+    ornamentDot: { width: 6, height: 6, backgroundColor: colors.primaryLight, transform: [{ rotate: '45deg' }] },
     tagline: {
-        color: colors.gold + 'AA', fontSize: 11,
+        color: colors.primary + 'AA', fontSize: 11,
         fontStyle: 'italic', letterSpacing: 0.5, marginBottom: spacing.md,
     },
     versionBadge: {
@@ -215,8 +237,26 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: colors.borderLight,
         ...shadows.sm, gap: 12,
     },
+    sectionLabel: { ...typography.overline, fontSize: 10, color: '#E8112D', marginBottom: 2 },
     sectionTitle: { ...typography.h3, color: colors.textPrimary },
     missionText: { ...typography.bodySmall, color: colors.textSecondary, lineHeight: 22 },
+
+    valuesGrid: {
+        flexDirection: 'row', flexWrap: 'wrap', gap: 12,
+        paddingHorizontal: spacing.lg, marginBottom: spacing.lg,
+    },
+    valueCard: {
+        width: '47%' as any, backgroundColor: colors.surface,
+        borderRadius: radius.lg, padding: spacing.md,
+        borderWidth: 1, borderColor: colors.borderLight,
+        ...shadows.sm, alignItems: 'center', gap: 6,
+    },
+    valueIconWrap: {
+        width: 44, height: 44, borderRadius: 12,
+        alignItems: 'center', justifyContent: 'center', marginBottom: 4,
+    },
+    valueTitle: { ...typography.label, color: colors.textPrimary, fontSize: 14, textAlign: 'center' },
+    valueDesc: { ...typography.caption, color: colors.textMuted, textAlign: 'center', lineHeight: 17 },
 
     listSectionTitle: {
         ...typography.overline, fontSize: 10, color: colors.textMuted,
@@ -254,7 +294,7 @@ const styles = StyleSheet.create({
     linkItemBorder: { borderBottomWidth: 1, borderBottomColor: colors.borderLight },
     linkIconWrap: {
         width: 34, height: 34, borderRadius: 9,
-        backgroundColor: colors.gold + '12',
+        backgroundColor: colors.primary + '12',
         alignItems: 'center', justifyContent: 'center',
     },
     linkLabel: { flex: 1, ...typography.bodySmall, fontFamily: 'Inter_500Medium', color: colors.textPrimary },

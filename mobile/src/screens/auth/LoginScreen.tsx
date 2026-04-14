@@ -4,6 +4,7 @@ import {
     StyleSheet, Image, KeyboardAvoidingView,
     Platform, ScrollView, ActivityIndicator, Alert,
 } from 'react-native'
+import { ArrowRight, Lock, Mail } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../../contexts/AuthContext'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
@@ -46,7 +47,7 @@ export default function LoginScreen({ navigation }: any) {
             >
                 {/* ── En-tête avec bande marine ── */}
                 <View style={styles.headerBand}>
-                    <View style={styles.goldLine} />
+                    <View style={styles.primaryLine} />
                     <Image
                         source={require('../../../assets/icon.png')}
                         style={styles.logo}
@@ -71,7 +72,7 @@ export default function LoginScreen({ navigation }: any) {
                     <View style={styles.inputGroup}>
                         <Text style={styles.label}>Adresse email</Text>
                         <View style={[styles.inputWrapper, focused === 'email' && styles.inputFocused]}>
-                            <Ionicons name="mail-outline" size={18} color={focused === 'email' ? colors.gold : colors.textMuted} style={styles.inputIcon} />
+                            <Mail size={18} color={focused === 'email' ? colors.primary : colors.textMuted} strokeWidth={1.75} style={styles.inputIcon}/>
                             <TextInput
                                 style={styles.input}
                                 placeholder="votre@email.com"
@@ -91,7 +92,7 @@ export default function LoginScreen({ navigation }: any) {
                     <View style={styles.inputGroup}>
                         <Text style={styles.label}>Mot de passe</Text>
                         <View style={[styles.inputWrapper, focused === 'password' && styles.inputFocused]}>
-                            <Ionicons name="lock-closed-outline" size={18} color={focused === 'password' ? colors.gold : colors.textMuted} style={styles.inputIcon} />
+                            <Lock size={18} color={focused === 'password' ? colors.primary : colors.textMuted} strokeWidth={1.75} style={styles.inputIcon}/>
                             <TextInput
                                 style={[styles.input, { flex: 1 }]}
                                 placeholder="Votre mot de passe"
@@ -134,7 +135,7 @@ export default function LoginScreen({ navigation }: any) {
                         ) : (
                             <>
                                 <Text style={styles.buttonText}>Se connecter</Text>
-                                <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+                                <ArrowRight size={18} color="#FFFFFF" strokeWidth={1.75} />
                             </>
                         )}
                     </TouchableOpacity>
@@ -172,19 +173,19 @@ const styles = StyleSheet.create({
         borderBottomLeftRadius: 32,
         borderBottomRightRadius: 32,
     },
-    goldLine: {
+    primaryLine: {
         position: 'absolute', top: 0, left: 0, right: 0,
-        height: 3, backgroundColor: colors.gold,
+        height: 3, backgroundColor: colors.primary,
     },
     logo: { width: 80, height: 80, marginBottom: 12 },
     brandName: {
-        color: colors.goldLight,
+        color: colors.primaryLight,
         fontSize: 20,
         fontWeight: '700',
         letterSpacing: 5,
     },
     brandSub: {
-        color: colors.goldLight,
+        color: colors.primaryLight,
         fontSize: 20,
         fontWeight: '700',
         letterSpacing: 5,
@@ -194,13 +195,13 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center',
         gap: 8, marginTop: 14, marginBottom: 10,
     },
-    ornamentLine: { width: 40, height: 1, backgroundColor: colors.gold + '60' },
+    ornamentLine: { width: 40, height: 1, backgroundColor: colors.primary + '60' },
     ornamentDiamond: {
-        width: 6, height: 6, backgroundColor: colors.goldLight,
+        width: 6, height: 6, backgroundColor: colors.primaryLight,
         transform: [{ rotate: '45deg' }],
     },
     tagline: {
-        color: colors.gold + 'AA',
+        color: colors.primary + 'AA',
         fontSize: 11, fontStyle: 'italic',
         letterSpacing: 0.5,
     },
@@ -246,8 +247,8 @@ const styles = StyleSheet.create({
         minHeight: 52,
     },
     inputFocused: {
-        borderColor: colors.gold,
-        backgroundColor: colors.goldShimmer,
+        borderColor: colors.primary,
+        backgroundColor: colors.primaryMuted,
     },
     inputIcon: { marginRight: 10 },
     input: {
@@ -260,11 +261,11 @@ const styles = StyleSheet.create({
 
     // Forgot
     forgotLink: { alignSelf: 'flex-end', marginBottom: spacing.lg, marginTop: -4 },
-    forgotText: { ...typography.caption, color: colors.gold, fontWeight: '600' },
+    forgotText: { ...typography.caption, color: colors.primary, fontWeight: '600' },
 
     // Button
     button: {
-        backgroundColor: colors.gold,
+        backgroundColor: colors.primary,
         borderRadius: radius.md,
         paddingVertical: 16,
         flexDirection: 'row',
@@ -291,11 +292,11 @@ const styles = StyleSheet.create({
         borderWidth: 1.5,
         borderColor: colors.borderGold,
         alignItems: 'center',
-        backgroundColor: colors.goldShimmer,
+        backgroundColor: colors.primaryMuted,
     },
     registerBtnText: {
         ...typography.button,
-        color: colors.gold,
+        color: colors.primary,
     },
 
     // Footer

@@ -1,17 +1,18 @@
 'use client'
 
 import { useTranslation, T } from '@/lib/translation';
-import { useList, useNavigation, useDelete, useUpdate } from '@refinedev/core'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Plus, Trash2, Search, ShoppingBag,
-    Loader2, Edit3, Eye, EyeOff, Star
+    Loader2, Edit3, Eye, EyeOff, Star, RefreshCw
 } from 'lucide-react'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { supabase } from '@/lib/supabase'
 
 interface ProductItem {
     id: string
@@ -29,20 +30,38 @@ interface ProductItem {
 
 export default function AdminBoutiquePage() {
     const { t } = useTranslation();
-    const { create, edit } = useNavigation()
-    const queryResult = useList<ProductItem>({
-        resource: 'products',
-        pagination: { pageSize: 50 },
-        sorters: [{ field: 'created_at', order: 'desc' }],
-    })
-    const { mutate: deleteItem } = useDelete()
-    const { mutate: updateItem } = useUpdate()
+    const router = useRouter()
+    const [items, setItems] = useState<ProductItem[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+    const [updatingId, setUpdatingId] = useState<string | null>(null)
     const [searchTerm, setSearchTerm] = useState('')
     const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all')
 
-    const data = queryResult.query?.data;
-    const isLoading = queryResult.query?.isLoading;
-    const items: ProductItem[] = data?.data || []
+    const fetchProducts = useCallback(async () => {
+        setIsLoading(true)
+        const { data } = await supabase
+            .from('products')
+            .select('*')
+            .order('created_at', { ascending: false })
+        setItems(data || [])
+        setIsLoading(false)
+    }, [])
+
+    useEffect(() => { fetchProducts() }, [fetchProducts])
+
+    const updateProduct = async (id: string, values: Partial<ProductItem>) => {
+        setUpdatingId(id)
+        await supabase.from('products').update(values).eq('id', id)
+        setItems(prev => prev.map(p => p.id === id ? { ...p, ...values } : p))
+        setUpdatingId(null)
+    }
+
+    const deleteProduct = async (id: string) => {
+        if (!confirm('Supprimer ce produit ?')) return
+        await supabase.from('products').delete().eq('id', id)
+        setItems(prev => prev.filter(p => p.id !== id))
+    }
+
     const filtered = items.filter((item) => {
         const matchSearch = (item.title?.toLowerCase() || '').includes(searchTerm.toLowerCase())
         const matchFilter = filter === 'all' ||
@@ -95,7 +114,8 @@ export default function AdminBoutiquePage() {
                     </div>
 
                     <Button
-                        onClick={() => create('products')}
+                        type="button"
+                        onClick={() => router.push('/admin/boutique/produits/create')}
                         className="bg-[#008751] h-14 px-8 rounded-2xl text-white font-black tracking-widest gap-2 shadow-xl hover:shadow-green-500/10 transform active:scale-95 transition-all"
                     >
                         <Plus size={20} /> AJOUTER
@@ -123,7 +143,7 @@ export default function AdminBoutiquePage() {
                         </div>
 
                         <AnimatePresence mode="popLayout">
-                            {filtered.map((item, index: number) => (
+                            {filtered.map((item) => (
                                 <motion.div
                                     key={item.id}
                                     layout
@@ -178,21 +198,26 @@ export default function AdminBoutiquePage() {
                                             <button
                                                 type="button"
                                                 title="Diminuer le stock"
-                                                disabled={(item.stock || 0) <= 0}
-                                                onClick={() => updateItem({ resource: 'products', id: item.id, values: { stock: Math.max(0, (item.stock || 0) - 1) } })}
+                                                disabled={(item.stock || 0) <= 0 || updatingId === item.id}
+                                                onClick={() => updateProduct(item.id, { stock: Math.max(0, (item.stock || 0) - 1) })}
                                                 className="w-5 h-5 rounded-md bg-white/5 text-gray-400 hover:bg-red-500/20 hover:text-red-400 disabled:opacity-20 disabled:cursor-not-allowed transition-all text-xs font-black flex items-center justify-center"
                                             >−</button>
                                             <span className={cn(
                                                 'text-sm font-black min-w-[24px] text-center',
                                                 (item.stock || 0) > 10 ? 'text-[#008751]' : (item.stock || 0) > 0 ? 'text-[#FCD116]' : 'text-[#E8112D]'
                                             )}>
-                                                {item.stock ?? 0}
+                                                {updatingId === item.id ? (
+                                                    <RefreshCw size={12} className="animate-spin inline" />
+                                                ) : (
+                                                    item.stock ?? 0
+                                                )}
                                             </span>
                                             <button
                                                 type="button"
                                                 title="Augmenter le stock"
-                                                onClick={() => updateItem({ resource: 'products', id: item.id, values: { stock: (item.stock || 0) + 1 } })}
-                                                className="w-5 h-5 rounded-md bg-white/5 text-gray-400 hover:bg-green-500/20 hover:text-green-400 transition-all text-xs font-black flex items-center justify-center"
+                                                disabled={updatingId === item.id}
+                                                onClick={() => updateProduct(item.id, { stock: (item.stock || 0) + 1 })}
+                                                className="w-5 h-5 rounded-md bg-white/5 text-gray-400 hover:bg-green-500/20 hover:text-green-400 disabled:opacity-20 transition-all text-xs font-black flex items-center justify-center"
                                             >+</button>
                                         </div>
                                         {(item.stock || 0) === 0 && (
@@ -204,11 +229,7 @@ export default function AdminBoutiquePage() {
                                     <div className="col-span-1">
                                         <button
                                             title={item.is_active ? "Désactiver" : "Activer"}
-                                            onClick={() => updateItem({
-                                                resource: 'products',
-                                                id: item.id,
-                                                values: { is_active: !item.is_active },
-                                            })}
+                                            onClick={() => updateProduct(item.id, { is_active: !item.is_active })}
                                             className={cn(
                                                 'flex items-center gap-1.5 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border transition-all',
                                                 item.is_active
@@ -224,11 +245,7 @@ export default function AdminBoutiquePage() {
                                     {/* Actions */}
                                     <div className="col-span-3 flex items-center justify-end gap-2">
                                         <button
-                                            onClick={() => updateItem({
-                                                resource: 'products',
-                                                id: item.id,
-                                                values: { is_featured: !item.is_featured },
-                                            })}
+                                            onClick={() => updateProduct(item.id, { is_featured: !item.is_featured })}
                                             className={cn(
                                                 'p-2.5 rounded-xl border transition-all',
                                                 item.is_featured
@@ -240,19 +257,16 @@ export default function AdminBoutiquePage() {
                                             <Star size={14} />
                                         </button>
                                         <Button
+                                            type="button"
                                             variant="outline"
-                                            onClick={() => edit('products', item.id)}
+                                            onClick={() => router.push(`/admin/boutique/produits/${item.id}`)}
                                             className="h-10 px-4 rounded-xl border-white/10 text-gray-400 hover:bg-white hover:text-black text-[10px] font-black uppercase tracking-widest"
                                         >
                                             <Edit3 size={12} className="mr-1.5" /> Modifier
                                         </Button>
                                         <button
                                             title={t("Supprimer le produit")}
-                                            onClick={() => {
-                                                if (confirm('Supprimer ce produit ?')) {
-                                                    deleteItem({ resource: 'products', id: item.id })
-                                                }
-                                            }}
+                                            onClick={() => deleteProduct(item.id)}
                                             className="p-2.5 rounded-xl bg-red-500/10 text-red-500 border border-red-500/10 hover:bg-red-500 hover:text-white transition-all"
                                         >
                                             <Trash2 size={14} />
@@ -266,7 +280,7 @@ export default function AdminBoutiquePage() {
                     <div className="flex flex-col items-center justify-center py-32 space-y-4">
                         <ShoppingBag size={48} className="text-gray-700" />
                         <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">
-                            Aucun produit. Cliquez sur "Ajouter" pour commencer.
+                            Aucun produit. Cliquez sur &ldquo;Ajouter&rdquo; pour commencer.
                         </p>
                     </div>
                 )}

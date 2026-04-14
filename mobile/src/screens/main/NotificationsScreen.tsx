@@ -3,6 +3,7 @@ import {
     View, Text, ScrollView, StyleSheet, TouchableOpacity,
     RefreshControl, Platform, Switch, Alert, ActivityIndicator,
 } from 'react-native'
+import { ArrowLeft, Bell } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
 import * as Notifications from 'expo-notifications'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
@@ -24,7 +25,7 @@ interface AppNotification {
 }
 
 const TYPE_CONFIG: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }> = {
-    dossier:     { icon: 'folder-open-outline',       color: colors.gold,    bg: colors.gold + '12' },
+    dossier:     { icon: 'folder-open-outline',       color: colors.primary,    bg: colors.primary + '12' },
     message:     { icon: 'chatbubble-ellipses-outline', color: colors.info,   bg: colors.info + '12' },
     payment:     { icon: 'card-outline',              color: colors.success, bg: colors.success + '12' },
     appointment: { icon: 'calendar-outline',          color: '#7C5CCA',      bg: '#7C5CCA12' },
@@ -160,13 +161,13 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
         <ScrollView
             style={styles.container}
             showsVerticalScrollIndicator={false}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.gold} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         >
             {/* Header */}
             <View style={styles.header}>
-                <View style={styles.goldLine} />
+                <View style={styles.primaryLine} />
                 <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <Ionicons name="arrow-back" size={22} color={colors.textOnDark} />
+                    <ArrowLeft size={22} color={colors.textOnDark} strokeWidth={1.75} />
                 </TouchableOpacity>
                 <View style={styles.headerRow}>
                     <View>
@@ -201,7 +202,7 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
                     </View>
                 </View>
                 {registeringPush ? (
-                    <ActivityIndicator color={colors.gold} />
+                    <ActivityIndicator color={colors.primary} />
                 ) : (
                     <Switch
                         value={pushEnabled}
@@ -215,12 +216,12 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
             {/* Liste notifications */}
             {loading ? (
                 <View style={styles.centerState}>
-                    <ActivityIndicator color={colors.gold} size="large" />
+                    <ActivityIndicator color={colors.primary} size="large" />
                 </View>
             ) : notifications.length === 0 ? (
                 <View style={styles.emptyCard}>
                     <View style={styles.emptyIconWrap}>
-                        <Ionicons name="notifications-outline" size={36} color={colors.textMuted} />
+                        <Bell size={36} color={colors.textMuted} strokeWidth={1.75} />
                     </View>
                     <Text style={styles.emptyTitle}>Aucune notification</Text>
                     <Text style={styles.emptyText}>
@@ -280,17 +281,17 @@ const styles = StyleSheet.create({
         borderBottomLeftRadius: 28,
         borderBottomRightRadius: 28,
     },
-    goldLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.gold },
+    primaryLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.primary },
     backBtn: { marginBottom: spacing.md },
     headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
     headerTitle: { ...typography.h2, color: colors.textOnDark },
-    headerSub: { ...typography.bodySmall, color: colors.gold + 'AA', marginTop: 4 },
+    headerSub: { ...typography.bodySmall, color: colors.primary + 'AA', marginTop: 4 },
     markAllBtn: {
         paddingHorizontal: 12, paddingVertical: 6,
-        backgroundColor: colors.gold + '20', borderRadius: radius.sm,
-        borderWidth: 1, borderColor: colors.gold + '30',
+        backgroundColor: colors.primary + '20', borderRadius: radius.sm,
+        borderWidth: 1, borderColor: colors.primary + '30',
     },
-    markAllText: { ...typography.caption, color: colors.gold, fontFamily: 'Inter_600SemiBold' },
+    markAllText: { ...typography.caption, color: colors.primary, fontFamily: 'Inter_600SemiBold' },
 
     pushCard: {
         flexDirection: 'row', alignItems: 'center',
@@ -343,14 +344,14 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     notifCardUnread: {
-        borderColor: colors.gold + '30',
-        backgroundColor: colors.gold + '05',
+        borderColor: colors.primary + '30',
+        backgroundColor: colors.primary + '05',
     },
     notifCardLast: { marginBottom: 0 },
     unreadDot: {
         position: 'absolute', top: 14, left: 6,
         width: 6, height: 6, borderRadius: 3,
-        backgroundColor: colors.gold,
+        backgroundColor: colors.primary,
     },
     notifIcon: {
         width: 38, height: 38, borderRadius: 10,

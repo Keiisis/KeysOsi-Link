@@ -3,6 +3,7 @@ import {
     View, Text, ScrollView, StyleSheet, TouchableOpacity,
     Image, Alert, Platform, ActivityIndicator,
 } from 'react-native'
+import { Calendar, Camera, ChevronRight, CreditCard, FolderOpen, LogOut, MapPin, Pencil, ShieldCheck } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
 import { useAuth } from '../../contexts/AuthContext'
@@ -174,7 +175,7 @@ export default function ProfilScreen() {
                     icon: 'person-outline' as const,
                     label: 'Informations personnelles',
                     sub: 'Modifier votre profil',
-                    color: colors.gold,
+                    color: colors.primary,
                     onPress: () => navigation.navigate('EditProfil'),
                 },
                 {
@@ -200,7 +201,7 @@ export default function ProfilScreen() {
                     icon: 'language-outline' as const,
                     label: t('Langue de l\'application'),
                     sub: `${langConfig.flag}  ${langConfig.nativeLabel}`,
-                    color: colors.gold,
+                    color: colors.primary,
                     onPress: () => setLangPickerVisible(true),
                 },
                 {
@@ -245,7 +246,7 @@ export default function ProfilScreen() {
         <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
             {/* Header */}
             <View style={styles.header}>
-                <View style={styles.goldLine} />
+                <View style={styles.primaryLine} />
 
                 {/* Avatar */}
                 <TouchableOpacity
@@ -256,7 +257,7 @@ export default function ProfilScreen() {
                 >
                     {uploadingAvatar ? (
                         <View style={[styles.avatarPlaceholder, { justifyContent: 'center' }]}>
-                            <ActivityIndicator color={colors.gold} />
+                            <ActivityIndicator color={colors.primary} />
                         </View>
                     ) : profile?.avatar_url ? (
                         <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
@@ -266,7 +267,7 @@ export default function ProfilScreen() {
                         </View>
                     )}
                     <View style={styles.cameraBadge}>
-                        <Ionicons name="camera" size={13} color="#FFF" />
+                        <Camera size={13} color="#FFF" strokeWidth={1.75} />
                     </View>
                 </TouchableOpacity>
 
@@ -276,12 +277,12 @@ export default function ProfilScreen() {
                 {/* Badges info */}
                 <View style={styles.badgesRow}>
                     <View style={styles.roleBadge}>
-                        <Ionicons name="shield-checkmark" size={12} color={colors.gold} />
+                        <ShieldCheck size={12} color={colors.primary} strokeWidth={1.75} />
                         <Text style={styles.roleText}>Client vérifié</Text>
                     </View>
                     {profile?.ville ? (
                         <View style={styles.villeBadge}>
-                            <Ionicons name="location" size={12} color={colors.gold + 'AA'} />
+                            <MapPin size={12} color={colors.primary + 'AA'} strokeWidth={1.75} />
                             <Text style={styles.villeText}>{profile.ville}</Text>
                         </View>
                     ) : null}
@@ -293,7 +294,7 @@ export default function ProfilScreen() {
                     onPress={() => navigation.navigate('EditProfil')}
                     activeOpacity={0.7}
                 >
-                    <Ionicons name="create-outline" size={14} color={colors.gold} />
+                    <Pencil size={14} color={colors.primary} strokeWidth={1.75} />
                     <Text style={styles.editShortcutText}>Modifier le profil</Text>
                 </TouchableOpacity>
             </View>
@@ -301,7 +302,7 @@ export default function ProfilScreen() {
             {/* Stats rapides */}
             <View style={styles.statsRow}>
                 <View style={styles.statCard}>
-                    <Ionicons name="folder-open" size={22} color={colors.gold} />
+                    <FolderOpen size={22} color={colors.primary} strokeWidth={1.75} />
                     <Text style={styles.statValue}>{stats.dossiers}</Text>
                     <Text style={styles.statLabel}>Dossiers</Text>
                 </View>
@@ -311,7 +312,7 @@ export default function ProfilScreen() {
                     <Text style={styles.statLabel}>RDV</Text>
                 </View>
                 <View style={styles.statCard}>
-                    <Ionicons name="card" size={22} color={colors.success} />
+                    <CreditCard size={22} color={colors.success} strokeWidth={1.75} />
                     <Text style={styles.statValue}>{stats.payments}</Text>
                     <Text style={styles.statLabel}>Paiements</Text>
                 </View>
@@ -336,7 +337,7 @@ export default function ProfilScreen() {
                                     <Text style={styles.menuLabel}>{item.label}</Text>
                                     <Text style={styles.menuSub}>{item.sub}</Text>
                                 </View>
-                                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                                <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.75} />
                             </TouchableOpacity>
                         ))}
                     </View>
@@ -345,7 +346,7 @@ export default function ProfilScreen() {
 
             {/* Déconnexion */}
             <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.7}>
-                <Ionicons name="log-out-outline" size={18} color={colors.danger} />
+                <LogOut size={18} color={colors.danger} strokeWidth={1.75} />
                 <Text style={styles.logoutText}>Se déconnecter</Text>
             </TouchableOpacity>
 
@@ -366,48 +367,48 @@ const styles = StyleSheet.create({
         paddingTop: Platform.OS === 'ios' ? 56 : 44, paddingBottom: 28,
         borderBottomLeftRadius: 32, borderBottomRightRadius: 32,
     },
-    goldLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.gold },
+    primaryLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.primary },
 
     avatarOuter: { position: 'relative', marginBottom: 14 },
-    avatar: { width: 90, height: 90, borderRadius: 45, borderWidth: 3, borderColor: colors.gold },
+    avatar: { width: 90, height: 90, borderRadius: 45, borderWidth: 3, borderColor: colors.primary },
     avatarPlaceholder: {
         width: 90, height: 90, borderRadius: 45,
-        backgroundColor: colors.gold + '20', borderWidth: 3, borderColor: colors.gold + '50',
+        backgroundColor: colors.primary + '20', borderWidth: 3, borderColor: colors.primary + '50',
         alignItems: 'center', justifyContent: 'center',
     },
-    avatarInitials: { fontSize: 28, fontFamily: 'PlayfairDisplay_700Bold', color: colors.goldLight },
+    avatarInitials: { fontSize: 28, fontFamily: 'Inter_700Bold', color: colors.primaryLight },
     cameraBadge: {
         position: 'absolute', bottom: 2, right: 2,
         width: 28, height: 28, borderRadius: 14,
-        backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center',
+        backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
         borderWidth: 2, borderColor: colors.headerBg,
     },
 
     userName: { ...typography.h2, color: colors.textOnDark },
-    userEmail: { ...typography.bodySmall, color: colors.gold + 'AA', marginTop: 4 },
+    userEmail: { ...typography.bodySmall, color: colors.primary + 'AA', marginTop: 4 },
 
     badgesRow: { flexDirection: 'row', gap: 8, marginTop: 12, alignItems: 'center' },
     roleBadge: {
         flexDirection: 'row', alignItems: 'center', gap: 5,
-        backgroundColor: colors.gold + '15', borderRadius: 20,
+        backgroundColor: colors.primary + '15', borderRadius: 20,
         paddingHorizontal: 12, paddingVertical: 5,
     },
-    roleText: { fontSize: 11, fontFamily: 'Inter_700Bold', color: colors.goldLight, letterSpacing: 0.5 },
+    roleText: { fontSize: 11, fontFamily: 'Inter_700Bold', color: colors.primaryLight, letterSpacing: 0.5 },
     villeBadge: {
         flexDirection: 'row', alignItems: 'center', gap: 4,
         backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 20,
         paddingHorizontal: 10, paddingVertical: 5,
     },
-    villeText: { fontSize: 11, fontFamily: 'Inter_500Medium', color: colors.gold + 'CC' },
+    villeText: { fontSize: 11, fontFamily: 'Inter_500Medium', color: colors.primary + 'CC' },
 
     editShortcut: {
         flexDirection: 'row', alignItems: 'center', gap: 5,
         marginTop: 14,
-        borderWidth: 1, borderColor: colors.gold + '30',
+        borderWidth: 1, borderColor: colors.primary + '30',
         paddingHorizontal: 16, paddingVertical: 7,
         borderRadius: 20,
     },
-    editShortcutText: { fontSize: 12, fontFamily: 'Inter_600SemiBold', color: colors.gold },
+    editShortcutText: { fontSize: 12, fontFamily: 'Inter_600SemiBold', color: colors.primary },
 
     statsRow: {
         flexDirection: 'row',

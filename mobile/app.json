@@ -20,7 +20,11 @@
         "NSCameraUsageDescription": "Prenez une photo pour votre profil ou vos documents.",
         "NSPhotoLibraryUsageDescription": "Sélectionnez des photos pour votre profil ou vos documents.",
         "NSMicrophoneUsageDescription": "Accès au microphone pour les messages vocaux."
-      }
+      },
+      "associatedDomains": [
+        "applinks:www.retourgagnantbenin.bj",
+        "applinks:retourgagnantbenin.bj"
+      ]
     },
     "android": {
       "package": "bj.retourgagnantbenin.app",
@@ -31,12 +35,22 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "RECORD_AUDIO",
-        "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "www.retourgagnantbenin.bj", "pathPrefix": "/mobile-payment" },
+            { "scheme": "https", "host": "retourgagnantbenin.bj", "pathPrefix": "/mobile-payment" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
       ]
     },
     "web": {
@@ -44,10 +58,11 @@
     },
     "extra": {
       "eas": {
-        "projectId": ""
+        "projectId": "6101f41c-f687-4263-af3e-049669ec6973"
       }
     },
     "plugins": [
+      "expo-dev-client",
       "expo-secure-store",
       "expo-font",
       [
@@ -73,6 +88,7 @@
           "sounds": []
         }
       ]
-    ]
+    ],
+    "owner": "keysosi"
   }
 }

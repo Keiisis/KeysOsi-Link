@@ -1,8 +1,9 @@
 import React from 'react'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
-import { Ionicons } from '@expo/vector-icons'
 import { Platform } from 'react-native'
+import { Home, Folder, Briefcase, Calendar, MessageSquare, User } from 'lucide-react-native'
 import { colors, typography } from '../config/theme'
+import { useLang } from '../contexts/LangContext'
 
 import HomeScreen from '../screens/main/HomeScreen'
 import ServicesScreen from '../screens/main/ServicesScreen'
@@ -22,31 +23,33 @@ export type MainTabParamList = {
 
 const Tab = createBottomTabNavigator<MainTabParamList>()
 
+const TAB_ICONS: Record<string, React.FC<any>> = {
+    Home: Home,
+    Services: Briefcase,
+    Dossier: Folder,
+    Events: Calendar,
+    Messages: MessageSquare,
+    Profil: User,
+}
+
 export default function MainTabNavigator() {
+    const { t } = useLang()
+
     return (
         <Tab.Navigator
             screenOptions={({ route }) => ({
                 headerShown: false,
                 tabBarIcon: ({ focused, color, size }) => {
-                    let iconName: keyof typeof Ionicons.glyphMap = 'help-outline'
-
-                    if (route.name === 'Home') {
-                        iconName = focused ? 'grid' : 'grid-outline'
-                    } else if (route.name === 'Services') {
-                        iconName = focused ? 'briefcase' : 'briefcase-outline'
-                    } else if (route.name === 'Dossier') {
-                        iconName = focused ? 'folder-open' : 'folder-open-outline'
-                    } else if (route.name === 'Events') {
-                        iconName = focused ? 'calendar' : 'calendar-outline'
-                    } else if (route.name === 'Messages') {
-                        iconName = focused ? 'chatbubbles' : 'chatbubbles-outline'
-                    } else if (route.name === 'Profil') {
-                        iconName = focused ? 'person' : 'person-outline'
-                    }
-
-                    return <Ionicons name={iconName} size={size} color={color} />
+                    const IconComponent = TAB_ICONS[route.name] || Home
+                    return (
+                        <IconComponent
+                            size={size}
+                            color={color}
+                            strokeWidth={focused ? 2.2 : 1.5}
+                        />
+                    )
                 },
-                tabBarActiveTintColor: colors.gold,
+                tabBarActiveTintColor: colors.primary,
                 tabBarInactiveTintColor: colors.textMuted,
                 tabBarStyle: {
                     backgroundColor: colors.surface,
@@ -63,12 +66,12 @@ export default function MainTabNavigator() {
                 },
             })}
         >
-            <Tab.Screen name="Home"     component={HomeScreen}     options={{ tabBarLabel: 'Accueil' }} />
-            <Tab.Screen name="Dossier"  component={DossierScreen}  options={{ tabBarLabel: 'Dossier' }} />
-            <Tab.Screen name="Services" component={ServicesScreen}  options={{ tabBarLabel: 'Services' }} />
-            <Tab.Screen name="Events"   component={EventsScreen}   options={{ tabBarLabel: 'Événements' }} />
-            <Tab.Screen name="Messages" component={MessagesScreen}  options={{ tabBarLabel: 'Messages' }} />
-            <Tab.Screen name="Profil"   component={ProfilScreen}   options={{ tabBarLabel: 'Profil' }} />
+            <Tab.Screen name="Home"     component={HomeScreen}     options={{ tabBarLabel: t('Accueil') }} />
+            <Tab.Screen name="Dossier"  component={DossierScreen}  options={{ tabBarLabel: t('Dossier') }} />
+            <Tab.Screen name="Services" component={ServicesScreen}  options={{ tabBarLabel: t('Services') }} />
+            <Tab.Screen name="Events"   component={EventsScreen}   options={{ tabBarLabel: t('Événements') }} />
+            <Tab.Screen name="Messages" component={MessagesScreen}  options={{ tabBarLabel: t('Messages') }} />
+            <Tab.Screen name="Profil"   component={ProfilScreen}   options={{ tabBarLabel: t('Profil') }} />
         </Tab.Navigator>
     )
 }

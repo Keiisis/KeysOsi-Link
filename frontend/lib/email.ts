@@ -56,7 +56,7 @@ export async function createTransporter() {
             user: config.user,
             pass: config.pass,
         },
-        tls: { rejectUnauthorized: false }
+        tls: { rejectUnauthorized: process.env.NODE_ENV === 'production' }
     })
 }
 
