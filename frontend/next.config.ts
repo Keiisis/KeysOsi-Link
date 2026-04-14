@@ -51,7 +51,7 @@ const securityHeaders = [
         " https://*.kkiapay.me" +
         " https://checkout.fedapay.com",
       "worker-src 'self' blob:",
-      "media-src 'self' data: blob:",
+      "media-src 'self' data: blob: https://*.supabase.co",
     ].join('; '),
   },
 ]
