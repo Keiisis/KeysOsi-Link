@@ -21,7 +21,8 @@ export async function GET(request: Request) {
             .from('messages')
             .select('id')
             .eq('email', email.toLowerCase().trim())
-            .eq('type', 'live_chat')
+            .eq('type', 'support')
+            .ilike('sujet', '%Live Chat%')
             .gte('created_at', yesterday)
             .order('created_at', { ascending: false })
             .limit(1);

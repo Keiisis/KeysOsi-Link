@@ -100,7 +100,7 @@ export default function AgentComptabilitePage() {
     const fetchAllData = async () => {
         setLoading(true)
         const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
+        if (!user) { setLoading(false); return }
 
         // Fetch Documents
         const { data: docs } = await supabase
@@ -250,7 +250,7 @@ export default function AgentComptabilitePage() {
         e.preventDefault()
         setSavingExpense(true)
         const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
+        if (!user) { setSavingExpense(false); return }
 
         const { error } = await supabase.from('depenses').insert({
             agent_id: user.id,
@@ -273,7 +273,7 @@ export default function AgentComptabilitePage() {
         if (!paymentDoc) return
         setSavingPayment(true)
         const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
+        if (!user) { setSavingPayment(false); return }
 
         const { error } = await supabase.from('paiements_manuels').insert({
             agent_id: user.id,

@@ -23,9 +23,9 @@ export async function POST(request: Request) {
                 nom: nom.trim(),
                 prenom: '',
                 email: (email || 'anonyme@livechat.com').toLowerCase().trim(),
-                sujet: `💬 Support Live — ${nom.trim()}`,
+                sujet: `💬 Live Chat — ${nom.trim()}`,
                 message: question.trim(),
-                type: 'live_chat',
+                type: 'support',
                 lu: false,
             })
             .select('id')
