@@ -127,6 +127,35 @@ export default function PortfolioImmersivePage() {
     const blob3Y = useTransform(scrollYProgress, [0, 1], ["0%", "80%"])
 
     const [showIntro, setShowIntro] = useState(true)
+    const videoRef = useRef<HTMLVideoElement>(null)
+
+    // Stratégie autoplay robuste :
+    // 1. Tentative immédiate de play() dès que la vidéo est montée
+    // 2. Retry automatique au premier événement utilisateur (autorisé par tous les navigateurs)
+    // 3. Filet de secours : ferme l'intro si rien n'a démarré sous 12s (fichier totalement inaccessible)
+    useEffect(() => {
+        if (!showIntro) return
+        const v = videoRef.current
+        if (!v) return
+
+        const tryPlay = () => { v.play().catch(() => { /* silencieux — on retentera */ }) }
+
+        // Tentative immédiate (dès que <video> est dans le DOM)
+        tryPlay()
+        // Re-tentative sur n'importe quelle interaction utilisateur
+        const events: (keyof WindowEventMap)[] = ['pointerdown', 'touchstart', 'keydown', 'scroll']
+        events.forEach(e => window.addEventListener(e, tryPlay, { once: true, passive: true }))
+
+        // Filet de secours absolu : si readyState < 2 après 12s, le fichier est inaccessible → on ferme
+        const failsafe = setTimeout(() => {
+            if (v.readyState < 2) setShowIntro(false)
+        }, 12000)
+
+        return () => {
+            clearTimeout(failsafe)
+            events.forEach(e => window.removeEventListener(e, tryPlay))
+        }
+    }, [showIntro])
 
     const services = [
         { id: '01', title: t("Nationalité Béninoise"), desc: t("Dossiers Afro-descendants"), bg: "bg-[#008751]", text: "text-white", iconBg: "bg-white/20" },
@@ -152,11 +181,15 @@ export default function PortfolioImmersivePage() {
                         className="fixed inset-0 z-[200] bg-[#050505] flex flex-col items-center justify-center overflow-hidden"
                     >
                         <video
+                            ref={videoRef}
                             src="https://ywvsfhqdtkgzavxsumnk.supabase.co/storage/v1/object/public/videos/portfolio/video-cut.mp4"
+                            poster="https://ywvsfhqdtkgzavxsumnk.supabase.co/storage/v1/object/public/gallery/portfolio/image_RGB.jpg"
                             autoPlay
                             muted
                             playsInline
+                            preload="auto"
                             onEnded={() => setShowIntro(false)}
+                            onError={() => setShowIntro(false)}
                             className="absolute inset-0 w-full h-full object-cover opacity-90 scale-105"
                         />
                         {/* Voile assombrissant pour faire ressortir le bouton */}
@@ -166,7 +199,7 @@ export default function PortfolioImmersivePage() {
                             <motion.button
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 2, duration: 0.8 }}
+                                transition={{ delay: 0.4, duration: 0.6 }}
                                 onClick={() => setShowIntro(false)}
                                 className="px-6 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white tracking-widest text-xs font-bold border border-white/20 transition-all uppercase"
                             >
