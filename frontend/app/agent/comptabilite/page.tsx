@@ -94,6 +94,8 @@ export default function AgentComptabilitePage() {
     const [paymentDocId, setPaymentDocId] = useState<string>('')
     const [newPayment, setNewPayment] = useState({ type: 'virement', montant: '', reference: '', notes: '', date: new Date().toISOString().split('T')[0] })
     const [savingPayment, setSavingPayment] = useState(false)
+    const [paymentMode, setPaymentMode] = useState<'site' | 'externe'>('site')
+    const [externePayment, setExternePayment] = useState({ libelle: '', client: '' })
     const [currentPage, setCurrentPage] = useState(1)
     const ITEMS_PER_PAGE = 8
 
@@ -282,28 +284,39 @@ export default function AgentComptabilitePage() {
 
     const handleAddPayment = async (e: React.FormEvent) => {
         e.preventDefault()
-        const targetDocId = paymentDoc?.id || paymentDocId
-        if (!targetDocId) return
         setSavingPayment(true)
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) { setSavingPayment(false); return }
 
+        const isExterne = paymentMode === 'externe' && !paymentDoc
+        const targetDocId = paymentDoc?.id || paymentDocId
+        if (!isExterne && !targetDocId) { setSavingPayment(false); return }
+        if (isExterne && !externePayment.libelle.trim()) { setSavingPayment(false); return }
+
+        const composedNotes = isExterne
+            ? `[EXTERNE] ${externePayment.libelle}${externePayment.client ? ' — ' + externePayment.client : ''}${newPayment.notes ? ' | ' + newPayment.notes : ''}`
+            : (newPayment.notes || null)
+
         const { error } = await supabase.from('paiements_manuels').insert({
             agent_id: user.id,
-            document_id: targetDocId,
+            document_id: isExterne ? null : targetDocId,
             type: newPayment.type,
             montant: Number(newPayment.montant),
             date_paiement: newPayment.date,
             reference: newPayment.reference || null,
-            notes: newPayment.notes || null,
+            notes: composedNotes,
         })
 
         if (!error) {
             setShowPaymentModal(false)
             setPaymentDoc(null)
             setPaymentDocId('')
+            setPaymentMode('site')
+            setExternePayment({ libelle: '', client: '' })
             setNewPayment({ type: 'virement', montant: '', reference: '', notes: '', date: new Date().toISOString().split('T')[0] })
             fetchAllData()
+        } else {
+            alert('Erreur: ' + error.message + (isExterne ? '\n\nAstuce: la colonne document_id de paiements_manuels doit être nullable pour accepter les paiements externes.' : ''))
         }
         setSavingPayment(false)
     }
@@ -866,36 +879,85 @@ export default function AgentComptabilitePage() {
                             <div className="p-6 border-b border-white/5 flex items-center justify-between">
                                 <div>
                                     <h3 className="text-lg font-black text-white">Enregistrer un Paiement</h3>
-                                    <p className="text-xs text-gray-500 mt-0.5">{selectedDoc ? `${selectedDoc.numero} — ${selectedDoc.client_nom} ${selectedDoc.client_prenom}` : 'Choisir une facture à encaisser'}</p>
+                                    <p className="text-xs text-gray-500 mt-0.5">{selectedDoc ? `${selectedDoc.numero} — ${selectedDoc.client_nom} ${selectedDoc.client_prenom}` : paymentMode === 'externe' ? 'Paiement externe (facture hors site)' : 'Choisir une facture à encaisser'}</p>
                                 </div>
                                 <button title="Fermer" onClick={() => setShowPaymentModal(false)} className="text-gray-500 hover:text-white"><X size={20} /></button>
                             </div>
                             {!paymentDoc && (
-                                <div className="px-6 pt-4 pb-0">
-                                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Facture concernée</label>
-                                    <select
-                                        title="Facture à encaisser"
-                                        required
-                                        value={paymentDocId}
-                                        onChange={e => {
-                                            const id = e.target.value
-                                            setPaymentDocId(id)
-                                            const d = allDocs.find(x => x.id === id)
-                                            if (d) {
-                                                const s = Math.max(0, d.total - (paiements[d.id] || 0))
-                                                setNewPayment(p => ({ ...p, montant: s > 0 ? String(s) : String(d.total) }))
-                                            }
-                                        }}
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-emerald-500/50 outline-none text-sm"
-                                    >
-                                        <option value="" disabled>— Sélectionnez une facture —</option>
-                                        {selectableDocs.length === 0 && <option value="" disabled>Aucune facture disponible</option>}
-                                        {selectableDocs.map(d => (
-                                            <option key={d.id} value={d.id} className="bg-[#0c1420]">
-                                                {d.numero} — {d.client_nom} {d.client_prenom} — {formatCurrency(Math.max(0, d.total - (paiements[d.id] || 0)))} restant
-                                            </option>
-                                        ))}
-                                    </select>
+                                <div className="px-6 pt-4 pb-0 space-y-3">
+                                    {/* Toggle site / externe */}
+                                    <div className="flex items-center gap-1 p-1 bg-white/5 border border-white/10 rounded-xl">
+                                        <button
+                                            type="button"
+                                            onClick={() => setPaymentMode('site')}
+                                            className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${paymentMode === 'site' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-gray-500 hover:text-white'}`}
+                                        >
+                                            Facture du site
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setPaymentMode('externe')
+                                                setPaymentDocId('')
+                                            }}
+                                            className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${paymentMode === 'externe' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'text-gray-500 hover:text-white'}`}
+                                        >
+                                            Facture Externe
+                                        </button>
+                                    </div>
+
+                                    {paymentMode === 'site' ? (
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Facture concernée</label>
+                                            <select
+                                                title="Facture à encaisser"
+                                                required
+                                                value={paymentDocId}
+                                                onChange={e => {
+                                                    const id = e.target.value
+                                                    setPaymentDocId(id)
+                                                    const d = allDocs.find(x => x.id === id)
+                                                    if (d) {
+                                                        const s = Math.max(0, d.total - (paiements[d.id] || 0))
+                                                        setNewPayment(p => ({ ...p, montant: s > 0 ? String(s) : String(d.total) }))
+                                                    }
+                                                }}
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-emerald-500/50 outline-none text-sm"
+                                            >
+                                                <option value="" disabled>— Sélectionnez une facture —</option>
+                                                {selectableDocs.length === 0 && <option value="" disabled>Aucune facture disponible</option>}
+                                                {selectableDocs.map(d => (
+                                                    <option key={d.id} value={d.id} className="bg-[#0c1420]">
+                                                        {d.numero} — {d.client_nom} {d.client_prenom} — {formatCurrency(Math.max(0, d.total - (paiements[d.id] || 0)))} restant
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Libellé <span className="text-[#E8112D]">*</span></label>
+                                                <input
+                                                    required
+                                                    type="text"
+                                                    value={externePayment.libelle}
+                                                    onChange={e => setExternePayment(p => ({ ...p, libelle: e.target.value }))}
+                                                    className="w-full bg-amber-500/5 border border-amber-500/20 rounded-xl px-4 py-3 text-white focus:border-amber-500/50 outline-none text-sm"
+                                                    placeholder="Ex: Prestation conseil, Vente accessoires..."
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Client / Bénéficiaire <span className="normal-case text-gray-600">(optionnel)</span></label>
+                                                <input
+                                                    type="text"
+                                                    value={externePayment.client}
+                                                    onChange={e => setExternePayment(p => ({ ...p, client: e.target.value }))}
+                                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-amber-500/50 outline-none text-sm"
+                                                    placeholder="Nom du client / société"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                             {selectedDoc && (
@@ -948,7 +1010,7 @@ export default function AgentComptabilitePage() {
                                     <textarea rows={2} value={newPayment.notes} onChange={e => setNewPayment(p => ({ ...p, notes: e.target.value }))}
                                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-emerald-500/50 outline-none text-sm resize-none" placeholder="Commentaire..." />
                                 </div>
-                                <button disabled={savingPayment || !newPayment.montant || !selectedDoc} type="submit"
+                                <button disabled={savingPayment || !newPayment.montant || (paymentMode === 'site' ? !selectedDoc : !externePayment.libelle.trim())} type="submit"
                                     className="w-full py-4 bg-emerald-500 text-white font-black rounded-xl hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2 mt-4">
                                     {savingPayment ? <RefreshCw size={18} className="animate-spin" /> : <Banknote size={18} />} Confirmer l&apos;encaissement
                                 </button>
