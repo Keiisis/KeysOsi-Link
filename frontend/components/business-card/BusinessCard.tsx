@@ -87,12 +87,12 @@ function QRCodeDisplay({ size }: { size: number }) {
 
 /* ══════════════════════════════════════════════════════════════
    RECTO — Fond Blanc, Logo TRÈS Grand, Nom Agence + Tagline
-   Dimensions professionnelles : 600 × 388 px (ratio 85:55mm)
+   Dimensions professionnelles : 680 × 408 px (ratio 90:54mm)
 ══════════════════════════════════════════════════════════════ */
 
 export const CardRecto = forwardRef<HTMLDivElement, { data: CardData; scale?: number }>(
     ({ scale = 1 }, ref) => {
-        const W = 600 * scale, H = 388 * scale, s = scale
+        const W = 680 * scale, H = 408 * scale, s = scale
 
         return (
             <div ref={ref} style={{
@@ -105,7 +105,7 @@ export const CardRecto = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
                 {/* ── Liseré doré en haut ── */}
                 <div style={{
                     position: 'absolute', top: 0, left: 0, right: 0,
-                    height: 4.5 * s,
+                    height: 8 * s, // Rendu un peu plus épais pour bien s'aligner sur la coupe
                     background: `linear-gradient(90deg, ${GOLD_D}, ${GOLD}, ${GOLD_D})`,
                     zIndex: 3,
                 }} />
@@ -113,38 +113,37 @@ export const CardRecto = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
                 {/* ── Liseré doré en bas ── */}
                 <div style={{
                     position: 'absolute', bottom: 0, left: 0, right: 0,
-                    height: 4.5 * s,
+                    height: 8 * s,
                     background: `linear-gradient(90deg, ${GOLD_D}, ${GOLD}, ${GOLD_D})`,
                     zIndex: 3,
                 }} />
 
-                {/* ── Cadre subtil intérieur ── */}
+                {/* ── Cadre bord à bord (Hauteurs très marquées à gauche et à droite) ── */}
                 <div style={{
                     position: 'absolute',
-                    top: 12 * s, bottom: 12 * s, left: 12 * s, right: 12 * s,
-                    border: `1px solid ${GOLD}30`,
-                    borderRadius: 6 * s,
+                    top: 0, bottom: 0, left: 0, right: 0,
+                    borderLeft: `4px solid ${GOLD}`,
+                    borderRight: `4px solid ${GOLD}`,
                     pointerEvents: 'none', zIndex: 1,
                 }} />
 
-                {/* ── Contenu centré ── */}
+                {/* ── Contenu centré (On enlève le padding forcé pour laisser le design prendre l'espace) ── */}
                 <div style={{
                     position: 'absolute', inset: 0,
                     display: 'flex', flexDirection: 'column',
                     alignItems: 'center', justifyContent: 'center',
-                    zIndex: 2, padding: `${20 * s}px`,
+                    zIndex: 2, padding: `${30 * s}px`,
                 }}>
 
-                    {/* LOGO — TRÈS GRAND */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {/* LOGO — TRÈS GRAND ET BIEN EXPOSÉ */}
                     <img
                         src="/images/logo-transparent.png"
                         alt="Retour Gagnant Bénin"
                         style={{
-                            width: 170 * s,
-                            height: 170 * s,
+                            width: 250 * s,
+                            height: 250 * s,
                             objectFit: 'contain',
-                            marginBottom: 14 * s,
+                            marginBottom: 8 * s,
                             filter: 'drop-shadow(0px 4px 12px rgba(201,168,76,0.15))',
                         }}
                     />
@@ -171,31 +170,31 @@ export const CardRecto = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
                         }} />
                     </div>
 
-                    {/* NOM DE L'AGENCE — Grand, lisible, sombre */}
+                    {/* NOM DE L'AGENCE — Grand, lisible, très gras */}
                     <div style={{
                         color: DARK,
-                        fontSize: 26 * s,
-                        fontWeight: 700,
-                        letterSpacing: '0.25em',
+                        fontSize: 34 * s,
+                        fontWeight: 900,
+                        letterSpacing: '0.20em',
                         textTransform: 'uppercase',
                         fontFamily: "'Cinzel','Georgia',serif",
                         textAlign: 'center',
                         lineHeight: 1.15,
-                        marginLeft: `${0.25 * 26 * s}px`,
+                        marginLeft: `${0.20 * 34 * s}px`,
                     }}>
                         Retour Gagnant
                     </div>
                     <div style={{
                         color: DARK,
-                        fontSize: 26 * s,
-                        fontWeight: 700,
-                        letterSpacing: '0.25em',
+                        fontSize: 34 * s,
+                        fontWeight: 900,
+                        letterSpacing: '0.20em',
                         textTransform: 'uppercase',
                         fontFamily: "'Cinzel','Georgia',serif",
                         textAlign: 'center',
                         lineHeight: 1.15,
-                        marginTop: 6 * s,
-                        marginLeft: `${0.25 * 26 * s}px`,
+                        marginTop: 4 * s,
+                        marginLeft: `${0.20 * 34 * s}px`,
                     }}>
                         Bénin
                     </div>
@@ -203,12 +202,12 @@ export const CardRecto = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
                     {/* Tagline — italique doré */}
                     <div style={{
                         color: GOLD_D,
-                        fontSize: 13 * s,
-                        letterSpacing: '0.10em',
+                        fontSize: 18 * s,
+                        letterSpacing: '0.08em',
                         textAlign: 'center',
                         fontStyle: 'italic',
-                        marginTop: 16 * s,
-                        fontWeight: 500,
+                        marginTop: 22 * s,
+                        fontWeight: 700,
                         fontFamily: "'Georgia',serif",
                     }}>
                         L&apos;Agence du Retour des Afro-descendants
@@ -227,7 +226,7 @@ CardRecto.displayName = 'CardRecto'
 
 export const CardVerso = forwardRef<HTMLDivElement, { data: CardData; scale?: number }>(
     ({ data, scale = 1 }, ref) => {
-        const W = 600 * scale, H = 388 * scale, s = scale
+        const W = 680 * scale, H = 408 * scale, s = scale
         const qrSize = Math.round(100 * s)
         const bracket = 14 * s
 
@@ -243,9 +242,26 @@ export const CardVerso = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
                 {/* ── Liseré supérieur doré pleine largeur ── */}
                 <div style={{
                     position: 'absolute', top: 0, left: 0, right: 0,
-                    height: 4.5 * s,
+                    height: 8 * s,
                     background: `linear-gradient(90deg, ${GOLD_D}, ${GOLD}, ${GOLD_D})`,
                     zIndex: 3,
+                }} />
+
+                {/* ── Liseré doré en bas ── */}
+                <div style={{
+                    position: 'absolute', bottom: 0, left: 0, right: 0,
+                    height: 8 * s,
+                    background: `linear-gradient(90deg, ${GOLD_D}, ${GOLD}, ${GOLD_D})`,
+                    zIndex: 3,
+                }} />
+
+                {/* ── Cadre bord à bord (Hauteurs très marquées à gauche et à droite) ── */}
+                <div style={{
+                    position: 'absolute',
+                    top: 0, bottom: 0, left: 0, right: 0,
+                    borderLeft: `4px solid ${GOLD}`,
+                    borderRight: `4px solid ${GOLD}`,
+                    pointerEvents: 'none', zIndex: 1,
                 }} />
 
                 {/* ── Barre verticale accent gauche ── */}
@@ -342,11 +358,11 @@ export const CardVerso = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
                                 display: 'flex', alignItems: 'center',
                                 gap: 12 * s, marginBottom: 12 * s,
                             }}>
-                                <IcoPhone sz={Math.round(15 * s)} col={GOLD} />
+                                <IcoPhone sz={Math.round(18 * s)} col={GOLD} />
                                 <span style={{
                                     color: TEXT,
-                                    fontSize: 15 * s,
-                                    fontWeight: 500,
+                                    fontSize: 18 * s,
+                                    fontWeight: 700,
                                     letterSpacing: '0.04em',
                                     fontFamily: "'Inter','Arial',sans-serif",
                                 }}>
@@ -361,11 +377,11 @@ export const CardVerso = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
                                 display: 'flex', alignItems: 'center',
                                 gap: 12 * s,
                             }}>
-                                <IcoMail sz={Math.round(15 * s)} col={GOLD} />
+                                <IcoMail sz={Math.round(18 * s)} col={GOLD} />
                                 <span style={{
                                     color: TEXT,
-                                    fontSize: 15 * s,
-                                    fontWeight: 500,
+                                    fontSize: 18 * s,
+                                    fontWeight: 700,
                                     letterSpacing: '0.01em',
                                     fontFamily: "'Inter','Arial',sans-serif",
                                     overflow: 'hidden',
@@ -374,6 +390,46 @@ export const CardVerso = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
                                 </span>
                             </div>
                         )}
+
+                        {/* Contacts génériques et adresse rapprochés juste en dessous */}
+                        <div style={{
+                            marginTop: 18 * s,
+                            paddingTop: 14 * s,
+                            borderTop: `2px solid ${GOLD}40`,
+                        }}>
+                            {/* Web + Email générique */}
+                            <div style={{
+                                display: 'flex', alignItems: 'center',
+                                gap: 12 * s, marginBottom: 12 * s,
+                            }}>
+                                <IcoGlobe sz={Math.round(16 * s)} col={GOLD} />
+                                <span style={{
+                                    color: TEXT_L,
+                                    fontSize: 14 * s,
+                                    letterSpacing: '0.02em',
+                                    fontFamily: "'Inter','Arial',sans-serif",
+                                    fontWeight: 700,
+                                }}>
+                                    contact@retourgagnantbenin.bj — www.retourgagnantbenin.bj
+                                </span>
+                            </div>
+                            {/* Adresse */}
+                            <div style={{
+                                display: 'flex', alignItems: 'center',
+                                gap: 12 * s,
+                            }}>
+                                <IcoPin sz={Math.round(16 * s)} col={GOLD} />
+                                <span style={{
+                                    color: TEXT_L,
+                                    fontSize: 14 * s,
+                                    letterSpacing: '0.01em',
+                                    fontFamily: "'Inter','Arial',sans-serif",
+                                    fontWeight: 700,
+                                }}>
+                                    Haie-Vive Cocotiers, Carré N°1158, Cotonou — BÉNIN
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
                     {/* ══════════════════════════════════════════
@@ -446,56 +502,6 @@ export const CardVerso = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
                         </div>
                     </div>
 
-                    {/* ══════════════════════════════════════════
-                        FOOTER — Web & Adresse
-                    ══════════════════════════════════════════ */}
-
-                    {/* Séparateur pleine largeur gradient */}
-                    <div style={{
-                        position: 'absolute',
-                        bottom: 72 * s, left: 20 * s, right: 20 * s,
-                        height: 1 * s,
-                        background: `linear-gradient(90deg, transparent, ${GOLD}60 20%, ${GOLD}60 80%, transparent)`,
-                    }} />
-
-                    {/* Deux lignes footer */}
-                    <div style={{
-                        position: 'absolute',
-                        bottom: 18 * s, left: 30 * s, right: 30 * s,
-                    }}>
-                        {/* Web + Email */}
-                        <div style={{
-                            display: 'flex', alignItems: 'center',
-                            gap: 10 * s, marginBottom: 10 * s,
-                        }}>
-                            <IcoGlobe sz={Math.round(13 * s)} col={GOLD} />
-                            <span style={{
-                                color: TEXT_L,
-                                fontSize: 12 * s,
-                                letterSpacing: '0.02em',
-                                fontFamily: "'Inter','Arial',sans-serif",
-                                fontWeight: 500,
-                            }}>
-                                contact@retourgagnantbenin.bj — www.retourgagnantbenin.bj
-                            </span>
-                        </div>
-                        {/* Adresse */}
-                        <div style={{
-                            display: 'flex', alignItems: 'center',
-                            gap: 10 * s,
-                        }}>
-                            <IcoPin sz={Math.round(13 * s)} col={GOLD} />
-                            <span style={{
-                                color: TEXT_L,
-                                fontSize: 12 * s,
-                                letterSpacing: '0.02em',
-                                fontFamily: "'Inter','Arial',sans-serif",
-                                fontWeight: 500,
-                            }}>
-                                Haie-Vive Cocotiers, Carré N°1158, Cotonou — BÉNIN
-                            </span>
-                        </div>
-                    </div>
 
                 </div>
             </div>

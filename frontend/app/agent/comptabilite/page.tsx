@@ -9,7 +9,7 @@ import {
     RefreshCw, Plus, AlertTriangle, Banknote, CreditCard, Bell
 } from 'lucide-react'
 import { useTranslation } from '@/lib/translation'
-import { exportToExcel } from '@/lib/exportExcel'
+import { exportToExcelMultiSheet } from '@/lib/exportExcel'
 import { 
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
     AreaChart, Area
@@ -88,8 +88,10 @@ export default function AgentComptabilitePage() {
     const [savingExpense, setSavingExpense] = useState(false)
     // Paiements manuels
     const [paiements, setPaiements] = useState<Record<string, number>>({}) // document_id → montant total payé
+    const [paiementsList, setPaiementsList] = useState<Array<{ id: string; document_id: string; type: string; montant: number; date_paiement: string; reference: string | null; notes: string | null }>>([])
     const [showPaymentModal, setShowPaymentModal] = useState(false)
     const [paymentDoc, setPaymentDoc] = useState<DocumentFinancier | null>(null)
+    const [paymentDocId, setPaymentDocId] = useState<string>('')
     const [newPayment, setNewPayment] = useState({ type: 'virement', montant: '', reference: '', notes: '', date: new Date().toISOString().split('T')[0] })
     const [savingPayment, setSavingPayment] = useState(false)
     const [currentPage, setCurrentPage] = useState(1)
@@ -130,8 +132,9 @@ export default function AgentComptabilitePage() {
         // Fetch paiements manuels pour cet agent
         const { data: paiem } = await supabase
             .from('paiements_manuels')
-            .select('document_id, montant')
+            .select('id, document_id, type, montant, date_paiement, reference, notes')
             .eq('agent_id', user.id)
+            .order('date_paiement', { ascending: false })
 
         if (paiem) {
             const map: Record<string, number> = {}
@@ -139,6 +142,15 @@ export default function AgentComptabilitePage() {
                 map[p.document_id] = (map[p.document_id] || 0) + Number(p.montant)
             })
             setPaiements(map)
+            setPaiementsList(paiem.map(p => ({
+                id: String(p.id),
+                document_id: String(p.document_id),
+                type: String(p.type),
+                montant: Number(p.montant),
+                date_paiement: String(p.date_paiement),
+                reference: p.reference ?? null,
+                notes: p.notes ?? null,
+            })))
         }
 
         if (docs) setAllDocs(docs)
@@ -270,14 +282,15 @@ export default function AgentComptabilitePage() {
 
     const handleAddPayment = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!paymentDoc) return
+        const targetDocId = paymentDoc?.id || paymentDocId
+        if (!targetDocId) return
         setSavingPayment(true)
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) { setSavingPayment(false); return }
 
         const { error } = await supabase.from('paiements_manuels').insert({
             agent_id: user.id,
-            document_id: paymentDoc.id,
+            document_id: targetDocId,
             type: newPayment.type,
             montant: Number(newPayment.montant),
             date_paiement: newPayment.date,
@@ -288,6 +301,7 @@ export default function AgentComptabilitePage() {
         if (!error) {
             setShowPaymentModal(false)
             setPaymentDoc(null)
+            setPaymentDocId('')
             setNewPayment({ type: 'virement', montant: '', reference: '', notes: '', date: new Date().toISOString().split('T')[0] })
             fetchAllData()
         }
@@ -299,38 +313,141 @@ export default function AgentComptabilitePage() {
             brouillon: 'Brouillon', envoye: 'Envoyé', accepte: 'Accepté',
             refuse: 'Refusé', paye: 'Payé', en_retard: 'En retard', annule: 'Annulé'
         }
-
-        const columns = [
-            { header: 'N° Document', key: 'numero', width: 22 },
-            { header: 'Type', key: 'type', width: 12, type: 'status' as const },
-            { header: 'Client', key: 'client', width: 30 },
-            { header: 'Email', key: 'email', width: 28 },
-            { header: 'Téléphone', key: 'phone', width: 18 },
-            { header: 'Montant (XOF)', key: 'total', width: 20, type: 'currency' as const },
-            { header: 'Statut', key: 'status', width: 16, type: 'status' as const },
-            { header: 'Date', key: 'created_at', width: 18, type: 'date' as const },
-        ]
-
-        const exportData = displayedDocs.map(d => ({
-            numero: d.numero,
-            type: d.type === 'facture' ? 'Facture' : 'Devis',
-            client: `${d.client_nom} ${d.client_prenom}`.trim(),
-            email: d.client_email || '',
-            phone: d.client_phone || '',
-            total: d.total,
-            status: statusLabels[d.status] || d.status,
-            created_at: new Date(d.created_at),
-        }))
+        const paymentLabels: Record<string, string> = {
+            virement: 'Virement bancaire', especes: 'Espèces', cheque: 'Chèque',
+            mobile_money: 'Mobile Money', carte: 'Carte bancaire', autre: 'Autre'
+        }
 
         const periodLabel = selectedPeriod === 'ce_mois' ? 'Ce Mois' : selectedPeriod === '3_mois' ? '3 Derniers Mois' : 'Global'
+        const subtitleBase = `Période : ${periodLabel} — Généré le ${new Date().toLocaleDateString('fr-FR')} — Confidentiel`
+        const docsById = new Map(allDocs.map(d => [d.id, d]))
 
-        await exportToExcel({
-            filename: `RG_Tresorerie_${periodLabel.replace(/\s/g, '_')}_${new Date().toISOString().split('T')[0]}`,
-            sheetName: 'Trésorerie',
-            title: 'RAPPORT DE TRÉSORERIE — RETOUR GAGNANT BÉNIN',
-            subtitle: `Période : ${periodLabel} — Généré le ${new Date().toLocaleDateString('fr-FR')} — Confidentiel`,
-            columns,
-            data: exportData,
+        // Sheet 1 — Documents (devis/factures)
+        const docsSheet = {
+            sheetName: 'Documents',
+            title: 'DOCUMENTS FINANCIERS — RETOUR GAGNANT BÉNIN',
+            subtitle: subtitleBase,
+            columns: [
+                { header: 'N° Document', key: 'numero', width: 22 },
+                { header: 'Type', key: 'type', width: 12, type: 'status' as const },
+                { header: 'Client', key: 'client', width: 30 },
+                { header: 'Email', key: 'email', width: 28 },
+                { header: 'Téléphone', key: 'phone', width: 18 },
+                { header: 'Total (XOF)', key: 'total', width: 18, type: 'currency' as const },
+                { header: 'Payé (XOF)', key: 'paye', width: 18, type: 'currency' as const },
+                { header: 'Reste (XOF)', key: 'reste', width: 18, type: 'currency' as const },
+                { header: 'Statut', key: 'status', width: 16, type: 'status' as const },
+                { header: 'Date', key: 'created_at', width: 14, type: 'date' as const },
+            ],
+            data: displayedDocs.map(d => {
+                const paye = paiements[d.id] || 0
+                return {
+                    numero: d.numero,
+                    type: d.type === 'facture' ? 'Facture' : 'Devis',
+                    client: `${d.client_nom} ${d.client_prenom}`.trim(),
+                    email: d.client_email || '',
+                    phone: d.client_phone || '',
+                    total: d.total,
+                    paye,
+                    reste: Math.max(0, d.total - paye),
+                    status: statusLabels[d.status] || d.status,
+                    created_at: new Date(d.created_at),
+                }
+            }),
+            summary: [
+                { label: 'Nombre de documents', value: displayedDocs.length },
+                { label: 'Total facturé', value: displayedDocs.reduce((a, d) => a + d.total, 0), type: 'currency' as const },
+                { label: 'Total encaissé', value: displayedDocs.reduce((a, d) => a + (paiements[d.id] || 0), 0), type: 'currency' as const },
+                { label: 'Reste à encaisser', value: displayedDocs.reduce((a, d) => a + Math.max(0, d.total - (paiements[d.id] || 0)), 0), type: 'currency' as const },
+            ],
+        }
+
+        // Sheet 2 — Paiements manuels
+        const paiementsPeriod = paiementsList.filter(p => {
+            const date = new Date(p.date_paiement)
+            return date >= pStart && date <= pEnd
+        })
+        const paiementsSheet = {
+            sheetName: 'Paiements',
+            title: 'PAIEMENTS ENREGISTRÉS',
+            subtitle: subtitleBase,
+            columns: [
+                { header: 'Date', key: 'date', width: 14, type: 'date' as const },
+                { header: 'N° Document', key: 'numero', width: 22 },
+                { header: 'Client', key: 'client', width: 30 },
+                { header: 'Mode', key: 'type', width: 20, type: 'status' as const },
+                { header: 'Montant (XOF)', key: 'montant', width: 18, type: 'currency' as const },
+                { header: 'Référence', key: 'reference', width: 22 },
+                { header: 'Notes', key: 'notes', width: 36 },
+            ],
+            data: paiementsPeriod.map(p => {
+                const d = docsById.get(p.document_id)
+                return {
+                    date: new Date(p.date_paiement),
+                    numero: d?.numero || '—',
+                    client: d ? `${d.client_nom} ${d.client_prenom}`.trim() : '—',
+                    type: paymentLabels[p.type] || p.type,
+                    montant: p.montant,
+                    reference: p.reference || '',
+                    notes: p.notes || '',
+                }
+            }),
+            summary: [
+                { label: 'Nombre de paiements', value: paiementsPeriod.length },
+                { label: 'Total encaissé manuellement', value: paiementsPeriod.reduce((a, p) => a + p.montant, 0), type: 'currency' as const },
+            ],
+        }
+
+        // Sheet 3 — Dépenses
+        const expensesPeriod = expenses.filter(e => {
+            const date = new Date(e.date_depense)
+            return date >= pStart && date <= pEnd
+        })
+        const depensesSheet = {
+            sheetName: 'Dépenses',
+            title: 'DÉPENSES',
+            subtitle: subtitleBase,
+            columns: [
+                { header: 'Date', key: 'date', width: 14, type: 'date' as const },
+                { header: 'Titre', key: 'titre', width: 36 },
+                { header: 'Catégorie', key: 'categorie', width: 20, type: 'status' as const },
+                { header: 'Montant (XOF)', key: 'montant', width: 18, type: 'currency' as const },
+            ],
+            data: expensesPeriod.map(e => ({
+                date: new Date(e.date_depense),
+                titre: e.titre,
+                categorie: e.categorie,
+                montant: Number(e.montant),
+            })),
+            summary: [
+                { label: 'Nombre de dépenses', value: expensesPeriod.length },
+                { label: 'Total dépenses', value: expensesPeriod.reduce((a, e) => a + Number(e.montant), 0), type: 'currency' as const },
+            ],
+        }
+
+        // Sheet 4 — Résumé
+        const resumeSheet = {
+            sheetName: 'Résumé',
+            title: 'SYNTHÈSE FINANCIÈRE',
+            subtitle: subtitleBase,
+            columns: [
+                { header: 'Indicateur', key: 'label', width: 38 },
+                { header: 'Valeur (XOF)', key: 'value', width: 22, type: 'currency' as const },
+            ],
+            data: [
+                { label: 'Chiffre d\'affaires facturé', value: stats.facture },
+                { label: 'Encaissé réel', value: stats.encaisse },
+                { label: 'En attente d\'encaissement', value: stats.attente },
+                { label: 'Dépenses', value: stats.depenses },
+                { label: 'Bénéfice net', value: stats.beneficeNet },
+                { label: `Commission agent (${(commissionRate * 100).toFixed(0)}%)`, value: stats.commission },
+                { label: 'Projection 30 jours', value: Math.round(stats.projection30j) },
+            ],
+        }
+
+        await exportToExcelMultiSheet({
+            filename: `RG_Comptabilite_${periodLabel.replace(/\s/g, '_')}_${new Date().toISOString().split('T')[0]}`,
+            sheets: [resumeSheet, docsSheet, paiementsSheet, depensesSheet],
         })
     }
 
@@ -399,12 +516,26 @@ export default function AgentComptabilitePage() {
                         <span className="text-xs font-bold">Export</span>
                     </button>
 
-                    <button 
+                    <button
                         onClick={() => setShowExpenseModal(true)}
                         className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-400 hover:bg-rose-500/30 transition-all font-bold"
                     >
                         <Plus size={18} />
                         <span className="text-xs">Dépense</span>
+                    </button>
+
+                    <button
+                        onClick={() => {
+                            setPaymentDoc(null)
+                            setPaymentDocId('')
+                            setNewPayment({ type: 'virement', montant: '', reference: '', notes: '', date: new Date().toISOString().split('T')[0] })
+                            setShowPaymentModal(true)
+                        }}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30 transition-all font-bold"
+                        title="Enregistrer un paiement manuel"
+                    >
+                        <Banknote size={18} />
+                        <span className="text-xs">Paiement</span>
                     </button>
                 </div>
             </div>
@@ -723,30 +854,68 @@ export default function AgentComptabilitePage() {
 
             {/* PAYMENT MODAL */}
             <AnimatePresence>
-                {showPaymentModal && paymentDoc && (
+                {showPaymentModal && (() => {
+                    const selectedDoc = paymentDoc || (paymentDocId ? allDocs.find(d => d.id === paymentDocId) || null : null)
+                    const solde = selectedDoc ? Math.max(0, selectedDoc.total - (paiements[selectedDoc.id] || 0)) : 0
+                    const selectableDocs = allDocs
+                        .filter(d => d.type === 'facture')
+                        .filter(d => (d.total - (paiements[d.id] || 0)) > 0 || d.status !== 'paye')
+                    return (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowPaymentModal(false)}>
                         <motion.div initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 10 }} onClick={e => e.stopPropagation()} className="glass-nexus-card w-full max-w-md overflow-hidden bg-[#0c1420]">
                             <div className="p-6 border-b border-white/5 flex items-center justify-between">
                                 <div>
                                     <h3 className="text-lg font-black text-white">Enregistrer un Paiement</h3>
-                                    <p className="text-xs text-gray-500 mt-0.5">{paymentDoc.numero} — {paymentDoc.client_nom} {paymentDoc.client_prenom}</p>
+                                    <p className="text-xs text-gray-500 mt-0.5">{selectedDoc ? `${selectedDoc.numero} — ${selectedDoc.client_nom} ${selectedDoc.client_prenom}` : 'Choisir une facture à encaisser'}</p>
                                 </div>
                                 <button title="Fermer" onClick={() => setShowPaymentModal(false)} className="text-gray-500 hover:text-white"><X size={20} /></button>
                             </div>
-                            <div className="px-6 pt-4 pb-0">
-                                <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/10">
-                                    <span className="text-xs text-gray-500">Solde restant</span>
-                                    <span className="text-base font-black text-amber-400">{formatCurrency(Math.max(0, paymentDoc.total - (paiements[paymentDoc.id] || 0)))}</span>
+                            {!paymentDoc && (
+                                <div className="px-6 pt-4 pb-0">
+                                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Facture concernée</label>
+                                    <select
+                                        title="Facture à encaisser"
+                                        required
+                                        value={paymentDocId}
+                                        onChange={e => {
+                                            const id = e.target.value
+                                            setPaymentDocId(id)
+                                            const d = allDocs.find(x => x.id === id)
+                                            if (d) {
+                                                const s = Math.max(0, d.total - (paiements[d.id] || 0))
+                                                setNewPayment(p => ({ ...p, montant: s > 0 ? String(s) : String(d.total) }))
+                                            }
+                                        }}
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-emerald-500/50 outline-none text-sm"
+                                    >
+                                        <option value="" disabled>— Sélectionnez une facture —</option>
+                                        {selectableDocs.length === 0 && <option value="" disabled>Aucune facture disponible</option>}
+                                        {selectableDocs.map(d => (
+                                            <option key={d.id} value={d.id} className="bg-[#0c1420]">
+                                                {d.numero} — {d.client_nom} {d.client_prenom} — {formatCurrency(Math.max(0, d.total - (paiements[d.id] || 0)))} restant
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
-                            </div>
+                            )}
+                            {selectedDoc && (
+                                <div className="px-6 pt-4 pb-0">
+                                    <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/10">
+                                        <span className="text-xs text-gray-500">Solde restant</span>
+                                        <span className="text-base font-black text-amber-400">{formatCurrency(solde)}</span>
+                                    </div>
+                                </div>
+                            )}
                             <form onSubmit={handleAddPayment} className="p-6 space-y-4">
                                 <div>
                                     <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Mode de paiement</label>
-                                    <div className="grid grid-cols-4 gap-2">
+                                    <div className="grid grid-cols-3 gap-2">
                                         {[
                                             { val: 'virement', icon: CreditCard, label: 'Virement' },
                                             { val: 'especes', icon: Banknote, label: 'Espèces' },
                                             { val: 'cheque', icon: FileText, label: 'Chèque' },
+                                            { val: 'mobile_money', icon: Zap, label: 'Mobile M.' },
+                                            { val: 'carte', icon: CreditCard, label: 'Carte' },
                                             { val: 'autre', icon: Wallet, label: 'Autre' },
                                         ].map(opt => (
                                             <button key={opt.val} type="button" onClick={() => setNewPayment(p => ({ ...p, type: opt.val }))}
@@ -779,14 +948,15 @@ export default function AgentComptabilitePage() {
                                     <textarea rows={2} value={newPayment.notes} onChange={e => setNewPayment(p => ({ ...p, notes: e.target.value }))}
                                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-emerald-500/50 outline-none text-sm resize-none" placeholder="Commentaire..." />
                                 </div>
-                                <button disabled={savingPayment || !newPayment.montant} type="submit"
+                                <button disabled={savingPayment || !newPayment.montant || !selectedDoc} type="submit"
                                     className="w-full py-4 bg-emerald-500 text-white font-black rounded-xl hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2 mt-4">
                                     {savingPayment ? <RefreshCw size={18} className="animate-spin" /> : <Banknote size={18} />} Confirmer l&apos;encaissement
                                 </button>
                             </form>
                         </motion.div>
                     </motion.div>
-                )}
+                )
+                })()}
             </AnimatePresence>
         </div>
     )

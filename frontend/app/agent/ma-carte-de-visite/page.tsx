@@ -85,11 +85,49 @@ export default function MaCarteDeVisite() {
                 toPng(rectoRef.current, { pixelRatio: 4, cacheBust: true }),
                 toPng(versoRef.current, { pixelRatio: 4, cacheBust: true }),
             ])
-            const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [85, 55] })
-            pdf.addImage(rectoUrl, 'PNG', 0, 0, 85, 55)
-            pdf.addPage([85, 55], 'landscape')
-            pdf.addImage(versoUrl, 'PNG', 0, 0, 85, 55)
-            pdf.save(`ma-carte-de-visite-${card.prenom}-${card.nom}.pdf`)
+            // Format "VIP / Oversized" (95x61.5mm) pour que ce soit indéniablement plus grand en main
+            const cardW = 95
+            const cardH = 61.5
+            
+            // Format A4 Standard (210 x 297 mm) qui désactive les bizarreries de mise à l'échelle des lecteurs PDF
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+            
+            // Calcul pour centrer parfaitement
+            const x = (210 - cardW) / 2
+            const y = (297 - cardH) / 2
+
+            // Fonction pour dessiner les traits de coupe (crop marks)
+            const drawCropMarks = () => {
+                pdf.setDrawColor(150, 150, 150)
+                pdf.setLineWidth(0.2)
+                const cL = 5 // longueur du trait de coupe
+                const m = 3 // marge d'éloignement de la carte
+
+                // Coin Haut-Gauche
+                pdf.line(x - m - cL, y, x - m, y) // Horizontale
+                pdf.line(x, y - m - cL, x, y - m) // Verticale
+                // Coin Haut-Droit
+                pdf.line(x + cardW + m, y, x + cardW + m + cL, y)
+                pdf.line(x + cardW, y - m - cL, x + cardW, y - m)
+                // Coin Bas-Gauche
+                pdf.line(x - m - cL, y + cardH, x - m, y + cardH)
+                pdf.line(x, y + cardH + m, x, y + cardH + m + cL)
+                // Coin Bas-Droit
+                pdf.line(x + cardW + m, y + cardH, x + cardW + m + cL, y + cardH)
+                pdf.line(x + cardW, y + cardH + m, x + cardW, y + cardH + m + cL)
+            }
+            
+            // Page 1: Recto centré avec traits de coupe
+            pdf.addImage(rectoUrl, 'PNG', x, y, cardW, cardH)
+            drawCropMarks()
+            
+            // Page 2: Verso centré avec traits de coupe
+            pdf.addPage('a4', 'portrait')
+            pdf.addImage(versoUrl, 'PNG', x, y, cardW, cardH)
+            drawCropMarks()
+            
+            // Changement de nom de fichier forcé pour éviter le cache système/navigateur
+            pdf.save(`Carte-VIP-${card.prenom}-${card.nom}.pdf`)
         } finally {
             setDownloading(null)
         }
@@ -164,8 +202,8 @@ export default function MaCarteDeVisite() {
                         transition={{ duration: 0.2 }}
                         style={{ transformOrigin: 'center' }}
                     >
-                        <div style={{ transform: 'scale(0.82)', transformOrigin: 'top center' }}>
-                            {view === 'recto' ? <CardRecto data={card} /> : <CardVerso data={card} />}
+                        <div>
+                            {view === 'recto' ? <CardRecto data={card} scale={0.63} /> : <CardVerso data={card} scale={0.63} />}
                         </div>
                     </motion.div>
                 </div>
@@ -207,7 +245,7 @@ export default function MaCarteDeVisite() {
 
                 <div className="mt-4 flex items-start gap-2 text-xs text-gray-600">
                     <Info size={12} className="mt-0.5 flex-shrink-0 text-[#C9A84C]/50" />
-                    <p>Les fichiers PNG sont exportés en haute résolution (300 DPI) pour une impression professionnelle. Le PDF contient les deux faces sur deux pages A6 paysage (85×55mm).</p>
+                    <p>Les fichiers PNG sont exportés en haute résolution pour impression. Le PDF génère deux pages au format A4 avec la carte centrée à sa dimension Premium Oversized (93×60mm) pour plus d&apos;impact en main. Des traits de coupe professionnels sont inclus pour garantir un massicotage ultra-précis.</p>
                 </div>
             </motion.div>
 

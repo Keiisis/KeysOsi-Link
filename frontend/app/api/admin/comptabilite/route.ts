@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = createClient(supabaseUrl, serviceKey)
 
-    const [docsRes, ordersRes, depsRes, settingsRes, paiemRes] = await Promise.all([
+    const [docsRes, ordersRes, depsRes, settingsRes, paiemRes, agentsRes] = await Promise.all([
         supabase
             .from('documents_financiers')
             .select(`
@@ -46,8 +46,13 @@ export async function GET(request: NextRequest) {
             .maybeSingle(),
         supabase
             .from('paiements_manuels')
-            .select('document_id,montant,agent_id')
+            .select('id,document_id,type,montant,date_paiement,reference,notes,agent_id')
+            .order('date_paiement', { ascending: false })
             .limit(10000),
+        supabase
+            .from('user_profiles')
+            .select('id,full_name,role')
+            .in('role', ['agent', 'admin', 'ceo', 'super_admin']),
     ])
 
     // Validation commissionRate : doit être entre 0 et 1 (pas un % comme 10)
@@ -66,11 +71,14 @@ export async function GET(request: NextRequest) {
         orders:         ordersRes.data   || [],
         depenses:       depsRes.data     || [],
         paiements:      paiemRes.data    || [],
+        agents:         agentsRes.data   || [],
         commissionRate,
         errors: {
             docs:     docsRes.error?.message     || null,
             orders:   ordersRes.error?.message   || null,
             depenses: depsRes.error?.message     || null,
+            paiements: paiemRes.error?.message   || null,
+            agents:   agentsRes.error?.message   || null,
         }
     })
 }

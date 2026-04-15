@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toPng } from 'html-to-image'
 import jsPDF from 'jspdf'
+import { Document, Packer, Paragraph, ImageRun, AlignmentType } from 'docx'
+import { saveAs } from 'file-saver'
 import {
     CreditCard, Download, FileImage, User, Plus, Trash2,
     CheckCircle, AlertCircle, Loader2, Eye, UserCheck, RefreshCw,
@@ -62,12 +64,39 @@ async function downloadPDF(
         captureCard(rectoRef, 4),
         captureCard(versoRef, 4),
     ])
-    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [85, 55] })
-    pdf.addImage(rectoUrl, 'PNG', 0, 0, 85, 55)
-    pdf.addPage([85, 55], 'landscape')
-    pdf.addImage(versoUrl, 'PNG', 0, 0, 85, 55)
-    pdf.save(`carte-visite-${name.toLowerCase().replace(/\s+/g, '-')}.pdf`)
+
+    // Création du PDF au format A4 (imprimeur)
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const pdfW = 210, pdfH = 297
+    const cardW = 90, cardH = 54
+
+    // Centrer la carte sur la page A4
+    const x = (pdfW - cardW) / 2
+    const y = (pdfH - cardH) / 2
+
+    // Traits de coupe
+    const drawCropMarks = () => {
+        pdf.setDrawColor(150, 150, 150)
+        pdf.setLineWidth(0.2)
+        const cL = 5, m = 3
+        pdf.line(x - m - cL, y, x - m, y)
+        pdf.line(x, y - m - cL, x, y - m)
+        pdf.line(x + cardW + m, y, x + cardW + m + cL, y)
+        pdf.line(x + cardW, y - m - cL, x + cardW, y - m)
+        pdf.line(x - m - cL, y + cardH, x - m, y + cardH)
+        pdf.line(x, y + cardH + m, x, y + cardH + m + cL)
+        pdf.line(x + cardW + m, y + cardH, x + cardW + m + cL, y + cardH)
+        pdf.line(x + cardW, y + cardH + m, x + cardW, y + cardH + m + cL)
+    }
+
+    pdf.addImage(rectoUrl, 'PNG', x, y, cardW, cardH)
+    drawCropMarks()
+    pdf.addPage('a4', 'portrait')
+    pdf.addImage(versoUrl, 'PNG', x, y, cardW, cardH)
+    drawCropMarks()
+    pdf.save(`Carte-VIP-${name.toLowerCase().replace(/\s+/g, '-')}.pdf`)
 }
+
 
 /** Extrait le message d'une erreur (Error, Supabase PostgrestError, ou objet quelconque) */
 function getErrorMessage(e: unknown): string {
@@ -188,6 +217,51 @@ export default function AdminDesignPage() {
         }
     }
 
+    const handleDownloadPdf = async () => {
+        setDownloading('pdf')
+        try {
+            const name = isValid ? `${form.prenom}-${form.nom}` : 'vide'
+            await downloadPDF(rectoRef, versoRef, name)
+            setStatus({ type: 'success', msg: 'PDF exporté avec les normes d\'impression !' })
+        } catch (e) {
+            console.error('Erreur export :', e)
+            setStatus({ type: 'error', msg: `Erreur export PDF : ${getErrorMessage(e)}` })
+        } finally {
+            setDownloading(null)
+        }
+    }
+
+    const handleDownloadPng = async () => {
+        setDownloading('png')
+        try {
+            const name = isValid ? `${form.prenom}-${form.nom}` : 'vide'
+            
+            const rectoUrl = await captureCard(rectoRef, 4)
+            const versoUrl = await captureCard(versoRef, 4)
+
+            const downloadImage = (dataUrl: string, filename: string) => {
+                const link = document.createElement("a")
+                link.href = dataUrl
+                link.download = filename
+                document.body.appendChild(link)
+                link.click()
+                document.body.removeChild(link)
+            }
+
+            downloadImage(rectoUrl, `Carte-VIP-${name}-RECTO.png`)
+            setTimeout(() => {
+                downloadImage(versoUrl, `Carte-VIP-${name}-VERSO.png`)
+            }, 500)
+
+            setStatus({ type: 'success', msg: 'Images PNG importables (Canva/Word) téléchargées avec succès !' })
+        } catch (e) {
+            console.error('Erreur export :', e)
+            setStatus({ type: 'error', msg: `Erreur export PNG : ${getErrorMessage(e)}` })
+        } finally {
+            setDownloading(null)
+        }
+    }
+
     /* ─── Suppression ─── */
     const deleteCard = async (id: string) => {
         if (!confirm('Supprimer cette carte ?')) return
@@ -204,7 +278,7 @@ export default function AdminDesignPage() {
     }
 
     /* ─── Téléchargement depuis une carte sauvegardée ─── */
-    const downloadSaved = async (card: SavedCard, type: 'recto-png' | 'verso-png' | 'pdf') => {
+    const downloadSaved = async (card: SavedCard, type: 'recto-png' | 'verso-png' | 'pdf' | 'docx') => {
         setDownloading(card.id + type)
         const cardData: CardData = {
             prenom:   card.employee_prenom,
@@ -219,7 +293,8 @@ export default function AdminDesignPage() {
             const fullName = `${card.employee_prenom}-${card.employee_nom}`
             if (type === 'recto-png')      await downloadPNG(rectoRef, `recto-${fullName}.png`)
             else if (type === 'verso-png') await downloadPNG(versoRef, `verso-${fullName}.png`)
-            else                           await downloadPDF(rectoRef, versoRef, fullName)
+            else if (type === 'pdf')       await downloadPDF(rectoRef, versoRef, fullName)
+            else if (type === 'docx')      await downloadDOCX(rectoRef, versoRef, fullName)
         } catch (e) {
             alert('Erreur export : ' + getErrorMessage(e))
         } finally {
@@ -433,26 +508,23 @@ CREATE POLICY "Admins full access" ON public.business_cards
                             {saving ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
                             Sauvegarder la carte
                         </button>
-                        <button type="button"
-                            onClick={async () => { setDownloading('recto-png'); try { await downloadPNG(rectoRef, `recto-${form.prenom}-${form.nom}.png`) } finally { setDownloading(null) } }}
+                        <button
+                            onClick={handleDownloadPdf}
                             disabled={!isValid || downloading !== null}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-white/[0.03] border border-white/10 text-gray-400 rounded-xl text-sm font-medium hover:text-white hover:border-white/20 transition-all disabled:opacity-40">
-                            {downloading === 'recto-png' ? <Loader2 size={14} className="animate-spin" /> : <FileImage size={14} />}
-                            PNG Recto
+                            className="flex w-full sm:w-auto items-center justify-center gap-2 group px-6 py-3.5 bg-gradient-to-r from-red-600 to-red-500 rounded-xl font-semibold text-white shadow-lg shadow-red-500/20 hover:shadow-red-500/40 transition-all hover:-translate-y-1 overflow-hidden relative"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:animate-shimmer" />
+                            {downloading === 'pdf' ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+                            <span>Imprimer (PDF - 90x54)</span>
                         </button>
-                        <button type="button"
-                            onClick={async () => { setDownloading('verso-png'); try { await downloadPNG(versoRef, `verso-${form.prenom}-${form.nom}.png`) } finally { setDownloading(null) } }}
+                        
+                        <button
+                            onClick={handleDownloadPng}
                             disabled={!isValid || downloading !== null}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-white/[0.03] border border-white/10 text-gray-400 rounded-xl text-sm font-medium hover:text-white hover:border-white/20 transition-all disabled:opacity-40">
-                            {downloading === 'verso-png' ? <Loader2 size={14} className="animate-spin" /> : <FileImage size={14} />}
-                            PNG Verso
-                        </button>
-                        <button type="button"
-                            onClick={async () => { setDownloading('pdf'); try { await downloadPDF(rectoRef, versoRef, `${form.prenom}-${form.nom}`) } finally { setDownloading(null) } }}
-                            disabled={!isValid || downloading !== null}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-[#008751]/10 border border-[#008751]/30 text-[#008751] rounded-xl text-sm font-bold hover:bg-[#008751]/20 transition-all disabled:opacity-40">
-                            {downloading === 'pdf' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-                            PDF Recto+Verso
+                            className="flex w-full sm:w-auto items-center justify-center gap-2 group px-6 py-3.5 bg-gradient-to-r from-[#C9A84C] to-[#A88836] rounded-xl font-semibold text-[#1A1F2C] shadow-lg shadow-[#C9A84C]/20 hover:shadow-[#C9A84C]/40 transition-all hover:-translate-y-1 overflow-hidden relative"
+                        >
+                            {downloading === 'png' ? <Loader2 size={18} className="animate-spin text-[#1A1F2C]" /> : <FileImage size={18} className="text-[#1A1F2C]" />}
+                            <span>Télécharger en Images (HQ)</span>
                         </button>
                     </div>
 
@@ -616,9 +688,16 @@ CREATE POLICY "Admins full access" ON public.business_cards
                                         <button type="button"
                                             onClick={() => downloadSaved(card, 'pdf')}
                                             disabled={downloading !== null}
-                                            className="flex items-center gap-1 px-2 py-1.5 bg-[#008751]/10 border border-[#008751]/20 rounded-lg text-xs text-[#008751] hover:bg-[#008751]/20 transition-colors disabled:opacity-40"
+                                            className="flex items-center gap-1 px-2 py-1.5 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-500 hover:bg-red-500/20 transition-colors disabled:opacity-40"
                                             title="PDF Recto+Verso">
                                             <Download size={12} /> PDF
+                                        </button>
+                                        <button type="button"
+                                            onClick={() => downloadSaved(card, 'docx')}
+                                            disabled={downloading !== null}
+                                            className="flex items-center gap-1 px-2 py-1.5 bg-[#C9A84C]/10 border border-[#C9A84C]/30 rounded-lg text-xs text-[#C9A84C] hover:bg-[#C9A84C]/20 transition-colors disabled:opacity-40"
+                                            title="DOCX Modifiable">
+                                            <FileImage size={12} /> DOCX
                                         </button>
                                         <button type="button"
                                             onClick={() => deleteCard(card.id)}

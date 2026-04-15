@@ -17,6 +17,150 @@ interface ExportOptions {
   subtitle?: string
 }
 
+interface SheetConfig {
+  sheetName: string
+  columns: ColumnConfig[]
+  data: Record<string, unknown>[]
+  title?: string
+  subtitle?: string
+  summary?: { label: string; value: string | number; type?: ColumnConfig['type'] }[]
+}
+
+interface MultiSheetOptions {
+  filename: string
+  sheets: SheetConfig[]
+}
+
+function columnLetter(n: number): string {
+  let s = ''
+  while (n > 0) {
+    const m = (n - 1) % 26
+    s = String.fromCharCode(65 + m) + s
+    n = Math.floor((n - 1) / 26)
+  }
+  return s
+}
+
+function buildSheet(worksheet: ExcelJS.Worksheet, cfg: SheetConfig) {
+  const { columns, data, title, subtitle, summary } = cfg
+  const lastCol = columnLetter(columns.length)
+  let currentRow = 1
+
+  if (title) {
+    worksheet.mergeCells(`A${currentRow}:${lastCol}${currentRow}`)
+    const c = worksheet.getCell(`A${currentRow}`)
+    c.value = title.toUpperCase()
+    c.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } }
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF008751' } }
+    c.alignment = { vertical: 'middle', horizontal: 'center' }
+    worksheet.getRow(currentRow).height = 32
+    currentRow++
+  }
+
+  if (subtitle) {
+    worksheet.mergeCells(`A${currentRow}:${lastCol}${currentRow}`)
+    const c = worksheet.getCell(`A${currentRow}`)
+    c.value = subtitle
+    c.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF555555' } }
+    c.alignment = { vertical: 'middle', horizontal: 'center' }
+    worksheet.getRow(currentRow).height = 20
+    currentRow += 2
+  }
+
+  worksheet.columns = columns.map(col => ({
+    header: col.header,
+    key: col.key,
+    width: col.width || 20,
+    style: { font: { name: 'Arial', size: 10 } }
+  }))
+
+  const headerRow = worksheet.getRow(currentRow)
+  headerRow.values = columns.map(c => c.header)
+  headerRow.height = 26
+  headerRow.eachCell((cell) => {
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F2937' } }
+    cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } }
+    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }
+    cell.border = {
+      top: { style: 'thin', color: { argb: 'FF4B5563' } },
+      left: { style: 'thin', color: { argb: 'FF4B5563' } },
+      bottom: { style: 'thin', color: { argb: 'FF4B5563' } },
+      right: { style: 'thin', color: { argb: 'FF4B5563' } }
+    }
+  })
+  worksheet.autoFilter = `A${currentRow}:${lastCol}${currentRow}`
+  worksheet.views = [{ state: 'frozen', ySplit: currentRow }]
+
+  data.forEach((row, index) => {
+    const dataRow = worksheet.addRow(row)
+    dataRow.height = 20
+    const rowColor = index % 2 === 0 ? 'FFFFFFFF' : 'FFF9FAFB'
+    dataRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rowColor } }
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+        bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+        left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+        right: { style: 'thin', color: { argb: 'FFE5E7EB' } }
+      }
+      cell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
+      const colConfig = columns[colNumber - 1]
+      if (colConfig.type === 'currency' && typeof cell.value === 'number') {
+        cell.numFmt = '#,##0 [$XOF]'
+        cell.alignment = { horizontal: 'right', vertical: 'middle', indent: 1 }
+      } else if (colConfig.type === 'date' && cell.value) {
+        cell.numFmt = 'dd/mm/yyyy'
+        cell.alignment = { horizontal: 'center', vertical: 'middle' }
+      } else if (colConfig.type === 'percent' && typeof cell.value === 'number') {
+        cell.value = cell.value / 100
+        cell.numFmt = '0%'
+        cell.alignment = { horizontal: 'center', vertical: 'middle' }
+      } else if (colConfig.type === 'status') {
+        cell.alignment = { horizontal: 'center', vertical: 'middle' }
+        cell.font = { bold: true, name: 'Arial', size: 10 }
+        const val = String(cell.value).toLowerCase()
+        if (val.includes('termin') || val.includes('payé') || val.includes('paye') || val.includes('succès') || val.includes('accept')) {
+          cell.font.color = { argb: 'FF008751' }
+        } else if (val.includes('cours') || val.includes('attente') || val.includes('envoy') || val.includes('traitement')) {
+          cell.font.color = { argb: 'FFD97706' }
+        } else if (val.includes('annul') || val.includes('retard') || val.includes('refus')) {
+          cell.font.color = { argb: 'FFDC2626' }
+        }
+      }
+    })
+  })
+
+  if (summary && summary.length) {
+    worksheet.addRow({})
+    summary.forEach(s => {
+      const r = worksheet.addRow([s.label, s.value])
+      r.height = 22
+      const labelCell = r.getCell(1)
+      const valueCell = r.getCell(2)
+      labelCell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FF1F2937' } }
+      labelCell.alignment = { horizontal: 'right', vertical: 'middle' }
+      valueCell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FF008751' } }
+      valueCell.alignment = { horizontal: 'right', vertical: 'middle', indent: 1 }
+      if (s.type === 'currency' && typeof s.value === 'number') {
+        valueCell.numFmt = '#,##0 [$XOF]'
+      }
+    })
+  }
+}
+
+export async function exportToExcelMultiSheet({ filename, sheets }: MultiSheetOptions) {
+  const workbook = new ExcelJS.Workbook()
+  workbook.creator = 'Retour Gagnant Bénin — Comptabilité'
+  workbook.created = new Date()
+  sheets.forEach(sheet => {
+    const ws = workbook.addWorksheet(sheet.sheetName)
+    buildSheet(ws, sheet)
+  })
+  const buffer = await workbook.xlsx.writeBuffer()
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+  saveAs(blob, `${filename}.xlsx`)
+}
+
 export async function exportToExcel({
   filename,
   sheetName,
