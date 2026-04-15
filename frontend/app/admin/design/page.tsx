@@ -98,6 +98,49 @@ async function downloadPDF(
 }
 
 
+async function downloadDOCX(
+    rectoRef: React.RefObject<HTMLDivElement | null>,
+    versoRef: React.RefObject<HTMLDivElement | null>,
+    name: string
+) {
+    const [rectoUrl, versoUrl] = await Promise.all([
+        captureCard(rectoRef, 4),
+        captureCard(versoRef, 4),
+    ])
+    const toBuffer = async (dataUrl: string) => {
+        const res = await fetch(dataUrl)
+        return await res.arrayBuffer()
+    }
+    const [rectoBuf, versoBuf] = await Promise.all([toBuffer(rectoUrl), toBuffer(versoUrl)])
+
+    const cardW = 340
+    const cardH = 204
+    const doc = new Document({
+        sections: [{
+            properties: {},
+            children: [
+                new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    children: [new ImageRun({ data: rectoBuf, transformation: { width: cardW, height: cardH }, type: 'png' })],
+                }),
+                new Paragraph({ children: [] }),
+                new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    children: [new ImageRun({ data: versoBuf, transformation: { width: cardW, height: cardH }, type: 'png' })],
+                }),
+            ],
+        }],
+    })
+    const blob = await Packer.toBlob(doc)
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.download = `Carte-VIP-${name.toLowerCase().replace(/\s+/g, '-')}.docx`
+    link.href = url
+    link.click()
+    URL.revokeObjectURL(url)
+}
+
+
 /** Extrait le message d'une erreur (Error, Supabase PostgrestError, ou objet quelconque) */
 function getErrorMessage(e: unknown): string {
     if (!e) return 'Erreur inconnue'
