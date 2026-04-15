@@ -44,13 +44,22 @@ export default function AgentMessagesPage() {
     const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [replySuggestions, setReplySuggestions] = useState<string[]>([]);
     const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+    const [fetchError, setFetchError] = useState<string | null>(null);
 
     const fetchMessages = async () => {
-        const { data } = await supabase
+        const { data, error } = await supabase
             .from('messages')
             .select('*')
             .neq('type', 'nationality')
             .order('created_at', { ascending: false })
+
+        if (error) {
+            console.error('[agent/messages] fetchMessages error:', error)
+            setFetchError(`${error.code || 'ERR'} — ${error.message}${error.hint ? ` (${error.hint})` : ''}`)
+        } else {
+            console.info('[agent/messages] fetchMessages OK, count =', data?.length, data)
+            setFetchError(null)
+        }
 
         setMessages((data || []) as Message[])
         setLoading(false)
@@ -326,6 +335,11 @@ export default function AgentMessagesPage() {
                     </div>
                     <h1 className="text-2xl font-black text-white">Console Live</h1>
                     <p className="text-gray-500 text-sm mt-1">{messages.length} conversation(s) • {unreadCount} en attente</p>
+                    {fetchError && (
+                        <div className="mt-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-mono max-w-xl">
+                            <strong className="font-bold">Erreur Supabase :</strong> {fetchError}
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-3 flex-wrap">
