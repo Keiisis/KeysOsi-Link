@@ -1012,11 +1012,29 @@ export default function AdminComptabilitePage() {
                 data: rapprochementRows,
             }
 
+            const paiementsManuelsTotal = pPaiements.reduce((a, p) => a + Number(p.montant || 0), 0)
+
             await exportToExcelMultiSheet({
                 filename: `RGB_Admin_Compta_${periodSlug(period)}_${new Date().toISOString().split('T')[0]}`,
                 coverTitle: 'Rapport comptable Admin',
                 coverSubtitle: 'À l\'attention du comptable — Synthèse officielle de la période',
                 coverPeriod: pLabel,
+                dashboard: {
+                    title: 'DASHBOARD COMPTABLE MENSUEL',
+                    subtitle,
+                    kpis: [
+                        { label: 'CA émis (factures)', value: kpis.caEmis, type: 'currency', tone: 'accent', detail: `${pDocs.filter(d => d.type === 'facture').length} factures émises` },
+                        { label: 'Total encaissé', value: kpis.totalEncaisse, type: 'currency', tone: 'good', detail: 'Facturation + Boutique + Paiements manuels' },
+                        { label: 'Paiements manuels', value: paiementsManuelsTotal, type: 'currency', tone: 'good', detail: `${pPaiements.length} paiements (virement / espèces / chèque)` },
+                        { label: 'Revenus boutique', value: kpis.boutique, type: 'currency', tone: 'accent', detail: `${pOrders.filter(o => o.payment_status === 'completed').length} commandes payées` },
+                        { label: 'TVA collectée', value: kpis.totalTVA, type: 'currency', tone: 'neutral', detail: 'À déclarer à la DGI' },
+                        { label: 'Factures en attente', value: kpis.enAttente, type: 'currency', tone: 'warn', detail: `${pDocs.filter(d => ['envoye', 'accepte'].includes(d.status)).length} factures en cours` },
+                        { label: `Commission agents ${(commissionRate * 100).toFixed(0)}%`, value: kpis.commission, type: 'currency', tone: 'warn', detail: 'Sur encaissements nets' },
+                        { label: 'Dépenses totales', value: kpis.totalDeps, type: 'currency', tone: 'bad', detail: `${pDeps.length} dépenses enregistrées` },
+                        { label: 'Bénéfice net', value: kpis.benefice, type: 'currency', tone: kpis.benefice >= 0 ? 'good' : 'bad', detail: 'Encaissé − Commissions − Dépenses' },
+                        { label: 'Score santé financière', value: scoreSante.score, type: 'number', tone: scoreSante.score >= 60 ? 'good' : scoreSante.score >= 40 ? 'warn' : 'bad', detail: `${scoreSante.label} / 100 — ${scoreSante.recommandation}` },
+                    ],
+                },
                 sheets: [
                     resumeSheet,
                     journalSheet,

@@ -522,11 +522,27 @@ export default function CeoComptabilite() {
             data: Array.from(modeBuckets.entries()).map(([mode, v]) => ({ mode, nb: v.nb, total: v.total })),
         }
 
+        const nbFacturesPayees = docs.filter(d => d.type === 'facture' && PAID_STATUSES.includes(d.status?.toLowerCase())).length
+
         await exportToExcelMultiSheet({
             filename: `RGB_CEO_Compta_${periodSlug(selectedPeriod)}_${scopeLabel}_${new Date().toISOString().split('T')[0]}`,
             coverTitle: 'Rapport comptable consolidé CEO',
             coverSubtitle: 'À l\'attention du comptable — Synthèse officielle de la période',
             coverPeriod: pLabel,
+            dashboard: {
+                title: 'DASHBOARD COMPTABLE CONSOLIDÉ',
+                subtitle,
+                kpis: [
+                    { label: 'Revenu total consolidé', value: totalRevenue, type: 'currency', tone: 'good', detail: 'Factures payées + Boutique + Paiements manuels' },
+                    { label: 'Encaissé sur factures', value: totalEncaisseDocs, type: 'currency', tone: 'good', detail: `${nbFacturesPayees} factures payées` },
+                    { label: 'Paiements manuels', value: totalManuellement, type: 'currency', tone: 'good', detail: `${paiements.length} paiements (virement / espèces / chèque)` },
+                    { label: 'Revenus boutique', value: totalOrders, type: 'currency', tone: 'accent', detail: `${orders.filter(o => PAID_STATUSES.includes((o.payment_status || '').toLowerCase())).length} commandes payées` },
+                    { label: 'TVA collectée', value: totalTVA, type: 'currency', tone: 'neutral', detail: 'À déclarer à la DGI' },
+                    { label: 'Factures en attente', value: pendingTotal, type: 'currency', tone: 'warn', detail: `${pendingDocs.length} factures non soldées` },
+                    { label: 'Dépenses totales', value: totalDepenses, type: 'currency', tone: 'bad', detail: `${depenses.length} dépenses enregistrées` },
+                    { label: 'Bénéfice net', value: profit, type: 'currency', tone: profit >= 0 ? 'good' : 'bad', detail: 'Revenu total − Dépenses' },
+                ],
+            },
             sheets: [resume, journalSheet, perAgentSheet, docsSheet, lignesSheet, paiementsSheet, depensesSheet, rapprochementSheet],
         })
     }

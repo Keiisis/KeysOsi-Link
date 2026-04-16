@@ -35,12 +35,25 @@ interface ExportOptions {
   totalRow?: boolean
 }
 
+interface DashboardKpi {
+  label: string
+  value: number
+  type?: CellType
+  detail?: string
+  tone?: 'good' | 'warn' | 'bad' | 'neutral' | 'accent'
+}
+
 interface MultiSheetOptions {
   filename: string
   sheets: SheetConfig[]
   coverTitle?: string
   coverSubtitle?: string
   coverPeriod?: string
+  dashboard?: {
+    title?: string
+    subtitle?: string
+    kpis: DashboardKpi[]
+  }
 }
 
 const COLOR_GOLD = 'FFC9A84C'
@@ -103,12 +116,13 @@ function buildSheet(worksheet: ExcelJS.Worksheet, cfg: SheetConfig) {
     fitToPage: true,
     fitToWidth: 1,
     fitToHeight: 0,
-    margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 },
+    margins: { left: 0.4, right: 0.4, top: 0.7, bottom: 0.5, header: 0.3, footer: 0.3 },
     horizontalCentered: true,
-    printTitlesRow: '1:1',
+    paperSize: 9, // A4
   }
   worksheet.headerFooter = {
-    oddFooter: '&L&8CONFIDENTIEL — Retour Gagnant Bénin&C&8&A&R&8Page &P / &N',
+    oddHeader: `&L&9&"Arial,Bold"&K${COLOR_NAVY.slice(2)}Retour Gagnant Bénin&R&9&KFF4B5563${cfg.sheetName || ''}`,
+    oddFooter: '&L&8&I&KFF888888CONFIDENTIEL — Retour Gagnant Bénin&C&8&KFF4B5563Généré le &D à &T&R&8&KFF4B5563Page &P / &N',
   }
 
   if (legalHeader) {
@@ -215,6 +229,8 @@ function buildSheet(worksheet: ExcelJS.Worksheet, cfg: SheetConfig) {
   })
   worksheet.autoFilter = `A${headerRowNum}:${lastCol}${headerRowNum}`
   worksheet.views = [{ state: 'frozen', ySplit: headerRowNum, xSplit: 1 }]
+  // Répéter toutes les lignes d'en-tête (légale + titre + super-headers + headers) sur chaque page imprimée
+  worksheet.pageSetup.printTitlesRow = `1:${headerRowNum}`
   currentRow++
 
   const dataStartRow = currentRow
@@ -235,22 +251,54 @@ function buildSheet(worksheet: ExcelJS.Worksheet, cfg: SheetConfig) {
       }
       cell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1, wrapText: true }
       applyNumFmt(cell, col.type)
+      if (col.type === 'currency' || col.type === 'number') {
+        const num = Number(cell.value)
+        if (!isNaN(num) && num < 0) {
+          cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: COLOR_RED_BJ } }
+        }
+      }
       if (col.type === 'status') {
         cell.alignment = { horizontal: 'center', vertical: 'middle' }
-        cell.font = { bold: true, name: 'Arial', size: 10 }
         const val = String(cell.value ?? '').toLowerCase()
-        if (val.includes('termin') || val.includes('payé') || val.includes('paye') || val.includes('succès') || val.includes('accept') || val.includes('soldé') || val.includes('solde')) {
-          cell.font.color = { argb: COLOR_GREEN_BJ }
+        let bg = 'FFF3F4F6'; let fg = COLOR_TEXT
+        if (val.includes('termin') || val.includes('payé') || val.includes('paye') || val.includes('succès') || val.includes('accept') || val.includes('soldé') || val.includes('complet') || val === 'livré' || val === 'livre') {
+          bg = 'FFDCFCE7'; fg = 'FF15803D'
         } else if (val.includes('cours') || val.includes('attente') || val.includes('envoy') || val.includes('traitement') || val.includes('brouillon')) {
-          cell.font.color = { argb: 'FFD97706' }
-        } else if (val.includes('annul') || val.includes('retard') || val.includes('refus') || val.includes('impay')) {
-          cell.font.color = { argb: COLOR_RED_BJ }
+          bg = 'FFFEF3C7'; fg = 'FFB45309'
+        } else if (val.includes('annul') || val.includes('retard') || val.includes('refus') || val.includes('impay') || val.includes('échou') || val.includes('echou')) {
+          bg = 'FFFEE2E2'; fg = COLOR_RED_BJ
+        } else if (val.includes('virement') || val.includes('espèces') || val.includes('especes') || val.includes('mobile') || val.includes('carte') || val.includes('chèque') || val.includes('cheque')) {
+          bg = 'FFDBEAFE'; fg = 'FF1E3A8A'
         }
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } }
+        cell.font = { bold: true, name: 'Arial', size: 10, color: { argb: fg } }
       }
     })
     currentRow++
   })
   const dataEndRow = currentRow - 1
+
+  // Data bars visuels sur les colonnes currency avec total (facilite lecture par le comptable)
+  if (data.length > 0) {
+    columns.forEach((col, i) => {
+      if (col.totalFormula === 'sum' && col.type === 'currency') {
+        const colL = columnLetter(i + 1)
+        worksheet.addConditionalFormatting({
+          ref: `${colL}${dataStartRow}:${colL}${dataEndRow}`,
+          rules: [{
+            type: 'dataBar',
+            priority: 1,
+            minLength: 0,
+            maxLength: 100,
+            gradient: true,
+            cfvo: [{ type: 'min' }, { type: 'max' }],
+            // ExcelJS accepte `color` pour DataBar au runtime, typage manquant dans @types
+            ...({ color: { argb: COLOR_GOLD } } as Record<string, unknown>),
+          }],
+        })
+      }
+    })
+  }
 
   // Ligne TOTAL avec formules Excel
   if (totalRow && data.length > 0) {
@@ -310,7 +358,7 @@ function buildSheet(worksheet: ExcelJS.Worksheet, cfg: SheetConfig) {
   }
 }
 
-function addCoverSheet(wb: ExcelJS.Workbook, opts: { title: string; subtitle?: string; period?: string }) {
+async function addCoverSheet(wb: ExcelJS.Workbook, opts: { title: string; subtitle?: string; period?: string }) {
   const ws = wb.addWorksheet('Couverture', {
     pageSetup: { orientation: 'portrait', fitToPage: true, margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 } },
   })
@@ -320,6 +368,24 @@ function addCoverSheet(wb: ExcelJS.Workbook, opts: { title: string; subtitle?: s
   // Bandeau tricolore haut
   addTricoloreBand(ws, r, 'J')
   r++
+
+  // Logo RGB (lazy import — évite de bundler 1.4MB dans les routes qui n'exportent pas)
+  try {
+    const { LOGO_BASE64 } = await import('@/lib/logoBase64')
+    const imgId = wb.addImage({ base64: LOGO_BASE64, extension: 'png' })
+    ws.getRow(r).height = 12
+    r++
+    ws.addImage(imgId, {
+      tl: { col: 3.5, row: r - 1 },
+      ext: { width: 180, height: 180 },
+      editAs: 'oneCell',
+    })
+    // réserve la hauteur visuelle du logo (6 lignes de ~30px)
+    for (let k = 0; k < 6; k++) ws.getRow(r + k).height = 30
+    r += 6
+  } catch {
+    // logo indisponible — on continue sans bloquer l'export
+  }
 
   r++
   ws.mergeCells(`A${r}:J${r}`)
@@ -417,7 +483,101 @@ function addCoverSheet(wb: ExcelJS.Workbook, opts: { title: string; subtitle?: s
   addTricoloreBand(ws, r, 'J')
 }
 
-export async function exportToExcelMultiSheet({ filename, sheets, coverTitle, coverSubtitle, coverPeriod }: MultiSheetOptions) {
+function addDashboardSheet(wb: ExcelJS.Workbook, dash: NonNullable<MultiSheetOptions['dashboard']>) {
+  const ws = wb.addWorksheet('Dashboard', {
+    pageSetup: { orientation: 'landscape', fitToPage: true, margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 }, paperSize: 9 },
+  })
+  ws.headerFooter = {
+    oddFooter: '&L&8&I&KFF888888CONFIDENTIEL — Retour Gagnant Bénin&C&8&KFF4B5563Dashboard synthétique&R&8&KFF4B5563Page &P / &N',
+  }
+  const cols = 10
+  for (let i = 1; i <= cols; i++) ws.getColumn(i).width = 14
+
+  let r = 1
+  addTricoloreBand(ws, r, 'J'); r++
+
+  // Titre
+  ws.mergeCells(`A${r}:J${r}`)
+  const t = ws.getCell(`A${r}`)
+  t.value = (dash.title || 'DASHBOARD COMPTABLE').toUpperCase()
+  t.font = { name: 'Arial', size: 18, bold: true, color: { argb: 'FFFFFFFF' } }
+  t.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_NAVY } }
+  t.alignment = { horizontal: 'center', vertical: 'middle' }
+  t.border = { bottom: { style: 'medium', color: { argb: COLOR_GOLD } } }
+  ws.getRow(r).height = 40; r++
+
+  if (dash.subtitle) {
+    ws.mergeCells(`A${r}:J${r}`)
+    const s = ws.getCell(`A${r}`)
+    s.value = dash.subtitle
+    s.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF4B5563' } }
+    s.alignment = { horizontal: 'center', vertical: 'middle' }
+    s.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_IVORY } }
+    ws.getRow(r).height = 20; r++
+  }
+  r++
+
+  // Grille 2 colonnes × 5 KPI par ligne (on étale sur 2 colonnes Excel par carte)
+  const COLS_PER_ROW = 2
+  const CELLS_PER_CARD = 5 // carte = 5 colonnes Excel
+  const toneStyles: Record<string, { bg: string; fg: string }> = {
+    good:    { bg: 'FFDCFCE7', fg: 'FF15803D' },
+    warn:    { bg: 'FFFEF3C7', fg: 'FFB45309' },
+    bad:     { bg: 'FFFEE2E2', fg: COLOR_RED_BJ },
+    accent:  { bg: 'FFFFF4D4', fg: COLOR_NAVY },
+    neutral: { bg: 'FFFFFFFF', fg: COLOR_NAVY },
+  }
+  const formatValue = (v: number, type?: CellType) => {
+    if (type === 'currency') return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(v) + ' FCFA'
+    if (type === 'percent') return (v * 100).toFixed(1) + ' %'
+    return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(v)
+  }
+
+  dash.kpis.forEach((k, idx) => {
+    const col = (idx % COLS_PER_ROW) * CELLS_PER_CARD + 1
+    if (idx % COLS_PER_ROW === 0 && idx !== 0) r += 5 // nouvelle rangée
+
+    const toneKey = k.tone || 'neutral'
+    const { bg, fg } = toneStyles[toneKey]
+    const endCol = col + CELLS_PER_CARD - 2 // laisse 1 colonne d'espace entre cartes
+
+    // Bande label
+    ws.mergeCells(r, col, r, endCol)
+    const labelCell = ws.getCell(r, col)
+    labelCell.value = k.label.toUpperCase()
+    labelCell.font = { name: 'Arial', size: 9, bold: true, color: { argb: fg } }
+    labelCell.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 }
+    labelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } }
+    labelCell.border = { top: { style: 'medium', color: { argb: fg } }, left: { style: 'medium', color: { argb: fg } }, right: { style: 'medium', color: { argb: fg } } }
+    ws.getRow(r).height = 22
+
+    // Bande valeur
+    ws.mergeCells(r + 1, col, r + 2, endCol)
+    const valCell = ws.getCell(r + 1, col)
+    valCell.value = formatValue(k.value, k.type)
+    valCell.font = { name: 'Arial', size: 22, bold: true, color: { argb: fg } }
+    valCell.alignment = { horizontal: 'center', vertical: 'middle' }
+    valCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } }
+    valCell.border = { left: { style: 'medium', color: { argb: fg } }, right: { style: 'medium', color: { argb: fg } } }
+    ws.getRow(r + 1).height = 26
+    ws.getRow(r + 2).height = 20
+
+    // Détail
+    ws.mergeCells(r + 3, col, r + 3, endCol)
+    const dCell = ws.getCell(r + 3, col)
+    dCell.value = k.detail || ''
+    dCell.font = { name: 'Arial', size: 9, italic: true, color: { argb: 'FF6B7280' } }
+    dCell.alignment = { horizontal: 'left', vertical: 'middle', indent: 1, wrapText: true }
+    dCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } }
+    dCell.border = { bottom: { style: 'medium', color: { argb: fg } }, left: { style: 'medium', color: { argb: fg } }, right: { style: 'medium', color: { argb: fg } } }
+    ws.getRow(r + 3).height = 24
+  })
+
+  r += 6
+  addTricoloreBand(ws, r, 'J')
+}
+
+export async function exportToExcelMultiSheet({ filename, sheets, coverTitle, coverSubtitle, coverPeriod, dashboard }: MultiSheetOptions) {
   const workbook = new ExcelJS.Workbook()
   workbook.creator = 'Retour Gagnant Bénin — Comptabilité'
   workbook.lastModifiedBy = 'Retour Gagnant Bénin'
@@ -425,7 +585,10 @@ export async function exportToExcelMultiSheet({ filename, sheets, coverTitle, co
   workbook.company = 'Retour Gagnant Bénin'
 
   if (coverTitle) {
-    addCoverSheet(workbook, { title: coverTitle, subtitle: coverSubtitle, period: coverPeriod })
+    await addCoverSheet(workbook, { title: coverTitle, subtitle: coverSubtitle, period: coverPeriod })
+  }
+  if (dashboard) {
+    addDashboardSheet(workbook, dashboard)
   }
 
   sheets.forEach(sheet => {
