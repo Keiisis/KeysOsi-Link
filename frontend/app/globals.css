@@ -57,9 +57,9 @@
      ═══════════════════════════════════════════════════════ */
 
   select {
-    background-color: #FFFFFF;
-    color: #1a2332;
-    border: 1px solid rgba(15, 23, 42, 0.12);
+    background-color: #0a0f14;
+    color: #e5e7eb;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 0.75rem;
     padding: 0.625rem 2.25rem 0.625rem 0.875rem;
     font-size: 0.875rem;
@@ -68,59 +68,58 @@
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 0.75rem center;
     background-size: 1rem;
   }
 
   select:hover {
-    border-color: rgba(0, 135, 81, 0.3);
-    background-color: #F9FAFB;
+    border-color: rgba(252, 209, 22, 0.3);
+    background-color: #0d1319;
   }
 
   select:focus {
     outline: none;
-    border-color: rgba(0, 135, 81, 0.5);
-    box-shadow: 0 0 0 3px rgba(0, 135, 81, 0.08);
+    border-color: rgba(252, 209, 22, 0.5);
+    box-shadow: 0 0 0 3px rgba(252, 209, 22, 0.08);
   }
 
   select option {
-    background-color: #FFFFFF;
-    color: #1a2332;
+    background-color: #0a0f14;
+    color: #e5e7eb;
     padding: 0.5rem 0.75rem;
   }
 
   select option:hover,
   select option:checked {
-    background-color: #F3F4F6;
-    color: #008751;
+    background-color: #1a2332;
+    color: #FCD116;
   }
 
   /* Ant Design Select overrides (admin panels) */
   .ant-select-dropdown {
-    background-color: #FFFFFF !important;
-    border: 1px solid rgba(15, 23, 42, 0.08) !important;
-    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08) !important;
+    background-color: #0d1319 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
   }
 
   .ant-select-item {
-    color: #1a2332 !important;
+    color: #e5e7eb !important;
   }
 
   .ant-select-item-option-active {
-    background-color: rgba(252, 209, 22, 0.12) !important;
+    background-color: rgba(252, 209, 22, 0.1) !important;
   }
 
   .ant-select-item-option-selected {
-    background-color: rgba(0, 135, 81, 0.10) !important;
-    color: #008751 !important;
+    background-color: rgba(0, 135, 81, 0.15) !important;
+    color: #FCD116 !important;
   }
 
   .ant-select-selector {
-    background-color: #FFFFFF !important;
-    border-color: rgba(15, 23, 42, 0.12) !important;
-    color: #1a2332 !important;
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #e5e7eb !important;
   }
 }
 
@@ -166,27 +165,27 @@
    ═══════════════════════════════════════════════════════ */
 
 :root {
-  /* ─── Nexus LIGHT — White Identity (background officiel du site) ─── */
-  --nexus-deep: #FFFFFF;
-  --nexus-card: #FFFFFF;
-  --nexus-elevated: #F9FAFB;
-  --nexus-hover: #F3F4F6;
+  /* ─── Nexus Emerald Palette ─── */
+  --nexus-deep: hsl(160, 30%, 3%);
+  --nexus-card: hsl(160, 20%, 7%);
+  --nexus-elevated: hsl(160, 15%, 10%);
+  --nexus-hover: hsl(160, 12%, 13%);
 
-  /* ─── Brand Accent (emerald preserved) ─── */
+  /* ─── Brand Accent ─── */
   --nexus-accent: hsl(160, 84%, 39%);
-  --nexus-accent-soft: hsla(160, 84%, 39%, 0.10);
-  --nexus-glow: rgba(16, 185, 129, 0.25);
+  --nexus-accent-soft: hsla(160, 84%, 39%, 0.15);
+  --nexus-glow: rgba(16, 185, 129, 0.35);
   --nexus-teal: hsl(174, 72%, 40%);
 
-  /* ─── Text Hierarchy (dark-on-light) ─── */
-  --nexus-text: #1a2332;
-  --nexus-text-secondary: #4b5563;
-  --nexus-text-muted: #6b7280;
+  /* ─── Text Hierarchy ─── */
+  --nexus-text: hsl(0, 0%, 95%);
+  --nexus-text-secondary: hsl(160, 5%, 55%);
+  --nexus-text-muted: hsl(160, 3%, 38%);
 
-  /* ─── Borders (subtle dark tints for light bg) ─── */
-  --nexus-border-subtle: rgba(15, 23, 42, 0.06);
-  --nexus-border-default: rgba(15, 23, 42, 0.10);
-  --nexus-border-strong: rgba(15, 23, 42, 0.16);
+  /* ─── Borders ─── */
+  --nexus-border-subtle: hsla(160, 50%, 50%, 0.06);
+  --nexus-border-default: hsla(160, 50%, 50%, 0.10);
+  --nexus-border-strong: hsla(160, 50%, 50%, 0.20);
 
   /* ─── Status Colors ─── */
   --nexus-success: #10B981;
@@ -211,53 +210,50 @@
 /* ─── Nexus Glassmorphism Utilities ─── */
 @layer components {
   .glass-nexus {
-    background: #FFFFFF;
+    background: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--nexus-border-subtle);
   }
 
   .glass-nexus-card {
-    background: #FFFFFF;
+    background: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--nexus-border-default);
     border-radius: 1rem;
     transition: all var(--nexus-transition-normal);
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   }
 
   .glass-nexus-card:hover {
-    background: #FFFFFF;
+    background: rgba(255, 255, 255, 0.05);
     border-color: var(--nexus-border-strong);
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(16, 185, 129, 0.10);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(16, 185, 129, 0.08);
   }
 
   .glass-nexus-sidebar {
-    background: #FFFFFF;
+    background: rgba(6, 18, 16, 0.95);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     border-right: 1px solid var(--nexus-border-subtle);
-    box-shadow: 1px 0 3px rgba(15, 23, 42, 0.03);
   }
 
   .glass-nexus-input {
-    background: #FFFFFF;
+    background: rgba(255, 255, 255, 0.04);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border: 1px solid var(--nexus-border-default);
-    color: var(--nexus-text);
     transition: all var(--nexus-transition-fast);
   }
 
   .glass-nexus-input:focus {
-    background: #FFFFFF;
-    border-color: rgba(16, 185, 129, 0.5);
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(16, 185, 129, 0.4);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1), 0 0 20px rgba(16, 185, 129, 0.08);
   }
 
   .glass-nexus-overlay {
-    background: rgba(15, 23, 42, 0.45);
+    background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
@@ -275,20 +271,20 @@
   }
 
   .nexus-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(15, 23, 42, 0.12);
+    background: rgba(16, 185, 129, 0.15);
     border-radius: 100px;
   }
 
   .nexus-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(16, 185, 129, 0.35);
+    background: rgba(16, 185, 129, 0.3);
   }
 
   /* Shimmer skeleton loading */
   .nexus-skeleton {
     background: linear-gradient(90deg,
-        rgba(15, 23, 42, 0.04) 25%,
-        rgba(15, 23, 42, 0.08) 50%,
-        rgba(15, 23, 42, 0.04) 75%);
+        rgba(255, 255, 255, 0.03) 25%,
+        rgba(255, 255, 255, 0.06) 50%,
+        rgba(255, 255, 255, 0.03) 75%);
     background-size: 200% 100%;
     animation: nexus-shimmer 1.5s linear infinite;
   }

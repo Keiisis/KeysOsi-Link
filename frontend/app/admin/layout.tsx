@@ -150,8 +150,8 @@ function AdminLayoutContent({
             <div className={cn('relative', compact ? 'p-3 pb-4' : 'p-5 pb-6')}>
                 <div className={cn('flex items-center', compact ? 'justify-center' : 'gap-3')}>
                     <div className="w-10 h-10 rounded-xl bg-benin-gradient p-0.5 flex-shrink-0 shadow-[0_0_20px_rgba(252,209,22,0.3)]">
-                        <div className="w-full h-full bg-white rounded-[10px] flex items-center justify-center">
-                            <Globe size={20} className="text-[#C9A84C]" />
+                        <div className="w-full h-full bg-[#0a0f18] rounded-[10px] flex items-center justify-center">
+                            <Globe size={20} className="text-[#FCD116]" />
                         </div>
                     </div>
                     {!compact && (
@@ -160,8 +160,8 @@ function AdminLayoutContent({
                             animate={{ opacity: 1, x: 0 }}
                             className="overflow-hidden whitespace-nowrap"
                         >
-                            <h1 className="text-lg font-black font-heading tracking-tighter text-[#1a2332]">
-                                KAGE <span className="text-[#C9A84C]"><T>ADMIN</T></span>
+                            <h1 className="text-lg font-black font-heading tracking-tighter text-white">
+                                KAGE <span className="text-[#FCD116]"><T>ADMIN</T></span>
                             </h1>
                             <div className="flex items-center gap-1.5 mt-0.5">
                                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
@@ -185,14 +185,14 @@ function AdminLayoutContent({
                                 'group relative flex items-center gap-3 rounded-xl transition-all duration-200',
                                 compact ? 'justify-center p-3' : 'px-3 py-2.5',
                                 isActive
-                                    ? 'bg-gradient-to-r from-[#C9A84C]/15 to-transparent text-[#C9A84C]'
-                                    : 'text-gray-600 hover:bg-black/[0.04] hover:text-[#1a2332]'
+                                    ? 'bg-gradient-to-r from-[#FCD116]/15 to-transparent text-[#FCD116]'
+                                    : 'text-gray-500 hover:bg-white/5 hover:text-white'
                             )}
                         >
                             {isActive && (
                                 <motion.div
                                     layoutId="admin-sidebar-active"
-                                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full bg-[#C9A84C] shadow-[0_0_12px_rgba(201,168,76,0.5)]"
+                                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full bg-[#FCD116] shadow-[0_0_12px_rgba(252,209,22,0.6)]"
                                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                                 />
                             )}
@@ -200,7 +200,7 @@ function AdminLayoutContent({
                                 size={18}
                                 className={cn(
                                     'flex-shrink-0 transition-all',
-                                    isActive ? 'text-[#C9A84C]' : 'group-hover:text-[#C9A84C]/80'
+                                    isActive ? 'text-[#FCD116]' : 'group-hover:text-[#FCD116]/70'
                                 )}
                             />
                             {!compact && (
@@ -224,18 +224,18 @@ function AdminLayoutContent({
             </nav>
 
             {/* Footer / User Profile */}
-            <div className={cn('border-t border-black/5', compact ? 'p-2' : 'p-3')}>
+            <div className={cn('border-t border-white/5', compact ? 'p-2' : 'p-3')}>
                 {!compact ? (
                     <div className="space-y-2">
-                        <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#F9FAFB] border border-black/5">
+                        <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white/[0.02] border border-white/5">
                             <div className="w-9 h-9 rounded-full bg-benin-gradient p-0.5 flex-shrink-0">
-                                <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
-                                    <User size={16} className="text-gray-500" />
+                                <div className="w-full h-full bg-[#0a0f18] rounded-full flex items-center justify-center">
+                                    <User size={16} className="text-gray-400" />
                                 </div>
                             </div>
                             <div className="flex-1 overflow-hidden">
-                                <p className="text-xs font-bold text-[#1a2332] truncate">{user?.email?.split('@')[0] || 'Admin'}</p>
-                                <p className="text-[9px] text-gray-500 font-mono uppercase truncate"><T>Super User</T></p>
+                                <p className="text-xs font-bold text-white truncate">{user?.email?.split('@')[0] || 'Admin'}</p>
+                                <p className="text-[9px] text-gray-400 font-mono uppercase truncate"><T>Super User</T></p>
                             </div>
                         </div>
                         <button
@@ -265,13 +265,13 @@ function AdminLayoutContent({
             key="admin-auth"
             fallback={<LoginRedirect />}
         >
-            <div className="flex h-screen bg-white text-[#1a2332] font-sans overflow-hidden">
+            <div className="flex h-screen bg-[#05080a] text-white font-sans overflow-hidden">
                 {/* ═══════════ DESKTOP SIDEBAR ═══════════ */}
                 <motion.aside
                     initial={false}
                     animate={{ width: isSidebarOpen ? 260 : 68 }}
                     transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                    className="hidden lg:flex h-full bg-white border-r border-black/5 flex-col relative z-50 overflow-hidden shadow-[1px_0_3px_rgba(15,23,42,0.04)]"
+                    className="hidden lg:flex h-full bg-[#0a0f18] border-r border-white/5 flex-col relative z-50 overflow-hidden shadow-[10px_0_30px_rgba(0,0,0,0.5)]"
                 >
                     <div className="absolute top-0 left-0 w-full h-[300px] bg-benin-gradient opacity-10 blur-[100px] pointer-events-none" />
                     {renderSidebarContent(!isSidebarOpen)}
@@ -293,12 +293,12 @@ function AdminLayoutContent({
                                 animate={{ x: 0, opacity: 1 }}
                                 exit={{ x: -320, opacity: 0 }}
                                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                                className="fixed left-0 top-0 h-full w-[280px] bg-white border-r border-black/5 flex flex-col z-[101] lg:hidden shadow-2xl"
+                                className="fixed left-0 top-0 h-full w-[280px] bg-[#0a0f18] border-r border-white/5 flex flex-col z-[101] lg:hidden shadow-2xl"
                             >
                                 <button
                                     onClick={() => setMobileMenuOpen(false)}
                                     title={t("Fermer le menu")}
-                                    className="absolute top-4 right-4 p-2 rounded-lg hover:bg-black/5 text-gray-500 z-10"
+                                    className="absolute top-4 right-4 p-2 rounded-lg hover:bg-white/5 text-gray-400 z-10"
                                 >
                                     <X size={18} />
                                 </button>
@@ -319,15 +319,15 @@ function AdminLayoutContent({
                     {/* ═══ TOP NAVBAR ═══ */}
                     <header className={cn(
                         'h-14 lg:h-16 flex items-center px-4 lg:px-6 justify-between transition-all relative z-40',
-                        'bg-white/80 backdrop-blur-xl border-b border-black/5',
-                        scrolled && 'shadow-[0_4px_30px_rgba(15,23,42,0.06)]'
+                        'bg-[#05080a]/80 backdrop-blur-xl border-b border-white/5',
+                        scrolled && 'shadow-[0_4px_30px_rgba(0,0,0,0.4)]'
                     )}>
                         <div className="flex items-center gap-3">
                             {/* Mobile hamburger */}
                             <button
                                 onClick={() => setMobileMenuOpen(true)}
                                 title={t("Ouvrir le menu")}
-                                className="p-2 rounded-lg hover:bg-black/5 transition-colors text-gray-600 lg:hidden"
+                                className="p-2 rounded-lg hover:bg-white/5 transition-colors text-gray-400 lg:hidden"
                             >
                                 <Menu size={20} />
                             </button>
@@ -335,28 +335,28 @@ function AdminLayoutContent({
                             {/* Desktop sidebar toggle */}
                             <button
                                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                                className="hidden lg:flex p-2 rounded-lg hover:bg-black/5 transition-colors text-gray-600"
+                                className="hidden lg:flex p-2 rounded-lg hover:bg-white/5 transition-colors text-gray-400"
                                 title={isSidebarOpen ? 'Réduire' : 'Agrandir'}
                             >
                                 {isSidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeft size={18} />}
                             </button>
 
-                            <div className="hidden md:flex items-center gap-2 text-[10px] font-bold text-gray-600 uppercase tracking-[0.15em] bg-black/[0.03] px-3 py-1.5 rounded-full border border-black/5">
+                            <div className="hidden md:flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-[0.15em] bg-white/5 px-3 py-1.5 rounded-full border border-white/5">
                                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                                 Secure • 256-bit
                             </div>
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <button title="Notifications" className="p-2 rounded-lg hover:bg-black/5 text-gray-600 hover:text-[#1a2332] transition-all">
+                            <button title="Notifications" className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-all">
                                 <Bell size={17} />
                             </button>
-                            <button title="Aide" className="p-2 rounded-lg hover:bg-black/5 text-gray-600 hover:text-[#1a2332] transition-all hidden sm:flex">
+                            <button title="Aide" className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-all hidden sm:flex">
                                 <HelpCircle size={17} />
                             </button>
 
                             {/* KAGE IA Button */}
-                            <button className="flex items-center gap-1.5 bg-[#C9A84C]/10 hover:bg-[#C9A84C]/20 text-[#C9A84C] border border-[#C9A84C]/30 px-3 py-1.5 rounded-xl transition-all text-[10px] font-black tracking-widest">
+                            <button className="flex items-center gap-1.5 bg-[#FCD116]/10 hover:bg-[#FCD116]/20 text-[#FCD116] border border-[#FCD116]/20 px-3 py-1.5 rounded-xl transition-all text-[10px] font-black tracking-widest">
                                 <Sparkles size={14} className="animate-pulse" />
                                 <span className="hidden sm:inline"><T>KAGE IA</T></span>
                             </button>
@@ -395,14 +395,14 @@ function LoginRedirect() {
     }, [router])
 
     return (
-        <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="min-h-screen bg-[#05080a] flex items-center justify-center">
             <div className="flex flex-col items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-benin-gradient p-0.5 shadow-[0_0_20px_rgba(201,168,76,0.3)]">
-                    <div className="w-full h-full bg-white rounded-[10px] flex items-center justify-center">
-                        <ShieldCheck size={24} className="text-[#C9A84C]" />
+                <div className="w-12 h-12 rounded-xl bg-benin-gradient p-0.5 shadow-[0_0_20px_rgba(252,209,22,0.3)]">
+                    <div className="w-full h-full bg-[#05080a] rounded-[10px] flex items-center justify-center">
+                        <ShieldCheck size={24} className="text-[#FCD116]" />
                     </div>
                 </div>
-                <p className="text-gray-600 text-sm font-bold uppercase tracking-widest animate-pulse">
+                <p className="text-gray-500 text-sm font-bold uppercase tracking-widest animate-pulse">
                     Redirection...
                 </p>
             </div>
