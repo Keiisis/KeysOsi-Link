@@ -2,8 +2,58 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Calculator, RefreshCw, Loader2, TrendingUp, TrendingDown, DollarSign, FileText, Download, Users, Banknote, AlertTriangle } from 'lucide-react'
+import { Calculator, RefreshCw, Loader2, TrendingUp, TrendingDown, DollarSign, FileText, Download, Users, Banknote, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { exportToExcelMultiSheet } from '@/lib/exportExcel'
+
+// ── Périodes ──────────────────────────────────────────────────
+type Period = string
+const MONTH_REGEX = /^\d{4}-\d{2}$/
+const isMonth = (p: Period) => MONTH_REGEX.test(p)
+function currentMonthKey(): string {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+function shiftMonth(key: string, delta: number): string {
+    const [y, m] = key.split('-').map(Number)
+    const d = new Date(y, m - 1 + delta, 1)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+function monthLabel(key: string): string {
+    const [y, m] = key.split('-').map(Number)
+    const s = new Date(y, m - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+    return s.charAt(0).toUpperCase() + s.slice(1)
+}
+function periodLabel(period: Period): string {
+    if (period === 'tous') return 'Global'
+    if (period === '3_mois') return '3 derniers mois'
+    if (isMonth(period)) return monthLabel(period)
+    return period
+}
+function periodSlug(period: Period): string {
+    if (period === 'tous') return 'Global'
+    if (period === '3_mois') return '3_mois'
+    return period
+}
+function getPeriodRange(period: Period): { start: Date; end: Date } {
+    const now = new Date()
+    const fullEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+    if (period === 'tous') return { start: new Date(0), end: fullEnd }
+    if (period === '3_mois') return { start: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000), end: fullEnd }
+    if (isMonth(period)) {
+        const [y, m] = period.split('-').map(Number)
+        return { start: new Date(y, m - 1, 1), end: new Date(y, m, 0, 23, 59, 59, 999) }
+    }
+    return { start: new Date(0), end: fullEnd }
+}
+function last12Months(): string[] {
+    const out: string[] = []
+    const d = new Date()
+    for (let i = 0; i < 12; i++) {
+        const ref = new Date(d.getFullYear(), d.getMonth() - i, 1)
+        out.push(`${ref.getFullYear()}-${String(ref.getMonth() + 1).padStart(2, '0')}`)
+    }
+    return out
+}
 
 const GOLD = '#C9A84C'; const YELLOW = '#FCD116'; const GREEN_L = '#008751'
 const RED = '#E8112D'; const BG = '#FAF8F4'; const TEXT = '#1B2A4A'
@@ -18,9 +68,15 @@ function fmtDate(d: string) {
     return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
+interface DocumentItem {
+    description?: string; quantity?: number; unit_price?: number; tva?: number; unit_cost?: number
+}
 interface FinancialDoc {
     id: string; type: string; numero?: string; client_nom?: string; client_prenom?: string
-    client_email?: string; total: number; status: string; created_at: string; agent_id?: string; currency?: string
+    client_email?: string; client_phone?: string; client_adresse?: string
+    total: number; sous_total?: number; total_tva?: number; remise?: number
+    items?: DocumentItem[]
+    status: string; created_at: string; agent_id?: string; currency?: string
 }
 interface Order {
     id: string; customer_name?: string; customer_email?: string; product_title?: string
@@ -64,6 +120,7 @@ export default function CeoComptabilite() {
     const [loading, setLoading] = useState(true)
     const [activeTab, setActiveTab] = useState<'overview' | 'agents' | 'factures' | 'commandes' | 'depenses' | 'paiements'>('overview')
     const [agentFilter, setAgentFilter] = useState<string>('all')
+    const [selectedPeriod, setSelectedPeriod] = useState<Period>(() => currentMonthKey())
     const [refresh, setRefresh] = useState(0)
 
     const load = useCallback(async () => {
@@ -90,10 +147,21 @@ export default function CeoComptabilite() {
     const allDepenses = data?.depenses || []
     const allPaiements = data?.paiements || []
 
-    const docs = agentFilter === 'all' ? allDocs : allDocs.filter(d => d.agent_id === agentFilter)
-    const depenses = agentFilter === 'all' ? allDepenses : allDepenses.filter(d => d.agent_id === agentFilter)
-    const paiements = agentFilter === 'all' ? allPaiements : allPaiements.filter(p => p.agent_id === agentFilter)
-    const orders = allOrders // commandes boutique = transverses
+    const { start: pStart, end: pEnd } = useMemo(() => getPeriodRange(selectedPeriod), [selectedPeriod])
+    const inPeriod = useCallback((iso: string | undefined) => {
+        if (!iso) return false
+        const d = new Date(iso)
+        return d >= pStart && d <= pEnd
+    }, [pStart, pEnd])
+
+    const docsByAgent = agentFilter === 'all' ? allDocs : allDocs.filter(d => d.agent_id === agentFilter)
+    const depensesByAgent = agentFilter === 'all' ? allDepenses : allDepenses.filter(d => d.agent_id === agentFilter)
+    const paiementsByAgent = agentFilter === 'all' ? allPaiements : allPaiements.filter(p => p.agent_id === agentFilter)
+
+    const docs = docsByAgent.filter(d => inPeriod(d.created_at))
+    const depenses = depensesByAgent.filter(e => inPeriod(e.date_depense))
+    const paiements = paiementsByAgent.filter(p => inPeriod(p.date_paiement))
+    const orders = allOrders.filter(o => inPeriod(o.created_at))
 
     const totalFacture = docs.filter(d => d.type === 'facture').reduce((a, d) => a + (d.total || 0), 0)
     const totalManuellement = paiements.reduce((a, p) => a + Number(p.montant || 0), 0)
@@ -106,7 +174,7 @@ export default function CeoComptabilite() {
     const pendingDocs = docs.filter(d => d.type === 'facture' && !PAID_STATUSES.includes(d.status?.toLowerCase()) && d.status !== 'annule' && d.status !== 'refuse' && d.status !== 'brouillon')
     const pendingTotal = pendingDocs.reduce((a, d) => a + d.total, 0)
 
-    // Agrégation par agent
+    // Agrégation par agent (filtrée par période, tous agents confondus)
     const perAgent = useMemo(() => {
         const rows = new Map<string, { agent_id: string; name: string; facture: number; encaisse: number; paiementsManuels: number; depenses: number; nbDocs: number; nbPaiements: number }>()
         const ensure = (id: string | undefined) => {
@@ -120,7 +188,7 @@ export default function CeoComptabilite() {
             }
             return rows.get(key)!
         }
-        allDocs.forEach(d => {
+        allDocs.filter(d => inPeriod(d.created_at)).forEach(d => {
             const r = ensure(d.agent_id)
             if (d.type === 'facture') {
                 r.facture += d.total || 0
@@ -128,56 +196,151 @@ export default function CeoComptabilite() {
                 if (PAID_STATUSES.includes(d.status?.toLowerCase())) r.encaisse += d.total || 0
             }
         })
-        allPaiements.forEach(p => {
+        allPaiements.filter(p => inPeriod(p.date_paiement)).forEach(p => {
             const r = ensure(p.agent_id)
             r.paiementsManuels += Number(p.montant || 0)
             r.nbPaiements += 1
         })
-        allDepenses.forEach(d => {
+        allDepenses.filter(d => inPeriod(d.date_depense)).forEach(d => {
             const r = ensure(d.agent_id)
             r.depenses += Number(d.montant || 0)
         })
         return Array.from(rows.values()).sort((a, b) => (b.encaisse + b.paiementsManuels) - (a.encaisse + a.paiementsManuels))
-    }, [allDocs, allPaiements, allDepenses, agentMap])
+    }, [allDocs, allPaiements, allDepenses, agentMap, inPeriod])
 
     const docsById = useMemo(() => new Map(allDocs.map(d => [d.id, d])), [allDocs])
 
     const handleExport = async () => {
-        const scopeLabel = agentFilter === 'all' ? 'Toutes_Agents' : (agentMap.get(agentFilter) || 'Agent').replace(/\s+/g, '_')
-        const subtitle = `Vue ${agentFilter === 'all' ? 'globale CEO' : agentMap.get(agentFilter) || agentFilter} — Généré le ${new Date().toLocaleDateString('fr-FR')} — Confidentiel`
+        const scopeLabel = agentFilter === 'all' ? 'Tous_agents' : (agentMap.get(agentFilter) || 'Agent').replace(/\s+/g, '_')
+        const pLabel = periodLabel(selectedPeriod)
+        const subtitle = `Vue ${agentFilter === 'all' ? 'consolidée CEO — tous agents' : agentMap.get(agentFilter) || agentFilter}   —   Période : ${pLabel}   —   Document strictement confidentiel`
+
+        const enrichDoc = (d: FinancialDoc) => {
+            const ht = typeof d.sous_total === 'number' ? d.sous_total : (d.items || []).reduce((a, it) => a + Number(it.quantity || 0) * Number(it.unit_price || 0), 0)
+            const tva = typeof d.total_tva === 'number' ? d.total_tva : (d.items || []).reduce((a, it) => a + Number(it.quantity || 0) * Number(it.unit_price || 0) * Number(it.tva || 0) / 100, 0)
+            const remise = Number(d.remise || 0)
+            const ttc = Number(d.total || 0)
+            return { ht, tva, remise, ttc }
+        }
+
+        // Synthèse
+        const totalHT = docs.filter(d => d.type === 'facture').reduce((a, d) => a + enrichDoc(d).ht, 0)
+        const totalTVA = docs.filter(d => d.type === 'facture').reduce((a, d) => a + enrichDoc(d).tva, 0)
+        const totalRemise = docs.filter(d => d.type === 'facture').reduce((a, d) => a + enrichDoc(d).remise, 0)
 
         const resume = {
-            sheetName: 'Résumé',
-            title: 'SYNTHÈSE FINANCIÈRE CEO — RETOUR GAGNANT BÉNIN',
+            sheetName: 'Synthèse',
+            title: 'SYNTHÈSE FINANCIÈRE CONSOLIDÉE',
             subtitle,
+            legalHeader: true,
             columns: [
-                { header: 'Indicateur', key: 'label', width: 38 },
-                { header: 'Valeur (XOF)', key: 'value', width: 22, type: 'currency' as const },
+                { header: 'Indicateur', key: 'label', width: 46 },
+                { header: 'Valeur (FCFA)', key: 'value', width: 24, type: 'currency' as const },
             ],
             data: [
-                { label: 'Chiffre d\'affaires facturé', value: totalFacture },
+                { label: 'Chiffre d\'affaires HT facturé', value: totalHT },
+                { label: 'TVA collectée', value: totalTVA },
+                { label: 'Remises accordées', value: totalRemise },
+                { label: 'Chiffre d\'affaires TTC facturé', value: totalFacture },
                 { label: 'Encaissé sur factures (statut payé)', value: totalEncaisseDocs },
-                { label: 'Encaissé par paiements manuels', value: totalManuellement },
+                { label: 'Encaissé par paiements manuels enregistrés', value: totalManuellement },
                 { label: 'Revenus commandes boutique', value: totalOrders },
-                { label: 'Revenu total', value: totalRevenue },
-                { label: 'Dépenses', value: totalDepenses },
+                { label: 'Revenu total consolidé', value: totalRevenue },
+                { label: 'Total dépenses période', value: totalDepenses },
                 { label: 'Bénéfice net', value: profit },
                 { label: 'Factures en attente d\'encaissement', value: pendingTotal },
+                { label: 'Nombre de factures émises', value: docs.filter(d => d.type === 'facture').length },
+                { label: 'Nombre de paiements enregistrés', value: paiements.length },
+                { label: 'Nombre de dépenses enregistrées', value: depenses.length },
             ],
+        }
+
+        // Journal consolidé
+        type JournalRow = { date: Date; piece: string; agent: string; libelle: string; mode: string; debit: number; credit: number }
+        const journalRows: JournalRow[] = []
+        docs.filter(d => d.type === 'facture').forEach(d => {
+            journalRows.push({
+                date: new Date(d.created_at),
+                piece: d.numero || '—',
+                agent: d.agent_id ? (agentMap.get(d.agent_id) || '—') : '—',
+                libelle: `Facture émise — ${d.client_nom || ''} ${d.client_prenom || ''}`.trim(),
+                mode: '—',
+                debit: 0,
+                credit: Number(d.total || 0),
+            })
+        })
+        paiements.forEach(p => {
+            const d = docsById.get(p.document_id)
+            const isExterne = !d && /^\[EXTERNE\]/i.test(p.notes || '')
+            const libelleExterne = isExterne ? (p.notes || '').replace(/^\[EXTERNE\]\s*/i, '').split('|')[0].trim() : ''
+            journalRows.push({
+                date: new Date(p.date_paiement),
+                piece: d?.numero || (isExterne ? 'EXT' : '—'),
+                agent: p.agent_id ? (agentMap.get(p.agent_id) || '—') : '—',
+                libelle: d
+                    ? `Encaissement — ${d.client_nom || ''} ${d.client_prenom || ''}`.trim()
+                    : isExterne ? `Encaissement externe — ${libelleExterne}` : 'Encaissement',
+                mode: PAYMENT_LABELS[p.type] || p.type,
+                debit: Number(p.montant || 0),
+                credit: 0,
+            })
+        })
+        orders.filter(o => PAID_STATUSES.includes((o.payment_status || '').toLowerCase())).forEach(o => {
+            journalRows.push({
+                date: new Date(o.created_at),
+                piece: o.id.slice(0, 8).toUpperCase(),
+                agent: '—',
+                libelle: `Commande boutique — ${o.product_title || ''}`.trim(),
+                mode: PAYMENT_LABELS[(o.payment_method || '').toLowerCase()] || (o.payment_method || '—'),
+                debit: Number(o.amount || 0),
+                credit: 0,
+            })
+        })
+        depenses.forEach(e => {
+            journalRows.push({
+                date: new Date(e.date_depense),
+                piece: '—',
+                agent: e.agent_id ? (agentMap.get(e.agent_id) || '—') : '—',
+                libelle: `Dépense — ${e.titre || ''} (${e.categorie || ''})`,
+                mode: '—',
+                debit: Number(e.montant || 0),
+                credit: 0,
+            })
+        })
+        journalRows.sort((a, b) => a.date.getTime() - b.date.getTime())
+
+        const journalSheet = {
+            sheetName: 'Journal',
+            title: 'JOURNAL COMPTABLE CONSOLIDÉ',
+            subtitle,
+            legalHeader: true,
+            totalRow: true,
+            columns: [
+                { header: 'Date', key: 'date', width: 13, type: 'date' as const },
+                { header: 'N° Pièce', key: 'piece', width: 18 },
+                { header: 'Agent', key: 'agent', width: 22 },
+                { header: 'Libellé', key: 'libelle', width: 44 },
+                { header: 'Mode', key: 'mode', width: 18, type: 'status' as const },
+                { header: 'Débit (FCFA)', key: 'debit', width: 18, type: 'currency' as const, totalFormula: 'sum' as const },
+                { header: 'Crédit (FCFA)', key: 'credit', width: 18, type: 'currency' as const, totalFormula: 'sum' as const },
+            ],
+            data: journalRows,
         }
 
         const perAgentSheet = {
             sheetName: 'Par Agent',
             title: 'PERFORMANCES PAR AGENT',
             subtitle,
+            legalHeader: true,
+            totalRow: true,
             columns: [
                 { header: 'Agent', key: 'name', width: 28 },
-                { header: 'Nb factures', key: 'nbDocs', width: 14 },
-                { header: 'Facturé', key: 'facture', width: 18, type: 'currency' as const },
-                { header: 'Encaissé docs', key: 'encaisse', width: 18, type: 'currency' as const },
-                { header: 'Paiements manuels', key: 'paiementsManuels', width: 20, type: 'currency' as const },
-                { header: 'Dépenses', key: 'depenses', width: 18, type: 'currency' as const },
-                { header: 'Net', key: 'net', width: 18, type: 'currency' as const },
+                { header: 'Nb factures', key: 'nbDocs', width: 14, type: 'number' as const, totalFormula: 'sum' as const },
+                { header: 'Facturé', key: 'facture', width: 18, type: 'currency' as const, totalFormula: 'sum' as const },
+                { header: 'Encaissé docs', key: 'encaisse', width: 18, type: 'currency' as const, totalFormula: 'sum' as const },
+                { header: 'Paiements manuels', key: 'paiementsManuels', width: 20, type: 'currency' as const, totalFormula: 'sum' as const },
+                { header: 'Dépenses', key: 'depenses', width: 18, type: 'currency' as const, totalFormula: 'sum' as const },
+                { header: 'Net', key: 'net', width: 18, type: 'currency' as const, totalFormula: 'sum' as const },
             ],
             data: perAgent.map(a => ({
                 name: a.name,
@@ -190,52 +353,118 @@ export default function CeoComptabilite() {
             })),
         }
 
+        // Documents enrichis HT/TVA/TTC
         const docsSheet = {
             sheetName: 'Documents',
-            title: 'DOCUMENTS FINANCIERS',
+            title: 'DOCUMENTS FINANCIERS (DEVIS & FACTURES)',
             subtitle,
+            legalHeader: true,
+            totalRow: true,
             columns: [
-                { header: 'N°', key: 'numero', width: 22 },
-                { header: 'Type', key: 'type', width: 12, type: 'status' as const },
-                { header: 'Agent', key: 'agent', width: 24 },
-                { header: 'Client', key: 'client', width: 28 },
-                { header: 'Total (XOF)', key: 'total', width: 18, type: 'currency' as const },
-                { header: 'Statut', key: 'status', width: 16, type: 'status' as const },
-                { header: 'Date', key: 'date', width: 14, type: 'date' as const },
+                { header: 'N° Document', key: 'numero', width: 22, group: 'Identification' },
+                { header: 'Type', key: 'type', width: 11, type: 'status' as const, group: 'Identification' },
+                { header: 'Date', key: 'date', width: 13, type: 'date' as const, group: 'Identification' },
+                { header: 'Agent', key: 'agent', width: 22, group: 'Identification' },
+                { header: 'Client', key: 'client', width: 26, group: 'Client' },
+                { header: 'Email', key: 'email', width: 24, group: 'Client' },
+                { header: 'Sous-total HT', key: 'ht', width: 16, type: 'currency' as const, totalFormula: 'sum' as const, group: 'Montants HT / TVA / TTC' },
+                { header: 'TVA', key: 'tva', width: 14, type: 'currency' as const, totalFormula: 'sum' as const, group: 'Montants HT / TVA / TTC' },
+                { header: 'Remise', key: 'remise', width: 13, type: 'currency' as const, totalFormula: 'sum' as const, group: 'Montants HT / TVA / TTC' },
+                { header: 'TOTAL TTC', key: 'ttc', width: 17, type: 'currency' as const, totalFormula: 'sum' as const, group: 'Montants HT / TVA / TTC' },
+                { header: 'Statut', key: 'status', width: 14, type: 'status' as const, group: 'État' },
             ],
-            data: docs.map(d => ({
-                numero: d.numero || '—',
-                type: DOC_TYPES[d.type] || d.type,
-                agent: d.agent_id ? (agentMap.get(d.agent_id) || '—') : '—',
-                client: `${d.client_nom || ''} ${d.client_prenom || ''}`.trim() || '—',
-                total: d.total,
-                status: STATUS_LABELS[d.status] || d.status,
-                date: new Date(d.created_at),
-            })),
+            data: docs.map(d => {
+                const { ht, tva, remise, ttc } = enrichDoc(d)
+                return {
+                    numero: d.numero || '—',
+                    type: DOC_TYPES[d.type] || d.type,
+                    date: new Date(d.created_at),
+                    agent: d.agent_id ? (agentMap.get(d.agent_id) || '—') : '—',
+                    client: `${d.client_nom || ''} ${d.client_prenom || ''}`.trim() || '—',
+                    email: d.client_email || '',
+                    ht, tva, remise, ttc,
+                    status: STATUS_LABELS[d.status] || d.status,
+                }
+            }),
+        }
+
+        // Lignes d'articles
+        const lignesRows: Array<Record<string, unknown>> = []
+        docs.forEach(d => {
+            const items = Array.isArray(d.items) ? d.items : []
+            items.forEach((it, idx) => {
+                const qty = Number(it.quantity || 0)
+                const pu = Number(it.unit_price || 0)
+                const tvaRate = Number(it.tva || 0)
+                const ht = qty * pu
+                const tvaVal = ht * tvaRate / 100
+                lignesRows.push({
+                    date: new Date(d.created_at),
+                    numero: d.numero || '—',
+                    type: DOC_TYPES[d.type] || d.type,
+                    agent: d.agent_id ? (agentMap.get(d.agent_id) || '—') : '—',
+                    client: `${d.client_nom || ''} ${d.client_prenom || ''}`.trim(),
+                    ligne: idx + 1,
+                    description: it.description || '',
+                    qty, pu, ht,
+                    tva_taux: tvaRate / 100,
+                    tva_montant: tvaVal,
+                    ttc: ht + tvaVal,
+                })
+            })
+        })
+        const lignesSheet = {
+            sheetName: 'Lignes d\'articles',
+            title: 'DÉTAIL DES LIGNES D\'ARTICLES',
+            subtitle,
+            legalHeader: true,
+            totalRow: true,
+            columns: [
+                { header: 'Date', key: 'date', width: 13, type: 'date' as const, group: 'Pièce' },
+                { header: 'N° Document', key: 'numero', width: 20, group: 'Pièce' },
+                { header: 'Type', key: 'type', width: 11, type: 'status' as const, group: 'Pièce' },
+                { header: 'Agent', key: 'agent', width: 20, group: 'Pièce' },
+                { header: 'Client', key: 'client', width: 24, group: 'Pièce' },
+                { header: 'N°', key: 'ligne', width: 6, type: 'number' as const, group: 'Article' },
+                { header: 'Description', key: 'description', width: 40, group: 'Article' },
+                { header: 'Qté', key: 'qty', width: 8, type: 'number' as const, totalFormula: 'sum' as const, group: 'Article' },
+                { header: 'PU', key: 'pu', width: 14, type: 'currency' as const, group: 'Article' },
+                { header: 'HT', key: 'ht', width: 15, type: 'currency' as const, totalFormula: 'sum' as const, group: 'Calcul TVA' },
+                { header: 'Taux TVA', key: 'tva_taux', width: 11, type: 'percent' as const, group: 'Calcul TVA' },
+                { header: 'TVA', key: 'tva_montant', width: 14, type: 'currency' as const, totalFormula: 'sum' as const, group: 'Calcul TVA' },
+                { header: 'TTC', key: 'ttc', width: 15, type: 'currency' as const, totalFormula: 'sum' as const, group: 'Calcul TVA' },
+            ],
+            data: lignesRows,
         }
 
         const paiementsSheet = {
             sheetName: 'Paiements',
-            title: 'PAIEMENTS MANUELS',
+            title: 'REGISTRE DES PAIEMENTS ENCAISSÉS',
             subtitle,
+            legalHeader: true,
+            totalRow: true,
             columns: [
-                { header: 'Date', key: 'date', width: 14, type: 'date' as const },
-                { header: 'Agent', key: 'agent', width: 24 },
-                { header: 'N° Document', key: 'numero', width: 22 },
+                { header: 'Date', key: 'date', width: 13, type: 'date' as const },
+                { header: 'Agent', key: 'agent', width: 22 },
+                { header: 'N° Facture', key: 'numero', width: 20 },
+                { header: 'Client / Libellé', key: 'client', width: 30 },
                 { header: 'Mode', key: 'type', width: 16, type: 'status' as const },
-                { header: 'Montant (XOF)', key: 'montant', width: 18, type: 'currency' as const },
-                { header: 'Référence', key: 'reference', width: 22 },
+                { header: 'Référence', key: 'reference', width: 20 },
+                { header: 'Montant (FCFA)', key: 'montant', width: 18, type: 'currency' as const, totalFormula: 'sum' as const },
                 { header: 'Notes', key: 'notes', width: 30 },
             ],
             data: paiements.map(p => {
                 const d = docsById.get(p.document_id)
+                const isExterne = !d && /^\[EXTERNE\]/i.test(p.notes || '')
+                const libelleExterne = isExterne ? (p.notes || '').replace(/^\[EXTERNE\]\s*/i, '').split('|')[0].trim() : ''
                 return {
                     date: new Date(p.date_paiement),
                     agent: p.agent_id ? (agentMap.get(p.agent_id) || '—') : '—',
-                    numero: d?.numero || '—',
+                    numero: d?.numero || (isExterne ? 'EXTERNE' : '—'),
+                    client: d ? `${d.client_nom || ''} ${d.client_prenom || ''}`.trim() : (isExterne ? libelleExterne : '—'),
                     type: PAYMENT_LABELS[p.type] || p.type,
-                    montant: Number(p.montant),
                     reference: p.reference || '',
+                    montant: Number(p.montant),
                     notes: p.notes || '',
                 }
             }),
@@ -243,14 +472,16 @@ export default function CeoComptabilite() {
 
         const depensesSheet = {
             sheetName: 'Dépenses',
-            title: 'DÉPENSES',
+            title: 'REGISTRE DES DÉPENSES',
             subtitle,
+            legalHeader: true,
+            totalRow: true,
             columns: [
-                { header: 'Date', key: 'date', width: 14, type: 'date' as const },
-                { header: 'Agent', key: 'agent', width: 24 },
-                { header: 'Titre', key: 'titre', width: 32 },
-                { header: 'Catégorie', key: 'categorie', width: 18, type: 'status' as const },
-                { header: 'Montant (XOF)', key: 'montant', width: 18, type: 'currency' as const },
+                { header: 'Date', key: 'date', width: 13, type: 'date' as const },
+                { header: 'Agent', key: 'agent', width: 22 },
+                { header: 'Titre', key: 'titre', width: 40 },
+                { header: 'Catégorie', key: 'categorie', width: 16, type: 'status' as const },
+                { header: 'Montant (FCFA)', key: 'montant', width: 18, type: 'currency' as const, totalFormula: 'sum' as const },
             ],
             data: depenses.map(e => ({
                 date: new Date(e.date_depense),
@@ -261,9 +492,42 @@ export default function CeoComptabilite() {
             })),
         }
 
+        // Rapprochement bancaire consolidé
+        const modeBuckets = new Map<string, { nb: number; total: number }>()
+        paiements.forEach(p => {
+            const key = PAYMENT_LABELS[p.type] || p.type
+            const b = modeBuckets.get(key) || { nb: 0, total: 0 }
+            b.nb += 1
+            b.total += Number(p.montant || 0)
+            modeBuckets.set(key, b)
+        })
+        orders.filter(o => PAID_STATUSES.includes((o.payment_status || '').toLowerCase())).forEach(o => {
+            const key = PAYMENT_LABELS[(o.payment_method || '').toLowerCase()] || (o.payment_method || 'Autre')
+            const b = modeBuckets.get(key) || { nb: 0, total: 0 }
+            b.nb += 1
+            b.total += Number(o.amount || 0)
+            modeBuckets.set(key, b)
+        })
+        const rapprochementSheet = {
+            sheetName: 'Rapprochement',
+            title: 'RAPPROCHEMENT BANCAIRE PAR MODE DE PAIEMENT',
+            subtitle,
+            legalHeader: true,
+            totalRow: true,
+            columns: [
+                { header: 'Mode de paiement', key: 'mode', width: 30 },
+                { header: 'Nb transactions', key: 'nb', width: 18, type: 'number' as const, totalFormula: 'sum' as const },
+                { header: 'Total encaissé (FCFA)', key: 'total', width: 22, type: 'currency' as const, totalFormula: 'sum' as const },
+            ],
+            data: Array.from(modeBuckets.entries()).map(([mode, v]) => ({ mode, nb: v.nb, total: v.total })),
+        }
+
         await exportToExcelMultiSheet({
-            filename: `RGB_CEO_Compta_${scopeLabel}_${new Date().toISOString().split('T')[0]}`,
-            sheets: [resume, perAgentSheet, docsSheet, paiementsSheet, depensesSheet],
+            filename: `RGB_CEO_Compta_${periodSlug(selectedPeriod)}_${scopeLabel}_${new Date().toISOString().split('T')[0]}`,
+            coverTitle: 'Rapport comptable consolidé CEO',
+            coverSubtitle: 'À l\'attention du comptable — Synthèse officielle de la période',
+            coverPeriod: pLabel,
+            sheets: [resume, journalSheet, perAgentSheet, docsSheet, lignesSheet, paiementsSheet, depensesSheet, rapprochementSheet],
         })
     }
 
@@ -280,7 +544,47 @@ export default function CeoComptabilite() {
                     </div>
                     <p className="text-sm opacity-50">Consolidation complète RGB — tous agents, factures, paiements et dépenses</p>
                 </div>
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-2 flex-wrap items-center">
+                    <div className="flex items-center rounded-xl border bg-white overflow-hidden"
+                        style={{ borderColor: `${GOLD}30` }}>
+                        <button
+                            title="Mois précédent"
+                            onClick={() => {
+                                const base = isMonth(selectedPeriod) ? selectedPeriod : currentMonthKey()
+                                setSelectedPeriod(shiftMonth(base, -1))
+                            }}
+                            className="p-2.5 hover:opacity-70"
+                            style={{ color: TEXT }}
+                        >
+                            <ChevronLeft size={16} />
+                        </button>
+                        <select
+                            title="Sélectionner la période"
+                            value={selectedPeriod}
+                            onChange={e => setSelectedPeriod(e.target.value)}
+                            className="bg-transparent px-3 py-2 text-sm font-semibold outline-none min-w-[170px]"
+                            style={{ color: TEXT }}
+                        >
+                            {last12Months().map(m => (
+                                <option key={m} value={m}>{monthLabel(m)}</option>
+                            ))}
+                            <option value="3_mois">3 derniers mois</option>
+                            <option value="tous">Global</option>
+                        </select>
+                        <button
+                            title="Mois suivant"
+                            disabled={isMonth(selectedPeriod) && selectedPeriod >= currentMonthKey()}
+                            onClick={() => {
+                                const base = isMonth(selectedPeriod) ? selectedPeriod : currentMonthKey()
+                                const next = shiftMonth(base, 1)
+                                if (next <= currentMonthKey()) setSelectedPeriod(next)
+                            }}
+                            className="p-2.5 hover:opacity-70 disabled:opacity-30"
+                            style={{ color: TEXT }}
+                        >
+                            <ChevronRight size={16} />
+                        </button>
+                    </div>
                     <select
                         title="Filtrer par agent"
                         value={agentFilter}

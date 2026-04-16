@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import * as ExcelJS from 'exceljs'
-import { saveAs } from 'file-saver'
 import {
     Wallet, TrendingDown, ArrowUpRight, ArrowDownRight, Download,
     BarChart3, FileText, RefreshCw, Users, ShoppingBag,
@@ -14,13 +12,52 @@ import {
     EyeOff, Eye, ExternalLink, Banknote, CreditCard, Bell
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { exportToExcelMultiSheet } from '@/lib/exportExcel'
 import {
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     AreaChart, Area, BarChart, Bar, Cell,
 } from 'recharts'
 
 // ─── Types ──────────────────────────────────────────────────────────
-type Period = 'ce_mois' | '3_mois' | '6_mois' | 'annee' | 'tous'
+type Period = string
+const MONTH_REGEX = /^\d{4}-\d{2}$/
+const isMonth = (p: Period) => MONTH_REGEX.test(p)
+function currentMonthKey(): string {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+function shiftMonth(key: string, delta: number): string {
+    const [y, m] = key.split('-').map(Number)
+    const d = new Date(y, m - 1 + delta, 1)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+function monthLabel(key: string): string {
+    const [y, m] = key.split('-').map(Number)
+    const s = new Date(y, m - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+    return s.charAt(0).toUpperCase() + s.slice(1)
+}
+function periodLabel(period: Period): string {
+    if (period === 'tous') return 'Global (toutes périodes)'
+    if (period === '3_mois') return '3 derniers mois'
+    if (period === '6_mois') return '6 derniers mois'
+    if (period === 'annee')  return 'Année en cours'
+    if (isMonth(period)) return monthLabel(period)
+    return period
+}
+function periodSlug(period: Period): string {
+    if (period === 'tous') return 'Global'
+    if (isMonth(period)) return period
+    return period
+}
+function last12Months(): string[] {
+    const out: string[] = []
+    const d = new Date()
+    for (let i = 0; i < 12; i++) {
+        const ref = new Date(d.getFullYear(), d.getMonth() - i, 1)
+        out.push(`${ref.getFullYear()}-${String(ref.getMonth() + 1).padStart(2, '0')}`)
+    }
+    return out
+}
 
 interface AgentRow {
     id: string
@@ -87,8 +124,11 @@ interface DepRow {
 function getPeriodRange(p: Period): { start: Date; end: Date } {
     const now = new Date()
     const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+    if (isMonth(p)) {
+        const [y, m] = p.split('-').map(Number)
+        return { start: new Date(y, m - 1, 1), end: new Date(y, m, 0, 23, 59, 59, 999) }
+    }
     switch (p) {
-        case 'ce_mois': return { start: new Date(now.getFullYear(), now.getMonth(), 1), end }
         case '3_mois':  return { start: new Date(now.getTime() - 90  * 864e5), end }
         case '6_mois':  return { start: new Date(now.getTime() - 180 * 864e5), end }
         case 'annee':   return { start: new Date(now.getFullYear(), 0, 1), end }
@@ -98,7 +138,10 @@ function getPeriodRange(p: Period): { start: Date; end: Date } {
 
 function getPrevPeriodRange(p: Period): { start: Date; end: Date } {
     const now = new Date()
-    if (p === 'ce_mois') return { start: new Date(now.getFullYear(), now.getMonth() - 1, 1), end: new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59) }
+    if (isMonth(p)) {
+        const [y, m] = p.split('-').map(Number)
+        return { start: new Date(y, m - 2, 1), end: new Date(y, m - 1, 0, 23, 59, 59, 999) }
+    }
     if (p === '3_mois')  return { start: new Date(now.getTime() - 180 * 864e5), end: new Date(now.getTime() - 90  * 864e5) }
     if (p === '6_mois')  return { start: new Date(now.getTime() - 360 * 864e5), end: new Date(now.getTime() - 180 * 864e5) }
     if (p === 'annee')   return { start: new Date(now.getFullYear() - 1, 0, 1), end: new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59) }
@@ -310,7 +353,7 @@ function DocDetailModal({ doc, agent, onClose }: { doc: DocRow; agent?: AgentRow
 
 // ─── Main ────────────────────────────────────────────────────────────
 export default function AdminComptabilitePage() {
-    const [period, setPeriod]       = useState<Period>('tous')
+    const [period, setPeriod]       = useState<Period>(() => currentMonthKey())
     const [loading, setLoading]     = useState(true)
     const [refreshing, setRefreshing] = useState(false)
     const [exporting, setExporting] = useState(false)
@@ -329,8 +372,9 @@ export default function AdminComptabilitePage() {
     const [showAllAgents, setShowAllAgents] = useState(false)
     const [detailDoc, setDetailDoc]     = useState<DocRow | null>(null)
     const [alertFilter, setAlertFilter] = useState<string | null>(null)
-    // Paiements manuels (virement/espèces)
+    // Paiements manuels (virement/espèces) — map pour UI + tableau complet pour exports
     const [paiements, setPaiements] = useState<Record<string, number>>({})
+    const [paiementsList, setPaiementsList] = useState<Array<{ id: string; document_id: string; type: string; montant: number; date_paiement: string; reference?: string | null; notes?: string | null; agent_id?: string }>>([])
     const [showPaymentModal, setShowPaymentModal] = useState(false)
     const [paymentDoc, setPaymentDoc] = useState<DocRow | null>(null)
     const [newPayment, setNewPayment] = useState({ type: 'virement', montant: '', reference: '', notes: '', date: new Date().toISOString().split('T')[0] })
@@ -355,8 +399,10 @@ export default function AdminComptabilitePage() {
             setCommissionRate(erpRes.commissionRate)
         }
         if (erpRes.paiements) {
+            const list = erpRes.paiements as Array<{ id: string; document_id: string; type: string; montant: number; date_paiement: string; reference?: string | null; notes?: string | null; agent_id?: string }>
+            setPaiementsList(list)
             const map: Record<string, number> = {}
-            ;(erpRes.paiements as { document_id: string; montant: number }[]).forEach(p => {
+            list.forEach(p => {
                 map[p.document_id] = (map[p.document_id] || 0) + Number(p.montant)
             })
             setPaiements(map)
@@ -374,6 +420,7 @@ export default function AdminComptabilitePage() {
     const pDocs    = useMemo(() => docs.filter(d => inRange(d.created_at, start, end)), [docs, start, end])
     const pOrders  = useMemo(() => orders.filter(o => inRange(o.created_at, start, end)), [orders, start, end])
     const pDeps    = useMemo(() => depenses.filter(d => inRange(d.date_depense, start, end)), [depenses, start, end])
+    const pPaiements = useMemo(() => paiementsList.filter(p => inRange(p.date_paiement, start, end)), [paiementsList, start, end])
     const pvDocs   = useMemo(() => docs.filter(d => inRange(d.created_at, pS, pE)), [docs, pS, pE])
     const pvOrders = useMemo(() => orders.filter(o => inRange(o.created_at, pS, pE)), [orders, pS, pE])
     const pvDeps   = useMemo(() => depenses.filter(d => inRange(d.date_depense, pS, pE)), [depenses, pS, pE])
@@ -601,145 +648,387 @@ export default function AdminComptabilitePage() {
         document.getElementById('journal-section')?.scrollIntoView({ behavior: 'smooth' })
     }
 
-    // ── Export Excel multi-feuilles ───────────────────────────────
+    // ── Export Excel multi-feuilles (LOT 1 : HT/TVA/TTC, Journal, entête légal, totaux formule) ──
     const handleMasterExport = async () => {
         setExporting(true)
         try {
-            const wb = new ExcelJS.Workbook()
-            wb.creator = 'Retour Gagnant ERP Admin'
-            wb.created = new Date()
+            const pLabel = periodLabel(period)
+            const subtitle = `Vue Admin (tous agents consolidés)   —   Période : ${pLabel}   —   Commission agents : ${(commissionRate * 100).toFixed(0)}%   —   Document officiel confidentiel`
+            const agentMap = new Map<string, string>()
+            agents.forEach(a => agentMap.set(a.id, a.full_name || a.email || a.id.slice(0, 8)))
 
-            const GREEN  = 'FF008751'
-            const YELLOW = 'FFFCD116'
-            const DARK   = 'FF0a1628'
-            const WHITE  = 'FFFFFFFF'
-            const RED    = 'FFE8112D'
-
-            const HDR_STYLE = {
-                font: { bold: true, color: { argb: WHITE }, name: 'Arial', size: 10 },
-                fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: GREEN } },
-                alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
-                border: { bottom: { style: 'thin' as const, color: { argb: GREEN } } }
-            }
-            const addHeader = (ws: ExcelJS.Worksheet, title: string, cols: number) => {
-                ws.mergeCells(`A1:${String.fromCharCode(64 + cols)}1`)
-                const t = ws.getCell('A1')
-                t.value = `RETOUR GAGNANT BENIN — ${title}`
-                t.font = { bold: true, size: 14, color: { argb: WHITE }, name: 'Arial' }
-                t.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: DARK } }
-                t.alignment = { horizontal: 'center', vertical: 'middle' }
-                ws.getRow(1).height = 32
-                ws.mergeCells(`A2:${String.fromCharCode(64 + cols)}2`)
-                const s = ws.getCell('A2')
-                s.value = `Periode: ${start.toLocaleDateString('fr-FR')} -> ${end.toLocaleDateString('fr-FR')} | Commission: ${(commissionRate * 100).toFixed(0)}% | Genere le ${new Date().toLocaleDateString('fr-FR')}`
-                s.font = { italic: true, size: 9, color: { argb: 'FF888888' } }
-                s.alignment = { horizontal: 'center' }
-                ws.getRow(2).height = 16
-            }
-            const setHeaderRow = (ws: ExcelJS.Worksheet, rowNum: number, values: string[]) => {
-                const row = ws.getRow(rowNum)
-                row.values = ['', ...values]
-                row.height = 22
-                row.eachCell((cell, col) => { if (col > 1) Object.assign(cell, HDR_STYLE) })
-            }
-            const stripe = (row: ExcelJS.Row, i: number) => {
-                if (i % 2 === 0) row.eachCell(cell => { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAF8' } } })
+            const PAYMENT_LABELS: Record<string, string> = {
+                virement: 'Virement bancaire', especes: 'Espèces', cheque: 'Chèque',
+                mobile_money: 'Mobile Money', carte: 'Carte bancaire', autre: 'Autre'
             }
 
-            // Feuille 1 — KPI global
-            const ws1 = wb.addWorksheet('Resume Global')
-            ws1.columns = [{ width: 2 }, { width: 42 }, { width: 24 }, { width: 34 }]
-            addHeader(ws1, 'RAPPORT COMPTABLE GLOBAL', 3)
-            setHeaderRow(ws1, 3, ['INDICATEUR', 'MONTANT (FCFA)', 'DETAIL'])
-            const kpiRows: [string, number, string][] = [
-                ["CA Emis (Factures)", kpis.caEmis, `${pDocs.filter(d => d.type === 'facture').length} factures emises`],
-                ['Encaisse - Facturation (net remises)', kpis.encaisseFactu, `${kpis.nbFactPaye} factures payees`],
-                ['Revenus Boutique', kpis.boutique, `${pOrders.filter(o => o.payment_status === 'completed').length} commandes`],
-                ['TOTAL ENCAISSE', kpis.totalEncaisse, 'Facturation + Boutique'],
-                ['TVA Collectee', kpis.totalTVA, 'Sur factures payees'],
-                ['Factures En Attente', kpis.enAttente, `${pDocs.filter(d => ['envoye', 'accepte'].includes(d.status)).length} en cours`],
-                [`Commission Agents (${(commissionRate * 100).toFixed(0)}%)`, kpis.commission, 'Sur encaissements nets'],
-                ['Depenses Totales', kpis.totalDeps, `${pDeps.length} depenses`],
-                ['BENEFICE NET', kpis.benefice, 'Encaisse - Commissions - Depenses'],
-                ['Projection 30 jours', Math.round(kpis.proj30), 'Basee sur rythme actuel'],
-                ['Score Sante Financiere', scoreSante.score, `${scoreSante.label} — ${scoreSante.recommandation}`],
-            ]
-            kpiRows.forEach(([label, montant, detail], i) => {
-                const r = ws1.addRow(['', label, montant, detail])
-                r.getCell(3).numFmt = '#,##0'
-                if (label.startsWith('TOTAL') || label.startsWith('BENEFICE')) {
-                    r.getCell(2).font = { bold: true, size: 11 }
-                    r.getCell(3).font = { bold: true, size: 11, color: { argb: montant < 0 ? RED : GREEN } }
+            // Enrichissement des docs (HT/TVA reconstitués depuis items si colonnes vides)
+            const enrichDoc = (d: DocRow) => {
+                let st = Number(d.sous_total) || 0
+                let tv = Number(d.total_tva) || 0
+                if ((!st || !tv) && Array.isArray(d.items)) {
+                    st = d.items.reduce((a, it) => a + (Number(it.quantity) || 0) * (Number(it.unit_price) || 0), 0)
+                    tv = d.items.reduce((a, it) => a + (Number(it.quantity) || 0) * (Number(it.unit_price) || 0) * ((Number(it.tva) || 0) / 100), 0)
                 }
-                stripe(r, i)
-            })
+                return { ...d, _ht: st, _tva: tv, _remise: Number(d.remise) || 0, _ttc: Number(d.total) || 0 }
+            }
+            const docsEnriched = pDocs.map(enrichDoc)
 
-            // Feuille 2 — Performance Agents
-            const ws2 = wb.addWorksheet('Performance Agents')
-            ws2.columns = [{ width: 2 }, { width: 26 }, { width: 30 }, { width: 20 }, { width: 20 }, { width: 20 }, { width: 20 }, { width: 20 }, { width: 10 }, { width: 12 }, { width: 12 }, { width: 18 }]
-            addHeader(ws2, 'PERFORMANCE PAR AGENT', 11)
-            setHeaderRow(ws2, 3, ['Agent', 'Email', 'CA Emis', 'Encaisse Net', `Commission ${(commissionRate * 100).toFixed(0)}%`, 'TVA Collectee', 'Depenses', 'Benefice Net', 'Devis', 'Factures', 'Conv%'])
-            sortedAgents.forEach((s, i) => {
-                const conv = s.nbFactures > 0 ? ((s.nbPayees / s.nbFactures) * 100).toFixed(1) + '%' : '0%'
-                const r = ws2.addRow(['', s.agent.full_name || '—', s.agent.email || '—', s.caEmis, s.encaisse, s.commission, s.tvaCollectee, s.depenses, s.benefice, s.nbDevis, s.nbFactures, conv])
-                ;[4, 5, 6, 7, 8, 9].forEach(col => { r.getCell(col).numFmt = '#,##0' })
-                if (s.benefice < 0) r.getCell(9).font = { color: { argb: RED }, bold: true }
-                if (i === 0) r.eachCell(c => { c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF9E6' } } })
-                else stripe(r, i)
-            })
+            // ── 1. Synthèse ───────────────────────────────────────
+            const resumeSheet = {
+                sheetName: 'Synthèse',
+                title: 'SYNTHÈSE COMPTABLE MENSUELLE',
+                subtitle,
+                legalHeader: true,
+                columns: [
+                    { header: 'Indicateur', key: 'label', width: 44 },
+                    { header: 'Montant (FCFA)', key: 'value', width: 22, type: 'currency' as const },
+                    { header: 'Détail', key: 'detail', width: 42 },
+                ],
+                data: [
+                    { label: "CA émis (factures)", value: kpis.caEmis, detail: `${pDocs.filter(d => d.type === 'facture').length} factures émises` },
+                    { label: "Encaissé - Facturation (net remises)", value: kpis.encaisseFactu, detail: `${kpis.nbFactPaye} factures payées` },
+                    { label: "Paiements manuels (virement/espèces)", value: pPaiements.reduce((a, p) => a + Number(p.montant || 0), 0), detail: `${pPaiements.length} paiements` },
+                    { label: "Revenus boutique", value: kpis.boutique, detail: `${pOrders.filter(o => o.payment_status === 'completed').length} commandes` },
+                    { label: "TOTAL ENCAISSÉ", value: kpis.totalEncaisse, detail: 'Facturation + Boutique' },
+                    { label: "TVA collectée", value: kpis.totalTVA, detail: 'Sur factures émises' },
+                    { label: "Factures en attente", value: kpis.enAttente, detail: `${pDocs.filter(d => ['envoye', 'accepte'].includes(d.status)).length} en cours` },
+                    { label: `Commission agents (${(commissionRate * 100).toFixed(0)}%)`, value: kpis.commission, detail: 'Sur encaissements nets' },
+                    { label: "Dépenses totales", value: kpis.totalDeps, detail: `${pDeps.length} dépenses` },
+                    { label: "BÉNÉFICE NET", value: kpis.benefice, detail: 'Encaissé - Commissions - Dépenses' },
+                    { label: "Projection 30 jours", value: Math.round(kpis.proj30), detail: 'Basée sur rythme actuel' },
+                    { label: "Score santé financière", value: scoreSante.score, detail: `${scoreSante.label} — ${scoreSante.recommandation}` },
+                ],
+            }
 
-            // Feuille 3 — Factures & Devis détaillés
-            const ws3 = wb.addWorksheet('Factures et Devis')
-            ws3.columns = [{ width: 2 }, { width: 20 }, { width: 10 }, { width: 28 }, { width: 26 }, { width: 18 }, { width: 16 }, { width: 14 }, { width: 14 }, { width: 16 }, { width: 20 }, { width: 10 }, { width: 14 }]
-            addHeader(ws3, 'JOURNAL FACTURES & DEVIS', 12)
-            setHeaderRow(ws3, 3, ['N Document', 'Type', 'Client', 'Email', 'Telephone', 'Sous-total HT', 'TVA', 'Remise', 'Total TTC', 'Statut', 'Agent', 'Signe', 'Date'])
-            pDocs.forEach((d, i) => {
-                const ag = agents.find(a => a.id === d.agent_id)
-                const r = ws3.addRow([
-                    '', d.numero, d.type === 'facture' ? 'Facture' : 'Devis',
-                    `${d.client_nom} ${d.client_prenom || ''}`.trim(),
-                    d.client_email || '—', d.client_phone || '—',
-                    Number(d.sous_total) || 0, Number(d.total_tva) || 0, Number(d.remise) || 0, d.total,
-                    DOC_STATUS[d.status]?.label || d.status,
-                    ag?.full_name || ag?.email || '—',
-                    d.signed_at ? 'Oui' : 'Non',
-                    new Date(d.created_at)
-                ])
-                ;[7, 8, 9, 10].forEach(col => r.getCell(col).numFmt = '#,##0')
-                r.getCell(14).numFmt = 'dd/mm/yyyy'
-                if (d.status === 'paye') r.getCell(11).font = { color: { argb: GREEN }, bold: true }
-                if (d.signed_at) r.getCell(13).font = { color: { argb: 'FF9333ea' }, bold: true }
-                stripe(r, i)
-            })
+            // ── 2. Journal comptable consolidé ────────────────────
+            type JRow = { date: Date; piece: string; agent: string; libelle: string; mode: string; debit: number; credit: number }
+            const journalRows: JRow[] = []
 
-            // Feuille 4 — Commandes Boutique
-            const ws4 = wb.addWorksheet('Boutique Commandes')
-            ws4.columns = [{ width: 2 }, { width: 26 }, { width: 28 }, { width: 34 }, { width: 16 }, { width: 10 }, { width: 14 }, { width: 14 }, { width: 14 }]
-            addHeader(ws4, 'COMMANDES BOUTIQUE', 8)
-            setHeaderRow(ws4, 3, ['Client', 'Email', 'Produit', 'Montant', 'Devise', 'Methode', 'Statut', 'Date'])
-            pOrders.forEach((o, i) => {
-                const r = ws4.addRow(['', o.customer_name || '—', o.customer_email || '—', o.product_title || '—', o.amount, o.currency || 'XOF', o.payment_method || '—', ORDER_STATUS[o.payment_status]?.label || o.payment_status, new Date(o.created_at)])
-                r.getCell(5).numFmt = '#,##0'; r.getCell(9).numFmt = 'dd/mm/yyyy'
-                if (o.payment_status === 'completed') r.getCell(8).font = { color: { argb: GREEN }, bold: true }
-                stripe(r, i)
+            pDocs.filter(d => d.type === 'facture').forEach(d => {
+                journalRows.push({
+                    date: new Date(d.created_at),
+                    piece: d.numero || '—',
+                    agent: d.agent_id ? (agentMap.get(d.agent_id) || '—') : '—',
+                    libelle: `Facturation — ${d.client_nom || ''} ${d.client_prenom || ''}`.trim(),
+                    mode: DOC_STATUS[d.status]?.label || d.status,
+                    debit: 0,
+                    credit: Number(d.total || 0),
+                })
             })
-
-            // Feuille 5 — Dépenses
-            const ws5 = wb.addWorksheet('Depenses')
-            ws5.columns = [{ width: 2 }, { width: 36 }, { width: 22 }, { width: 20 }, { width: 14 }, { width: 28 }, { width: 34 }]
-            addHeader(ws5, 'JOURNAL DES DEPENSES', 6)
-            setHeaderRow(ws5, 3, ['Titre', 'Categorie', 'Montant', 'Date', 'Agent', 'Notes'])
-            pDeps.forEach((d, i) => {
-                const ag = agents.find(a => a.id === d.agent_id)
-                const r = ws5.addRow(['', d.titre, d.categorie, Number(d.montant), new Date(d.date_depense), ag?.full_name || ag?.email || '—', d.notes || '—'])
-                r.getCell(4).numFmt = '#,##0'; r.getCell(5).numFmt = 'dd/mm/yyyy'
-                r.getCell(4).font = { color: { argb: RED } }
-                stripe(r, i)
+            pPaiements.forEach(p => {
+                const d = docs.find(x => x.id === p.document_id)
+                const isExterne = !d && /^\[EXTERNE\]/i.test(p.notes || '')
+                const libelleExterne = isExterne ? (p.notes || '').replace(/^\[EXTERNE\]\s*/i, '').split('|')[0].trim() : ''
+                journalRows.push({
+                    date: new Date(p.date_paiement),
+                    piece: d?.numero || (isExterne ? 'EXT' : '—'),
+                    agent: p.agent_id ? (agentMap.get(p.agent_id) || '—') : '—',
+                    libelle: d
+                        ? `Encaissement — ${d.client_nom || ''} ${d.client_prenom || ''}`.trim()
+                        : isExterne ? `Encaissement externe — ${libelleExterne}` : 'Encaissement',
+                    mode: PAYMENT_LABELS[p.type] || p.type,
+                    debit: Number(p.montant || 0),
+                    credit: 0,
+                })
             })
+            pOrders.filter(o => o.payment_status === 'completed').forEach(o => {
+                journalRows.push({
+                    date: new Date(o.created_at),
+                    piece: o.id.slice(0, 8).toUpperCase(),
+                    agent: '—',
+                    libelle: `Commande boutique — ${o.product_title || ''}`.trim(),
+                    mode: PAYMENT_LABELS[(o.payment_method || '').toLowerCase()] || (o.payment_method || '—'),
+                    debit: Number(o.amount || 0),
+                    credit: 0,
+                })
+            })
+            pDeps.forEach(e => {
+                journalRows.push({
+                    date: new Date(e.date_depense),
+                    piece: '—',
+                    agent: e.agent_id ? (agentMap.get(e.agent_id) || '—') : '—',
+                    libelle: `Dépense — ${e.titre || ''} (${e.categorie || ''})`,
+                    mode: '—',
+                    debit: Number(e.montant || 0),
+                    credit: 0,
+                })
+            })
+            journalRows.sort((a, b) => a.date.getTime() - b.date.getTime())
 
-            const buf = await wb.xlsx.writeBuffer()
-            saveAs(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
-                `RG_Comptabilite_${new Date().toISOString().slice(0, 10)}.xlsx`)
+            const journalSheet = {
+                sheetName: 'Journal',
+                title: 'JOURNAL COMPTABLE CONSOLIDÉ',
+                subtitle,
+                legalHeader: true,
+                totalRow: true,
+                columns: [
+                    { header: 'Date', key: 'date', width: 13, type: 'date' as const },
+                    { header: 'N° Pièce', key: 'piece', width: 18 },
+                    { header: 'Agent', key: 'agent', width: 22 },
+                    { header: 'Libellé', key: 'libelle', width: 44 },
+                    { header: 'Mode / Statut', key: 'mode', width: 20, type: 'status' as const },
+                    { header: 'Débit (FCFA)', key: 'debit', width: 18, type: 'currency' as const, totalFormula: 'sum' as const },
+                    { header: 'Crédit (FCFA)', key: 'credit', width: 18, type: 'currency' as const, totalFormula: 'sum' as const },
+                ],
+                data: journalRows,
+            }
+
+            // ── 3. Performance par agent ──────────────────────────
+            const perAgentSheet = {
+                sheetName: 'Par Agent',
+                title: 'PERFORMANCE PAR AGENT',
+                subtitle,
+                legalHeader: true,
+                totalRow: true,
+                columns: [
+                    { header: 'Agent', key: 'name', width: 26 },
+                    { header: 'Email', key: 'email', width: 30 },
+                    { header: 'CA émis', key: 'caEmis', width: 18, type: 'currency' as const, totalFormula: 'sum' as const },
+                    { header: 'Encaissé net', key: 'encaisse', width: 18, type: 'currency' as const, totalFormula: 'sum' as const },
+                    { header: `Commission ${(commissionRate * 100).toFixed(0)}%`, key: 'commission', width: 18, type: 'currency' as const, totalFormula: 'sum' as const },
+                    { header: 'TVA collectée', key: 'tva', width: 16, type: 'currency' as const, totalFormula: 'sum' as const },
+                    { header: 'Dépenses', key: 'depenses', width: 16, type: 'currency' as const, totalFormula: 'sum' as const },
+                    { header: 'Bénéfice net', key: 'benefice', width: 18, type: 'currency' as const, totalFormula: 'sum' as const },
+                    { header: 'Devis', key: 'nbDevis', width: 10, type: 'number' as const, totalFormula: 'sum' as const },
+                    { header: 'Factures', key: 'nbFactures', width: 10, type: 'number' as const, totalFormula: 'sum' as const },
+                    { header: 'Conv. %', key: 'conv', width: 12 },
+                ],
+                data: sortedAgents.map(s => ({
+                    name: s.agent.full_name || '—',
+                    email: s.agent.email || '—',
+                    caEmis: s.caEmis,
+                    encaisse: s.encaisse,
+                    commission: s.commission,
+                    tva: s.tvaCollectee,
+                    depenses: s.depenses,
+                    benefice: s.benefice,
+                    nbDevis: s.nbDevis,
+                    nbFactures: s.nbFactures,
+                    conv: s.nbFactures > 0 ? ((s.nbPayees / s.nbFactures) * 100).toFixed(1) + '%' : '0%',
+                })),
+            }
+
+            // ── 4. Documents HT/TVA/TTC (super-headers) ───────────
+            const docsSheet = {
+                sheetName: 'Documents',
+                title: 'JOURNAL DES FACTURES & DEVIS (HT / TVA / TTC)',
+                subtitle,
+                legalHeader: true,
+                totalRow: true,
+                columns: [
+                    { header: 'N° Document', key: 'numero', width: 18, group: 'Document' },
+                    { header: 'Type', key: 'type', width: 10, group: 'Document' },
+                    { header: 'Date', key: 'date', width: 13, type: 'date' as const, group: 'Document' },
+                    { header: 'Agent', key: 'agent', width: 22, group: 'Document' },
+                    { header: 'Client', key: 'client', width: 28, group: 'Client' },
+                    { header: 'Email', key: 'email', width: 26, group: 'Client' },
+                    { header: 'Téléphone', key: 'phone', width: 16, group: 'Client' },
+                    { header: 'Sous-total HT', key: 'ht', width: 16, type: 'currency' as const, totalFormula: 'sum' as const, group: 'Montants HT / TVA / TTC' },
+                    { header: 'TVA', key: 'tva', width: 14, type: 'currency' as const, totalFormula: 'sum' as const, group: 'Montants HT / TVA / TTC' },
+                    { header: 'Remise', key: 'remise', width: 14, type: 'currency' as const, totalFormula: 'sum' as const, group: 'Montants HT / TVA / TTC' },
+                    { header: 'Total TTC', key: 'ttc', width: 16, type: 'currency' as const, totalFormula: 'sum' as const, group: 'Montants HT / TVA / TTC' },
+                    { header: 'Statut', key: 'status', width: 14, type: 'status' as const, group: 'État' },
+                    { header: 'Signé', key: 'signe', width: 10, group: 'État' },
+                ],
+                data: docsEnriched.map(d => ({
+                    numero: d.numero,
+                    type: d.type === 'facture' ? 'Facture' : 'Devis',
+                    date: new Date(d.created_at),
+                    agent: d.agent_id ? (agentMap.get(d.agent_id) || '—') : '—',
+                    client: `${d.client_nom || ''} ${d.client_prenom || ''}`.trim(),
+                    email: d.client_email || '—',
+                    phone: d.client_phone || '—',
+                    ht: d._ht,
+                    tva: d._tva,
+                    remise: d._remise,
+                    ttc: d._ttc,
+                    status: DOC_STATUS[d.status]?.label || d.status,
+                    signe: d.signed_at ? 'Oui' : 'Non',
+                })),
+            }
+
+            // ── 5. Lignes d'articles ──────────────────────────────
+            type LineRow = { numero: string; client: string; date: Date; description: string; qty: number; pu: number; tva: number; total_ht: number }
+            const lignesRows: LineRow[] = []
+            docsEnriched.forEach(d => {
+                if (!Array.isArray(d.items)) return
+                d.items.forEach(it => {
+                    const q = Number(it.quantity) || 0
+                    const pu = Number(it.unit_price) || 0
+                    lignesRows.push({
+                        numero: d.numero || '—',
+                        client: `${d.client_nom || ''} ${d.client_prenom || ''}`.trim(),
+                        date: new Date(d.created_at),
+                        description: it.description || '—',
+                        qty: q,
+                        pu,
+                        tva: Number(it.tva) || 0,
+                        total_ht: q * pu,
+                    })
+                })
+            })
+            const lignesSheet = {
+                sheetName: "Lignes d'articles",
+                title: "LIGNES D'ARTICLES (DÉTAIL DES FACTURES)",
+                subtitle,
+                legalHeader: true,
+                totalRow: true,
+                columns: [
+                    { header: 'N° Facture', key: 'numero', width: 18 },
+                    { header: 'Date', key: 'date', width: 13, type: 'date' as const },
+                    { header: 'Client', key: 'client', width: 28 },
+                    { header: 'Description', key: 'description', width: 48 },
+                    { header: 'Qté', key: 'qty', width: 10, type: 'number' as const, totalFormula: 'sum' as const },
+                    { header: 'P.U. (FCFA)', key: 'pu', width: 16, type: 'currency' as const },
+                    { header: 'TVA %', key: 'tva', width: 10, type: 'number' as const },
+                    { header: 'Total HT', key: 'total_ht', width: 18, type: 'currency' as const, totalFormula: 'sum' as const },
+                ],
+                data: lignesRows,
+            }
+
+            // ── 6. Paiements reçus ────────────────────────────────
+            const paiementsSheet = {
+                sheetName: 'Paiements',
+                title: 'PAIEMENTS MANUELS RECUS',
+                subtitle,
+                legalHeader: true,
+                totalRow: true,
+                columns: [
+                    { header: 'Date', key: 'date', width: 13, type: 'date' as const },
+                    { header: 'N° Facture', key: 'numero', width: 18 },
+                    { header: 'Client / Libellé', key: 'client', width: 36 },
+                    { header: 'Agent', key: 'agent', width: 22 },
+                    { header: 'Mode', key: 'mode', width: 18, type: 'status' as const },
+                    { header: 'Référence', key: 'reference', width: 20 },
+                    { header: 'Montant (FCFA)', key: 'montant', width: 18, type: 'currency' as const, totalFormula: 'sum' as const },
+                ],
+                data: pPaiements.map(p => {
+                    const d = docs.find(x => x.id === p.document_id)
+                    const isExterne = !d && /^\[EXTERNE\]/i.test(p.notes || '')
+                    const libelleExterne = isExterne ? (p.notes || '').replace(/^\[EXTERNE\]\s*/i, '').split('|')[0].trim() : ''
+                    return {
+                        date: new Date(p.date_paiement),
+                        numero: d?.numero || (isExterne ? 'EXT' : '—'),
+                        client: d ? `${d.client_nom || ''} ${d.client_prenom || ''}`.trim() : (libelleExterne || '—'),
+                        agent: p.agent_id ? (agentMap.get(p.agent_id) || '—') : '—',
+                        mode: PAYMENT_LABELS[p.type] || p.type,
+                        reference: p.reference || '—',
+                        montant: Number(p.montant || 0),
+                    }
+                }),
+            }
+
+            // ── 7. Dépenses ──────────────────────────────────────
+            const depensesSheet = {
+                sheetName: 'Dépenses',
+                title: 'JOURNAL DES DÉPENSES',
+                subtitle,
+                legalHeader: true,
+                totalRow: true,
+                columns: [
+                    { header: 'Date', key: 'date', width: 13, type: 'date' as const },
+                    { header: 'Titre', key: 'titre', width: 36 },
+                    { header: 'Catégorie', key: 'categorie', width: 22 },
+                    { header: 'Agent', key: 'agent', width: 22 },
+                    { header: 'Montant (FCFA)', key: 'montant', width: 18, type: 'currency' as const, totalFormula: 'sum' as const },
+                    { header: 'Notes', key: 'notes', width: 38 },
+                ],
+                data: pDeps.map(e => ({
+                    date: new Date(e.date_depense),
+                    titre: e.titre || '—',
+                    categorie: e.categorie || '—',
+                    agent: e.agent_id ? (agentMap.get(e.agent_id) || '—') : '—',
+                    montant: Number(e.montant || 0),
+                    notes: e.notes || '—',
+                })),
+            }
+
+            // ── 8. Boutique ──────────────────────────────────────
+            const boutiqueSheet = {
+                sheetName: 'Boutique',
+                title: 'COMMANDES BOUTIQUE',
+                subtitle,
+                legalHeader: true,
+                totalRow: true,
+                columns: [
+                    { header: 'Date', key: 'date', width: 13, type: 'date' as const },
+                    { header: 'Client', key: 'client', width: 26 },
+                    { header: 'Email', key: 'email', width: 26 },
+                    { header: 'Produit', key: 'produit', width: 34 },
+                    { header: 'Devise', key: 'devise', width: 10 },
+                    { header: 'Méthode', key: 'methode', width: 16, type: 'status' as const },
+                    { header: 'Statut', key: 'statut', width: 14, type: 'status' as const },
+                    { header: 'Montant (FCFA)', key: 'montant', width: 16, type: 'currency' as const, totalFormula: 'sum' as const },
+                ],
+                data: pOrders.map(o => ({
+                    date: new Date(o.created_at),
+                    client: o.customer_name || '—',
+                    email: o.customer_email || '—',
+                    produit: o.product_title || '—',
+                    devise: o.currency || 'XOF',
+                    methode: PAYMENT_LABELS[(o.payment_method || '').toLowerCase()] || (o.payment_method || '—'),
+                    statut: ORDER_STATUS[o.payment_status]?.label || o.payment_status,
+                    montant: Number(o.amount || 0),
+                })),
+            }
+
+            // ── 9. Rapprochement bancaire ────────────────────────
+            type RecRow = { date: Date; source: string; reference: string; mode: string; montant: number }
+            const rapprochementRows: RecRow[] = []
+            pPaiements.forEach(p => {
+                const d = docs.find(x => x.id === p.document_id)
+                rapprochementRows.push({
+                    date: new Date(p.date_paiement),
+                    source: d ? `Facture ${d.numero}` : 'Encaissement externe',
+                    reference: p.reference || '—',
+                    mode: PAYMENT_LABELS[p.type] || p.type,
+                    montant: Number(p.montant || 0),
+                })
+            })
+            pOrders.filter(o => o.payment_status === 'completed').forEach(o => {
+                rapprochementRows.push({
+                    date: new Date(o.created_at),
+                    source: `Boutique — ${o.product_title || ''}`,
+                    reference: o.id.slice(0, 8).toUpperCase(),
+                    mode: PAYMENT_LABELS[(o.payment_method || '').toLowerCase()] || (o.payment_method || '—'),
+                    montant: Number(o.amount || 0),
+                })
+            })
+            rapprochementRows.sort((a, b) => a.date.getTime() - b.date.getTime())
+            const rapprochementSheet = {
+                sheetName: 'Rapprochement',
+                title: 'RAPPROCHEMENT BANCAIRE',
+                subtitle,
+                legalHeader: true,
+                totalRow: true,
+                columns: [
+                    { header: 'Date', key: 'date', width: 13, type: 'date' as const },
+                    { header: 'Source', key: 'source', width: 32 },
+                    { header: 'Référence', key: 'reference', width: 20 },
+                    { header: 'Mode', key: 'mode', width: 18, type: 'status' as const },
+                    { header: 'Montant (FCFA)', key: 'montant', width: 18, type: 'currency' as const, totalFormula: 'sum' as const },
+                ],
+                data: rapprochementRows,
+            }
+
+            await exportToExcelMultiSheet({
+                filename: `RGB_Admin_Compta_${periodSlug(period)}_${new Date().toISOString().split('T')[0]}`,
+                coverTitle: 'Rapport comptable Admin',
+                coverSubtitle: 'À l\'attention du comptable — Synthèse officielle de la période',
+                coverPeriod: pLabel,
+                sheets: [
+                    resumeSheet,
+                    journalSheet,
+                    perAgentSheet,
+                    docsSheet,
+                    lignesSheet,
+                    paiementsSheet,
+                    depensesSheet,
+                    boutiqueSheet,
+                    rapprochementSheet,
+                ],
+            })
         } catch (err) {
             console.error('[Export Excel]', err)
         } finally {
@@ -792,14 +1081,52 @@ export default function AdminComptabilitePage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
-                    <div className="flex gap-1 bg-white/5 rounded-xl p-1">
-                        {(['ce_mois', '3_mois', '6_mois', 'annee', 'tous'] as Period[]).map(p => (
-                            <button key={p} type="button" onClick={() => { setPeriod(p); setJournalPage(1); setAlertFilter(null) }}
-                                className={cn('text-[10px] font-bold px-3 py-2 rounded-lg transition-all',
-                                    period === p ? 'bg-[#FCD116] text-[#0a0f18]' : 'text-gray-400 hover:text-white')}>
-                                {p === 'ce_mois' ? 'Ce mois' : p === '3_mois' ? '3 mois' : p === '6_mois' ? '6 mois' : p === 'annee' ? 'Année' : 'Tout'}
-                            </button>
-                        ))}
+                    <div className="flex items-center bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+                        <button
+                            type="button"
+                            title="Mois précédent"
+                            onClick={() => {
+                                const base = isMonth(period) ? period : currentMonthKey()
+                                setPeriod(shiftMonth(base, -1))
+                                setJournalPage(1); setAlertFilter(null)
+                            }}
+                            className="p-2.5 text-gray-400 hover:text-white transition-colors"
+                        >
+                            <ChevronLeft size={14} />
+                        </button>
+                        <select
+                            title="Sélectionner la période"
+                            value={period}
+                            onChange={e => { setPeriod(e.target.value); setJournalPage(1); setAlertFilter(null) }}
+                            className="bg-transparent text-white text-[11px] font-bold px-3 py-2 outline-none min-w-[170px] cursor-pointer appearance-none"
+                        >
+                            <optgroup label="Mois précis (comptable)">
+                                {last12Months().map(m => (
+                                    <option key={m} value={m} className="bg-[#0a0f18]">{monthLabel(m)}</option>
+                                ))}
+                            </optgroup>
+                            <optgroup label="Périodes étendues">
+                                <option value="3_mois" className="bg-[#0a0f18]">3 derniers mois</option>
+                                <option value="6_mois" className="bg-[#0a0f18]">6 derniers mois</option>
+                                <option value="annee"  className="bg-[#0a0f18]">Année en cours</option>
+                                <option value="tous"   className="bg-[#0a0f18]">Global</option>
+                            </optgroup>
+                        </select>
+                        <button
+                            type="button"
+                            title="Mois suivant"
+                            disabled={isMonth(period) && period >= currentMonthKey()}
+                            onClick={() => {
+                                const base = isMonth(period) ? period : currentMonthKey()
+                                const next = shiftMonth(base, 1)
+                                if (next <= currentMonthKey()) {
+                                    setPeriod(next); setJournalPage(1); setAlertFilter(null)
+                                }
+                            }}
+                            className="p-2.5 text-gray-400 hover:text-white transition-colors disabled:opacity-30"
+                        >
+                            <ChevronRight size={14} />
+                        </button>
                     </div>
                     <button type="button" onClick={fetchAll} disabled={refreshing} title="Rafraîchir"
                         className="p-3 rounded-xl bg-white/5 border border-white/5 text-gray-400 hover:text-white transition-colors disabled:opacity-40">
@@ -808,7 +1135,7 @@ export default function AdminComptabilitePage() {
                     <button type="button" onClick={handleMasterExport} disabled={exporting}
                         className="flex items-center gap-2 bg-[#FCD116] text-[#0a0f18] hover:bg-[#e6bc00] font-black text-xs px-5 py-3 rounded-xl transition-all disabled:opacity-60 shadow-[0_0_24px_rgba(252,209,22,0.2)]">
                         {exporting ? <div className="w-4 h-4 border-2 border-[#0a0f18] border-t-transparent rounded-full animate-spin" /> : <Download size={14} />}
-                        Export Excel (5 feuilles)
+                        Export comptable mensuel
                     </button>
                 </div>
             </div>
