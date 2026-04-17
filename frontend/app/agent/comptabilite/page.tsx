@@ -9,7 +9,7 @@ import {
     RefreshCw, Plus, AlertTriangle, Banknote, CreditCard, Bell, ChevronLeft, ChevronRight
 } from 'lucide-react'
 import { useTranslation } from '@/lib/translation'
-import { exportToExcelMultiSheet } from '@/lib/exportExcel'
+import { exportRegistreComptable, RegistreRecette, RegistreDepense } from '@/lib/exportRegistreComptable'
 import { 
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
     AreaChart, Area
@@ -386,308 +386,79 @@ export default function AgentComptabilitePage() {
             brouillon: 'Brouillon', envoye: 'Envoyé', accepte: 'Accepté',
             refuse: 'Refusé', paye: 'Payé', en_retard: 'En retard', annule: 'Annulé'
         }
-        const paymentLabels: Record<string, string> = {
-            virement: 'Virement bancaire', especes: 'Espèces', cheque: 'Chèque',
-            mobile_money: 'Mobile Money', carte: 'Carte bancaire', autre: 'Autre'
-        }
 
         const pLabel = periodLabel(selectedPeriod)
-        const subtitleBase = `Période : ${pLabel}   —   Exporté le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}   —   Document strictement confidentiel`
         const docsById = new Map(allDocs.map(d => [d.id, d]))
 
-        // Reconstruction HT/TVA/Remise/TTC depuis documents_financiers (fallback si champs absents)
-        const enrichDoc = (d: DocumentFinancier) => {
-            const ht = typeof d.sous_total === 'number' ? d.sous_total : (d.items || []).reduce((a, it) => a + Number(it.quantity || 0) * Number(it.unit_price || 0), 0)
-            const tva = typeof d.total_tva === 'number' ? d.total_tva : (d.items || []).reduce((a, it) => a + Number(it.quantity || 0) * Number(it.unit_price || 0) * Number(it.tva || 0) / 100, 0)
-            const remise = Number(d.remise || 0)
-            const ttc = Number(d.total || 0)
-            return { ht, tva, remise, ttc }
+        // Reconstruction HT depuis documents_financiers
+        const getHT = (d: DocumentFinancier) => {
+            return typeof d.sous_total === 'number'
+                ? d.sous_total
+                : (d.items || []).reduce((a, it) => a + Number(it.quantity || 0) * Number(it.unit_price || 0), 0)
         }
 
-        // ── Sheet 1 : Journal comptable chronologique (Débit/Crédit)
-        type JournalRow = { date: Date; piece: string; libelle: string; mode: string; debit: number; credit: number }
-        const journalRows: JournalRow[] = []
-        // Factures émises → crédit 70 (produit)
-        displayedDocs.filter(d => d.type === 'facture').forEach(d => {
-            journalRows.push({
+        // ── Mapper les factures → recettes ──
+        const recettes: RegistreRecette[] = displayedDocs
+            .filter(d => d.type === 'facture')
+            .map(d => ({
                 date: new Date(d.created_at),
-                piece: d.numero,
-                libelle: `Facture émise — ${d.client_nom} ${d.client_prenom}`.trim(),
-                mode: '—',
-                debit: 0,
-                credit: Number(d.total || 0),
-            })
-        })
-        // Paiements encaissés → débit banque/caisse
+                numero: d.numero,
+                client: `${d.client_nom} ${d.client_prenom}`.trim(),
+                categorie: 'Accompagnement diaspora',
+                refDossier: '',
+                montantHT: getHT(d) || Number(d.total || 0),
+                statut: statusLabels[d.status] || d.status,
+            }))
+
+        // Ajouter les paiements externes (sans facture liée) comme recettes
         paiementsList.filter(p => {
             const date = new Date(p.date_paiement)
             return date >= pStart && date <= pEnd
         }).forEach(p => {
             const d = docsById.get(p.document_id)
-            const isExterne = !d && /^\[EXTERNE\]/i.test(p.notes || '')
+            if (d) return // déjà compté via la facture
+            const isExterne = /^\[EXTERNE\]/i.test(p.notes || '')
             const libelleExterne = isExterne ? (p.notes || '').replace(/^\[EXTERNE\]\s*/i, '').split('|')[0].trim() : ''
-            journalRows.push({
+            recettes.push({
                 date: new Date(p.date_paiement),
-                piece: d?.numero || (isExterne ? 'EXT' : '—'),
-                libelle: d
-                    ? `Encaissement — ${d.client_nom} ${d.client_prenom}`.trim()
-                    : isExterne ? `Encaissement externe — ${libelleExterne}` : 'Encaissement',
-                mode: paymentLabels[p.type] || p.type,
-                debit: Number(p.montant || 0),
-                credit: 0,
+                numero: isExterne ? 'EXT' : '—',
+                client: isExterne ? libelleExterne : 'Paiement externe',
+                categorie: 'Autre recette',
+                refDossier: p.reference || '',
+                montantHT: Number(p.montant || 0),
+                statut: 'Payé',
             })
         })
-        // Dépenses → débit 6x (charges)
+
+        // ── Mapper les dépenses → RegistreDepense ──
+        // Correspondance catégorie agent → catégorie registre officiel
+        const catMap: Record<string, string> = {
+            marketing: 'Communication et Pub',
+            operationnel: 'Fournitures bureau',
+            logistique: 'Deplacement et carburant',
+            autre: 'Autre depense',
+        }
         const expensesPeriod = expenses.filter(e => {
             const date = new Date(e.date_depense)
             return date >= pStart && date <= pEnd
         })
-        expensesPeriod.forEach(e => {
-            journalRows.push({
-                date: new Date(e.date_depense),
-                piece: '—',
-                libelle: `Dépense — ${e.titre} (${e.categorie})`,
-                mode: '—',
-                debit: Number(e.montant || 0),
-                credit: 0,
-            })
-        })
-        journalRows.sort((a, b) => a.date.getTime() - b.date.getTime())
+        const depensesRegistre: RegistreDepense[] = expensesPeriod.map(e => ({
+            date: new Date(e.date_depense),
+            numero: '',
+            fournisseur: e.titre,
+            categorie: catMap[e.categorie] || 'Autre depense',
+            ref: '',
+            montantHT: Number(e.montant),
+            statut: 'Payé',
+        }))
 
-        const journalSheet = {
-            sheetName: 'Journal',
-            title: 'JOURNAL COMPTABLE CHRONOLOGIQUE',
-            subtitle: subtitleBase,
-            legalHeader: true,
-            totalRow: true,
-            columns: [
-                { header: 'Date', key: 'date', width: 13, type: 'date' as const },
-                { header: 'N° Pièce', key: 'piece', width: 20 },
-                { header: 'Libellé de l\'opération', key: 'libelle', width: 48 },
-                { header: 'Mode', key: 'mode', width: 18, type: 'status' as const },
-                { header: 'Débit (FCFA)', key: 'debit', width: 18, type: 'currency' as const, totalFormula: 'sum' as const },
-                { header: 'Crédit (FCFA)', key: 'credit', width: 18, type: 'currency' as const, totalFormula: 'sum' as const },
-            ],
-            data: journalRows,
-        }
-
-        // ── Sheet 2 : Documents financiers (avec HT / TVA / Remise / TTC)
-        const docsRows = displayedDocs.map(d => {
-            const { ht, tva, remise, ttc } = enrichDoc(d)
-            const paye = paiements[d.id] || 0
-            return {
-                numero: d.numero,
-                type: d.type === 'facture' ? 'Facture' : 'Devis',
-                client: `${d.client_nom} ${d.client_prenom}`.trim(),
-                email: d.client_email || '',
-                phone: d.client_phone || '',
-                adresse: d.client_adresse || '',
-                ht,
-                tva,
-                remise,
-                ttc,
-                paye,
-                reste: Math.max(0, ttc - paye),
-                status: statusLabels[d.status] || d.status,
-                created_at: new Date(d.created_at),
-            }
-        })
-
-        const docsSheet = {
-            sheetName: 'Documents',
-            title: 'DOCUMENTS FINANCIERS (DEVIS & FACTURES)',
-            subtitle: subtitleBase,
-            legalHeader: true,
-            totalRow: true,
-            columns: [
-                { header: 'N° Document', key: 'numero', width: 22, group: 'Identification' },
-                { header: 'Type', key: 'type', width: 12, type: 'status' as const, group: 'Identification' },
-                { header: 'Date', key: 'created_at', width: 13, type: 'date' as const, group: 'Identification' },
-                { header: 'Client', key: 'client', width: 26, group: 'Client' },
-                { header: 'Email', key: 'email', width: 26, group: 'Client' },
-                { header: 'Téléphone', key: 'phone', width: 16, group: 'Client' },
-                { header: 'Adresse', key: 'adresse', width: 26, group: 'Client' },
-                { header: 'Sous-total HT', key: 'ht', width: 16, type: 'currency' as const, totalFormula: 'sum' as const, group: 'Montants HT / TVA / TTC' },
-                { header: 'TVA', key: 'tva', width: 14, type: 'currency' as const, totalFormula: 'sum' as const, group: 'Montants HT / TVA / TTC' },
-                { header: 'Remise', key: 'remise', width: 13, type: 'currency' as const, totalFormula: 'sum' as const, group: 'Montants HT / TVA / TTC' },
-                { header: 'TOTAL TTC', key: 'ttc', width: 17, type: 'currency' as const, totalFormula: 'sum' as const, group: 'Montants HT / TVA / TTC' },
-                { header: 'Encaissé', key: 'paye', width: 15, type: 'currency' as const, totalFormula: 'sum' as const, group: 'Règlement' },
-                { header: 'Reste à payer', key: 'reste', width: 16, type: 'currency' as const, totalFormula: 'sum' as const, group: 'Règlement' },
-                { header: 'Statut', key: 'status', width: 14, type: 'status' as const, group: 'Règlement' },
-            ],
-            data: docsRows,
-        }
-
-        // ── Sheet 3 : Lignes d'articles (détail ventilation)
-        const lignesRows: Array<Record<string, unknown>> = []
-        displayedDocs.forEach(d => {
-            const items = Array.isArray(d.items) ? d.items : []
-            items.forEach((it, idx) => {
-                const qty = Number(it.quantity || 0)
-                const pu = Number(it.unit_price || 0)
-                const tvaRate = Number(it.tva || 0)
-                const ht = qty * pu
-                const tvaVal = ht * tvaRate / 100
-                lignesRows.push({
-                    date: new Date(d.created_at),
-                    numero: d.numero,
-                    type: d.type === 'facture' ? 'Facture' : 'Devis',
-                    client: `${d.client_nom} ${d.client_prenom}`.trim(),
-                    ligne: idx + 1,
-                    description: it.description || '',
-                    qty,
-                    pu,
-                    ht,
-                    tva_taux: tvaRate / 100,
-                    tva_montant: tvaVal,
-                    ttc: ht + tvaVal,
-                })
-            })
-        })
-        const lignesSheet = {
-            sheetName: 'Lignes d\'articles',
-            title: 'DÉTAIL DES LIGNES D\'ARTICLES',
-            subtitle: subtitleBase,
-            legalHeader: true,
-            totalRow: true,
-            columns: [
-                { header: 'Date', key: 'date', width: 13, type: 'date' as const, group: 'Pièce' },
-                { header: 'N° Document', key: 'numero', width: 20, group: 'Pièce' },
-                { header: 'Type', key: 'type', width: 11, type: 'status' as const, group: 'Pièce' },
-                { header: 'Client', key: 'client', width: 26, group: 'Pièce' },
-                { header: 'N°', key: 'ligne', width: 6, type: 'number' as const, group: 'Article' },
-                { header: 'Description', key: 'description', width: 42, group: 'Article' },
-                { header: 'Qté', key: 'qty', width: 8, type: 'number' as const, totalFormula: 'sum' as const, group: 'Article' },
-                { header: 'Prix unitaire', key: 'pu', width: 15, type: 'currency' as const, group: 'Article' },
-                { header: 'Total HT', key: 'ht', width: 15, type: 'currency' as const, totalFormula: 'sum' as const, group: 'Calcul TVA' },
-                { header: 'Taux TVA', key: 'tva_taux', width: 11, type: 'percent' as const, group: 'Calcul TVA' },
-                { header: 'TVA', key: 'tva_montant', width: 14, type: 'currency' as const, totalFormula: 'sum' as const, group: 'Calcul TVA' },
-                { header: 'TTC', key: 'ttc', width: 15, type: 'currency' as const, totalFormula: 'sum' as const, group: 'Calcul TVA' },
-            ],
-            data: lignesRows,
-        }
-
-        // ── Sheet 4 : Paiements
-        const paiementsPeriod = paiementsList.filter(p => {
-            const date = new Date(p.date_paiement)
-            return date >= pStart && date <= pEnd
-        })
-        const paiementsSheet = {
-            sheetName: 'Paiements',
-            title: 'REGISTRE DES PAIEMENTS ENCAISSÉS',
-            subtitle: subtitleBase,
-            legalHeader: true,
-            totalRow: true,
-            columns: [
-                { header: 'Date', key: 'date', width: 13, type: 'date' as const },
-                { header: 'N° Facture', key: 'numero', width: 20 },
-                { header: 'Client / Libellé', key: 'client', width: 34 },
-                { header: 'Mode', key: 'type', width: 18, type: 'status' as const },
-                { header: 'Référence', key: 'reference', width: 20 },
-                { header: 'Montant (FCFA)', key: 'montant', width: 18, type: 'currency' as const, totalFormula: 'sum' as const },
-                { header: 'Notes', key: 'notes', width: 36 },
-            ],
-            data: paiementsPeriod.map(p => {
-                const d = docsById.get(p.document_id)
-                const isExterne = !d && /^\[EXTERNE\]/i.test(p.notes || '')
-                const libelleExterne = isExterne ? (p.notes || '').replace(/^\[EXTERNE\]\s*/i, '').split('|')[0].trim() : ''
-                return {
-                    date: new Date(p.date_paiement),
-                    numero: d?.numero || (isExterne ? 'EXTERNE' : '—'),
-                    client: d ? `${d.client_nom} ${d.client_prenom}`.trim() : (isExterne ? libelleExterne : '—'),
-                    type: paymentLabels[p.type] || p.type,
-                    reference: p.reference || '',
-                    montant: p.montant,
-                    notes: p.notes || '',
-                }
-            }),
-        }
-
-        // ── Sheet 5 : Dépenses
-        const depensesSheet = {
-            sheetName: 'Dépenses',
-            title: 'REGISTRE DES DÉPENSES',
-            subtitle: subtitleBase,
-            legalHeader: true,
-            totalRow: true,
-            columns: [
-                { header: 'Date', key: 'date', width: 13, type: 'date' as const },
-                { header: 'Titre de la dépense', key: 'titre', width: 42 },
-                { header: 'Catégorie', key: 'categorie', width: 18, type: 'status' as const },
-                { header: 'Montant (FCFA)', key: 'montant', width: 18, type: 'currency' as const, totalFormula: 'sum' as const },
-            ],
-            data: expensesPeriod.map(e => ({
-                date: new Date(e.date_depense),
-                titre: e.titre,
-                categorie: e.categorie,
-                montant: Number(e.montant),
-            })),
-        }
-
-        // ── Sheet 6 : Rapprochement par mode de paiement
-        const modeBuckets = new Map<string, { nb: number; total: number }>()
-        paiementsPeriod.forEach(p => {
-            const key = paymentLabels[p.type] || p.type
-            const b = modeBuckets.get(key) || { nb: 0, total: 0 }
-            b.nb += 1
-            b.total += Number(p.montant || 0)
-            modeBuckets.set(key, b)
-        })
-        const rapprochementSheet = {
-            sheetName: 'Rapprochement',
-            title: 'RAPPROCHEMENT PAR MODE DE PAIEMENT',
-            subtitle: subtitleBase,
-            legalHeader: true,
-            totalRow: true,
-            columns: [
-                { header: 'Mode de paiement', key: 'mode', width: 30 },
-                { header: 'Nb transactions', key: 'nb', width: 18, type: 'number' as const, totalFormula: 'sum' as const },
-                { header: 'Total encaissé (FCFA)', key: 'total', width: 22, type: 'currency' as const, totalFormula: 'sum' as const },
-            ],
-            data: Array.from(modeBuckets.entries()).map(([mode, v]) => ({ mode, nb: v.nb, total: v.total })),
-        }
-
-        // ── Sheet 7 : Synthèse
-        const totalHT = docsRows.reduce((a, d) => a + (d.ht as number), 0)
-        const totalTVA = docsRows.reduce((a, d) => a + (d.tva as number), 0)
-        const totalRemise = docsRows.reduce((a, d) => a + (d.remise as number), 0)
-        const totalTTC = docsRows.reduce((a, d) => a + (d.ttc as number), 0)
-        const totalEncaisseManuel = paiementsPeriod.reduce((a, p) => a + Number(p.montant || 0), 0)
-        const totalDepenses = expensesPeriod.reduce((a, e) => a + Number(e.montant || 0), 0)
-        const beneficeNet = totalEncaisseManuel + stats.encaisse - totalDepenses
-
-        const resumeSheet = {
-            sheetName: 'Synthèse',
-            title: 'SYNTHÈSE FINANCIÈRE',
-            subtitle: subtitleBase,
-            legalHeader: true,
-            columns: [
-                { header: 'Indicateur', key: 'label', width: 46 },
-                { header: 'Valeur (FCFA)', key: 'value', width: 24, type: 'currency' as const },
-            ],
-            data: [
-                { label: 'Chiffre d\'affaires HT facturé', value: totalHT },
-                { label: 'TVA collectée', value: totalTVA },
-                { label: 'Remises accordées', value: totalRemise },
-                { label: 'Chiffre d\'affaires TTC facturé', value: totalTTC },
-                { label: 'Encaissements (factures soldées statut payé)', value: stats.encaisse },
-                { label: 'Encaissements manuels enregistrés', value: totalEncaisseManuel },
-                { label: 'Total dépenses période', value: totalDepenses },
-                { label: 'En attente d\'encaissement', value: stats.attente },
-                { label: 'Bénéfice net estimé', value: beneficeNet },
-                { label: `Commission agent (${(commissionRate * 100).toFixed(0)}%)`, value: stats.commission },
-                { label: 'Nombre de factures émises', value: docsRows.filter(d => d.type === 'Facture').length },
-                { label: 'Nombre de paiements enregistrés', value: paiementsPeriod.length },
-                { label: 'Nombre de dépenses enregistrées', value: expensesPeriod.length },
-            ],
-        }
-
-        await exportToExcelMultiSheet({
-            filename: `RGB_Comptabilite_${periodSlug(selectedPeriod)}_${new Date().toISOString().split('T')[0]}`,
-            coverTitle: 'Rapport comptable mensuel',
-            coverSubtitle: 'À l\'attention du comptable — Document de synthèse officiel',
-            coverPeriod: pLabel,
-            sheets: [resumeSheet, journalSheet, docsSheet, lignesSheet, paiementsSheet, depensesSheet, rapprochementSheet],
+        await exportRegistreComptable({
+            filename: `RGB_Registre_Agent_${periodSlug(selectedPeriod)}_${new Date().toISOString().split('T')[0]}`,
+            moisLabel: pLabel,
+            periodeISO: isMonth(selectedPeriod) ? selectedPeriod : currentMonthKey(),
+            tauxTVA: 0.18,
+            recettes,
+            depenses: depensesRegistre,
         })
     }
 
