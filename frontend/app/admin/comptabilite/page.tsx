@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { exportToExcelMultiSheet } from '@/lib/exportExcel'
+import ComptaLockPanel, { type ClotureRow } from '@/components/comptabilite/ComptaLockPanel'
 import {
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     AreaChart, Area, BarChart, Bar, Cell,
@@ -363,6 +364,7 @@ export default function AdminComptabilitePage() {
     const [orders, setOrders]       = useState<OrderRow[]>([])
     const [depenses, setDepenses]   = useState<DepRow[]>([])
     const [commissionRate, setCommissionRate] = useState(0.10)
+    const [clotures, setClotures]   = useState<ClotureRow[]>([])
 
     const [journalTab, setJournalTab]   = useState<'docs' | 'boutique' | 'depenses'>('docs')
     const [searchQ, setSearchQ]         = useState('')
@@ -407,6 +409,7 @@ export default function AdminComptabilitePage() {
             })
             setPaiements(map)
         }
+        setClotures(erpRes.clotures || [])
         setLoading(false)
         setRefreshing(false)
     }, [])
@@ -1066,6 +1069,7 @@ export default function AdminComptabilitePage() {
     const nAgents  = agents.filter(a => a.role === 'agent').length
     const nSigned  = pDocs.filter(d => d.signed_at).length
     const nPending = pOrders.filter(o => o.payment_status === 'pending').length
+    const periodLocked = clotures.some(c => c.periode === period)
 
     return (
         <div className="space-y-8 max-w-7xl mx-auto pb-12">
@@ -1157,6 +1161,24 @@ export default function AdminComptabilitePage() {
                     </button>
                 </div>
             </div>
+
+            {/* ── LOT 3 : VERROU PÉRIODE ── */}
+            <ComptaLockPanel
+                currentPeriod={period}
+                isMonthPeriod={isMonth(period)}
+                periodLabel={periodLabel(period)}
+                clotures={clotures}
+                snapshot={{
+                    totalEncaisse: kpis.totalEncaisse,
+                    totalDepenses: kpis.totalDeps,
+                    beneficeNet: kpis.benefice,
+                    nbDocuments: pDocs.length,
+                    nbPaiements: pPaiements.length,
+                    nbDepenses: pDeps.length,
+                }}
+                onChange={fetchAll}
+                fmt={fmt}
+            />
 
             {/* ── SCORE SANTÉ + ALERTES ── */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -1544,7 +1566,7 @@ export default function AdminComptabilitePage() {
                                             </td>
                                             <td className="p-4 text-right text-[10px] text-gray-500 font-mono">{fmtDate(d.created_at)}</td>
                                             <td className="p-4 pr-5 text-center" onClick={e => e.stopPropagation()}>
-                                                {d.type === 'facture' && solde !== null && solde > 0 && (
+                                                {d.type === 'facture' && solde !== null && solde > 0 && !periodLocked && (
                                                     <button
                                                         type="button"
                                                         title="Enregistrer un paiement"

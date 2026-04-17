@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Calculator, RefreshCw, Loader2, TrendingUp, TrendingDown, DollarSign, FileText, Download, Users, Banknote, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { exportToExcelMultiSheet } from '@/lib/exportExcel'
+import ComptaLockPanel, { type ClotureRow } from '@/components/comptabilite/ComptaLockPanel'
 
 // ── Périodes ──────────────────────────────────────────────────
 type Period = string
@@ -99,6 +100,7 @@ interface ApiResponse {
     depenses: Depense[]
     paiements: Paiement[]
     agents: Agent[]
+    clotures: ClotureRow[]
     commissionRate: number
 }
 
@@ -625,6 +627,28 @@ export default function CeoComptabilite() {
                     </button>
                 </div>
             </motion.div>
+
+            {/* ── LOT 3 : VERROU PÉRIODE ── */}
+            {!loading && data && (
+                <div className="mb-6">
+                    <ComptaLockPanel
+                        currentPeriod={selectedPeriod}
+                        isMonthPeriod={isMonth(selectedPeriod)}
+                        periodLabel={periodLabel(selectedPeriod)}
+                        clotures={data.clotures || []}
+                        snapshot={{
+                            totalEncaisse: totalRevenue,
+                            totalDepenses,
+                            beneficeNet: profit,
+                            nbDocuments: docs.length,
+                            nbPaiements: paiements.length,
+                            nbDepenses: depenses.length,
+                        }}
+                        onChange={load}
+                        fmt={fmt}
+                    />
+                </div>
+            )}
 
             {loading ? (
                 <div className="flex items-center justify-center py-32"><Loader2 size={32} className="animate-spin opacity-40" /></div>

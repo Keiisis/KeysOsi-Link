@@ -424,7 +424,7 @@ export default function PortfolioImmersivePage() {
                     className="mt-20 text-center pb-8"
                 >
                     <motion.a
-                        href="https://maps.google.com/?q=Haie+Vive,+Cotonou"
+                        href="https://www.google.com/maps/place//@6.3572158,2.3927686,17z/data=!3m1!4b1!4m6!1m5!3m4!2zNsKwMjEnMjYuMCJOIDLCsDIzJzQzLjIiRQ!8m2!3d6.3572222!4d2.3953333"
                         target="_blank"
                         rel="noopener noreferrer"
                         whileHover={{ scale: 1.05 }}

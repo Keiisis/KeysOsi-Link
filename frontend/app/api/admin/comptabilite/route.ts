@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = createClient(supabaseUrl, serviceKey)
 
-    const [docsRes, ordersRes, depsRes, settingsRes, paiemRes, agentsRes] = await Promise.all([
+    const [docsRes, ordersRes, depsRes, settingsRes, paiemRes, agentsRes, cloturesRes] = await Promise.all([
         supabase
             .from('documents_financiers')
             .select(`
@@ -53,6 +53,10 @@ export async function GET(request: NextRequest) {
             .from('user_profiles')
             .select('id,full_name,role')
             .in('role', ['agent', 'admin', 'ceo', 'super_admin']),
+        supabase
+            .from('clotures_mensuelles')
+            .select('id,periode,date_cloture,cloture_par_nom,total_encaisse,total_depenses,total_tva,benefice_net,nb_documents,nb_paiements,nb_depenses,notes,hash_integrite')
+            .order('periode', { ascending: false }),
     ])
 
     // Validation commissionRate : doit être entre 0 et 1 (pas un % comme 10)
@@ -72,6 +76,7 @@ export async function GET(request: NextRequest) {
         depenses:       depsRes.data     || [],
         paiements:      paiemRes.data    || [],
         agents:         agentsRes.data   || [],
+        clotures:       cloturesRes.data || [],
         commissionRate,
         errors: {
             docs:     docsRes.error?.message     || null,
@@ -79,6 +84,7 @@ export async function GET(request: NextRequest) {
             depenses: depsRes.error?.message     || null,
             paiements: paiemRes.error?.message   || null,
             agents:   agentsRes.error?.message   || null,
+            clotures: cloturesRes.error?.message || null,
         }
     })
 }
