@@ -382,53 +382,68 @@ export default function AgentComptabilitePage() {
     }
 
     const handleExport = async () => {
-        const statusLabels: Record<string, string> = {
-            brouillon: 'Brouillon', envoye: 'Envoyé', accepte: 'Accepté',
-            refuse: 'Refusé', paye: 'Payé', en_retard: 'En retard', annule: 'Annulé'
-        }
-
         const pLabel = periodLabel(selectedPeriod)
         const docsById = new Map(allDocs.map(d => [d.id, d]))
 
-        // Reconstruction HT depuis documents_financiers
-        const getHT = (d: DocumentFinancier) => {
-            return typeof d.sous_total === 'number'
-                ? d.sous_total
-                : (d.items || []).reduce((a, it) => a + Number(it.quantity || 0) * Number(it.unit_price || 0), 0)
-        }
-
-        // ── Mapper les factures → recettes ──
-        const recettes: RegistreRecette[] = displayedDocs
-            .filter(d => d.type === 'facture')
-            .map(d => ({
-                date: new Date(d.created_at),
-                numero: d.numero,
-                client: `${d.client_nom} ${d.client_prenom}`.trim(),
-                categorie: 'Accompagnement diaspora',
-                refDossier: '',
-                montantHT: getHT(d) || Number(d.total || 0),
-                statut: statusLabels[d.status] || d.status,
-            }))
-
-        // Ajouter les paiements externes (sans facture liée) comme recettes
-        paiementsList.filter(p => {
+        // ── LOGIQUE INTELLIGENTE : Recettes = argent réellement encaissé ──
+        // On ne compte PAS les factures non payées (ex: M. Albin envoyé mais pas encaissé)
+        // Seuls les paiements effectivement reçus sont des recettes
+        const recettes: RegistreRecette[] = []
+        const paiementsPeriod = paiementsList.filter(p => {
             const date = new Date(p.date_paiement)
             return date >= pStart && date <= pEnd
-        }).forEach(p => {
-            const d = docsById.get(p.document_id)
-            if (d) return // déjà compté via la facture
-            const isExterne = /^\[EXTERNE\]/i.test(p.notes || '')
-            const libelleExterne = isExterne ? (p.notes || '').replace(/^\[EXTERNE\]\s*/i, '').split('|')[0].trim() : ''
-            recettes.push({
-                date: new Date(p.date_paiement),
-                numero: isExterne ? 'EXT' : '—',
-                client: isExterne ? libelleExterne : 'Paiement externe',
-                categorie: 'Autre recette',
-                refDossier: p.reference || '',
-                montantHT: Number(p.montant || 0),
-                statut: 'Payé',
-            })
         })
+
+        // 1. Paiements liés à une facture → recette avec montant réellement encaissé
+        const docsWithPayments = new Set<string>()
+        paiementsPeriod.forEach(p => {
+            const d = docsById.get(p.document_id)
+            const isExterne = !d && /^\[EXTERNE\]/i.test(p.notes || '')
+            const libelleExterne = isExterne ? (p.notes || '').replace(/^\[EXTERNE\]\s*/i, '').split('|')[0].trim() : ''
+
+            if (d) {
+                docsWithPayments.add(d.id)
+                recettes.push({
+                    date: new Date(p.date_paiement),
+                    numero: d.numero,
+                    client: `${d.client_nom} ${d.client_prenom}`.trim(),
+                    categorie: 'Accompagnement diaspora',
+                    refDossier: p.reference || '',
+                    montantHT: Number(p.montant || 0),
+                    statut: 'Encaissé',
+                })
+            } else {
+                // Paiement externe (sans facture liée)
+                recettes.push({
+                    date: new Date(p.date_paiement),
+                    numero: isExterne ? 'EXT' : '—',
+                    client: isExterne ? libelleExterne : 'Paiement externe',
+                    categorie: 'Autre recette',
+                    refDossier: p.reference || '',
+                    montantHT: Number(p.montant || 0),
+                    statut: 'Encaissé',
+                })
+            }
+        })
+
+        // 2. Factures avec statut 'paye' mais sans paiement manuel enregistré
+        //    (paiements passés via le site web / webhook automatique)
+        displayedDocs
+            .filter(d => d.type === 'facture' && d.status === 'paye' && !docsWithPayments.has(d.id))
+            .forEach(d => {
+                recettes.push({
+                    date: new Date(d.created_at),
+                    numero: d.numero,
+                    client: `${d.client_nom} ${d.client_prenom}`.trim(),
+                    categorie: 'Accompagnement diaspora',
+                    refDossier: '',
+                    montantHT: Number(d.total || 0),
+                    statut: 'Encaissé',
+                })
+            })
+
+        // NOTE: Les factures non payées (envoye, accepte, brouillon) sont EXCLUES
+        // car elles ne représentent pas de l'argent réellement reçu
 
         // ── Mapper les dépenses → RegistreDepense ──
         // Correspondance catégorie agent → catégorie registre officiel

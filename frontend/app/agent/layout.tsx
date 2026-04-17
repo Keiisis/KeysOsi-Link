@@ -12,7 +12,7 @@ import {
     Menu, Bell, Search, Headphones, X,
     TrendingUp, BookOpen, CircleDot, ChevronRight,
     Shield, PanelLeftClose, PanelLeft,
-    Command, UserCog, Globe, Handshake, Radar, MonitorPlay, Landmark, CreditCard
+    Command, UserCog, Globe, Handshake, Radar, MonitorPlay, Landmark, CreditCard, Mail
 } from 'lucide-react'
 import { useTranslation, T } from '@/lib/translation'
 
@@ -382,6 +382,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                 { title: t('Messages'), icon: MessageSquare, href: '/agent/messages', badge: unreadMessages },
                 { title: t('Vocaux'), icon: Headphones, href: '/agent/vocaux', badge: unreadVoices },
                 { title: t('Notifications'), icon: Bell, href: '/agent/notifications', badge: unreadNotifications },
+                { title: t('Rédiger un Mail'), icon: Mail, href: '/agent/rediger-mails' },
             ],
         },
         {
