@@ -7,7 +7,7 @@ import Script from 'next/script'
 import {
     ArrowLeft, ArrowRight, CheckCircle2,
     FileText, Send, ChevronLeft, Loader2, AlertCircle,
-    CreditCard, Heart, Home, Shield, ChevronRight, X
+    CreditCard, Heart, Home, Shield, ChevronRight, X, User, Mail, Phone, MapPin, Globe2
 } from 'lucide-react'
 import Link from 'next/link'
 import { Price, useCurrency } from '@/components/ui/Price'
@@ -92,6 +92,10 @@ export default function NationaliteFormPage() {
     const [appRef, setAppRef] = useState('')
     const [errors, setErrors] = useState<string[]>([])
     const [lawAccepted, setLawAccepted] = useState(false)
+    const [preInscriptionDone, setPreInscriptionDone] = useState(false)
+    const [preInscriptionSubmitting, setPreInscriptionSubmitting] = useState(false)
+    const [preInscriptionError, setPreInscriptionError] = useState('')
+    const [preInscription, setPreInscription] = useState({ prenom: '', nom: '', email: '', telephone: '', pays_residence: '' })
     const [paymentSettings, setPaymentSettings] = useState<Record<string, string>>({})
     const [paymentDone, setPaymentDone] = useState(false)
     const [paymentProvider, setPaymentProvider] = useState<PaymentProvider | null>(null)
@@ -166,6 +170,32 @@ export default function NationaliteFormPage() {
     })))
 
     useEffect(() => {
+        // Restaurer la pré-inscription si l'utilisateur revient sur la page
+        try {
+            const saved = localStorage.getItem('rgb_nat_pre_inscription')
+            if (saved) {
+                const parsed = JSON.parse(saved)
+                if (parsed?.email) {
+                    setPreInscription({
+                        prenom: parsed.prenom || '',
+                        nom: parsed.nom || '',
+                        email: parsed.email || '',
+                        telephone: parsed.telephone || '',
+                        pays_residence: parsed.pays_residence || '',
+                    })
+                    setForm(p => ({
+                        ...p,
+                        prenom: parsed.prenom || p.prenom,
+                        nom: parsed.nom || p.nom,
+                        email: parsed.email || p.email,
+                        telephone: parsed.telephone || p.telephone,
+                        pays_residence: parsed.pays_residence || p.pays_residence,
+                    }))
+                    setPreInscriptionDone(true)
+                }
+            }
+        } catch { /* ignore */ }
+
         fetch('/api/settings/payment').then(r => r.json()).then(d => setPaymentSettings(d)).catch(() => { })
         supabase.from('nationality_page_content').select('content_fr').eq('section_key', 'form_bg_image').single()
             .then(({ data }) => { if (data?.content_fr) setBgImageUrl(data.content_fr) })
@@ -182,6 +212,36 @@ export default function NationaliteFormPage() {
                 }
             })
     }, [])
+
+    const submitPreInscription = async () => {
+        setPreInscriptionError('')
+        const { prenom, nom, email, telephone, pays_residence } = preInscription
+        if (!prenom.trim() || !nom.trim()) { setPreInscriptionError(t('Nom et prénom requis')); return }
+        if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setPreInscriptionError(t('Email invalide')); return }
+        if (!pays_residence) { setPreInscriptionError(t('Pays de résidence requis')); return }
+
+        setPreInscriptionSubmitting(true)
+
+        // Pré-remplissage immédiat du formulaire principal (avant même la réponse API)
+        setForm(p => ({ ...p, prenom, nom, email, telephone, pays_residence }))
+
+        try {
+            localStorage.setItem('rgb_nat_pre_inscription', JSON.stringify(preInscription))
+        } catch { /* quota ignoré */ }
+
+        // API non bloquante : on continue la démarche même si la requête échoue
+        fetch('/api/nationality/lead', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...preInscription, lang: 'fr' }),
+        }).catch(err => console.log('[NAT-LEAD] fire-and-forget:', err))
+
+        // Laisser percevoir un micro-délai pour l'animation, sans attendre la réponse
+        setTimeout(() => {
+            setPreInscriptionSubmitting(false)
+            setPreInscriptionDone(true)
+        }, 400)
+    }
 
     const u = useCallback((key: keyof NationaliteForm, val: unknown) => setForm(p => ({ ...p, [key]: val })), [])
     const IC = "w-full bg-white/[0.04] border border-white/10 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 placeholder:text-gray-600 transition-all"
@@ -438,7 +498,113 @@ export default function NationaliteFormPage() {
         </div>
     )
 
-    // ═══ LAW POPUP ═══
+    // ═══ PRE-INSCRIPTION GATE ═══ (capture lead avant accès au formulaire)
+    if (!preInscriptionDone) return (
+        <div className="min-h-screen relative flex items-center justify-center px-4 py-8">
+            <AnimatedBackground bgImageUrl={bgImageUrl} />
+            <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: 'easeOut' }}
+                className="relative z-10 bg-[#0b1411]/85 backdrop-blur-2xl border border-emerald-500/20 shadow-[0_0_60px_rgba(0,0,0,0.6)] rounded-3xl p-6 md:p-10 max-w-xl w-full">
+                <div className="absolute top-0 inset-x-0 h-1.5 rounded-t-3xl overflow-hidden">
+                    <div className="h-full" style={{ background: 'linear-gradient(90deg,#008751 33%,#FCD116 33%,#FCD116 66%,#E8112D 66%)' }} />
+                </div>
+
+                <div className="text-center mb-6">
+                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 border border-emerald-500/30 mb-4">
+                        <Globe2 size={24} className="text-emerald-400" />
+                    </div>
+                    <span className="inline-block text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em] mb-2"><T>Loi N° 2024-31</T></span>
+                    <h2 className="text-2xl md:text-3xl font-black text-white leading-tight mb-2">
+                        <T>Démarrez votre demande</T>
+                    </h2>
+                    <p className="text-sm text-gray-400 leading-relaxed max-w-md mx-auto">
+                        <T>Quelques informations pour préparer votre dossier et vous permettre de reprendre la démarche à tout moment.</T>
+                    </p>
+                </div>
+
+                {preInscriptionError && (
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 mb-4 flex items-center gap-2 text-xs text-red-400">
+                        <AlertCircle size={14} /> {preInscriptionError}
+                    </div>
+                )}
+
+                <div className="space-y-4 mb-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label className={LC}><T>Prénom</T><span className={RQ}>*</span></label>
+                            <div className="relative">
+                                <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                                <input title={t('Prénom')} value={preInscription.prenom}
+                                    onChange={e => setPreInscription(p => ({ ...p, prenom: e.target.value }))}
+                                    className={IC + ' pl-9'} placeholder={t('Votre prénom')} />
+                            </div>
+                        </div>
+                        <div>
+                            <label className={LC}><T>Nom</T><span className={RQ}>*</span></label>
+                            <div className="relative">
+                                <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                                <input title={t('Nom')} value={preInscription.nom}
+                                    onChange={e => setPreInscription(p => ({ ...p, nom: e.target.value }))}
+                                    className={IC + ' pl-9'} placeholder={t('Votre nom')} />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className={LC}><T>Email</T><span className={RQ}>*</span></label>
+                        <div className="relative">
+                            <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                            <input title={t('Email')} type="email" value={preInscription.email}
+                                onChange={e => setPreInscription(p => ({ ...p, email: e.target.value }))}
+                                className={IC + ' pl-9'} placeholder={t('email@exemple.com')} />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label className={LC}><T>Téléphone / WhatsApp</T></label>
+                            <div className="relative">
+                                <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                                <input title={t('Téléphone')} value={preInscription.telephone}
+                                    onChange={e => setPreInscription(p => ({ ...p, telephone: e.target.value }))}
+                                    className={IC + ' pl-9'} placeholder="+229 XX XX XX XX" />
+                            </div>
+                        </div>
+                        <div>
+                            <label className={LC}><T>Pays de résidence</T><span className={RQ}>*</span></label>
+                            <div className="relative">
+                                <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 z-10" />
+                                <select title={t('Pays de résidence')} value={preInscription.pays_residence}
+                                    onChange={e => setPreInscription(p => ({ ...p, pays_residence: e.target.value }))}
+                                    className={IC + ' pl-9'}>
+                                    <option value="">{t('Sélectionner')}</option>
+                                    {COUNTRIES.map(c => <option key={c} value={c}>{t(c)}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-emerald-500/5 border border-emerald-500/15 rounded-xl p-3 mb-5 flex items-start gap-2">
+                    <Shield size={14} className="text-emerald-400 shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-gray-400 leading-relaxed">
+                        <T>Vos informations sont protégées. Vous recevrez un email pour créer votre espace personnel — cela n'interrompt pas votre démarche en cours.</T>
+                    </p>
+                </div>
+
+                <div className="flex gap-3">
+                    <Link href="/nationalite" className="flex-1 bg-white/5 text-gray-300 hover:text-white font-bold text-sm py-3 rounded-xl text-center hover:bg-white/10 transition-all backdrop-blur-md"><T>Annuler</T></Link>
+                    <button onClick={submitPreInscription} disabled={preInscriptionSubmitting}
+                        className="flex-[2] bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-sm py-3 rounded-xl disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20">
+                        {preInscriptionSubmitting ? (
+                            <><Loader2 size={16} className="animate-spin" /> <T>Enregistrement…</T></>
+                        ) : (
+                            <><T>Continuer ma démarche</T> <ArrowRight size={16} /></>
+                        )}
+                    </button>
+                </div>
+            </motion.div>
+        </div>
+    )
 
     // ═══ LAW POPUP ═══
     if (step === 0) return (

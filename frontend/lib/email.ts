@@ -515,6 +515,31 @@ export const getEmailTemplates = async (locale: string = 'fr') => {
         <div style="color:rgba(255,255,255,0.75);font-size:14px;line-height:1.9;margin:0 0 24px;white-space:pre-wrap;">${agentMessage}</div>
     `, language),
 
+        /** Invitation à créer un compte — après capture d'un prospect nationalité */
+        accountInvite: (clientName: string, registerUrl: string) => EMAIL_WRAPPER(`
+        <h2 style="margin:0 0 16px;font-size:22px;color:#FCD116;font-weight:800;">🇧🇯 Bienvenue ${clientName}</h2>
+        <p style="color:rgba(255,255,255,0.75);font-size:14px;line-height:1.8;margin:0 0 18px;">
+            Nous avons bien reçu votre intérêt pour la reconnaissance de la nationalité béninoise. Votre dossier est en cours de préparation — vous pouvez <strong style="color:#fff;">continuer votre démarche</strong> dès maintenant sur notre site.
+        </p>
+        <div style="background:rgba(0,135,81,0.08);border-left:3px solid #008751;padding:16px 20px;border-radius:0 12px 12px 0;margin:0 0 24px;">
+            <p style="margin:0 0 8px;font-size:13px;color:#FCD116;font-weight:700;">Votre espace personnel vous attend</p>
+            <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.65);line-height:1.7;">
+                Créer votre compte vous permet de suivre l'avancement de votre dossier, d'échanger avec votre conseiller et de téléverser vos pièces en toute sécurité.
+            </p>
+        </div>
+        <table cellpadding="0" cellspacing="0" style="margin:0 auto 20px;">
+          <tr><td>
+            <a href="${registerUrl}" style="display:inline-block;background:linear-gradient(135deg,#008751,#00a664);color:white;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:800;font-size:13px;letter-spacing:0.5px;box-shadow:0 4px 15px rgba(0,135,81,0.3);">
+              Créer mon compte sécurisé →
+            </a>
+          </td></tr>
+        </table>
+        <p style="color:rgba(255,255,255,0.4);font-size:12px;line-height:1.6;margin:0;text-align:center;">
+            Pas de pression — cette invitation ne bloque en rien votre démarche.<br/>
+            Vous pouvez créer votre compte avant, pendant, ou après la soumission de votre dossier.
+        </p>
+    `, 'fr'),
+
         /** Invoice payment reminder — tone escalates with delay */
         invoiceReminder: (
             clientName: string,
