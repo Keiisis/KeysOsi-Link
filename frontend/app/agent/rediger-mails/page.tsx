@@ -657,33 +657,45 @@ export default function AgentRedigerMailsPage() {
                                         <div className="w-full max-w-[620px] bg-white rounded-[20px] overflow-hidden border border-[#1B2A4A]/6" style={{ boxShadow: '0 20px 60px rgba(27,42,74,0.10), 0 4px 16px rgba(27,42,74,0.05)' }}>
                                             {/* Bande tricolore top */}
                                             <div className="h-[5px]" style={{ background: 'linear-gradient(90deg, #008751 0%, #008751 33%, #FCD116 33%, #FCD116 66%, #E8112D 66%, #E8112D 100%)' }} />
-                                            {/* Header blanc — Logo XXL libre + nom tricolore */}
-                                            <div className="px-10 pt-12 pb-9 text-center bg-white">
+                                            {/* Header blanc — Logo XXL libre + nom tricolore aligné */}
+                                            <div className="px-10 pt-13 pb-10 text-center bg-white" style={{ paddingTop: 52 }}>
                                                 {/* Logo grand, libre, sans container */}
                                                 <img
-                                                    src="/logo.jpg"
+                                                    src="/assets/logo.png"
                                                     alt="Retour Gagnant Bénin"
-                                                    width={140}
-                                                    height={140}
-                                                    className="mx-auto mb-6 block"
-                                                    style={{ maxWidth: 140, height: 'auto', border: 0 }}
+                                                    width={160}
+                                                    height={160}
+                                                    className="mx-auto block"
+                                                    style={{ maxWidth: 160, height: 'auto', border: 0, marginBottom: 22 }}
                                                 />
-                                                {/* Nom tricolore Bénin */}
+                                                {/* RETOUR GAGNANT — ligne 1 */}
                                                 <h1
-                                                    className="m-0 leading-tight"
+                                                    className="m-0 leading-none"
                                                     style={{
-                                                        fontSize: 30, fontWeight: 900, letterSpacing: '2px',
+                                                        fontSize: 34, fontWeight: 900, letterSpacing: '3px',
                                                         fontFamily: "'Playfair Display', Georgia, serif",
                                                     }}
                                                 >
-                                                    <span style={{ color: '#008751', textShadow: '0 2px 20px rgba(0,135,81,0.25)' }}>RETOUR</span>{' '}
-                                                    <span style={{ color: '#E6B800', textShadow: '0 2px 20px rgba(252,209,22,0.35)', margin: '0 2px' }}>GAGNANT</span>{' '}
-                                                    <span style={{ color: '#E8112D', textShadow: '0 2px 20px rgba(232,17,45,0.25)' }}>BÉNIN</span>
+                                                    <span style={{ color: '#008751', textShadow: '0 2px 20px rgba(0,135,81,0.22)' }}>RETOUR</span>
+                                                    <span style={{ color: '#E6B800', textShadow: '0 2px 20px rgba(252,209,22,0.32)', marginLeft: 10 }}>GAGNANT</span>
                                                 </h1>
+                                                {/* BÉNIN — ligne 2 centré */}
+                                                <div style={{ marginTop: 10 }}>
+                                                    <span
+                                                        style={{
+                                                            fontSize: 22, fontWeight: 900, letterSpacing: '14px',
+                                                            color: '#E8112D', textShadow: '0 2px 18px rgba(232,17,45,0.28)',
+                                                            fontFamily: "'Playfair Display', Georgia, serif",
+                                                            paddingLeft: 14,
+                                                        }}
+                                                    >
+                                                        BÉNIN
+                                                    </span>
+                                                </div>
                                                 {/* Tagline */}
-                                                <p className="mt-[18px] text-[10px] uppercase font-bold" style={{ color: '#C9A84C', letterSpacing: '5px' }}>Tradition · Modernité · Excellence</p>
+                                                <p className="mt-[22px] text-[10px] uppercase font-bold" style={{ color: '#C9A84C', letterSpacing: '5px' }}>Tradition · Modernité · Excellence</p>
                                                 {/* Accent or */}
-                                                <div className="mx-auto mt-7 h-[2px] w-[120px]" style={{ background: 'linear-gradient(90deg, transparent, #C9A84C, transparent)' }} />
+                                                <div className="mx-auto h-[2px] w-[120px]" style={{ background: 'linear-gradient(90deg, transparent, #C9A84C, transparent)', marginTop: 26 }} />
                                             </div>
                                             {/* Corps */}
                                             <div

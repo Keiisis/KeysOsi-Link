@@ -158,14 +158,15 @@ export default function PortfolioImmersivePage() {
     }, [showIntro])
 
     const services = [
-        { id: '01', title: t("Nationalité Béninoise"), desc: t("Dossiers Afro-descendants"), bg: "bg-[#008751]", text: "text-white", iconBg: "bg-white/20" },
-        { id: '02', title: t("Citoyenneté & Démarches"), desc: t("Identité, Passeport, Visas"), bg: "bg-white", text: "text-gray-900", iconBg: "bg-[#008751]/10 text-[#008751]" },
-        { id: '03', title: t("Investissement Immobilier"), desc: t("Terrains, Maisons, Projets"), bg: "bg-[#FCD116]", text: "text-gray-900", iconBg: "bg-white/40" },
-        { id: '04', title: t("Création d'Entreprise"), desc: t("Accompagnement Affaires"), bg: "bg-white", text: "text-gray-900", iconBg: "bg-[#008751]/10 text-[#008751]" },
-        { id: '05', title: t("Conseil Juridique"), desc: t("Succession, Notariat"), bg: "bg-[#E8112D]", text: "text-white", iconBg: "bg-white/20" },
-        { id: '06', title: t("Logistique du Retour"), desc: t("Déménagement Inter."), bg: "bg-white", text: "text-gray-900", iconBg: "bg-[#008751]/10 text-[#008751]" },
-        { id: '07', title: t("Production Médias"), desc: t("Reportages, Docs"), bg: "bg-[#008751]", text: "text-white", iconBg: "bg-white/20" },
-        { id: '08', title: t("Cérémonies & Événements"), desc: t("Accueil, Culture, Fêtes"), bg: "bg-[#FCD116]", text: "text-gray-900", iconBg: "bg-white/40" },
+        { id: '01', title: t("Passeport & Documents"), desc: t("Passeport, acte de naissance, apostille"), bg: "bg-[#008751]", text: "text-white", iconBg: "bg-white/20" },
+        { id: '02', title: t("Acheter ou Louer"), desc: t("Immobilier, foncier, sécurisation"), bg: "bg-white", text: "text-gray-900", iconBg: "bg-[#008751]/10 text-[#008751]" },
+        { id: '03', title: t("Création d'Entreprise"), desc: t("RCCM, compte pro, fiscalité"), bg: "bg-[#FCD116]", text: "text-gray-900", iconBg: "bg-white/40" },
+        { id: '04', title: t("Tourisme & Culture"), desc: t("Circuits, patrimoine, séjours"), bg: "bg-white", text: "text-gray-900", iconBg: "bg-[#008751]/10 text-[#008751]" },
+        { id: '05', title: t("Suivi de Chantier"), desc: t("Maîtrise d'ouvrage, coordination"), bg: "bg-[#E8112D]", text: "text-white", iconBg: "bg-white/20" },
+        { id: '06', title: t("Investissement"), desc: t("Opportunités, partenariats locaux"), bg: "bg-white", text: "text-gray-900", iconBg: "bg-[#008751]/10 text-[#008751]" },
+        { id: '07', title: t("Nationalité VIP"), desc: t("Reconnaissance prioritaire"), bg: "bg-[#008751]", text: "text-white", iconBg: "bg-white/20" },
+        { id: '08', title: t("Recherche Ancestrale"), desc: t("Généalogie, archives d'esclavage"), bg: "bg-[#FCD116]", text: "text-gray-900", iconBg: "bg-white/40" },
+        { id: '09', title: t("Autres Services"), desc: t("Transport, santé, scolarité"), bg: "bg-white", text: "text-gray-900", iconBg: "bg-[#008751]/10 text-[#008751]" },
     ]
 
     return (
