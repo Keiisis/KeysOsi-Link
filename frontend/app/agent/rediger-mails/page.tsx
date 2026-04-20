@@ -653,30 +653,30 @@ export default function AgentRedigerMailsPage() {
                                         <Eye size={13} className="text-[#1B2A4A]" />
                                         <span className="text-[10px] font-semibold text-[#1B2A4A] uppercase tracking-wider">Aperçu — Tel que reçu par le destinataire</span>
                                     </div>
-                                    <div className="p-8 bg-[#ECEAE4] flex justify-center">
-                                        <div className="w-full max-w-[560px] bg-white rounded-xl overflow-hidden shadow-lg border border-[#1B2A4A]/8">
+                                    <div className="p-8 flex justify-center" style={{ background: '#F5EEE0' }}>
+                                        <div className="w-full max-w-[600px] bg-white rounded-2xl overflow-hidden shadow-xl border border-[#C9A84C]/15">
                                             {/* Bande tricolore */}
                                             <div className="h-[5px]" style={{ background: 'linear-gradient(90deg, #008751 33%, #FCD116 33%, #FCD116 66%, #E8112D 66%)' }} />
-                                            {/* Header logo */}
-                                            <div className="px-8 pt-7 pb-5 text-center" style={{ background: 'linear-gradient(180deg, #1B2A4A, #142035)' }}>
-                                                <div className="inline-flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-xl border-2 border-[#008751]/30 flex items-center justify-center" style={{ background: 'rgba(0,135,81,0.15)' }}>
-                                                        <span className="text-[#008751] font-black text-sm">RG</span>
+                                            {/* Header navy */}
+                                            <div className="px-10 pt-7 pb-6 text-center" style={{ background: 'linear-gradient(135deg, #1B2A4A 0%, #243557 100%)' }}>
+                                                <div className="inline-flex items-center gap-3.5">
+                                                    <div className="w-14 h-14 rounded-xl border-2 border-[#C9A84C]/40 flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, rgba(201,168,76,0.2), rgba(201,168,76,0.08))' }}>
+                                                        <span className="text-[#C9A84C] font-black text-base tracking-wider">RG</span>
                                                     </div>
                                                     <div className="text-left">
-                                                        <p className="text-[16px] font-black leading-tight">
-                                                            <span className="text-[#008751]">RETOUR</span>{' '}
-                                                            <span className="text-[#E8112D]">GAGNANT</span>
+                                                        <p className="text-[18px] font-black leading-tight">
+                                                            <span className="text-white">RETOUR</span>{' '}
+                                                            <span className="text-[#C9A84C]">GAGNANT</span>
                                                         </p>
-                                                        <p className="text-[8px] text-[#FCD116]/70 tracking-[3px] uppercase font-bold mt-px">BÉNIN</p>
+                                                        <p className="text-[9px] text-[#C9A84C] tracking-[3px] uppercase font-bold mt-0.5">BÉNIN</p>
                                                     </div>
                                                 </div>
                                             </div>
-                                            {/* Ligne déco */}
-                                            <div className="h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,135,81,0.25), rgba(252,209,22,0.15), transparent)' }} />
+                                            {/* Ligne déco or */}
+                                            <div className="h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, #C9A84C 20%, #C9A84C 80%, transparent)' }} />
                                             {/* Corps */}
                                             <div
-                                                className="px-8 py-6 text-[#1B2A4A] text-[13px] leading-[1.8]
+                                                className="px-10 py-8 text-[#2D3A55] text-[14px] leading-[1.8] bg-white
                                                     [&_a]:text-[#008751] [&_a]:font-semibold [&_a]:underline
                                                     [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-2
                                                     [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-2
@@ -685,17 +685,15 @@ export default function AgentRedigerMailsPage() {
                                                 style={{ fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}
                                                 dangerouslySetInnerHTML={{ __html: bodyHtml }}
                                             />
-                                            {/* Footer */}
-                                            <div className="px-8">
-                                                <div className="h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(27,42,74,0.08), transparent)' }} />
-                                            </div>
-                                            <div className="px-8 py-5 text-center">
-                                                <p className="text-[11px] text-[#6B7280]/60 font-medium">Cet email vous a été envoyé par un conseiller de Retour Gagnant Bénin.</p>
-                                                <p className="text-[11px] text-[#6B7280]/50 mt-1">
-                                                    Pour répondre : <span className="text-[#008751] font-semibold">contact@retourgagnantbenin.bj</span>
+                                            {/* Footer ivoire */}
+                                            <div className="px-10 pt-6 pb-6 text-center" style={{ background: '#FAF6EC' }}>
+                                                <div className="h-px mb-4" style={{ background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.25), transparent)' }} />
+                                                <p className="text-[11px] text-[#5A6680] font-semibold">Cet email vous a été envoyé par un conseiller de Retour Gagnant Bénin.</p>
+                                                <p className="text-[11px] text-[#5A6680] mt-1.5">
+                                                    Pour répondre : <a href="mailto:contact@retourgagnantbenin.bj" className="text-[#008751] font-bold no-underline">contact@retourgagnantbenin.bj</a>
                                                 </p>
-                                                <div className="h-px bg-[#1B2A4A]/4 my-3" />
-                                                <p className="text-[9px] text-[#6B7280]/40">&copy; {new Date().getFullYear()} Retour Gagnant Bénin — Tradition, Modernité, Excellence</p>
+                                                <div className="h-px my-3 mx-auto max-w-[200px]" style={{ background: 'rgba(27,42,74,0.08)' }} />
+                                                <p className="text-[10px] text-[#8B94A6] font-semibold tracking-wide">&copy; {new Date().getFullYear()} Retour Gagnant Bénin — Tradition, Modernité, Excellence</p>
                                             </div>
                                             {/* Bande basse */}
                                             <div className="h-[4px]" style={{ background: 'linear-gradient(90deg, #008751 33%, #FCD116 33%, #FCD116 66%, #E8112D 66%)' }} />
