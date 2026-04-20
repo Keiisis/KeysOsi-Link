@@ -295,11 +295,6 @@ const EMAIL_WRAPPER = async (content: string, lang: string = 'fr') => {
     // Fetch dynamic email template from ERP settings
     const emailTpl = await getEmailTemplate()
 
-    // Sous-titre du header (navy → gold)
-    const headerSubtitle = emailTpl.header
-        ? `<p style="margin:3px 0 0;font-size:10px;color:#C9A84C;letter-spacing:3px;text-transform:uppercase;font-weight:700;">${emailTpl.header.split('\n')[0]}</p>`
-        : `<p style="margin:3px 0 0;font-size:10px;color:#C9A84C;letter-spacing:4px;text-transform:uppercase;font-weight:700;">BÉNIN</p>`
-
     // Footer institutionnel
     const footerContent = emailTpl.footer
         ? `<p style="margin:0 0 6px;font-size:11px;color:#5A6680;font-weight:600;letter-spacing:0.3px;">${emailTpl.footer.replace(/\n/g, '<br/>')}</p>`
@@ -312,57 +307,100 @@ const EMAIL_WRAPPER = async (content: string, lang: string = 'fr') => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Retour Gagnant Bénin</title>
 </head>
-<body style="margin:0;padding:0;background:#F5EEE0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;-webkit-font-smoothing:antialiased;color:#1B2A4A;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5EEE0;padding:28px 0;">
+<body style="margin:0;padding:0;background:#EFE7D5;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;-webkit-font-smoothing:antialiased;color:#1B2A4A;">
+  <!-- ambient gradient backdrop -->
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:radial-gradient(ellipse at top,#F8F1DF 0%,#EFE7D5 60%,#E8DFC9 100%);padding:36px 16px;">
     <tr><td align="center">
-      <table width="640" cellpadding="0" cellspacing="0" style="max-width:640px;width:100%;background:#FFFFFF;border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(27,42,74,0.12),0 2px 8px rgba(27,42,74,0.06);border:1px solid rgba(201,168,76,0.15);">
+      <table width="640" cellpadding="0" cellspacing="0" style="max-width:640px;width:100%;background:#FFFFFF;border-radius:22px;overflow:hidden;box-shadow:0 30px 80px rgba(27,42,74,0.18),0 10px 30px rgba(201,168,76,0.12),0 1px 0 rgba(255,255,255,0.8) inset;border:1px solid rgba(201,168,76,0.22);">
 
-        <!-- ══════ FLAG STRIPE ══════ -->
-        <tr><td style="height:5px;background:linear-gradient(90deg,#008751 33%,#FCD116 33%,#FCD116 66%,#E8112D 66%);"></td></tr>
+        <!-- ══════ FLAG STRIPE TOP ══════ -->
+        <tr><td style="height:6px;background:linear-gradient(90deg,#008751 0%,#008751 33%,#FCD116 33%,#FCD116 66%,#E8112D 66%,#E8112D 100%);box-shadow:0 1px 0 rgba(0,0,0,0.06) inset;"></td></tr>
 
-        <!-- ══════ HEADER NAVY ══════ -->
-        <tr><td style="padding:30px 44px 26px;text-align:center;background:linear-gradient(135deg,#1B2A4A 0%,#243557 100%);">
-          <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
-            <tr>
-              <td style="vertical-align:middle;padding-right:16px;">
-                <img src="${LOGO_URL}" alt="RGB" width="56" height="56" style="border-radius:14px;display:block;border:2px solid rgba(201,168,76,0.4);box-shadow:0 4px 16px rgba(0,0,0,0.25);" />
-              </td>
-              <td style="vertical-align:middle;text-align:left;">
-                <h1 style="margin:0;font-size:22px;font-weight:900;letter-spacing:1px;line-height:1.1;">
-                  <span style="color:#FFFFFF;">RETOUR</span> <span style="color:#C9A84C;">GAGNANT</span>
-                </h1>
-                ${headerSubtitle}
-              </td>
-            </tr>
+        <!-- ══════ HEADER — Navy avec glow or ══════ -->
+        <tr><td style="padding:0;background:linear-gradient(135deg,#0F1A30 0%,#1B2A4A 45%,#243557 100%);position:relative;">
+          <!-- glow or en haut -->
+          <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,0.6),transparent);"></div>
+
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr><td style="padding:38px 44px 34px;text-align:center;">
+              <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
+                <tr>
+                  <!-- Logo sans cadre — juste un halo or diffus -->
+                  <td style="vertical-align:middle;padding-right:20px;">
+                    <div style="display:inline-block;padding:6px;background:radial-gradient(circle,rgba(201,168,76,0.25) 0%,rgba(201,168,76,0.08) 50%,transparent 75%);border-radius:50%;">
+                      <img src="${LOGO_URL}" alt="Retour Gagnant Bénin" width="64" height="64" style="display:block;border:0;outline:0;" />
+                    </div>
+                  </td>
+                  <!-- Nom tricolore -->
+                  <td style="vertical-align:middle;text-align:left;">
+                    <h1 style="margin:0;font-size:26px;font-weight:900;letter-spacing:1.5px;line-height:1;font-family:'Playfair Display','Segoe UI',Georgia,serif;">
+                      <span style="color:#00A862;text-shadow:0 0 18px rgba(0,168,98,0.45),0 1px 0 rgba(0,0,0,0.3);">RETOUR</span>
+                      <span style="color:#FCD116;text-shadow:0 0 18px rgba(252,209,22,0.5),0 1px 0 rgba(0,0,0,0.3);margin-left:4px;">GAGNANT</span>
+                    </h1>
+                    <div style="margin-top:6px;">
+                      <span style="display:inline-block;font-size:13px;font-weight:900;letter-spacing:6px;color:#FF2D4E;text-shadow:0 0 14px rgba(232,17,45,0.55),0 1px 0 rgba(0,0,0,0.3);font-family:'Playfair Display','Segoe UI',Georgia,serif;">BÉNIN</span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              <!-- tagline institutionnelle -->
+              <p style="margin:22px 0 0;font-size:9.5px;color:rgba(201,168,76,0.85);letter-spacing:5px;text-transform:uppercase;font-weight:700;">Tradition · Modernité · Excellence</p>
+            </td></tr>
           </table>
+
+          <!-- double accent or en bas du header -->
+          <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,0.35),transparent);"></div>
+          <div style="height:3px;background:linear-gradient(90deg,transparent 5%,#C9A84C 25%,#E6C975 50%,#C9A84C 75%,transparent 95%);box-shadow:0 2px 8px rgba(201,168,76,0.3);"></div>
         </td></tr>
 
-        <!-- ══════ ACCENT GOLD LINE ══════ -->
-        <tr><td style="height:2px;background:linear-gradient(90deg,transparent,#C9A84C 20%,#C9A84C 80%,transparent);"></td></tr>
-
         <!-- ══════ CONTENT ══════ -->
-        <tr><td style="padding:36px 44px 40px;background:#FFFFFF;color:#1B2A4A;">
+        <tr><td style="padding:44px 48px 40px;background:linear-gradient(180deg,#FFFFFF 0%,#FEFCF7 100%);color:#1B2A4A;">
           ${content}
         </td></tr>
 
-        <!-- ══════ FOOTER ══════ -->
-        <tr><td style="padding:0;background:#FAF6EC;">
-          <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,0.25),transparent);"></div>
-        </td></tr>
-        <tr><td style="padding:26px 44px 22px;text-align:center;background:#FAF6EC;">
-          ${footerContent}
-          <p style="margin:0 0 14px;font-size:11px;color:#5A6680;">
-            ${t.replyTo} <a href="mailto:${CONTACT_EMAIL}" style="color:#008751;text-decoration:none;font-weight:700;">${CONTACT_EMAIL}</a>
-          </p>
-          <div style="height:1px;background:rgba(27,42,74,0.08);margin:14px auto;max-width:200px;"></div>
-          <p style="margin:0 0 4px;font-size:10px;color:#8B94A6;letter-spacing:0.3px;font-weight:600;">${t.footer}</p>
-          <p style="margin:0;font-size:9px;color:#A9B0BE;">${t.autoSent}</p>
+        <!-- ══════ SÉPARATEUR ORNEMENT ══════ -->
+        <tr><td style="padding:0 48px;background:#FEFCF7;">
+          <table width="100%" cellpadding="0" cellspacing="0"><tr>
+            <td style="height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,0.3),transparent);"></td>
+            <td width="40" style="text-align:center;padding:0 12px;">
+              <span style="display:inline-block;width:6px;height:6px;background:#C9A84C;border-radius:50%;box-shadow:0 0 10px rgba(201,168,76,0.5);"></span>
+            </td>
+            <td style="height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,0.3),transparent);"></td>
+          </tr></table>
         </td></tr>
 
-        <!-- ══════ BOTTOM STRIPE ══════ -->
-        <tr><td style="height:4px;background:linear-gradient(90deg,#008751 33%,#FCD116 33%,#FCD116 66%,#E8112D 66%);"></td></tr>
+        <!-- ══════ FOOTER ══════ -->
+        <tr><td style="padding:28px 48px 26px;text-align:center;background:linear-gradient(180deg,#FEFCF7 0%,#FAF4E6 100%);">
+          ${footerContent}
+          <p style="margin:0 0 14px;font-size:11.5px;color:#5A6680;">
+            ${t.replyTo} <a href="mailto:${CONTACT_EMAIL}" style="color:#008751;text-decoration:none;font-weight:700;border-bottom:1px solid rgba(0,135,81,0.3);">${CONTACT_EMAIL}</a>
+          </p>
+          <!-- Mini drapeau décoratif -->
+          <table cellpadding="0" cellspacing="0" style="margin:16px auto 14px;">
+            <tr>
+              <td style="width:24px;height:3px;background:#008751;border-radius:2px 0 0 2px;"></td>
+              <td style="width:24px;height:3px;background:#FCD116;"></td>
+              <td style="width:24px;height:3px;background:#E8112D;border-radius:0 2px 2px 0;"></td>
+            </tr>
+          </table>
+          <p style="margin:0 0 4px;font-size:10.5px;color:#6B7589;letter-spacing:0.4px;font-weight:600;">${t.footer}</p>
+          <p style="margin:0;font-size:9.5px;color:#A9B0BE;letter-spacing:0.2px;">${t.autoSent}</p>
+        </td></tr>
+
+        <!-- ══════ FLAG STRIPE BOTTOM ══════ -->
+        <tr><td style="height:5px;background:linear-gradient(90deg,#008751 0%,#008751 33%,#FCD116 33%,#FCD116 66%,#E8112D 66%,#E8112D 100%);"></td></tr>
 
       </table>
+
+      <!-- Signature sous la carte -->
+      <table cellpadding="0" cellspacing="0" style="margin-top:18px;">
+        <tr><td style="text-align:center;">
+          <p style="margin:0;font-size:10px;color:rgba(27,42,74,0.4);letter-spacing:2px;text-transform:uppercase;font-weight:600;">
+            🇧🇯&nbsp;&nbsp;Retour Gagnant Bénin&nbsp;·&nbsp;${new Date().getFullYear()}
+          </p>
+        </td></tr>
+      </table>
+
     </td></tr>
   </table>
 </body>

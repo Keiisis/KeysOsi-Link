@@ -653,50 +653,83 @@ export default function AgentRedigerMailsPage() {
                                         <Eye size={13} className="text-[#1B2A4A]" />
                                         <span className="text-[10px] font-semibold text-[#1B2A4A] uppercase tracking-wider">Aperçu — Tel que reçu par le destinataire</span>
                                     </div>
-                                    <div className="p-8 flex justify-center" style={{ background: '#F5EEE0' }}>
-                                        <div className="w-full max-w-[600px] bg-white rounded-2xl overflow-hidden shadow-xl border border-[#C9A84C]/15">
+                                    <div className="p-10 flex justify-center" style={{ background: 'radial-gradient(ellipse at top, #F8F1DF 0%, #EFE7D5 60%, #E8DFC9 100%)' }}>
+                                        <div className="w-full max-w-[620px] bg-white rounded-[22px] overflow-hidden border border-[#C9A84C]/25" style={{ boxShadow: '0 30px 80px rgba(27,42,74,0.18), 0 10px 30px rgba(201,168,76,0.12)' }}>
                                             {/* Bande tricolore */}
-                                            <div className="h-[5px]" style={{ background: 'linear-gradient(90deg, #008751 33%, #FCD116 33%, #FCD116 66%, #E8112D 66%)' }} />
-                                            {/* Header navy */}
-                                            <div className="px-10 pt-7 pb-6 text-center" style={{ background: 'linear-gradient(135deg, #1B2A4A 0%, #243557 100%)' }}>
-                                                <div className="inline-flex items-center gap-3.5">
-                                                    <div className="w-14 h-14 rounded-xl border-2 border-[#C9A84C]/40 flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, rgba(201,168,76,0.2), rgba(201,168,76,0.08))' }}>
-                                                        <span className="text-[#C9A84C] font-black text-base tracking-wider">RG</span>
+                                            <div className="h-[6px]" style={{ background: 'linear-gradient(90deg, #008751 0%, #008751 33%, #FCD116 33%, #FCD116 66%, #E8112D 66%, #E8112D 100%)' }} />
+                                            {/* Header navy premium */}
+                                            <div className="relative" style={{ background: 'linear-gradient(135deg, #0F1A30 0%, #1B2A4A 45%, #243557 100%)' }}>
+                                                <div className="h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.6), transparent)' }} />
+                                                <div className="px-10 pt-9 pb-8 text-center">
+                                                    <div className="inline-flex items-center gap-5">
+                                                        {/* Logo avec halo or diffus — pas de cercle noir */}
+                                                        <div
+                                                            className="flex items-center justify-center"
+                                                            style={{
+                                                                width: 80, height: 80, borderRadius: '50%',
+                                                                background: 'radial-gradient(circle, rgba(201,168,76,0.25) 0%, rgba(201,168,76,0.08) 50%, transparent 75%)',
+                                                            }}
+                                                        >
+                                                            <img
+                                                                src="/logo.jpg"
+                                                                alt="RGB"
+                                                                width={64}
+                                                                height={64}
+                                                                style={{ display: 'block', border: 0 }}
+                                                            />
+                                                        </div>
+                                                        {/* Nom tricolore Bénin */}
+                                                        <div className="text-left" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                                                            <h1 className="leading-none" style={{ fontSize: 28, fontWeight: 900, letterSpacing: '1.5px', margin: 0 }}>
+                                                                <span style={{ color: '#00A862', textShadow: '0 0 18px rgba(0,168,98,0.45), 0 1px 0 rgba(0,0,0,0.3)' }}>RETOUR</span>{' '}
+                                                                <span style={{ color: '#FCD116', textShadow: '0 0 18px rgba(252,209,22,0.5), 0 1px 0 rgba(0,0,0,0.3)' }}>GAGNANT</span>
+                                                            </h1>
+                                                            <div className="mt-1.5">
+                                                                <span style={{ fontSize: 14, fontWeight: 900, letterSpacing: '6px', color: '#FF2D4E', textShadow: '0 0 14px rgba(232,17,45,0.55), 0 1px 0 rgba(0,0,0,0.3)' }}>BÉNIN</span>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div className="text-left">
-                                                        <p className="text-[18px] font-black leading-tight">
-                                                            <span className="text-white">RETOUR</span>{' '}
-                                                            <span className="text-[#C9A84C]">GAGNANT</span>
-                                                        </p>
-                                                        <p className="text-[9px] text-[#C9A84C] tracking-[3px] uppercase font-bold mt-0.5">BÉNIN</p>
-                                                    </div>
+                                                    <p className="mt-6 text-[9.5px] uppercase font-bold tracking-[5px]" style={{ color: 'rgba(201,168,76,0.85)' }}>Tradition · Modernité · Excellence</p>
                                                 </div>
+                                                <div className="h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.35), transparent)' }} />
+                                                <div className="h-[3px]" style={{ background: 'linear-gradient(90deg, transparent 5%, #C9A84C 25%, #E6C975 50%, #C9A84C 75%, transparent 95%)', boxShadow: '0 2px 8px rgba(201,168,76,0.3)' }} />
                                             </div>
-                                            {/* Ligne déco or */}
-                                            <div className="h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, #C9A84C 20%, #C9A84C 80%, transparent)' }} />
                                             {/* Corps */}
                                             <div
-                                                className="px-10 py-8 text-[#2D3A55] text-[14px] leading-[1.8] bg-white
+                                                className="px-12 py-11 text-[#1B2A4A] text-[14.5px] leading-[1.8]
                                                     [&_a]:text-[#008751] [&_a]:font-semibold [&_a]:underline
                                                     [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-2
                                                     [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-2
                                                     [&_strong]:font-bold [&_strong]:text-[#1B2A4A]
                                                     [&_p]:my-2"
-                                                style={{ fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}
+                                                style={{
+                                                    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+                                                    background: 'linear-gradient(180deg, #FFFFFF 0%, #FEFCF7 100%)',
+                                                }}
                                                 dangerouslySetInnerHTML={{ __html: bodyHtml }}
                                             />
+                                            {/* Séparateur ornement */}
+                                            <div className="px-12 flex items-center gap-3" style={{ background: '#FEFCF7' }}>
+                                                <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.3), transparent)' }} />
+                                                <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#C9A84C', boxShadow: '0 0 10px rgba(201,168,76,0.5)' }} />
+                                                <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.3), transparent)' }} />
+                                            </div>
                                             {/* Footer ivoire */}
-                                            <div className="px-10 pt-6 pb-6 text-center" style={{ background: '#FAF6EC' }}>
-                                                <div className="h-px mb-4" style={{ background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.25), transparent)' }} />
-                                                <p className="text-[11px] text-[#5A6680] font-semibold">Cet email vous a été envoyé par un conseiller de Retour Gagnant Bénin.</p>
-                                                <p className="text-[11px] text-[#5A6680] mt-1.5">
-                                                    Pour répondre : <a href="mailto:contact@retourgagnantbenin.bj" className="text-[#008751] font-bold no-underline">contact@retourgagnantbenin.bj</a>
+                                            <div className="px-12 pt-7 pb-7 text-center" style={{ background: 'linear-gradient(180deg, #FEFCF7 0%, #FAF4E6 100%)' }}>
+                                                <p className="text-[11.5px] text-[#5A6680] font-semibold">Cet email vous a été envoyé par un conseiller de Retour Gagnant Bénin.</p>
+                                                <p className="text-[11.5px] text-[#5A6680] mt-1.5">
+                                                    Pour répondre : <a href="mailto:contact@retourgagnantbenin.bj" className="text-[#008751] font-bold" style={{ borderBottom: '1px solid rgba(0,135,81,0.3)' }}>contact@retourgagnantbenin.bj</a>
                                                 </p>
-                                                <div className="h-px my-3 mx-auto max-w-[200px]" style={{ background: 'rgba(27,42,74,0.08)' }} />
-                                                <p className="text-[10px] text-[#8B94A6] font-semibold tracking-wide">&copy; {new Date().getFullYear()} Retour Gagnant Bénin — Tradition, Modernité, Excellence</p>
+                                                {/* Mini drapeau décoratif */}
+                                                <div className="flex justify-center items-center mt-4 mb-3.5">
+                                                    <div style={{ width: 28, height: 3, background: '#008751', borderRadius: '2px 0 0 2px' }} />
+                                                    <div style={{ width: 28, height: 3, background: '#FCD116' }} />
+                                                    <div style={{ width: 28, height: 3, background: '#E8112D', borderRadius: '0 2px 2px 0' }} />
+                                                </div>
+                                                <p className="text-[10.5px] text-[#6B7589] font-semibold tracking-wide">&copy; {new Date().getFullYear()} Retour Gagnant Bénin — Tradition, Modernité, Excellence</p>
                                             </div>
                                             {/* Bande basse */}
-                                            <div className="h-[4px]" style={{ background: 'linear-gradient(90deg, #008751 33%, #FCD116 33%, #FCD116 66%, #E8112D 66%)' }} />
+                                            <div className="h-[5px]" style={{ background: 'linear-gradient(90deg, #008751 0%, #008751 33%, #FCD116 33%, #FCD116 66%, #E8112D 66%, #E8112D 100%)' }} />
                                         </div>
                                     </div>
                                 </motion.div>
