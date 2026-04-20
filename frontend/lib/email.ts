@@ -315,27 +315,32 @@ const EMAIL_WRAPPER = async (content: string, lang: string = 'fr') => {
         <!-- ══════ FLAG STRIPE TOP ══════ -->
         <tr><td style="height:5px;background:linear-gradient(90deg,#008751 0%,#008751 33%,#FCD116 33%,#FCD116 66%,#E8112D 66%,#E8112D 100%);"></td></tr>
 
-        <!-- ══════ HEADER BLANC — Logo XXL + nom tricolore aligné ══════ -->
-        <tr><td style="padding:52px 40px 40px;text-align:center;background:#FFFFFF;">
-          <!-- Logo transparent grand format, libre, centré -->
-          <img src="${LOGO_URL}" alt="Retour Gagnant Bénin" width="160" height="160" style="display:block;margin:0 auto 22px;border:0;outline:0;max-width:160px;height:auto;" />
-
-          <!-- RETOUR GAGNANT — ligne 1 -->
-          <h1 style="margin:0;font-size:34px;font-weight:900;letter-spacing:3px;line-height:1;font-family:'Playfair Display','Segoe UI',Georgia,serif;">
-            <span style="color:#008751;text-shadow:0 2px 20px rgba(0,135,81,0.22);">RETOUR</span>
-            <span style="color:#E6B800;text-shadow:0 2px 20px rgba(252,209,22,0.32);margin-left:10px;">GAGNANT</span>
-          </h1>
-
-          <!-- BÉNIN — ligne 2, centré sous RETOUR GAGNANT -->
-          <div style="margin-top:10px;">
-            <span style="display:inline-block;font-size:22px;font-weight:900;letter-spacing:14px;color:#E8112D;text-shadow:0 2px 18px rgba(232,17,45,0.28);font-family:'Playfair Display','Segoe UI',Georgia,serif;padding-left:14px;">BÉNIN</span>
-          </div>
-
-          <!-- Tagline institutionnelle -->
-          <p style="margin:22px 0 0;font-size:10px;color:#C9A84C;letter-spacing:5px;text-transform:uppercase;font-weight:700;">Tradition · Modernité · Excellence</p>
-
+        <!-- ══════ HEADER BLANC — Logo à gauche + Nom à droite ══════ -->
+        <tr><td style="padding:44px 44px 36px;background:#FFFFFF;">
+          <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
+            <tr>
+              <!-- Logo à gauche -->
+              <td style="vertical-align:middle;padding-right:26px;">
+                <img src="${LOGO_URL}" alt="Retour Gagnant Bénin" width="120" height="120" style="display:block;border:0;outline:0;max-width:120px;height:auto;" />
+              </td>
+              <!-- Nom à droite : RETOUR GAGNANT + BÉNIN en dessous -->
+              <td style="vertical-align:middle;text-align:left;border-left:1px solid rgba(201,168,76,0.25);padding-left:26px;">
+                <!-- RETOUR GAGNANT — ligne 1 -->
+                <h1 style="margin:0;font-size:30px;font-weight:900;letter-spacing:2px;line-height:1;font-family:'Playfair Display','Segoe UI',Georgia,serif;white-space:nowrap;">
+                  <span style="color:#008751;text-shadow:0 2px 18px rgba(0,135,81,0.22);">RETOUR</span>
+                  <span style="color:#E6B800;text-shadow:0 2px 18px rgba(252,209,22,0.32);margin-left:8px;">GAGNANT</span>
+                </h1>
+                <!-- BÉNIN — ligne 2 sous RETOUR -->
+                <div style="margin-top:9px;">
+                  <span style="display:inline-block;font-size:22px;font-weight:900;letter-spacing:12px;color:#E8112D;text-shadow:0 2px 16px rgba(232,17,45,0.28);font-family:'Playfair Display','Segoe UI',Georgia,serif;padding-left:12px;">BÉNIN</span>
+                </div>
+                <!-- Tagline institutionnelle sous le nom -->
+                <p style="margin:10px 0 0;font-size:9px;color:#C9A84C;letter-spacing:3.5px;text-transform:uppercase;font-weight:700;">Tradition · Modernité · Excellence</p>
+              </td>
+            </tr>
+          </table>
           <!-- Accent or en bas du header -->
-          <div style="margin:26px auto 0;height:2px;width:120px;background:linear-gradient(90deg,transparent,#C9A84C,transparent);"></div>
+          <div style="margin:28px auto 0;height:2px;width:140px;background:linear-gradient(90deg,transparent,#C9A84C,transparent);"></div>
         </td></tr>
 
         <!-- ══════ CONTENT ══════ -->

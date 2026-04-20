@@ -657,45 +657,57 @@ export default function AgentRedigerMailsPage() {
                                         <div className="w-full max-w-[620px] bg-white rounded-[20px] overflow-hidden border border-[#1B2A4A]/6" style={{ boxShadow: '0 20px 60px rgba(27,42,74,0.10), 0 4px 16px rgba(27,42,74,0.05)' }}>
                                             {/* Bande tricolore top */}
                                             <div className="h-[5px]" style={{ background: 'linear-gradient(90deg, #008751 0%, #008751 33%, #FCD116 33%, #FCD116 66%, #E8112D 66%, #E8112D 100%)' }} />
-                                            {/* Header blanc — Logo XXL libre + nom tricolore aligné */}
-                                            <div className="px-10 pt-13 pb-10 text-center bg-white" style={{ paddingTop: 52 }}>
-                                                {/* Logo grand, libre, sans container */}
-                                                <img
-                                                    src="/assets/logo.png"
-                                                    alt="Retour Gagnant Bénin"
-                                                    width={160}
-                                                    height={160}
-                                                    className="mx-auto block"
-                                                    style={{ maxWidth: 160, height: 'auto', border: 0, marginBottom: 22 }}
-                                                />
-                                                {/* RETOUR GAGNANT — ligne 1 */}
-                                                <h1
-                                                    className="m-0 leading-none"
-                                                    style={{
-                                                        fontSize: 34, fontWeight: 900, letterSpacing: '3px',
-                                                        fontFamily: "'Playfair Display', Georgia, serif",
-                                                    }}
-                                                >
-                                                    <span style={{ color: '#008751', textShadow: '0 2px 20px rgba(0,135,81,0.22)' }}>RETOUR</span>
-                                                    <span style={{ color: '#E6B800', textShadow: '0 2px 20px rgba(252,209,22,0.32)', marginLeft: 10 }}>GAGNANT</span>
-                                                </h1>
-                                                {/* BÉNIN — ligne 2 centré */}
-                                                <div style={{ marginTop: 10 }}>
-                                                    <span
-                                                        style={{
-                                                            fontSize: 22, fontWeight: 900, letterSpacing: '14px',
-                                                            color: '#E8112D', textShadow: '0 2px 18px rgba(232,17,45,0.28)',
-                                                            fontFamily: "'Playfair Display', Georgia, serif",
-                                                            paddingLeft: 14,
-                                                        }}
-                                                    >
-                                                        BÉNIN
-                                                    </span>
+                                            {/* Header blanc — Logo à gauche + RETOUR GAGNANT / BÉNIN à droite */}
+                                            <div className="bg-white" style={{ padding: '44px 44px 36px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0 }}>
+                                                    {/* Colonne gauche — Logo libre, grand */}
+                                                    <div style={{ paddingRight: 26, display: 'flex', alignItems: 'center' }}>
+                                                        <img
+                                                            src="/assets/logo.png"
+                                                            alt="Retour Gagnant Bénin"
+                                                            width={120}
+                                                            height={120}
+                                                            style={{ display: 'block', maxWidth: 120, height: 'auto', border: 0 }}
+                                                        />
+                                                    </div>
+                                                    {/* Séparateur or vertical */}
+                                                    {/* Colonne droite — RETOUR GAGNANT + BÉNIN + tagline */}
+                                                    <div style={{ borderLeft: '1px solid rgba(201,168,76,0.25)', paddingLeft: 26, textAlign: 'left' }}>
+                                                        {/* RETOUR GAGNANT — ligne 1 */}
+                                                        <h1
+                                                            className="m-0"
+                                                            style={{
+                                                                margin: 0,
+                                                                fontSize: 30, fontWeight: 900, letterSpacing: '2px', lineHeight: 1,
+                                                                fontFamily: "'Playfair Display', Georgia, serif",
+                                                                whiteSpace: 'nowrap',
+                                                            }}
+                                                        >
+                                                            <span style={{ color: '#008751', textShadow: '0 2px 18px rgba(0,135,81,0.22)' }}>RETOUR</span>
+                                                            <span style={{ color: '#E6B800', textShadow: '0 2px 18px rgba(252,209,22,0.32)', marginLeft: 8 }}>GAGNANT</span>
+                                                        </h1>
+                                                        {/* BÉNIN — ligne 2, aligné sous RETOUR */}
+                                                        <div style={{ marginTop: 9 }}>
+                                                            <span
+                                                                style={{
+                                                                    display: 'inline-block',
+                                                                    fontSize: 22, fontWeight: 900, letterSpacing: '12px',
+                                                                    color: '#E8112D', textShadow: '0 2px 16px rgba(232,17,45,0.28)',
+                                                                    fontFamily: "'Playfair Display', Georgia, serif",
+                                                                    paddingLeft: 12,
+                                                                }}
+                                                            >
+                                                                BÉNIN
+                                                            </span>
+                                                        </div>
+                                                        {/* Tagline */}
+                                                        <p style={{ margin: '10px 0 0', fontSize: 9, color: '#C9A84C', letterSpacing: '3.5px', textTransform: 'uppercase', fontWeight: 700 }}>
+                                                            Tradition · Modernité · Excellence
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                {/* Tagline */}
-                                                <p className="mt-[22px] text-[10px] uppercase font-bold" style={{ color: '#C9A84C', letterSpacing: '5px' }}>Tradition · Modernité · Excellence</p>
-                                                {/* Accent or */}
-                                                <div className="mx-auto h-[2px] w-[120px]" style={{ background: 'linear-gradient(90deg, transparent, #C9A84C, transparent)', marginTop: 26 }} />
+                                                {/* Accent or centré sous le bloc */}
+                                                <div style={{ margin: '28px auto 0', height: 2, width: 140, background: 'linear-gradient(90deg, transparent, #C9A84C, transparent)' }} />
                                             </div>
                                             {/* Corps */}
                                             <div
