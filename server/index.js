@@ -1652,6 +1652,17 @@ app.post('/agent/:id/unlock-exploit', (req, res) => {
     res.json({ success: true, snapshot: a.snapshot() });
 });
 
+// Active le scope-override pour un agent : cibles hors-scope ne sont plus hard-bloquees.
+// Chaque cible hors-scope est toujours loggee dans le transcript + exposee via snapshot().
+// L'utilisateur declare avoir l'autorisation ecrite necessaire (CTF/mandat/proprie infra).
+app.post('/agent/:id/override-scope', (req, res) => {
+    const a = agentLib.getAgent(req.params.id);
+    if (!a) return res.status(404).json({ success: false, error: 'Agent introuvable' });
+    const reason = (req.body && typeof req.body.reason === 'string') ? req.body.reason.slice(0, 200) : 'api-call';
+    a.overrideScope(reason);
+    res.json({ success: true, snapshot: a.snapshot() });
+});
+
 app.get('/agent/list', (_req, res) => {
     res.json({ success: true, agents: agentLib.listAgents() });
 });

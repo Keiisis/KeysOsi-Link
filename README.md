@@ -21,7 +21,7 @@
 - [Configuration des clés API](#-configuration-des-clés-api)
 - [Démarrage du serveur](#-démarrage-du-serveur)
 - [Extension Chrome](#-extension-chrome)
-- [Intégration MCP (Claude Desktop / Cursor)](#-intégration-mcp-claude-desktop--cursor)
+- [Intégration MCP (Claude Code / Claude Desktop / Cursor)](#-intégration-mcp-claude-code--claude-desktop--cursor)
 - [Utilisation de l'agent pentester](#-utilisation-de-lagent-pentester)
 - [Endpoints HTTP principaux](#-endpoints-http-principaux)
 - [Catalogue d'outils sandbox](#-catalogue-doutils-sandbox)
@@ -335,11 +335,49 @@ Une fois le serveur lancé, allez sur une interface IA supportée.
 
 ---
 
-## 🔌 Intégration MCP (Claude Desktop / Cursor)
+## 🔌 Intégration MCP (Claude Code / Claude Desktop / Cursor)
 
-KeysOsi-Link expose **10 outils** aux clients MCP via deux transports :
+KeysOsi-Link expose **10 outils** aux clients MCP via deux transports : **stdio** (CLI local) et **HTTP** (réseau).
 
-### Transport stdio (recommandé — Claude Desktop)
+### 🤖 Option 1 — Claude Code (recommandé pour dev terminal)
+
+Claude Code gère les serveurs MCP via CLI ou fichier `.mcp.json`. Le repo inclut déjà un `.mcp.json` à la racine — si vous ouvrez le projet avec Claude Code, il détecte automatiquement `keysosi-link` et vous propose de l'activer.
+
+**Méthode A — CLI (la plus simple)** :
+
+```bash
+# Scope "user" : dispo dans toutes vos sessions Claude Code
+claude mcp add keysosi-link node /chemin/absolu/KeysOsi-Link/server/bin/keysosi-mcp.js \
+  --scope user \
+  --env KEYSOSI_ENGAGEMENT=default
+
+# Ou scope "project" : partagé via .mcp.json (commit dans le repo)
+claude mcp add keysosi-link node ./server/bin/keysosi-mcp.js --scope project
+
+# Verifier
+claude mcp list
+```
+
+**Méthode B — Fichier `.mcp.json` à la racine du projet** (déjà présent dans ce repo) :
+
+```json
+{
+  "mcpServers": {
+    "keysosi-link": {
+      "command": "node",
+      "args": ["./server/bin/keysosi-mcp.js"],
+      "env": { "KEYSOSI_ENGAGEMENT": "default" }
+    }
+  }
+}
+```
+
+Ouvrez le dossier dans Claude Code → à la première session, il vous demande de confirmer l'activation du serveur MCP → acceptez → les 10 outils `mcp__keysosi-link__*` deviennent disponibles.
+
+**Utilisation** : dans Claude Code tapez `/mcp` pour voir le statut, ou demandez directement en langage naturel :
+> « Avec keysosi-link, lance un recon_quick sur scanme.nmap.org »
+
+### 🖥️ Option 2 — Claude Desktop
 
 Fichier de configuration :
 - **Windows** : `%APPDATA%\Claude\claude_desktop_config.json`
@@ -366,15 +404,44 @@ Collez :
 
 Redémarrez Claude Desktop → les 10 outils apparaissent dans l'icône 🔌.
 
-### Transport HTTP (Cursor / curl / dev)
+### 🧠 Option 3 — Cursor / Windsurf / autres clients MCP
 
-POST JSON-RPC vers `http://localhost:3666/mcp` :
+Dans les settings MCP du client, ajoutez :
+```json
+{
+  "keysosi-link": {
+    "command": "node",
+    "args": ["/chemin/absolu/KeysOsi-Link/server/bin/keysosi-mcp.js"]
+  }
+}
+```
+
+### 🌐 Option 4 — Transport HTTP (curl / dev / intégrations custom)
+
+POST JSON-RPC vers `http://localhost:3666/mcp` (nécessite `npm start` lancé) :
 
 ```bash
 curl -X POST http://localhost:3666/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
+
+### ✅ Vérifier que le MCP stdio fonctionne
+
+Sans passer par un client, testez en ligne de commande :
+
+```bash
+cd server
+printf '%s\n%s\n' \
+  '{"jsonrpc":"2.0","id":1,"method":"initialize"}' \
+  '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+| node bin/keysosi-mcp.js
+```
+
+Vous devez voir :
+- `KeysOsi-Link MCP server ready (stdio)` sur stderr
+- `[keysosi-mcp] ready — 10 tools exposes` sur stderr
+- Deux réponses JSON-RPC valides sur stdout
 
 ### Les 10 outils MCP
 
@@ -453,8 +520,32 @@ curl -X POST http://localhost:3666/agents/1/answer \
 ### Unlock exploit mode
 
 ```bash
-curl -X POST http://localhost:3666/agents/1/unlock
+curl -X POST http://localhost:3666/agent/1/unlock-exploit
 ```
+
+### Scope-override (cibles hors scope engagement)
+
+Par défaut, un agent avec engagement actif bloque les cibles hors scope. Pour déverrouiller (CTF libre, pivot sur sous-domaine découvert, audit propre infra sans engagement formel) :
+
+```bash
+# Soit au lancement :
+curl -X POST http://localhost:3666/agents \
+  -H "Content-Type: application/json" \
+  -d '{"target":"...", "engagementSlug":"...", "scopeOverride": true}'
+
+# Soit en cours de route :
+curl -X POST http://localhost:3666/agent/1/override-scope \
+  -H "Content-Type: application/json" \
+  -d '{"reason":"pivot-authorize-par-programme-H1"}'
+```
+
+Avec `scopeOverride: true` :
+- Les cibles hors scope ne sont **plus hard-bloquées**
+- Chaque cible hors scope est **loggée** dans le transcript (niveau WARN) avec son nom
+- La liste est exposée dans `snapshot().scopeOverrideTargets` pour audit
+- Le hook bug-bounty (H1/Bugcrowd) passe de hard-block à warn
+
+**L'utilisateur déclare implicitement avoir l'autorisation écrite nécessaire** (CTF, mandat pentest, propre infra). L'outil continue de tracer toute action pour que vous puissiez prouver la légitimité si besoin.
 
 ---
 
@@ -579,11 +670,14 @@ En fin d'engagement (`finally` block) :
 
 ### Règles hard-coded dans l'agent
 
-1. **Scope enforcement** : `_runTool` vérifie `engagements.isInScope(host)` avant chaque exécution. Bloc `SCOPE BLOCK` si hors scope, aucun appel n'est fait.
-2. **Bug bounty scope check** : si l'engagement a `platform + handle`, l'API du programme (H1/Bugcrowd/Intigriti) est consultée et la cible est refusée si out-of-scope.
-3. **Double-unlock exploit** : mode `full` ou `exploit` + confirmation utilisateur par outil.
-4. **Budget tokens** : hard stop à `AURA_TOKEN_BUDGET` (défaut 500 k).
-5. **MAX_STEPS** : 40 étapes ReAct max par agent.
+1. **Scope enforcement** : `_runTool` vérifie `engagements.isInScope(host)` avant chaque exécution. Bloc `SCOPE BLOCK` si hors scope, sauf si `scopeOverride` est actif (cf. ci-dessous).
+2. **Bug bounty scope check** : si l'engagement a `platform + handle`, l'API du programme (H1/Bugcrowd/Intigriti) est consultée et la cible est refusée si out-of-scope, sauf `scopeOverride`.
+3. **Scope-override opt-in** : flag explicite (`scopeOverride: true` au constructeur ou `POST /agent/:id/override-scope`) qui transforme les hard-blocks en WARN auditables. Chaque cible hors-scope est tracée dans `_scopeOverrideTargets` et exposée via `snapshot()`.
+4. **Double-unlock exploit** : mode `full` ou `exploit` + confirmation utilisateur par outil.
+5. **Budget tokens** : hard stop à `AURA_TOKEN_BUDGET` (défaut 500 k).
+6. **MAX_STEPS** : 40 étapes ReAct max par agent.
+
+> 💡 Sans engagement actif (`engagementSlug` absent), l'agent n'a **aucun scope check** — c'est le mode « free-roam » implicite pour CTF et propre infra.
 
 ### Ce que l'agent refuse catégoriquement
 - DoS / flood / bruteforce sans mandat

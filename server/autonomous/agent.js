@@ -57,7 +57,7 @@ function targetHost(target) {
 }
 
 class Agent extends EventEmitter {
-    constructor({ target, engagementSlug, mode = 'recon-only', goal = '', orchestrated = false, exploitUnlocked = false }) {
+    constructor({ target, engagementSlug, mode = 'recon-only', goal = '', orchestrated = false, exploitUnlocked = false, scopeOverride = false }) {
         super();
         this.id = String(++agentCounter);
         this.target = target;
@@ -66,6 +66,11 @@ class Agent extends EventEmitter {
         this.goal = goal;
         this.orchestrated = !!orchestrated; // Planner + multi-phase execution
         this.exploitUnlocked = !!exploitUnlocked;
+        // scopeOverride : autorise les cibles hors-scope apres deverrouillage explicite.
+        // Chaque cible hors-scope est loggee (auditabilite). Supprime UNIQUEMENT le hard block,
+        // pas les verifications de mandat / bug bounty platform qui restent pour info utilisateur.
+        this.scopeOverride = !!scopeOverride;
+        this._scopeOverrideTargets = new Set(); // cibles hors-scope deja autorisees dans cette session
         this.steps = 0;
         this.running = false;
         this.status = 'idle';
@@ -119,6 +124,18 @@ class Agent extends EventEmitter {
         this.emit('unlock', { at: new Date().toISOString() });
     }
 
+    /**
+     * Active le scope-override : les cibles hors-scope engagement/bug-bounty ne seront
+     * plus hard-bloquees mais loggees comme WARN. Chaque cible est tracee dans
+     * _scopeOverrideTargets pour audit.
+     * L'utilisateur declare explicitement avoir l'autorisation ecrite necessaire.
+     */
+    overrideScope(reason = 'user-declared-authorization') {
+        this.scopeOverride = true;
+        this._log('warn', `🔓 SCOPE-OVERRIDE active — raison: ${reason}. Toute cible hors-scope sera loggee.`);
+        this.emit('scope-override', { at: new Date().toISOString(), reason });
+    }
+
     _log(level, msg, extra) {
         const entry = { at: new Date().toISOString(), level, msg, extra };
         this.transcript.push(entry);
@@ -134,6 +151,8 @@ class Agent extends EventEmitter {
             mode: this.mode,
             orchestrated: this.orchestrated,
             exploitUnlocked: this.exploitUnlocked,
+            scopeOverride: this.scopeOverride,
+            scopeOverrideTargets: [...this._scopeOverrideTargets],
             goal: this.goal,
             status: this.status,
             steps: this.steps,
@@ -198,20 +217,30 @@ class Agent extends EventEmitter {
         if (eng) {
             const inScope = engagements.isInScope(eng, this.target);
             if (inScope === false) {
-                const ans = await this.ask(
-                    `⚠ ${this.target} est HORS du scope "${eng.name}". Continuer ?`,
-                    ['oui, etendre le scope', 'non, arreter']
-                );
-                if (!ans || ans.startsWith('non')) {
-                    this._log('warn', 'Arret : cible hors scope');
-                    this.running = false;
-                    this.status = 'done';
-                    this.emit('end', { reason: 'out-of-scope' });
-                    return;
+                if (this.scopeOverride) {
+                    this._scopeOverrideTargets.add(targetHost(this.target));
+                    this._log('warn', `⚠️  SCOPE-OVERRIDE : ${this.target} HORS du scope "${eng.name}" mais autorise par override utilisateur`);
+                } else {
+                    const ans = await this.ask(
+                        `⚠ ${this.target} est HORS du scope "${eng.name}". Continuer ?`,
+                        ['oui, etendre le scope', 'oui, activer scope-override', 'non, arreter']
+                    );
+                    if (!ans || ans.startsWith('non')) {
+                        this._log('warn', 'Arret : cible hors scope');
+                        this.running = false;
+                        this.status = 'done';
+                        this.emit('end', { reason: 'out-of-scope' });
+                        return;
+                    }
+                    if (ans.includes('scope-override')) {
+                        this.overrideScope('user-accepted-at-start');
+                        this._scopeOverrideTargets.add(targetHost(this.target));
+                    } else {
+                        const newScope = [...eng.scope, targetHost(this.target)];
+                        await engagements.update(this.engagementSlug, { scope: newScope });
+                        this._log('info', `Scope etendu : ${targetHost(this.target)}`);
+                    }
                 }
-                const newScope = [...eng.scope, targetHost(this.target)];
-                await engagements.update(this.engagementSlug, { scope: newScope });
-                this._log('info', `Scope etendu : ${targetHost(this.target)}`);
             }
         } else {
             this._log('warn', 'Aucun engagement actif — scope check desactive.');
@@ -238,12 +267,18 @@ class Agent extends EventEmitter {
                 if (prog?.ok) {
                     const chk = bugbountyApi.isInScope(host, prog.scope, prog.outOfScope);
                     if (chk && chk.inScope === false) {
-                        this._log('error', `🚫 Target ${host} OUT-OF-SCOPE sur ${eng.platform}/${eng.handle}`);
-                        this.running = false; this.status = 'done';
-                        this.emit('end', { reason: 'bb-out-of-scope' });
-                        return;
+                        if (this.scopeOverride) {
+                            this._scopeOverrideTargets.add(host);
+                            this._log('warn', `⚠️  SCOPE-OVERRIDE : ${host} OUT-OF-SCOPE sur ${eng.platform}/${eng.handle} mais autorise par override`);
+                        } else {
+                            this._log('error', `🚫 Target ${host} OUT-OF-SCOPE sur ${eng.platform}/${eng.handle}`);
+                            this.running = false; this.status = 'done';
+                            this.emit('end', { reason: 'bb-out-of-scope' });
+                            return;
+                        }
+                    } else {
+                        this._log('info', `✅ Scope check ${eng.platform}/${eng.handle} OK`);
                     }
-                    this._log('info', `✅ Scope check ${eng.platform}/${eng.handle} OK`);
                 }
             } catch (e) { this._log('warn', `BB scope check skip: ${e.message}`); }
         }
@@ -544,8 +579,15 @@ Ne jamais relancer le meme outil avec les memes args consecutivement.`;
         if (eng) {
             const inScope = engagements.isInScope(eng, host);
             if (inScope === false) {
-                this._log('error', `SCOPE BLOCK: ${host} hors scope, action refusee`);
-                return false;
+                if (this.scopeOverride) {
+                    if (!this._scopeOverrideTargets.has(host)) {
+                        this._scopeOverrideTargets.add(host);
+                        this._log('warn', `⚠️  SCOPE-OVERRIDE : nouvelle cible hors-scope autorisee → ${host} (tool: ${tool})`);
+                    }
+                } else {
+                    this._log('error', `SCOPE BLOCK: ${host} hors scope, action refusee`);
+                    return false;
+                }
             }
         }
 

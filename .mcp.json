@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "keysosi-link": {
+      "command": "node",
+      "args": ["./server/bin/keysosi-mcp.js"],
+      "env": {
+        "KEYSOSI_ENGAGEMENT": "default"
+      }
+    }
+  }
+}
