@@ -1,0 +1,23 @@
+{
+    "name": "keysosi-link-server",
+    "version": "6.0.0",
+    "description": "KeysOsi-Link v6.0 Phantom - Autonomous CyberSec Meta-Agent Server",
+    "main": "index.js",
+    "bin": {
+        "keysosi-mcp": "./bin/keysosi-mcp.js"
+    },
+    "scripts": {
+        "start": "node index.js",
+        "mcp": "node bin/keysosi-mcp.js"
+    },
+    "dependencies": {
+        "@anthropic-ai/sdk": "^0.90.0",
+        "@google/generative-ai": "^0.24.1",
+        "cors": "^2.8.5",
+        "express": "^4.19.2",
+        "groq-sdk": "^0.37.0",
+        "node-pty": "^1.0.0",
+        "openai": "^6.34.0",
+        "ws": "^8.18.0"
+    }
+}

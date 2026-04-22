@@ -1,0 +1,56 @@
+# ════════════════════════════════════════════════════════════════
+#  ⚡ KEYSOSI LAB — Cibles d'entraînement (vulnérables par design)
+#  Toutes sur le réseau aura-lab-net → accessibles depuis aura-lab
+#  par nom de service (ex: `nmap dvwa`, `curl http://juice-shop:3000`)
+# ════════════════════════════════════════════════════════════════
+name: aura-lab-targets
+
+services:
+  # ── Damn Vulnerable Web Application ──
+  dvwa:
+    image: vulnerables/web-dvwa:latest
+    container_name: aura-dvwa
+    restart: unless-stopped
+    networks: [labnet]
+    ports:
+      - "127.0.0.1:8080:80"
+
+  # ── OWASP Juice Shop (modern Node.js / OWASP Top 10) ──
+  juice-shop:
+    image: bkimminich/juice-shop:latest
+    container_name: aura-juice
+    restart: unless-stopped
+    networks: [labnet]
+    ports:
+      - "127.0.0.1:8081:3000"
+
+  # ── Mutillidae (LAMP vulnérable, OWASP Top 10) ──
+  mutillidae:
+    image: webpwnized/mutillidae:latest
+    container_name: aura-mutillidae
+    restart: unless-stopped
+    networks: [labnet]
+    ports:
+      - "127.0.0.1:8082:80"
+
+  # ── Metasploitable2 (Linux vulnérable — services réseau uniquement, pas de port host) ──
+  metasploitable:
+    image: tleemcjr/metasploitable2:latest
+    container_name: aura-metasploitable
+    restart: unless-stopped
+    networks: [labnet]
+    # Pas de ports exposés sur l'hôte : accessible uniquement depuis aura-lab via labnet
+
+  # ── WebGoat (OWASP, lessons interactives) ──
+  webgoat:
+    image: webgoat/webgoat:latest
+    container_name: aura-webgoat
+    restart: unless-stopped
+    networks: [labnet]
+    ports:
+      - "127.0.0.1:8083:8080"
+
+networks:
+  labnet:
+    name: aura-lab-net
+    driver: bridge
