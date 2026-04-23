@@ -15,6 +15,8 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
+import { ThemeProvider } from '@/lib/theme/ThemeContext'
+import { ThemeToggle } from '@/components/theme/ThemeToggle'
 
 // ══════════════════════════════════════════════════════════════
 // PALETTE CEO — Or · Vert · Jaune · Rouge · Drapeau Bénin
@@ -347,7 +349,8 @@ export default function CeoLayout({ children }: { children: React.ReactNode }) {
     const activeLabel = CEO_NAV.find(n => pathname === n.href || pathname.startsWith(n.href + '/'))?.label || 'CEO Panel'
 
     return (
-        <div className="flex h-screen overflow-hidden" style={{ background: BG, color: TEXT }}>
+        <ThemeProvider panel="ceo" defaultTheme="light">
+        <div className="flex h-screen overflow-hidden" style={{ background: 'var(--panel-bg)', color: 'var(--panel-text)' }}>
 
             {/* Welcome animation */}
             <AnimatePresence>
@@ -499,6 +502,7 @@ export default function CeoLayout({ children }: { children: React.ReactNode }) {
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
+                        <ThemeToggle />
                         <button className="relative p-2 rounded-xl transition-colors"
                             style={{ background: `${GREEN}15`, color: `${GREEN_L}80` }}
                             onMouseEnter={e => (e.currentTarget.style.color = GREEN_L)}
@@ -594,5 +598,6 @@ export default function CeoLayout({ children }: { children: React.ReactNode }) {
                 )}
             </AnimatePresence>
         </div>
+        </ThemeProvider>
     )
 }

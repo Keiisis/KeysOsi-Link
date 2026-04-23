@@ -15,6 +15,8 @@ import {
     Command, UserCog, Globe, Handshake, Radar, MonitorPlay, Landmark, CreditCard, Mail
 } from 'lucide-react'
 import { useTranslation, T } from '@/lib/translation'
+import { ThemeProvider } from '@/lib/theme/ThemeContext'
+import { ThemeToggle } from '@/components/theme/ThemeToggle'
 
 // ═══════════════════════════════════════════
 // Types
@@ -574,7 +576,8 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
     )
 
     return (
-        <div className="flex h-screen bg-nexus-deep text-white font-sans overflow-hidden">
+        <ThemeProvider panel="agent" defaultTheme="dark">
+        <div className="flex h-screen text-white font-sans overflow-hidden" style={{ background: 'var(--panel-bg)', color: 'var(--panel-text)' }}>
             {/* ═══════════ DESKTOP SIDEBAR ═══════════ */}
             <motion.aside
                 initial={false}
@@ -665,6 +668,8 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                     </div>
 
                     <div className="flex items-center gap-2">
+                        <ThemeToggle />
+
                         {/* Search trigger */}
                         <button
                             onClick={() => setSearchOpen(true)}
@@ -793,5 +798,6 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                 </div>
             </main>
         </div>
+        </ThemeProvider>
     )
 }

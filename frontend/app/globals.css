@@ -489,3 +489,89 @@
 .marquee-paused {
   animation-play-state: paused !important;
 }
+
+/* ═══════════════════════════════════════════════════════
+   🎨 THEME TOGGLE — Variables par panel x theme
+   Utilisation : wrapper avec [data-panel="X"][data-theme="Y"]
+   Composants lisent via var(--panel-bg), var(--panel-text), etc.
+   ═══════════════════════════════════════════════════════ */
+
+/* ── ADMIN : noir bleuté (dark défaut) ⇄ ivoire institutionnel ── */
+[data-panel="admin"][data-theme="dark"] {
+  --panel-bg: #05080a;
+  --panel-surface: #0a0f18;
+  --panel-surface-alt: #111827;
+  --panel-text: #E5E7EB;
+  --panel-text-muted: #9CA3AF;
+  --panel-border: rgba(255,255,255,0.08);
+  --panel-accent: #FCD116;
+}
+[data-panel="admin"][data-theme="light"] {
+  --panel-bg: #FAF8F4;
+  --panel-surface: #FFFFFF;
+  --panel-surface-alt: #F5F0E8;
+  --panel-text: #1B2A4A;
+  --panel-text-muted: #6B7280;
+  --panel-border: rgba(27,42,74,0.10);
+  --panel-accent: #C9A84C;
+}
+
+/* ── AGENT : ivoire chaud (light défaut) ⇄ bleu nuit institutionnel ── */
+[data-panel="agent"][data-theme="light"] {
+  --panel-bg: #F7F4EE;
+  --panel-surface: #FFFFFF;
+  --panel-surface-alt: #FEFCF9;
+  --panel-text: #1B2A4A;
+  --panel-text-muted: #6B7280;
+  --panel-border: rgba(27,42,74,0.08);
+  --panel-accent: #008751;
+}
+[data-panel="agent"][data-theme="dark"] {
+  --panel-bg: #0F1A30;
+  --panel-surface: #1A2542;
+  --panel-surface-alt: #253058;
+  --panel-text: #E8E4D8;
+  --panel-text-muted: #9CA3AF;
+  --panel-border: rgba(255,255,255,0.10);
+  --panel-accent: #10B981;
+}
+
+/* ── CLIENT : noir profond (dark défaut) ⇄ ivoire doux ── */
+[data-panel="client"][data-theme="dark"] {
+  --panel-bg: #060d16;
+  --panel-surface: #0f1827;
+  --panel-surface-alt: #1a2540;
+  --panel-text: #E5E7EB;
+  --panel-text-muted: #9CA3AF;
+  --panel-border: rgba(255,255,255,0.10);
+  --panel-accent: #C9A84C;
+}
+[data-panel="client"][data-theme="light"] {
+  --panel-bg: #FAF8F4;
+  --panel-surface: #FFFFFF;
+  --panel-surface-alt: #F5F0E8;
+  --panel-text: #1B2A4A;
+  --panel-text-muted: #6B7280;
+  --panel-border: rgba(27,42,74,0.10);
+  --panel-accent: #C9A84C;
+}
+
+/* ── CEO : blanc premium (light défaut) ⇄ charbon executive ── */
+[data-panel="ceo"][data-theme="light"] {
+  --panel-bg: #FFFFFF;
+  --panel-surface: #F4FAF5;
+  --panel-surface-alt: #FAFAF7;
+  --panel-text: #1B2A4A;
+  --panel-text-muted: #6B7280;
+  --panel-border: rgba(27,42,74,0.08);
+  --panel-accent: #008751;
+}
+[data-panel="ceo"][data-theme="dark"] {
+  --panel-bg: #0a0f18;
+  --panel-surface: #111827;
+  --panel-surface-alt: #1a2540;
+  --panel-text: #F4F0E6;
+  --panel-text-muted: #9CA3AF;
+  --panel-border: rgba(212,175,55,0.18);
+  --panel-accent: #D4AF37;
+}

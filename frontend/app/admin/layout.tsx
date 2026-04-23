@@ -20,6 +20,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { RefineContext } from '@/components/admin/refine-context'
 import { supabase } from '@/lib/supabase'
+import { ThemeProvider } from '@/lib/theme/ThemeContext'
+import { ThemeToggle } from '@/components/theme/ThemeToggle'
 
 function AdminLayoutContent({
     children,
@@ -265,13 +267,15 @@ function AdminLayoutContent({
             key="admin-auth"
             fallback={<LoginRedirect />}
         >
-            <div className="flex h-screen bg-[#05080a] text-white font-sans overflow-hidden">
+            <ThemeProvider panel="admin" defaultTheme="dark">
+            <div className="flex h-screen text-white font-sans overflow-hidden" style={{ background: 'var(--panel-bg)', color: 'var(--panel-text)' }}>
                 {/* ═══════════ DESKTOP SIDEBAR ═══════════ */}
                 <motion.aside
                     initial={false}
                     animate={{ width: isSidebarOpen ? 260 : 68 }}
                     transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                    className="hidden lg:flex h-full bg-[#0a0f18] border-r border-white/5 flex-col relative z-50 overflow-hidden shadow-[10px_0_30px_rgba(0,0,0,0.5)]"
+                    className="hidden lg:flex h-full border-r flex-col relative z-50 overflow-hidden shadow-[10px_0_30px_rgba(0,0,0,0.5)]"
+                    style={{ background: 'var(--panel-surface)', borderColor: 'var(--panel-border)' }}
                 >
                     <div className="absolute top-0 left-0 w-full h-[300px] bg-benin-gradient opacity-10 blur-[100px] pointer-events-none" />
                     {renderSidebarContent(!isSidebarOpen)}
@@ -293,7 +297,8 @@ function AdminLayoutContent({
                                 animate={{ x: 0, opacity: 1 }}
                                 exit={{ x: -320, opacity: 0 }}
                                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                                className="fixed left-0 top-0 h-full w-[280px] bg-[#0a0f18] border-r border-white/5 flex flex-col z-[101] lg:hidden shadow-2xl"
+                                className="fixed left-0 top-0 h-full w-[280px] border-r flex flex-col z-[101] lg:hidden shadow-2xl"
+                                style={{ background: 'var(--panel-surface)', borderColor: 'var(--panel-border)' }}
                             >
                                 <button
                                     onClick={() => setMobileMenuOpen(false)}
@@ -317,11 +322,17 @@ function AdminLayoutContent({
                     </div>
 
                     {/* ═══ TOP NAVBAR ═══ */}
-                    <header className={cn(
-                        'h-14 lg:h-16 flex items-center px-4 lg:px-6 justify-between transition-all relative z-40',
-                        'bg-[#05080a]/80 backdrop-blur-xl border-b border-white/5',
-                        scrolled && 'shadow-[0_4px_30px_rgba(0,0,0,0.4)]'
-                    )}>
+                    <header
+                        className={cn(
+                            'h-14 lg:h-16 flex items-center px-4 lg:px-6 justify-between transition-all relative z-40',
+                            'backdrop-blur-xl border-b',
+                            scrolled && 'shadow-[0_4px_30px_rgba(0,0,0,0.4)]'
+                        )}
+                        style={{
+                            background: 'color-mix(in srgb, var(--panel-bg) 80%, transparent)',
+                            borderColor: 'var(--panel-border)',
+                        }}
+                    >
                         <div className="flex items-center gap-3">
                             {/* Mobile hamburger */}
                             <button
@@ -348,6 +359,7 @@ function AdminLayoutContent({
                         </div>
 
                         <div className="flex items-center gap-2">
+                            <ThemeToggle />
                             <button title="Notifications" className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-all">
                                 <Bell size={17} />
                             </button>
@@ -383,6 +395,7 @@ function AdminLayoutContent({
                     </div>
                 </main>
             </div>
+            </ThemeProvider>
         </Authenticated>
     )
 }
