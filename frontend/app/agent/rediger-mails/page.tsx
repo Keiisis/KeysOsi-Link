@@ -8,7 +8,7 @@ import {
     Trash2, Eye, Edit3, Clock, CheckCircle2, AlertCircle,
     Bold, Italic, Underline, Link2, List, ListOrdered,
     AlignLeft, AlignCenter, Image, Sparkles,
-    FileText, RefreshCw, Inbox, Star
+    FileText, RefreshCw, Inbox, Star, Paperclip, Wand2
 } from 'lucide-react'
 
 // ═══════════════════════════════════════════
@@ -33,7 +33,33 @@ interface EmailLog {
     created_at: string
 }
 
+interface EmailAttachment {
+    id: string
+    filename: string
+    size: number
+    contentType: string
+    content: string // base64 (data URL prefix strippe au moment du POST)
+}
+
 type Tab = 'compose' | 'sent' | 'templates'
+
+// Limite dure cote client — meme que l'API (20MB decodes)
+const MAX_ATTACHMENT_TOTAL_BYTES = 20 * 1024 * 1024
+
+function formatFileSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} o`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`
+    return `${(bytes / (1024 * 1024)).toFixed(2)} Mo`
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(String(reader.result || ''))
+        reader.onerror = () => reject(new Error('Impossible de lire ' + file.name))
+        reader.readAsDataURL(file)
+    })
+}
 
 // ═══════════════════════════════════════════
 // Modèles de mails prédéfinis
@@ -139,8 +165,13 @@ export default function AgentRedigerMailsPage() {
     const [showPreview, setShowPreview] = useState(false)
     const [showTemplates, setShowTemplates] = useState(false)
 
+    // Pieces jointes + amelioration IA
+    const [attachments, setAttachments] = useState<EmailAttachment[]>([])
+    const [enhancing, setEnhancing] = useState(false)
+
     const editorRef = useRef<HTMLDivElement>(null)
     const contactPickerRef = useRef<HTMLDivElement>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
     // Charger les contacts et emails envoyés
     useEffect(() => {
@@ -251,6 +282,98 @@ export default function AgentRedigerMailsPage() {
         setShowContactPicker(false)
     }
 
+    // ─── Upload de pieces jointes (tous types de fichiers) ───
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || [])
+        if (files.length === 0) return
+
+        const currentTotal = attachments.reduce((acc, a) => acc + a.size, 0)
+        const newItems: EmailAttachment[] = []
+        let runningTotal = currentTotal
+
+        for (const file of files) {
+            if (runningTotal + file.size > MAX_ATTACHMENT_TOTAL_BYTES) {
+                setSendResult({
+                    ok: false,
+                    msg: `Taille totale > ${formatFileSize(MAX_ATTACHMENT_TOTAL_BYTES)}. Fichier "${file.name}" ignoré.`,
+                })
+                break
+            }
+            try {
+                const dataUrl = await readFileAsDataUrl(file)
+                newItems.push({
+                    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                    filename: file.name,
+                    size: file.size,
+                    contentType: file.type || 'application/octet-stream',
+                    content: dataUrl,
+                })
+                runningTotal += file.size
+            } catch (err) {
+                setSendResult({
+                    ok: false,
+                    msg: err instanceof Error ? err.message : 'Erreur de lecture du fichier.',
+                })
+            }
+        }
+
+        if (newItems.length > 0) {
+            setAttachments(prev => [...prev, ...newItems])
+        }
+        // Reset input pour permettre de re-uploader le meme fichier si supprime
+        if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+
+    const removeAttachment = (id: string) => {
+        setAttachments(prev => prev.filter(a => a.id !== id))
+    }
+
+    // ─── Ameliorer le mail avec l'IA (Groq via /api/ai/enhance-email) ───
+    const handleEnhanceWithAI = async () => {
+        syncEditorContent()
+        const currentHtml = editorRef.current?.innerHTML || bodyHtml
+        // On envoie le texte brut à l'IA (plus fiable que HTML)
+        const plainText = editorRef.current?.innerText || currentHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+        if (!plainText || plainText.length < 10) {
+            setSendResult({ ok: false, msg: 'Écrivez un brouillon (au moins 10 caractères) avant d\'améliorer.' })
+            setTimeout(() => setSendResult(null), 4000)
+            return
+        }
+
+        setEnhancing(true)
+        setSendResult(null)
+        try {
+            const res = await fetch('/api/ai/enhance-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: plainText }),
+            })
+            const data = await res.json()
+            if (!res.ok || !data.enhanced) {
+                throw new Error(data.error || 'Pas de réponse de l\'IA.')
+            }
+            // Converti le texte brut ameliore en HTML (paragraphes + sauts de ligne preserves)
+            const enhancedHtml = data.enhanced
+                .split(/\n{2,}/)
+                .map((para: string) => `<p>${para.replace(/\n/g, '<br/>')}</p>`)
+                .join('')
+
+            if (editorRef.current) {
+                editorRef.current.innerHTML = enhancedHtml
+            }
+            setBodyHtml(enhancedHtml)
+            setSendResult({ ok: true, msg: '✨ Mail amélioré par l\'IA. Relisez avant d\'envoyer.' })
+            setTimeout(() => setSendResult(null), 4000)
+        } catch (err) {
+            setSendResult({
+                ok: false,
+                msg: err instanceof Error ? err.message : 'Échec de l\'amélioration IA.',
+            })
+            setTimeout(() => setSendResult(null), 5000)
+        }
+        setEnhancing(false)
+    }
+
     const handleSend = async () => {
         if (!toEmail || !subject) return
         syncEditorContent()
@@ -271,12 +394,23 @@ export default function AgentRedigerMailsPage() {
                     clientName: toName || toEmail.split('@')[0],
                     context: 'agent_compose',
                     language: 'fr',
+                    attachments: attachments.map(a => ({
+                        filename: a.filename,
+                        content: a.content,
+                        contentType: a.contentType,
+                    })),
                 }),
             })
 
             const data = await res.json()
             if (res.ok && data.success) {
-                setSendResult({ ok: true, msg: 'Email envoyé avec succès !' })
+                const attachCount = attachments.length
+                setSendResult({
+                    ok: true,
+                    msg: attachCount > 0
+                        ? `Email envoyé avec ${attachCount} pièce(s) jointe(s) !`
+                        : 'Email envoyé avec succès !',
+                })
                 setSentEmails(prev => [{
                     id: Date.now().toString(),
                     to_email: toEmail,
@@ -289,6 +423,7 @@ export default function AgentRedigerMailsPage() {
                 setToEmail(''); setToName(''); setSubject('')
                 if (editorRef.current) editorRef.current.innerHTML = ''
                 setBodyHtml('')
+                setAttachments([])
             } else {
                 setSendResult({ ok: false, msg: data.error || 'Erreur lors de l\'envoi.' })
             }
@@ -303,6 +438,7 @@ export default function AgentRedigerMailsPage() {
         setToEmail(''); setToName(''); setSubject('')
         if (editorRef.current) editorRef.current.innerHTML = ''
         setBodyHtml(''); setSendResult(null)
+        setAttachments([])
     }
 
     if (loading) {
@@ -592,10 +728,47 @@ export default function AgentRedigerMailsPage() {
                                 </button>
                                 <button
                                     onClick={() => { const url = prompt('URL de l\'image :'); if (url) execCmd('insertImage', url) }}
-                                    title="Insérer une image"
+                                    title="Insérer une image par URL"
                                     className="p-2 rounded-md text-[#6B7280] hover:text-[#1B2A4A] hover:bg-[#1B2A4A]/5 transition-all"
                                 >
                                     <Image size={15} />
+                                </button>
+                                <div className="w-px h-5 bg-[#1B2A4A]/8 mx-1" />
+                                {/* Joindre fichiers (tous types) */}
+                                <button
+                                    onClick={() => fileInputRef.current?.click()}
+                                    title="Joindre des fichiers (PDF, Word, Excel, ZIP, images, etc.)"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold text-[#1B2A4A] bg-[#1B2A4A]/5 hover:bg-[#008751]/10 hover:text-[#008751] transition-all"
+                                >
+                                    <Paperclip size={13} />
+                                    Joindre fichiers
+                                </button>
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    multiple
+                                    onChange={handleFileUpload}
+                                    className="hidden"
+                                    aria-hidden="true"
+                                />
+                                {/* Ameliorer avec l'IA */}
+                                <button
+                                    onClick={handleEnhanceWithAI}
+                                    disabled={enhancing}
+                                    title="Améliorer le brouillon avec l'IA (Groq)"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold text-white transition-all disabled:opacity-50"
+                                    style={{
+                                        background: enhancing
+                                            ? '#6B7280'
+                                            : 'linear-gradient(135deg, #C9A84C, #B08D3A)',
+                                        boxShadow: enhancing ? 'none' : '0 2px 8px rgba(201,168,76,0.30)',
+                                    }}
+                                >
+                                    {enhancing
+                                        ? <RefreshCw size={13} className="animate-spin" />
+                                        : <Wand2 size={13} />
+                                    }
+                                    {enhancing ? 'Amélioration...' : 'Améliorer avec IA'}
                                 </button>
                                 <div className="flex-1" />
                                 <span className="text-[10px] text-[#6B7280]/60 font-mono pr-1">
@@ -746,6 +919,46 @@ export default function AgentRedigerMailsPage() {
                                 </motion.div>
                             )}
                         </AnimatePresence>
+
+                        {/* ── Liste des pièces jointes ── */}
+                        {attachments.length > 0 && (
+                            <div className="px-6 py-3 border-t border-[#1B2A4A]/6 bg-[#FEFCF9]">
+                                <div className="flex items-center justify-between mb-2">
+                                    <p className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider flex items-center gap-1.5">
+                                        <Paperclip size={11} />
+                                        {attachments.length} pièce{attachments.length > 1 ? 's' : ''} jointe{attachments.length > 1 ? 's' : ''}
+                                    </p>
+                                    <p className="text-[10px] text-[#6B7280]/60 font-mono">
+                                        {formatFileSize(attachments.reduce((acc, a) => acc + a.size, 0))} / {formatFileSize(MAX_ATTACHMENT_TOTAL_BYTES)}
+                                    </p>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {attachments.map(a => (
+                                        <div
+                                            key={a.id}
+                                            className="group flex items-center gap-2 px-3 py-2 rounded-lg bg-white border border-[#1B2A4A]/10 hover:border-[#008751]/25 transition-all max-w-xs"
+                                        >
+                                            <div className="w-7 h-7 rounded-md bg-[#008751]/8 flex items-center justify-center flex-shrink-0">
+                                                <FileText size={13} className="text-[#008751]" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[11px] font-semibold text-[#1B2A4A] truncate" title={a.filename}>
+                                                    {a.filename}
+                                                </p>
+                                                <p className="text-[9px] text-[#6B7280]">{formatFileSize(a.size)}</p>
+                                            </div>
+                                            <button
+                                                onClick={() => removeAttachment(a.id)}
+                                                title="Retirer"
+                                                className="p-1 rounded hover:bg-[#E8112D]/8 text-[#6B7280] hover:text-[#E8112D] transition-all"
+                                            >
+                                                <X size={12} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {/* ── Boutons d'action ── */}
                         <div className="px-6 py-4 border-t border-[#1B2A4A]/6 bg-[#FAFAF7] flex items-center justify-between">

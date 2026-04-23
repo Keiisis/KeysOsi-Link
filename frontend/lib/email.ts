@@ -60,6 +60,12 @@ export async function createTransporter() {
     })
 }
 
+export interface EmailAttachment {
+    filename: string
+    content: string // base64 (avec ou sans prefixe data:...;base64,)
+    contentType?: string
+}
+
 export async function sendEmail(options: {
     to: string
     subject: string
@@ -67,6 +73,7 @@ export async function sendEmail(options: {
     replyTo?: string
     context?: string
     relatedId?: string
+    attachments?: EmailAttachment[]
 }): Promise<{ success: boolean; error?: string }> {
     try {
         const config = await getEmailConfig()
@@ -76,12 +83,23 @@ export async function sendEmail(options: {
             return { success: false, error: 'SMTP non configuré. Allez dans Admin > Paramètres > Email.' }
         }
 
+        // Transforme les attachments base64 en buffers pour nodemailer
+        const mailAttachments = (options.attachments || []).map(a => {
+            const raw = a.content.includes(',') ? a.content.split(',')[1] : a.content
+            return {
+                filename: a.filename,
+                content: Buffer.from(raw, 'base64'),
+                contentType: a.contentType,
+            }
+        })
+
         const info = await transporter.sendMail({
             from: `"${config.fromName}" <${config.fromEmail}>`,
             to: options.to,
             subject: options.subject,
             html: options.html,
             replyTo: options.replyTo || config.fromEmail,
+            ...(mailAttachments.length ? { attachments: mailAttachments } : {}),
         })
 
         const supabase = createClient(supabaseUrl, supabaseKey)

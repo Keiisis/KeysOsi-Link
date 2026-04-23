@@ -148,7 +148,7 @@ export default function AdminBoutiquePage() {
 
                     <Button
                         type="button"
-                        onClick={() => router.push('/admin/boutique/produits/create')}
+                        onClick={() => router.push('/admin/boutique/create')}
                         className="bg-[#008751] h-14 px-8 rounded-2xl text-white font-black tracking-widest gap-2 shadow-xl hover:shadow-green-500/10 transform active:scale-95 transition-all"
                     >
                         <Plus size={20} /> AJOUTER
@@ -364,7 +364,7 @@ export default function AdminBoutiquePage() {
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            onClick={() => router.push(`/admin/boutique/produits/${item.id}`)}
+                                            onClick={() => router.push(`/admin/boutique/edit/${item.id}`)}
                                             className="h-10 px-4 rounded-xl border-white/10 text-gray-400 hover:bg-white hover:text-black text-[10px] font-black uppercase tracking-widest"
                                         >
                                             <Edit3 size={12} className="mr-1.5" /> Modifier

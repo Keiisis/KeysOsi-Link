@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Poppins, Inter } from "next/font/google";
+import { Poppins, Inter, Montserrat } from "next/font/google";
 import { LayoutShell } from "@/components/layout/LayoutShell";
 import { TranslationProvider } from "@/lib/translation";
 import "./globals.css";
@@ -14,6 +14,12 @@ const inter = Inter({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600"],
   variable: "--font-inter",
+});
+
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-montserrat",
 });
 
 export const metadata: Metadata = {
@@ -57,7 +63,7 @@ export default async function RootLayout({
   return (
     <html lang="fr" className="scroll-smooth">
       <body
-        className={`${poppins.variable} ${inter.variable} font-sans bg-background text-foreground antialiased`}
+        className={`${poppins.variable} ${inter.variable} ${montserrat.variable} font-sans bg-background text-foreground antialiased`}
         suppressHydrationWarning={true}
       >
         <TranslationProvider>
