@@ -133,7 +133,7 @@ export default function SimulateurPage() {
     const progressPercent = isResultStep ? 100 : Math.round((currentStep / totalSteps) * 100)
 
     return (
-        <div className="min-h-screen bg-[#05080a] text-white relative overflow-hidden flex flex-col">
+        <div className="min-h-screen bg-white text-gray-900 relative overflow-hidden flex flex-col">
             {/* Background Effects */}
             <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[900px] h-[900px] bg-[#008751]/8 rounded-full blur-[200px]" />
@@ -155,7 +155,7 @@ export default function SimulateurPage() {
                     <h1 className="text-3xl md:text-5xl font-black font-heading mb-4 tracking-tight">
                         Trouvez votre <span className="bg-gradient-to-r from-[#FCD116] to-[#E8112D] bg-clip-text text-transparent"><T>voie</T></span>
                     </h1>
-                    <p className="text-gray-400 max-w-xl mx-auto">
+                    <p className="text-gray-500 max-w-xl mx-auto">
                         En 5 questions, découvrez le service Retour Gagnant fait pour vous.
                     </p>
                 </motion.div>
@@ -193,11 +193,11 @@ export default function SimulateurPage() {
                                     const StepIcon = step.icon
                                     return (
                                         <div className="text-center">
-                                            <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                                            <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-white/5 border border-gray-200 flex items-center justify-center">
                                                 <StepIcon size={28} className="text-[#FCD116]" />
                                             </div>
                                             <h2 className="text-2xl font-black font-heading mb-2">{t(step.title)}</h2>
-                                            <p className="text-gray-400 mb-8">{t(step.subtitle)}</p>
+                                            <p className="text-gray-500 mb-8">{t(step.subtitle)}</p>
 
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 {step.options.map((opt) => (
@@ -206,7 +206,7 @@ export default function SimulateurPage() {
                                                         onClick={() => selectAnswer(step.id, opt.value)}
                                                         className={`p-5 rounded-2xl border text-left transition-all group hover:scale-[1.02] ${answers[step.id] === opt.value
                                                                 ? 'bg-[#008751]/20 border-[#008751]/50 shadow-[0_0_30px_rgba(0,135,81,0.2)]'
-                                                                : 'bg-white/[0.03] border-white/10 hover:border-white/20 hover:bg-white/[0.05]'
+                                                                : 'bg-gray-50 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                                                             }`}
                                                     >
                                                         <span className="text-2xl mb-2 block">{opt.emoji}</span>
@@ -233,31 +233,31 @@ export default function SimulateurPage() {
                                         <contactStep.icon size={28} className="text-[#FCD116]" />
                                     </div>
                                     <h2 className="text-2xl font-black font-heading mb-2">{t(contactStep.title)}</h2>
-                                    <p className="text-gray-400">{t(contactStep.subtitle)}</p>
+                                    <p className="text-gray-500">{t(contactStep.subtitle)}</p>
                                 </div>
 
                                 <div className="max-w-md mx-auto space-y-4">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 block"><T>Nom</T></label>
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1.5 block"><T>Nom</T></label>
                                             <input type="text" required value={nom} onChange={e => setNom(e.target.value)} placeholder={t("Votre nom")}
-                                                className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751]" />
+                                                className="w-full px-4 py-3.5 bg-white/5 border border-gray-200 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751]" />
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 block"><T>Prénom</T></label>
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1.5 block"><T>Prénom</T></label>
                                             <input type="text" value={prenom} onChange={e => setPrenom(e.target.value)} placeholder={t("Votre prénom")}
-                                                className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751]" />
+                                                className="w-full px-4 py-3.5 bg-white/5 border border-gray-200 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751]" />
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 block"><T>Email</T></label>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1.5 block"><T>Email</T></label>
                                         <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder={t("votre@email.com")}
-                                            className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751]" />
+                                            className="w-full px-4 py-3.5 bg-white/5 border border-gray-200 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751]" />
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 block"><T>WhatsApp (optionnel)</T></label>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1.5 block"><T>WhatsApp (optionnel)</T></label>
                                         <input type="tel" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder={t("+229 XX XX XX XX")}
-                                            className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751]" />
+                                            className="w-full px-4 py-3.5 bg-white/5 border border-gray-200 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751]" />
                                     </div>
 
                                     <button
@@ -307,7 +307,7 @@ export default function SimulateurPage() {
                                     </svg>
                                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                                         <span className="text-4xl font-black font-mono text-[#FCD116]">{result.score}</span>
-                                        <span className="text-[10px] uppercase tracking-widest text-gray-400 font-bold"><T>score</T></span>
+                                        <span className="text-[10px] uppercase tracking-widest text-gray-500 font-bold"><T>score</T></span>
                                     </div>
                                 </div>
 
@@ -319,7 +319,7 @@ export default function SimulateurPage() {
                                 <div className="bg-gradient-to-br from-[#008751]/20 to-[#008751]/5 border border-[#008751]/30 rounded-3xl p-8 mb-8 backdrop-blur-xl max-w-lg mx-auto">
                                     <Sparkles size={32} className="text-[#FCD116] mx-auto mb-4" />
                                     <h3 className="text-2xl font-black font-heading text-[#FCD116] mb-2">{t(result.service)}</h3>
-                                    <p className="text-gray-400 text-sm leading-relaxed">
+                                    <p className="text-gray-500 text-sm leading-relaxed">
                                         {result.hasOrigins
                                             ? t('Vos origines béninoises renforcent votre éligibilité. Notre équipe est prête à vous accompagner dans cette démarche.')
                                             : t('Votre profil montre un fort intérêt pour le Bénin. Nous sommes prêts à vous accompagner.')}
@@ -357,7 +357,7 @@ export default function SimulateurPage() {
                     >
                         <button
                             onClick={() => setCurrentStep(prev => prev - 1)}
-                            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors group"
+                            className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors group"
                         >
                             <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                             <span className="text-sm font-bold uppercase tracking-widest"><T>Précédent</T></span>

@@ -131,7 +131,7 @@ export default function SuiviDossierPage() {
     }
 
     return (
-        <div className="min-h-screen bg-[#05080a] text-white relative overflow-hidden">
+        <div className="min-h-screen bg-white text-gray-900 relative overflow-hidden">
             {/* Background Effects */}
             <div className="absolute inset-0">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[#008751]/10 rounded-full blur-[150px]" />
@@ -155,7 +155,7 @@ export default function SuiviDossierPage() {
                         <h1 className="text-4xl md:text-6xl font-black font-heading mb-6 tracking-tight">
                             <T>Suivi de</T> <span className="bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D] bg-clip-text text-transparent"><T>Dossier</T></span>
                         </h1>
-                        <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
+                        <p className="text-gray-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
                             <T>Consultez l&apos;avancement de votre dossier en temps réel grâce à notre système de suivi intelligent.</T>
                         </p>
                     </motion.div>
@@ -170,10 +170,10 @@ export default function SuiviDossierPage() {
                                 exit={{ opacity: 0, y: -20 }}
                             >
                                 <div className="max-w-xl mx-auto">
-                                    <div className="bg-white/[0.03] border border-white/10 rounded-3xl p-8 md:p-10 backdrop-blur-xl shadow-2xl">
+                                    <div className="bg-gray-50 border border-gray-200 rounded-3xl p-8 md:p-10 backdrop-blur-xl shadow-2xl">
                                         <form onSubmit={handleSearch} className="space-y-6">
                                             <div>
-                                                <label className="text-[11px] font-black uppercase tracking-[3px] text-gray-400 mb-2 block">
+                                                <label className="text-[11px] font-black uppercase tracking-[3px] text-gray-500 mb-2 block">
                                                     <T>Numéro de dossier</T>
                                                 </label>
                                                 <input
@@ -182,11 +182,11 @@ export default function SuiviDossierPage() {
                                                     value={numDossier}
                                                     onChange={e => setNumDossier(e.target.value)}
                                                     placeholder={t("Ex: RG-2026-00001")}
-                                                    className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751] focus:bg-white/[0.08] transition-all text-lg font-mono tracking-wider"
+                                                    className="w-full px-5 py-4 bg-white/5 border border-gray-200 rounded-2xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-[#008751] focus:bg-gray-100 transition-all text-lg font-mono tracking-wider"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="text-[11px] font-black uppercase tracking-[3px] text-gray-400 mb-2 block">
+                                                <label className="text-[11px] font-black uppercase tracking-[3px] text-gray-500 mb-2 block">
                                                     <T>Email associé</T>
                                                 </label>
                                                 <input
@@ -195,7 +195,7 @@ export default function SuiviDossierPage() {
                                                     value={email}
                                                     onChange={e => setEmail(e.target.value)}
                                                     placeholder={t("votre@email.com")}
-                                                    className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751] focus:bg-white/[0.08] transition-all"
+                                                    className="w-full px-5 py-4 bg-white/5 border border-gray-200 rounded-2xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-[#008751] focus:bg-gray-100 transition-all"
                                                 />
                                             </div>
 
@@ -246,7 +246,7 @@ export default function SuiviDossierPage() {
                                 <button
                                     onClick={resetSearch}
                                     title={t("Nouvelle recherche")}
-                                    className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-8 group"
+                                    className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors mb-8 group"
                                 >
                                     <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                                     <span className="text-sm font-bold uppercase tracking-widest"><T>Nouvelle recherche</T></span>
@@ -258,7 +258,7 @@ export default function SuiviDossierPage() {
                                         <div>
                                             <p className="text-[11px] font-black uppercase tracking-[4px] text-[#008751] mb-2"><T>Dossier N°</T></p>
                                             <h2 className="text-3xl font-black font-mono tracking-wider text-white">{dossier.num_dossier}</h2>
-                                            <p className="text-gray-400 mt-2 text-sm">
+                                            <p className="text-gray-500 mt-2 text-sm">
                                                 {dossier.client_prenom} {dossier.client_nom} — <span className="text-[#FCD116]">{dossier.service_type}</span>
                                             </p>
                                         </div>
@@ -280,7 +280,7 @@ export default function SuiviDossierPage() {
                                                     <span className="text-xl fond-black text-white font-mono">{dossier.progression}%</span>
                                                 </div>
                                             </div>
-                                            <p className="text-[10px] uppercase tracking-widest text-gray-400 mt-2 font-bold"><T>Progression</T></p>
+                                            <p className="text-[10px] uppercase tracking-widest text-gray-500 mt-2 font-bold"><T>Progression</T></p>
                                         </div>
                                     </div>
                                 </div>
@@ -314,7 +314,7 @@ export default function SuiviDossierPage() {
 
                                         <div className="space-y-4 relative z-10">
                                             {dossier.documents_manquants.map((doc, idx) => (
-                                                <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#05080a] border border-red-500/20 rounded-2xl p-4 md:px-6">
+                                                <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-red-500/20 rounded-2xl p-4 md:px-6">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-2 h-2 rounded-full bg-red-500" />
                                                         <span className="font-bold text-gray-200">{doc}</span>
@@ -332,8 +332,8 @@ export default function SuiviDossierPage() {
                                                             htmlFor={`upload-${idx}`}
                                                             className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm cursor-pointer transition-all ${
                                                                 uploadingDoc === doc 
-                                                                ? 'bg-gray-800 text-gray-400 cursor-not-allowed' 
-                                                                : 'bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white shadow-[0_4px_20px_rgba(239,68,68,0.2)]'
+                                                                ? 'bg-gray-800 text-gray-500 cursor-not-allowed' 
+                                                                : 'bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-gray-900 shadow-[0_4px_20px_rgba(239,68,68,0.2)]'
                                                             }`}
                                                         >
                                                             {uploadingDoc === doc ? (
@@ -378,7 +378,7 @@ export default function SuiviDossierPage() {
                                                         ? 'bg-[#FCD116]/5 border-[#FCD116]/30 shadow-[0_0_30px_rgba(252,209,22,0.1)]'
                                                         : etape.status === 'completed'
                                                             ? 'bg-[#008751]/5 border-[#008751]/20'
-                                                            : 'bg-white/[0.02] border-white/5'
+                                                            : 'bg-gray-50 border-gray-200'
                                                         }`}
                                                 >
                                                     <div className="flex items-center justify-between mb-1">
@@ -393,7 +393,7 @@ export default function SuiviDossierPage() {
                                                         <p className="text-gray-500 text-xs mt-1">{new Date(etape.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                                                     )}
                                                     {etape.note && (
-                                                        <p className="text-gray-400 text-sm mt-2 leading-relaxed">{t(etape.note)}</p>
+                                                        <p className="text-gray-500 text-sm mt-2 leading-relaxed">{t(etape.note)}</p>
                                                     )}
                                                     {etape.status === 'in_progress' && (
                                                         <div className="mt-3 flex items-center gap-2">
@@ -442,7 +442,7 @@ export default function SuiviDossierPage() {
                                     </p>
                                     <a
                                         href="/contact"
-                                        className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-white/5 border border-white/10 text-white font-bold text-sm hover:bg-white/10 transition-all"
+                                        className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-white/5 border border-gray-200 text-gray-900 font-bold text-sm hover:bg-gray-100 transition-all"
                                     >
                                         <Sparkles size={16} className="text-[#FCD116]" />
                                         <T>Contacter un conseiller</T>
