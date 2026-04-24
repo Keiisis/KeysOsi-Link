@@ -28,6 +28,7 @@ const bugbountyApi = _opt('./bugbounty-api');
 const fewshotMemory = _opt('./fewshot-memory');
 const replayDvr = _opt('./replay-dvr');
 const reportGen = _opt('./report-gen');
+const notifications = _opt('./notifications');
 
 // Model routing — resolu dynamiquement depuis ai-config
 // (reasoning = 70B/Opus/GPT-4o ; cheap = 8B/Haiku/GPT-4o-mini)
@@ -768,6 +769,11 @@ Ne jamais relancer le meme outil avec les memes args consecutivement.`;
         });
         this._log('info', `📋 Finding [${finding.severity.toUpperCase()}] ${finding.title}`);
         this.emit('finding', finding);
+
+        // ── v6 Phantom : notif push si severity >= high (Slack/Discord/Telegram) ──
+        if (notifications?.notifyFinding && ['high', 'critical'].includes((finding.severity || '').toLowerCase())) {
+            notifications.notifyFinding({ target: this.target, finding }).catch(() => {});
+        }
         return false;
     }
 }

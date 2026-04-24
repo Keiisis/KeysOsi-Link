@@ -84,6 +84,8 @@ const screenshotDvr = require('./autonomous/screenshot-dvr');
 const fewshotMemory = require('./autonomous/fewshot-memory');
 const replayDvr = require('./autonomous/replay-dvr');
 const mcpServer = require('./autonomous/mcp-server');
+const notifications = require('./autonomous/notifications');
+const swarmManager = require('./autonomous/swarm-manager');
 
 // Instantiate CyberSec modules
 const scanner = new VulnerabilityScanner(PROJECT_ROOT);
@@ -2331,6 +2333,64 @@ app.post('/mcp', mcpServer.httpHandler({
 }));
 app.get('/mcp/tools', (_req, res) => {
     res.json({ ok: true, tools: mcpServer.listTools() });
+});
+
+// ════════════════════════════════════════════
+// NOTIFICATIONS — Slack / Discord / Telegram
+// ════════════════════════════════════════════
+app.get('/notifications/status', (_req, res) => {
+    res.json({ ok: true, ...notifications.status() });
+});
+
+app.post('/notifications/test', async (req, res) => {
+    const { title = 'Test notification KeysOsi-Link', severity = 'info', message = 'Ceci est un test depuis /notifications/test', target } = req.body || {};
+    const result = await notifications.notify({ title, severity, target, message });
+    res.json(result);
+});
+
+app.post('/notifications/send', async (req, res) => {
+    const { title, severity, target, message, fields } = req.body || {};
+    if (!title) return res.status(400).json({ ok: false, error: 'title required' });
+    const result = await notifications.notify({ title, severity, target, message, fields });
+    res.json(result);
+});
+
+// ════════════════════════════════════════════
+// SWARM — Multi-agents paralleles
+// ════════════════════════════════════════════
+app.post('/swarm', async (req, res) => {
+    const { engagementSlug, targets, mode, goal, orchestrated, exploitUnlocked, scopeOverride, concurrency } = req.body || {};
+    if (!Array.isArray(targets) || targets.length === 0) {
+        return res.status(400).json({ ok: false, error: 'targets[] required (non-empty array)' });
+    }
+    try {
+        const swarm = swarmManager.createSwarm({
+            engagementSlug, targets, mode, goal,
+            orchestrated, exploitUnlocked, scopeOverride, concurrency,
+        });
+        // Lance en arriere-plan — on retourne le snapshot immediat
+        swarm.run((opts) => agentLib.createAgent(opts)).catch(e => {
+            console.error('[SWARM] run error:', e.message);
+        });
+        res.json({ ok: true, swarm: swarm.snapshot() });
+    } catch (e) {
+        res.status(500).json({ ok: false, error: e.message });
+    }
+});
+
+app.get('/swarm', (_req, res) => {
+    res.json({ ok: true, swarms: swarmManager.listSwarms() });
+});
+
+app.get('/swarm/:id', (req, res) => {
+    const s = swarmManager.getSwarm(req.params.id);
+    if (!s) return res.status(404).json({ ok: false, error: 'swarm-not-found' });
+    res.json({ ok: true, swarm: s.snapshot() });
+});
+
+app.post('/swarm/:id/stop', (req, res) => {
+    const result = swarmManager.stopSwarm(req.params.id);
+    res.json(result);
 });
 
 // ════════════════════════════════════════════
