@@ -13,7 +13,7 @@ import { useLang } from '../../contexts/LangContext'
 import { supabase } from '../../config/supabase'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
 
-const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://retourgagnantbenin.bj'
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
 const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp',
     'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
 const MAX_SIZE_MB = 10

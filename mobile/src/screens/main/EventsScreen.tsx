@@ -9,7 +9,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
 
 const { width } = Dimensions.get('window')
-const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://retourgagnantbenin.bj'
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

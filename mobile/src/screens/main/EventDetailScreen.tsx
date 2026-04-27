@@ -10,7 +10,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
 import type { AppEvent } from './EventsScreen'
 
-const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://retourgagnantbenin.bj'
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -105,7 +105,8 @@ export default function EventDetailScreen({ route, navigation }: any) {
                             onPress: () => {
                                 const { Linking } = require('react-native')
                                 const msg = `Bonjour, je souhaite finaliser mon paiement pour l'événement "${event.title}" (billet ${selectedTicket}) - ${formatPrice(selectedPrice, event.currency)}`
-                                Linking.openURL(`https://wa.me/22990000000?text=${encodeURIComponent(msg)}`)
+                                // Numero officiel agence Retour Gagnant Benin (+229 01 60 32 21 21)
+                                Linking.openURL(`https://wa.me/2290160322121?text=${encodeURIComponent(msg)}`)
                             },
                         },
                     ]

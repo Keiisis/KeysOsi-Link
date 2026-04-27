@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import {
     View, Text, StyleSheet, Modal, TouchableOpacity,
     ActivityIndicator, Alert, Platform
@@ -11,8 +11,10 @@ import { colors, spacing, shadows, typography, radius } from '../config/theme'
 
 /* ═══════════════════════════════════════════════════════════
    KkiapayModal — Paiement natif via SDK Kkiapay React Native
-   Fonctionne sur Android & iOS (via react-native-webview)
-   Widget intégré in-app — plus besoin d'ouvrir le navigateur !
+   Fonctionne sur Android & iOS (necessite dev build, pas Expo Go)
+   Widget integre in-app — plus besoin d'ouvrir le navigateur.
+   La cle publique et le mode sandbox/prod sont lus depuis la
+   table Supabase `settings` (kkiapay_public_key / kkiapay_sandbox).
 ═══════════════════════════════════════════════════════════ */
 
 interface KkiapayModalProps {
@@ -26,40 +28,55 @@ interface KkiapayModalProps {
 export default function KkiapayModal({ visible, amount, serviceName, onClose, onSuccess }: KkiapayModalProps) {
     const [loading, setLoading] = useState(false)
     const [kkiapayKey, setKkiapayKey] = useState<string | null>(null)
+    const [sandbox, setSandbox] = useState(false)
     const { profile } = useAuth()
     const { openKkiapayWidget, addSuccessListener, addFailedListener } = useKkiapay()
 
-    // ── Charger la clé publique Kkiapay depuis Supabase settings ──
+    // Refs sur les callbacks pour eviter le ré-enregistrement des listeners
+    // a chaque render. Le SDK ne fournit pas de removeListener officiel, donc
+    // on enregistre UNE SEULE FOIS au mount + on lit toujours la version a
+    // jour des callbacks via la ref (pas de stale closure non plus).
+    const onSuccessRef = useRef(onSuccess)
+    const onCloseRef = useRef(onClose)
+    useEffect(() => { onSuccessRef.current = onSuccess }, [onSuccess])
+    useEffect(() => { onCloseRef.current = onClose }, [onClose])
+
+    // ── Charger la cle publique Kkiapay + flag sandbox depuis Supabase settings ──
     useEffect(() => {
-        const fetchKey = async () => {
+        const fetchSettings = async () => {
             try {
                 const { data } = await supabase
                     .from('settings')
-                    .select('value')
-                    .eq('key', 'kkiapay_public_key')
-                    .single()
-                if (data?.value) setKkiapayKey(data.value)
-            } catch { /* silent */ }
+                    .select('key, value')
+                    .in('key', ['kkiapay_public_key', 'kkiapay_sandbox'])
+                if (Array.isArray(data)) {
+                    for (const row of data) {
+                        if (row.key === 'kkiapay_public_key' && row.value) setKkiapayKey(row.value)
+                        if (row.key === 'kkiapay_sandbox') {
+                            setSandbox(row.value === 'true' || row.value === true)
+                        }
+                    }
+                }
+            } catch { /* silent — fallback prod */ }
         }
-        fetchKey()
+        fetchSettings()
     }, [])
 
-    // ── Listeners Kkiapay (succès / échec) ──
+    // ── Listeners Kkiapay (succès / échec) — enregistrement unique ──
     useEffect(() => {
         addSuccessListener((data: any) => {
-            console.log('✅ Paiement Kkiapay réussi:', data)
             const transactionId = data?.transactionId || data?.transaction_id || `KK-${Date.now()}`
-            onSuccess(String(transactionId))
+            onSuccessRef.current(String(transactionId))
         })
 
-        addFailedListener((data: any) => {
-            console.log('❌ Paiement Kkiapay échoué:', data)
+        addFailedListener(() => {
             Alert.alert(
                 'Paiement échoué',
                 'Le paiement n\'a pas pu être finalisé. Veuillez réessayer.',
-                [{ text: 'OK', onPress: onClose }]
+                [{ text: 'OK', onPress: () => onCloseRef.current() }]
             )
         })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     // ── Extrait le montant numérique depuis un texte comme "À partir de 150 000 FCFA" ──
@@ -87,7 +104,7 @@ export default function KkiapayModal({ visible, amount, serviceName, onClose, on
             openKkiapayWidget({
                 amount: numericAmount,
                 api_key: kkiapayKey,
-                sandbox: false, // Production mode
+                sandbox, // Lit settings.kkiapay_sandbox (default: false / prod)
                 email: profile?.email || '',
                 phone: profile?.phone || '',
                 reason: serviceName || 'Paiement de service',

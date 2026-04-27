@@ -9,16 +9,24 @@
 
 | Technologie | Version | Usage |
 |---|---|---|
-| Expo | SDK 52 | Framework React Native |
-| React Native | 0.76+ | UI natif |
-| TypeScript | 5.3+ | Typage strict |
+| Expo | SDK 54 | Framework React Native |
+| React Native | 0.81.5 | UI natif |
+| React | 19.1.0 | UI |
+| TypeScript | 5.9.x | Typage strict |
 | @supabase/supabase-js | 2.x | Backend/Auth/Storage |
 | @react-navigation/native | 7.x | Navigation (Stack + Tabs) |
-| @expo/vector-icons (Ionicons) | 14.x | Icônes |
-| expo-document-picker | 1.x | Upload fichiers |
-| expo-image-picker | 16.x | Galerie + Caméra |
-| expo-linking | 7.x | Ouverture URLs + Deep Links |
-| @react-native-async-storage | 2.x | Stockage local |
+| **lucide-react-native** | 1.x | Icônes principales (migration depuis Ionicons) |
+| @expo/vector-icons (Ionicons) | 15.x | Fallback / icônes Services |
+| expo-document-picker | 14.x | Upload fichiers |
+| expo-image-picker | 17.x | Galerie + Caméra |
+| expo-linking | (intégré) | Deep Links |
+| expo-notifications | 0.32.x | Notifications push |
+| expo-secure-store | 15.x | Stockage sécurisé credentials |
+| @kkiapay-org/react-native-sdk | 0.1.x | Paiement Mobile Money / Carte (in-app) |
+| react-native-webview | 13.x | Dépendance interne du SDK Kkiapay |
+| @react-native-async-storage | 2.x | Stockage local (onboarding flag, etc.) |
+
+> ⚠️ **Build : dev build obligatoire** (`expo-dev-client` actif). Plus de support Expo Go car le SDK Kkiapay nécessite des modules natifs.
 
 ---
 
@@ -88,23 +96,36 @@ Chaque service dans `SERVICES_DATA` doit avoir :
 
 ## 💳 PAIEMENT : ARCHITECTURE DÉTAILLÉE
 
+**Évolution v1 → v2** : on est passés de `Linking.openURL()` (qui ouvre le navigateur vers `/mobile-payment`) à un **widget natif in-app** via le SDK officiel Kkiapay React Native. Plus user-friendly, retour instantané.
+
 ```
-┌─────────────────┐    ┌──────────────────────┐    ┌─────────────────┐
-│  Mobile App     │    │  Site Web (Next.js)  │    │  Kkiapay API    │
-│                 │    │                      │    │                 │
-│ KkiapayModal    │───▶│ /mobile-payment      │───▶│ Widget SDK      │
-│ (Linking.openURL)│   │ (charge k.js)       │    │ (paiement)      │
-│                 │◀───│ deep link retour     │◀───│ callback        │
-│                 │    │                      │    │                 │
-│ handleSuccess() │───▶│ /api/mobile/dossiers │───▶│                 │
-│ (POST dossier)  │   │ (crée dossier DB)    │    │                 │
-└─────────────────┘    └──────────────────────┘    └─────────────────┘
+┌──────────────────────────┐                    ┌─────────────────┐
+│  Mobile App (dev build)  │                    │  Kkiapay API    │
+│                          │                    │                 │
+│  KkiapayProvider         │                    │                 │
+│   └─ KkiapayModal        │                    │                 │
+│       └─ openKkiapayWidget()  ───────────────▶│  Widget natif   │
+│           sandbox / api_key                   │  (in-app)       │
+│           depuis settings    ◀────────────────│  Mobile Money   │
+│       └─ addSuccessListener  ◀────────────────│  /Carte         │
+│           via useRef (no leak)                │                 │
+│                          │                    │                 │
+│  onSuccess(transactionId)│                    │                 │
+│   └─ POST /api/mobile/dossiers                │                 │
+│       (cree dossier DB)  │                    │                 │
+└──────────────────────────┘                    └─────────────────┘
 ```
 
-### Contraintes techniques
-- ❌ PAS de `react-native-webview` (crash Expo Go)
-- ❌ PAS de `expo-web-browser` (module natif, crash Expo Go)
-- ✅ `Linking.openURL()` uniquement (natif, toujours disponible)
+### Configuration Supabase `settings`
+| Clé | Valeur | Effet |
+|-----|--------|-------|
+| `kkiapay_public_key` | string | Clé API publique Kkiapay |
+| `kkiapay_sandbox` | `'true'` / `'false'` | Mode test (`true`) ou prod (`false`) |
+
+### Contraintes techniques (v2)
+- ✅ **Dev build obligatoire** (Expo Go non supporté car SDK Kkiapay = module natif)
+- ✅ Listeners `addSuccessListener` / `addFailedListener` enregistrés **une seule fois** au mount, callbacks accessibles via `useRef` pour éviter les listeners orphelins (le SDK n'expose pas de removeListener)
+- ✅ Le mode sandbox/prod est **lu depuis Supabase**, pas hardcodé
 
 ---
 
@@ -130,10 +151,12 @@ soumis → verifie → traitement → validation → termine
 
 | Bug | Cause | Solution |
 |-----|-------|----------|
-| `Cannot find native module` | `react-native-webview` en Expo Go | Remplacé par `Linking.openURL()` |
+| Listeners Kkiapay doublés au remount | `addSuccessListener` dans useEffect avec deps `[]` capturait `onSuccess` en stale closure | Ref `onSuccessRef` mise à jour à chaque render, listener enregistré une seule fois |
+| Numéro WhatsApp placeholder `22990000000` | Valeur de dev oubliée | Remplacé par numéro agence `2290160322121` |
+| API_BASE divergent (avec/sans `www.`) | 5 fichiers, 2 conventions différentes | Standardisé `https://www.retourgagnantbenin.bj` partout |
+| Sandbox Kkiapay hardcodé `false` | Pas de toggle pour les tests | Lu depuis `settings.kkiapay_sandbox` Supabase |
 | TS2345 sur dates | `null` pas accepté par `Date()` | Vérification `if (date)` avant formatage |
 | TS7006 implicit any | Callback `Alert.prompt` | Typage explicite du paramètre |
-| Plugin crash app.json | `expo-web-browser` plugin | Retiré de `app.json` plugins |
 | Services différents web/mobile | Données hardcodées différentes | Synchronisation manuelle SERVICES_DATA |
 
 ---
