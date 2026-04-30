@@ -7,6 +7,8 @@ import {
 import { ArrowRight, Calendar, CheckCircle, Clock, MapPin, Star } from 'lucide-react-native'
 import { useAuth } from '../../contexts/AuthContext'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
+import { useLang } from '../../contexts/LangContext'
+import { fetchWithTimeout } from '../../lib/fetch'
 
 const { width } = Dimensions.get('window')
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
@@ -33,82 +35,7 @@ export interface AppEvent {
     my_registration?: { id: string; status: string; ticket_type: string } | null
 }
 
-// ─── Fallback événements ──────────────────────────────────────────────────────
-
-const FALLBACK_EVENTS: AppEvent[] = [
-    {
-        id: 'evt-1',
-        title: 'Gala de la Diaspora Béninoise 2025',
-        short_description: 'Soirée de gala annuelle réunissant la diaspora béninoise du monde entier.',
-        description: 'Grand gala de prestige organisé par Retour Gagnant Bénin. Musique live, gastronomie béninoise, discours officiels et réseautage exclusif.',
-        start_date: '2025-07-15T19:00:00',
-        end_date: '2025-07-15T23:30:00',
-        location: 'Cotonou',
-        address: 'Hôtel Azalaï, Boulevard de la Marina, Cotonou',
-        price_standard: 25000,
-        price_vip: 75000,
-        currency: 'XOF',
-        max_capacity: 300,
-        is_featured: true,
-        cover_image: '',
-        status: 'published',
-        category: 'Gala',
-    },
-    {
-        id: 'evt-2',
-        title: 'Forum Investissements Bénin 2025',
-        short_description: 'Rencontrez les acteurs clés et découvrez les opportunités d\'investissement.',
-        description: 'Forum international dédié aux opportunités d\'investissement au Bénin. Panels, pitches de startups et networking B2B.',
-        start_date: '2025-08-22T09:00:00',
-        end_date: '2025-08-22T18:00:00',
-        location: 'Cotonou',
-        address: 'Palais des Congrès, Cotonou',
-        price_standard: 15000,
-        price_vip: 45000,
-        currency: 'XOF',
-        max_capacity: 500,
-        is_featured: true,
-        cover_image: '',
-        status: 'published',
-        category: 'Forum',
-    },
-    {
-        id: 'evt-3',
-        title: 'Circuit Culturel — Abomey & Ouidah',
-        short_description: 'Palais Royaux d\'Abomey (UNESCO) + Route des Esclaves sur 2 jours.',
-        description: 'Circuit guidé sur 2 jours : Palais Royaux d\'Abomey, Musée de Ouidah, Porte du Non-Retour, Forêt Sacrée de Kpasse.',
-        start_date: '2025-09-05T07:00:00',
-        end_date: '2025-09-06T18:00:00',
-        location: 'Abomey / Ouidah',
-        address: 'Départ depuis Cotonou (navette incluse)',
-        price_standard: 35000,
-        price_vip: 55000,
-        currency: 'XOF',
-        max_capacity: 30,
-        is_featured: false,
-        cover_image: '',
-        status: 'published',
-        category: 'Tourisme',
-    },
-    {
-        id: 'evt-4',
-        title: 'Séminaire : Créer son Entreprise au Bénin',
-        short_description: 'Tout savoir sur la création d\'entreprise et les démarches administratives.',
-        description: 'Séminaire d\'une journée animé par des experts juridiques et fiscaux. Questions-réponses, études de cas réels, networking.',
-        start_date: '2025-10-11T09:00:00',
-        end_date: '2025-10-11T17:00:00',
-        location: 'En ligne + Cotonou',
-        address: 'Hybride — lien de connexion envoyé après inscription',
-        price_standard: 0,
-        price_vip: 20000,
-        currency: 'XOF',
-        max_capacity: 200,
-        is_featured: false,
-        cover_image: '',
-        status: 'published',
-        category: 'Séminaire',
-    },
-]
+// Pas de fallback — seuls les vrais événements de la base de données sont affichés
 
 const CATEGORIES = ['Tous', 'Gala', 'Forum', 'Tourisme', 'Séminaire', 'Conférence']
 
@@ -131,8 +58,8 @@ function formatTime(iso: string) {
     return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 }
 
-function formatPrice(price: number, currency: string) {
-    if (price === 0) return 'Gratuit'
+function formatPrice(price: number, currency: string, t: any) {
+    if (price === 0) return t('Gratuit')
     return `${price.toLocaleString('fr-FR')} ${currency}`
 }
 
@@ -142,7 +69,7 @@ function isFuture(iso: string) {
 
 // ─── EventCard ────────────────────────────────────────────────────────────────
 
-function EventCard({ event, onPress }: { event: AppEvent; onPress: () => void }) {
+function EventCard({ event, onPress, t }: { event: AppEvent; onPress: () => void; t: any }) {
     const catColor = CATEGORY_COLORS[event.category || ''] || colors.primary
     const isFree = event.price_standard === 0
     const isRegistered = !!event.my_registration
@@ -168,11 +95,11 @@ function EventCard({ event, onPress }: { event: AppEvent; onPress: () => void })
                     {event.is_featured && (
                         <View style={styles.featuredBadge}>
                             <Star size={9} color={colors.primary} strokeWidth={1.75} />
-                            <Text style={styles.featuredText}>À la une</Text>
+                            <Text style={styles.featuredText}>{t('À la une')}</Text>
                         </View>
                     )}
                     <View style={[styles.catBadge, { backgroundColor: catColor + '22' }]}>
-                        <Text style={[styles.catText, { color: catColor }]}>{event.category || 'Événement'}</Text>
+                        <Text style={[styles.catText, { color: catColor }]}>{event.category ? t(event.category) : t('Événement')}</Text>
                     </View>
                 </View>
 
@@ -187,7 +114,7 @@ function EventCard({ event, onPress }: { event: AppEvent; onPress: () => void })
                 {isRegistered && (
                     <View style={styles.registeredBadge}>
                         <CheckCircle size={12} color={colors.success} strokeWidth={1.75} />
-                        <Text style={styles.registeredText}>Inscrit</Text>
+                        <Text style={styles.registeredText}>{t('Inscrit')}</Text>
                     </View>
                 )}
             </View>
@@ -212,18 +139,18 @@ function EventCard({ event, onPress }: { event: AppEvent; onPress: () => void })
                     <View style={styles.priceWrap}>
                         {isFree ? (
                             <View style={[styles.priceBadge, { backgroundColor: colors.successLight }]}>
-                                <Text style={[styles.priceText, { color: colors.success }]}>Gratuit</Text>
+                                <Text style={[styles.priceText, { color: colors.success }]}>{t('Gratuit')}</Text>
                             </View>
                         ) : (
                             <View style={[styles.priceBadge, { backgroundColor: colors.primaryMuted }]}>
                                 <Text style={[styles.priceText, { color: colors.primaryDark }]}>
-                                    {formatPrice(event.price_standard, event.currency)}
+                                    {formatPrice(event.price_standard, event.currency, t)}
                                 </Text>
                             </View>
                         )}
                     </View>
                     <View style={[styles.cardBtn, { backgroundColor: catColor }]}>
-                        <Text style={styles.cardBtnText}>Voir</Text>
+                        <Text style={styles.cardBtnText}>{t('Voir')}</Text>
                         <ArrowRight size={11} color="#FFF" strokeWidth={1.75} />
                     </View>
                 </View>
@@ -236,7 +163,8 @@ function EventCard({ event, onPress }: { event: AppEvent; onPress: () => void })
 
 export default function EventsScreen({ navigation }: any) {
     const { profile } = useAuth()
-    const [events, setEvents] = useState<AppEvent[]>(FALLBACK_EVENTS)
+    const [events, setEvents] = useState<AppEvent[]>([])
+    const { t } = useLang()
     const [loading, setLoading] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
     const [category, setCategory] = useState('Tous')
@@ -244,14 +172,16 @@ export default function EventsScreen({ navigation }: any) {
     const fetchEvents = useCallback(async () => {
         try {
             const clientParam = profile?.id ? `&client_id=${profile.id}` : ''
-            const text = await fetch(`${API_BASE}/api/mobile/events?${clientParam}`).then(r => r.text())
+            const text = await fetchWithTimeout(`${API_BASE}/api/mobile/events?${clientParam}`, { timeoutMs: 10000 }).then(r => r.text())
             let json: { events?: AppEvent[] } = {}
             try { json = JSON.parse(text) } catch { /* ignore */ }
-            if (json.events && json.events.length > 0) {
-                setEvents(json.events.filter((e: AppEvent) => isFuture(e.start_date) || true))
-            }
-        } catch { /* garder fallback */ } finally {
-            setLoading(false) }
+            // Toujours mettre à jour avec les données réelles (même vide)
+            setEvents(json.events || [])
+        } catch (err) {
+            console.warn('[Events] fetch error:', err)
+        } finally {
+            setLoading(false)
+        }
     }, [profile?.id])
 
     useEffect(() => { fetchEvents() }, [fetchEvents])
@@ -272,14 +202,25 @@ export default function EventsScreen({ navigation }: any) {
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.primaryLine} />
-                <Text style={styles.headerTitle}>Événements</Text>
-                <Text style={styles.headerSub}>Galas, forums, circuits culturels et séminaires</Text>
+                <Text style={styles.headerTitle}>{t('Événements')}</Text>
+                <Text style={styles.headerSub}>{t('Galas, forums, circuits culturels et séminaires')}</Text>
             </View>
 
             {loading ? (
                 <View style={styles.loadingWrap}>
                     <ActivityIndicator color={colors.primary} size="large" />
-                    <Text style={styles.loadingText}>Chargement des événements…</Text>
+                    <Text style={styles.loadingText}>{t('Chargement des événements…')}</Text>
+                </View>
+            ) : events.length === 0 ? (
+                /* ── État vide global : aucun événement dans la base ── */
+                <View style={styles.globalEmptyWrap}>
+                    <View style={styles.globalEmptyIcon}>
+                        <Calendar size={48} color={colors.primary} strokeWidth={1.5} />
+                    </View>
+                    <Text style={styles.globalEmptyTitle}>{t('Aucun événement pour le moment')}</Text>
+                    <Text style={styles.globalEmptyDesc}>
+                        {t('Les prochains galas, forums et circuits culturels de Retour Gagnant Bénin seront affichés ici dès leur publication.')}
+                    </Text>
                 </View>
             ) : (
                 <>
@@ -295,12 +236,12 @@ export default function EventsScreen({ navigation }: any) {
                                 <View style={styles.featuredTopRow}>
                                     <View style={styles.featuredLabel}>
                                         <Star size={10} color={colors.primary} strokeWidth={1.75} />
-                                        <Text style={styles.featuredLabelText}>Événement Phare</Text>
+                                        <Text style={styles.featuredLabelText}>{t('Événement Phare')}</Text>
                                     </View>
                                     {featured.my_registration && (
                                         <View style={styles.registeredBadgeLg}>
                                             <CheckCircle size={13} color={colors.success} strokeWidth={1.75} />
-                                            <Text style={styles.registeredTextLg}>Inscrit</Text>
+                                            <Text style={styles.registeredTextLg}>{t('Inscrit')}</Text>
                                         </View>
                                     )}
                                 </View>
@@ -317,12 +258,12 @@ export default function EventsScreen({ navigation }: any) {
                                     <View style={styles.featuredBottom}>
                                         <Text style={styles.featuredPrice}>
                                             {featured.price_standard === 0
-                                                ? 'Gratuit'
-                                                : `À partir de ${featured.price_standard.toLocaleString('fr-FR')} ${featured.currency}`
+                                                ? t('Gratuit')
+                                                : t('À partir de {price}').replace('{price}', featured.price_standard.toLocaleString('fr-FR') + ' ' + featured.currency)
                                             }
                                         </Text>
                                         <View style={styles.featuredBtn}>
-                                            <Text style={styles.featuredBtnText}>S'inscrire</Text>
+                                            <Text style={styles.featuredBtnText}>{t('S\'inscrire')}</Text>
                                             <ArrowRight size={13} color="#FFF" strokeWidth={1.75} />
                                         </View>
                                     </View>
@@ -345,7 +286,7 @@ export default function EventsScreen({ navigation }: any) {
                                 onPress={() => setCategory(cat)}
                             >
                                 <Text style={[styles.filterText, category === cat && styles.filterTextActive]}>
-                                    {cat}
+                                    {t(cat)}
                                 </Text>
                             </TouchableOpacity>
                         ))}
@@ -356,7 +297,7 @@ export default function EventsScreen({ navigation }: any) {
                         {filtered.length === 0 ? (
                             <View style={styles.emptyWrap}>
                                 <Calendar size={40} color={colors.textMuted} strokeWidth={1.75} />
-                                <Text style={styles.emptyText}>Aucun événement dans cette catégorie</Text>
+                                <Text style={styles.emptyText}>{t('Aucun événement dans cette catégorie')}</Text>
                             </View>
                         ) : (
                             filtered.map(event => (
@@ -364,6 +305,7 @@ export default function EventsScreen({ navigation }: any) {
                                     key={event.id}
                                     event={event}
                                     onPress={() => navigation.navigate('EventDetail', { event })}
+                                    t={t}
                                 />
                             ))
                         )}
@@ -396,7 +338,39 @@ const styles = StyleSheet.create({
     loadingWrap: { paddingTop: 60, alignItems: 'center', gap: 12 },
     loadingText: { ...typography.bodySmall, color: colors.textSecondary },
 
-    // Featured card
+    // État vide global (aucun événement dans la base)
+    globalEmptyWrap: {
+        alignItems: 'center',
+        paddingTop: 60,
+        paddingBottom: 40,
+        paddingHorizontal: spacing.xl,
+        gap: 16,
+    },
+    globalEmptyIcon: {
+        width: 88,
+        height: 88,
+        borderRadius: 44,
+        backgroundColor: colors.primary + '15',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 8,
+    },
+    globalEmptyTitle: {
+        ...typography.h2,
+        color: colors.textPrimary,
+        textAlign: 'center',
+    },
+    globalEmptyDesc: {
+        ...typography.bodySmall,
+        color: colors.textSecondary,
+        textAlign: 'center',
+        lineHeight: 20,
+    },
+
+    // Liste
+    listWrap: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: 14 },
+    emptyWrap: { alignItems: 'center', paddingVertical: 40, gap: 12 },
+    emptyText: { ...typography.bodySmall, color: colors.textMuted, textAlign: 'center' },
     featuredCard: { margin: spacing.lg, borderRadius: radius.xl, overflow: 'hidden', ...shadows.md },
     featuredCover: { padding: spacing.lg, minHeight: 200, justifyContent: 'space-between' },
     featuredPattern: {
@@ -443,11 +417,6 @@ const styles = StyleSheet.create({
     filterPillActive: { borderColor: colors.primary, backgroundColor: colors.primaryMuted },
     filterText: { ...typography.caption, color: colors.textSecondary },
     filterTextActive: { color: colors.primaryDark, fontFamily: 'Inter_700Bold' },
-
-    // Liste
-    listWrap: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: 14 },
-    emptyWrap: { alignItems: 'center', paddingVertical: 40, gap: 12 },
-    emptyText: { ...typography.bodySmall, color: colors.textMuted, textAlign: 'center' },
 
     // Event card
     card: {

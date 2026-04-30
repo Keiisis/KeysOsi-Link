@@ -7,6 +7,7 @@ import { ArrowRight, ChevronRight } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { colors, spacing, radius, typography, gradients } from '../config/theme'
+import { useLang } from '../contexts/LangContext'
 
 const { width, height } = Dimensions.get('window')
 
@@ -45,6 +46,7 @@ const SLIDES = [
 ]
 
 export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
+    const { t } = useLang()
     const [current, setCurrent] = useState(0)
     const flatRef = useRef<FlatList>(null)
 
@@ -90,8 +92,8 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
                             <View style={[styles.ornamentLine, { backgroundColor: item.accent + '50' }]} />
                         </View>
 
-                        <Text style={styles.title}>{item.title}</Text>
-                        <Text style={styles.subtitle}>{item.subtitle}</Text>
+                        <Text style={styles.title}>{t(item.title)}</Text>
+                        <Text style={styles.subtitle}>{t(item.subtitle)}</Text>
                     </LinearGradient>
                 )}
             />
@@ -115,7 +117,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
                 <View style={styles.btns}>
                     {!isLast && (
                         <TouchableOpacity style={styles.skipBtn} onPress={onComplete} activeOpacity={0.7}>
-                            <Text style={styles.skipText}>Passer</Text>
+                            <Text style={styles.skipText}>{t('Passer')}</Text>
                         </TouchableOpacity>
                     )}
 
@@ -126,7 +128,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
                     >
                         {isLast ? (
                             <>
-                                <Text style={styles.nextText}>Commencer</Text>
+                                <Text style={styles.nextText}>{t('Commencer')}</Text>
                                 <ArrowRight size={18} color="#FFF" strokeWidth={1.75} />
                             </>
                         ) : (

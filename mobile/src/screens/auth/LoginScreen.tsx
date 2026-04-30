@@ -7,6 +7,7 @@ import {
 import { ArrowRight, Lock, Mail } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../../contexts/AuthContext'
+import { useLang } from '../../contexts/LangContext'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
 
 
@@ -16,6 +17,7 @@ import { colors, spacing, radius, shadows, typography } from '../../config/theme
 
 export default function LoginScreen({ navigation }: any) {
     const { signIn } = useAuth()
+    const { t } = useLang()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(false)
@@ -24,14 +26,14 @@ export default function LoginScreen({ navigation }: any) {
 
     const handleLogin = async () => {
         if (!email.trim() || !password.trim()) {
-            Alert.alert('Champs requis', 'Veuillez remplir tous les champs.')
+            Alert.alert(t('Champs requis'), t('Veuillez remplir tous les champs.'))
             return
         }
         setLoading(true)
         const { error } = await signIn(email.trim(), password)
         setLoading(false)
         if (error) {
-            Alert.alert('Erreur de connexion', 'Email ou mot de passe incorrect.')
+            Alert.alert(t('Erreur de connexion'), t('Email ou mot de passe incorrect.'))
         }
     }
 
@@ -60,22 +62,22 @@ export default function LoginScreen({ navigation }: any) {
                         <View style={styles.ornamentDiamond} />
                         <View style={styles.ornamentLine} />
                     </View>
-                    <Text style={styles.tagline}>L&apos;Agence du Retour des Afro-descendants</Text>
+                    <Text style={styles.tagline}>{t("L'Agence du Retour des Afro-descendants")}</Text>
                 </View>
 
                 {/* ── Carte formulaire ── */}
                 <View style={styles.card}>
-                    <Text style={styles.title}>Connexion</Text>
-                    <Text style={styles.subtitle}>Accédez à votre espace client sécurisé</Text>
+                    <Text style={styles.title}>{t('Connexion')}</Text>
+                    <Text style={styles.subtitle}>{t('Accédez à votre espace client sécurisé')}</Text>
 
                     {/* Email */}
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Adresse email</Text>
+                        <Text style={styles.label}>{t('Adresse email')}</Text>
                         <View style={[styles.inputWrapper, focused === 'email' && styles.inputFocused]}>
                             <Mail size={18} color={focused === 'email' ? colors.primary : colors.textMuted} strokeWidth={1.75} style={styles.inputIcon}/>
                             <TextInput
                                 style={styles.input}
-                                placeholder="votre@email.com"
+                                placeholder={t("votre@email.com")}
                                 placeholderTextColor={colors.textMuted}
                                 value={email}
                                 onChangeText={setEmail}
@@ -90,12 +92,12 @@ export default function LoginScreen({ navigation }: any) {
 
                     {/* Mot de passe */}
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Mot de passe</Text>
+                        <Text style={styles.label}>{t('Mot de passe')}</Text>
                         <View style={[styles.inputWrapper, focused === 'password' && styles.inputFocused]}>
                             <Lock size={18} color={focused === 'password' ? colors.primary : colors.textMuted} strokeWidth={1.75} style={styles.inputIcon}/>
                             <TextInput
                                 style={[styles.input, { flex: 1 }]}
-                                placeholder="Votre mot de passe"
+                                placeholder={t("Votre mot de passe")}
                                 placeholderTextColor={colors.textMuted}
                                 value={password}
                                 onChangeText={setPassword}
@@ -120,7 +122,7 @@ export default function LoginScreen({ navigation }: any) {
 
                     {/* Mot de passe oublié */}
                     <TouchableOpacity style={styles.forgotLink} onPress={() => navigation.navigate('ForgotPassword')}>
-                        <Text style={styles.forgotText}>Mot de passe oublié ?</Text>
+                        <Text style={styles.forgotText}>{t('Mot de passe oublié ?')}</Text>
                     </TouchableOpacity>
 
                     {/* Bouton Connexion */}
@@ -134,7 +136,7 @@ export default function LoginScreen({ navigation }: any) {
                             <ActivityIndicator color="#FFFFFF" size="small" />
                         ) : (
                             <>
-                                <Text style={styles.buttonText}>Se connecter</Text>
+                                <Text style={styles.buttonText}>{t('Se connecter')}</Text>
                                 <ArrowRight size={18} color="#FFFFFF" strokeWidth={1.75} />
                             </>
                         )}
@@ -143,13 +145,13 @@ export default function LoginScreen({ navigation }: any) {
                     {/* Séparateur */}
                     <View style={styles.separator}>
                         <View style={styles.separatorLine} />
-                        <Text style={styles.separatorText}>ou</Text>
+                        <Text style={styles.separatorText}>{t('ou')}</Text>
                         <View style={styles.separatorLine} />
                     </View>
 
                     {/* Lien inscription */}
                     <TouchableOpacity style={styles.registerBtn} activeOpacity={0.7} onPress={() => navigation.navigate('Register')}>
-                        <Text style={styles.registerBtnText}>Créer un compte</Text>
+                        <Text style={styles.registerBtnText}>{t('Créer un compte')}</Text>
                     </TouchableOpacity>
                 </View>
 

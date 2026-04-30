@@ -12,6 +12,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useLang } from '../../contexts/LangContext'
 import { supabase } from '../../config/supabase'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
+import { fetchWithTimeout } from '../../lib/fetch'
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
 const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp',
@@ -53,7 +54,7 @@ export default function DossierScreen() {
     const fetchDossiers = useCallback(async () => {
         if (!profile) { setLoading(false); return }
         try {
-            const text = await fetch(`${API_BASE}/api/mobile/dossiers?client_id=${profile.id}`).then(r => r.text())
+            const text = await fetchWithTimeout(`${API_BASE}/api/mobile/dossiers?client_id=${profile.id}`, { timeoutMs: 10000 }).then(r => r.text())
             let json: { dossiers?: Dossier[] } = {}
             try { json = JSON.parse(text) } catch { /* ignore */ }
             const list = json.dossiers || []
@@ -102,10 +103,10 @@ export default function DossierScreen() {
                     file_name: safeName, file_url: publicUrl, file_type: mimeType, status: 'pending',
                 })
             }
-            Alert.alert('Document envoyé', 'Notre équipe le vérifiera sous 24–48h.')
+            Alert.alert(t('Document envoyé'), t('Notre équipe le vérifiera sous 24–48h.'))
             await fetchDossiers()
         } catch (e: unknown) {
-            Alert.alert('Erreur', e instanceof Error ? e.message : 'Erreur lors de l\'envoi')
+            Alert.alert(t('Erreur'), e instanceof Error ? e.message : t('Erreur lors de l\'envoi'))
         } finally { setUploading(false) }
     }
 
@@ -115,14 +116,14 @@ export default function DossierScreen() {
         if (result.canceled || !result.assets?.[0]) return
         const asset = result.assets[0]
         if (asset.size && asset.size > MAX_SIZE_MB * 1024 * 1024) {
-            Alert.alert('Fichier trop volumineux', `Maximum ${MAX_SIZE_MB} Mo.`); return
+            Alert.alert(t('Fichier trop volumineux'), t('Maximum {size} Mo.').replace('{size}', MAX_SIZE_MB.toString())); return
         }
         await uploadFile(asset.uri, asset.name, asset.mimeType || 'application/octet-stream')
     }
     const handlePickImage = async () => {
         setShowUploadModal(false)
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
-        if (status !== 'granted') { Alert.alert('Permission refusée', 'Accès à la galerie requis.'); return }
+        if (status !== 'granted') { Alert.alert(t('Permission refusée'), t('Accès à la galerie requis.')); return }
         const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85 })
         if (result.canceled || !result.assets[0]) return
         const asset = result.assets[0]
@@ -131,7 +132,7 @@ export default function DossierScreen() {
     const handleScanDocument = async () => {
         setShowUploadModal(false)
         const { status } = await ImagePicker.requestCameraPermissionsAsync()
-        if (status !== 'granted') { Alert.alert('Permission refusée', 'Accès caméra requis.'); return }
+        if (status !== 'granted') { Alert.alert(t('Permission refusée'), t('Accès caméra requis.')); return }
         const result = await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 0.85 })
         if (result.canceled || !result.assets[0]) return
         await uploadFile(result.assets[0].uri, `scan_${Date.now()}.jpg`, 'image/jpeg')
@@ -207,10 +208,10 @@ export default function DossierScreen() {
                                             <Text style={styles.progressService}>{selected.service_type}</Text>
                                             <View style={styles.statusRow}>
                                                 <View style={[styles.statusDot, { backgroundColor: color }]} />
-                                                <Text style={[styles.progressStatus, { color }]}>{STATUS_LABEL[selected.status] || selected.status}</Text>
+                                                <Text style={[styles.progressStatus, { color }]}>{t(STATUS_LABEL[selected.status] || selected.status)}</Text>
                                             </View>
                                             <Text style={styles.progressDate}>
-                                                Créé le {new Date(selected.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                                                {t('Créé le')} {new Date(selected.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
                                             </Text>
                                         </View>
                                         <View style={[styles.percentCircle, { borderColor: color + '60' }]}>
@@ -231,7 +232,7 @@ export default function DossierScreen() {
                                                     <View style={[styles.stepDot, active && { backgroundColor: color }, current && { borderWidth: 2, borderColor: color + '80' }]}>
                                                         {active && <Check size={8} color="#FFF" strokeWidth={1.75} />}
                                                     </View>
-                                                    <Text style={[styles.stepLabel, active && { color, fontFamily: 'Inter_700Bold' }]}>{step.label}</Text>
+                                                    <Text style={[styles.stepLabel, active && { color, fontFamily: 'Inter_700Bold' }]}>{t(step.label)}</Text>
                                                 </View>
                                             )
                                         })}
@@ -281,11 +282,11 @@ export default function DossierScreen() {
                                 }) : (
                                     <View style={styles.noDocsCard}>
                                         <Upload size={32} color={colors.textMuted} strokeWidth={1.75} />
-                                        <Text style={styles.noDocsTitle}>Aucun document envoyé</Text>
-                                        <Text style={styles.noDocsText}>Ajoutez vos documents pour faire avancer votre dossier.</Text>
+                                        <Text style={styles.noDocsTitle}>{t('Aucun document envoyé')}</Text>
+                                        <Text style={styles.noDocsText}>{t('Ajoutez vos documents pour faire avancer votre dossier.')}</Text>
                                         <TouchableOpacity style={styles.uploadNowBtn} onPress={() => setShowUploadModal(true)}>
                                             <Plus size={16} color="#FFF" strokeWidth={1.75} />
-                                            <Text style={styles.uploadNowText}>Ajouter un document</Text>
+                                            <Text style={styles.uploadNowText}>{t('Ajouter un document')}</Text>
                                         </TouchableOpacity>
                                     </View>
                                 )}
@@ -301,26 +302,26 @@ export default function DossierScreen() {
                 <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowUploadModal(false)}>
                     <View style={styles.modalSheet}>
                         <View style={styles.modalHandle} />
-                        <Text style={styles.modalTitle}>Ajouter un document</Text>
-                        <Text style={styles.modalSub}>PDF, Word, image — Max {MAX_SIZE_MB} Mo</Text>
+                        <Text style={styles.modalTitle}>{t('Ajouter un document')}</Text>
+                        <Text style={styles.modalSub}>{t('PDF, Word, image — Max {size} Mo').replace('{size}', MAX_SIZE_MB.toString())}</Text>
                         {[
-                            { icon: 'document-text-outline' as const, color: colors.info, label: 'Choisir un fichier', sub: 'PDF, Word, image depuis vos fichiers', action: handlePickDocument },
-                            { icon: 'image-outline' as const, color: '#7C5CCA', label: 'Photo depuis la galerie', sub: 'Sélectionner une image existante', action: handlePickImage },
-                            { icon: 'camera-outline' as const, color: colors.primary, label: 'Scanner un document', sub: 'Prendre une photo avec la caméra', action: handleScanDocument },
+                            { icon: 'document-text-outline' as const, color: colors.info, label: t('Choisir un fichier'), sub: t('PDF, Word, image depuis vos fichiers'), action: handlePickDocument },
+                            { icon: 'image-outline' as const, color: '#7C5CCA', label: t('Photo depuis la galerie'), sub: t('Sélectionner une image existante'), action: handlePickImage },
+                            { icon: 'camera-outline' as const, color: colors.primary, label: t('Scanner un document'), sub: t('Prendre une photo avec la caméra'), action: handleScanDocument },
                         ].map((opt, i) => (
                             <TouchableOpacity key={i} style={styles.modalOption} onPress={opt.action} activeOpacity={0.7}>
                                 <View style={[styles.modalOptionIcon, { backgroundColor: opt.color + '15' }]}>
                                     <Ionicons name={opt.icon} size={22} color={opt.color} />
                                 </View>
                                 <View style={styles.modalOptionText}>
-                                    <Text style={styles.modalOptionLabel}>{opt.label}</Text>
-                                    <Text style={styles.modalOptionSub}>{opt.sub}</Text>
+                                    <Text style={styles.modalOptionLabel}>{t(opt.label)}</Text>
+                                    <Text style={styles.modalOptionSub}>{t(opt.sub)}</Text>
                                 </View>
                                 <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.75} />
                             </TouchableOpacity>
                         ))}
                         <TouchableOpacity style={styles.modalCancel} onPress={() => setShowUploadModal(false)}>
-                            <Text style={styles.modalCancelText}>Annuler</Text>
+                            <Text style={styles.modalCancelText}>{t('Annuler')}</Text>
                         </TouchableOpacity>
                     </View>
                 </TouchableOpacity>

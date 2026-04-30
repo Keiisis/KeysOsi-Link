@@ -1,20 +1,25 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
     View, Text, ScrollView, StyleSheet, TouchableOpacity,
     Platform, Alert, ActivityIndicator,
 } from 'react-native'
-import { ArrowLeft, Calendar, Check, Clock, CreditCard, HelpCircle, Star, Tag, Users } from 'lucide-react-native'
+import { ArrowLeft, Calendar, Check, Clock, CreditCard, Star, Tag, Users } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLang } from '../../contexts/LangContext'
 import KkiapayModal from '../../components/KkiapayModal'
+import { fetchWithTimeout } from '../../lib/fetch'
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
 
 /* ═══════════════════════════════════════════════════════════
    Service Details Screen — Synchronisé avec le site web
    Affiche : description, features/pièces, tarifs, processus
+   
+   IMPORTANT: This screen receives RAW (untranslated) data from
+   ServicesScreen and calls t() dynamically so translations
+   update reactively without requiring a page reload.
 ═══════════════════════════════════════════════════════════ */
 
 interface PricingOption {
@@ -31,7 +36,7 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
     } = route.params || {}
 
     const { profile } = useAuth()
-    const { t } = useLang()
+    const { t, lang, preloadTexts } = useLang()
     const [loading, setLoading] = useState(false)
     const [showKkiapay, setShowKkiapay] = useState(false)
     const serviceColor = color || colors.primary
@@ -50,6 +55,51 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
 
     const pricingOptions: PricingOption[] = paramPricingOptions?.length ? paramPricingOptions : []
 
+    // ── Preload ALL texts visible on this screen ──
+    useEffect(() => {
+        if (lang === 'fr') return
+        const texts: string[] = []
+
+        // Core content
+        if (title) texts.push(title)
+        if (subtitle) texts.push(subtitle)
+        if (fullDescription || desc) texts.push(fullDescription || desc)
+        if (duration) texts.push(duration)
+        if (price) texts.push(price)
+
+        // Features & documents
+        for (const f of features) if (f) texts.push(f)
+        for (const d of requiredDocs) if (d) texts.push(d)
+
+        // Pricing options (both labels and prices)
+        for (const po of pricingOptions) {
+            if (po.label) texts.push(po.label)
+            if (po.price) texts.push(po.price)
+        }
+
+        // UI strings on this screen
+        texts.push(
+            'Service Premium', 'Détails du Service', 'Délai moyen', 'Tarif',
+            'Support', 'Dédié', 'Sur devis',
+            'Pièces à fournir pour les afro-descendants', 'Ce que nous proposons',
+            'Pack VIP Retour Gagnant',
+            "Un accompagnement intégral en une seule journée — de l'état civil à la délivrance de votre passeport.",
+            'Enrôlement État Civil', "Obtention de votre extrait de naissance certifié conforme auprès des autorités de l'état civil béninois.",
+            "Carte d'Identité Personnelle (CIP A)", "Constitution du dossier et enrôlement biométrique pour votre titre d'identité officiel béninois.",
+            'Passeport Express Jour-J', "Prise en charge prioritaire de votre demande de passeport biométrique — déposée et traitée le jour même.",
+            'Tarification', 'Comment ça marche ?',
+            'Commandez le service', 'Déposez vos documents', 'Suivi en temps réel', 'Résultat final',
+            'Documents requis', 'Prêt à démarrer ?',
+            'Réservez un créneau avec nos experts pour concrétiser votre projet.',
+            'Payer avec Kkiapay', 'Premier appel de 15 min gratuit',
+            'Paiement 100% sécurisé via Mobile Money ou Carte Bancaire.',
+            'Non connecté', 'Veuillez vous connecter pour commander ce service.',
+        )
+
+        console.log(`[ServiceDetails] Pre-loading ${texts.length} texts for translation`)
+        preloadTexts(texts)
+    }, [lang]) // Only run once per language change
+
     // Le titre de la section "features" change selon le service (comme sur le site web)
     const featuresTitle = serviceId === 'passeport'
         ? t('Pièces à fournir pour les afro-descendants')
@@ -67,9 +117,10 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
         setShowKkiapay(false)
         setLoading(true)
         try {
-            const res = await fetch(`${API_BASE}/api/mobile/dossiers`, {
+            const res = await fetchWithTimeout(`${API_BASE}/api/mobile/dossiers`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                timeoutMs: 15000,
                 body: JSON.stringify({
                     client_id: profile?.id,
                     service_type: title,
@@ -91,21 +142,21 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
 
             if (json.exists) {
                 Alert.alert(
-                    'Dossier existant',
-                    'Vous avez déjà un dossier en cours pour ce service. Consultez la section "Mon Dossier" pour suivre son avancement.',
-                    [{ text: 'Voir mon dossier', onPress: () => navigation.goBack() }]
+                    t('Dossier existant'),
+                    t('Vous avez déjà un dossier en cours pour ce service. Consultez la section "Mon Dossier" pour suivre son avancement.'),
+                    [{ text: t('Voir mon dossier'), onPress: () => navigation.goBack() }]
                 )
                 return
             }
 
             Alert.alert(
-                'Paiement Réussi !',
-                `Votre dossier pour "${title}" a été créé avec succès.\n\nNotre équipe vous contactera dans les 24 heures pour la suite.`,
-                [{ text: 'Voir mon espace', onPress: () => navigation.navigate('Dossier') }]
+                t('Paiement Réussi !'),
+                t(`Votre dossier pour "{title}" a été créé avec succès.\n\nNotre équipe vous contactera dans les 24 heures pour la suite.`, { title }),
+                [{ text: t('Voir mon espace'), onPress: () => navigation.navigate('Dossier') }]
             )
         } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : 'Erreur lors de la création du dossier'
-            Alert.alert('Erreur', msg)
+            const msg = e instanceof Error ? e.message : t('Erreur lors de la création du dossier')
+            Alert.alert(t('Erreur'), msg)
         } finally {
             setLoading(false)
         }
@@ -145,20 +196,20 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
                     {t(fullDescription || desc || 'Informations concernant ce service et accompagnement personnalisé.')}
                 </Text>
 
-                {/* Infos clés */}
+                {/* Infos clés — ALL values wrapped with t() */}
                 <View style={styles.infoRow}>
                     <View style={styles.infoItem}>
                         <Clock size={18} color={serviceColor} strokeWidth={1.75} />
                         <View>
                             <Text style={styles.infoLabel}>{t('Délai moyen')}</Text>
-                            <Text style={styles.infoValue} numberOfLines={2}>{duration || '4–8 semaines'}</Text>
+                            <Text style={styles.infoValue} numberOfLines={2}>{t(duration || '4–8 semaines')}</Text>
                         </View>
                     </View>
                     <View style={[styles.infoItem, styles.infoItemBorder]}>
                         <Tag size={18} color={serviceColor} strokeWidth={1.75} />
                         <View>
                             <Text style={styles.infoLabel}>{t('Tarif')}</Text>
-                            <Text style={styles.infoValue} numberOfLines={2}>{price || 'Sur devis'}</Text>
+                            <Text style={styles.infoValue} numberOfLines={2}>{t(price || 'Sur devis')}</Text>
                         </View>
                     </View>
                     <View style={styles.infoItem}>
@@ -193,7 +244,7 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
                                 <Text style={styles.vipSectionTitle}>{t('Pack VIP Retour Gagnant')}</Text>
                             </View>
                             <Text style={styles.vipSectionDesc}>
-                                Un accompagnement intégral en une seule journée — de l'état civil à la délivrance de votre passeport.
+                                {t("Un accompagnement intégral en une seule journée — de l'état civil à la délivrance de votre passeport.")}
                             </Text>
                             {[
                                 { num: '01', title: 'Enrôlement État Civil', desc: "Obtention de votre extrait de naissance certifié conforme auprès des autorités de l'état civil béninois." },
@@ -214,7 +265,7 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
 
                 <View style={styles.divider} />
 
-                {/* Grille de tarifs — synchronisée avec le pricing_options du site */}
+                {/* Grille de tarifs — ALL wrapped with t() including prices */}
                 {pricingOptions.length > 0 && (
                     <>
                         <Text style={styles.sectionTitle}>{t('Tarification')}</Text>
@@ -222,7 +273,7 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
                             {pricingOptions.map((opt: PricingOption, i: number) => (
                                 <View key={i} style={[styles.pricingCard, { borderLeftColor: serviceColor }]}>
                                     <Text style={styles.pricingLabel}>{t(opt.label)}</Text>
-                                    <Text style={[styles.pricingPrice, { color: serviceColor }]}>{opt.price}</Text>
+                                    <Text style={[styles.pricingPrice, { color: serviceColor }]}>{t(opt.price)}</Text>
                                 </View>
                             ))}
                         </View>

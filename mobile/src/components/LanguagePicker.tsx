@@ -17,7 +17,7 @@ interface LanguagePickerProps {
 }
 
 export default function LanguagePicker({ visible, onClose }: LanguagePickerProps) {
-    const { lang, setLang } = useLang()
+    const { lang, setLang, t } = useLang()
     const slideAnim = useRef(new Animated.Value(SHEET_H)).current
     const fadeAnim  = useRef(new Animated.Value(0)).current
 
@@ -72,9 +72,9 @@ export default function LanguagePicker({ visible, onClose }: LanguagePickerProps
 
                     <View style={styles.headerContent}>
                         <View>
-                            <Text style={styles.headerTitle}>Langue de l&apos;application</Text>
+                            <Text style={styles.headerTitle}>{t("Langue de l'application")}</Text>
                             <Text style={styles.headerSub}>
-                                Choisissez votre langue préférée
+                                {t('Choisissez votre langue préférée')}
                             </Text>
                         </View>
                         <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
@@ -146,7 +146,7 @@ export default function LanguagePicker({ visible, onClose }: LanguagePickerProps
                 <View style={styles.footer}>
                     <Globe size={13} color={colors.textMuted} strokeWidth={1.75} />
                     <Text style={styles.footerText}>
-                        La traduction est automatique et propulsée par IA
+                        {t('La traduction est automatique et propulsée par IA')}
                     </Text>
                 </View>
 

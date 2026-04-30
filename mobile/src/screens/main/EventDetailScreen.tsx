@@ -8,6 +8,9 @@ import { ArrowLeft, CheckCircle, HelpCircle, Info, Star } from 'lucide-react-nat
 import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../../contexts/AuthContext'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
+import { useLang } from '../../contexts/LangContext'
+import { fetchWithTimeout } from '../../lib/fetch'
+import KkiapayModal from '../../components/KkiapayModal'
 import type { AppEvent } from './EventsScreen'
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
@@ -22,8 +25,8 @@ function formatDateLong(iso: string) {
 function formatTime(iso: string) {
     return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 }
-function formatPrice(price: number, currency: string) {
-    if (price === 0) return 'Gratuit'
+function formatPrice(price: number, currency: string, t: any) {
+    if (price === 0) return t('Gratuit')
     return `${price.toLocaleString('fr-FR')} ${currency}`
 }
 
@@ -38,10 +41,14 @@ export default function EventDetailScreen({ route, navigation }: any) {
     const { event } = route.params as { event: AppEvent }
     const { profile } = useAuth()
 
+    const { t } = useLang()
     const [loading, setLoading] = useState(false)
     const [selectedTicket, setSelectedTicket] = useState<'standard' | 'vip'>('standard')
     const [showModal, setShowModal] = useState(false)
     const [registration, setRegistration] = useState(event.my_registration || null)
+    // Paiement Kkiapay direct (pour events payants)
+    const [showKkiapay, setShowKkiapay] = useState(false)
+    const [pendingRegistration, setPendingRegistration] = useState<{ id: string; amount: number } | null>(null)
 
     const catColor = CATEGORY_COLORS[event.category || ''] || colors.primary
     const isFree = event.price_standard === 0
@@ -53,14 +60,15 @@ export default function EventDetailScreen({ route, navigation }: any) {
 
     const handleRegister = async () => {
         if (!profile) {
-            Alert.alert('Non connecté', 'Veuillez vous connecter pour vous inscrire.')
+            Alert.alert(t('Non connecté'), t('Veuillez vous connecter pour vous inscrire.'))
             return
         }
         setLoading(true)
         try {
-            const res = await fetch(`${API_BASE}/api/mobile/events`, {
+            const res = await fetchWithTimeout(`${API_BASE}/api/mobile/events`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                timeoutMs: 15000,
                 body: JSON.stringify({
                     event_id: event.id,
                     client_id: profile.id,
@@ -76,44 +84,77 @@ export default function EventDetailScreen({ route, navigation }: any) {
                 throw new Error((json.error as string) || `Erreur ${res.status}`)
             }
 
-            const reg = (json.registration as { id: string; status: string; ticket_type: string }) ||
+            const reg = (json.registration as { id: string; status: string; ticket_type: string; payment_status?: string }) ||
                 (json.exists ? { ...(json.registration as object || {}), status: 'confirmed' } : null)
 
             setRegistration(reg)
             setShowModal(false)
 
             if (json.exists) {
-                Alert.alert('Déjà inscrit', 'Vous êtes déjà inscrit à cet événement.', [{ text: 'OK' }])
+                Alert.alert(t('Déjà inscrit'), t('Vous êtes déjà inscrit à cet événement.'), [{ text: 'OK' }])
                 return
             }
 
-            // Afficher les instructions de paiement si payant
+            // Inscription gratuite → confirmée immédiatement
             if (isFreeTicket) {
                 Alert.alert(
-                    '✅ Inscription confirmée !',
-                    `Votre place est réservée pour "${event.title}".\n\nUn email de confirmation vous sera envoyé.`,
-                    [{ text: 'Parfait !' }]
+                    t('✅ Inscription confirmée !'),
+                    t('Votre place est réservée pour "{eventTitle}".\n\nUn email de confirmation vous sera envoyé.').replace('{eventTitle}', event.title),
+                    [{ text: t('Parfait !') }]
                 )
-            } else {
-                Alert.alert(
-                    'Inscription enregistrée',
-                    `Votre inscription pour "${event.title}" (${selectedTicket.toUpperCase()}) est en attente de paiement.\n\n💰 Montant : ${formatPrice(selectedPrice, event.currency)}\n\nContactez-nous via WhatsApp pour finaliser votre paiement et obtenir votre billet.`,
-                    [
-                        { text: 'Fermer', style: 'cancel' },
-                        {
-                            text: 'Contacter sur WhatsApp',
-                            onPress: () => {
-                                const { Linking } = require('react-native')
-                                const msg = `Bonjour, je souhaite finaliser mon paiement pour l'événement "${event.title}" (billet ${selectedTicket}) - ${formatPrice(selectedPrice, event.currency)}`
-                                // Numero officiel agence Retour Gagnant Benin (+229 01 60 32 21 21)
-                                Linking.openURL(`https://wa.me/2290160322121?text=${encodeURIComponent(msg)}`)
-                            },
-                        },
-                    ]
-                )
+                return
+            }
+
+            // Inscription payante → ouvrir Kkiapay pour finaliser tout de suite
+            if (reg?.id) {
+                setPendingRegistration({ id: reg.id, amount: selectedPrice })
+                setShowKkiapay(true)
             }
         } catch (e: unknown) {
-            Alert.alert('Erreur', e instanceof Error ? e.message : 'Impossible de s\'inscrire')
+            Alert.alert(t('Erreur'), e instanceof Error ? e.message : t('Impossible de s\'inscrire'))
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    /* ── Confirmer le paiement Kkiapay → PATCH registration ── */
+    const handlePaymentSuccess = async (txId: string) => {
+        setShowKkiapay(false)
+        if (!pendingRegistration) return
+        setLoading(true)
+        try {
+            const res = await fetchWithTimeout(`${API_BASE}/api/mobile/events`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                timeoutMs: 15000,
+                body: JSON.stringify({
+                    registration_id: pendingRegistration.id,
+                    transaction_id: txId,
+                }),
+            })
+            const data = await res.json().catch(() => ({}))
+
+            if (!res.ok || !data.ok) {
+                Alert.alert(
+                    t('Paiement reçu — confirmation manuelle requise'),
+                    t('Votre paiement a été reçu (réf : {tx}) mais la confirmation automatique a échoué. Notre équipe vérifiera votre billet sous 24h.').replace('{tx}', txId),
+                )
+                return
+            }
+
+            setRegistration({ id: pendingRegistration.id, status: 'confirmed', ticket_type: selectedTicket })
+            setPendingRegistration(null)
+
+            Alert.alert(
+                t('✅ Paiement confirmé !'),
+                t('Votre place pour "{eventTitle}" est réservée. Un email de confirmation vous sera envoyé.').replace('{eventTitle}', event.title),
+                [{ text: t('Parfait !') }]
+            )
+        } catch (e: unknown) {
+            Alert.alert(
+                t('Erreur'),
+                t('Paiement reçu (réf : {tx}) mais confirmation impossible. Contactez le support.').replace('{tx}', txId),
+            )
         } finally {
             setLoading(false)
         }
@@ -139,7 +180,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
                         {event.is_featured && (
                             <View style={styles.featuredBadge}>
                                 <Star size={9} color={catColor} strokeWidth={1.75} />
-                                <Text style={[styles.featuredText, { color: catColor }]}>À la une</Text>
+                                <Text style={[styles.featuredText, { color: catColor }]}>{t('À la une')}</Text>
                             </View>
                         )}
                         {event.category && (
@@ -160,7 +201,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
                     {isRegistered && (
                         <View style={styles.registeredBanner}>
                             <CheckCircle size={16} color={colors.success} strokeWidth={1.75} />
-                            <Text style={styles.registeredText}>Vous êtes inscrit</Text>
+                            <Text style={styles.registeredText}>{t('Vous êtes inscrit')}</Text>
                         </View>
                     )}
                 </View>
@@ -172,10 +213,10 @@ export default function EventDetailScreen({ route, navigation }: any) {
                     {/* Méta-infos */}
                     <View style={styles.metaGrid}>
                         {[
-                            { icon: 'calendar-outline' as const, label: 'Date', value: formatDateLong(event.start_date) },
-                            { icon: 'time-outline' as const, label: 'Heure', value: `${formatTime(event.start_date)}${event.end_date ? ` → ${formatTime(event.end_date)}` : ''}` },
-                            { icon: 'location-outline' as const, label: 'Lieu', value: event.address || event.location },
-                            { icon: 'people-outline' as const, label: 'Capacité', value: event.max_capacity ? `${event.max_capacity} places` : 'Non limité' },
+                            { icon: 'calendar-outline' as const, label: t('Date'), value: formatDateLong(event.start_date) },
+                            { icon: 'time-outline' as const, label: t('Heure'), value: `${formatTime(event.start_date)}${event.end_date ? ` → ${formatTime(event.end_date)}` : ''}` },
+                            { icon: 'location-outline' as const, label: t('Lieu'), value: event.address || event.location },
+                            { icon: 'people-outline' as const, label: t('Capacité'), value: event.max_capacity ? `${event.max_capacity} ${t('places')}` : t('Non limité') },
                         ].map((item, i) => (
                             <View key={i} style={styles.metaItem}>
                                 <View style={[styles.metaIcon, { backgroundColor: catColor + '15' }]}>
@@ -192,13 +233,13 @@ export default function EventDetailScreen({ route, navigation }: any) {
                     <View style={styles.divider} />
 
                     {/* Description */}
-                    <Text style={styles.sectionTitle}>À propos de l'événement</Text>
-                    <Text style={styles.description}>{event.description || event.short_description || 'Rejoignez-nous pour cet événement exceptionnel organisé par Retour Gagnant Bénin.'}</Text>
+                    <Text style={styles.sectionTitle}>{t('À propos de l\'événement')}</Text>
+                    <Text style={styles.description}>{event.description || event.short_description || t('Rejoignez-nous pour cet événement exceptionnel organisé par Retour Gagnant Bénin.')}</Text>
 
                     <View style={styles.divider} />
 
                     {/* Tarifs */}
-                    <Text style={styles.sectionTitle}>Tarifs & Billets</Text>
+                    <Text style={styles.sectionTitle}>{t('Tarifs & Billets')}</Text>
 
                     {/* Standard */}
                     <TouchableOpacity
@@ -210,11 +251,11 @@ export default function EventDetailScreen({ route, navigation }: any) {
                             {selectedTicket === 'standard' && <View style={[styles.ticketRadioInner, { backgroundColor: catColor }]} />}
                         </View>
                         <View style={styles.ticketInfo}>
-                            <Text style={styles.ticketName}>Billet Standard</Text>
-                            <Text style={styles.ticketDesc}>Accès à l'événement, networking</Text>
+                            <Text style={styles.ticketName}>{t('Billet Standard')}</Text>
+                            <Text style={styles.ticketDesc}>{t('Accès à l\'événement, networking')}</Text>
                         </View>
                         <Text style={[styles.ticketPrice, isFree && { color: colors.success }]}>
-                            {formatPrice(event.price_standard, event.currency)}
+                            {formatPrice(event.price_standard, event.currency, t)}
                         </Text>
                     </TouchableOpacity>
 
@@ -230,16 +271,16 @@ export default function EventDetailScreen({ route, navigation }: any) {
                             </View>
                             <View style={styles.ticketInfo}>
                                 <View style={styles.vipRow}>
-                                    <Text style={styles.ticketName}>Billet VIP</Text>
+                                    <Text style={styles.ticketName}>{t('Billet VIP')}</Text>
                                     <View style={[styles.vipBadge, { backgroundColor: catColor + '20' }]}>
                                         <Star size={8} color={catColor} strokeWidth={1.75} />
                                         <Text style={[styles.vipBadgeText, { color: catColor }]}>VIP</Text>
                                     </View>
                                 </View>
-                                <Text style={styles.ticketDesc}>Accès prioritaire, places réservées, cocktail</Text>
+                                <Text style={styles.ticketDesc}>{t('Accès prioritaire, places réservées, cocktail')}</Text>
                             </View>
                             <Text style={styles.ticketPrice}>
-                                {formatPrice(event.price_vip || 0, event.currency)}
+                                {formatPrice(event.price_vip || 0, event.currency, t)}
                             </Text>
                         </TouchableOpacity>
                     )}
@@ -253,7 +294,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
                 {isRegistered ? (
                     <View style={[styles.btnRegistered, { backgroundColor: colors.successBg, borderColor: colors.success + '40' }]}>
                         <CheckCircle size={20} color={colors.success} strokeWidth={1.75} />
-                        <Text style={[styles.btnText, { color: colors.success }]}>Inscription confirmée</Text>
+                        <Text style={[styles.btnText, { color: colors.success }]}>{t('Inscription confirmée')}</Text>
                     </View>
                 ) : (
                     <TouchableOpacity
@@ -268,7 +309,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
                             <>
                                 <Ionicons name="ticket-outline" size={20} color="#FFF" />
                                 <Text style={styles.btnText}>
-                                    S'inscrire · {formatPrice(selectedPrice, event.currency)}
+                                    {t('S\'inscrire ·')} {formatPrice(selectedPrice, event.currency, t)}
                                 </Text>
                             </>
                         )}
@@ -281,16 +322,16 @@ export default function EventDetailScreen({ route, navigation }: any) {
                 <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowModal(false)}>
                     <View style={styles.sheet}>
                         <View style={styles.sheetHandle} />
-                        <Text style={styles.sheetTitle}>Confirmer l'inscription</Text>
+                        <Text style={styles.sheetTitle}>{t('Confirmer l\'inscription')}</Text>
                         <Text style={styles.sheetEvent} numberOfLines={2}>{event.title}</Text>
 
                         <View style={styles.sheetInfoRow}>
                             <Ionicons name="ticket-outline" size={16} color={catColor} />
                             <Text style={styles.sheetInfoText}>
-                                Billet <Text style={{ fontFamily: 'Inter_700Bold', color: catColor }}>{selectedTicket.toUpperCase()}</Text>
+                                {t('Billet')} <Text style={{ fontFamily: 'Inter_700Bold', color: catColor }}>{selectedTicket.toUpperCase()}</Text>
                             </Text>
                             <Text style={[styles.sheetPrice, { color: catColor }]}>
-                                {formatPrice(selectedPrice, event.currency)}
+                                {formatPrice(selectedPrice, event.currency, t)}
                             </Text>
                         </View>
 
@@ -298,7 +339,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
                             <View style={styles.payNotice}>
                                 <Info size={15} color={colors.info} strokeWidth={1.75} />
                                 <Text style={styles.payNoticeText}>
-                                    Après inscription, vous recevrez les instructions de paiement par WhatsApp ou email.
+                                    {t('Après inscription, vous recevrez les instructions de paiement par WhatsApp ou email.')}
                                 </Text>
                             </View>
                         )}
@@ -311,16 +352,25 @@ export default function EventDetailScreen({ route, navigation }: any) {
                             {loading
                                 ? <ActivityIndicator color="#FFF" size="small" />
                                 : <Text style={styles.confirmBtnText}>
-                                    {isFreeTicket ? 'Confirmer l\'inscription' : 'Confirmer et payer plus tard'}
+                                    {isFreeTicket ? t('Confirmer l\'inscription') : t('Confirmer et payer plus tard')}
                                 </Text>
                             }
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowModal(false)}>
-                            <Text style={styles.cancelText}>Annuler</Text>
+                            <Text style={styles.cancelText}>{t('Annuler')}</Text>
                         </TouchableOpacity>
                     </View>
                 </TouchableOpacity>
             </Modal>
+
+            {/* Paiement Kkiapay direct (events payants) */}
+            <KkiapayModal
+                visible={showKkiapay}
+                amount={String(pendingRegistration?.amount || selectedPrice)}
+                serviceName={`${event.title} — ${selectedTicket === 'vip' ? 'VIP' : 'Standard'}`}
+                onClose={() => setShowKkiapay(false)}
+                onSuccess={handlePaymentSuccess}
+            />
         </>
     )
 }

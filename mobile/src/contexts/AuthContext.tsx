@@ -15,6 +15,7 @@ export interface UserProfile {
     avatar_url?: string
     phone?: string
     ville?: string
+    pays?: string
     push_token?: string
 }
 

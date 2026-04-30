@@ -75,7 +75,7 @@ export default function RegisterScreen({ navigation }: any) {
                             <View style={[styles.inputWrapper, focused === 'prenom' && styles.inputFocused]}>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="Jean"
+                                    placeholder={t("Jean")}
                                     placeholderTextColor={colors.textMuted}
                                     value={prenom} onChangeText={setPrenom}
                                     autoCapitalize="words"
@@ -88,7 +88,7 @@ export default function RegisterScreen({ navigation }: any) {
                             <View style={[styles.inputWrapper, focused === 'nom' && styles.inputFocused]}>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="Dupont"
+                                    placeholder={t("Dupont")}
                                     placeholderTextColor={colors.textMuted}
                                     value={nom} onChangeText={setNom}
                                     autoCapitalize="words"
@@ -104,7 +104,7 @@ export default function RegisterScreen({ navigation }: any) {
                             <Mail size={18} color={focused === 'email' ? colors.primary : colors.textMuted} strokeWidth={1.75} style={styles.inputIcon}/>
                             <TextInput
                                 style={styles.input}
-                                placeholder="votre@email.com"
+                                placeholder={t("votre@email.com")}
                                 placeholderTextColor={colors.textMuted}
                                 value={email} onChangeText={setEmail}
                                 keyboardType="email-address"
@@ -120,7 +120,7 @@ export default function RegisterScreen({ navigation }: any) {
                             <Lock size={18} color={focused === 'password' ? colors.primary : colors.textMuted} strokeWidth={1.75} style={styles.inputIcon}/>
                             <TextInput
                                 style={[styles.input, { flex: 1 }]}
-                                placeholder="Min. 6 caractères"
+                                placeholder={t("Min. 6 caractères")}
                                 placeholderTextColor={colors.textMuted}
                                 value={password} onChangeText={setPassword}
                                 secureTextEntry={!showPassword}
@@ -135,7 +135,7 @@ export default function RegisterScreen({ navigation }: any) {
                     <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={handleRegister} disabled={loading} activeOpacity={0.85}>
                         {loading ? <ActivityIndicator color="#FFFFFF" size="small" /> : (
                             <>
-                                <Text style={styles.buttonText}>S&apos;inscrire</Text>
+                                <Text style={styles.buttonText}>{t("S'inscrire")}</Text>
                                 <Ionicons name="person-add-outline" size={18} color="#FFFFFF" />
                             </>
                         )}

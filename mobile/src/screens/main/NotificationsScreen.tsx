@@ -10,6 +10,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../config/supabase'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
+import { useLang } from '../../contexts/LangContext'
 import { RootStackParamList } from '../../navigation/AppNavigator'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Notifications'>
@@ -39,6 +40,7 @@ const TYPE_CONFIG: Record<string, { icon: keyof typeof Ionicons.glyphMap; color:
 export default function NotificationsScreen({ navigation }: { navigation: Nav }) {
     const { profile, updateProfile } = useAuth()
     const [notifications, setNotifications] = useState<AppNotification[]>([])
+    const { t } = useLang()
     const [loading, setLoading] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
     const [pushEnabled, setPushEnabled] = useState(false)
@@ -91,8 +93,8 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
 
                 if (finalStatus !== 'granted') {
                     Alert.alert(
-                        'Permission refusée',
-                        'Activez les notifications dans les paramètres de votre appareil pour recevoir des alertes.',
+                        t('Permission refusée'),
+                        t('Activez les notifications dans les paramètres de votre appareil pour recevoir des alertes.')
                     )
                     return
                 }
@@ -104,21 +106,21 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
 
                 await updateProfile({ push_token: token })
                 setPushEnabled(true)
-                Alert.alert('Notifications activées', 'Vous recevrez désormais des alertes pour vos dossiers et messages.')
+                Alert.alert(t('Notifications activées'), t('Vous recevrez désormais des alertes pour vos dossiers et messages.'))
             } catch (e: unknown) {
-                const msg = e instanceof Error ? e.message : 'Erreur'
-                Alert.alert('Erreur', msg)
+                const msg = e instanceof Error ? e.message : t('Erreur')
+                Alert.alert(t('Erreur'), msg)
             } finally {
                 setRegisteringPush(false)
             }
         } else {
             Alert.alert(
-                'Désactiver les notifications',
-                'Vous ne recevrez plus d\'alertes push. Vous pourrez les réactiver à tout moment.',
+                t('Désactiver les notifications'),
+                t('Vous ne recevrez plus d\'alertes push. Vous pourrez les réactiver à tout moment.'),
                 [
-                    { text: 'Annuler', style: 'cancel' },
+                    { text: t('Annuler'), style: 'cancel' },
                     {
-                        text: 'Désactiver', style: 'destructive', onPress: async () => {
+                        text: t('Désactiver'), style: 'destructive', onPress: async () => {
                             await updateProfile({ push_token: undefined })
                             setPushEnabled(false)
                         },
@@ -150,10 +152,10 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
         const d = new Date(iso)
         const now = new Date()
         const diff = Math.floor((now.getTime() - d.getTime()) / 1000)
-        if (diff < 60) return 'À l\'instant'
-        if (diff < 3600) return `Il y a ${Math.floor(diff / 60)} min`
-        if (diff < 86400) return `Il y a ${Math.floor(diff / 3600)} h`
-        if (diff < 604800) return `Il y a ${Math.floor(diff / 86400)} j`
+        if (diff < 60) return t('À l\'instant')
+        if (diff < 3600) return `${t('Il y a')} ${Math.floor(diff / 60)} min`
+        if (diff < 86400) return `${t('Il y a')} ${Math.floor(diff / 3600)} h`
+        if (diff < 604800) return `${t('Il y a')} ${Math.floor(diff / 86400)} j`
         return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
     }
 
@@ -171,14 +173,14 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
                 </TouchableOpacity>
                 <View style={styles.headerRow}>
                     <View>
-                        <Text style={styles.headerTitle}>Notifications</Text>
+                        <Text style={styles.headerTitle}>{t('Notifications')}</Text>
                         <Text style={styles.headerSub}>
-                            {unreadCount > 0 ? `${unreadCount} non lue${unreadCount > 1 ? 's' : ''}` : 'Tout est à jour'}
+                            {unreadCount > 0 ? `${unreadCount} ${t('non lue')}${unreadCount > 1 ? 's' : ''}` : t('Tout est à jour')}
                         </Text>
                     </View>
                     {unreadCount > 0 && (
                         <TouchableOpacity style={styles.markAllBtn} onPress={markAllRead} activeOpacity={0.7}>
-                            <Text style={styles.markAllText}>Tout lire</Text>
+                            <Text style={styles.markAllText}>{t('Tout lire')}</Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -195,9 +197,9 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
                         />
                     </View>
                     <View>
-                        <Text style={styles.pushLabel}>Notifications push</Text>
+                        <Text style={styles.pushLabel}>{t('Notifications push')}</Text>
                         <Text style={styles.pushSub}>
-                            {pushEnabled ? 'Activées — alertes en temps réel' : 'Désactivées'}
+                            {pushEnabled ? t('Activées — alertes en temps réel') : t('Désactivées')}
                         </Text>
                     </View>
                 </View>
@@ -223,9 +225,9 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
                     <View style={styles.emptyIconWrap}>
                         <Bell size={36} color={colors.textMuted} strokeWidth={1.75} />
                     </View>
-                    <Text style={styles.emptyTitle}>Aucune notification</Text>
+                    <Text style={styles.emptyTitle}>{t('Aucune notification')}</Text>
                     <Text style={styles.emptyText}>
-                        Vous serez alerté ici lors des mises à jour de vos dossiers, messages et rendez-vous.
+                        {t('Vous serez alerté ici lors des mises à jour de vos dossiers, messages et rendez-vous.')}
                     </Text>
                 </View>
             ) : (

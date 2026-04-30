@@ -7,6 +7,7 @@ import { ArrowLeft, ExternalLink, HelpCircle } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
+import { useLang } from '../../contexts/LangContext'
 import { RootStackParamList } from '../../navigation/AppNavigator'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'About'>
@@ -42,6 +43,7 @@ const TEAM = [
 ═══════════════════════════════════════════════════════════ */
 
 export default function AboutScreen({ navigation }: { navigation: Nav }) {
+    const { t } = useLang()
     const handleLink = (url: string) => {
         Linking.openURL(url).catch(() => {
             /* ignore */
@@ -56,8 +58,8 @@ export default function AboutScreen({ navigation }: { navigation: Nav }) {
                 <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                     <ArrowLeft size={22} color={colors.textOnDark} strokeWidth={1.75} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>À propos</Text>
-                <Text style={styles.headerSub}>Retour Gagnant Bénin</Text>
+                <Text style={styles.headerTitle}>{t('À propos')}</Text>
+                <Text style={styles.headerSub}>{t('Retour Gagnant Bénin')}</Text>
             </View>
 
             {/* Logo & version */}
@@ -76,41 +78,41 @@ export default function AboutScreen({ navigation }: { navigation: Nav }) {
                     <View style={styles.ornamentDot} />
                     <View style={styles.ornamentLine} />
                 </View>
-                <Text style={styles.tagline}>L'Agence du Retour des Afro-descendants</Text>
+                <Text style={styles.tagline}>{t("L'Agence du Retour des Afro-descendants")}</Text>
                 <View style={styles.versionBadge}>
                     <Ionicons name="code-slash-outline" size={12} color={colors.textMuted} />
-                    <Text style={styles.versionText}>Version {APP_VERSION} (build {BUILD_NUMBER})</Text>
+                    <Text style={styles.versionText}>{t('Version')} {APP_VERSION} ({t('build')} {BUILD_NUMBER})</Text>
                 </View>
             </View>
 
             {/* Notre Histoire — synchronisé avec le site web /a-propos */}
             <View style={styles.missionCard}>
-                <Text style={styles.sectionLabel}>NOTRE HISTOIRE</Text>
-                <Text style={styles.sectionTitle}>Née de la diaspora,{"\n"}pour la diaspora</Text>
+                <Text style={styles.sectionLabel}>{t('NOTRE HISTOIRE')}</Text>
+                <Text style={styles.sectionTitle}>{t('Née de la diaspora,')}{"\n"}{t('pour la diaspora')}</Text>
                 <Text style={styles.missionText}>
-                    Fondée par des membres de la diaspora béninoise ayant eux-mêmes vécu l'expérience du retour, Retour Gagnant est née d'un constat simple : rentrer au pays ne devrait pas être un parcours du combattant.
+                    {t("Fondée par des membres de la diaspora béninoise ayant eux-mêmes vécu l'expérience du retour, Retour Gagnant est née d'un constat simple : rentrer au pays ne devrait pas être un parcours du combattant.")}
                 </Text>
                 <Text style={styles.missionText}>
-                    Aujourd'hui, nous avons accompagné plus de 500 projets de retour réussis. Des passeports aux investissements immobiliers, en passant par la création d'entreprise, nous sommes le partenaire de confiance de la diaspora.
+                    {t("Aujourd'hui, nous avons accompagné plus de 500 projets de retour réussis. Des passeports aux investissements immobiliers, en passant par la création d'entreprise, nous sommes le partenaire de confiance de la diaspora.")}
                 </Text>
             </View>
 
             {/* Nos Valeurs — synchronisé avec le site web */}
-            <Text style={styles.listSectionTitle}>NOS VALEURS</Text>
+            <Text style={styles.listSectionTitle}>{t('NOS VALEURS')}</Text>
             <View style={styles.valuesGrid}>
                 {VALUES.map((v, i) => (
                     <View key={i} style={styles.valueCard}>
                         <View style={[styles.valueIconWrap, { backgroundColor: v.color + '12' }]}>
                             <Ionicons name={v.icon} size={22} color={v.color} />
                         </View>
-                        <Text style={styles.valueTitle}>{v.title}</Text>
-                        <Text style={styles.valueDesc}>{v.desc}</Text>
+                        <Text style={styles.valueTitle}>{t(v.title)}</Text>
+                        <Text style={styles.valueDesc}>{t(v.desc)}</Text>
                     </View>
                 ))}
             </View>
 
             {/* Équipe */}
-            <Text style={styles.listSectionTitle}>Notre équipe</Text>
+            <Text style={styles.listSectionTitle}>{t('Notre équipe')}</Text>
             <View style={styles.teamCard}>
                 {TEAM.map((member, i) => (
                     <View
@@ -121,15 +123,15 @@ export default function AboutScreen({ navigation }: { navigation: Nav }) {
                             <Ionicons name={member.icon} size={18} color={member.color} />
                         </View>
                         <View>
-                            <Text style={styles.teamName}>{member.name}</Text>
-                            <Text style={styles.teamRole}>{member.role}</Text>
+                            <Text style={styles.teamName}>{t(member.name)}</Text>
+                            <Text style={styles.teamRole}>{t(member.role)}</Text>
                         </View>
                     </View>
                 ))}
             </View>
 
             {/* Liens légaux */}
-            <Text style={styles.listSectionTitle}>Informations légales</Text>
+            <Text style={styles.listSectionTitle}>{t('Informations légales')}</Text>
             <View style={styles.linksCard}>
                 {LINKS.map((link, i) => (
                     <TouchableOpacity
@@ -141,14 +143,14 @@ export default function AboutScreen({ navigation }: { navigation: Nav }) {
                         <View style={styles.linkIconWrap}>
                             <Ionicons name={link.icon} size={18} color={colors.primary} />
                         </View>
-                        <Text style={styles.linkLabel}>{link.label}</Text>
+                        <Text style={styles.linkLabel}>{t(link.label)}</Text>
                         <ExternalLink size={14} color={colors.textMuted} strokeWidth={1.75} />
                     </TouchableOpacity>
                 ))}
             </View>
 
             {/* Réseaux sociaux */}
-            <Text style={styles.listSectionTitle}>Suivez-nous</Text>
+            <Text style={styles.listSectionTitle}>{t('Suivez-nous')}</Text>
             <View style={styles.socialRow}>
                 {[
                     { icon: 'logo-facebook' as const, color: '#1877F2', label: 'Facebook' },
@@ -165,7 +167,7 @@ export default function AboutScreen({ navigation }: { navigation: Nav }) {
 
             {/* Copyright */}
             <Text style={styles.copyright}>
-                © {new Date().getFullYear()} Retour Gagnant Bénin{'\n'}Tous droits réservés
+                © {new Date().getFullYear()} Retour Gagnant Bénin{'\n'}{t('Tous droits réservés')}
             </Text>
 
             <View style={{ height: 100 }} />

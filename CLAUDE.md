@@ -1,7 +1,7 @@
-# 🧠 RETOUR GAGNANT — MÉMOIRE PERSISTANTE CLAUDE CODE v3.0
+# 🧠 RETOUR GAGNANT — MÉMOIRE PERSISTANTE CLAUDE CODE v3.1
 
 > **⚡ CE FICHIER EST TON CERVEAU.** Tu le lis EN PREMIER, AUTOMATIQUEMENT, à chaque nouvelle session.
-> **DERNIÈRE MISE À JOUR** : 2026-04-13 15:45
+> **DERNIÈRE MISE À JOUR** : 2026-04-27
 > **PROTOCOLE** : Diary + Planning-with-Files + Context-Save/Restore
 
 ---
@@ -31,7 +31,7 @@ Quand l'utilisateur dit **"continue"**, **"reprends"**, **"on continue"** ou n'i
 
 ### RÈGLE 4 — LECTURE AVANT DÉCISION
 Avant toute décision architecturale majeure, **relis ce fichier** pour t'assurer d'être aligné avec :
-- Le design system (Or/Ivoire/Bleu Nuit)
+- Le design system (Nexus Emerald + Or, mode clair)
 - Les conventions (FR, TypeScript strict, pas de noir pur)
 - Les pièges connus
 
@@ -45,77 +45,112 @@ La seule exception : si tu dois prendre une décision business (supprimer un ser
 ## 📍 ÉTAT ACTUEL
 
 ### 🎯 OBJECTIF PRINCIPAL
-**Parité totale Mobile ↔ Web + Application productionready**
+**Parité totale Mobile ↔ Web + Application production-ready**
 L'app mobile Expo doit être une copie fidèle et fonctionnelle du site web Next.js, connectée en temps réel à Supabase.
 
 ### ✅ TERMINÉ (ne pas refaire)
 
-#### Synchronisation des données
-- ✅ `ServicesScreen.tsx` — 9 services synchronisés avec le web (titres, desc, features, prix, pricing_options)
-- ✅ `ServiceDetailsScreen.tsx` — Refonte complète : pricing_options grid, Pack VIP Passeport 3 étapes, CTA "Prêt à démarrer ?"
-- ✅ `AboutScreen.tsx` — Contenu identique au web : "Notre Histoire", 4 valeurs (Excellence, Engagement, Proximité, Confiance), 4 équipes, URLs corrigées → retourgagnantbenin.bj
-- ✅ `FAQScreen.tsx` — Email corrigé → contact@retourgagnantbenin.bj
+#### Synchronisation mobile ↔ web (P0)
+- ✅ 9 services synchronisés (`ServicesScreen.tsx` + `ServiceDetailsScreen.tsx`)
+- ✅ `AboutScreen.tsx`, `FAQScreen.tsx` alignés avec le web
+- ✅ `HomeScreen.tsx` reconstruit (dashboard ultra premium, t() câblé)
+- ✅ Toutes les screens mobile retravaillées (15 écrans + auth + onboarding)
 
-#### Navigation & Types
-- ✅ `AppNavigator.tsx` — Types route étendus (subtitle, fullDescription, pricing_options, documents, features)
+#### Traduction mobile (P1) — ✅ DONE
+- ✅ `LangContext.tsx` avec batch chunks de 15 + cache AsyncStorage par langue
+- ✅ Hook `useLang()` câblé dans **23 fichiers** (tous les écrans + nav + components)
+- ✅ Composant `<T>` créé (`mobile/src/components/T.tsx`) — *non utilisé, screens préfèrent `useLang().t()` direct*
+- ✅ `LanguagePicker.tsx` (composant sélecteur)
+- ✅ API consolidée : `/api/translate` (route mobile dédiée supprimée)
+- ✅ Format API : `POST { texts: string[], lang: LangCode }` → `{ translations: { [src]: tgt } }`
+- ✅ 6 langues : FR / EN / ES / PT / CR / HT
+- ✅ `LangProvider` wrappé dans `App.tsx`
 
-#### Paiement Kkiapay
-- ✅ `KkiapayModal.tsx` — Paiement réel via `Linking.openURL()` (pas WebView = compatible Expo Go)
-- ✅ `mobile-payment/page.tsx` (web) — Gateway : charge Kkiapay SDK k.js → deep link retour
-- ✅ `App.tsx` — Deep link handler : écoute `payment-success`, `payment-failed`, `payment-canceled` + Alert
+#### Paiement (P0)
+- ✅ Architecture Kkiapay v2 : SDK natif React Native (`@kkiapay-org/react-native-sdk`)
+- ✅ Listeners enregistrés une seule fois (refs pour callbacks → pas de stale closure)
+- ✅ Sandbox toggle lu depuis Supabase `settings.kkiapay_sandbox`
+- ✅ API_BASE standardisé `https://www.retourgagnantbenin.bj` partout
+- ✅ Numéro WhatsApp réel : `2290160322121`
+- ✅ Paiement web : 5 providers configurés en admin (Kkiapay, FedaPay, Zeyow, **Stripe**, **PayPal Business**)
+- ✅ Stripe XOF zero-decimal (pas de ×100), webhook signature, PaymentIntents
+- ✅ PayPal API v2 Orders (sandbox + production), client_id depuis settings, capture côté serveur
 
-#### Configuration
-- ✅ `app.json` — Deep links : scheme `retourgagnant://`, intentFilters Android, associatedDomains iOS
-- ✅ TypeScript : 0 erreur de compilation (vérifié `npx tsc --noEmit`)
-- ✅ Expo démarre OK sur localhost:8081
+#### Backoffice (Admin / Agent / CEO / Client)
+- ✅ Comptabilité LOT 1 (export mensuel), LOT 2 (Excel pro avec logo/dashboard/data bars), LOT 3 (clôture, justificatifs, verrou période)
+- ✅ Registre comptable agent format officiel RGB (TVA, ventilation, bilan)
+- ✅ Messagerie agent design institutionnel clair, export intelligent + email pro
+- ✅ ERP boutique : fiche client exhaustive, alarmes factures, gestion stock
+- ✅ Live chat type support (loading spinner fix)
+- ✅ Bouton Paiement accepte factures externes (libellé libre)
+- ✅ Toggle thème clair/sombre par panel (admin / agent / client / ceo)
+- ✅ Migration thème sombre → clair sur 7 pages publiques
+- ✅ Email institutionnel : header tricolore, logo XXL, portfolio 9 services cliquables
+- ✅ Capture prospect avant formulaire nationalité + invitation compte
+- ✅ Roll-up admin complet + attachments mail IA
 
-#### Corrections techniques
-- ✅ `PaymentsScreen.tsx` — Corrections TypeScript
-- ✅ `AppointmentsScreen.tsx` — Corrections TypeScript
-- ✅ `DossierScreen.tsx` — Upload documents (camera/gallery/files) connecté Supabase
+#### Design & UX
+- ✅ Refonte design system mobile → **Nexus Emerald** (mode clair, primary `#10B981`, accent or `#C9A84C`)
+- ✅ Migration icônes mobile : Ionicons → **lucide-react-native** (Ionicons en fallback Services)
+- ✅ Carte de visite (`frontend/components/business-card/BusinessCard.tsx`) — recto/verso minimaliste premium
+
+#### Infra & Build
+- ✅ TypeScript : 0 erreur (`npx tsc --noEmit`)
+- ✅ Mobile : passage **dev build obligatoire** (Expo Go non supporté à cause SDK Kkiapay natif)
+- ✅ CSP : `media-src` autorisé pour vidéos Supabase (portfolio)
+- ✅ Suspense + force-dynamic sur `/mobile-payment` (build Vercel)
 
 #### Mémoire & Continuité
-- ✅ `CLAUDE.md` racine — Système de mémoire persistante v3 (ce fichier)
-- ✅ `mobile/CLAUDE.md` — Sous-mémoire mobile
-- ✅ `frontend/CLAUDE.md` — Sous-mémoire frontend
-- ✅ `.claude/commands/` — Commandes `/continue`, `/save`, `/status`
+- ✅ `CLAUDE.md` racine, `mobile/CLAUDE.md`, `frontend/CLAUDE.md`
+- ✅ `.claude/commands/` — `/continue`, `/save`, `/status`, `/scan`, `/sync-check`, `/diary`
+
+### ⚠️ EN COURS / DETTE TECHNIQUE
+
+#### 🔴 [P0] SDK Kkiapay natif — actuellement **MOCKÉ**
+Dans `mobile/src/components/KkiapayModal.tsx` lignes 33-36 :
+```ts
+// const { openKkiapayWidget, addSuccessListener, addFailedListener } = useKkiapay()
+const openKkiapayWidget = (args: any) => { ... Alert.alert("Kkiapay Désactivé", ...) }
+const addSuccessListener = (cb: any) => {}
+const addFailedListener = (cb: any) => {}
+```
+**Action** : décommenter le hook réel et builder un dev build (`eas build --profile development`). Avant ça, le paiement mobile est un mock qui retourne `MOCK-TX` directement.
+
+#### 🟡 Fichiers supprimés non commités
+`Aura-Link/` entièrement supprimé (extension Chrome + serveur dev tool AI) — à confirmer/commiter.
+`frontend/app/api/mobile/translate/route.ts` supprimée (fusion dans `/api/translate`).
 
 ### ⬜ TODO — Dans l'ordre de priorité
 
-1. ⬜ **[P1] Traduction mobile** — Port du système multi-langues du web (6 langues : FR, EN, ES, PT, CR, HT)
-   - Créer `mobile/src/contexts/LangContext.tsx` amélioré avec cache AsyncStorage
-   - Composant `<T>` pour traduction inline (comme le web)
-   - Hook `useLang()` dans chaque écran
-   - API : `POST /api/translate` → Groq batch
+1. ⬜ **[P0] Réactiver SDK Kkiapay natif**
+   - Décommenter `useKkiapay()` dans `KkiapayModal.tsx`
+   - Builder dev build avec `expo-dev-client` + `eas build --profile development --platform android`
+   - Tester paiement sandbox end-to-end
 
-2. ⬜ **[P1] HomeScreen.tsx** — Vérifier parité complète avec le hero du site web
-   - Comparer avec `frontend/components/home/HeroSection.tsx`
-   - Vérifier le slogan, les stats, les CTA
-
-3. ⬜ **[P2] Audit RLS Supabase** — Row Level Security sur tables critiques
+2. ⬜ **[P1] Audit RLS Supabase** — Row Level Security sur tables critiques
    - `dossiers` : un client ne voit que SES dossiers
    - `client_profiles` : un client ne voit que SON profil
-   - `messages` : isolation par conversation
+   - `messages` : isolation par conversation (`sender_id`/`recipient_id`)
+   - `notifications` : `user_id = auth.uid()`
 
-4. ⬜ **[P2] Test paiement Kkiapay sandbox** — Flux complet end-to-end
-   - Service → KkiapayModal → navigateur → paiement sandbox → deep link retour → Alert → POST /api/mobile/dossiers
+3. ⬜ **[P2] Notifications push mobile** — Connecter `expo-notifications` aux events Supabase Realtime
+   - Subscribe sur `dossiers.status` change → notification locale
+   - Subscribe sur `messages` insert → notification
+
+4. ⬜ **[P2] Test paiement Kkiapay sandbox end-to-end** (après P0 résolu)
+   - Service → KkiapayModal → widget natif → POST `/api/mobile/dossiers`
 
 5. ⬜ **[P2] Upload documents Supabase** — Tester bucket `dossier-documents`
-   - Vérifier les permissions du bucket (public/private)
-   - Tester upload réel depuis DossierScreen
+   - Permissions du bucket
+   - Test upload réel depuis `DossierScreen`
 
-6. ⬜ **[P3] Notifications push** — Connecter expo-notifications aux events Supabase
-   - Écouter `dossiers.status` via Supabase Realtime
-   - Envoyer une notification locale quand le statut change
+6. ⬜ **[P3] MessagesScreen Realtime** — Subscribe `messages` Supabase Realtime + envoi temps réel
 
-7. ⬜ **[P3] MessagesScreen** — Vérifier le système de messagerie temps réel
-   - Supabase Realtime subscription sur `messages`
-   - Envoi de messages depuis le mobile
+7. ⬜ **[P3] Composant `<T>`** — actuellement non utilisé. Soit le supprimer, soit migrer les screens qui font `t('texte')` vers `<T>texte</T>` (cohérence avec le web).
 
-8. ⬜ **[P4] Git commit** — Commiter les 22 fichiers modifiés
-   - `git add -A && git commit -m "feat(mobile): sync complète web↔mobile + deep links + mémoire"`
+8. ⬜ **[P4] Git** — beaucoup de fichiers en attente (toutes les screens mobile + App.tsx + LangContext + KkiapayModal + frontend/api/translate). Commit cohérent à préparer.
 
-9. ⬜ **[P4] Audit visuel** — Tester tous les 15 écrans sur device réel
+9. ⬜ **[P4] Audit visuel mobile sur device réel** (15 écrans)
 
 ---
 
@@ -128,13 +163,16 @@ L'app mobile Expo doit être une copie fidèle et fonctionnelle du site web Next
 | **Mission** | Accompagnement diaspora béninoise/afro-descendante (passeport, nationalité, immobilier, business) |
 | **Workspace** | `c:\Users\HP\Desktop\RETOUR GAGNANT TEMPLATE` |
 | **Frontend** | Next.js 15 App Router — `frontend/` |
-| **Mobile** | Expo SDK 52 React Native — `mobile/` |
-| **Backend** | Supabase (PostgreSQL + Auth + Storage + Realtime) |
-| **Paiement** | Kkiapay (Mobile Money MTN/Moov + Carte bancaire) |
-| **Traduction** | Groq LLaMA 3 (batch, cache localStorage/AsyncStorage) |
+| **Mobile** | Expo SDK 54 React Native 0.81.5 — `mobile/` |
+| **Backend CMS** | Strapi 5.36 (SQLite dev / PostgreSQL prod) — `backend/` |
+| **BDD/Auth** | Supabase (PostgreSQL + Auth + Storage + Realtime) |
+| **Paiement web** | Kkiapay, FedaPay, Zeyow, Stripe, PayPal Business (5 providers) |
+| **Paiement mobile** | Kkiapay SDK natif (dev build requis) |
+| **Traduction** | Groq LLaMA 3.3 70B (batch, cache localStorage/AsyncStorage) |
 | **Hébergement** | Vercel |
-| **OS Dev** | Windows 11 — PowerShell |
+| **OS Dev** | Windows 11 — PowerShell + bash (Git Bash) |
 | **Domaine email** | contact@retourgagnantbenin.bj |
+| **WhatsApp agence** | 229 01 60 32 21 21 |
 
 ---
 
@@ -148,47 +186,57 @@ RETOUR GAGNANT TEMPLATE/
 ├── frontend/                    ← Next.js 15 App Router
 │   ├── CLAUDE.md                ← Sous-mémoire frontend
 │   ├── app/
-│   │   ├── (routes)/            ← Pages publiques (services, a-propos, contact...)
-│   │   ├── admin/               ← Dashboard administrateur
-│   │   ├── agent/               ← Espace agent terrain
+│   │   ├── (routes)/            ← Pages publiques (services, a-propos, contact, blog, partenaires...)
+│   │   ├── admin/               ← Dashboard administrateur (compta, ERP, settings)
+│   │   ├── agent/               ← Espace agent terrain (messagerie, registre comptable)
 │   │   ├── client/              ← Espace client web (dashboard, messages, dossier)
 │   │   ├── ceo/                 ← Dashboard CEO
-│   │   ├── api/                 ← 40+ API Routes
-│   │   │   ├── admin/           ← CRUD admin (services, users, waf)
-│   │   │   ├── checkout/        ← Paiement Kkiapay/FedaPay/PayPal
+│   │   ├── boutique/            ← Boutique e-commerce + payment return
+│   │   ├── api/                 ← 50+ API Routes
+│   │   │   ├── admin/           ← CRUD admin (services, users, waf, compta)
+│   │   │   ├── checkout/        ← Paiement Kkiapay/FedaPay/Stripe/PayPal/Zeyow
+│   │   │   │   ├── stripe/      ← PaymentIntent
+│   │   │   │   ├── paypal/      ← create + capture
+│   │   │   │   └── verify/      ← Vérif serveur tous providers
 │   │   │   ├── client/          ← Register, login, profil
 │   │   │   ├── mobile/          ← API dédiée mobile (dossiers)
 │   │   │   ├── translate/       ← Traduction Groq batch
-│   │   │   └── webhooks/        ← Callbacks Kkiapay/FedaPay
-│   │   └── mobile-payment/      ← Gateway paiement pour l'app mobile
-│   ├── components/              ← UI components (200+)
-│   ├── lib/                     ← Supabase client, email, traduction, utils
-│   └── public/                  ← Assets statiques
+│   │   │   ├── settings/payment ← GET clés publiques + test connectivité
+│   │   │   └── webhooks/        ← Callbacks Kkiapay/FedaPay/Stripe/PayPal/Zeyow
+│   │   └── mobile-payment/      ← Gateway paiement web (legacy v1, fallback)
+│   ├── components/
+│   │   ├── boutique/            ← PaymentModal, CartCheckoutModal
+│   │   ├── business-card/       ← Carte de visite (recto/verso)
+│   │   └── ...
+│   ├── lib/                     ← Supabase client, email, traduction, store Zustand, currency
+│   └── public/                  ← Assets statiques (logo, qr, Excel templates)
 │
-├── mobile/                      ← Expo React Native (SDK 52)
+├── mobile/                      ← Expo React Native (SDK 54)
 │   ├── CLAUDE.md                ← Sous-mémoire mobile
-│   ├── App.tsx                  ← Entry point + deep links + fonts
-│   ├── app.json                 ← Config Expo + scheme + plugins + permissions
+│   ├── App.tsx                  ← Entry point + deep links + fonts + providers
+│   ├── app.json                 ← Config Expo + scheme + plugins + permissions + dev-client
 │   ├── src/
 │   │   ├── screens/
 │   │   │   ├── auth/            ← Login, Register, ForgotPassword, SplashScreen
+│   │   │   ├── OnboardingScreen.tsx
 │   │   │   └── main/            ← 15 écrans principaux
-│   │   ├── components/          ← KkiapayModal, LanguagePicker
-│   │   ├── config/              ← theme.ts, supabase.ts
+│   │   ├── components/          ← KkiapayModal, LanguagePicker, T
+│   │   ├── config/              ← theme.ts (Nexus Emerald), supabase.ts
 │   │   ├── contexts/            ← AuthContext, LangContext
 │   │   └── navigation/          ← AppNavigator, MainTabNavigator
+│   ├── stitch/                  ← (?) à investiguer
 │   └── .env                     ← Variables Supabase + API URL
+│
+├── backend/                     ← Strapi CMS
 │
 ├── .claude/
 │   ├── settings.json            ← Permissions Claude Code
 │   ├── settings.local.json      ← Permissions locales (auto-générées)
+│   ├── scripts/                 ← Scripts internes
 │   └── commands/                ← Commandes slash personnalisées
-│       ├── continue.md          ← /continue — Reprendre le travail
-│       ├── save.md              ← /save — Sauvegarder l'état
-│       └── status.md            ← /status — Rapport complet
+│       ├── continue.md, save.md, status.md, scan.md, sync-check.md, diary.md
 │
 └── diary/                       ← Journal de développement (auto-créé)
-    └── 2026/04/                 ← Logs par mois
 ```
 
 ---
@@ -199,65 +247,78 @@ RETOUR GAGNANT TEMPLATE/
 ```env
 EXPO_PUBLIC_SUPABASE_URL=https://ywvsfhqdtkgzavxsumnk.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIs...
-EXPO_PUBLIC_API_URL=https://retourgagnantbenin.bj
+EXPO_PUBLIC_API_URL=https://www.retourgagnantbenin.bj
 ```
 
 ### Frontend (`frontend/.env.local`) — Clés critiques
 ```
 NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY         ← SERVEUR UNIQUEMENT, jamais côté client
-NEXT_PUBLIC_KKIAPAY_PUBLIC_KEY    ← Clé publique Kkiapay
-NEXT_PUBLIC_KKIAPAY_SANDBOX       ← true = mode test, false = production
-GROQ_API_KEY                      ← Pour traduction IA
+GROQ_API_KEY                      ← Pour traduction IA (rotation via lib/groq)
+```
+
+### Settings Supabase (table `settings`, category `payment`) — pas dans .env
+```
+kkiapay_enabled, kkiapay_sandbox, kkiapay_public_key, kkiapay_private_key, kkiapay_secret_key
+fedapay_enabled, fedapay_sandbox, fedapay_public_key, fedapay_secret_key
+zeyow_enabled, zeyow_redirect_url
+stripe_enabled, stripe_sandbox, stripe_public_key, stripe_secret_key, stripe_webhook_secret
+paypal_enabled, paypal_sandbox, paypal_client_id, paypal_client_secret, paypal_currency, paypal_webhook_id
 ```
 
 ---
 
-## 🎨 DESIGN SYSTEM — "Pro Max Ivoire/Or/Bleu Nuit"
+## 🎨 DESIGN SYSTEM — "Nexus Emerald" (Mode Clair)
 
 ### Palette de couleurs
 
-| Token | Hex | Usage | ⚠️ Règle |
-|-------|-----|-------|----------|
-| `gold` | `#C9A84C` | Primaire, CTA, accents | Utilisation principale |
-| `goldLight` | `#D4B85A` | Texte sur fond sombre | |
-| `background` | `#FAF8F4` | Fond ivoire chaud | JAMAIS #FFF pur |
-| `surface` | `#FFFFFF` | Cartes, modales | |
-| `surfaceWarm` | `#F5F0E8` | Sections alternées | |
-| `headerBg` / `navy` | `#1B2A4A` | Headers bleu nuit | |
-| `textPrimary` | `#1B2A4A` | Texte principal | JAMAIS #000 |
-| `textSecondary` | `#6B7280` | Texte secondaire | |
-| Bénin Vert | `#008751` | Services, succès, CTA | Drapeau |
-| Bénin Jaune | `#FCD116` | Badges, highlights | Drapeau |
-| Bénin Rouge | `#E8112D` | Alertes, labels | Drapeau |
+| Token | Hex | Usage |
+|-------|-----|-------|
+| `primary` | `#10B981` | Vert émeraude — accent principal Nexus |
+| `primaryDark` | `#047857` | Hover, gradients |
+| `primaryLight` | `#34D399` | Soft accents |
+| `teal` | `#14B8A6` | Info, secondaire émeraude |
+| `gold` | `#C9A84C` | Accent secondaire / premium |
+| `goldLight` | `#E2C97E` | Texte sur fond sombre |
+| `goldDark` | `#A68B3C` | Texte gold |
+| `background` | `#FFFFFF` | Fond principal mode clair |
+| `surface` | `#FFFFFF` | Cartes, modales |
+| `surfaceWarm` | `#F8FAF9` | Sections alternées |
+| `headerBg` | `#10B981` | En-tête primaire |
+| `textPrimary` | `#1a2332` | Texte principal (jamais #000) |
+| `textSecondary` | `#4A5568` | Texte secondaire |
+| `navy` | `#0C1B33` | Fallback dark sections |
+| Bénin Vert | `#008751` | Drapeau (touches uniquement) |
+| Bénin Jaune | `#FCD116` | Drapeau (touches uniquement) |
+| Bénin Rouge | `#E8112D` | Drapeau (touches uniquement) |
 
 ### Typographie
-- **Titres** : Playfair Display (700 Bold)
-- **Corps** : Inter (400 Regular → 700 Bold)
-- **Icônes mobile** : Ionicons
+- **Mobile** : Outfit (body) + Playfair Display (titres) — chargées dans `App.tsx` via `@expo-google-fonts`
+- **Web** : Outfit + Playfair Display
+- **Icônes mobile** : `lucide-react-native` (principal) + Ionicons (fallback Services)
 - **Icônes web** : Lucide React
 
 ### Règles NON NÉGOCIABLES
 - ❌ **JAMAIS** de noir pur `#000000`
-- ❌ **JAMAIS** de fond blanc pur `#FFFFFF` pour le background principal
-- ❌ **JAMAIS** de couleurs génériques (red, blue, green natifs)
-- ✅ TOUJOURS le trio Or/Ivoire/Bleu Nuit
+- ❌ **JAMAIS** de couleurs natives génériques (red, blue, green sans token)
+- ✅ TOUJOURS via tokens du theme (`colors.primary`, `colors.gold`, etc.)
+- ✅ Mode clair pour l'app + pages publiques ; toggle clair/sombre par panel (admin/agent/client/ceo)
 
 ---
 
 ## 📦 LES 9 SERVICES — Source de vérité unique
 
-| # | Slug | Titre | Prix base | Icône mobile |
-|---|------|-------|-----------|-------------|
-| 1 | `passeport` | Passeport & Documents Officiels | 50 000 FCFA | `document-text` |
-| 2 | `logement` | Acheter ou Louer un Bien | 25 000 FCFA | `home` |
-| 3 | `business` | Création d'Entreprise | 150 000 FCFA | `briefcase` |
-| 4 | `culture` | Tourisme & Culture | 80 000 FCFA/pers | `earth` |
-| 5 | `construction` | Suivi de Chantier | 50 000 FCFA | `construct` |
-| 6 | `investissement` | Investissement | 50 000 FCFA | `trending-up` |
-| 7 | `nationalite-vip` | Nationalité VIP | 150 000 FCFA | `ribbon` |
-| 8 | `recherche-ancestrale` | Recherche Ancestrale | 250 € | `people` |
-| 9 | `autres` | Autres Services | Nous contacter | `apps` |
+| # | Slug | Titre | Prix base | Icône mobile (lucide) |
+|---|------|-------|-----------|----------------------|
+| 1 | `passeport` | Passeport & Documents Officiels | 50 000 FCFA | `FileText` |
+| 2 | `logement` | Acheter ou Louer un Bien | 25 000 FCFA | `Home` |
+| 3 | `business` | Création d'Entreprise | 150 000 FCFA | `Briefcase` |
+| 4 | `culture` | Tourisme & Culture | 80 000 FCFA/pers | `Globe` |
+| 5 | `construction` | Suivi de Chantier | 50 000 FCFA | `HardHat` |
+| 6 | `investissement` | Investissement | 50 000 FCFA | `TrendingUp` |
+| 7 | `nationalite-vip` | Nationalité VIP | 150 000 FCFA | `Award` |
+| 8 | `recherche-ancestrale` | Recherche Ancestrale | 250 € | `Users` |
+| 9 | `autres` | Autres Services | Nous contacter | `LayoutGrid` |
 
 ### ⚠️ FICHIERS JUMELÉS — Modifier les 2 en même temps !
 | Source | Fichier |
@@ -267,45 +328,33 @@ GROQ_API_KEY                      ← Pour traduction IA
 
 ---
 
-## 💳 FLUX PAIEMENT KKIAPAY (Architecture complète)
+## 💳 FLUX PAIEMENT — Architecture v2
 
+### Mobile (Kkiapay SDK natif)
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    APPLICATION MOBILE                            │
-│  ServiceDetailsScreen → KkiapayModal                            │
-│    │                      │                                     │
-│    │ Sélection service    │ Linking.openURL()                   │
-│    │ + options prix       │ ──────────────────────┐             │
-│    ▼                      ▼                       │             │
-│                                                   │             │
-│  ◄──────────────────────────── Deep Link ──────── │             │
-│  retourgagnant://payment-success?transactionId=X  │             │
-│  retourgagnant://payment-failed                   │             │
-│  retourgagnant://payment-canceled                 │             │
-│    │                                              │             │
-│    ▼ Alert.alert()                                │             │
-│    │ POST /api/mobile/dossiers                    │             │
-│    ▼ Création dossier Supabase                    │             │
-└───────────────────────────────────────────────────│─────────────┘
-                                                    │
-┌───────────────────────────────────────────────────▼─────────────┐
-│                    SITE WEB (Next.js)                            │
-│  /mobile-payment?amount=X&service=Y&name=Z                     │
-│    │                                                            │
-│    ▼ Charge Kkiapay SDK (k.js CDN)                             │
-│    │                                                            │
-│    ▼ openKkiapayWidget({ amount, key, sandbox })               │
-│    │                                                            │
-│    ├── successCallback → window.location = deep link success    │
-│    ├── failedCallback  → window.location = deep link failed     │
-│    └── closeCallback   → window.location = deep link canceled   │
-└─────────────────────────────────────────────────────────────────┘
+ServiceDetailsScreen
+  └─ KkiapayModal (visible)
+      ├─ fetch settings.kkiapay_public_key + .kkiapay_sandbox depuis Supabase
+      ├─ openKkiapayWidget({ amount, key, sandbox, theme })   ← widget IN-APP
+      ├─ addSuccessListener (registered ONCE au mount via useRef)
+      │     └─ onSuccess(transactionId) → POST /api/mobile/dossiers
+      └─ addFailedListener
+            └─ Alert.alert("Échec")
+```
+**État actuel** : SDK MOCKÉ (lignes 33-36). À réactiver après dev build.
+
+### Web (5 providers)
+```
+PaymentModal / CartCheckoutModal
+  └─ POST /api/checkout (créer commande pending)
+      └─ Provider widget (Kkiapay k.js / FedaPay / Stripe.js / PayPal SDK / Zeyow redirect)
+          └─ POST /api/checkout/verify (server-side double-check)
+              └─ POST /api/webhooks/{provider} (signature verification)
 ```
 
-**⚠️ CONTRAINTES TECHNIQUES :**
-- ❌ PAS de `expo-web-browser` (crash Expo Go)
-- ❌ PAS de WebView (Kkiapay SDK incompatible)
-- ✅ `Linking.openURL()` → navigateur système → deep link retour
+### Tarification Stripe XOF
+- XOF est **zero-decimal currency** : pas de ×100
+- Liste : BIF, CLP, DJF, GNF, JPY, KMF, KRW, MGA, PYG, RWF, UGX, VND, VUV, **XAF, XOF**, XPF
 
 ---
 
@@ -317,42 +366,53 @@ GROQ_API_KEY                      ← Pour traduction IA
 | `dossiers` | id, client_id, service_type, status, progress, created_at | Dossiers client |
 | `dossier_documents` | id, dossier_id, file_url, file_type, uploaded_at | Documents attachés |
 | `client_profiles` | id, user_id, first_name, last_name, phone, address | Profil client |
-| `messages` | id, sender_id, receiver_id, content, read, created_at | Messagerie interne |
-| `notifications` | id, user_id, title, message, read, type | Notifications |
+| `messages` | id, sender_id, recipient_id, content, is_read, created_at | Messagerie interne |
+| `notifications` | id, user_id, title, message, is_read, type | Notifications |
 | `appointments` | id, client_id, date, time, type, status, notes | Rendez-vous |
 | `events` | id, title, date, location, description, image_url | Événements communautaires |
-| `settings` | key, value, category | Paramètres dynamiques |
+| `settings` | key, value, category | Paramètres dynamiques (payment, frontend, ...) |
 | `products` | id, name, price, stock, image_url, category | Boutique |
 | `orders` | id, client_id, total, status, payment_method | Commandes boutique |
-| `page_sections` | id, page_slug, section_key, content | Contenu dynamique pages |
+| `page_sections` | id, page, section_key, content (JSONB), is_active | Contenu dynamique pages |
+| `partners` | id, name, profile, ... | Partenaires (profils détaillés) |
+| `translations` | source_text, source_hash, lang, translated_text, context | Cache traductions Groq |
 
-### Statuts de dossier
+### Statuts de dossier (mobile/web)
 ```
-'pending' → 'in_progress' → 'review' → 'approved' → 'completed'
-                                     → 'rejected'
+soumis → verifie → traitement → validation → termine
+                                            ↘ annule
 ```
+
+| Status | Label | Couleur |
+|--------|-------|---------|
+| `soumis` | Dossier soumis | `info` (#3B82F6) |
+| `verifie` | En cours de vérification | Violet (#7C5CCA) |
+| `traitement` | En traitement | `gold` (#C9A84C) |
+| `validation` | En validation | Orange (#E07B54) |
+| `termine` | Terminé | `success` (#10B981) |
+| `annule` | Annulé | `danger` (#EF4444) |
 
 ---
 
 ## 📱 15 ÉCRANS MOBILE — Registre complet
 
-| # | Écran | Fichier | Tab | Statut Sync |
-|---|-------|---------|-----|-------------|
-| 1 | Accueil | `HomeScreen.tsx` | Home | ⬜ À vérifier |
-| 2 | Services | `ServicesScreen.tsx` | Home | ✅ |
-| 3 | Détail service | `ServiceDetailsScreen.tsx` | — | ✅ |
-| 4 | Mon Dossier | `DossierScreen.tsx` | Dossier | ✅ |
-| 5 | Messages | `MessagesScreen.tsx` | Messages | ⬜ À vérifier |
-| 6 | Événements | `EventsScreen.tsx` | Events | ✅ |
-| 7 | Détail event | `EventDetailScreen.tsx` | — | ✅ |
-| 8 | Profil | `ProfilScreen.tsx` | Profil | ✅ |
-| 9 | Modifier profil | `EditProfilScreen.tsx` | — | ✅ |
-| 10 | Paiements | `PaymentsScreen.tsx` | — | ✅ |
-| 11 | Rendez-vous | `AppointmentsScreen.tsx` | — | ✅ |
-| 12 | Notifications | `NotificationsScreen.tsx` | — | ✅ |
-| 13 | Sécurité | `SecurityScreen.tsx` | — | ✅ |
-| 14 | FAQ | `FAQScreen.tsx` | — | ✅ |
-| 15 | À Propos | `AboutScreen.tsx` | — | ✅ |
+| # | Écran | Fichier | Tab | Sync | Lang |
+|---|-------|---------|-----|------|------|
+| 1 | Accueil | `HomeScreen.tsx` | Home | ✅ | ✅ |
+| 2 | Services | `ServicesScreen.tsx` | Services | ✅ | ✅ |
+| 3 | Détail service | `ServiceDetailsScreen.tsx` | — | ✅ | ✅ |
+| 4 | Mon Dossier | `DossierScreen.tsx` | Dossier | ✅ | ✅ |
+| 5 | Messages | `MessagesScreen.tsx` | (stack) | ✅ | ✅ |
+| 6 | Événements | `EventsScreen.tsx` | Events | ✅ | ✅ |
+| 7 | Détail event | `EventDetailScreen.tsx` | — | ✅ | ✅ |
+| 8 | Profil | `ProfilScreen.tsx` | Profil | ✅ | ✅ |
+| 9 | Modifier profil | `EditProfilScreen.tsx` | — | ✅ | ✅ |
+| 10 | Paiements | `PaymentsScreen.tsx` | (stack) | ✅ | ✅ |
+| 11 | Rendez-vous | `AppointmentsScreen.tsx` | (stack) | ✅ | ✅ |
+| 12 | Notifications | `NotificationsScreen.tsx` | (stack) | ✅ | ✅ |
+| 13 | Sécurité | `SecurityScreen.tsx` | — | ✅ | ✅ |
+| 14 | FAQ | `FAQScreen.tsx` | — | ✅ | ✅ |
+| 15 | À Propos | `AboutScreen.tsx` | — | ✅ | ✅ |
 
 ---
 
@@ -360,19 +420,21 @@ GROQ_API_KEY                      ← Pour traduction IA
 
 | Rôle | Fichier | Notes |
 |------|---------|-------|
-| **Entry point mobile** | `mobile/App.tsx` | Deep links + fonts + providers |
-| **Config Expo** | `mobile/app.json` | Scheme + plugins + permissions |
-| **Navigation** | `mobile/src/navigation/AppNavigator.tsx` | Stack navigator + types |
+| **Entry point mobile** | `mobile/App.tsx` | Deep links + fonts (Outfit/Playfair) + AuthProvider + LangProvider |
+| **Config Expo** | `mobile/app.json` | Scheme + plugins + dev-client + permissions |
+| **Navigation** | `mobile/src/navigation/AppNavigator.tsx` | Stack navigator + types route |
 | **Tabs** | `mobile/src/navigation/MainTabNavigator.tsx` | 5 tabs bottom |
 | **Auth** | `mobile/src/contexts/AuthContext.tsx` | Supabase Auth session |
-| **Lang** | `mobile/src/contexts/LangContext.tsx` | Sélecteur langue |
-| **Theme** | `mobile/src/config/theme.ts` | Design tokens complets |
+| **Lang** | `mobile/src/contexts/LangContext.tsx` | Batch chunks 15 + AsyncStorage cache + 6 langues |
+| **Theme** | `mobile/src/config/theme.ts` | Design tokens Nexus Emerald (mode clair) |
 | **Supabase** | `mobile/src/config/supabase.ts` | Client Supabase init |
-| **Paiement** | `mobile/src/components/KkiapayModal.tsx` | Modal + Linking |
-| **Gateway web** | `frontend/app/mobile-payment/page.tsx` | Charge SDK Kkiapay |
-| **API dossiers** | `frontend/app/api/mobile/dossiers/route.ts` | GET/POST dossiers mobile |
+| **Paiement mobile** | `mobile/src/components/KkiapayModal.tsx` | ⚠️ SDK actuellement MOCKÉ (lignes 33-36) |
+| **Composant T** | `mobile/src/components/T.tsx` | <T>texte</T> — créé mais inutilisé |
+| **API translate** | `frontend/app/api/translate/route.ts` | POST {texts, lang} → {translations:{src:tgt}} |
+| **API dossiers mobile** | `frontend/app/api/mobile/dossiers/route.ts` | GET/POST dossiers |
 | **Services web** | `frontend/app/(routes)/services/[slug]/page.tsx` | Source de vérité services |
-| **Traduction web** | `frontend/lib/translation/TranslationProvider.tsx` | Provider + composant T |
+| **Carte visite** | `frontend/components/business-card/BusinessCard.tsx` | Recto/Verso minimaliste premium |
+| **Translation web** | `frontend/lib/translation/TranslationProvider.tsx` | Provider + composant T web |
 
 ---
 
@@ -380,16 +442,19 @@ GROQ_API_KEY                      ← Pour traduction IA
 
 | # | Piège | Impact | Solution |
 |---|-------|--------|----------|
-| 1 | `expo-web-browser` / WebView | 💥 CRASH Expo Go | `Linking.openURL()` uniquement |
+| 1 | Listeners Kkiapay doublés au remount | Multiples callbacks fired | `addSuccessListener` dans useEffect `[]`, callbacks via `useRef` (pas de stale closure) |
 | 2 | `SUPABASE_SERVICE_ROLE_KEY` côté client | 🔒 Faille sécurité critique | Uniquement dans API Routes serveur |
 | 3 | `Alert.prompt()` sur Android | 💥 N'existe pas | Modal custom avec TextInput |
 | 4 | Polices non chargées au render | 💥 Crash silencieux | `useFonts()` + SplashScreen dans App.tsx |
 | 5 | Params navigation non typés | ❌ Erreur TS | Déclarer dans `RootStackParamList` |
 | 6 | URL `retour-gagnant.com` | ❌ Mauvais domaine | `retourgagnantbenin.bj` |
 | 7 | Email `contact@retour-gagnant.com` | ❌ Mauvais email | `contact@retourgagnantbenin.bj` |
-| 8 | `npm install` avec peer deps | ⚠️ Conflits | `--legacy-peer-deps` si nécessaire |
-| 9 | Supabase `from()` sans `.select()` | ⚠️ Renvoie rien | Toujours `.select('*')` |
-| 10 | Modifier un service sans l'autre | 🐛 Désynchronisation | **TOUJOURS** modifier web ET mobile ensemble |
+| 8 | Stripe XOF avec ×100 | 💸 Montants 100x trop élevés | XOF est zero-decimal — pas de multiplication |
+| 9 | Modifier un service sans l'autre | 🐛 Désynchronisation | TOUJOURS modifier web ET mobile ensemble |
+| 10 | API_BASE divergent (`www.` vs sans) | Redirections cassent fetch | Standardisé `https://www.retourgagnantbenin.bj` |
+| 11 | Numéro WhatsApp placeholder `22990000000` | Erreur prod | Numéro réel `2290160322121` |
+| 12 | Sandbox Kkiapay hardcodé | Test impossible | Lu depuis `settings.kkiapay_sandbox` |
+| 13 | Build Vercel sans Suspense | Erreur force-dynamic | Wrapper `<Suspense>` autour useSearchParams |
 
 ---
 
@@ -397,25 +462,29 @@ GROQ_API_KEY                      ← Pour traduction IA
 
 ### Style
 - **Langue UI** : Français
-- **Langue code** : Anglais (noms de variables, fonctions)
+- **Langue code** : Anglais (variables, fonctions)
 - **Commentaires** : Français
 - **TypeScript** : Mode strict, tout typer (jamais `any` sauf exception documentée)
 
 ### Mobile
 - **Styles** : `StyleSheet.create({})` — jamais de styles inline
-- **Navigation** : React Navigation 6 (Stack + Tab)
+- **Navigation** : React Navigation 7 (Stack + Tab)
 - **State** : Hooks React (`useState`, `useEffect`, `useContext`)
 - **API** : `supabase.from('table').select()` avec try/catch + données fallback
+- **Icônes** : `lucide-react-native` en priorité, Ionicons en fallback (Services)
+- **Traduction** : `const { t } = useLang()` + `t('texte FR')` dans les Text/string
 
 ### Web
 - **CSS** : Tailwind CSS
 - **Components** : shadcn/ui + Radix
-- **Animations** : Framer Motion
+- **Animations** : Framer Motion + GSAP + Three.js
 - **API** : Next.js API Routes (`app/api/`)
+- **Store** : Zustand (`lib/store/`)
+- **Traduction** : `<T>texte</T>` ou `useTranslation()`
 
 ### Git
 - **Messages** : `feat(scope): description` / `fix(scope): description`
-- **Scopes** : `mobile`, `frontend`, `api`, `supabase`, `config`
+- **Scopes** : `mobile`, `frontend`, `api`, `supabase`, `config`, `compta`, `erp`, `email`, `routes`, `panels`, `agent`, `admin`
 
 ---
 
@@ -428,51 +497,65 @@ npm run dev                    # Serveur dev → localhost:3000
 npm run build                  # Build production
 npx tsc --noEmit               # Type check
 
-# ── MOBILE ──
+# ── MOBILE (dev build requis pour Kkiapay natif) ──
 cd "c:\Users\HP\Desktop\RETOUR GAGNANT TEMPLATE\mobile"
-npx expo start --clear         # Expo Go avec cache vidé
-npx tsc --noEmit               # Type check mobile
+npx expo start --dev-client --clear     # Dev build (recommandé)
+npx expo start --clear                  # Expo Go (sans paiement réel)
+npx tsc --noEmit                        # Type check
+eas build --profile development --platform android   # Build APK dev
 
 # ── GIT ──
 cd "c:\Users\HP\Desktop\RETOUR GAGNANT TEMPLATE"
 git diff --stat HEAD            # Fichiers modifiés
-git add -A                      # Stage tout
-git commit -m "feat(mobile): sync complète web↔mobile"
-git push                        # Push sur remote
+git status --short              # Liste rapide
+git log --oneline -20           # Historique
 ```
 
 ---
 
 ## 📔 JOURNAL DE BORD
 
-> **Format** : `[Date] [Heure] — Résumé de session`
-> **Règle** : Mis à jour AUTOMATIQUEMENT par Claude Code à chaque fin de session.
+> **Format** : `[Date] — Résumé de session`
 
-### 2026-04-13 15:45 — Session 3 (Mémoire Ultra v3)
-- Création du système de mémoire v3 fusionnant diary + planning-with-files + context-save/restore
-- Commandes slash : `/continue`, `/save`, `/status`
-- Script auto-scan `prepare_session.ps1`
-- Sous-mémoires frontend + mobile
+### 2026-04-27 — Session 4 (Mémoire v3.1, refonte CLAUDE.md)
+- Audit complet du décalage entre CLAUDE.md (2026-04-13) et état réel du repo
+- Mise à jour majeure : design system Nexus Emerald (mode clair), Expo SDK 54, paiement v2 SDK natif, 5 providers web (Stripe + PayPal ajoutés), traduction mobile P1 marquée DONE
+- Identification dette critique : **Kkiapay SDK actuellement mocké** dans `KkiapayModal.tsx` (lignes 33-36) — à réactiver après dev build
+- Constat : `useLang()` câblé dans 23 fichiers, route `/api/mobile/translate` consolidée dans `/api/translate`
 
-### 2026-04-13 14:00 — Session 2 (Synchronisation suite)
-- `AboutScreen.tsx` synchronisé avec le web
-- `FAQScreen.tsx` email corrigé
-- `app.json` deep links (Android intentFilters + iOS associatedDomains)
-- `App.tsx` deep link handler (payment-success/failed/canceled)
-- 0 erreur TypeScript
+### Commits notables 2026-04-13 → 2026-04-27 (chronologique)
+- `7e1ece1` fix(mobile/dossiers): auto-créer client_profiles si absent + SQL migration FK
+- `ee724f6` feat(mobile): events system + services enrichis + pièces à fournir
+- `d724579` feat(erp): paiements manuels + alarmes + stock boutique + live chat fixes
+- `7e8b3b2` fix(mobile-payment): Suspense boundary
+- `6d6af2a` fix(build+chat+partners): Suspense force-dynamic + partner profiles + file upload
+- `32071ff` feat(full): carte de visite + mobile redesign + ERP boutique + nouvelles API
+- `ca91536` fix(chat+compta): live chat type support + loading spinner
+- `41a6fbd` fix(portfolio): video intro fallback si autoplay échoue
+- `a632662` fix(csp): autorise media-src Supabase pour vidéos portfolio
+- `554bd5e` feat(erp): fiche client exhaustive, alarmes factures, gestion stock
+- `ff9712b` feat(compta): bouton Paiement accepte factures externes
+- `b683fe6` feat(compta): LOT 1 export comptable mensuel
+- `05c8407` feat(compta): LOT 2 export Excel pro (logo, dashboard, data bars)
+- `4fc0358` feat(compta): LOT 3 contrôle & conformité (clôture, justificatifs, verrou)
+- `fe5b650` feat(compta): registre comptable agent format officiel RGB
+- `483d926` feat(agent): logique export intelligente + messagerie email pro
+- `732f196` fix(agent): refonte messagerie agent design institutionnel clair
+- `257ec71` feat(nationalite): capture prospect avant formulaire + invitation compte
+- `9e3fc35` → `96b29a1` (5 commits) feat(email+portfolio): refonte institutionnelle, logo XXL tricolore, portfolio 9 services
+- `d5d4c77` feat(admin+agent+design): fix liens admin + roll-up + attachments mail IA
+- `a70358e` feat(panels): toggle thème clair/sombre par panel (admin/agent/client/ceo)
+- `33c5765` feat(routes): migration thème sombre → clair sur 7 pages publiques
+- `125e682` fix(mobile): audit P1+P2 — paiement listeners, WhatsApp, API_BASE, sandbox toggle
 
-### 2026-04-13 10:00 — Session 1 (Synchronisation initiale)
-- `ServicesScreen.tsx` — 9 services alignés
-- `ServiceDetailsScreen.tsx` — Refonte complète avec pricing_options
-- `AppNavigator.tsx` — Types de route étendus
-- `KkiapayModal.tsx` — Paiement réel via Linking
-- `DossierScreen.tsx` — Upload documents
+### 2026-04-13 — Sessions 1-3 (synchronisation initiale + mémoire v3)
+- Synchronisation 9 services web↔mobile, refonte ServiceDetailsScreen
+- KkiapayModal v1 (Linking) + gateway `/mobile-payment` + deep links
+- Création système mémoire persistante v3 (CLAUDE.md racine + sous-mémoires)
 
 ---
 
 ## 🧪 TEST — 5 questions de contrôle
-
-Si tu peux répondre à ces 5 questions, ta mémoire est intacte :
 
 | # | Question | Où trouver la réponse |
 |---|----------|----------------------|
@@ -484,6 +567,6 @@ Si tu peux répondre à ces 5 questions, ta mémoire est intacte :
 
 ---
 
-*Ce fichier est lu automatiquement par Claude Code VS Code à chaque ouverture du projet.*
+*Ce fichier est lu automatiquement par Claude Code à chaque ouverture du projet.*
 *Pattern : Diary + Planning-with-Files + Context-Save/Restore fusionnés.*
-*Taille optimisée pour tenir dans la fenêtre de contexte tout en étant exhaustif.*
+*Voir aussi `mobile/CLAUDE.md` et `frontend/CLAUDE.md` pour contexte spécifique par plateforme.*

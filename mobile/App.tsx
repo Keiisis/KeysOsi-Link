@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect } from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
@@ -24,6 +24,8 @@ import * as Notifications from 'expo-notifications'
 
 import { AuthProvider } from './src/contexts/AuthContext'
 import { LangProvider } from './src/contexts/LangContext'
+import { PaymentSettingsProvider } from './src/contexts/PaymentSettingsContext'
+import { CartProvider } from './src/contexts/CartContext'
 import AppNavigator from './src/navigation/AppNavigator'
 import SplashScreen from './src/screens/SplashScreen'
 import { KkiapayProvider } from '@kkiapay-org/react-native-sdk'
@@ -111,14 +113,18 @@ export default function App() {
     return (
         <SafeAreaProvider>
             <KkiapayProvider>
-                <LangProvider>
-                    <AuthProvider>
-                        <NavigationContainer linking={linking}>
-                            <StatusBar style="dark" />
-                            <AppNavigator />
-                        </NavigationContainer>
-                    </AuthProvider>
-                </LangProvider>
+                <PaymentSettingsProvider>
+                    <LangProvider>
+                        <AuthProvider>
+                            <CartProvider>
+                                <NavigationContainer linking={linking}>
+                                    <StatusBar style="dark" />
+                                    <AppNavigator />
+                                </NavigationContainer>
+                            </CartProvider>
+                        </AuthProvider>
+                    </LangProvider>
+                </PaymentSettingsProvider>
             </KkiapayProvider>
         </SafeAreaProvider>
     )

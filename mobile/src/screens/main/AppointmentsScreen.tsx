@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../config/supabase'
+import { useLang } from '../../contexts/LangContext'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
 import { RootStackParamList } from '../../navigation/AppNavigator'
 
@@ -43,6 +44,7 @@ const STATUS_CONFIG = {
 
 export default function AppointmentsScreen({ navigation }: { navigation: Nav }) {
     const { profile } = useAuth()
+    const { t } = useLang()
     const [appointments, setAppointments] = useState<Appointment[]>([])
     const [loading, setLoading] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
@@ -90,7 +92,7 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
     /* ── Demander un RDV ── */
     const handleRequestAppointment = async () => {
         if (!formNotes.trim()) {
-            Alert.alert('Champ requis', 'Décrivez brièvement l\'objet de votre rendez-vous.')
+            Alert.alert(t('Champ requis'), t('Décrivez brièvement l\'objet de votre rendez-vous.'))
             return
         }
 
@@ -119,13 +121,13 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
             setShowModal(false)
             setFormNotes('')
             Alert.alert(
-                'Demande envoyée',
-                'Notre équipe vous contactera sous 24h pour confirmer la date et l\'heure de votre rendez-vous.',
+                t('Demande envoyée'),
+                t('Notre équipe vous contactera sous 24h pour confirmer la date et l\'heure de votre rendez-vous.'),
             )
             await fetchAppointments()
         } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : 'Erreur'
-            Alert.alert('Erreur', msg)
+            const msg = e instanceof Error ? e.message : t('Erreur')
+            Alert.alert(t('Erreur'), msg)
         } finally {
             setSubmitting(false)
         }
@@ -134,12 +136,12 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
     /* ── Annuler un RDV ── */
     const handleCancel = (id: string) => {
         Alert.alert(
-            'Annuler le rendez-vous',
-            'Êtes-vous sûr de vouloir annuler ce rendez-vous ?',
+            t('Annuler le rendez-vous'),
+            t('Êtes-vous sûr de vouloir annuler ce rendez-vous ?'),
             [
-                { text: 'Non', style: 'cancel' },
+                { text: t('Non'), style: 'cancel' },
                 {
-                    text: 'Oui, annuler', style: 'destructive', onPress: async () => {
+                    text: t('Oui, annuler'), style: 'destructive', onPress: async () => {
                         await supabase.from('appointments').update({ status: 'cancelled' }).eq('id', id)
                         setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: 'cancelled' } : a))
                     },
@@ -149,7 +151,7 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
     }
 
     const formatDateTime = (iso: string | null) => {
-        if (!iso) return 'Date à confirmer'
+        if (!iso) return t('Date à confirmer')
         const d = new Date(iso)
         return d.toLocaleDateString('fr-FR', {
             weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
@@ -176,16 +178,16 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
                 </TouchableOpacity>
                 <View style={styles.headerRow}>
                     <View>
-                        <Text style={styles.headerTitle}>Rendez-vous</Text>
+                        <Text style={styles.headerTitle}>{t('Rendez-vous')}</Text>
                         <Text style={styles.headerSub}>
                             {upcoming.length > 0
-                                ? `${upcoming.length} RDV à venir`
-                                : 'Aucun RDV à venir'}
+                                ? `${upcoming.length} ${t('RDV à venir')}`
+                                : t('Aucun RDV à venir')}
                         </Text>
                     </View>
                     <TouchableOpacity style={styles.newRdvBtn} onPress={() => setShowModal(true)} activeOpacity={0.8}>
                         <Plus size={18} color="#FFF" strokeWidth={1.75} />
-                        <Text style={styles.newRdvText}>Demander</Text>
+                        <Text style={styles.newRdvText}>{t('Demander')}</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -195,9 +197,9 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
                 <View style={styles.nextRdvCard}>
                     <View style={styles.nextRdvBadge}>
                         <Clock size={12} color={colors.primary} strokeWidth={1.75} />
-                        <Text style={styles.nextRdvBadgeText}>Prochain rendez-vous</Text>
+                        <Text style={styles.nextRdvBadgeText}>{t('Prochain rendez-vous')}</Text>
                     </View>
-                    <Text style={styles.nextRdvTitle}>{TYPE_CONFIG[upcoming[0].type]?.label || 'Rendez-vous'}</Text>
+                    <Text style={styles.nextRdvTitle}>{t(TYPE_CONFIG[upcoming[0].type]?.label || 'Rendez-vous')}</Text>
                     <View style={styles.nextRdvRow}>
                         <Calendar size={14} color={colors.primary + 'AA'} strokeWidth={1.75} />
                         <Text style={styles.nextRdvDate}>{formatDateTime(upcoming[0].scheduled_at)}</Text>
@@ -205,7 +207,7 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
                     {upcoming[0].agent_name && (
                         <View style={styles.nextRdvRow}>
                             <User size={14} color={colors.primary + 'AA'} strokeWidth={1.75} />
-                            <Text style={styles.nextRdvDate}>Avec {upcoming[0].agent_name}</Text>
+                            <Text style={styles.nextRdvDate}>{t('Avec')} {upcoming[0].agent_name}</Text>
                         </View>
                     )}
                     <View style={styles.nextRdvType}>
@@ -215,7 +217,7 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
                             color={TYPE_CONFIG[upcoming[0].type]?.color || colors.primary}
                         />
                         <Text style={[styles.nextRdvTypeText, { color: TYPE_CONFIG[upcoming[0].type]?.color }]}>
-                            {TYPE_CONFIG[upcoming[0].type]?.label}
+                            {t(TYPE_CONFIG[upcoming[0].type]?.label)}
                         </Text>
                         <Text style={styles.nextRdvDuration}>• 30 min</Text>
                     </View>
@@ -224,14 +226,14 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
 
             {/* Tabs */}
             <View style={styles.tabs}>
-                {(['upcoming', 'past'] as const).map((t) => (
+                {(['upcoming', 'past'] as const).map((tabKey) => (
                     <TouchableOpacity
-                        key={t}
-                        style={[styles.tab, tab === t && styles.tabActive]}
-                        onPress={() => setTab(t)}
+                        key={tabKey}
+                        style={[styles.tab, tab === tabKey && styles.tabActive]}
+                        onPress={() => setTab(tabKey)}
                     >
-                        <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-                            {t === 'upcoming' ? `À venir (${upcoming.length})` : `Passés (${past.length})`}
+                        <Text style={[styles.tabText, tab === tabKey && styles.tabTextActive]}>
+                            {tabKey === 'upcoming' ? `${t('À venir')} (${upcoming.length})` : `${t('Passés')} (${past.length})`}
                         </Text>
                     </TouchableOpacity>
                 ))}
@@ -248,17 +250,17 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
                         <Calendar size={36} color={colors.textMuted} strokeWidth={1.75} />
                     </View>
                     <Text style={styles.emptyTitle}>
-                        {tab === 'upcoming' ? 'Aucun rendez-vous à venir' : 'Aucun rendez-vous passé'}
+                        {tab === 'upcoming' ? t('Aucun rendez-vous à venir') : t('Aucun rendez-vous passé')}
                     </Text>
                     <Text style={styles.emptyText}>
                         {tab === 'upcoming'
-                            ? 'Demandez un rendez-vous avec notre équipe pour discuter de votre dossier.'
-                            : 'L\'historique de vos rendez-vous apparaîtra ici.'}
+                            ? t('Demandez un rendez-vous avec notre équipe pour discuter de votre dossier.')
+                            : t('L\'historique de vos rendez-vous apparaîtra ici.')}
                     </Text>
                     {tab === 'upcoming' && (
                         <TouchableOpacity style={styles.emptyBtn} onPress={() => setShowModal(true)} activeOpacity={0.8}>
                             <Calendar size={16} color="#FFF" strokeWidth={1.75} />
-                            <Text style={styles.emptyBtnText}>Prendre rendez-vous</Text>
+                            <Text style={styles.emptyBtnText}>{t('Prendre rendez-vous')}</Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -275,20 +277,20 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
                                     <Text style={styles.rdvMonth}>{formatDateShort(appt.scheduled_at).split(' ')[1] || ''}</Text>
                                 </View>
                                 <View style={styles.rdvInfo}>
-                                    <Text style={styles.rdvTitle} numberOfLines={1}>{tc.label}</Text>
+                                    <Text style={styles.rdvTitle} numberOfLines={1}>{t(tc.label)}</Text>
                                     <View style={styles.rdvMeta}>
                                         <Ionicons name={tc.icon} size={12} color={tc.color} />
-                                        <Text style={[styles.rdvMetaText, { color: tc.color }]}>{tc.label}</Text>
+                                        <Text style={[styles.rdvMetaText, { color: tc.color }]}>{t(tc.label)}</Text>
                                         <Text style={styles.rdvMetaDot}>•</Text>
                                         <Text style={styles.rdvMetaText}>30 min</Text>
                                     </View>
                                     {appt.agent_name && (
-                                        <Text style={styles.rdvAgent}>Avec {appt.agent_name}</Text>
+                                        <Text style={styles.rdvAgent}>{t('Avec')} {appt.agent_name}</Text>
                                     )}
                                 </View>
                                 <View style={styles.rdvRight}>
                                     <View style={[styles.rdvStatus, { backgroundColor: sc.bg }]}>
-                                        <Text style={[styles.rdvStatusText, { color: sc.color }]}>{sc.label}</Text>
+                                        <Text style={[styles.rdvStatusText, { color: sc.color }]}>{t(sc.label)}</Text>
                                     </View>
                                     {canCancel && (
                                         <TouchableOpacity onPress={() => handleCancel(appt.id)} style={styles.cancelBtn}>
@@ -309,11 +311,11 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
                 <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowModal(false)}>
                     <View style={styles.modalSheet}>
                         <View style={styles.modalHandle} />
-                        <Text style={styles.modalTitle}>Demander un rendez-vous</Text>
-                        <Text style={styles.modalSub}>Notre équipe vous confirmera la date sous 24h</Text>
+                        <Text style={styles.modalTitle}>{t('Demander un rendez-vous')}</Text>
+                        <Text style={styles.modalSub}>{t('Notre équipe vous confirmera la date sous 24h')}</Text>
 
                         {/* Type de RDV */}
-                        <Text style={styles.modalLabel}>Type de rendez-vous</Text>
+                        <Text style={styles.modalLabel}>{t('Type de rendez-vous')}</Text>
                         <View style={styles.typeRow}>
                             {(Object.entries(TYPE_CONFIG) as [keyof typeof TYPE_CONFIG, typeof TYPE_CONFIG[keyof typeof TYPE_CONFIG]][]).map(([key, cfg]) => (
                                 <TouchableOpacity
@@ -324,19 +326,19 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
                                 >
                                     <Ionicons name={cfg.icon} size={18} color={formType === key ? cfg.color : colors.textMuted} />
                                     <Text style={[styles.typeBtnText, formType === key && { color: cfg.color }]}>
-                                        {cfg.label}
+                                        {t(cfg.label)}
                                     </Text>
                                 </TouchableOpacity>
                             ))}
                         </View>
 
                         {/* Notes */}
-                        <Text style={styles.modalLabel}>Objet et disponibilités *</Text>
+                        <Text style={styles.modalLabel}>{t('Objet et disponibilités')} *</Text>
                         <TextInput
                             style={styles.notesInput}
                             value={formNotes}
                             onChangeText={setFormNotes}
-                            placeholder="Ex : Suivi de mon dossier nationalité, disponible lundi et mercredi matin…"
+                            placeholder={t("Ex : Suivi de mon dossier nationalité, disponible lundi et mercredi matin…")}
                             placeholderTextColor={colors.textMuted}
                             multiline
                             numberOfLines={4}
@@ -354,7 +356,7 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
                             ) : (
                                 <>
                                     <Send size={18} color="#FFF" strokeWidth={1.75} />
-                                    <Text style={styles.submitBtnText}>Envoyer la demande</Text>
+                                    <Text style={styles.submitBtnText}>{t('Envoyer la demande')}</Text>
                                 </>
                             )}
                         </TouchableOpacity>

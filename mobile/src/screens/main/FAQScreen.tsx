@@ -7,6 +7,7 @@ import { ArrowLeft, ChevronRight, HelpCircle, Search, XCircle } from 'lucide-rea
 import { Ionicons } from '@expo/vector-icons'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
+import { useLang } from '../../contexts/LangContext'
 import { RootStackParamList } from '../../navigation/AppNavigator'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'FAQ'>
@@ -99,6 +100,7 @@ const FAQ_DATA = [
 ═══════════════════════════════════════════════════════════ */
 
 export default function FAQScreen({ navigation }: { navigation: Nav }) {
+    const { t } = useLang()
     const [openId, setOpenId] = useState<string | null>(null)
     const [search, setSearch] = useState('')
 
@@ -106,8 +108,8 @@ export default function FAQScreen({ navigation }: { navigation: Nav }) {
         ...cat,
         items: cat.items.filter(item =>
             !search.trim() ||
-            item.q.toLowerCase().includes(search.toLowerCase()) ||
-            item.a.toLowerCase().includes(search.toLowerCase())
+            t(item.q).toLowerCase().includes(search.toLowerCase()) ||
+            t(item.a).toLowerCase().includes(search.toLowerCase())
         ),
     })).filter(cat => cat.items.length > 0)
 
@@ -119,8 +121,8 @@ export default function FAQScreen({ navigation }: { navigation: Nav }) {
                 <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                     <ArrowLeft size={22} color={colors.textOnDark} strokeWidth={1.75} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Aide & FAQ</Text>
-                <Text style={styles.headerSub}>Questions fréquentes</Text>
+                <Text style={styles.headerTitle}>{t('Aide & FAQ')}</Text>
+                <Text style={styles.headerSub}>{t('Questions fréquentes')}</Text>
             </View>
 
             {/* Barre de recherche */}
@@ -131,7 +133,7 @@ export default function FAQScreen({ navigation }: { navigation: Nav }) {
                         style={styles.searchInput}
                         value={search}
                         onChangeText={setSearch}
-                        placeholder="Rechercher une question…"
+                        placeholder={t('Rechercher une question…')}
                         placeholderTextColor={colors.textMuted}
                         autoCapitalize="none"
                         returnKeyType="search"
@@ -148,8 +150,8 @@ export default function FAQScreen({ navigation }: { navigation: Nav }) {
             {filteredCategories.length === 0 ? (
                 <View style={styles.noResult}>
                     <Search size={32} color={colors.textMuted} strokeWidth={1.75} />
-                    <Text style={styles.noResultTitle}>Aucun résultat</Text>
-                    <Text style={styles.noResultText}>Essayez avec d'autres mots-clés.</Text>
+                    <Text style={styles.noResultTitle}>{t('Aucun résultat')}</Text>
+                    <Text style={styles.noResultText}>{t("Essayez avec d'autres mots-clés.")}</Text>
                 </View>
             ) : (
                 filteredCategories.map((cat) => (
@@ -159,7 +161,7 @@ export default function FAQScreen({ navigation }: { navigation: Nav }) {
                             <View style={[styles.catIcon, { backgroundColor: cat.color + '15' }]}>
                                 <Ionicons name={cat.icon} size={16} color={cat.color} />
                             </View>
-                            <Text style={[styles.catTitle, { color: cat.color }]}>{cat.category}</Text>
+                            <Text style={[styles.catTitle, { color: cat.color }]}>{t(cat.category)}</Text>
                         </View>
 
                         {/* Items */}
@@ -175,7 +177,7 @@ export default function FAQScreen({ navigation }: { navigation: Nav }) {
                                             activeOpacity={0.7}
                                         >
                                             <Text style={[styles.faqQ, isOpen && { color: cat.color }]}>
-                                                {item.q}
+                                                {t(item.q)}
                                             </Text>
                                             <Ionicons
                                                 name={isOpen ? 'chevron-up' : 'chevron-down'}
@@ -185,7 +187,7 @@ export default function FAQScreen({ navigation }: { navigation: Nav }) {
                                         </TouchableOpacity>
                                         {isOpen && (
                                             <View style={[styles.faqAnswer, { borderLeftColor: cat.color }]}>
-                                                <Text style={styles.faqA}>{item.a}</Text>
+                                                <Text style={styles.faqA}>{t(item.a)}</Text>
                                             </View>
                                         )}
                                     </View>
@@ -200,8 +202,8 @@ export default function FAQScreen({ navigation }: { navigation: Nav }) {
             <View style={styles.contactCard}>
                 <Ionicons name="chatbubble-ellipses" size={24} color={colors.primary} />
                 <View style={{ flex: 1 }}>
-                    <Text style={styles.contactTitle}>Vous n'avez pas trouvé votre réponse ?</Text>
-                    <Text style={styles.contactText}>Notre équipe est disponible pour vous aider.</Text>
+                    <Text style={styles.contactTitle}>{t("Vous n'avez pas trouvé votre réponse ?")}</Text>
+                    <Text style={styles.contactText}>{t('Notre équipe est disponible pour vous aider.')}</Text>
                 </View>
                 <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.75} />
             </View>

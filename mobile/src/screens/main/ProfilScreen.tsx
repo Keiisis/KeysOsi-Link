@@ -49,8 +49,8 @@ export default function ProfilScreen() {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
         if (status !== 'granted') {
             Alert.alert(
-                'Permission requise',
-                'Veuillez autoriser l\'accès à votre galerie dans les paramètres de l\'application.',
+                t('Permission requise'),
+                t('Veuillez autoriser l\'accès à votre galerie dans les paramètres de l\'application.'),
             )
             return
         }
@@ -97,10 +97,10 @@ export default function ProfilScreen() {
             const { error: updateError } = await updateProfile({ avatar_url: publicUrl })
             if (updateError) throw updateError
 
-            Alert.alert('Photo mise à jour', 'Votre photo de profil a été modifiée avec succès.')
+            Alert.alert(t('Photo mise à jour'), t('Votre photo de profil a été modifiée avec succès.'))
         } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : 'Erreur lors du téléchargement'
-            Alert.alert('Erreur', msg)
+            const msg = e instanceof Error ? e.message : t('Erreur lors du téléchargement')
+            Alert.alert(t('Erreur'), msg)
         } finally {
             setUploadingAvatar(false)
         }
@@ -110,7 +110,7 @@ export default function ProfilScreen() {
     const handleTakePhoto = async () => {
         const { status } = await ImagePicker.requestCameraPermissionsAsync()
         if (status !== 'granted') {
-            Alert.alert('Permission requise', 'Accès à la caméra refusé.')
+            Alert.alert(t('Permission requise'), t('Accès à la caméra refusé.'))
             return
         }
 
@@ -143,54 +143,75 @@ export default function ProfilScreen() {
             const { error: updateError } = await updateProfile({ avatar_url: publicUrl })
             if (updateError) throw updateError
 
-            Alert.alert('Photo mise à jour', 'Photo de profil modifiée avec succès.')
+            Alert.alert(t('Photo mise à jour'), t('Photo de profil modifiée avec succès.'))
         } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : 'Erreur lors du téléchargement'
-            Alert.alert('Erreur', msg)
+            const msg = e instanceof Error ? e.message : t('Erreur lors du téléchargement')
+            Alert.alert(t('Erreur'), msg)
         } finally {
             setUploadingAvatar(false)
         }
     }
 
     const showAvatarOptions = () => {
-        Alert.alert('Photo de profil', 'Choisissez une source', [
-            { text: 'Prendre une photo', onPress: handleTakePhoto },
-            { text: 'Choisir dans la galerie', onPress: handlePickAvatar },
-            { text: 'Annuler', style: 'cancel' },
+        Alert.alert(t('Photo de profil'), t('Choisissez une source'), [
+            { text: t('Prendre une photo'), onPress: handleTakePhoto },
+            { text: t('Choisir dans la galerie'), onPress: handlePickAvatar },
+            { text: t('Annuler'), style: 'cancel' },
         ])
     }
 
     const handleLogout = () => {
-        Alert.alert('Déconnexion', 'Êtes-vous sûr de vouloir vous déconnecter ?', [
-            { text: 'Annuler', style: 'cancel' },
-            { text: 'Se déconnecter', style: 'destructive', onPress: signOut },
+        Alert.alert(t('Déconnexion'), t('Êtes-vous sûr de vouloir vous déconnecter ?'), [
+            { text: t('Annuler'), style: 'cancel' },
+            { text: t('Se déconnecter'), style: 'destructive', onPress: signOut },
         ])
     }
 
     const menuSections = [
         {
-            title: 'Compte',
+            title: t('Compte'),
             items: [
                 {
                     icon: 'person-outline' as const,
-                    label: 'Informations personnelles',
-                    sub: 'Modifier votre profil',
+                    label: t('Informations personnelles'),
+                    sub: t('Modifier votre profil'),
                     color: colors.primary,
                     onPress: () => navigation.navigate('EditProfil'),
                 },
                 {
                     icon: 'card-outline' as const,
-                    label: 'Paiements & Facturation',
-                    sub: 'Historique et méthodes',
+                    label: t('Paiements'),
+                    sub: t('Historique et méthodes'),
                     color: colors.success,
                     onPress: () => navigation.navigate('Payments'),
                 },
                 {
+                    icon: 'receipt-outline' as const,
+                    label: t('Mes factures'),
+                    sub: t('Historique facturation'),
+                    color: colors.gold,
+                    onPress: () => navigation.navigate('Invoices'),
+                },
+                {
+                    icon: 'cube-outline' as const,
+                    label: t('Mes commandes'),
+                    sub: t('Suivi de vos colis'),
+                    color: colors.info,
+                    onPress: () => navigation.navigate('Orders'),
+                },
+                {
                     icon: 'calendar-outline' as const,
-                    label: 'Mes rendez-vous',
-                    sub: 'Prochains RDV',
+                    label: t('Mes rendez-vous'),
+                    sub: t('Prochains RDV'),
                     color: colors.warning,
                     onPress: () => navigation.navigate('Appointments'),
+                },
+                {
+                    icon: 'create-outline' as const,
+                    label: t('Ma signature'),
+                    sub: t('Signer factures et devis'),
+                    color: '#7C5CCA',
+                    onPress: () => navigation.navigate('Signature'),
                 },
             ],
         },
@@ -221,19 +242,19 @@ export default function ProfilScreen() {
             ],
         },
         {
-            title: 'Support',
+            title: t('Support'),
             items: [
                 {
                     icon: 'help-circle-outline' as const,
-                    label: 'Aide & FAQ',
-                    sub: 'Questions fréquentes',
+                    label: t('Aide & FAQ'),
+                    sub: t('Questions fréquentes'),
                     color: colors.info,
                     onPress: () => navigation.navigate('FAQ'),
                 },
                 {
                     icon: 'information-circle-outline' as const,
-                    label: 'À propos',
-                    sub: 'Version et mentions légales',
+                    label: t('À propos'),
+                    sub: t('Version et mentions légales'),
                     color: colors.textMuted,
                     onPress: () => navigation.navigate('About'),
                 },
@@ -278,7 +299,7 @@ export default function ProfilScreen() {
                 <View style={styles.badgesRow}>
                     <View style={styles.roleBadge}>
                         <ShieldCheck size={12} color={colors.primary} strokeWidth={1.75} />
-                        <Text style={styles.roleText}>Client vérifié</Text>
+                        <Text style={styles.roleText}>{t('Client vérifié')}</Text>
                     </View>
                     {profile?.ville ? (
                         <View style={styles.villeBadge}>
@@ -295,7 +316,7 @@ export default function ProfilScreen() {
                     activeOpacity={0.7}
                 >
                     <Pencil size={14} color={colors.primary} strokeWidth={1.75} />
-                    <Text style={styles.editShortcutText}>Modifier le profil</Text>
+                    <Text style={styles.editShortcutText}>{t('Modifier le profil')}</Text>
                 </TouchableOpacity>
             </View>
 
@@ -304,7 +325,7 @@ export default function ProfilScreen() {
                 <View style={styles.statCard}>
                     <FolderOpen size={22} color={colors.primary} strokeWidth={1.75} />
                     <Text style={styles.statValue}>{stats.dossiers}</Text>
-                    <Text style={styles.statLabel}>Dossiers</Text>
+                    <Text style={styles.statLabel}>{t('Dossiers')}</Text>
                 </View>
                 <View style={[styles.statCard, styles.statCardMiddle]}>
                     <Ionicons name="calendar" size={22} color='#7C5CCA' />
@@ -314,14 +335,14 @@ export default function ProfilScreen() {
                 <View style={styles.statCard}>
                     <CreditCard size={22} color={colors.success} strokeWidth={1.75} />
                     <Text style={styles.statValue}>{stats.payments}</Text>
-                    <Text style={styles.statLabel}>Paiements</Text>
+                    <Text style={styles.statLabel}>{t('Paiements')}</Text>
                 </View>
             </View>
 
             {/* Menu Sections */}
             {menuSections.map((section, si) => (
                 <View key={si}>
-                    <Text style={styles.sectionLabel}>{section.title}</Text>
+                    <Text style={styles.sectionLabel}>{t(section.title)}</Text>
                     <View style={styles.menuCard}>
                         {section.items.map((item, ii) => (
                             <TouchableOpacity
@@ -334,8 +355,8 @@ export default function ProfilScreen() {
                                     <Ionicons name={item.icon} size={18} color={item.color} />
                                 </View>
                                 <View style={styles.menuTextWrap}>
-                                    <Text style={styles.menuLabel}>{item.label}</Text>
-                                    <Text style={styles.menuSub}>{item.sub}</Text>
+                                    <Text style={styles.menuLabel}>{t(item.label)}</Text>
+                                    <Text style={styles.menuSub}>{t(item.sub)}</Text>
                                 </View>
                                 <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.75} />
                             </TouchableOpacity>
@@ -347,7 +368,7 @@ export default function ProfilScreen() {
             {/* Déconnexion */}
             <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.7}>
                 <LogOut size={18} color={colors.danger} strokeWidth={1.75} />
-                <Text style={styles.logoutText}>Se déconnecter</Text>
+                <Text style={styles.logoutText}>{t('Se déconnecter')}</Text>
             </TouchableOpacity>
 
             <Text style={styles.version}>Retour Gagnant Bénin — v1.0.0</Text>

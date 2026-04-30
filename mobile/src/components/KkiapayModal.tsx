@@ -5,8 +5,9 @@ import {
 } from 'react-native'
 import { Briefcase, CreditCard, Info, Lock, ShieldCheck, Smartphone, X } from 'lucide-react-native'
 import { useKkiapay } from '@kkiapay-org/react-native-sdk'
-import { supabase } from '../config/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useLang } from '../contexts/LangContext'
+import { usePaymentSettings } from '../contexts/PaymentSettingsContext'
 import { colors, spacing, shadows, typography, radius } from '../config/theme'
 
 /* ═══════════════════════════════════════════════════════════
@@ -27,9 +28,10 @@ interface KkiapayModalProps {
 
 export default function KkiapayModal({ visible, amount, serviceName, onClose, onSuccess }: KkiapayModalProps) {
     const [loading, setLoading] = useState(false)
-    const [kkiapayKey, setKkiapayKey] = useState<string | null>(null)
-    const [sandbox, setSandbox] = useState(false)
     const { profile } = useAuth()
+    const { t } = useLang()
+    // Settings preloaded at app start — no Supabase round-trip when modal opens
+    const { kkiapayPublicKey: kkiapayKey, kkiapaySandbox: sandbox } = usePaymentSettings()
     const { openKkiapayWidget, addSuccessListener, addFailedListener } = useKkiapay()
 
     // Refs sur les callbacks pour eviter le ré-enregistrement des listeners
@@ -41,27 +43,6 @@ export default function KkiapayModal({ visible, amount, serviceName, onClose, on
     useEffect(() => { onSuccessRef.current = onSuccess }, [onSuccess])
     useEffect(() => { onCloseRef.current = onClose }, [onClose])
 
-    // ── Charger la cle publique Kkiapay + flag sandbox depuis Supabase settings ──
-    useEffect(() => {
-        const fetchSettings = async () => {
-            try {
-                const { data } = await supabase
-                    .from('settings')
-                    .select('key, value')
-                    .in('key', ['kkiapay_public_key', 'kkiapay_sandbox'])
-                if (Array.isArray(data)) {
-                    for (const row of data) {
-                        if (row.key === 'kkiapay_public_key' && row.value) setKkiapayKey(row.value)
-                        if (row.key === 'kkiapay_sandbox') {
-                            setSandbox(row.value === 'true' || row.value === true)
-                        }
-                    }
-                }
-            } catch { /* silent — fallback prod */ }
-        }
-        fetchSettings()
-    }, [])
-
     // ── Listeners Kkiapay (succès / échec) — enregistrement unique ──
     useEffect(() => {
         addSuccessListener((data: any) => {
@@ -71,8 +52,8 @@ export default function KkiapayModal({ visible, amount, serviceName, onClose, on
 
         addFailedListener(() => {
             Alert.alert(
-                'Paiement échoué',
-                'Le paiement n\'a pas pu être finalisé. Veuillez réessayer.',
+                t('Paiement échoué'),
+                t("Le paiement n'a pas pu être finalisé. Veuillez réessayer."),
                 [{ text: 'OK', onPress: () => onCloseRef.current() }]
             )
         })
@@ -94,7 +75,7 @@ export default function KkiapayModal({ visible, amount, serviceName, onClose, on
     // ── Ouvrir le widget Kkiapay natif ──
     const handlePayNow = useCallback(() => {
         if (!kkiapayKey) {
-            Alert.alert('Configuration manquante', 'La clé de paiement Kkiapay n\'est pas configurée.')
+            Alert.alert(t('Configuration manquante'), t("La clé de paiement Kkiapay n'est pas configurée."))
             return
         }
 
@@ -107,15 +88,15 @@ export default function KkiapayModal({ visible, amount, serviceName, onClose, on
                 sandbox, // Lit settings.kkiapay_sandbox (default: false / prod)
                 email: profile?.email || '',
                 phone: profile?.phone || '',
-                reason: serviceName || 'Paiement de service',
+                reason: serviceName || t('Paiement de service'),
             })
         } catch (e) {
             console.error('Erreur ouverture widget Kkiapay:', e)
-            Alert.alert('Erreur', 'Impossible d\'ouvrir le paiement. Veuillez réessayer.')
+            Alert.alert(t('Erreur'), t("Impossible d'ouvrir le paiement. Veuillez réessayer."))
         } finally {
             setLoading(false)
         }
-    }, [kkiapayKey, numericAmount, profile])
+    }, [kkiapayKey, numericAmount, profile, sandbox, serviceName, openKkiapayWidget, t])
 
     return (
         <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -129,7 +110,7 @@ export default function KkiapayModal({ visible, amount, serviceName, onClose, on
                             </View>
                             <View style={styles.securedRow}>
                                 <ShieldCheck size={11} color={colors.primary} strokeWidth={2} />
-                                <Text style={styles.securedLabel}>Paiement sécurisé in-app</Text>
+                                <Text style={styles.securedLabel}>{t('Paiement sécurisé in-app')}</Text>
                             </View>
                         </View>
                         <TouchableOpacity onPress={onClose} style={styles.closeBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
@@ -141,19 +122,19 @@ export default function KkiapayModal({ visible, amount, serviceName, onClose, on
                     <View style={styles.serviceBox}>
                         <Briefcase size={20} color={colors.gold} strokeWidth={1.75} />
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.serviceLabel}>Service</Text>
+                            <Text style={styles.serviceLabel}>{t('Service')}</Text>
                             <Text style={styles.serviceName} numberOfLines={2}>{serviceName}</Text>
                         </View>
                     </View>
 
                     {/* Montant */}
                     <View style={styles.amountCard}>
-                        <Text style={styles.amountLabel}>Montant à payer</Text>
+                        <Text style={styles.amountLabel}>{t('Montant à payer')}</Text>
                         <Text style={styles.amountValue}>{formattedAmount}</Text>
                     </View>
 
                     {/* Moyens de paiement */}
-                    <Text style={styles.sectionTitle}>Moyens de paiement acceptés</Text>
+                    <Text style={styles.sectionTitle}>{t('Moyens de paiement acceptés')}</Text>
                     <View style={styles.methodsRow}>
                         <View style={styles.methodChip}>
                             <Smartphone size={16} color="#F59E0B" strokeWidth={1.75} />
@@ -181,7 +162,7 @@ export default function KkiapayModal({ visible, amount, serviceName, onClose, on
                         ) : (
                             <>
                                 <Lock size={18} color="#FFF" strokeWidth={1.75} />
-                                <Text style={styles.payBtnText}>Payer {formattedAmount}</Text>
+                                <Text style={styles.payBtnText}>{t('Payer')} {formattedAmount}</Text>
                             </>
                         )}
                     </TouchableOpacity>
@@ -190,7 +171,7 @@ export default function KkiapayModal({ visible, amount, serviceName, onClose, on
                     <View style={styles.footerNote}>
                         <Info size={13} color={colors.textMuted} strokeWidth={1.75} />
                         <Text style={styles.footerText}>
-                            Le widget de paiement Kkiapay s'ouvrira directement dans l'application. Android & iOS supportés.
+                            {t("Le widget de paiement Kkiapay s'ouvrira directement dans l'application. Android & iOS supportés.")}
                         </Text>
                     </View>
                 </View>

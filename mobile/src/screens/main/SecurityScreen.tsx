@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { supabase } from '../../config/supabase'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
+import { useLang } from '../../contexts/LangContext'
 import { RootStackParamList } from '../../navigation/AppNavigator'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Security'>
@@ -16,6 +17,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList, 'Security'>
 export default function SecurityScreen({ navigation }: { navigation: Nav }) {
     const [newPassword, setNewPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
+    const { t } = useLang()
     const [loading, setLoading] = useState(false)
     const [focused, setFocused] = useState<string | null>(null)
     const [showNew, setShowNew] = useState(false)
@@ -29,25 +31,25 @@ export default function SecurityScreen({ navigation }: { navigation: Nav }) {
         if (/[A-Z]/.test(p)) score++
         if (/[0-9]/.test(p)) score++
         if (/[^A-Za-z0-9]/.test(p)) score++
-        if (score <= 1) return { level: 1, label: 'Faible', color: '#E74C3C' }
-        if (score === 2) return { level: 2, label: 'Moyen', color: '#F39C12' }
-        if (score === 3) return { level: 3, label: 'Bon', color: '#2D9F63' }
-        return { level: 4, label: 'Fort', color: '#27AE60' }
+        if (score <= 1) return { level: 1, label: t('Faible'), color: '#E74C3C' }
+        if (score === 2) return { level: 2, label: t('Moyen'), color: '#F39C12' }
+        if (score === 3) return { level: 3, label: t('Bon'), color: '#2D9F63' }
+        return { level: 4, label: t('Fort'), color: '#27AE60' }
     }
 
     const strength = getStrength(newPassword)
 
     const handleSave = async () => {
         if (!newPassword.trim()) {
-            Alert.alert('Champ requis', 'Veuillez saisir un nouveau mot de passe.')
+            Alert.alert(t('Champ requis'), t('Veuillez saisir un nouveau mot de passe.'))
             return
         }
         if (newPassword.length < 8) {
-            Alert.alert('Mot de passe trop court', 'Le mot de passe doit contenir au moins 8 caractères.')
+            Alert.alert(t('Mot de passe trop court'), t('Le mot de passe doit contenir au moins 8 caractères.'))
             return
         }
         if (newPassword !== confirmPassword) {
-            Alert.alert('Mots de passe différents', 'La confirmation ne correspond pas au nouveau mot de passe.')
+            Alert.alert(t('Mots de passe différents'), t('La confirmation ne correspond pas au nouveau mot de passe.'))
             return
         }
 
@@ -56,12 +58,12 @@ export default function SecurityScreen({ navigation }: { navigation: Nav }) {
         setLoading(false)
 
         if (error) {
-            Alert.alert('Erreur', error.message)
+            Alert.alert(t('Erreur'), error.message)
         } else {
             Alert.alert(
-                'Mot de passe modifié',
-                'Votre mot de passe a été mis à jour avec succès.',
-                [{ text: 'OK', onPress: () => navigation.goBack() }]
+                t('Mot de passe modifié'),
+                t('Votre mot de passe a été mis à jour avec succès.'),
+                [{ text: t('OK'), onPress: () => navigation.goBack() }]
             )
         }
     }
@@ -85,7 +87,7 @@ export default function SecurityScreen({ navigation }: { navigation: Nav }) {
                     style={[styles.input, { flex: 1 }]}
                     value={value}
                     onChangeText={onChange}
-                    placeholder={placeholder}
+                    placeholder={t(placeholder)}
                     placeholderTextColor={colors.textMuted}
                     secureTextEntry={!show}
                     autoCapitalize="none"
@@ -118,8 +120,8 @@ export default function SecurityScreen({ navigation }: { navigation: Nav }) {
                 <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                     <ArrowLeft size={22} color={colors.textOnDark} strokeWidth={1.75} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Sécurité</Text>
-                <Text style={styles.headerSub}>Gérez votre mot de passe</Text>
+                <Text style={styles.headerTitle}>{t('Sécurité')}</Text>
+                <Text style={styles.headerSub}>{t('Gérez votre mot de passe')}</Text>
             </View>
 
             <ScrollView
@@ -131,19 +133,19 @@ export default function SecurityScreen({ navigation }: { navigation: Nav }) {
                 <View style={styles.infoBanner}>
                     <ShieldCheck size={20} color={colors.primary} strokeWidth={1.75} />
                     <Text style={styles.infoText}>
-                        Choisissez un mot de passe fort : au moins 8 caractères, avec majuscules, chiffres et symboles.
+                        {t('Choisissez un mot de passe fort : au moins 8 caractères, avec majuscules, chiffres et symboles.')}
                     </Text>
                 </View>
 
                 <View style={styles.card}>
                     <PasswordField
-                        label="Nouveau mot de passe"
+                        label={t('Nouveau mot de passe')}
                         value={newPassword}
                         onChange={setNewPassword}
                         show={showNew}
                         onToggle={() => setShowNew(v => !v)}
                         field="new"
-                        placeholder="Min. 8 caractères"
+                        placeholder={t("Min. 8 caractères")}
                     />
 
                     {/* Indicateur de force */}
@@ -169,10 +171,10 @@ export default function SecurityScreen({ navigation }: { navigation: Nav }) {
                     {/* Règles */}
                     <View style={styles.rulesWrap}>
                         {[
-                            { rule: newPassword.length >= 8, text: 'Au moins 8 caractères' },
-                            { rule: /[A-Z]/.test(newPassword), text: 'Une majuscule' },
-                            { rule: /[0-9]/.test(newPassword), text: 'Un chiffre' },
-                            { rule: /[^A-Za-z0-9]/.test(newPassword), text: 'Un caractère spécial' },
+                            { rule: newPassword.length >= 8, text: t('Au moins 8 caractères') },
+                            { rule: /[A-Z]/.test(newPassword), text: t('Une majuscule') },
+                            { rule: /[0-9]/.test(newPassword), text: t('Un chiffre') },
+                            { rule: /[^A-Za-z0-9]/.test(newPassword), text: t('Un caractère spécial') },
                         ].map(({ rule, text }) => (
                             <View key={text} style={styles.ruleRow}>
                                 <Ionicons
@@ -188,13 +190,13 @@ export default function SecurityScreen({ navigation }: { navigation: Nav }) {
                     <View style={styles.divider} />
 
                     <PasswordField
-                        label="Confirmer le mot de passe"
+                        label={t('Confirmer le mot de passe')}
                         value={confirmPassword}
                         onChange={setConfirmPassword}
                         show={showConfirm}
                         onToggle={() => setShowConfirm(v => !v)}
                         field="confirm"
-                        placeholder="Répétez le mot de passe"
+                        placeholder={t("Répétez le mot de passe")}
                     />
 
                     {/* Match indicator */}
@@ -209,7 +211,7 @@ export default function SecurityScreen({ navigation }: { navigation: Nav }) {
                                 styles.matchText,
                                 { color: newPassword === confirmPassword ? '#2D9F63' : '#E74C3C' },
                             ]}>
-                                {newPassword === confirmPassword ? 'Les mots de passe correspondent' : 'Les mots de passe ne correspondent pas'}
+                                {newPassword === confirmPassword ? t('Les mots de passe correspondent') : t('Les mots de passe ne correspondent pas')}
                             </Text>
                         </View>
                     )}
@@ -225,7 +227,7 @@ export default function SecurityScreen({ navigation }: { navigation: Nav }) {
                         ) : (
                             <>
                                 <ShieldCheck size={20} color="#FFF" strokeWidth={1.75} />
-                                <Text style={styles.saveBtnText}>Modifier le mot de passe</Text>
+                                <Text style={styles.saveBtnText}>{t('Modifier le mot de passe')}</Text>
                             </>
                         )}
                     </TouchableOpacity>
@@ -235,10 +237,10 @@ export default function SecurityScreen({ navigation }: { navigation: Nav }) {
                 <View style={styles.card2}>
                     <View style={styles.card2Header}>
                         <LogOut size={20} color={colors.primary} strokeWidth={1.75} />
-                        <Text style={styles.card2Title}>Déconnexion sécurisée</Text>
+                        <Text style={styles.card2Title}>{t('Déconnexion sécurisée')}</Text>
                     </View>
                     <Text style={styles.card2Text}>
-                        Si vous suspectez une activité non autorisée sur votre compte, déconnectez-vous immédiatement.
+                        {t('Si vous suspectez une activité non autorisée sur votre compte, déconnectez-vous immédiatement.')}
                     </Text>
                 </View>
             </ScrollView>

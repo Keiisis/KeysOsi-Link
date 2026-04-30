@@ -6,6 +6,7 @@ import {
 import { Shield, Star, ArrowRight, Folder, MessageSquare, Bell, CreditCard, ShoppingBag, Award } from 'lucide-react-native'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../config/supabase'
+import { useLang } from '../../contexts/LangContext'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
 
 const { width } = Dimensions.get('window')
@@ -20,6 +21,7 @@ interface DossierSummary { status: string; progress: number; service_type: strin
 
 export default function HomeScreen({ navigation }: any) {
     const { profile } = useAuth()
+    const { t } = useLang()
     const [refreshing, setRefreshing] = useState(false)
     const [dossier, setDossier] = useState<DossierSummary | null>(null)
     const [unreadMessages, setUnreadMessages] = useState(0)
@@ -47,30 +49,30 @@ export default function HomeScreen({ navigation }: any) {
 
     const getGreeting = () => {
         const h = new Date().getHours()
-        return h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir'
+        return h < 12 ? t('Bonjour') : h < 18 ? t('Bon après-midi') : t('Bonsoir')
     }
 
     const initials = ((profile?.prenom?.[0] || '') + (profile?.nom?.[0] || '')).toUpperCase() || 'C'
 
     const SHORTCUTS = [
-        { Icon: Award, label: 'Nationalité', color: colors.primary, dest: 'Services' },
-        { Icon: Folder, label: 'Dossier', color: '#1B2A4A', dest: 'Dossier' },
-        { Icon: MessageSquare, label: 'Messages', color: '#7C5CCA', badge: unreadMessages, dest: 'Messages' },
-        { Icon: Bell, label: 'Alertes', color: '#E07B54', badge: unreadNotifs, dest: 'Notifications' },
-        { Icon: CreditCard, label: 'Paiements', color: '#3B82C4', dest: 'Payments' },
-        { Icon: ShoppingBag, label: 'Boutique', color: '#0F766E', dest: 'Services' },
+        { Icon: Award, label: t('Nationalité'), color: colors.primary, dest: 'Services' },
+        { Icon: Folder, label: t('Dossier'), color: '#1B2A4A', dest: 'Dossier' },
+        { Icon: MessageSquare, label: t('Messages'), color: '#7C5CCA', badge: unreadMessages, dest: 'Messages' },
+        { Icon: Bell, label: t('Alertes'), color: '#E07B54', badge: unreadNotifs, dest: 'Notifications' },
+        { Icon: CreditCard, label: t('Paiements'), color: '#3B82C4', dest: 'Payments' },
+        { Icon: ShoppingBag, label: t('Boutique'), color: '#0F766E', dest: 'Boutique' },
     ]
 
     const statusConfig: Record<string, { label: string; color: string }> = {
-        'soumis':     { label: 'Dossier soumis',           color: colors.info },
-        'verifie':    { label: 'En cours de vérification', color: colors.warning },
-        'traitement': { label: 'En cours de traitement',   color: colors.primary },
-        'validation': { label: 'En attente de validation', color: '#7C5CCA' },
-        'termine':    { label: 'Terminé',                  color: colors.success },
-        'annule':     { label: 'Annulé',                   color: colors.danger },
+        'soumis':     { label: t('Dossier soumis'),           color: colors.info },
+        'verifie':    { label: t('En cours de vérification'), color: colors.warning },
+        'traitement': { label: t('En cours de traitement'),   color: colors.primary },
+        'validation': { label: t('En attente de validation'), color: '#7C5CCA' },
+        'termine':    { label: t('Terminé'),                  color: colors.success },
+        'annule':     { label: t('Annulé'),                   color: colors.danger },
         // anciennes valeurs (rétrocompatibilité)
-        'en_cours':   { label: 'En cours de traitement',   color: colors.primary },
-        'en_attente': { label: 'En attente de documents',  color: colors.warning },
+        'en_cours':   { label: t('En cours de traitement'),   color: colors.primary },
+        'en_attente': { label: t('En attente de documents'),  color: colors.warning },
     }
 
     return (
@@ -86,7 +88,7 @@ export default function HomeScreen({ navigation }: any) {
                     <View style={styles.headerLeft}>
                         <Text style={styles.greeting}>{getGreeting()},</Text>
                         <Text style={styles.userName} numberOfLines={1}>
-                            {profile?.prenom || 'Client'} {profile?.nom || ''}
+                            {profile?.prenom || t('Client')} {profile?.nom || ''}
                         </Text>
                     </View>
                     <TouchableOpacity style={styles.avatarWrap} activeOpacity={0.8} onPress={() => navigation.navigate('Profil')}>
@@ -107,15 +109,15 @@ export default function HomeScreen({ navigation }: any) {
                 <View style={styles.dossierBannerLeft}>
                     <View style={styles.dossierBannerBadge}>
                         <Shield size={12} color={colors.primary} strokeWidth={2.5} />
-                        <Text style={styles.dossierBannerBadgeText}>ESPACE SÉCURISÉ</Text>
+                        <Text style={styles.dossierBannerBadgeText}>{t('ESPACE SÉCURISÉ')}</Text>
                     </View>
                     <Text style={styles.dossierBannerTitle}>
-                        {dossier ? (dossier.service_type || 'Votre dossier en cours') : 'Démarrer votre projet'}
+                        {dossier ? (dossier.service_type || t('Votre dossier en cours')) : t('Démarrer votre projet')}
                     </Text>
                     <Text style={styles.dossierBannerSub}>
                         {dossier
                             ? (statusConfig[dossier.status]?.label || dossier.status)
-                            : 'Explorez nos services d\'accompagnement'
+                            : t('Explorez nos services d\'accompagnement')
                         }
                     </Text>
                     {dossier && (
@@ -131,7 +133,7 @@ export default function HomeScreen({ navigation }: any) {
 
             {/* ── Accès Rapides Centralisés ── */}
             <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Accès rapide</Text>
+                <Text style={styles.sectionTitle}>{t('Accès rapide')}</Text>
             </View>
 
             <View style={styles.actionsGrid}>
@@ -157,19 +159,19 @@ export default function HomeScreen({ navigation }: any) {
 
             {/* ── Section Services VIP ── */}
             <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Service Phare</Text>
+                <Text style={styles.sectionTitle}>{t('Service Phare')}</Text>
             </View>
 
             <TouchableOpacity style={styles.vipCard} activeOpacity={0.85} onPress={() => navigation.navigate('Services')}>
                 <View style={styles.vipContent}>
                     <View style={styles.vipBadge}>
                         <Star size={12} color="#FFF" fill="#FFF" strokeWidth={2} />
-                        <Text style={styles.vipBadgeText}>EXCLUSIF</Text>
+                        <Text style={styles.vipBadgeText}>{t('EXCLUSIF')}</Text>
                     </View>
-                    <Text style={styles.vipTitle}>Nationalité Béninoise VIP</Text>
-                    <Text style={styles.vipDesc}>Récupérez votre nationalité avec un accompagnement prioritaire de A à Z par nos experts.</Text>
+                    <Text style={styles.vipTitle}>{t('Nationalité Béninoise VIP')}</Text>
+                    <Text style={styles.vipDesc}>{t('Récupérez votre nationalité avec un accompagnement prioritaire de A à Z par nos experts.')}</Text>
                     <View style={styles.vipFooter}>
-                        <Text style={styles.vipActionText}>En savoir plus</Text>
+                        <Text style={styles.vipActionText}>{t('En savoir plus')}</Text>
                         <ArrowRight size={14} color={colors.primary} strokeWidth={2} />
                     </View>
                 </View>

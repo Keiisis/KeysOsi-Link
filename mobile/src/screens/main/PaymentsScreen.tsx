@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useRef } from 'react'
 import {
     View, Text, ScrollView, StyleSheet, TouchableOpacity,
-    RefreshControl, Platform, Alert, ActivityIndicator, Linking,
+    RefreshControl, Platform, Alert, ActivityIndicator,
 } from 'react-native'
 import { ArrowLeft, CreditCard, PlusCircle, Receipt, ShieldCheck } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
@@ -9,6 +9,7 @@ import { useKkiapay } from '@kkiapay-org/react-native-sdk'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLang } from '../../contexts/LangContext'
+import { usePaymentSettings } from '../../contexts/PaymentSettingsContext'
 import { supabase } from '../../config/supabase'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
 import { RootStackParamList } from '../../navigation/AppNavigator'
@@ -41,13 +42,9 @@ const STATUS_CONFIG = {
     refunded: { icon: 'arrow-undo-circle'  as const, color: colors.info    },
 }
 
-/* NOTE: Pour une intégration Kkiapay in-app (WebView),
-   installez : npx expo install react-native-webview
-   et remplacez Linking.openURL par un modal WebView avec l'URL Kkiapay.
-*/
-
 /* ═══════════════════════════════════════════════════════════
    Payments Screen — Historique + initier paiement Kkiapay
+   SDK natif Kkiapay React Native (Android + iOS, in-app widget)
 ═══════════════════════════════════════════════════════════ */
 
 export default function PaymentsScreen({ navigation }: { navigation: Nav }) {
@@ -56,7 +53,14 @@ export default function PaymentsScreen({ navigation }: { navigation: Nav }) {
     const [payments, setPayments] = useState<Payment[]>([])
     const [loading, setLoading] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
-    const [kkiapayKey, setKkiapayKey] = useState<string | null>(null)
+    // Settings préchargés au démarrage de l'app via PaymentSettingsContext
+    // → ouverture du widget instantanée, pas de round-trip Supabase
+    const { kkiapayPublicKey: kkiapayKey, kkiapaySandbox: sandbox } = usePaymentSettings()
+
+    // Pending transaction id is captured at openKkiapayWidget time so the
+    // success listener (registered once at mount) can update the right row.
+    const pendingTxIdRef = useRef<string | null>(null)
+    const fetchPaymentsRef = useRef<() => Promise<void>>(async () => {})
 
     /* ── Charger l'historique ── */
     const fetchPayments = useCallback(async () => {
@@ -73,23 +77,13 @@ export default function PaymentsScreen({ navigation }: { navigation: Nav }) {
         } catch { /* ignore */ } finally { setLoading(false) }
     }, [profile])
 
-    /* ── Charger la clé publique Kkiapay depuis settings ── */
-    const fetchKkiapayKey = useCallback(async () => {
-        try {
-            const { data } = await supabase
-                .from('settings')
-                .select('value')
-                .eq('key', 'kkiapay_public_key')
-                .single()
-
-            if (data?.value) setKkiapayKey(data.value)
-        } catch { /* ignore */ }
-    }, [])
-
     useEffect(() => {
         fetchPayments()
-        fetchKkiapayKey()
-    }, [fetchPayments, fetchKkiapayKey])
+    }, [fetchPayments])
+
+    // Keep fetchPayments ref up-to-date so the success listener (registered once)
+    // always uses the latest version.
+    useEffect(() => { fetchPaymentsRef.current = fetchPayments }, [fetchPayments])
 
     const onRefresh = async () => {
         setRefreshing(true)
@@ -97,20 +91,55 @@ export default function PaymentsScreen({ navigation }: { navigation: Nav }) {
         setRefreshing(false)
     }
 
-    /* ── Hook Kkiapay natif ── */
-    const { openKkiapayWidget, addSuccessListener } = useKkiapay()
+    /* ── Hook Kkiapay natif (Android + iOS, widget in-app) ── */
+    const { openKkiapayWidget, addSuccessListener, addFailedListener } = useKkiapay()
+
+    /* ── Listeners enregistrés UNE SEULE FOIS au mount ──
+       Le SDK n'expose pas de removeListener, donc on s'enregistre une fois et
+       on lit la transactionId courante via ref pour éviter les stale closures. */
+    useEffect(() => {
+        addSuccessListener(async (data: { transactionId?: string }) => {
+            const localTxId = pendingTxIdRef.current
+            if (!localTxId) return // pas de paiement en cours
+            const kkTxId = data?.transactionId || localTxId
+            try {
+                await supabase.from('paiements')
+                    .update({ status: 'success', transaction_id: String(kkTxId) })
+                    .eq('transaction_id', localTxId)
+                Alert.alert(t('✅ Paiement confirmé'), t('Votre paiement a bien été reçu.'))
+            } catch { /* ignore */ }
+            pendingTxIdRef.current = null
+            await fetchPaymentsRef.current()
+        })
+
+        addFailedListener(async () => {
+            const localTxId = pendingTxIdRef.current
+            if (localTxId) {
+                try {
+                    await supabase.from('paiements')
+                        .update({ status: 'failed' })
+                        .eq('transaction_id', localTxId)
+                } catch { /* ignore */ }
+                pendingTxIdRef.current = null
+            }
+            Alert.alert(t('Paiement échoué'), t("Le paiement n'a pas pu être finalisé. Veuillez réessayer."))
+            await fetchPaymentsRef.current()
+        })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     /* ── Initier un paiement Kkiapay (natif in-app) ── */
     const handleInitPayment = async (amount: number, description: string, dossierId?: string) => {
         if (!profile || !kkiapayKey) {
-            Alert.alert('Configuration', 'La passerelle de paiement n\'est pas configurée. Veuillez contacter le support.')
+            Alert.alert(t('Configuration'), t("La passerelle de paiement n'est pas configurée. Veuillez contacter le support."))
             return
         }
 
         const transactionId = `RG-${profile.id.slice(0, 8)}-${Date.now()}`
+        pendingTxIdRef.current = transactionId
 
         // Enregistrer le paiement en attente
-        await supabase.from('paiements').insert({
+        const { error: insertErr } = await supabase.from('paiements').insert({
             client_id: profile.id,
             dossier_id: dossierId || null,
             amount,
@@ -120,27 +149,27 @@ export default function PaymentsScreen({ navigation }: { navigation: Nav }) {
             transaction_id: transactionId,
             gateway: 'kkiapay',
         })
-
-        // Écouter le succès du paiement
-        addSuccessListener(async (data: any) => {
-            const kkTxId = data?.transactionId || data?.transaction_id || transactionId
-            // Mettre à jour le paiement en base
-            await supabase.from('paiements')
-                .update({ status: 'completed', transaction_id: String(kkTxId) })
-                .eq('transaction_id', transactionId)
-            Alert.alert('✅ Paiement confirmé', `Votre paiement de ${amount.toLocaleString('fr-FR')} FCFA a été reçu.`)
-            await fetchPayments()
-        })
+        if (insertErr) {
+            pendingTxIdRef.current = null
+            Alert.alert(t('Erreur'), t('Impossible de créer le paiement. Veuillez réessayer.'))
+            return
+        }
 
         // Ouvrir le widget Kkiapay natif (in-app)
-        openKkiapayWidget({
-            amount,
-            api_key: kkiapayKey,
-            sandbox: false,
-            email: profile.email || '',
-            phone: profile.phone || '',
-            reason: description || 'Paiement',
-        })
+        try {
+            openKkiapayWidget({
+                amount,
+                api_key: kkiapayKey,
+                sandbox, // lu depuis Supabase settings.kkiapay_sandbox
+                email: profile.email || '',
+                phone: profile.phone || '',
+                reason: description || t('Paiement'),
+            })
+        } catch (e) {
+            console.error('Erreur ouverture widget Kkiapay:', e)
+            pendingTxIdRef.current = null
+            Alert.alert(t('Erreur'), t("Impossible d'ouvrir le paiement. Veuillez réessayer."))
+        }
 
         await fetchPayments()
     }
@@ -195,19 +224,19 @@ export default function PaymentsScreen({ navigation }: { navigation: Nav }) {
                 activeOpacity={0.8}
                 onPress={() => {
                     Alert.prompt?.(
-                        'Montant à payer',
-                        'Entrez le montant en FCFA',
+                        t('Montant à payer'),
+                        t('Entrez le montant en FCFA'),
                         [
-                            { text: 'Annuler', style: 'cancel' },
+                            { text: t('Annuler'), style: 'cancel' },
                             {
-                                text: 'Payer via Kkiapay',
+                                text: t('Payer via Kkiapay'),
                                 onPress: (value: string | undefined) => {
                                     const amount = parseInt(value || '0', 10)
                                     if (!amount || amount < 100) {
-                                        Alert.alert('Montant invalide', 'Veuillez entrer un montant valide.')
+                                        Alert.alert(t('Montant invalide'), t('Veuillez entrer un montant valide.'))
                                         return
                                     }
-                                    handleInitPayment(amount, 'Paiement service Retour Gagnant')
+                                    handleInitPayment(amount, t('Paiement service Retour Gagnant'))
                                 },
                             },
                         ],
@@ -215,8 +244,8 @@ export default function PaymentsScreen({ navigation }: { navigation: Nav }) {
                         '',
                         'numeric'
                     ) ?? Alert.alert(
-                        'Paiement Kkiapay',
-                        'Contactez notre équipe pour effectuer un paiement ou consultez votre dossier.',
+                        t('Paiement Kkiapay'),
+                        t('Contactez notre équipe pour effectuer un paiement ou consultez votre dossier.')
                     )
                 }}
             >

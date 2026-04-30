@@ -350,7 +350,7 @@ export default function ServicesScreen({ navigation }: any) {
     const [services, setServices] = useState<ServiceFull[]>(SERVICES_DATA)
     const [loading, setLoading] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
-    const { t } = useLang()
+    const { t, lang, isTranslating, preloadTexts } = useLang()
 
     const fetchServices = useCallback(async () => {
         try {
@@ -360,7 +360,10 @@ export default function ServicesScreen({ navigation }: any) {
                 .eq('is_active', true)
                 .order('order_index', { ascending: true })
 
-            if (!error && data && data.length > 0) {
+            if (error) {
+                console.warn('[Services] Supabase error, using static data:', error.message)
+                setServices(SERVICES_DATA)
+            } else if (data && data.length > 0) {
                 // Fusionner les données DB avec les données statiques enrichies
                 const mapped: ServiceFull[] = data.map((s: Record<string, any>) => {
                     const staticMatch = SERVICES_DATA.find(sd =>
@@ -388,8 +391,15 @@ export default function ServicesScreen({ navigation }: any) {
                     }
                 })
                 setServices(mapped)
+            } else {
+                // Table vide — utiliser les données statiques
+                console.warn('[Services] No data from Supabase, using static data')
+                setServices(SERVICES_DATA)
             }
-        } catch { /* garder SERVICES_DATA */ } finally {
+        } catch (e: any) {
+            console.warn('[Services] Fetch failed, using static data:', e?.message)
+            setServices(SERVICES_DATA)
+        } finally {
             setLoading(false)
         }
     }, [])
@@ -397,6 +407,30 @@ export default function ServicesScreen({ navigation }: any) {
     useEffect(() => { fetchServices() }, [fetchServices])
     const onRefresh = async () => { setRefreshing(true); await fetchServices(); setRefreshing(false) }
 
+    // ── Pré-charger les textes visibles sur la grille (titres, desc, prix, UI) ──
+    useEffect(() => {
+        if (loading || lang === 'fr') return
+        const textsToPreload: string[] = []
+        for (const svc of services) {
+            if (svc.title) textsToPreload.push(svc.title)
+            if (svc.desc) textsToPreload.push(svc.desc)
+            if (svc.price) textsToPreload.push(svc.price)
+        }
+        // UI strings visible on this screen
+        textsToPreload.push(
+            'Nos Services',
+            'Des solutions complètes et sur-mesure pour votre retour au Bénin.',
+            'En savoir plus',
+            'LE PLUS POPULAIRE',
+            'Nationalité Béninoise VIP',
+            'Accompagnement complet de A à Z · À partir de 150 000 FCFA',
+        )
+        console.log(`[Services] Pre-loading ${textsToPreload.length} grid-visible texts`)
+        preloadTexts(textsToPreload)
+    }, [loading, services, lang, preloadTexts])
+
+    // ── Pass RAW (untranslated) data to ServiceDetails ──
+    // ServiceDetailsScreen will call t() itself so translations update dynamically
     const handlePress = (svc: ServiceFull) => {
         navigation.navigate('ServiceDetails', {
             serviceId: svc.id,
@@ -436,6 +470,14 @@ export default function ServicesScreen({ navigation }: any) {
                 </View>
             </LinearGradient>
 
+            {/* Indicateur de traduction en cours */}
+            {isTranslating && lang !== 'fr' && (
+                <View style={styles.translatingBanner}>
+                    <ActivityIndicator color={colors.primary} size="small" />
+                    <Text style={styles.translatingText}>{t('Traduction en cours...')}</Text>
+                </View>
+            )}
+
             {loading ? (
                 <View style={styles.loadingWrap}>
                     <ActivityIndicator color={colors.primary} size="large" />
@@ -461,7 +503,7 @@ export default function ServicesScreen({ navigation }: any) {
                                 <View style={styles.cardMeta}>
                                     <View style={[styles.metaBadge, { backgroundColor: svc.color + '12' }]}>
                                         <Tag size={9} color={svc.color} strokeWidth={1.75} />
-                                        <Text style={[styles.metaText, { color: svc.color }]} numberOfLines={1}>{svc.price}</Text>
+                                        <Text style={[styles.metaText, { color: svc.color }]} numberOfLines={1}>{t(svc.price)}</Text>
                                     </View>
                                 </View>
 
@@ -578,5 +620,16 @@ const styles = StyleSheet.create({
         width: 40, height: 40, borderRadius: 20,
         backgroundColor: colors.primaryMuted,
         alignItems: 'center', justifyContent: 'center',
+    },
+
+    translatingBanner: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+        gap: 8, paddingVertical: 8,
+        backgroundColor: colors.primaryMuted,
+        marginHorizontal: spacing.lg, marginTop: spacing.sm,
+        borderRadius: radius.sm,
+    },
+    translatingText: {
+        ...typography.caption, color: colors.primary, fontSize: 11,
     },
 })

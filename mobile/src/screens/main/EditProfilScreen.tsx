@@ -8,6 +8,7 @@ import { ArrowLeft, CheckCircle, Lock, Mail } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../../contexts/AuthContext'
+import { useLang } from '../../contexts/LangContext'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
 import { RootStackParamList } from '../../navigation/AppNavigator'
 
@@ -15,6 +16,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList, 'EditProfil'>
 
 export default function EditProfilScreen({ navigation }: { navigation: Nav }) {
     const { profile, updateProfile } = useAuth()
+    const { t } = useLang()
 
     const [prenom, setPrenom] = useState(profile?.prenom || '')
     const [nom, setNom] = useState(profile?.nom || '')
@@ -25,7 +27,7 @@ export default function EditProfilScreen({ navigation }: { navigation: Nav }) {
 
     const handleSave = async () => {
         if (!prenom.trim() || !nom.trim()) {
-            Alert.alert('Champs requis', 'Le prénom et le nom sont obligatoires.')
+            Alert.alert(t('Champs requis'), t('Le prénom et le nom sont obligatoires.'))
             return
         }
         setLoading(true)
@@ -38,9 +40,9 @@ export default function EditProfilScreen({ navigation }: { navigation: Nav }) {
         setLoading(false)
 
         if (error) {
-            Alert.alert('Erreur', error.message)
+            Alert.alert(t('Erreur'), error.message)
         } else {
-            Alert.alert('Succès', 'Profil mis à jour avec succès.', [
+            Alert.alert(t('Succès'), t('Profil mis à jour avec succès.'), [
                 { text: 'OK', onPress: () => navigation.goBack() },
             ])
         }
@@ -92,8 +94,8 @@ export default function EditProfilScreen({ navigation }: { navigation: Nav }) {
                 <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                     <ArrowLeft size={22} color={colors.textOnDark} strokeWidth={1.75} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Informations personnelles</Text>
-                <Text style={styles.headerSub}>Modifiez vos informations de profil</Text>
+                <Text style={styles.headerTitle}>{t('Informations personnelles')}</Text>
+                <Text style={styles.headerSub}>{t('Modifiez vos informations de profil')}</Text>
             </View>
 
             <ScrollView
@@ -108,30 +110,30 @@ export default function EditProfilScreen({ navigation }: { navigation: Nav }) {
                         <Text style={styles.emailText}>{profile?.email}</Text>
                         <View style={styles.lockedBadge}>
                             <Lock size={10} color={colors.textMuted} strokeWidth={1.75} />
-                            <Text style={styles.lockedText}>Non modifiable</Text>
+                            <Text style={styles.lockedText}>{t('Non modifiable')}</Text>
                         </View>
                     </View>
 
                     <View style={styles.divider} />
 
                     <Field
-                        label="Prénom *"
+                        label={t('Prénom *')}
                         value={prenom}
                         onChange={setPrenom}
-                        placeholder="Jean"
+                        placeholder={t("Jean")}
                         icon="person-outline"
                         field="prenom"
                     />
                     <Field
-                        label="Nom *"
+                        label={t('Nom *')}
                         value={nom}
                         onChange={setNom}
-                        placeholder="Dupont"
+                        placeholder={t("Dupont")}
                         icon="person-outline"
                         field="nom"
                     />
                     <Field
-                        label="Téléphone"
+                        label={t('Téléphone')}
                         value={phone}
                         onChange={setPhone}
                         placeholder="+229 97 00 00 00"
@@ -140,10 +142,10 @@ export default function EditProfilScreen({ navigation }: { navigation: Nav }) {
                         field="phone"
                     />
                     <Field
-                        label="Ville de résidence"
+                        label={t('Ville de résidence')}
                         value={ville}
                         onChange={setVille}
-                        placeholder="Paris, Montréal, Lagos..."
+                        placeholder={t("Paris, Montréal, Lagos...")}
                         icon="location-outline"
                         field="ville"
                     />
@@ -159,7 +161,7 @@ export default function EditProfilScreen({ navigation }: { navigation: Nav }) {
                         ) : (
                             <>
                                 <CheckCircle size={20} color="#FFF" strokeWidth={1.75} />
-                                <Text style={styles.saveBtnText}>Enregistrer les modifications</Text>
+                                <Text style={styles.saveBtnText}>{t('Enregistrer les modifications')}</Text>
                             </>
                         )}
                     </TouchableOpacity>
