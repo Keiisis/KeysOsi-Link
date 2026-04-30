@@ -99,8 +99,9 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
                     return
                 }
 
+                // EAS project ID lu depuis app.json (extra.eas.projectId)
                 const tokenData = await Notifications.getExpoPushTokenAsync({
-                    projectId: 'retour-gagnant-benin',
+                    projectId: '6101f41c-f687-4263-af3e-049669ec6973',
                 })
                 const token = tokenData.data
 
@@ -255,11 +256,11 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
                                 <View style={styles.notifContent}>
                                     <View style={styles.notifTopRow}>
                                         <Text style={[styles.notifTitle, !notif.is_read && styles.notifTitleBold]} numberOfLines={1}>
-                                            {notif.title}
+                                            {t(notif.title)}
                                         </Text>
                                         <Text style={styles.notifTime}>{formatDate(notif.created_at)}</Text>
                                     </View>
-                                    <Text style={styles.notifBody} numberOfLines={2}>{notif.body}</Text>
+                                    <Text style={styles.notifBody} numberOfLines={2}>{t(notif.body)}</Text>
                                 </View>
                             </TouchableOpacity>
                         )

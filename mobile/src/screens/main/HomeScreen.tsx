@@ -4,6 +4,7 @@ import {
     TouchableOpacity, RefreshControl, Dimensions, Platform
 } from 'react-native'
 import { Shield, Star, ArrowRight, Folder, MessageSquare, Bell, CreditCard, ShoppingBag, Award } from 'lucide-react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../config/supabase'
 import { useLang } from '../../contexts/LangContext'
@@ -30,17 +31,36 @@ export default function HomeScreen({ navigation }: any) {
     const fetchData = async () => {
         if (!profile) return
         try {
-            const [dossierRes, msgRes, notifRes] = await Promise.all([
+            // Dossier le plus récent + notifications non lues
+            const [dossierRes, notifRes, conversationRes] = await Promise.all([
                 supabase.from('dossiers').select('status, progress, service_type')
-                    .eq('client_id', profile.id).order('created_at', { ascending: false }).limit(1).single(),
-                supabase.from('messages').select('*', { count: 'exact', head: true })
-                    .eq('recipient_id', profile.id).eq('is_read', false),
+                    .eq('client_id', profile.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
                 supabase.from('notifications').select('*', { count: 'exact', head: true })
                     .eq('user_id', profile.id).eq('is_read', false),
+                // Conversation chat du client (schéma legacy ERP : messages.client_id + type='chat')
+                supabase.from('messages').select('id')
+                    .eq('client_id', profile.id).eq('type', 'chat')
+                    .order('created_at', { ascending: false }).limit(1).maybeSingle(),
             ])
+
             if (dossierRes.data) setDossier(dossierRes.data)
-            setUnreadMessages(msgRes.count || 0)
             setUnreadNotifs(notifRes.count || 0)
+
+            // Messages non lus = chat_messages role='agent' postérieurs au dernier passage du client
+            // (timestamp stocké en AsyncStorage)
+            if (conversationRes.data?.id) {
+                const lastSeenKey = `@rg_chat_last_seen_${profile.id}`
+                const lastSeenIso = await AsyncStorage.getItem(lastSeenKey).catch(() => null)
+                let unreadQuery = supabase.from('chat_messages')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('conversation_id', conversationRes.data.id)
+                    .eq('role', 'agent')
+                if (lastSeenIso) unreadQuery = unreadQuery.gt('created_at', lastSeenIso)
+                const { count } = await unreadQuery
+                setUnreadMessages(count || 0)
+            } else {
+                setUnreadMessages(0)
+            }
         } catch { /* silent */ }
     }
 

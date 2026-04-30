@@ -6,6 +6,7 @@ import {
 } from 'react-native'
 import { Clock, HelpCircle, MessageCircle, Send, Users } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../config/supabase'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
@@ -88,7 +89,7 @@ export default function MessagesScreen() {
         setLoading(false)
     }, [])
 
-    /* ── Init: find conversation + load history ── */
+    /* ── Init: find conversation + load history + reset unread badge ── */
     useEffect(() => {
         const init = async () => {
             const convId = await findOrCreateConversation()
@@ -97,9 +98,14 @@ export default function MessagesScreen() {
             } else {
                 setLoading(false)
             }
+            // Marquer cet écran comme "vu" pour le badge unread du HomeScreen
+            if (profile?.id) {
+                AsyncStorage.setItem(`@rg_chat_last_seen_${profile.id}`, new Date().toISOString())
+                    .catch(() => {})
+            }
         }
         init()
-    }, [findOrCreateConversation, fetchChatHistory])
+    }, [findOrCreateConversation, fetchChatHistory, profile?.id])
 
     /* ── 3. Realtime: listen for new chat_messages ── */
     useEffect(() => {
@@ -158,11 +164,11 @@ export default function MessagesScreen() {
                     sender_id: null,
                     recipient_id: null,
                     type: 'chat',
-                    nom: profile.nom || profile.last_name || '',
-                    prenom: profile.prenom || profile.first_name || '',
+                    nom: profile.nom || '',
+                    prenom: profile.prenom || '',
                     email: profile.email || '',
                     telephone: profile.phone || '',
-                    sujet: `💬 Chat — ${(profile.prenom || profile.first_name || '')} ${(profile.nom || profile.last_name || '')}`.trim(),
+                    sujet: `💬 Chat — ${profile.prenom || ''} ${profile.nom || ''}`.trim(),
                     is_read: false,
                     lu: false,
                 })
@@ -184,7 +190,7 @@ export default function MessagesScreen() {
         const tempId = `temp-${Date.now()}`
         const tempMsg: ChatMessage = {
             id: tempId,
-            conversation_id: activeConvId,
+            conversation_id: activeConvId!,
             role: 'client',
             content: text,
             created_at: new Date().toISOString(),

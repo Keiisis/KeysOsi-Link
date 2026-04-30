@@ -108,7 +108,7 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
 
             if (error) throw error
 
-            // Notif pour le client
+            // Notif pour le client (stockée en FR — traduite à l'affichage via t() dans NotificationsScreen)
             await supabase.from('notifications').insert({
                 user_id: profile!.id,
                 title: 'Demande de RDV envoyée',
@@ -117,6 +117,9 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
                 is_read: false,
                 created_at: new Date().toISOString(),
             })
+            // Note: les strings ci-dessus sont stockées en français dans la DB
+            // mais le NotificationsScreen les passe par t() pour les afficher
+            // dans la langue du client.
 
             setShowModal(false)
             setFormNotes('')
@@ -142,7 +145,11 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
                 { text: t('Non'), style: 'cancel' },
                 {
                     text: t('Oui, annuler'), style: 'destructive', onPress: async () => {
-                        await supabase.from('appointments').update({ status: 'cancelled' }).eq('id', id)
+                        const { error } = await supabase.from('appointments').update({ status: 'cancelled' }).eq('id', id)
+                        if (error) {
+                            Alert.alert(t('Erreur'), t("L'annulation a échoué. Réessayez."))
+                            return
+                        }
                         setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: 'cancelled' } : a))
                     },
                 },

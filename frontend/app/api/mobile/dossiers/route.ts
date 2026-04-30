@@ -50,17 +50,77 @@ export async function GET(req: NextRequest) {
     }
 }
 
+// ─── Verify Kkiapay transaction (server-side, anti-fraud) ───────────────────
+async function verifyKkiapayTransaction(transactionId: string): Promise<{ ok: boolean; status: string; amount?: number }> {
+    const { data: settings } = await supabase
+        .from('settings')
+        .select('key, value')
+        .in('key', ['kkiapay_private_key', 'kkiapay_secret_key', 'kkiapay_sandbox'])
+    const privateKey = settings?.find(s => s.key === 'kkiapay_private_key')?.value
+    const secretKey = settings?.find(s => s.key === 'kkiapay_secret_key')?.value
+    const sandbox = settings?.find(s => s.key === 'kkiapay_sandbox')?.value === 'true'
+    const apiUrl = sandbox
+        ? 'https://api-sandbox.kkiapay.me/api/v1/transactions/status'
+        : 'https://api.kkiapay.me/api/v1/transactions/status'
+
+    if (!privateKey || !secretKey) return { ok: false, status: 'config_missing' }
+
+    try {
+        const res = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-private-key': String(privateKey),
+                'x-secret-key': String(secretKey),
+            },
+            body: JSON.stringify({ transactionId }),
+        })
+        if (!res.ok) return { ok: false, status: `kkiapay_http_${res.status}` }
+        const data = await res.json()
+        return { ok: data?.status === 'SUCCESS', status: data?.status || 'unknown', amount: data?.amount }
+    } catch (e) {
+        return { ok: false, status: e instanceof Error ? e.message : 'verify_failed' }
+    }
+}
+
 // ─── POST : créer un dossier (commande service depuis mobile) ─────────────────
+//   Body : { client_id, service_type, service_id?, notes?, payment_tx_id?, transaction_id? }
+//   Si payment_tx_id (ou transaction_id) est fourni : vérification Kkiapay côté serveur
+//   pour éviter qu'un client malveillant crée un dossier sans payer.
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json()
         const { client_id, service_type, service_id, notes } = body
+        const transactionId: string | undefined = body.payment_tx_id || body.transaction_id
 
         if (!client_id || !service_type) {
             return NextResponse.json(
                 { error: 'client_id et service_type sont requis' },
                 { status: 400 }
             )
+        }
+
+        // ── Vérification paiement Kkiapay côté serveur (anti-fraude) ──
+        // Idempotence : si un dossier existe déjà avec ce transaction_id, on le renvoie.
+        if (transactionId) {
+            const { data: existingByTx } = await supabase
+                .from('dossiers')
+                .select('id, status')
+                .eq('transaction_id', transactionId)
+                .maybeSingle()
+            if (existingByTx) {
+                return NextResponse.json({ id: existingByTx.id, exists: true, message: 'Already created' }, { status: 200 })
+            }
+
+            // Vérifier le paiement Kkiapay
+            const verify = await verifyKkiapayTransaction(transactionId)
+            if (!verify.ok) {
+                console.warn(`[mobile/dossiers] Paiement non confirmé : ${verify.status}`)
+                return NextResponse.json(
+                    { error: `Paiement non confirmé (${verify.status})` },
+                    { status: 402 }
+                )
+            }
         }
 
         // S'assurer que le client existe dans client_profiles (cas inscription mobile)
@@ -99,7 +159,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ exists: true, id: existing.id }, { status: 200 })
         }
 
-        // Créer le dossier
+        // Créer le dossier (avec trace paiement si fournie)
         const { data, error } = await supabase
             .from('dossiers')
             .insert({
@@ -109,6 +169,8 @@ export async function POST(req: NextRequest) {
                 status: 'soumis',
                 progress: 0,
                 notes: notes || null,
+                transaction_id: transactionId || null,
+                payment_method: transactionId ? 'kkiapay' : null,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
             })
