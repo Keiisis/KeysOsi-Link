@@ -3,7 +3,10 @@ import React, { useEffect, useState, useCallback } from 'react'
 import {
     View, Text, ScrollView, StyleSheet, TouchableOpacity,
     RefreshControl, Platform, ActivityIndicator, TextInput, Alert,
+    Animated, Easing, Image, Dimensions
 } from 'react-native'
+import { LinearGradient } from 'expo-linear-gradient'
+import { Video, ResizeMode } from 'expo-av'
 import { ArrowLeft, Package, Search, Truck, CheckCircle, Clock, AlertTriangle, ShoppingBag } from 'lucide-react-native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../../contexts/AuthContext'
@@ -13,6 +16,18 @@ import { colors, spacing, radius, shadows, typography } from '../../config/theme
 import { RootStackParamList } from '../../navigation/AppNavigator'
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
+
+const royal = {
+    bg: '#FDF9F1',
+    surface: '#FFFFFF',
+    textDark: '#0A1A14',
+    emerald: '#0B4A2B',
+    lightEmerald: '#12683E',
+    gold: '#DCA540',
+    terracotta: '#D45B3E',
+    softGold: '#F8E9C7',
+    border: '#EBE2CD'
+}
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Orders'>
 
 export interface OrderListItem {
@@ -63,6 +78,42 @@ const shippingIcon = (status: string | null) => {
         default: return Clock
     }
 }
+
+const { width } = Dimensions.get('window')
+
+/* ── Animation Héro Livreur VIP ── */
+const DeliveryHeroAnimation = () => {
+    const scaleAnim = React.useRef(new Animated.Value(1)).current;
+
+    React.useEffect(() => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(scaleAnim, { toValue: 1.08, duration: 12000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+                Animated.timing(scaleAnim, { toValue: 1, duration: 12000, easing: Easing.inOut(Easing.ease), useNativeDriver: true })
+            ])
+        ).start();
+    }, []);
+
+    return (
+        <View style={styles.heroContainer}>
+            <Animated.View style={[StyleSheet.absoluteFillObject, { transform: [{ scale: scaleAnim }] }]}>
+                <Video
+                    source={require('../../../assets/images/delivery_video.mp4')}
+                    style={{ width: '100%', height: '100%' }}
+                    resizeMode={ResizeMode.COVER}
+                    shouldPlay
+                    isLooping
+                    isMuted={true}
+                />
+            </Animated.View>
+            <LinearGradient 
+                colors={['rgba(0,0,0,0.1)', royal.bg]} 
+                style={StyleSheet.absoluteFillObject} 
+                start={{x:0, y:0.5}} end={{x:0, y:1}} 
+            />
+        </View>
+    );
+};
 
 export default function OrdersScreen({ navigation }: { navigation: Nav }) {
     const { profile } = useAuth()
@@ -174,17 +225,38 @@ export default function OrdersScreen({ navigation }: { navigation: Nav }) {
     }
 
     return (
-        <ScrollView
-            style={styles.container}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-        >
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <ArrowLeft size={22} color="#FFF" strokeWidth={1.75} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>{t('Mes Commandes')}</Text>
-                <Text style={styles.headerSub}>{t('Suivi de vos achats boutique')}</Text>
-            </View>
+        <View style={styles.container}>
+            <LinearGradient 
+                colors={['rgba(220,165,64,0.15)', royal.bg, royal.bg]} 
+                locations={[0, 0.4, 1]}
+                style={StyleSheet.absoluteFillObject} 
+            />
+            <ScrollView
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={royal.gold} />}
+                showsVerticalScrollIndicator={false}
+            >
+                <View style={[styles.header, { zIndex: 10 }]}>
+                    <View style={styles.headerBgWrap}>
+                        <LinearGradient colors={[royal.emerald, royal.lightEmerald]} style={StyleSheet.absoluteFillObject} />
+                    </View>
+                    <View style={styles.headerTopRow}>
+                        <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.goBack()}>
+                            <ArrowLeft size={24} color="#FFF" strokeWidth={2} />
+                        </TouchableOpacity>
+                        
+                        <View style={styles.stickyTitleWrapper}>
+                            <View style={styles.titleDot} />
+                            <Text style={styles.stickyTitle}>{t("MES COMMANDES")}</Text>
+                            <View style={styles.titleDot} />
+                        </View>
+                        
+                        <View style={{width: 44}} />
+                    </View>
+                    <Text style={styles.headerSub}>{t('Suivi privé de vos joyaux')}</Text>
+                </View>
+
+            {/* Animation Image Hyper-Réaliste */}
+            <DeliveryHeroAnimation />
 
             {/* Recherche par code de suivi */}
             <View style={styles.searchCard}>
@@ -244,41 +316,87 @@ export default function OrdersScreen({ navigation }: { navigation: Nav }) {
             )}
 
             <View style={{ height: 100 }} />
-        </ScrollView>
+            </ScrollView>
+        </View>
     )
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
+    container: { flex: 1, backgroundColor: royal.bg },
 
     header: {
-        backgroundColor: colors.headerBg,
         paddingTop: Platform.OS === 'ios' ? 56 : 44,
         paddingBottom: 24,
         paddingHorizontal: spacing.lg,
-        borderBottomLeftRadius: 28,
-        borderBottomRightRadius: 28,
+        shadowColor: royal.emerald,
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        shadowOffset: { width: 0, height: 10 },
+        elevation: 15,
+        backgroundColor: 'transparent',
     },
-    backBtn: { marginBottom: spacing.md },
-    headerTitle: { ...typography.h2, color: colors.textOnDark },
-    headerSub: { ...typography.bodySmall, color: 'rgba(255,255,255,0.7)', marginTop: 4 },
+    headerBgWrap: {
+        ...StyleSheet.absoluteFillObject,
+        borderBottomLeftRadius: 30,
+        borderBottomRightRadius: 30,
+        overflow: 'hidden',
+    },
+    headerTopRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    iconBtn: {
+        width: 44, height: 44, borderRadius: 22,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        alignItems: 'center', justifyContent: 'center'
+    },
+    stickyTitleWrapper: {
+        flexDirection: 'row', alignItems: 'center', gap: 10,
+        backgroundColor: 'rgba(220,165,64,0.15)',
+        paddingHorizontal: 20, paddingVertical: 8,
+        borderRadius: 24, borderWidth: 1, borderColor: 'rgba(220,165,64,0.3)'
+    },
+    stickyTitle: {
+        fontFamily: 'PlayfairDisplay_700Bold', fontSize: 14,
+        color: royal.gold, letterSpacing: 2, textTransform: 'uppercase'
+    },
+    titleDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: royal.gold, opacity: 0.8 },
+    headerSub: {
+        fontFamily: 'Inter_500Medium', fontSize: 14,
+        color: royal.softGold, textAlign: 'center', fontStyle: 'italic',
+        marginTop: 4,
+    },
+
+    heroContainer: {
+        width: '100%',
+        height: 250,
+        overflow: 'hidden',
+        position: 'relative',
+        marginBottom: -20, // Pour chevaucher avec la carte de recherche
+    },
 
     searchCard: {
         margin: spacing.lg,
         marginBottom: spacing.md,
-        backgroundColor: colors.surface,
+        backgroundColor: 'rgba(255,255,255,0.75)',
         padding: spacing.md,
         borderRadius: radius.md,
-        borderWidth: 1, borderColor: colors.borderLight,
+        shadowColor: royal.gold,
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 3,
     },
     searchHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
     searchTitle: { ...typography.label, color: colors.textPrimary },
     searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     searchInput: {
         flex: 1, paddingHorizontal: 12, paddingVertical: 10,
-        backgroundColor: colors.surfaceWarm,
+        backgroundColor: 'rgba(255,255,255,0.9)',
         borderRadius: radius.sm,
-        borderWidth: 1, borderColor: colors.borderLight,
+        borderWidth: 1, borderColor: 'rgba(220,165,64,0.3)',
         ...typography.body, color: colors.textPrimary,
     },
     searchBtn: {
@@ -297,11 +415,14 @@ const styles = StyleSheet.create({
     list: { paddingHorizontal: spacing.lg },
     orderCard: {
         flexDirection: 'row', alignItems: 'center',
-        backgroundColor: colors.surface,
+        backgroundColor: 'rgba(255,255,255,0.85)',
         borderRadius: radius.md,
         padding: 14, marginBottom: 8,
-        borderWidth: 1, borderColor: colors.borderLight,
-        ...shadows.xs,
+        shadowColor: royal.gold,
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 3 },
+        elevation: 2,
     },
     orderIconWrap: {
         width: 44, height: 44, borderRadius: 12,
@@ -320,11 +441,15 @@ const styles = StyleSheet.create({
 
     emptyCard: {
         marginHorizontal: spacing.lg,
-        backgroundColor: colors.surface,
+        backgroundColor: 'rgba(255,255,255,0.85)',
         borderRadius: radius.lg,
         padding: spacing.xl,
         alignItems: 'center',
-        borderWidth: 1, borderColor: colors.borderLight,
+        shadowColor: royal.gold,
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 3,
     },
     emptyIconWrap: {
         width: 70, height: 70, borderRadius: 35,

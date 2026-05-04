@@ -31,7 +31,7 @@ interface PricingOption {
 export default function ServiceDetailsScreen({ route, navigation }: any) {
     const {
         serviceId, title, subtitle, desc, fullDescription,
-        color, icon, duration, price, documents,
+        color, icon, duration: paramDuration, price: paramPrice, documents: paramDocuments,
         features: paramFeatures,
         pricing_options: paramPricingOptions,
     } = route.params || {}
@@ -42,19 +42,61 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
     const [showKkiapay, setShowKkiapay] = useState(false)
     const serviceColor = color || colors.primary
 
-    const features: string[] = paramFeatures?.length ? paramFeatures : [
+    /* ── Données dynamiques DB (priorité), avec fallback sur route.params hardcoded ──
+       L'admin peut changer le prix via le panel admin → la DB est mise à jour →
+       le mobile fetch ce nouveau prix automatiquement → Kkiapay facture le bon montant. */
+    const [dynamicPrice, setDynamicPrice] = useState<string | null>(null)
+    const [dynamicPricingOptions, setDynamicPricingOptions] = useState<PricingOption[] | null>(null)
+    const [dynamicFeatures, setDynamicFeatures] = useState<string[] | null>(null)
+    const [dynamicDocuments, setDynamicDocuments] = useState<string[] | null>(null)
+    const [dynamicDuration, setDynamicDuration] = useState<string | null>(null)
+
+    useEffect(() => {
+        if (!serviceId) return
+        let cancelled = false
+        const fetchServiceDetails = async () => {
+            try {
+                const res = await fetchWithTimeout(`${API_BASE}/api/services/${serviceId}`, { timeoutMs: 8000 })
+                if (!res.ok) return
+                const json = await res.json().catch(() => ({}))
+                const data = json.service
+                if (!data || cancelled) return
+
+                // Override avec valeurs DB si présentes (sinon on garde les params)
+                if (data.price_display) setDynamicPrice(data.price_display)
+                if (Array.isArray(data.pricing_options) && data.pricing_options.length > 0) {
+                    setDynamicPricingOptions(data.pricing_options)
+                }
+                if (Array.isArray(data.features) && data.features.length > 0) {
+                    setDynamicFeatures(data.features)
+                }
+                if (Array.isArray(data.documents) && data.documents.length > 0) {
+                    setDynamicDocuments(data.documents)
+                }
+                if (data.duration) setDynamicDuration(data.duration)
+            } catch (e) {
+                // Réseau coupé / API down → on garde les valeurs hardcoded de route.params
+                console.warn('[ServiceDetails] Fetch DB failed, using params fallback:', e)
+            }
+        }
+        fetchServiceDetails()
+        return () => { cancelled = true }
+    }, [serviceId])
+
+    // Valeurs effectives : DB en priorité, params en fallback
+    const price = dynamicPrice ?? paramPrice
+    const duration = dynamicDuration ?? paramDuration
+    const features: string[] = dynamicFeatures ?? (paramFeatures?.length ? paramFeatures : [
         'Consultation initiale avec nos experts',
         'Analyse complète de votre dossier',
         'Accompagnement administratif personnalisé',
         'Suivi en temps réel via l\'application',
-    ]
-
-    const requiredDocs: string[] = documents?.length ? documents : [
+    ])
+    const requiredDocs: string[] = dynamicDocuments ?? (paramDocuments?.length ? paramDocuments : [
         'Pièce d\'identité valide (passeport ou CNI)',
         'Justificatif selon le service demandé',
-    ]
-
-    const pricingOptions: PricingOption[] = paramPricingOptions?.length ? paramPricingOptions : []
+    ])
+    const pricingOptions: PricingOption[] = dynamicPricingOptions ?? (paramPricingOptions?.length ? paramPricingOptions : [])
 
     // ── Preload ALL texts visible on this screen ──
     useEffect(() => {
