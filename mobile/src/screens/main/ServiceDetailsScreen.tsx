@@ -10,6 +10,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useLang } from '../../contexts/LangContext'
 import KkiapayModal from '../../components/KkiapayModal'
 import { fetchWithTimeout } from '../../lib/fetch'
+import { supabase } from '../../config/supabase'
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
 
@@ -110,37 +111,30 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
             Alert.alert(t('Non connecté'), t('Veuillez vous connecter pour commander ce service.'))
             return
         }
-        setShowKkiapay(true)
+
+        const isSurDevis = !price || price.toString().toLowerCase().includes('devis')
+        const numericPrice = price ? parseFloat(price.toString().replace(/[^0-9.-]+/g, '')) : 0
+
+        if (isSurDevis || numericPrice === 0) {
+            // Pour les services sans paiement immédiat, on crée le dossier directement
+            createDossierDirectly(null, 0)
+        } else {
+            setShowKkiapay(true)
+        }
     }
 
-    const handlePaymentSuccess = async (transactionId: string) => {
-        setShowKkiapay(false)
+    const createDossierDirectly = async (transactionId: string | null, numericPrice: number) => {
         setLoading(true)
         try {
-            const res = await fetchWithTimeout(`${API_BASE}/api/mobile/dossiers`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                timeoutMs: 15000,
-                body: JSON.stringify({
-                    client_id: profile?.id,
-                    service_type: title,
-                    service_id: serviceId || null,
-                    payment_tx_id: transactionId,
-                    notes: `Commande initiée via l'application mobile le ${new Date().toLocaleDateString('fr-FR')}\nTransaction: ${transactionId}`,
-                }),
-            })
+            // Vérifier si un dossier existe déjà
+            const { data: existing } = await supabase
+                .from('dossiers')
+                .select('id')
+                .eq('client_id', profile?.id)
+                .eq('service_type', title)
+                .maybeSingle()
 
-            const text = await res.text()
-            let json: Record<string, unknown> = {}
-            try { json = JSON.parse(text) } catch {
-                throw new Error(`Erreur serveur (${res.status}) — contactez le support`)
-            }
-
-            if (!res.ok) {
-                throw new Error((json.error as string) || `Erreur ${res.status}`)
-            }
-
-            if (json.exists) {
+            if (existing) {
                 Alert.alert(
                     t('Dossier existant'),
                     t('Vous avez déjà un dossier en cours pour ce service. Consultez la section "Mon Dossier" pour suivre son avancement.'),
@@ -149,17 +143,38 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
                 return
             }
 
+            // Insérer directement dans Supabase pour que les agents le reçoivent instantanément
+            const { error } = await supabase.from('dossiers').insert({
+                client_id: profile?.id,
+                service_type: title,
+                status: 'en_attente',
+                progress: 10,
+                transaction_id: transactionId,
+                payment_method: transactionId ? 'kkiapay' : 'none',
+                payment_amount: isNaN(numericPrice) ? 0 : numericPrice,
+                payment_currency: 'XOF',
+                notes: `Commande initiée via l'application mobile le ${new Date().toLocaleDateString('fr-FR')}${transactionId ? `\nTransaction: ${transactionId}` : ''}`
+            })
+
+            if (error) throw error
+
             Alert.alert(
-                t('Paiement Réussi !'),
+                t('Demande Enregistrée !'),
                 t(`Votre dossier pour "{title}" a été créé avec succès.\n\nNotre équipe vous contactera dans les 24 heures pour la suite.`, { title }),
                 [{ text: t('Voir mon espace'), onPress: () => navigation.navigate('Dossier') }]
             )
-        } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : t('Erreur lors de la création du dossier')
+        } catch (e: any) {
+            const msg = e.message || t('Erreur lors de la création du dossier')
             Alert.alert(t('Erreur'), msg)
         } finally {
             setLoading(false)
         }
+    }
+
+    const handlePaymentSuccess = async (transactionId: string) => {
+        setShowKkiapay(false)
+        const numericPrice = price ? parseFloat(price.toString().replace(/[^0-9.-]+/g, '')) : 0
+        await createDossierDirectly(transactionId, numericPrice)
     }
 
     return (
