@@ -1,0 +1,102 @@
+'use strict'
+import React from 'react'
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native'
+import { LinearGradient } from 'expo-linear-gradient'
+import { ArrowLeft } from 'lucide-react-native'
+
+const royal = {
+    emerald: '#0B4A2B',
+    lightEmerald: '#12683E',
+    gold: '#DCA540',
+    softGold: '#F8E9C7',
+}
+
+interface ScreenHeaderProps {
+    title: string
+    subtitle?: string
+    onBack?: () => void
+    rightAction?: React.ReactNode
+}
+
+/**
+ * Premium header component matching the Boutique/Orders style.
+ * Green gradient background with rounded bottom corners,
+ * gold-accented title badge, and optional back/right actions.
+ */
+export default function ScreenHeader({ title, subtitle, onBack, rightAction }: ScreenHeaderProps) {
+    return (
+        <View style={styles.header}>
+            <View style={styles.headerBgWrap}>
+                <LinearGradient colors={[royal.emerald, royal.lightEmerald]} style={StyleSheet.absoluteFillObject} />
+            </View>
+            <View style={styles.headerTopRow}>
+                {onBack ? (
+                    <TouchableOpacity style={styles.iconBtn} onPress={onBack} activeOpacity={0.7}>
+                        <ArrowLeft size={24} color="#FFF" strokeWidth={2} />
+                    </TouchableOpacity>
+                ) : (
+                    <View style={{ width: 44 }} />
+                )}
+
+                <View style={styles.stickyTitleWrapper}>
+                    <View style={styles.titleDot} />
+                    <Text style={styles.stickyTitle} numberOfLines={1}>{title.toUpperCase()}</Text>
+                    <View style={styles.titleDot} />
+                </View>
+
+                {rightAction || <View style={{ width: 44 }} />}
+            </View>
+            {subtitle ? (
+                <Text style={styles.headerSub}>{subtitle}</Text>
+            ) : null}
+        </View>
+    )
+}
+
+const styles = StyleSheet.create({
+    header: {
+        paddingTop: Platform.OS === 'ios' ? 56 : 44,
+        paddingBottom: 24,
+        paddingHorizontal: 20,
+        shadowColor: royal.emerald,
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        shadowOffset: { width: 0, height: 10 },
+        elevation: 15,
+        backgroundColor: 'transparent',
+    },
+    headerBgWrap: {
+        ...StyleSheet.absoluteFillObject,
+        borderBottomLeftRadius: 30,
+        borderBottomRightRadius: 30,
+        overflow: 'hidden',
+    },
+    headerTopRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    iconBtn: {
+        width: 44, height: 44, borderRadius: 22,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        alignItems: 'center', justifyContent: 'center',
+    },
+    stickyTitleWrapper: {
+        flexDirection: 'row', alignItems: 'center', gap: 10,
+        backgroundColor: 'rgba(220,165,64,0.15)',
+        paddingHorizontal: 20, paddingVertical: 8,
+        borderRadius: 24, borderWidth: 1, borderColor: 'rgba(220,165,64,0.3)',
+        flexShrink: 1,
+    },
+    stickyTitle: {
+        fontFamily: 'PlayfairDisplay_700Bold', fontSize: 14,
+        color: royal.gold, letterSpacing: 2, textTransform: 'uppercase',
+    },
+    titleDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: royal.gold, opacity: 0.8 },
+    headerSub: {
+        fontFamily: 'Inter_500Medium', fontSize: 14,
+        color: royal.softGold, textAlign: 'center', fontStyle: 'italic',
+        marginTop: 4,
+    },
+})

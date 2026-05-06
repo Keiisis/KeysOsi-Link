@@ -5,11 +5,13 @@ import {
 } from 'react-native'
 import { ArrowLeft, Bell } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
+import ScreenHeader from '../../components/ScreenHeader'
 import * as Notifications from 'expo-notifications'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../config/supabase'
-import { colors, spacing, radius, shadows, typography } from '../../config/theme'
+import { LinearGradient } from 'expo-linear-gradient'
+import { colors, spacing, radius, shadows, typography, royal } from '../../config/theme'
 import { useLang } from '../../contexts/LangContext'
 import { RootStackParamList } from '../../navigation/AppNavigator'
 
@@ -161,31 +163,28 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
     }
 
     return (
-        <ScrollView
-            style={styles.container}
-            showsVerticalScrollIndicator={false}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-        >
-            {/* Header */}
-            <View style={styles.header}>
-                <View style={styles.primaryLine} />
-                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <ArrowLeft size={22} color={colors.textOnDark} strokeWidth={1.75} />
-                </TouchableOpacity>
-                <View style={styles.headerRow}>
-                    <View>
-                        <Text style={styles.headerTitle}>{t('Notifications')}</Text>
-                        <Text style={styles.headerSub}>
-                            {unreadCount > 0 ? `${unreadCount} ${t('non lue')}${unreadCount > 1 ? 's' : ''}` : t('Tout est à jour')}
-                        </Text>
-                    </View>
-                    {unreadCount > 0 && (
+        <View style={styles.container}>
+            <LinearGradient 
+                colors={['rgba(220,165,64,0.15)', royal.bg, royal.bg]} 
+                locations={[0, 0.4, 1]}
+                style={StyleSheet.absoluteFillObject} 
+            />
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={royal.gold} />}
+            >
+            <ScreenHeader
+                title={t('Notifications')}
+                subtitle={unreadCount > 0 ? `${unreadCount} ${t('non lue')}${unreadCount > 1 ? 's' : ''}` : t('Tout est à jour')}
+                onBack={() => navigation.goBack()}
+                rightAction={
+                    unreadCount > 0 ? (
                         <TouchableOpacity style={styles.markAllBtn} onPress={markAllRead} activeOpacity={0.7}>
                             <Text style={styles.markAllText}>{t('Tout lire')}</Text>
                         </TouchableOpacity>
-                    )}
-                </View>
-            </View>
+                    ) : undefined
+                }
+            />
 
             {/* Toggle Push */}
             <View style={styles.pushCard}>
@@ -269,32 +268,20 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
             )}
 
             <View style={{ height: 100 }} />
-        </ScrollView>
+            </ScrollView>
+        </View>
     )
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
+    container: { flex: 1, backgroundColor: royal.bg },
 
-    header: {
-        backgroundColor: colors.headerBg,
-        paddingTop: Platform.OS === 'ios' ? 56 : 44,
-        paddingBottom: 24,
-        paddingHorizontal: spacing.lg,
-        borderBottomLeftRadius: 28,
-        borderBottomRightRadius: 28,
-    },
-    primaryLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.primary },
-    backBtn: { marginBottom: spacing.md },
-    headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
-    headerTitle: { ...typography.h2, color: colors.textOnDark },
-    headerSub: { ...typography.bodySmall, color: colors.primary + 'AA', marginTop: 4 },
     markAllBtn: {
         paddingHorizontal: 12, paddingVertical: 6,
-        backgroundColor: colors.primary + '20', borderRadius: radius.sm,
-        borderWidth: 1, borderColor: colors.primary + '30',
+        backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 22,
+        borderWidth: 1, borderColor: 'rgba(220,165,64,0.3)',
     },
-    markAllText: { ...typography.caption, color: colors.primary, fontFamily: 'Inter_600SemiBold' },
+    markAllText: { ...typography.caption, color: '#FFF', fontFamily: 'Inter_600SemiBold' },
 
     pushCard: {
         flexDirection: 'row', alignItems: 'center',

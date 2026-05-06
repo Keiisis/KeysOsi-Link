@@ -7,7 +7,8 @@ import {
     FileText, Search, Plus, Clock,
     CheckCircle2, Loader2, Eye,
     X, Calendar, Mail, Phone, StickyNote,
-    ArrowRight, AlertCircle, FileWarning, Send, MessageSquare, User
+    ArrowRight, AlertCircle, FileWarning, Send, MessageSquare, User,
+    Download
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
@@ -31,6 +32,7 @@ interface Dossier {
     documents_manquants?: string[]
     client_message?: string
     message_thread_id?: string
+    dossier_ref_id?: string
 }
 
 interface ChatMsg {
@@ -57,10 +59,39 @@ export default function AgentDossiersPage() {
     const [noteText, setNoteText] = useState('')
     const [docRequest, setDocRequest] = useState('')
     const [chatMsgs, setChatMsgs] = useState<ChatMsg[]>([])
+    const [dossierDocs, setDossierDocs] = useState<any[]>([])
+    const [loadingDocs, setLoadingDocs] = useState(false)
     const [chatInput, setChatInput] = useState('')
     const [chatSending, setChatSending] = useState(false)
     const [emailSending, setEmailSending] = useState(false)
     const chatBottomRef = useRef<HTMLDivElement>(null)
+
+    const loadDossierDocs = async (trackingId: string, refId?: string) => {
+        setLoadingDocs(true)
+        const ids = [trackingId, refId].filter(Boolean) as string[]
+
+        // Query all three document tables the system uses:
+        // - dossier_documents: mobile app uploads (DossierScreen)
+        // - client_documents: web dashboard uploads (/api/documents/upload)
+        // - documents: legacy fallback table
+        const [r1, r2, r3] = await Promise.all([
+            supabase.from('dossier_documents').select('*').in('dossier_id', ids),
+            supabase.from('client_documents').select('*').in('dossier_id', ids),
+            supabase.from('documents').select('*').in('dossier_id', ids),
+        ])
+        
+        // Merge and deduplicate by id
+        const all = [...(r1.data || []), ...(r2.data || []), ...(r3.data || [])]
+        const seen = new Set<string>()
+        const unique = all.filter(d => {
+            if (seen.has(d.id)) return false
+            seen.add(d.id)
+            return true
+        })
+        
+        setDossierDocs(unique)
+        setLoadingDocs(false)
+    }
 
     const loadChat = async (threadId: string) => {
         const { data } = await supabase
@@ -164,6 +195,18 @@ export default function AgentDossiersPage() {
             setLoading(false)
         }
         fetchDossiers()
+
+        // Realtime: auto-refresh when dossier_tracking changes
+        const channel = supabase
+            .channel('agent-dossiers-realtime')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'dossier_tracking',
+            }, () => { fetchDossiers() })
+            .subscribe()
+
+        return () => { supabase.removeChannel(channel) }
     }, [])
 
     const updateStatus = async (dossierId: string, newStatus: DossierStatus) => {
@@ -180,10 +223,33 @@ export default function AgentDossiersPage() {
 
         setDossiers(prev => prev.map(d => d.id === dossierId ? { ...d, statut: newStatus, progression, updated_at } : d))
         
+        // Update dossier_tracking (agent table)
         await supabase
             .from('dossier_tracking')
             .update({ statut: newStatus, progression, updated_at })
             .eq('id', dossierId)
+
+        // ── Sync to dossiers table (mobile table) via dossier_ref_id ──
+        const dossierEntry = dossiers.find(x => x.id === dossierId);
+        const dossierRefId = (dossierEntry as any)?.dossier_ref_id;
+        if (dossierRefId) {
+            const mobileStatusMap: Record<DossierStatus, string> = {
+                reception: 'soumis',
+                verification: 'verifie',
+                traitement: 'traitement',
+                validation: 'validation',
+                finalisation: 'validation',
+                termine: 'termine',
+            }
+            await supabase
+                .from('dossiers')
+                .update({
+                    status: mobileStatusMap[newStatus],
+                    progress: progression,
+                    updated_at,
+                })
+                .eq('id', dossierRefId)
+        }
 
         const d = dossiers.find(x => x.id === dossierId);
         if (d && d.client_email) {
@@ -312,6 +378,8 @@ export default function AgentDossiersPage() {
                                                                 setChatMsgs([])
                                                                 setChatInput('')
                                                                 if (d.message_thread_id) loadChat(d.message_thread_id)
+                                                                // Toujours charger les documents en cherchant par les 2 IDs possibles
+                                                                loadDossierDocs(d.id, d.dossier_ref_id)
                                                             }}
                                                         >
                                                             <div className="flex items-start justify-between mb-2">
@@ -453,6 +521,44 @@ export default function AgentDossiersPage() {
                                             {col.label}
                                         </button>
                                     ))}
+                                </div>
+                            </div>
+
+                            {/* Documents Fournis */}
+                            <div className="mb-6">
+                                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                    <FileText size={12} /> Documents fournis par le client
+                                </p>
+                                <div className="space-y-2">
+                                    {loadingDocs ? (
+                                        <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
+                                            <Loader2 size={14} className="animate-spin" /> Chargement des documents...
+                                        </div>
+                                    ) : dossierDocs.length > 0 ? (
+                                        dossierDocs.map(doc => (
+                                            <div key={doc.id} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm">
+                                                <div className="flex items-center gap-2 overflow-hidden">
+                                                    <FileText size={14} className="text-emerald-400 shrink-0" />
+                                                    <span className="text-gray-300 truncate">{doc.file_name}</span>
+                                                </div>
+                                                {doc.file_url && (
+                                                    <a 
+                                                        href={doc.file_url}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="ml-2 p-1.5 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-300 rounded transition-colors shrink-0"
+                                                        title="Télécharger/Voir"
+                                                    >
+                                                        <Download size={14} />
+                                                    </a>
+                                                )}
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-xs text-gray-500 bg-white/5 px-3 py-2 rounded-lg border border-white/5">
+                                            Aucun document fourni pour le moment.
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 

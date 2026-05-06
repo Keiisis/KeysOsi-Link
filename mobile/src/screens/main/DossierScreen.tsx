@@ -1,17 +1,22 @@
 'use strict'
 import React, { useEffect, useState, useCallback } from 'react'
-import {
-    View, Text, ScrollView, StyleSheet, TouchableOpacity,
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity,
     RefreshControl, Platform, Alert, ActivityIndicator, Modal,
 } from 'react-native'
 import { Check, ChevronRight, FileText, FolderOpen, Info, Plus, PlusCircle, Upload } from 'lucide-react-native'
+import { LinearGradient } from 'expo-linear-gradient'
+import ScreenHeader from '../../components/ScreenHeader'
 import { Ionicons } from '@expo/vector-icons'
 import * as DocumentPicker from 'expo-document-picker'
 import * as ImagePicker from 'expo-image-picker'
+// expo-file-system : on utilise l'API legacy pour readAsStringAsync + EncodingType
+// (la nouvelle API class-based File n'a pas encore d'équivalent simple sur RN)
+import * as FileSystem from 'expo-file-system/legacy'
+import { decode } from 'base64-arraybuffer'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLang } from '../../contexts/LangContext'
 import { supabase } from '../../config/supabase'
-import { colors, spacing, radius, shadows, typography } from '../../config/theme'
+import { colors, spacing, radius, shadows, typography, royal } from '../../config/theme'
 import { fetchWithTimeout } from '../../lib/fetch'
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
@@ -50,6 +55,7 @@ export default function DossierScreen() {
     const [loading, setLoading] = useState(true)
     const [uploading, setUploading] = useState(false)
     const [showUploadModal, setShowUploadModal] = useState(false)
+    const [uploadTargetDossier, setUploadTargetDossier] = useState<Dossier | null>(null)
 
     const fetchDossiers = useCallback(async () => {
         if (!profile) { setLoading(false); return }
@@ -68,6 +74,22 @@ export default function DossierScreen() {
     }, [profile])
 
     useEffect(() => { fetchDossiers() }, [fetchDossiers])
+
+    // ── Realtime subscription: auto-refresh when agents update dossiers ──
+    useEffect(() => {
+        if (!profile?.id) return
+        const channel = supabase
+            .channel('dossiers-realtime')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'dossiers',
+                filter: `client_id=eq.${profile.id}`,
+            }, () => { fetchDossiers() })
+            .subscribe()
+        return () => { supabase.removeChannel(channel) }
+    }, [profile?.id, fetchDossiers])
+
     const onRefresh = async () => { setRefreshing(true); await fetchDossiers(); setRefreshing(false) }
 
     const progressFromStatus = (status: string) => {
@@ -77,29 +99,31 @@ export default function DossierScreen() {
     }
 
     const uploadFile = async (uri: string, fileName: string, mimeType: string) => {
-        if (!selected || !profile) return
+        const target = uploadTargetDossier || selected
+        if (!target || !profile) { Alert.alert(t('Erreur'), t('Veuillez d\'abord sélectionner un dossier.')); return }
         setUploading(true); setShowUploadModal(false)
         try {
-            const response = await fetch(uri)
-            const blob = await response.blob()
+            // Utiliser FileSystem et base64-arraybuffer pour éviter "Network request failed" sur RN
+            const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 })
+            const arrayBuffer = decode(base64)
             const safeName = fileName.replace(/[^a-zA-Z0-9._\-\u00C0-\u017E]/g, '_')
-            const filePath = `${profile.id}/${selected.id}/${Date.now()}_${safeName}`
+            const filePath = `${profile.id}/${target.id}/${Date.now()}_${safeName}`
 
             const { error: uploadError } = await supabase.storage
                 .from('dossier-documents')
-                .upload(filePath, blob, { contentType: mimeType, upsert: false })
+                .upload(filePath, arrayBuffer, { contentType: mimeType, upsert: false })
             if (uploadError) throw uploadError
 
             const { data: { publicUrl } } = supabase.storage.from('dossier-documents').getPublicUrl(filePath)
 
             // Essayer les deux tables
             const { error: dbErr } = await supabase.from('dossier_documents').insert({
-                dossier_id: selected.id, client_id: profile.id,
+                dossier_id: target.id, client_id: profile.id,
                 file_name: safeName, file_url: publicUrl, file_type: mimeType, status: 'pending',
             })
             if (dbErr) {
                 await supabase.from('documents').insert({
-                    dossier_id: selected.id, client_id: profile.id,
+                    dossier_id: target.id, client_id: profile.id,
                     file_name: safeName, file_url: publicUrl, file_type: mimeType, status: 'pending',
                 })
             }
@@ -151,24 +175,25 @@ export default function DossierScreen() {
     }
 
     return (
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
-            <View style={styles.header}>
-                <View style={styles.primaryLine} />
-                <View style={styles.headerRow}>
-                    <View>
-                        <Text style={styles.headerTitle}>{t('Mes Dossiers')}</Text>
-                        <Text style={styles.headerSub}>{dossiers.length} {t('dossier')}{dossiers.length !== 1 ? 's' : ''} {t('en cours')}</Text>
-                    </View>
-                    {selected && (
-                        <TouchableOpacity style={styles.uploadHeaderBtn} onPress={() => setShowUploadModal(true)} disabled={uploading}>
-                            {uploading ? <ActivityIndicator color="#FFF" size="small" /> : (
-                                <><Upload size={16} color="#FFF" strokeWidth={1.75} /><Text style={styles.uploadHeaderBtnText}>{t('Ajouter')}</Text></>
-                            )}
-                        </TouchableOpacity>
-                    )}
-                </View>
-            </View>
+        <View style={styles.container}>
+            <LinearGradient 
+                colors={['rgba(220,165,64,0.15)', royal.bg, royal.bg]} 
+                locations={[0, 0.4, 1]}
+                style={StyleSheet.absoluteFillObject} 
+            />
+            <ScrollView showsVerticalScrollIndicator={false}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={royal.gold} />}>
+                <ScreenHeader
+                title={t('Mes Dossiers')}
+                subtitle={`${dossiers.length} ${t('dossier')}${dossiers.length !== 1 ? 's' : ''} ${t('en cours')}`}
+                rightAction={
+                    <TouchableOpacity style={styles.uploadHeaderBtn} onPress={() => { setUploadTargetDossier(null); setShowUploadModal(true) }} disabled={uploading}>
+                        {uploading ? <ActivityIndicator color="#FFF" size="small" /> : (
+                            <><Upload size={16} color="#FFF" strokeWidth={1.75} /><Text style={styles.uploadHeaderBtnText}>{t('Ajouter')}</Text></>
+                        )}
+                    </TouchableOpacity>
+                }
+            />
 
             {loading ? (
                 <View style={styles.centerState}>
@@ -304,6 +329,31 @@ export default function DossierScreen() {
                         <View style={styles.modalHandle} />
                         <Text style={styles.modalTitle}>{t('Ajouter un document')}</Text>
                         <Text style={styles.modalSub}>{t('PDF, Word, image — Max {size} Mo').replace('{size}', MAX_SIZE_MB.toString())}</Text>
+
+                        {/* ── Sélecteur de dossier cible ── */}
+                        {dossiers.length > 0 && (
+                            <View style={styles.dossierSelector}>
+                                <Text style={styles.dossierSelectorLabel}>{t('Dossier concerné')}</Text>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }} contentContainerStyle={{ gap: 8 }}>
+                                    {dossiers.map((d) => {
+                                        const isTarget = (uploadTargetDossier?.id || selected?.id) === d.id
+                                        return (
+                                            <TouchableOpacity
+                                                key={d.id}
+                                                style={[styles.dossierChip, isTarget && styles.dossierChipActive]}
+                                                onPress={() => setUploadTargetDossier(d)}
+                                            >
+                                                <FolderOpen size={14} color={isTarget ? '#FFF' : colors.primary} strokeWidth={1.75} />
+                                                <Text style={[styles.dossierChipText, isTarget && styles.dossierChipTextActive]} numberOfLines={1}>
+                                                    {d.service_type}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        )
+                                    })}
+                                </ScrollView>
+                            </View>
+                        )}
+
                         {[
                             { icon: 'document-text-outline' as const, color: colors.info, label: t('Choisir un fichier'), sub: t('PDF, Word, image depuis vos fichiers'), action: handlePickDocument },
                             { icon: 'image-outline' as const, color: '#7C5CCA', label: t('Photo depuis la galerie'), sub: t('Sélectionner une image existante'), action: handlePickImage },
@@ -326,18 +376,14 @@ export default function DossierScreen() {
                     </View>
                 </TouchableOpacity>
             </Modal>
-        </ScrollView>
+            </ScrollView>
+        </View>
     )
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
-    header: { backgroundColor: colors.headerBg, paddingTop: Platform.OS === 'ios' ? 56 : 44, paddingBottom: 24, paddingHorizontal: spacing.lg, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },
-    primaryLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.primary },
-    headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
-    headerTitle: { ...typography.h1, color: colors.textOnDark },
-    headerSub: { ...typography.bodySmall, color: colors.primary + 'AA', marginTop: 4 },
-    uploadHeaderBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary + '25', borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: colors.primary + '40' },
+    container: { flex: 1, backgroundColor: royal.bg },
+    uploadHeaderBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 22, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: 'rgba(220,165,64,0.3)' },
     uploadHeaderBtnText: { ...typography.caption, color: '#FFF', fontFamily: 'Inter_600SemiBold' },
     centerState: { alignItems: 'center', justifyContent: 'center', padding: spacing.xxl, gap: 12 },
     loadingText: { ...typography.bodySmall, color: colors.textSecondary },
@@ -397,4 +443,10 @@ const styles = StyleSheet.create({
     modalOptionSub: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
     modalCancel: { marginTop: spacing.md, paddingVertical: 14, alignItems: 'center', backgroundColor: colors.surfaceElevated, borderRadius: radius.md },
     modalCancelText: { ...typography.button, color: colors.textSecondary },
+    dossierSelector: { marginBottom: spacing.md, paddingBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+    dossierSelectorLabel: { ...typography.label, color: colors.textPrimary, fontSize: 13 },
+    dossierChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1.5, borderColor: colors.primary + '40', backgroundColor: colors.primaryMuted },
+    dossierChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    dossierChipText: { ...typography.caption, color: colors.primary, fontFamily: 'Inter_600SemiBold', maxWidth: 120 },
+    dossierChipTextActive: { color: '#FFF' },
 })

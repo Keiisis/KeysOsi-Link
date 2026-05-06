@@ -11,6 +11,7 @@ import { ArrowLeft, Package, Search, Truck, CheckCircle, Clock, AlertTriangle, S
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLang } from '../../contexts/LangContext'
+import ScreenHeader from '../../components/ScreenHeader'
 import { fetchWithTimeout } from '../../lib/fetch'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
 import { RootStackParamList } from '../../navigation/AppNavigator'
@@ -235,25 +236,11 @@ export default function OrdersScreen({ navigation }: { navigation: Nav }) {
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={royal.gold} />}
                 showsVerticalScrollIndicator={false}
             >
-                <View style={[styles.header, { zIndex: 10 }]}>
-                    <View style={styles.headerBgWrap}>
-                        <LinearGradient colors={[royal.emerald, royal.lightEmerald]} style={StyleSheet.absoluteFillObject} />
-                    </View>
-                    <View style={styles.headerTopRow}>
-                        <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.goBack()}>
-                            <ArrowLeft size={24} color="#FFF" strokeWidth={2} />
-                        </TouchableOpacity>
-                        
-                        <View style={styles.stickyTitleWrapper}>
-                            <View style={styles.titleDot} />
-                            <Text style={styles.stickyTitle}>{t("MES COMMANDES")}</Text>
-                            <View style={styles.titleDot} />
-                        </View>
-                        
-                        <View style={{width: 44}} />
-                    </View>
-                    <Text style={styles.headerSub}>{t('Suivi privé de vos joyaux')}</Text>
-                </View>
+                <ScreenHeader 
+                    title={t("MES COMMANDES")}
+                    subtitle={t('Suivi privé de vos joyaux')}
+                    onBack={() => navigation.goBack()}
+                />
 
             {/* Animation Image Hyper-Réaliste */}
             <DeliveryHeroAnimation />
@@ -323,51 +310,6 @@ export default function OrdersScreen({ navigation }: { navigation: Nav }) {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: royal.bg },
-
-    header: {
-        paddingTop: Platform.OS === 'ios' ? 56 : 44,
-        paddingBottom: 24,
-        paddingHorizontal: spacing.lg,
-        shadowColor: royal.emerald,
-        shadowOpacity: 0.3,
-        shadowRadius: 20,
-        shadowOffset: { width: 0, height: 10 },
-        elevation: 15,
-        backgroundColor: 'transparent',
-    },
-    headerBgWrap: {
-        ...StyleSheet.absoluteFillObject,
-        borderBottomLeftRadius: 30,
-        borderBottomRightRadius: 30,
-        overflow: 'hidden',
-    },
-    headerTopRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    iconBtn: {
-        width: 44, height: 44, borderRadius: 22,
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        alignItems: 'center', justifyContent: 'center'
-    },
-    stickyTitleWrapper: {
-        flexDirection: 'row', alignItems: 'center', gap: 10,
-        backgroundColor: 'rgba(220,165,64,0.15)',
-        paddingHorizontal: 20, paddingVertical: 8,
-        borderRadius: 24, borderWidth: 1, borderColor: 'rgba(220,165,64,0.3)'
-    },
-    stickyTitle: {
-        fontFamily: 'PlayfairDisplay_700Bold', fontSize: 14,
-        color: royal.gold, letterSpacing: 2, textTransform: 'uppercase'
-    },
-    titleDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: royal.gold, opacity: 0.8 },
-    headerSub: {
-        fontFamily: 'Inter_500Medium', fontSize: 14,
-        color: royal.softGold, textAlign: 'center', fontStyle: 'italic',
-        marginTop: 4,
-    },
 
     heroContainer: {
         width: '100%',

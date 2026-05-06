@@ -5,6 +5,7 @@ import {
 } from 'react-native'
 import { Calendar, Camera, ChevronRight, CreditCard, FolderOpen, LogOut, MapPin, Pencil, ShieldCheck } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { LinearGradient } from 'expo-linear-gradient'
 import * as ImagePicker from 'expo-image-picker'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../config/supabase'
@@ -12,8 +13,10 @@ import { colors, spacing, radius, shadows, typography } from '../../config/theme
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { RootStackParamList } from '../../navigation/AppNavigator'
+import ScreenHeader from '../../components/ScreenHeader'
 import { useLang } from '../../contexts/LangContext'
 import LanguagePicker from '../../components/LanguagePicker'
+import { Modal } from 'react-native'
 
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
@@ -22,12 +25,41 @@ type Nav = NativeStackNavigationProp<RootStackParamList>
 ═══════════════════════════════════════════════════════════ */
 
 export default function ProfilScreen() {
-    const { profile, signOut, updateProfile } = useAuth()
+    const { profile, signOut, updateProfile, refreshProfile } = useAuth()
     const navigation = useNavigation<Nav>()
     const { langConfig, t } = useLang()
     const [langPickerVisible, setLangPickerVisible] = useState(false)
     const [uploadingAvatar, setUploadingAvatar] = useState(false)
+    const [showAvatarGallery, setShowAvatarGallery] = useState(false)
     const [stats, setStats] = useState({ dossiers: 0, appointments: 0, payments: 0 })
+
+    /* ── Avatars animés prédéfinis par genre ── */
+    const AVATAR_PRESETS = {
+        homme: [
+            { key: 'h1', label: 'Guerrier Shōnen', emoji: '🦸🏾‍♂️', color: '#E74C3C', bg: '#FDEDEC' },
+            { key: 'h2', label: 'Business King', emoji: '👑', color: '#F39C12', bg: '#FEF9E7' },
+            { key: 'h3', label: 'Tech Genius', emoji: '💻', color: '#3498DB', bg: '#EBF5FB' },
+            { key: 'h4', label: 'Artiste Cool', emoji: '🎨', color: '#9B59B6', bg: '#F5EEF8' },
+            { key: 'h5', label: 'Champion', emoji: '🏆', color: '#27AE60', bg: '#EAFAF1' },
+            { key: 'h6', label: 'Voyageur', emoji: '✈️', color: '#1ABC9C', bg: '#E8F8F5' },
+        ],
+        femme: [
+            { key: 'f1', label: 'Reine Afro', emoji: '👸🏾', color: '#E74C3C', bg: '#FDEDEC' },
+            { key: 'f2', label: 'Business Queen', emoji: '💎', color: '#F39C12', bg: '#FEF9E7' },
+            { key: 'f3', label: 'Créatrice', emoji: '🌟', color: '#E91E63', bg: '#FCE4EC' },
+            { key: 'f4', label: 'Fashionista', emoji: '👗', color: '#9B59B6', bg: '#F5EEF8' },
+            { key: 'f5', label: 'Scientifique', emoji: '🔬', color: '#3498DB', bg: '#EBF5FB' },
+            { key: 'f6', label: 'Aventurière', emoji: '🌍', color: '#27AE60', bg: '#EAFAF1' },
+        ],
+        neutre: [
+            { key: 'n1', label: 'Phoenix', emoji: '🔥', color: '#E74C3C', bg: '#FDEDEC' },
+            { key: 'n2', label: 'Étoile', emoji: '⭐', color: '#F39C12', bg: '#FEF9E7' },
+            { key: 'n3', label: 'Ninja', emoji: '🥷', color: '#2C3E50', bg: '#EBEDEF' },
+            { key: 'n4', label: 'Astronaute', emoji: '🚀', color: '#3498DB', bg: '#EBF5FB' },
+            { key: 'n5', label: 'Lion', emoji: '🦁', color: '#E67E22', bg: '#FDF2E9' },
+            { key: 'n6', label: 'Diamant', emoji: '💠', color: '#1ABC9C', bg: '#E8F8F5' },
+        ],
+    }
 
     useEffect(() => {
         if (!profile) return
@@ -93,9 +125,11 @@ export default function ProfilScreen() {
                 .from('avatars')
                 .getPublicUrl(filePath)
 
-            // Mettre à jour le profil
-            const { error: updateError } = await updateProfile({ avatar_url: publicUrl })
-            if (updateError) throw updateError
+            // Mettre à jour le profil + reset avatar_type
+            await supabase.from('client_profiles').update({
+                avatar_url: publicUrl, avatar_type: 'photo', avatar_preset: null,
+            }).eq('id', userId)
+            await refreshProfile()
 
             Alert.alert(t('Photo mise à jour'), t('Votre photo de profil a été modifiée avec succès.'))
         } catch (e: unknown) {
@@ -140,8 +174,10 @@ export default function ProfilScreen() {
             if (uploadError) throw uploadError
 
             const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath)
-            const { error: updateError } = await updateProfile({ avatar_url: publicUrl })
-            if (updateError) throw updateError
+            await supabase.from('client_profiles').update({
+                avatar_url: publicUrl, avatar_type: 'photo', avatar_preset: null,
+            }).eq('id', userId)
+            await refreshProfile()
 
             Alert.alert(t('Photo mise à jour'), t('Photo de profil modifiée avec succès.'))
         } catch (e: unknown) {
@@ -152,10 +188,36 @@ export default function ProfilScreen() {
         }
     }
 
+    /* ── Sélection avatar prédéfini ── */
+    const handleSelectPresetAvatar = async (preset: { key: string; emoji: string; label: string }) => {
+        if (!profile?.id) return
+        setUploadingAvatar(true)
+        setShowAvatarGallery(false)
+        try {
+            const { error } = await supabase
+                .from('client_profiles')
+                .update({
+                    avatar_type: 'preset',
+                    avatar_preset: preset.key,
+                    avatar_url: null,
+                    updated_at: new Date().toISOString(),
+                })
+                .eq('id', profile.id)
+            if (error) throw error
+            await refreshProfile()
+            Alert.alert(t('Avatar mis à jour'), `${preset.emoji} ${preset.label}`)
+        } catch (e: unknown) {
+            Alert.alert(t('Erreur'), e instanceof Error ? e.message : t('Erreur'))
+        } finally {
+            setUploadingAvatar(false)
+        }
+    }
+
     const showAvatarOptions = () => {
-        Alert.alert(t('Photo de profil'), t('Choisissez une source'), [
-            { text: t('Prendre une photo'), onPress: handleTakePhoto },
-            { text: t('Choisir dans la galerie'), onPress: handlePickAvatar },
+        Alert.alert(t('Photo de profil'), t('Choisissez une option'), [
+            { text: t('🎭 Choisir un avatar'), onPress: () => setShowAvatarGallery(true) },
+            { text: t('📷 Prendre une photo'), onPress: handleTakePhoto },
+            { text: t('🖼️ Choisir dans la galerie'), onPress: handlePickAvatar },
             { text: t('Annuler'), style: 'cancel' },
         ])
     }
@@ -258,15 +320,28 @@ export default function ProfilScreen() {
                     color: colors.textMuted,
                     onPress: () => navigation.navigate('About'),
                 },
+                {
+                    icon: 'document-text-outline' as const,
+                    label: t('CGU & Confidentialité'),
+                    sub: t('Conditions et politique de données'),
+                    color: '#6B7280',
+                    onPress: () => navigation.navigate('Legal'),
+                },
             ],
         },
     ]
 
     return (
-        <>
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        <LinearGradient colors={[colors.background, colors.surfaceWarm]} style={styles.container}>
+        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
             {/* Header */}
-            <View style={styles.header}>
+            <ScreenHeader
+                title={t('Mon Profil')}
+                subtitle={t('Gérez vos informations et préférences')}
+            />
+
+            {/* Profile Info Card */}
+            <View style={styles.profileCard}>
                 <View style={styles.primaryLine} />
 
                 {/* Avatar */}
@@ -282,11 +357,26 @@ export default function ProfilScreen() {
                         </View>
                     ) : profile?.avatar_url ? (
                         <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
-                    ) : (
-                        <View style={styles.avatarPlaceholder}>
-                            <Text style={styles.avatarInitials}>{initials}</Text>
-                        </View>
-                    )}
+                    ) : (() => {
+                        // Check for preset avatar
+                        const presetKey = profile?.avatar_preset
+                        if (presetKey && profile?.avatar_type === 'preset') {
+                            const allPresets = [...AVATAR_PRESETS.homme, ...AVATAR_PRESETS.femme, ...AVATAR_PRESETS.neutre]
+                            const found = allPresets.find(p => p.key === presetKey)
+                            if (found) {
+                                return (
+                                    <View style={[styles.avatarPlaceholder, { backgroundColor: found.bg, borderColor: found.color + '70' }]}>
+                                        <Text style={{ fontSize: 40 }}>{found.emoji}</Text>
+                                    </View>
+                                )
+                            }
+                        }
+                        return (
+                            <View style={styles.avatarPlaceholder}>
+                                <Text style={styles.avatarInitials}>{initials}</Text>
+                            </View>
+                        )
+                    })()}
                     <View style={styles.cameraBadge}>
                         <Camera size={13} color="#FFF" strokeWidth={1.75} />
                     </View>
@@ -376,17 +466,59 @@ export default function ProfilScreen() {
         </ScrollView>
 
         <LanguagePicker visible={langPickerVisible} onClose={() => setLangPickerVisible(false)} />
-        </>
+
+        {/* ── Avatar Gallery Modal ── */}
+        <Modal visible={showAvatarGallery} transparent animationType="slide" onRequestClose={() => setShowAvatarGallery(false)}>
+            <TouchableOpacity style={galStyles.overlay} activeOpacity={1} onPress={() => setShowAvatarGallery(false)}>
+                <View style={galStyles.sheet}>
+                    <View style={galStyles.handle} />
+                    <Text style={galStyles.title}>{t('Choisir un avatar')}</Text>
+                    <Text style={galStyles.subtitle}>{t('Sélectionnez un personnage qui vous représente')}</Text>
+
+                    <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
+                        {(['homme', 'femme', 'neutre'] as const).map((genre) => (
+                            <View key={genre} style={galStyles.genreSection}>
+                                <Text style={galStyles.genreLabel}>
+                                    {genre === 'homme' ? '👨🏾 ' + t('Homme') : genre === 'femme' ? '👩🏾 ' + t('Femme') : '🌈 ' + t('Neutre')}
+                                </Text>
+                                <View style={galStyles.grid}>
+                                    {AVATAR_PRESETS[genre].map((av) => (
+                                        <TouchableOpacity
+                                            key={av.key}
+                                            style={[galStyles.avatarCard, { borderColor: av.color + '40' }]}
+                                            onPress={() => handleSelectPresetAvatar(av)}
+                                            activeOpacity={0.7}
+                                        >
+                                            <View style={[galStyles.avatarCircle, { backgroundColor: av.bg, borderColor: av.color + '50' }]}>
+                                                <Text style={galStyles.avatarEmoji}>{av.emoji}</Text>
+                                            </View>
+                                            <Text style={[galStyles.avatarName, { color: av.color }]} numberOfLines={1}>{av.label}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+                        ))}
+                    </ScrollView>
+
+                    <TouchableOpacity style={galStyles.cancelBtn} onPress={() => setShowAvatarGallery(false)}>
+                        <Text style={galStyles.cancelText}>{t('Annuler')}</Text>
+                    </TouchableOpacity>
+                </View>
+            </TouchableOpacity>
+        </Modal>
+        </LinearGradient>
     )
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
+    container: { flex: 1 },
 
-    header: {
-        backgroundColor: colors.headerBg, alignItems: 'center',
-        paddingTop: Platform.OS === 'ios' ? 56 : 44, paddingBottom: 28,
-        borderBottomLeftRadius: 32, borderBottomRightRadius: 32,
+    profileCard: {
+        alignItems: 'center',
+        paddingTop: spacing.lg, paddingBottom: 28,
+        backgroundColor: colors.surface,
+        borderBottomWidth: 1, borderColor: colors.borderLight,
+        marginBottom: spacing.lg,
     },
     primaryLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.primary },
 
@@ -405,8 +537,8 @@ const styles = StyleSheet.create({
         borderWidth: 2, borderColor: colors.headerBg,
     },
 
-    userName: { ...typography.h2, color: colors.textOnDark },
-    userEmail: { ...typography.bodySmall, color: colors.primary + 'AA', marginTop: 4 },
+    userName: { ...typography.h2, color: colors.textPrimary },
+    userEmail: { ...typography.bodySmall, color: colors.textSecondary, marginTop: 4 },
 
     badgesRow: { flexDirection: 'row', gap: 8, marginTop: 12, alignItems: 'center' },
     roleBadge: {
@@ -414,13 +546,13 @@ const styles = StyleSheet.create({
         backgroundColor: colors.primary + '15', borderRadius: 20,
         paddingHorizontal: 12, paddingVertical: 5,
     },
-    roleText: { fontSize: 11, fontFamily: 'Inter_700Bold', color: colors.primaryLight, letterSpacing: 0.5 },
+    roleText: { fontSize: 11, fontFamily: 'Inter_700Bold', color: colors.primary, letterSpacing: 0.5 },
     villeBadge: {
         flexDirection: 'row', alignItems: 'center', gap: 4,
-        backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 20,
+        backgroundColor: colors.surfaceElevated, borderRadius: 20,
         paddingHorizontal: 10, paddingVertical: 5,
     },
-    villeText: { fontSize: 11, fontFamily: 'Inter_500Medium', color: colors.primary + 'CC' },
+    villeText: { fontSize: 11, fontFamily: 'Inter_500Medium', color: colors.textSecondary },
 
     editShortcut: {
         flexDirection: 'row', alignItems: 'center', gap: 5,
@@ -479,4 +611,36 @@ const styles = StyleSheet.create({
     logoutText: { ...typography.label, color: colors.danger },
 
     version: { ...typography.caption, color: colors.textMuted, textAlign: 'center', marginTop: spacing.lg },
+})
+
+const galStyles = StyleSheet.create({
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+    sheet: {
+        backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+        padding: spacing.lg, paddingBottom: Platform.OS === 'ios' ? 44 : spacing.xl,
+    },
+    handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 16 },
+    title: { ...typography.h3, color: colors.textPrimary, marginBottom: 4 },
+    subtitle: { ...typography.bodySmall, color: colors.textSecondary, marginBottom: spacing.md },
+    genreSection: { marginBottom: spacing.md },
+    genreLabel: { ...typography.label, color: colors.textPrimary, fontSize: 14, marginBottom: 10, letterSpacing: 0.5 },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    avatarCard: {
+        width: '30%' as any, alignItems: 'center', padding: 10,
+        borderRadius: radius.md, borderWidth: 1.5,
+        backgroundColor: colors.surfaceElevated,
+    },
+    avatarCircle: {
+        width: 56, height: 56, borderRadius: 28,
+        alignItems: 'center', justifyContent: 'center',
+        borderWidth: 2, marginBottom: 6,
+    },
+    avatarEmoji: { fontSize: 28 },
+    avatarName: { fontSize: 10, fontFamily: 'Inter_700Bold', textAlign: 'center' },
+    cancelBtn: {
+        marginTop: spacing.md, paddingVertical: 14,
+        alignItems: 'center', backgroundColor: colors.surfaceElevated,
+        borderRadius: radius.md,
+    },
+    cancelText: { ...typography.button, color: colors.textSecondary },
 })

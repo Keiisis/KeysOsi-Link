@@ -5,8 +5,10 @@ import {
 } from 'react-native'
 import { ArrowLeft, ExternalLink, HelpCircle } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { LinearGradient } from 'expo-linear-gradient'
+import ScreenHeader from '../../components/ScreenHeader'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { colors, spacing, radius, shadows, typography } from '../../config/theme'
+import { colors, spacing, radius, shadows, typography, royal } from '../../config/theme'
 import { useLang } from '../../contexts/LangContext'
 import { RootStackParamList } from '../../navigation/AppNavigator'
 
@@ -51,16 +53,18 @@ export default function AboutScreen({ navigation }: { navigation: Nav }) {
     }
 
     return (
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-            {/* Header */}
-            <View style={styles.header}>
-                <View style={styles.primaryLine} />
-                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <ArrowLeft size={22} color={colors.textOnDark} strokeWidth={1.75} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>{t('À propos')}</Text>
-                <Text style={styles.headerSub}>{t('Retour Gagnant Bénin')}</Text>
-            </View>
+        <View style={styles.container}>
+            <LinearGradient 
+                colors={['rgba(220,165,64,0.15)', royal.bg, royal.bg]} 
+                locations={[0, 0.4, 1]}
+                style={StyleSheet.absoluteFillObject} 
+            />
+            <ScrollView showsVerticalScrollIndicator={false}>
+                <ScreenHeader
+                title={t('À propos')}
+                subtitle={t('Retour Gagnant Bénin')}
+                onBack={() => navigation.goBack()}
+            />
 
             {/* Logo & version */}
             <View style={styles.brandCard}>
@@ -171,25 +175,15 @@ export default function AboutScreen({ navigation }: { navigation: Nav }) {
             </Text>
 
             <View style={{ height: 100 }} />
-        </ScrollView>
+            </ScrollView>
+        </View>
     )
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
+    container: { flex: 1, backgroundColor: royal.bg },
 
-    header: {
-        backgroundColor: colors.headerBg,
-        paddingTop: Platform.OS === 'ios' ? 56 : 44,
-        paddingBottom: 24,
-        paddingHorizontal: spacing.lg,
-        borderBottomLeftRadius: 28,
-        borderBottomRightRadius: 28,
-    },
-    primaryLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.primary },
-    backBtn: { marginBottom: spacing.md },
-    headerTitle: { ...typography.h2, color: colors.textOnDark },
-    headerSub: { ...typography.bodySmall, color: colors.primary + 'AA', marginTop: 4 },
+
 
     brandCard: {
         margin: spacing.lg,

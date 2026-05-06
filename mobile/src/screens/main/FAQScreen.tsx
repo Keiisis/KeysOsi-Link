@@ -5,8 +5,10 @@ import {
 } from 'react-native'
 import { ArrowLeft, ChevronRight, HelpCircle, Search, XCircle } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
+import ScreenHeader from '../../components/ScreenHeader'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { colors, spacing, radius, shadows, typography } from '../../config/theme'
+import { LinearGradient } from 'expo-linear-gradient'
+import { colors, spacing, radius, shadows, typography, royal } from '../../config/theme'
 import { useLang } from '../../contexts/LangContext'
 import { RootStackParamList } from '../../navigation/AppNavigator'
 
@@ -114,16 +116,18 @@ export default function FAQScreen({ navigation }: { navigation: Nav }) {
     })).filter(cat => cat.items.length > 0)
 
     return (
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-            {/* Header */}
-            <View style={styles.header}>
-                <View style={styles.primaryLine} />
-                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <ArrowLeft size={22} color={colors.textOnDark} strokeWidth={1.75} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>{t('Aide & FAQ')}</Text>
-                <Text style={styles.headerSub}>{t('Questions fréquentes')}</Text>
-            </View>
+        <View style={styles.container}>
+            <LinearGradient 
+                colors={['rgba(220,165,64,0.15)', royal.bg, royal.bg]} 
+                locations={[0, 0.4, 1]}
+                style={StyleSheet.absoluteFillObject} 
+            />
+            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScreenHeader
+                title={t('Aide & FAQ')}
+                subtitle={t('Questions fréquentes')}
+                onBack={() => navigation.goBack()}
+            />
 
             {/* Barre de recherche */}
             <View style={styles.searchWrap}>
@@ -209,25 +213,15 @@ export default function FAQScreen({ navigation }: { navigation: Nav }) {
             </View>
 
             <View style={{ height: 100 }} />
-        </ScrollView>
+            </ScrollView>
+        </View>
     )
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
+    container: { flex: 1, backgroundColor: royal.bg },
 
-    header: {
-        backgroundColor: colors.headerBg,
-        paddingTop: Platform.OS === 'ios' ? 56 : 44,
-        paddingBottom: 24,
-        paddingHorizontal: spacing.lg,
-        borderBottomLeftRadius: 28,
-        borderBottomRightRadius: 28,
-    },
-    primaryLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.primary },
-    backBtn: { marginBottom: spacing.md },
-    headerTitle: { ...typography.h2, color: colors.textOnDark },
-    headerSub: { ...typography.bodySmall, color: colors.primary + 'AA', marginTop: 4 },
+
 
     searchWrap: { padding: spacing.lg, paddingBottom: spacing.sm },
     searchBar: {

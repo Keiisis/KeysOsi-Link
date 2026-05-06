@@ -9,6 +9,8 @@ import {
     MapPin, Phone, User, ExternalLink, Copy, Receipt,
 } from 'lucide-react-native'
 import * as Clipboard from 'expo-clipboard'
+import { LinearGradient } from 'expo-linear-gradient'
+import ScreenHeader from '../../components/ScreenHeader'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { RouteProp } from '@react-navigation/native'
 import { useLang } from '../../contexts/LangContext'
@@ -119,21 +121,21 @@ export default function OrderDetailScreen({ navigation, route }: { navigation: N
 
     if (loading) {
         return (
-            <View style={[styles.container, styles.center]}>
+            <LinearGradient colors={[colors.background, colors.surfaceWarm]} style={[styles.container, styles.center]}>
                 <ActivityIndicator color={colors.primary} size="large" />
-            </View>
+            </LinearGradient>
         )
     }
 
     if (!order) {
         return (
-            <View style={[styles.container, styles.center]}>
+            <LinearGradient colors={[colors.background, colors.surfaceWarm]} style={[styles.container, styles.center]}>
                 <AlertTriangle size={40} color={colors.danger} />
                 <Text style={styles.errorTitle}>{t('Commande introuvable')}</Text>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.linkBtn}>
                     <Text style={styles.linkBtnText}>{t('Retour')}</Text>
                 </TouchableOpacity>
-            </View>
+            </LinearGradient>
         )
     }
 
@@ -143,15 +145,14 @@ export default function OrderDetailScreen({ navigation, route }: { navigation: N
     const currentStageIdx = STAGES.indexOf(status)
 
     return (
-        <ScrollView style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <ArrowLeft size={22} color="#FFF" strokeWidth={1.75} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>{t('Détails de la commande')}</Text>
-                <Text style={styles.headerSub}>#{order.id.slice(0, 8).toUpperCase()}</Text>
-            </View>
+        <LinearGradient colors={[colors.background, colors.surfaceWarm]} style={styles.container}>
+            <ScreenHeader
+                title={t('Détails de la commande')}
+                subtitle={`#${order.id.slice(0, 8).toUpperCase()}`}
+                onBack={() => navigation.goBack()}
+            />
+
+            <ScrollView style={{ flex: 1 }}>
 
             {/* Statut principal */}
             <View style={[styles.statusCard, { borderColor: statusColor + '40' }]}>
@@ -303,27 +304,19 @@ export default function OrderDetailScreen({ navigation, route }: { navigation: N
             )}
 
             <View style={{ height: 60 }} />
-        </ScrollView>
+            </ScrollView>
+        </LinearGradient>
     )
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
+    container: { flex: 1 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
     errorTitle: { ...typography.h3, color: colors.textPrimary, marginTop: 12 },
     linkBtn: { paddingHorizontal: 24, paddingVertical: 10, backgroundColor: colors.primary, borderRadius: radius.sm },
     linkBtnText: { ...typography.button, color: '#FFF' },
 
-    header: {
-        backgroundColor: colors.headerBg,
-        paddingTop: Platform.OS === 'ios' ? 56 : 44,
-        paddingBottom: 24,
-        paddingHorizontal: spacing.lg,
-        borderBottomLeftRadius: 24, borderBottomRightRadius: 24,
-    },
-    backBtn: { marginBottom: spacing.md },
-    headerTitle: { ...typography.h2, color: colors.textOnDark },
-    headerSub: { ...typography.bodySmall, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
+
 
     statusCard: {
         margin: spacing.lg,

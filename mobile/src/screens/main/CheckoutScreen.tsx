@@ -6,9 +6,11 @@ import {
 } from 'react-native'
 import { ArrowLeft, MapPin, Package, ShieldCheck, User, Phone, Mail, Globe, Lock } from 'lucide-react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import ScreenHeader from '../../components/ScreenHeader'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { RouteProp } from '@react-navigation/native'
-import { colors, spacing, radius, shadows, typography } from '../../config/theme'
+import { LinearGradient } from 'expo-linear-gradient'
+import { colors, spacing, radius, shadows, typography, royal } from '../../config/theme'
 import { useLang } from '../../contexts/LangContext'
 import { useAuth } from '../../contexts/AuthContext'
 import KkiapayModal from '../../components/KkiapayModal'
@@ -179,15 +181,17 @@ export default function CheckoutScreen({ navigation, route }: { navigation: Nav;
     /* ── Render ── */
     return (
         <View style={styles.container}>
+            <LinearGradient 
+                colors={['rgba(220,165,64,0.15)', royal.bg, royal.bg]} 
+                locations={[0, 0.4, 1]}
+                style={StyleSheet.absoluteFillObject} 
+            />
             <ScrollView showsVerticalScrollIndicator={false}>
-                {/* Header */}
-                <View style={styles.header}>
-                    <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                        <ArrowLeft size={22} color="#FFF" strokeWidth={1.75} />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>{t('Finaliser la commande')}</Text>
-                    <Text style={styles.headerSub}>{t('Adresse de livraison + paiement')}</Text>
-                </View>
+                <ScreenHeader
+                    title={t('Finaliser la commande')}
+                    subtitle={t('Adresse de livraison + paiement')}
+                    onBack={() => navigation.goBack()}
+                />
 
                 {/* Récap panier */}
                 <View style={styles.card}>
@@ -322,18 +326,9 @@ function Field({
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
+    container: { flex: 1, backgroundColor: royal.bg },
 
-    header: {
-        backgroundColor: colors.headerBg,
-        paddingTop: Platform.OS === 'ios' ? 56 : 44,
-        paddingBottom: 20,
-        paddingHorizontal: spacing.lg,
-        borderBottomLeftRadius: 24, borderBottomRightRadius: 24,
-    },
-    backBtn: { marginBottom: spacing.md },
-    headerTitle: { ...typography.h2, color: colors.textOnDark },
-    headerSub: { ...typography.bodySmall, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
+
 
     card: {
         margin: spacing.lg,

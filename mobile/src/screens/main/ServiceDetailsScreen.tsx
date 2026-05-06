@@ -5,12 +5,12 @@ import {
 } from 'react-native'
 import { ArrowLeft, Calendar, Check, Clock, CreditCard, Star, Tag, Users } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { LinearGradient } from 'expo-linear-gradient'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLang } from '../../contexts/LangContext'
 import KkiapayModal from '../../components/KkiapayModal'
 import { fetchWithTimeout } from '../../lib/fetch'
-import { supabase } from '../../config/supabase'
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
 
@@ -158,25 +158,46 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
         const numericPrice = price ? parseFloat(price.toString().replace(/[^0-9.-]+/g, '')) : 0
 
         if (isSurDevis || numericPrice === 0) {
-            // Pour les services sans paiement immédiat, on crée le dossier directement
-            createDossierDirectly(null, 0)
+            // Service sans paiement immédiat → création du dossier directement via API
+            createDossierViaApi(null, 0)
         } else {
             setShowKkiapay(true)
         }
     }
 
-    const createDossierDirectly = async (transactionId: string | null, numericPrice: number) => {
+    /* ── Création de dossier via API serveur sécurisée ──
+       Pourquoi pas un insert Supabase direct ? Parce que :
+       1. La vérification Kkiapay (anti-fraude) doit être faite côté serveur
+       2. service_type doit être le SLUG canonique (pas le title traduit qui
+          changerait selon la langue de l'app)
+       3. /api/mobile/dossiers POST gère aussi : idempotence, création
+          client_profiles, notification client, et garde-fou doublon
+    */
+    const createDossierViaApi = async (transactionId: string | null, numericPrice: number) => {
+        if (!profile?.id) {
+            Alert.alert(t('Non connecté'), t('Veuillez vous connecter pour commander ce service.'))
+            return
+        }
         setLoading(true)
         try {
-            // Vérifier si un dossier existe déjà
-            const { data: existing } = await supabase
-                .from('dossiers')
-                .select('id')
-                .eq('client_id', profile?.id)
-                .eq('service_type', title)
-                .maybeSingle()
+            const res = await fetchWithTimeout(`${API_BASE}/api/mobile/dossiers`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                timeoutMs: 20000,
+                body: JSON.stringify({
+                    client_id: profile.id,
+                    // service_type = SLUG canonique (stable en DB quelle que soit la langue)
+                    service_type: serviceId || title,
+                    service_id: serviceId || null,
+                    payment_tx_id: transactionId,
+                    payment_amount: isNaN(numericPrice) ? 0 : numericPrice,
+                    payment_currency: 'XOF',
+                    notes: `Commande initiée via l'application mobile le ${new Date().toLocaleDateString('fr-FR')}${transactionId ? `\nTransaction: ${transactionId}` : ''}`,
+                }),
+            })
+            const json = await res.json().catch(() => ({}))
 
-            if (existing) {
+            if (json.exists) {
                 Alert.alert(
                     t('Dossier existant'),
                     t('Vous avez déjà un dossier en cours pour ce service. Consultez la section "Mon Dossier" pour suivre son avancement.'),
@@ -185,20 +206,18 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
                 return
             }
 
-            // Insérer directement dans Supabase pour que les agents le reçoivent instantanément
-            const { error } = await supabase.from('dossiers').insert({
-                client_id: profile?.id,
-                service_type: title,
-                status: 'en_attente',
-                progress: 10,
-                transaction_id: transactionId,
-                payment_method: transactionId ? 'kkiapay' : 'none',
-                payment_amount: isNaN(numericPrice) ? 0 : numericPrice,
-                payment_currency: 'XOF',
-                notes: `Commande initiée via l'application mobile le ${new Date().toLocaleDateString('fr-FR')}${transactionId ? `\nTransaction: ${transactionId}` : ''}`
-            })
-
-            if (error) throw error
+            if (!res.ok) {
+                const msg = (json.error as string) || `Erreur ${res.status}`
+                if (res.status === 402) {
+                    // Paiement non confirmé par Kkiapay
+                    Alert.alert(
+                        t('Paiement non confirmé'),
+                        t('Le paiement n\'a pas pu être vérifié auprès de Kkiapay. Si vous avez bien été débité, contactez le support avec la référence : ') + (transactionId || ''),
+                    )
+                    return
+                }
+                throw new Error(msg)
+            }
 
             Alert.alert(
                 t('Demande Enregistrée !'),
@@ -216,15 +235,16 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
     const handlePaymentSuccess = async (transactionId: string) => {
         setShowKkiapay(false)
         const numericPrice = price ? parseFloat(price.toString().replace(/[^0-9.-]+/g, '')) : 0
-        await createDossierDirectly(transactionId, numericPrice)
+        await createDossierViaApi(transactionId, numericPrice)
     }
 
     return (
-        <ScrollView
-            style={styles.container}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scroll}
-        >
+        <LinearGradient colors={[colors.background, colors.surfaceWarm]} style={styles.container}>
+            <ScrollView
+                style={{ flex: 1 }}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.scroll}
+            >
             {/* Header coloré */}
             <View style={[styles.header, { backgroundColor: serviceColor }]}>
                 <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
@@ -411,12 +431,13 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
             />
 
             <View style={{ height: 60 }} />
-        </ScrollView>
+            </ScrollView>
+        </LinearGradient>
     )
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
+    container: { flex: 1 },
     scroll: { paddingBottom: spacing.xxl },
 
     header: {

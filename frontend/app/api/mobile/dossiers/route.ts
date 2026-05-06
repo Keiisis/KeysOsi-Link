@@ -92,6 +92,11 @@ export async function POST(req: NextRequest) {
         const body = await req.json()
         const { client_id, service_type, service_id, notes } = body
         const transactionId: string | undefined = body.payment_tx_id || body.transaction_id
+        const paymentAmount: number | null =
+            body.payment_amount !== undefined && body.payment_amount !== null
+                ? Number(body.payment_amount)
+                : null
+        const paymentCurrency: string = String(body.payment_currency || 'XOF')
 
         if (!client_id || !service_type) {
             return NextResponse.json(
@@ -159,7 +164,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ exists: true, id: existing.id }, { status: 200 })
         }
 
-        // Créer le dossier (avec trace paiement si fournie)
+        // Créer le dossier (avec trace paiement complète si fournie)
         const { data, error } = await supabase
             .from('dossiers')
             .insert({
@@ -171,6 +176,8 @@ export async function POST(req: NextRequest) {
                 notes: notes || null,
                 transaction_id: transactionId || null,
                 payment_method: transactionId ? 'kkiapay' : null,
+                payment_amount: paymentAmount,
+                payment_currency: paymentCurrency,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
             })
@@ -194,6 +201,34 @@ export async function POST(req: NextRequest) {
             is_read: false,
             created_at: new Date().toISOString(),
         })
+
+        // ── Sync vers dossier_tracking pour le dashboard agent ──
+        try {
+            const { data: clientProfile } = await supabase
+                .from('client_profiles')
+                .select('nom, prenom, email, phone')
+                .eq('id', client_id)
+                .single()
+
+            const numDossier = `DOS-${Date.now().toString(36).toUpperCase()}`
+            await supabase.from('dossier_tracking').insert({
+                dossier_ref_id: data.id,
+                num_dossier: numDossier,
+                client_nom: clientProfile?.nom || '',
+                client_prenom: clientProfile?.prenom || '',
+                client_email: clientProfile?.email || '',
+                client_phone: clientProfile?.phone || '',
+                service_type,
+                statut: 'reception',
+                progression: 10,
+                etapes: [],
+                notes: notes || null,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+            })
+        } catch (syncErr) {
+            console.warn('[api/mobile/dossiers] Sync vers dossier_tracking échoué:', syncErr)
+        }
 
         return NextResponse.json({ id: data.id }, { status: 201 })
     } catch (e) {

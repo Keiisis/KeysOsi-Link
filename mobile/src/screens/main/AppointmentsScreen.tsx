@@ -6,11 +6,13 @@ import {
 } from 'react-native'
 import { ArrowLeft, Calendar, Clock, Plus, Send, User, XCircle } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { LinearGradient } from 'expo-linear-gradient'
+import ScreenHeader from '../../components/ScreenHeader'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../config/supabase'
 import { useLang } from '../../contexts/LangContext'
-import { colors, spacing, radius, shadows, typography } from '../../config/theme'
+import { colors, spacing, radius, shadows, typography, royal } from '../../config/theme'
 import { RootStackParamList } from '../../navigation/AppNavigator'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Appointments'>
@@ -172,32 +174,27 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
     }
 
     return (
-        <ScrollView
-            style={styles.container}
-            showsVerticalScrollIndicator={false}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-        >
-            {/* Header */}
-            <View style={styles.header}>
-                <View style={styles.primaryLine} />
-                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <ArrowLeft size={22} color={colors.textOnDark} strokeWidth={1.75} />
-                </TouchableOpacity>
-                <View style={styles.headerRow}>
-                    <View>
-                        <Text style={styles.headerTitle}>{t('Rendez-vous')}</Text>
-                        <Text style={styles.headerSub}>
-                            {upcoming.length > 0
-                                ? `${upcoming.length} ${t('RDV à venir')}`
-                                : t('Aucun RDV à venir')}
-                        </Text>
-                    </View>
+        <View style={styles.container}>
+            <LinearGradient 
+                colors={['rgba(220,165,64,0.15)', royal.bg, royal.bg]} 
+                locations={[0, 0.4, 1]}
+                style={StyleSheet.absoluteFillObject} 
+            />
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={royal.gold} />}
+            >
+                <ScreenHeader
+                title={t('Rendez-vous')}
+                subtitle={upcoming.length > 0 ? `${upcoming.length} ${t('RDV à venir')}` : t('Aucun RDV à venir')}
+                onBack={() => navigation.goBack()}
+                rightAction={
                     <TouchableOpacity style={styles.newRdvBtn} onPress={() => setShowModal(true)} activeOpacity={0.8}>
                         <Plus size={18} color="#FFF" strokeWidth={1.75} />
                         <Text style={styles.newRdvText}>{t('Demander')}</Text>
                     </TouchableOpacity>
-                </View>
-            </View>
+                }
+            />
 
             {/* Prochain RDV highlight */}
             {upcoming[0] && (
@@ -370,30 +367,19 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
                     </View>
                 </TouchableOpacity>
             </Modal>
-        </ScrollView>
+            </ScrollView>
+        </View>
     )
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
+    container: { flex: 1, backgroundColor: royal.bg },
 
-    header: {
-        backgroundColor: colors.headerBg,
-        paddingTop: Platform.OS === 'ios' ? 56 : 44,
-        paddingBottom: 24,
-        paddingHorizontal: spacing.lg,
-        borderBottomLeftRadius: 28,
-        borderBottomRightRadius: 28,
-    },
-    primaryLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.primary },
-    backBtn: { marginBottom: spacing.md },
-    headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
-    headerTitle: { ...typography.h2, color: colors.textOnDark },
-    headerSub: { ...typography.bodySmall, color: colors.primary + 'AA', marginTop: 4 },
     newRdvBtn: {
         flexDirection: 'row', alignItems: 'center', gap: 6,
-        backgroundColor: colors.primary, borderRadius: radius.md,
+        backgroundColor: 'rgba(220,165,64,0.3)', borderRadius: 22,
         paddingHorizontal: 14, paddingVertical: 9,
+        borderWidth: 1, borderColor: 'rgba(220,165,64,0.4)',
     },
     newRdvText: { ...typography.caption, color: '#FFF', fontFamily: 'Inter_700Bold' },
 

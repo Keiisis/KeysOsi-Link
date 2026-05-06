@@ -5,13 +5,15 @@ import {
 } from 'react-native'
 import { ArrowLeft, CreditCard, PlusCircle, Receipt, ShieldCheck } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
+import ScreenHeader from '../../components/ScreenHeader'
 import { useKkiapay } from '@kkiapay-org/react-native-sdk'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLang } from '../../contexts/LangContext'
 import { usePaymentSettings } from '../../contexts/PaymentSettingsContext'
 import { supabase } from '../../config/supabase'
-import { colors, spacing, radius, shadows, typography } from '../../config/theme'
+import { LinearGradient } from 'expo-linear-gradient'
+import { colors, spacing, radius, shadows, typography, royal } from '../../config/theme'
 import { RootStackParamList } from '../../navigation/AppNavigator'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Payments'>
@@ -191,20 +193,21 @@ export default function PaymentsScreen({ navigation }: { navigation: Nav }) {
         .reduce((acc, p) => acc + p.amount, 0)
 
     return (
-        <ScrollView
-            style={styles.container}
-            showsVerticalScrollIndicator={false}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-        >
-            {/* Header */}
-            <View style={styles.header}>
-                <View style={styles.primaryLine} />
-                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <ArrowLeft size={22} color={colors.textOnDark} strokeWidth={1.75} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>{t('Paiements')}</Text>
-                <Text style={styles.headerSub}>{t('Historique et facturation')}</Text>
-            </View>
+        <View style={styles.container}>
+            <LinearGradient 
+                colors={['rgba(220,165,64,0.15)', royal.bg, royal.bg]} 
+                locations={[0, 0.4, 1]}
+                style={StyleSheet.absoluteFillObject} 
+            />
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={royal.gold} />}
+            >
+            <ScreenHeader
+                title={t('Paiements')}
+                subtitle={t('Historique et facturation')}
+                onBack={() => navigation.goBack()}
+            />
 
             {/* Résumé */}
             <View style={styles.summaryCard}>
@@ -315,25 +318,15 @@ export default function PaymentsScreen({ navigation }: { navigation: Nav }) {
             </View>
 
             <View style={{ height: 100 }} />
-        </ScrollView>
+            </ScrollView>
+        </View>
     )
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
+    container: { flex: 1, backgroundColor: royal.bg },
 
-    header: {
-        backgroundColor: colors.headerBg,
-        paddingTop: Platform.OS === 'ios' ? 56 : 44,
-        paddingBottom: 24,
-        paddingHorizontal: spacing.lg,
-        borderBottomLeftRadius: 28,
-        borderBottomRightRadius: 28,
-    },
-    primaryLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.primary },
-    backBtn: { marginBottom: spacing.md },
-    headerTitle: { ...typography.h2, color: colors.textOnDark },
-    headerSub: { ...typography.bodySmall, color: colors.primary + 'AA', marginTop: 4 },
+
 
     summaryCard: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

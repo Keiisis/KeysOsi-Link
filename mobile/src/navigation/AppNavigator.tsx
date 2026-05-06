@@ -27,6 +27,7 @@ import OrderConfirmationScreen from '../screens/main/OrderConfirmationScreen'
 import SignatureScreen from '../screens/main/SignatureScreen'
 import InvoicesScreen from '../screens/main/InvoicesScreen'
 import NationaliteFormScreen from '../screens/main/NationaliteFormScreen'
+import LegalScreen from '../screens/main/LegalScreen'
 
 /* ── Types de navigation ── */
 export interface BoutiqueProduct {
@@ -91,6 +92,7 @@ export type RootStackParamList = {
     Signature: undefined
     Invoices: undefined
     NationaliteForm: undefined
+    Legal: undefined
 }
 
 const Stack = createNativeStackNavigator<RootStackParamList>()
@@ -160,6 +162,9 @@ export default function AppNavigator() {
 
                     {/* Nationalité VIP — Formulaire complet */}
                     <Stack.Screen name="NationaliteForm" component={NationaliteFormScreen} options={{ animation: 'slide_from_bottom' }} />
+
+                    {/* Légal */}
+                    <Stack.Screen name="Legal" component={LegalScreen} options={{ animation: 'slide_from_right' }} />
                 </>
             )}
         </Stack.Navigator>

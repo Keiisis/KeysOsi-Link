@@ -5,11 +5,13 @@ import {
     RefreshControl, Platform, ActivityIndicator, Linking, Alert,
 } from 'react-native'
 import { ArrowLeft, FileText, Download, ExternalLink, Receipt, Mail, CheckCircle, Clock } from 'lucide-react-native'
+import ScreenHeader from '../../components/ScreenHeader'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLang } from '../../contexts/LangContext'
 import { fetchWithTimeout } from '../../lib/fetch'
-import { colors, spacing, radius, shadows, typography } from '../../config/theme'
+import { LinearGradient } from 'expo-linear-gradient'
+import { colors, spacing, radius, shadows, typography, royal } from '../../config/theme'
 import { RootStackParamList } from '../../navigation/AppNavigator'
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
@@ -89,17 +91,20 @@ export default function InvoicesScreen({ navigation }: { navigation: Nav }) {
     }
 
     return (
-        <ScrollView
-            style={styles.container}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-        >
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <ArrowLeft size={22} color="#FFF" strokeWidth={1.75} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>{t('Mes Factures')}</Text>
-                <Text style={styles.headerSub}>{t('Historique des factures émises')}</Text>
-            </View>
+        <View style={styles.container}>
+            <LinearGradient 
+                colors={['rgba(220,165,64,0.15)', royal.bg, royal.bg]} 
+                locations={[0, 0.4, 1]}
+                style={StyleSheet.absoluteFillObject} 
+            />
+            <ScrollView
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={royal.gold} />}
+            >
+            <ScreenHeader
+                title={t('Mes Factures')}
+                subtitle={t('Historique des factures émises')}
+                onBack={() => navigation.goBack()}
+            />
 
             <View style={styles.listHeader}>
                 <Receipt size={18} color={colors.primary} strokeWidth={1.75} />
@@ -173,24 +178,15 @@ export default function InvoicesScreen({ navigation }: { navigation: Nav }) {
             )}
 
             <View style={{ height: 100 }} />
-        </ScrollView>
+            </ScrollView>
+        </View>
     )
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
+    container: { flex: 1, backgroundColor: royal.bg },
 
-    header: {
-        backgroundColor: colors.headerBg,
-        paddingTop: Platform.OS === 'ios' ? 56 : 44,
-        paddingBottom: 24,
-        paddingHorizontal: spacing.lg,
-        borderBottomLeftRadius: 28,
-        borderBottomRightRadius: 28,
-    },
-    backBtn: { marginBottom: spacing.md },
-    headerTitle: { ...typography.h2, color: colors.textOnDark },
-    headerSub: { ...typography.bodySmall, color: 'rgba(255,255,255,0.7)', marginTop: 4 },
+
 
     listHeader: {
         flexDirection: 'row', alignItems: 'center', gap: 8,

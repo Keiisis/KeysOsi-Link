@@ -130,6 +130,39 @@ export default function AdminDossiersPage() {
         }
     }
 
+    // Documents
+    const [dossierDocs, setDossierDocs] = useState<any[]>([])
+    const [loadingDocs, setLoadingDocs] = useState(false)
+
+    const loadDossierDocs = async (dossierTrackingId: string, dossierRefId?: string) => {
+        setLoadingDocs(true)
+        setDossierDocs([])
+        
+        const ids = [dossierTrackingId, dossierRefId].filter(Boolean) as string[]
+        
+        // Query all three document tables the system uses:
+        // - dossier_documents: mobile app uploads (DossierScreen)
+        // - client_documents: web dashboard uploads (/api/documents/upload)
+        // - documents: legacy fallback table
+        const [r1, r2, r3] = await Promise.all([
+            supabase.from('dossier_documents').select('*').in('dossier_id', ids),
+            supabase.from('client_documents').select('*').in('dossier_id', ids),
+            supabase.from('documents').select('*').in('dossier_id', ids),
+        ])
+        
+        // Merge and deduplicate by id
+        const all = [...(r1.data || []), ...(r2.data || []), ...(r3.data || [])]
+        const seen = new Set<string>()
+        const unique = all.filter(d => {
+            if (seen.has(d.id)) return false
+            seen.add(d.id)
+            return true
+        })
+        
+        setDossierDocs(unique)
+        setLoadingDocs(false)
+    }
+
     // Create form state
     const [newDossier, setNewDossier] = useState({
         num_dossier: '',
@@ -140,9 +173,12 @@ export default function AdminDossiersPage() {
         service_type: 'general',
     })
 
-    const handleExpandDossier = useCallback((dossierId: string, threadId: string | undefined) => {
+    const handleExpandDossier = useCallback((dossierId: string, threadId: string | undefined, refId: string | undefined) => {
         setExpandedId(prev => prev === dossierId ? null : dossierId)
-        if (threadId && dossierId !== expandedId) loadChat(threadId)
+        if (dossierId !== expandedId) {
+            if (threadId) loadChat(threadId)
+            loadDossierDocs(dossierId, refId)
+        }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [expandedId])
 
@@ -162,6 +198,34 @@ export default function AdminDossiersPage() {
         (d.client_prenom as string)?.toLowerCase().includes(searchQuery.toLowerCase())
     )
 
+    // ── Status mapping: dossier_tracking statuts → mobile dossiers statuses ──
+    const trackingToMobileStatus: Record<string, string> = {
+        reception: 'soumis',
+        verification: 'verifie',
+        traitement: 'traitement',
+        validation: 'validation',
+        finalisation: 'validation',
+        termine: 'termine',
+        annule: 'annule',
+    }
+
+    // Sync helper: propagate changes from dossier_tracking → dossiers (mobile table)
+    const syncToMobileDossiers = async (dossierId: string, mobileStatus: string, progression: number) => {
+        // Find the dossier_ref_id for this tracking entry
+        const dossier = dossiers.find((d: Record<string, unknown>) => d.id === dossierId)
+        const refId = dossier?.dossier_ref_id as string | undefined
+        if (!refId) return
+
+        await supabase
+            .from('dossiers')
+            .update({
+                status: mobileStatus,
+                progress: progression,
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', refId)
+    }
+
     const updateStep = (dossierId: string, etapes: Record<string, unknown>[], stepIndex: number, newStatus: string) => {
         const updated = [...etapes]
         updated[stepIndex] = {
@@ -176,15 +240,43 @@ export default function AdminDossiersPage() {
             resource: 'dossier_tracking',
             id: dossierId,
             values: { etapes: updated, progression },
-        }, { onSuccess: () => refetch() })
+        }, {
+            onSuccess: () => {
+                refetch()
+                // Sync progression to mobile dossiers table
+                const dossier = dossiers.find((d: Record<string, unknown>) => d.id === dossierId)
+                const currentStatut = (dossier?.statut as string) || 'reception'
+                const mobileStatus = trackingToMobileStatus[currentStatut] || 'soumis'
+                syncToMobileDossiers(dossierId, mobileStatus, progression)
+            }
+        })
     }
 
     const updateStatut = (dossierId: string, newStatut: string) => {
+        // Calculate progression from statut
+        const statutProgressionMap: Record<string, number> = {
+            reception: 10,
+            verification: 30,
+            traitement: 60,
+            validation: 80,
+            finalisation: 95,
+            termine: 100,
+            annule: 0,
+        }
+        const progression = statutProgressionMap[newStatut] ?? 10
+
         update({
             resource: 'dossier_tracking',
             id: dossierId,
-            values: { statut: newStatut },
-        }, { onSuccess: () => refetch() })
+            values: { statut: newStatut, progression },
+        }, {
+            onSuccess: () => {
+                refetch()
+                // Sync to mobile dossiers table
+                const mobileStatus = trackingToMobileStatus[newStatut] || 'soumis'
+                syncToMobileDossiers(dossierId, mobileStatus, progression)
+            }
+        })
     }
 
     const createDossier = async () => {
@@ -332,7 +424,7 @@ export default function AdminDossiersPage() {
                             >
                                 {/* Row */}
                                 <button
-                                    onClick={() => handleExpandDossier(dossier.id as string, dossier.message_thread_id as string | undefined)}
+                                    onClick={() => handleExpandDossier(dossier.id as string, dossier.message_thread_id as string | undefined, dossier.dossier_ref_id as string | undefined)}
                                     className="w-full flex items-center justify-between p-5 text-left"
                                     title={`Voir les détails du dossier ${dossier.num_dossier}`}
                                 >
@@ -397,6 +489,45 @@ export default function AdminDossiersPage() {
                                                                 <option key={val} value={val} className="bg-[#0a0f18]">{lab}</option>
                                                             ))}
                                                         </select>
+                                                    </div>
+                                                </div>
+
+                                                {/* Documents fournis */}
+                                                <div className="p-4 rounded-xl border border-white/10 bg-white/5">
+                                                    <div className="flex items-center gap-2 mb-3">
+                                                        <FileText size={14} className="text-[#008751]" />
+                                                        <p className="text-[10px] font-black uppercase tracking-widest text-[#008751]"><T>Documents fournis par le client</T></p>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        {loadingDocs ? (
+                                                            <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
+                                                                <Loader2 size={14} className="animate-spin" /> <T>Chargement des documents...</T>
+                                                            </div>
+                                                        ) : dossierDocs.length > 0 ? (
+                                                            dossierDocs.map(doc => (
+                                                                <div key={doc.id} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm">
+                                                                    <div className="flex items-center gap-2 overflow-hidden">
+                                                                        <FileText size={14} className="text-[#008751] shrink-0" />
+                                                                        <span className="text-gray-300 truncate">{doc.file_name}</span>
+                                                                    </div>
+                                                                    {doc.file_url && (
+                                                                        <a 
+                                                                            href={doc.file_url}
+                                                                            target="_blank"
+                                                                            rel="noreferrer"
+                                                                            className="ml-2 p-1.5 bg-[#008751]/10 text-[#008751] hover:bg-[#008751]/20 rounded transition-colors shrink-0"
+                                                                            title={t("Télécharger/Voir")}
+                                                                        >
+                                                                            <Download size={14} />
+                                                                        </a>
+                                                                    )}
+                                                                </div>
+                                                            ))
+                                                        ) : (
+                                                            <p className="text-xs text-gray-500 bg-white/5 px-3 py-2 rounded-lg border border-white/5">
+                                                                <T>Aucun document fourni pour le moment.</T>
+                                                            </p>
+                                                        )}
                                                     </div>
                                                 </div>
 

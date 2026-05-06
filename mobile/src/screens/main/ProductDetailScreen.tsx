@@ -5,6 +5,7 @@ import {
     Image, Dimensions, Platform, Alert,
 } from 'react-native'
 import { ArrowLeft, Minus, Plus, ShoppingCart, Star, Tag, ChevronRight } from 'lucide-react-native'
+import { LinearGradient } from 'expo-linear-gradient'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { RouteProp } from '@react-navigation/native'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
@@ -58,7 +59,7 @@ export default function ProductDetailScreen({ navigation, route }: Props) {
     const images = product.images && product.images.length > 0 ? product.images : []
 
     return (
-        <View style={styles.container}>
+        <LinearGradient colors={[colors.background, colors.surfaceWarm]} style={styles.container}>
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* ── Carousel images ── */}
                 <View style={styles.carouselWrap}>
@@ -202,12 +203,12 @@ export default function ProductDetailScreen({ navigation, route }: Props) {
                     )}
                 </TouchableOpacity>
             </View>
-        </View>
+        </LinearGradient>
     )
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
+    container: { flex: 1 },
 
     /* Carousel */
     carouselWrap: { position: 'relative', width, height: width * 0.95, backgroundColor: colors.surfaceWarm },

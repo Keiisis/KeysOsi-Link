@@ -7,6 +7,7 @@ import {
 import { ArrowRight, Star, Tag } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
+import ScreenHeader from '../../components/ScreenHeader'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
 import { useLang } from '../../contexts/LangContext'
 import { supabase } from '../../config/supabase'
@@ -449,26 +450,17 @@ export default function ServicesScreen({ navigation }: any) {
     }
 
     return (
+        <LinearGradient colors={[colors.background, colors.surfaceWarm]} style={styles.container}>
         <ScrollView
-            style={styles.container}
+            style={{ flex: 1 }}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         >
-            {/* Header */}
-            <LinearGradient colors={['#070D1A', '#0C1B33', '#132846']} style={styles.header}>
-                <View style={styles.flagStripe}>
-                    <View style={[styles.flagSeg, { backgroundColor: colors.flagGreen }]} />
-                    <View style={[styles.flagSeg, { backgroundColor: colors.flagYellow }]} />
-                    <View style={[styles.flagSeg, { backgroundColor: colors.flagRed }]} />
-                </View>
-                <View style={styles.headerContent}>
-                    <Text style={styles.headerTitle}>{t('Nos Services')}</Text>
-                    <Text style={styles.headerSub}>
-                        {t('Des solutions complètes et sur-mesure pour votre retour au Bénin.')}
-                    </Text>
-                </View>
-            </LinearGradient>
+            <ScreenHeader
+                title={t('Nos Services')}
+                subtitle={t('Des solutions complètes et sur-mesure pour votre retour au Bénin.')}
+            />
 
             {/* Indicateur de traduction en cours */}
             {isTranslating && lang !== 'fr' && (
@@ -541,26 +533,16 @@ export default function ServicesScreen({ navigation }: any) {
             )}
 
             <View style={{ height: 100 }} />
-        </ScrollView>
+            </ScrollView>
+        </LinearGradient>
     )
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
+    container: { flex: 1 },
     scrollContent: { paddingBottom: spacing.xl },
 
-    header: {
-        paddingTop: Platform.OS === 'ios' ? 56 : 44,
-        paddingBottom: 28,
-        paddingHorizontal: spacing.lg,
-        borderBottomLeftRadius: 28,
-        borderBottomRightRadius: 28,
-    },
-    flagStripe: { position: 'absolute', top: 0, left: 0, right: 0, height: 4, flexDirection: 'row' },
-    flagSeg: { flex: 1 },
-    headerContent: { alignItems: 'center', paddingTop: 8 },
-    headerTitle: { ...typography.h1, color: '#FFFFFF', textAlign: 'center' },
-    headerSub: { ...typography.bodySmall, color: 'rgba(255,255,255,0.55)', marginTop: 6, textAlign: 'center', lineHeight: 20 },
+
 
     loadingWrap: { paddingTop: 60, alignItems: 'center' },
 

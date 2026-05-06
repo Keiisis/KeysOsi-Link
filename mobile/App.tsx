@@ -28,6 +28,7 @@ import { PaymentSettingsProvider } from './src/contexts/PaymentSettingsContext'
 import { CartProvider } from './src/contexts/CartContext'
 import AppNavigator from './src/navigation/AppNavigator'
 import SplashScreen from './src/screens/SplashScreen'
+import OfflineBanner from './src/components/OfflineBanner'
 import { KkiapayProvider } from '@kkiapay-org/react-native-sdk'
 
 /* ── Notification handler global (doit être défini avant tout rendu) ── */
@@ -120,6 +121,7 @@ export default function App() {
                                 <NavigationContainer linking={linking}>
                                     <StatusBar style="dark" />
                                     <AppNavigator />
+                                    <OfflineBanner />
                                 </NavigationContainer>
                             </CartProvider>
                         </AuthProvider>

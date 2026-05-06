@@ -6,9 +6,11 @@ import {
 } from 'react-native'
 import { ArrowLeft, Lock, LogOut, ShieldCheck } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { LinearGradient } from 'expo-linear-gradient'
+import ScreenHeader from '../../components/ScreenHeader'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { supabase } from '../../config/supabase'
-import { colors, spacing, radius, shadows, typography } from '../../config/theme'
+import { colors, spacing, radius, shadows, typography, royal } from '../../config/theme'
 import { useLang } from '../../contexts/LangContext'
 import { RootStackParamList } from '../../navigation/AppNavigator'
 
@@ -114,15 +116,16 @@ export default function SecurityScreen({ navigation }: { navigation: Nav }) {
             style={styles.container}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            {/* Header */}
-            <View style={styles.header}>
-                <View style={styles.primaryLine} />
-                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <ArrowLeft size={22} color={colors.textOnDark} strokeWidth={1.75} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>{t('Sécurité')}</Text>
-                <Text style={styles.headerSub}>{t('Gérez votre mot de passe')}</Text>
-            </View>
+            <LinearGradient 
+                colors={['rgba(220,165,64,0.15)', royal.bg, royal.bg]} 
+                locations={[0, 0.4, 1]}
+                style={StyleSheet.absoluteFillObject} 
+            />
+            <ScreenHeader
+                title={t('Sécurité')}
+                subtitle={t('Gérez votre mot de passe')}
+                onBack={() => navigation.goBack()}
+            />
 
             <ScrollView
                 contentContainerStyle={styles.scroll}
@@ -249,19 +252,8 @@ export default function SecurityScreen({ navigation }: { navigation: Nav }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
-    header: {
-        backgroundColor: colors.headerBg,
-        paddingTop: Platform.OS === 'ios' ? 56 : 44,
-        paddingBottom: 28,
-        paddingHorizontal: spacing.lg,
-        borderBottomLeftRadius: 28,
-        borderBottomRightRadius: 28,
-    },
-    primaryLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.primary },
-    backBtn: { marginBottom: spacing.md },
-    headerTitle: { ...typography.h2, color: colors.textOnDark },
-    headerSub: { ...typography.bodySmall, color: colors.primary + 'AA', marginTop: 4 },
+    container: { flex: 1, backgroundColor: royal.bg },
+
 
     scroll: { padding: spacing.lg, paddingBottom: 60 },
 

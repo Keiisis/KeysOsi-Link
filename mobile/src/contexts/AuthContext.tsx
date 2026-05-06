@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { Session, User } from '@supabase/supabase-js'
 import { supabase } from '../config/supabase'
+import { registerPushToken, clearPushToken } from '../utils/pushToken'
 
 /* ═══════════════════════════════════════════════════════════
    Auth Context — Session management + Profile management
@@ -13,6 +14,8 @@ export interface UserProfile {
     email: string
     role: 'client' | 'agent' | 'admin' | 'ceo'
     avatar_url?: string
+    avatar_type?: string
+    avatar_preset?: string
     phone?: string
     ville?: string
     pays?: string
@@ -55,6 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }))
             if (session?.user) {
                 fetchProfile(session.user.id)
+                registerPushToken(session.user.id).catch(() => {})
             }
         })
 
@@ -67,6 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }))
             if (session?.user) {
                 fetchProfile(session.user.id)
+                registerPushToken(session.user.id).catch(() => {})
             } else {
                 setState(prev => ({ ...prev, profile: null }))
             }
@@ -79,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
             const { data, error } = await supabase
                 .from('client_profiles')
-                .select('id, prenom, nom, email, phone, ville, pays, avatar_url')
+                .select('id, prenom, nom, email, phone, ville, pays, avatar_url, avatar_type, avatar_preset')
                 .eq('id', userId)
                 .single()
 
@@ -114,6 +119,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const signOut = async () => {
+        if (state.user?.id) {
+            await clearPushToken(state.user.id).catch(() => {})
+        }
         await supabase.auth.signOut()
         setState({ session: null, user: null, loading: false, profile: null })
     }

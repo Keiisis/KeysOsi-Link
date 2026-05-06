@@ -6,6 +6,8 @@ import {
 } from 'react-native'
 import { ArrowLeft, Edit3, RotateCcw, Save, Trash2, Settings as SettingsIcon, Check } from 'lucide-react-native'
 import SignatureScreenLib, { SignatureViewRef } from 'react-native-signature-canvas'
+import { LinearGradient } from 'expo-linear-gradient'
+import ScreenHeader from '../../components/ScreenHeader'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLang } from '../../contexts/LangContext'
@@ -156,16 +158,12 @@ export default function SignatureScreen({ navigation }: { navigation: Nav }) {
 
     /* ── Render ── */
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <ArrowLeft size={22} color="#FFF" strokeWidth={1.75} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>{t('Ma Signature')}</Text>
-                <Text style={styles.headerSub}>
-                    {t('Utilisée pour signer factures, devis et documents')}
-                </Text>
-            </View>
+        <LinearGradient colors={[colors.background, colors.surfaceWarm]} style={styles.container}>
+            <ScreenHeader
+                title={t('Ma Signature')}
+                subtitle={t('Utilisée pour signer factures, devis et documents')}
+                onBack={() => navigation.goBack()}
+            />
 
             {loading ? (
                 <View style={styles.center}>
@@ -280,24 +278,15 @@ export default function SignatureScreen({ navigation }: { navigation: Nav }) {
                     </View>
                 </View>
             )}
-        </View>
+        </LinearGradient>
     )
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
+    container: { flex: 1 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-    header: {
-        backgroundColor: colors.headerBg,
-        paddingTop: Platform.OS === 'ios' ? 56 : 44,
-        paddingBottom: 24,
-        paddingHorizontal: spacing.lg,
-        borderBottomLeftRadius: 24, borderBottomRightRadius: 24,
-    },
-    backBtn: { marginBottom: spacing.md },
-    headerTitle: { ...typography.h2, color: colors.textOnDark },
-    headerSub: { ...typography.bodySmall, color: 'rgba(255,255,255,0.7)', marginTop: 4 },
+
 
     scrollContent: { padding: spacing.lg },
 

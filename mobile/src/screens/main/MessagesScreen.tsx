@@ -4,12 +4,14 @@ import {
     StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
     Alert,
 } from 'react-native'
-import { Clock, HelpCircle, MessageCircle, Send, Users } from 'lucide-react-native'
+import { ArrowLeft, Send, Users, MessageCircle, Clock } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { LinearGradient } from 'expo-linear-gradient'
+import ScreenHeader from '../../components/ScreenHeader'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../config/supabase'
-import { colors, spacing, radius, shadows, typography } from '../../config/theme'
+import { colors, spacing, radius, shadows, typography, royal } from '../../config/theme'
 import { useLang } from '../../contexts/LangContext'
 
 /* ── Types ── */
@@ -282,22 +284,16 @@ export default function MessagesScreen() {
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
+            <LinearGradient 
+                colors={['rgba(220,165,64,0.15)', royal.bg, royal.bg]} 
+                locations={[0, 0.4, 1]}
+                style={StyleSheet.absoluteFillObject} 
+            />
             {/* Header */}
-            <View style={styles.header}>
-                <View style={styles.primaryLine} />
-                <View style={styles.headerRow}>
-                    <View style={styles.headerAvatarWrap}>
-                        <Users size={18} color={colors.primary} strokeWidth={1.75} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.headerTitle}>{t('Équipe Retour Gagnant')}</Text>
-                        <View style={styles.onlineRow}>
-                            <View style={styles.onlineDot} />
-                            <Text style={styles.onlineText}>{t('En ligne — répond sous 2h')}</Text>
-                        </View>
-                    </View>
-                </View>
-            </View>
+            <ScreenHeader
+                title={t('Messagerie')}
+                subtitle={t('En ligne — répond sous 2h')}
+            />
 
             {/* Zone messages */}
             {loading ? (
@@ -381,26 +377,9 @@ export default function MessagesScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
+    container: { flex: 1, backgroundColor: royal.bg },
 
-    header: {
-        backgroundColor: colors.headerBg,
-        paddingTop: Platform.OS === 'ios' ? 56 : 44,
-        paddingBottom: 16,
-        paddingHorizontal: spacing.lg,
-    },
-    primaryLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.primary },
-    headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    headerAvatarWrap: {
-        width: 42, height: 42, borderRadius: 21,
-        backgroundColor: colors.primaryMuted,
-        alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1.5, borderColor: colors.primary + '40',
-    },
-    headerTitle: { ...typography.label, fontSize: 15, color: colors.textOnDark },
-    onlineRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 },
-    onlineDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#4ADE80' },
-    onlineText: { fontSize: 11, color: colors.primary + 'AA', fontFamily: 'Inter_500Medium' },
+
 
     loadingState: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
     loadingText: { ...typography.bodySmall, color: colors.textSecondary },

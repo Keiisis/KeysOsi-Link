@@ -192,3 +192,16 @@ export const typography = {
     label: { fontSize: 13, fontFamily: 'Outfit_600SemiBold' },
     button: { fontSize: 15, fontFamily: 'Outfit_700Bold', letterSpacing: 0.3 },
 }
+
+/* ── Royal — Tokens dorés/chic utilisés par les écrans premium ── */
+export const royal = {
+    bg: colors.background,
+    gold: colors.gold,
+    goldLight: colors.goldLight,
+    goldDark: colors.goldDark,
+    goldSoft: colors.goldSoft,
+    emerald: colors.primary,
+    lightEmerald: colors.primaryLight,
+    textDark: colors.textPrimary,
+    textLight: colors.textOnDark,
+}

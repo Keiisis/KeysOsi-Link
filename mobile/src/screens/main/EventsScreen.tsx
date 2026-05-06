@@ -5,8 +5,10 @@ import {
     RefreshControl, Platform, ActivityIndicator, Dimensions,
 } from 'react-native'
 import { ArrowRight, Calendar, CheckCircle, Clock, MapPin, Star } from 'lucide-react-native'
+import { LinearGradient } from 'expo-linear-gradient'
+import ScreenHeader from '../../components/ScreenHeader'
 import { useAuth } from '../../contexts/AuthContext'
-import { colors, spacing, radius, shadows, typography } from '../../config/theme'
+import { colors, spacing, radius, shadows, typography, royal } from '../../config/theme'
 import { useLang } from '../../contexts/LangContext'
 import { fetchWithTimeout } from '../../lib/fetch'
 
@@ -194,17 +196,20 @@ export default function EventsScreen({ navigation }: any) {
     const featured = events.filter(e => e.is_featured)[0]
 
     return (
-        <ScrollView
-            style={styles.container}
-            showsVerticalScrollIndicator={false}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-        >
-            {/* Header */}
-            <View style={styles.header}>
-                <View style={styles.primaryLine} />
-                <Text style={styles.headerTitle}>{t('Événements')}</Text>
-                <Text style={styles.headerSub}>{t('Galas, forums, circuits culturels et séminaires')}</Text>
-            </View>
+        <View style={styles.container}>
+            <LinearGradient 
+                colors={['rgba(220,165,64,0.15)', royal.bg, royal.bg]} 
+                locations={[0, 0.4, 1]}
+                style={StyleSheet.absoluteFillObject} 
+            />
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={royal.gold} />}
+            >
+                <ScreenHeader
+                title={t('Événements')}
+                subtitle={t('Galas, forums, circuits culturels et séminaires')}
+            />
 
             {loading ? (
                 <View style={styles.loadingWrap}>
@@ -314,26 +319,17 @@ export default function EventsScreen({ navigation }: any) {
             )}
 
             <View style={{ height: 100 }} />
-        </ScrollView>
+            </ScrollView>
+        </View>
     )
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
+    container: { flex: 1, backgroundColor: royal.bg },
 
-    header: {
-        backgroundColor: colors.headerBg,
-        paddingTop: Platform.OS === 'ios' ? 56 : 44,
-        paddingBottom: 24,
-        paddingHorizontal: spacing.lg,
-        borderBottomLeftRadius: 28,
-        borderBottomRightRadius: 28,
-    },
-    primaryLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: colors.primary },
-    headerTitle: { ...typography.h1, color: colors.textOnDark },
-    headerSub: { ...typography.bodySmall, color: colors.primary + 'AA', marginTop: 4 },
+
 
     loadingWrap: { paddingTop: 60, alignItems: 'center', gap: 12 },
     loadingText: { ...typography.bodySmall, color: colors.textSecondary },

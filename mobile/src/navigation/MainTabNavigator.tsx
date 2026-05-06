@@ -1,6 +1,7 @@
 import React from 'react'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { Platform } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Home, Folder, Briefcase, Calendar, MessageSquare, User } from 'lucide-react-native'
 import { colors, typography } from '../config/theme'
 import { useLang } from '../contexts/LangContext'
@@ -34,6 +35,10 @@ const TAB_ICONS: Record<string, React.FC<any>> = {
 
 export default function MainTabNavigator() {
     const { t } = useLang()
+    const insets = useSafeAreaInsets()
+
+    // Sur Android, on ajoute au minimum 16px au-dessus de la zone de gestes système
+    const bottomPadding = Platform.OS === 'ios' ? 28 : Math.max(insets.bottom, 8) + 16
 
     return (
         <Tab.Navigator
@@ -55,9 +60,14 @@ export default function MainTabNavigator() {
                     backgroundColor: colors.surface,
                     borderTopWidth: 1,
                     borderTopColor: colors.borderLight,
-                    height: Platform.OS === 'ios' ? 88 : 68,
-                    paddingBottom: Platform.OS === 'ios' ? 28 : 12,
-                    paddingTop: 12,
+                    height: (Platform.OS === 'ios' ? 60 : 56) + bottomPadding,
+                    paddingBottom: bottomPadding,
+                    paddingTop: 8,
+                    elevation: 12,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: -3 },
+                    shadowOpacity: 0.08,
+                    shadowRadius: 6,
                 },
                 tabBarLabelStyle: {
                     ...typography.caption,

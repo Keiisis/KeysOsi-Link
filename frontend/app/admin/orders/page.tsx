@@ -43,8 +43,10 @@ const SHIPPING_STATUSES = [
 const statusConfig: Record<string, { icon: typeof Clock, label: string, classes: string }> = {
     pending: { icon: Clock, label: 'En attente', classes: 'bg-[#FCD116]/15 text-[#FCD116] border-[#FCD116]/30' },
     completed: { icon: CheckCircle2, label: 'Payé', classes: 'bg-[#008751]/15 text-[#008751] border-[#008751]/30' },
+    abandoned: { icon: XCircle, label: 'Abandonné', classes: 'bg-orange-500/15 text-orange-400 border-orange-500/30' },
     failed: { icon: XCircle, label: 'Échouée', classes: 'bg-[#E8112D]/15 text-[#E8112D] border-[#E8112D]/30' },
     refunded: { icon: RefreshCcw, label: 'Remboursé', classes: 'bg-[#4A90D9]/15 text-[#4A90D9] border-[#4A90D9]/30' },
+    cancelled: { icon: XCircle, label: 'Annulé', classes: 'bg-gray-500/15 text-gray-400 border-gray-500/30' },
 }
 
 export default function AdminOrdersPage() {
@@ -137,6 +139,7 @@ export default function AdminOrdersPage() {
         .reduce((sum: number, i) => sum + (i.amount || 0), 0)
     const pendingCount = items.filter((i) => i.payment_status === 'pending').length
     const completedCount = items.filter((i) => i.payment_status === 'completed').length
+    const abandonedCount = items.filter((i) => i.payment_status === 'abandoned').length
 
     return (
         <div className="space-y-10 animate-in fade-in duration-700">
@@ -152,11 +155,12 @@ export default function AdminOrdersPage() {
             </div>
 
             {/* Stats bar */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {[
                     { label: 'Revenu Total', value: `${formatPrice(totalRevenue)} XOF`, textClass: 'text-[#008751]' },
                     { label: 'Commandes Payees', value: String(completedCount), textClass: 'text-[#FCD116]' },
                     { label: 'En Attente', value: String(pendingCount), textClass: 'text-[#E8112D]' },
+                    { label: 'Paniers Abandonnés', value: String(abandonedCount), textClass: 'text-orange-400' },
                 ].map(stat => (
                     <div key={stat.label} className="p-6 rounded-2xl bg-[#0a0f18] border border-white/5">
                         <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">{stat.label}</p>
@@ -178,7 +182,7 @@ export default function AdminOrdersPage() {
                     />
                 </div>
                 <div className="flex items-center gap-1 p-1 bg-white/5 border border-white/5 rounded-2xl overflow-x-auto scrollbar-none">
-                    {['all', 'pending', 'completed', 'failed', 'refunded'].map(s => (
+                    {['all', 'pending', 'completed', 'abandoned', 'failed', 'refunded'].map(s => (
                         <button
                             key={s}
                             onClick={() => setStatusFilter(s)}

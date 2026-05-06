@@ -6,6 +6,7 @@ import {
 } from 'react-native'
 import { ArrowLeft, CheckCircle, HelpCircle, Info, Star } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { LinearGradient } from 'expo-linear-gradient'
 import { useAuth } from '../../contexts/AuthContext'
 import { colors, spacing, radius, shadows, typography } from '../../config/theme'
 import { useLang } from '../../contexts/LangContext'
@@ -161,8 +162,8 @@ export default function EventDetailScreen({ route, navigation }: any) {
     }
 
     return (
-        <>
-            <ScrollView style={styles.container} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+        <LinearGradient colors={[colors.background, colors.surfaceWarm]} style={styles.container}>
+            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
                 {/* Header coloré */}
                 <View style={[styles.header, { backgroundColor: catColor }]}>
@@ -371,14 +372,14 @@ export default function EventDetailScreen({ route, navigation }: any) {
                 onClose={() => setShowKkiapay(false)}
                 onSuccess={handlePaymentSuccess}
             />
-        </>
+        </LinearGradient>
     )
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
+    container: { flex: 1 },
     scroll: { paddingBottom: spacing.xl },
 
     header: {
