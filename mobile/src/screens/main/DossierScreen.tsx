@@ -5,7 +5,17 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity,
 } from 'react-native'
 import { Check, ChevronRight, FileText, FolderOpen, Info, Plus, PlusCircle, Upload } from 'lucide-react-native'
 import { LinearGradient } from 'expo-linear-gradient'
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withTiming,
+    withSpring,
+    Easing,
+} from 'react-native-reanimated'
 import ScreenHeader from '../../components/ScreenHeader'
+import PressableCard from '../../components/PressableCard'
+import EmptyState from '../../components/EmptyState'
+import { SkeletonCard } from '../../components/Skeleton'
 import { Ionicons } from '@expo/vector-icons'
 import * as DocumentPicker from 'expo-document-picker'
 import * as ImagePicker from 'expo-image-picker'
@@ -16,7 +26,7 @@ import { decode } from 'base64-arraybuffer'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLang } from '../../contexts/LangContext'
 import { supabase } from '../../config/supabase'
-import { colors, spacing, radius, shadows, typography, royal } from '../../config/theme'
+import { colors, spacing, radius, shadows, typography, fonts, royal, motion } from '../../config/theme'
 import { fetchWithTimeout } from '../../lib/fetch'
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
@@ -187,35 +197,53 @@ export default function DossierScreen() {
                 title={t('Mes Dossiers')}
                 subtitle={`${dossiers.length} ${t('dossier')}${dossiers.length !== 1 ? 's' : ''} ${t('en cours')}`}
                 rightAction={
-                    <TouchableOpacity style={styles.uploadHeaderBtn} onPress={() => { setUploadTargetDossier(null); setShowUploadModal(true) }} disabled={uploading}>
+                    <PressableCard
+                        haptic={uploading ? 'none' : 'light'}
+                        disabled={uploading}
+                        onPress={() => { setUploadTargetDossier(null); setShowUploadModal(true) }}
+                        accessibilityLabel={t('Ajouter un document')}
+                        style={styles.uploadHeaderBtn}
+                    >
                         {uploading ? <ActivityIndicator color="#FFF" size="small" /> : (
                             <><Upload size={16} color="#FFF" strokeWidth={1.75} /><Text style={styles.uploadHeaderBtnText}>{t('Ajouter')}</Text></>
                         )}
-                    </TouchableOpacity>
+                    </PressableCard>
                 }
             />
 
             {loading ? (
-                <View style={styles.centerState}>
-                    <ActivityIndicator color={colors.primary} size="large" />
-                    <Text style={styles.loadingText}>{t('Chargement…')}</Text>
+                <View style={{ paddingHorizontal: spacing.lg, gap: 12 }}>
+                    <SkeletonCard style={{ height: 220 }} />
+                    <SkeletonCard style={{ height: 80 }} />
+                    <SkeletonCard style={{ height: 80 }} />
                 </View>
             ) : dossiers.length === 0 ? (
-                <View style={styles.emptyCard}>
-                    <View style={styles.emptyIconWrap}><FolderOpen size={44} color={colors.primary} strokeWidth={1.75} /></View>
-                    <Text style={styles.emptyTitle}>{t('Aucun dossier en cours')}</Text>
-                    <Text style={styles.emptyText}>{t('Commandez un service depuis l\'onglet Services pour créer votre premier dossier.')}</Text>
-                </View>
+                <EmptyState
+                    icon={FolderOpen}
+                    title={t('Aucun dossier en cours')}
+                    body={t('Commandez un service depuis l\'onglet Services pour créer votre premier dossier.')}
+                />
             ) : (
                 <>
-                    {/* Sélecteur dossier si plusieurs */}
+                    {/* Sélecteur dossier si plusieurs — PressableCard avec haptics */}
                     {dossiers.length > 1 && (
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll} contentContainerStyle={styles.tabsContent}>
-                            {dossiers.map((d) => (
-                                <TouchableOpacity key={d.id} style={[styles.tab, selected?.id === d.id && styles.tabActive]} onPress={() => setSelected(d)}>
-                                    <Text style={[styles.tabText, selected?.id === d.id && styles.tabTextActive]} numberOfLines={1}>{d.service_type}</Text>
-                                </TouchableOpacity>
-                            ))}
+                            {dossiers.map((d) => {
+                                const isActive = selected?.id === d.id
+                                return (
+                                    <PressableCard
+                                        key={d.id}
+                                        haptic="selection"
+                                        onPress={() => setSelected(d)}
+                                        accessibilityLabel={d.service_type}
+                                        style={[styles.tab, isActive && styles.tabActive] as never}
+                                    >
+                                        <Text style={[styles.tabText, isActive && styles.tabTextActive]} numberOfLines={1}>
+                                            {d.service_type}
+                                        </Text>
+                                    </PressableCard>
+                                )
+                            })}
                         </ScrollView>
                     )}
 
@@ -248,19 +276,43 @@ export default function DossierScreen() {
                                         <View style={[styles.progressFill, { width: `${progress}%` as any, backgroundColor: color }]} />
                                     </View>
 
-                                    <View style={styles.stepsRow}>
-                                        {STEPS.map((step, i) => {
-                                            const active = stepIdx >= i
-                                            const current = stepIdx === i
-                                            return (
-                                                <View key={i} style={styles.step}>
-                                                    <View style={[styles.stepDot, active && { backgroundColor: color }, current && { borderWidth: 2, borderColor: color + '80' }]}>
-                                                        {active && <Check size={8} color="#FFF" strokeWidth={1.75} />}
+                                    <View style={styles.stepperWrap}>
+                                        {/* Ligne grise de fond (toute la largeur des dots, hors les bords) */}
+                                        <View style={styles.stepperLineBg} />
+                                        {/* Ligne colorée — proportionnelle à l'avancement */}
+                                        {stepIdx > 0 && (
+                                            <View
+                                                style={[
+                                                    styles.stepperLineFill,
+                                                    { backgroundColor: color, width: `${(stepIdx / (STEPS.length - 1)) * 100}%` as never },
+                                                ]}
+                                            />
+                                        )}
+
+                                        <View style={styles.stepsRow}>
+                                            {STEPS.map((step, i) => {
+                                                const active = stepIdx >= i
+                                                const current = stepIdx === i
+                                                return (
+                                                    <View key={i} style={styles.step}>
+                                                        <View style={[
+                                                            styles.stepDot,
+                                                            active && { backgroundColor: color },
+                                                            current && { borderWidth: 3, borderColor: color + '50', transform: [{ scale: 1.15 }] },
+                                                        ]}>
+                                                            {active && <Check size={9} color="#FFF" strokeWidth={2.5} />}
+                                                        </View>
+                                                        <Text style={[
+                                                            styles.stepLabel,
+                                                            active && { color, fontFamily: fonts.bodyBold },
+                                                            current && { color },
+                                                        ]}>
+                                                            {t(step.label)}
+                                                        </Text>
                                                     </View>
-                                                    <Text style={[styles.stepLabel, active && { color, fontFamily: 'Inter_700Bold' }]}>{t(step.label)}</Text>
-                                                </View>
-                                            )
-                                        })}
+                                                )
+                                            })}
+                                        </View>
                                     </View>
 
                                     {selected.notes ? (
@@ -275,9 +327,15 @@ export default function DossierScreen() {
                                 <View style={styles.sectionHeader}>
                                     <FileText size={18} color={colors.primary} strokeWidth={1.75} />
                                     <Text style={styles.sectionTitle}>{t('Documents')} ({selected.documents.length})</Text>
-                                    <TouchableOpacity style={styles.addDocBtn} onPress={() => setShowUploadModal(true)} disabled={uploading}>
+                                    <PressableCard
+                                        haptic={uploading ? 'none' : 'light'}
+                                        disabled={uploading}
+                                        onPress={() => setShowUploadModal(true)}
+                                        accessibilityLabel={t('Ajouter un document')}
+                                        style={styles.addDocBtn}
+                                    >
                                         {uploading ? <ActivityIndicator color={colors.primary} size="small" /> : <PlusCircle size={22} color={colors.primary} strokeWidth={1.75} />}
-                                    </TouchableOpacity>
+                                    </PressableCard>
                                 </View>
 
                                 {uploading && (
@@ -309,10 +367,15 @@ export default function DossierScreen() {
                                         <Upload size={32} color={colors.textMuted} strokeWidth={1.75} />
                                         <Text style={styles.noDocsTitle}>{t('Aucun document envoyé')}</Text>
                                         <Text style={styles.noDocsText}>{t('Ajoutez vos documents pour faire avancer votre dossier.')}</Text>
-                                        <TouchableOpacity style={styles.uploadNowBtn} onPress={() => setShowUploadModal(true)}>
-                                            <Plus size={16} color="#FFF" strokeWidth={1.75} />
+                                        <PressableCard
+                                            haptic="medium"
+                                            onPress={() => setShowUploadModal(true)}
+                                            accessibilityLabel={t('Ajouter un document')}
+                                            style={styles.uploadNowBtn}
+                                        >
+                                            <Plus size={16} color="#FFF" strokeWidth={2} />
                                             <Text style={styles.uploadNowText}>{t('Ajouter un document')}</Text>
-                                        </TouchableOpacity>
+                                        </PressableCard>
                                     </View>
                                 )}
                             </>
@@ -338,16 +401,18 @@ export default function DossierScreen() {
                                     {dossiers.map((d) => {
                                         const isTarget = (uploadTargetDossier?.id || selected?.id) === d.id
                                         return (
-                                            <TouchableOpacity
+                                            <PressableCard
                                                 key={d.id}
-                                                style={[styles.dossierChip, isTarget && styles.dossierChipActive]}
+                                                haptic="selection"
                                                 onPress={() => setUploadTargetDossier(d)}
+                                                accessibilityLabel={d.service_type}
+                                                style={[styles.dossierChip, isTarget && styles.dossierChipActive] as never}
                                             >
                                                 <FolderOpen size={14} color={isTarget ? '#FFF' : colors.primary} strokeWidth={1.75} />
                                                 <Text style={[styles.dossierChipText, isTarget && styles.dossierChipTextActive]} numberOfLines={1}>
                                                     {d.service_type}
                                                 </Text>
-                                            </TouchableOpacity>
+                                            </PressableCard>
                                         )
                                     })}
                                 </ScrollView>
@@ -359,7 +424,13 @@ export default function DossierScreen() {
                             { icon: 'image-outline' as const, color: '#7C5CCA', label: t('Photo depuis la galerie'), sub: t('Sélectionner une image existante'), action: handlePickImage },
                             { icon: 'camera-outline' as const, color: colors.primary, label: t('Scanner un document'), sub: t('Prendre une photo avec la caméra'), action: handleScanDocument },
                         ].map((opt, i) => (
-                            <TouchableOpacity key={i} style={styles.modalOption} onPress={opt.action} activeOpacity={0.7}>
+                            <PressableCard
+                                key={i}
+                                haptic="light"
+                                onPress={opt.action}
+                                accessibilityLabel={opt.label}
+                                style={styles.modalOption}
+                            >
                                 <View style={[styles.modalOptionIcon, { backgroundColor: opt.color + '15' }]}>
                                     <Ionicons name={opt.icon} size={22} color={opt.color} />
                                 </View>
@@ -368,11 +439,16 @@ export default function DossierScreen() {
                                     <Text style={styles.modalOptionSub}>{t(opt.sub)}</Text>
                                 </View>
                                 <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.75} />
-                            </TouchableOpacity>
+                            </PressableCard>
                         ))}
-                        <TouchableOpacity style={styles.modalCancel} onPress={() => setShowUploadModal(false)}>
+                        <PressableCard
+                            haptic="light"
+                            onPress={() => setShowUploadModal(false)}
+                            accessibilityLabel={t('Annuler')}
+                            style={styles.modalCancel}
+                        >
                             <Text style={styles.modalCancelText}>{t('Annuler')}</Text>
-                        </TouchableOpacity>
+                        </PressableCard>
                     </View>
                 </TouchableOpacity>
             </Modal>
@@ -408,9 +484,33 @@ const styles = StyleSheet.create({
     percentText: { fontSize: 16, fontFamily: 'Inter_700Bold' },
     progressBg: { height: 8, backgroundColor: colors.borderLight, borderRadius: 4, overflow: 'hidden', marginBottom: 20 },
     progressFill: { height: '100%', borderRadius: 4 },
-    stepsRow: { flexDirection: 'row', justifyContent: 'space-between' },
+    stepperWrap: { position: 'relative', paddingTop: 4 },
+    stepperLineBg: {
+        position: 'absolute',
+        top: 12,
+        left: '10%',
+        right: '10%',
+        height: 2,
+        backgroundColor: colors.borderLight,
+        borderRadius: 1,
+    },
+    stepperLineFill: {
+        position: 'absolute',
+        top: 12,
+        left: '10%',
+        height: 2,
+        borderRadius: 1,
+        maxWidth: '80%',
+    },
+    stepsRow: { flexDirection: 'row', justifyContent: 'space-between', position: 'relative' },
     step: { alignItems: 'center', flex: 1 },
-    stepDot: { width: 18, height: 18, borderRadius: 9, backgroundColor: colors.borderLight, marginBottom: 6, alignItems: 'center', justifyContent: 'center' },
+    stepDot: {
+        width: 20, height: 20, borderRadius: 10,
+        backgroundColor: colors.borderLight,
+        marginBottom: 6,
+        alignItems: 'center', justifyContent: 'center',
+        borderWidth: 2, borderColor: colors.surface,
+    },
     stepLabel: { ...typography.caption, fontSize: 9, color: colors.textMuted, textAlign: 'center' },
     notesRow: { flexDirection: 'row', gap: 6, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.borderLight },
     notesText: { ...typography.caption, color: colors.textSecondary, flex: 1, lineHeight: 18 },
