@@ -99,7 +99,7 @@ function QRCodeDisplay({ size }: { size: number }) {
 
 export const CardRecto = forwardRef<HTMLDivElement, { data: CardData; scale?: number }>(
     ({ scale = 1 }, ref) => {
-        const W = 680 * scale, H = 408 * scale, s = scale
+        const W = 680 * scale, H = 440 * scale, s = scale
 
         return (
             <div ref={ref} style={{
@@ -108,7 +108,6 @@ export const CardRecto = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
                 fontFamily: FONT,
                 boxShadow: '0 2px 16px rgba(0,0,0,0.08)',
                 background: '#FFFFFF',
-                border: `1px solid ${DARK}`, // Bordure très visible et élégante pour la découpe
                 boxSizing: 'border-box',
             }}>
                 {/* ── Accent doré fin en haut ── */}
@@ -204,7 +203,7 @@ CardRecto.displayName = 'CardRecto'
 
 export const CardVerso = forwardRef<HTMLDivElement, { data: CardData; scale?: number }>(
     ({ data, scale = 1 }, ref) => {
-        const W = 680 * scale, H = 408 * scale, s = scale
+        const W = 680 * scale, H = 440 * scale, s = scale
         const qrSize = Math.round(112 * s) // QR Code plus grand !
 
         return (
@@ -214,7 +213,6 @@ export const CardVerso = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
                 fontFamily: FONT,
                 boxShadow: '0 2px 16px rgba(0,0,0,0.08)',
                 background: '#FFFFFF',
-                border: `1px solid ${DARK}`, // Bordure très visible et élégante pour la découpe
                 boxSizing: 'border-box',
             }}>
 

@@ -1,0 +1,22 @@
+# ── Projets séparés (ne pas tracker dans ce repo) ──
+Aura-Link/
+KeysOsi-Link/
+
+# ── Assets bruts de design (lourds, hors scope code) ──
+mobile/assets/Ajouts/
+mobile/stitch/
+
+# ── Notes / plans de travail locaux ──
+plan.md
+supabase_sync_dossiers_tracking.sql
+
+# ── Système ──
+.DS_Store
+Thumbs.db
+*.log
+
+# ── Editor/IDE ──
+.vscode/
+.idea/
+*.swp
+*.swo

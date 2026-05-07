@@ -10,10 +10,18 @@ import { saveAs } from 'file-saver'
 import {
     CreditCard, Download, FileImage, User, Plus, Trash2,
     CheckCircle, AlertCircle, Loader2, Eye, UserCheck, RefreshCw,
-    Search, ExternalLink, BookOpen, ChevronRight
+    Search, ExternalLink, BookOpen, ChevronRight, Building2, Compass
 } from 'lucide-react'
 import Link from 'next/link'
-import { CardRecto, CardVerso, type CardData } from '@/components/business-card/BusinessCard'
+import { CardRecto as RGBRecto, CardVerso as RGBVerso, type CardData } from '@/components/business-card/BusinessCard'
+import { CardRecto as OuidahRecto, CardVerso as OuidahVerso } from '@/components/business-card/OuidahCard'
+
+type TabKey = 'rgb' | 'ouidah'
+
+const TABS: { key: TabKey; label: string; icon: typeof Building2; accent: string; accentBg: string }[] = [
+    { key: 'rgb', label: 'Retour Gagnant', icon: Building2, accent: '#C9A84C', accentBg: '#C9A84C' },
+    { key: 'ouidah', label: 'Ouidah Heritage Tour', icon: Compass, accent: '#C88B2A', accentBg: '#1B2A4A' },
+]
 
 /* ═══════════════════════════════════════════════════════════════
    TYPES
@@ -60,40 +68,61 @@ async function downloadPDF(
     versoRef: React.RefObject<HTMLDivElement | null>,
     name: string
 ) {
+    if (!rectoRef.current || !versoRef.current) throw new Error('Ref manquante')
+
+    // ── Forcer les deux captures à EXACTEMENT la même taille pixel ──
+    const W = rectoRef.current.offsetWidth
+    const H = rectoRef.current.offsetHeight
+    await new Promise(r => setTimeout(r, 400))
+
+    const captureOpts = { pixelRatio: 4, cacheBust: true, skipFonts: false, width: W, height: H }
     const [rectoUrl, versoUrl] = await Promise.all([
-        captureCard(rectoRef, 4),
-        captureCard(versoRef, 4),
+        toPng(rectoRef.current, captureOpts),
+        toPng(versoRef.current, captureOpts),
     ])
 
-    // Création du PDF au format A4 (imprimeur)
+    // ═══ PDF — 2 pages A4 Portrait, carte 85×55mm centrée ═══
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-    const pdfW = 210, pdfH = 297
-    const cardW = 90, cardH = 54
 
-    // Centrer la carte sur la page A4
-    const x = (pdfW - cardW) / 2
-    const y = (pdfH - cardH) / 2
+    const cardW = 85, cardH = 55
+    const x = 62.5            // (210 - 85) / 2 = 62.5
+    const y = 121              // (297 - 55) / 2 = 121
+    const cropLen = 8, cropOff = 3
 
-    // Traits de coupe
-    const drawCropMarks = () => {
-        pdf.setDrawColor(150, 150, 150)
-        pdf.setLineWidth(0.2)
-        const cL = 5, m = 3
-        pdf.line(x - m - cL, y, x - m, y)
-        pdf.line(x, y - m - cL, x, y - m)
-        pdf.line(x + cardW + m, y, x + cardW + m + cL, y)
-        pdf.line(x + cardW, y - m - cL, x + cardW, y - m)
-        pdf.line(x - m - cL, y + cardH, x - m, y + cardH)
-        pdf.line(x, y + cardH + m, x, y + cardH + m + cL)
-        pdf.line(x + cardW + m, y + cardH, x + cardW + m + cL, y + cardH)
-        pdf.line(x + cardW, y + cardH + m, x + cardW, y + cardH + m + cL)
+    // ── Traits de coupe identiques recto & verso ──
+    const drawCropMarks = (label: string) => {
+        pdf.setDrawColor(0, 0, 0)
+        pdf.setLineWidth(0.15)
+        // Haut-gauche
+        pdf.line(x - cropOff - cropLen, y, x - cropOff, y)
+        pdf.line(x, y - cropOff - cropLen, x, y - cropOff)
+        // Haut-droit
+        pdf.line(x + cardW + cropOff, y, x + cardW + cropOff + cropLen, y)
+        pdf.line(x + cardW, y - cropOff - cropLen, x + cardW, y - cropOff)
+        // Bas-gauche
+        pdf.line(x - cropOff - cropLen, y + cardH, x - cropOff, y + cardH)
+        pdf.line(x, y + cardH + cropOff, x, y + cardH + cropOff + cropLen)
+        // Bas-droit
+        pdf.line(x + cardW + cropOff, y + cardH, x + cardW + cropOff + cropLen, y + cardH)
+        pdf.line(x + cardW, y + cardH + cropOff, x + cardW, y + cardH + cropOff + cropLen)
+        // Label
+        pdf.setFontSize(7)
+        pdf.setTextColor(100, 100, 100)
+        pdf.text(label, x + cardW / 2, y - cropOff - cropLen - 2, { align: 'center' })
+        pdf.setFontSize(5.5)
+        pdf.setTextColor(130, 130, 130)
+        pdf.text(`${cardW} × ${cardH} mm — Imprimer à TAILLE RÉELLE (100%)`, x + cardW / 2, y + cardH + cropOff + cropLen + 4, { align: 'center' })
     }
 
+    // Page 1 — RECTO
     pdf.addImage(rectoUrl, 'PNG', x, y, cardW, cardH)
-    drawCropMarks()
+    drawCropMarks('RECTO')
+
+    // Page 2 — VERSO (position strictement identique)
     pdf.addPage('a4', 'portrait')
     pdf.addImage(versoUrl, 'PNG', x, y, cardW, cardH)
-    drawCropMarks()
+    drawCropMarks('VERSO')
+
     pdf.save(`Carte-VIP-${name.toLowerCase().replace(/\s+/g, '-')}.pdf`)
 }
 
@@ -156,6 +185,7 @@ function getErrorMessage(e: unknown): string {
 export default function AdminDesignPage() {
     const [form, setForm] = useState<CardData>({ prenom: '', nom: '', position: '', phone: '', email: '' })
     const [activeView, setActiveView] = useState<'recto' | 'verso'>('recto')
+    const [activeTab, setActiveTab] = useState<TabKey>('rgb')
 
     const [agents, setAgents] = useState<Agent[]>([])
     const [selectedAgent, setSelectedAgent] = useState<string>('')
@@ -170,8 +200,12 @@ export default function AdminDesignPage() {
     const [downloading, setDownloading] = useState<string | null>(null)
     const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
 
-    const rectoRef = useRef<HTMLDivElement>(null)
-    const versoRef = useRef<HTMLDivElement>(null)
+    const rgbRectoRef = useRef<HTMLDivElement>(null)
+    const rgbVersoRef = useRef<HTMLDivElement>(null)
+    const ouidahRectoRef = useRef<HTMLDivElement>(null)
+    const ouidahVersoRef = useRef<HTMLDivElement>(null)
+
+    const getActiveRefs = () => activeTab === 'rgb' ? { recto: rgbRectoRef, verso: rgbVersoRef } : { recto: ouidahRectoRef, verso: ouidahVersoRef }
 
     const isValid = !!(form.prenom.trim() && form.nom.trim() && form.position.trim())
 
@@ -264,7 +298,8 @@ export default function AdminDesignPage() {
         setDownloading('pdf')
         try {
             const name = isValid ? `${form.prenom}-${form.nom}` : 'vide'
-            await downloadPDF(rectoRef, versoRef, name)
+            const refs = getActiveRefs()
+            await downloadPDF(refs.recto, refs.verso, name)
             setStatus({ type: 'success', msg: 'PDF exporté avec les normes d\'impression !' })
         } catch (e) {
             console.error('Erreur export :', e)
@@ -278,9 +313,10 @@ export default function AdminDesignPage() {
         setDownloading('png')
         try {
             const name = isValid ? `${form.prenom}-${form.nom}` : 'vide'
+            const refs = getActiveRefs()
             
-            const rectoUrl = await captureCard(rectoRef, 4)
-            const versoUrl = await captureCard(versoRef, 4)
+            const rectoUrl = await captureCard(refs.recto, 4)
+            const versoUrl = await captureCard(refs.verso, 4)
 
             const downloadImage = (dataUrl: string, filename: string) => {
                 const link = document.createElement("a")
@@ -334,10 +370,11 @@ export default function AdminDesignPage() {
         await new Promise(r => setTimeout(r, 250))
         try {
             const fullName = `${card.employee_prenom}-${card.employee_nom}`
-            if (type === 'recto-png')      await downloadPNG(rectoRef, `recto-${fullName}.png`)
-            else if (type === 'verso-png') await downloadPNG(versoRef, `verso-${fullName}.png`)
-            else if (type === 'pdf')       await downloadPDF(rectoRef, versoRef, fullName)
-            else if (type === 'docx')      await downloadDOCX(rectoRef, versoRef, fullName)
+            const refs = getActiveRefs()
+            if (type === 'recto-png')      await downloadPNG(refs.recto, `recto-${fullName}.png`)
+            else if (type === 'verso-png') await downloadPNG(refs.verso, `verso-${fullName}.png`)
+            else if (type === 'pdf')       await downloadPDF(refs.recto, refs.verso, fullName)
+            else if (type === 'docx')      await downloadDOCX(refs.recto, refs.verso, fullName)
         } catch (e) {
             alert('Erreur export : ' + getErrorMessage(e))
         } finally {
@@ -607,6 +644,28 @@ CREATE POLICY "Admins full access" ON public.business_cards
                             <h2 className="text-sm font-bold text-white flex items-center gap-2">
                                 <Eye size={16} className="text-[#C9A84C]" /> Aperçu en temps réel
                             </h2>
+                        </div>
+
+                        <div className="flex rounded-lg overflow-hidden border border-white/10 mb-4 bg-white/[0.02]">
+                            {TABS.map(tab => {
+                                const isActive = activeTab === tab.key
+                                return (
+                                    <button
+                                        key={tab.key}
+                                        type="button"
+                                        onClick={() => { setActiveTab(tab.key); setActiveView('recto') }}
+                                        className="flex-1 py-2 text-xs font-bold transition-colors"
+                                        style={{
+                                            background: isActive ? `${tab.accent}20` : 'transparent',
+                                            color: isActive ? tab.accent : '#6B7280',
+                                        }}>
+                                        {tab.label}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                        
+                        <div className="flex justify-center mb-4">
                             <div className="flex rounded-lg overflow-hidden border border-white/10">
                                 <button type="button" onClick={() => setActiveView('recto')}
                                     className={`px-3 py-1.5 text-xs font-bold transition-colors ${activeView === 'recto' ? 'bg-[#C9A84C]/20 text-[#C9A84C]' : 'text-gray-500 hover:text-gray-300'}`}>
@@ -628,7 +687,10 @@ CREATE POLICY "Admins full access" ON public.business_cards
                                             animate={{ opacity: 1, rotateY: 0 }}
                                             exit={{ opacity: 0, rotateY: 15 }}
                                             transition={{ duration: 0.3 }}>
-                                            <CardRecto data={isValid ? form : { prenom: 'PRÉNOM', nom: 'NOM', position: 'Fonction', phone: '', email: '' }} />
+                                            {activeTab === 'rgb' 
+                                                ? <RGBRecto data={isValid ? form : { prenom: 'PRÉNOM', nom: 'NOM', position: 'Fonction', phone: '', email: '' }} />
+                                                : <OuidahRecto data={isValid ? form : { prenom: 'PRÉNOM', nom: 'NOM', position: 'Fonction', phone: '', email: '' }} />
+                                            }
                                         </motion.div>
                                     ) : (
                                         <motion.div key="verso"
@@ -636,7 +698,10 @@ CREATE POLICY "Admins full access" ON public.business_cards
                                             animate={{ opacity: 1, rotateY: 0 }}
                                             exit={{ opacity: 0, rotateY: -15 }}
                                             transition={{ duration: 0.3 }}>
-                                            <CardVerso data={isValid ? form : { prenom: 'PRÉNOM', nom: 'NOM', position: 'Fonction', phone: '+229 01 XX XX XX', email: 'email@exemple.bj' }} />
+                                            {activeTab === 'rgb'
+                                                ? <RGBVerso data={isValid ? form : { prenom: 'PRÉNOM', nom: 'NOM', position: 'Fonction', phone: '+229 01 XX XX XX', email: 'email@exemple.bj' }} />
+                                                : <OuidahVerso data={isValid ? form : { prenom: 'PRÉNOM', nom: 'NOM', position: 'Fonction', phone: '+229 01 XX XX XX', email: 'email@exemple.bj' }} />
+                                            }
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
@@ -650,8 +715,10 @@ CREATE POLICY "Admins full access" ON public.business_cards
 
                     {/* Refs pour export — off-screen pour permettre le chargement des images */}
                     <div style={{ position: 'fixed', left: '-9999px', top: 0, pointerEvents: 'none', zIndex: -1 }} aria-hidden>
-                        <CardRecto ref={rectoRef} data={form} scale={1} />
-                        <CardVerso ref={versoRef} data={form} scale={1} />
+                        <RGBRecto ref={rgbRectoRef} data={form} scale={1} />
+                        <RGBVerso ref={rgbVersoRef} data={form} scale={1} />
+                        <OuidahRecto ref={ouidahRectoRef} data={form} scale={1} />
+                        <OuidahVerso ref={ouidahVersoRef} data={form} scale={1} />
                     </div>
                 </div>
             </div>
@@ -682,13 +749,23 @@ CREATE POLICY "Admins full access" ON public.business_cards
                                 <div key={card.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 hover:bg-white/[0.02] transition-colors">
                                     {/* Miniature */}
                                     <div style={{ transform: 'scale(0.28)', transformOrigin: 'top left', width: 340 * 0.28, height: 220 * 0.28, flexShrink: 0, pointerEvents: 'none' }}>
-                                        <CardRecto data={{
-                                            prenom: card.employee_prenom,
-                                            nom: card.employee_nom,
-                                            position: card.position,
-                                            phone: card.phone,
-                                            email: card.email,
-                                        }} />
+                                        {activeTab === 'rgb' ? (
+                                            <RGBRecto data={{
+                                                prenom: card.employee_prenom,
+                                                nom: card.employee_nom,
+                                                position: card.position,
+                                                phone: card.phone,
+                                                email: card.email,
+                                            }} />
+                                        ) : (
+                                            <OuidahRecto data={{
+                                                prenom: card.employee_prenom,
+                                                nom: card.employee_nom,
+                                                position: card.position,
+                                                phone: card.phone,
+                                                email: card.email,
+                                            }} />
+                                        )}
                                     </div>
 
                                     {/* Infos */}

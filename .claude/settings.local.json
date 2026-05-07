@@ -237,7 +237,8 @@
       "Bash(grep -n \"</ScrollView>\\\\|</>$\\\\|^export default\\\\|^}\" \"c:/Users/HP/Desktop/RETOUR GAGNANT TEMPLATE/mobile/src/screens/main/EventDetailScreen.tsx\")",
       "Bash(cat)",
       "Bash(python /tmp/fix_brochure.py)",
-      "Bash(python fix_brochure.py)"
+      "Bash(python fix_brochure.py)",
+      "Bash(claude mcp *)"
     ],
     "additionalDirectories": [
       "c:\\Users\\HP\\Desktop\\RETOUR GAGNANT TEMPLATE\\frontend\\app\\api\\admin\\users"
