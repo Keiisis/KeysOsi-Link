@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from 'react'
 import {
-    View, Text, ScrollView, StyleSheet, TouchableOpacity,
+    View, Text, ScrollView, StyleSheet,
     Platform, Alert, ActivityIndicator,
 } from 'react-native'
 import { ArrowLeft, Calendar, Check, Clock, CreditCard, Star, Tag, Users } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
-import { colors, spacing, radius, shadows, typography } from '../../config/theme'
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withSpring,
+    withTiming,
+    Easing,
+} from 'react-native-reanimated'
+import PressableCard from '../../components/PressableCard'
+import { colors, spacing, radius, shadows, typography, fonts, motion } from '../../config/theme'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLang } from '../../contexts/LangContext'
 import KkiapayModal from '../../components/KkiapayModal'
@@ -41,6 +49,26 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
     const [loading, setLoading] = useState(false)
     const [showKkiapay, setShowKkiapay] = useState(false)
     const serviceColor = color || colors.primary
+
+    /* ── Animations Reanimated ── */
+    const headerOpacity = useSharedValue(0)
+    const headerTranslate = useSharedValue(-20)
+    const iconScale = useSharedValue(0.7)
+
+    useEffect(() => {
+        headerOpacity.value = withTiming(1, { duration: motion.slow, easing: Easing.out(Easing.cubic) })
+        headerTranslate.value = withSpring(0, motion.spring.soft)
+        iconScale.value = withSpring(1, motion.spring.bounce)
+    }, [headerOpacity, headerTranslate, iconScale])
+
+    const headerEnterStyle = useAnimatedStyle(() => ({
+        opacity: headerOpacity.value,
+        transform: [{ translateY: headerTranslate.value }],
+    }))
+
+    const iconEnterStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: iconScale.value }],
+    }))
 
     /* ── Données dynamiques DB (priorité), avec fallback sur route.params hardcoded ──
        L'admin peut changer le prix via le panel admin → la DB est mise à jour →
@@ -245,23 +273,36 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scroll}
             >
-            {/* Header coloré */}
-            <View style={[styles.header, { backgroundColor: serviceColor }]}>
-                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <View style={styles.backBtnCircle}>
-                        <ArrowLeft size={20} color="#FFF" strokeWidth={1.75} />
-                    </View>
-                </TouchableOpacity>
+            {/* Header coloré — gradient subtil + glow circle décoratif */}
+            <Animated.View style={[styles.header, headerEnterStyle]}>
+                <LinearGradient
+                    colors={[serviceColor, serviceColor + 'E0', serviceColor + 'B0']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFillObject}
+                />
+                <View style={styles.headerGlowOrb} />
 
-                <View style={styles.headerIconWrap}>
+                <PressableCard
+                    haptic="light"
+                    onPress={() => navigation.goBack()}
+                    accessibilityLabel={t('Retour')}
+                    style={styles.backBtn}
+                >
+                    <View style={styles.backBtnCircle}>
+                        <ArrowLeft size={20} color="#FFF" strokeWidth={2} />
+                    </View>
+                </PressableCard>
+
+                <Animated.View style={[styles.headerIconWrap, iconEnterStyle]}>
                     <Ionicons name={icon || 'briefcase-outline'} size={40} color={serviceColor} />
-                </View>
+                </Animated.View>
 
                 <View style={styles.headerBadge}>
-                    <Star size={10} color={serviceColor} strokeWidth={1.75} />
+                    <Star size={10} color={serviceColor} fill={serviceColor} strokeWidth={1.75} />
                     <Text style={[styles.headerBadgeText, { color: serviceColor }]}>{t('Service Premium')}</Text>
                 </View>
-            </View>
+            </Animated.View>
 
             {/* Carte contenu */}
             <View style={styles.card}>
@@ -398,21 +439,22 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
                     </Text>
 
                     {/* Bouton commander / payer */}
-                    <TouchableOpacity
-                        style={[styles.btn, { backgroundColor: serviceColor }, loading && styles.btnDisabled]}
-                        activeOpacity={0.85}
-                        onPress={initiateCheckout}
+                    <PressableCard
+                        haptic={loading ? 'none' : 'medium'}
                         disabled={loading}
+                        onPress={initiateCheckout}
+                        accessibilityLabel={t('Payer avec Kkiapay')}
+                        style={[styles.btn, { backgroundColor: serviceColor }, loading && styles.btnDisabled] as never}
                     >
                         {loading ? (
                             <ActivityIndicator color="#FFF" size="small" />
                         ) : (
                             <>
-                                <CreditCard size={20} color="#FFF" strokeWidth={1.75} />
+                                <CreditCard size={20} color="#FFF" strokeWidth={2} />
                                 <Text style={styles.btnText}>{t('Payer avec Kkiapay')}</Text>
                             </>
                         )}
-                    </TouchableOpacity>
+                    </PressableCard>
 
                     <Text style={styles.ctaFreeNote}>{t('Premier appel de 15 min gratuit')}</Text>
                 </View>
@@ -447,8 +489,15 @@ const styles = StyleSheet.create({
         borderBottomLeftRadius: 36,
         borderBottomRightRadius: 36,
         position: 'relative',
+        overflow: 'hidden',
     },
-    backBtn: { position: 'absolute', top: Platform.OS === 'ios' ? 54 : 38, left: 20 },
+    headerGlowOrb: {
+        position: 'absolute',
+        top: -80, right: -60,
+        width: 220, height: 220, borderRadius: 110,
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    },
+    backBtn: { position: 'absolute', top: Platform.OS === 'ios' ? 54 : 38, left: 20, zIndex: 10 },
     backBtnCircle: {
         width: 38, height: 38, borderRadius: 19,
         backgroundColor: 'rgba(255,255,255,0.2)',
@@ -465,7 +514,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFF', borderRadius: 20,
         paddingHorizontal: 12, paddingVertical: 5, marginTop: 14,
     },
-    headerBadgeText: { fontSize: 11, fontFamily: 'Inter_700Bold', letterSpacing: 0.5 },
+    headerBadgeText: { fontSize: 11, fontFamily: fonts.bodyBold, letterSpacing: 1 },
 
     card: {
         marginHorizontal: spacing.lg,
