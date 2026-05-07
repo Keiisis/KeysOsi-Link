@@ -205,3 +205,36 @@ export const royal = {
     textDark: colors.textPrimary,
     textLight: colors.textOnDark,
 }
+
+/* ═══════════════════════════════════════════════════════════
+   Motion — durées et easings standardisés (Reanimated 4)
+   Évite les "magic numbers" dispersés. Référencer ces tokens
+   pour toutes les animations de press, fade, slide.
+═══════════════════════════════════════════════════════════ */
+export const motion = {
+    // Durées (ms)
+    instant: 80,
+    fast: 160,
+    base: 220,
+    slow: 320,
+    slower: 480,
+
+    // Spring presets pour Reanimated withSpring()
+    spring: {
+        snappy: { damping: 18, stiffness: 220, mass: 0.6 },
+        soft:   { damping: 22, stiffness: 140, mass: 0.8 },
+        bounce: { damping: 12, stiffness: 180, mass: 0.7 },
+    },
+
+    // Échelles standard pour press states
+    pressScale: 0.97,
+    pressScaleStrong: 0.94,
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Skeleton — couleurs shimmer pour les loading states
+═══════════════════════════════════════════════════════════ */
+export const skeletonColors = {
+    base: '#EAEEF2',
+    highlight: '#F5F8FA',
+}
