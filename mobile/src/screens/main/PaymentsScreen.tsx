@@ -12,9 +12,12 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useLang } from '../../contexts/LangContext'
 import { usePaymentSettings } from '../../contexts/PaymentSettingsContext'
 import { supabase } from '../../config/supabase'
+import { fetchWithTimeout } from '../../lib/fetch'
 import { LinearGradient } from 'expo-linear-gradient'
 import { colors, spacing, radius, shadows, typography, royal } from '../../config/theme'
 import { RootStackParamList } from '../../navigation/AppNavigator'
+
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Payments'>
 
@@ -63,6 +66,10 @@ export default function PaymentsScreen({ navigation }: { navigation: Nav }) {
     // success listener (registered once at mount) can update the right row.
     const pendingTxIdRef = useRef<string | null>(null)
     const fetchPaymentsRef = useRef<() => Promise<void>>(async () => {})
+    // Listeners are registered once at mount, so we mirror profile via a ref to
+    // avoid stale closures (the SDK doesn't expose removeListener).
+    const profileRef = useRef(profile)
+    useEffect(() => { profileRef.current = profile }, [profile])
 
     /* ── Charger l'historique ── */
     const fetchPayments = useCallback(async () => {
@@ -100,27 +107,56 @@ export default function PaymentsScreen({ navigation }: { navigation: Nav }) {
        Le SDK n'expose pas de removeListener, donc on s'enregistre une fois et
        on lit la transactionId courante via ref pour éviter les stale closures. */
     useEffect(() => {
+        // Confirmation paiement : on délègue à /api/mobile/payments/verify qui vérifie
+        // côté serveur auprès de Kkiapay (anti-fraude). Le client ne touche plus à
+        // la table paiements directement pour passer pending → success.
         addSuccessListener(async (data: { transactionId?: string }) => {
             const localTxId = pendingTxIdRef.current
-            if (!localTxId) return // pas de paiement en cours
-            const kkTxId = data?.transactionId || localTxId
+            const profileNow = profileRef.current
+            if (!localTxId || !profileNow) return
+            const kkTxId = data?.transactionId ? String(data.transactionId) : ''
             try {
-                await supabase.from('paiements')
-                    .update({ status: 'success', transaction_id: String(kkTxId) })
-                    .eq('transaction_id', localTxId)
-                Alert.alert(t('✅ Paiement confirmé'), t('Votre paiement a bien été reçu.'))
-            } catch { /* ignore */ }
+                const res = await fetchWithTimeout(`${API_BASE}/api/mobile/payments/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        client_id: profileNow.id,
+                        local_tx_id: localTxId,
+                        kk_transaction_id: kkTxId,
+                    }),
+                    timeoutMs: 15000,
+                })
+                if (res.ok) {
+                    Alert.alert(t('✅ Paiement confirmé'), t('Votre paiement a bien été reçu.'))
+                } else {
+                    const j = await res.json().catch(() => ({} as { error?: string }))
+                    Alert.alert(
+                        t('Vérification échouée'),
+                        j?.error || t("Le paiement n'a pas pu être confirmé. Notre équipe sera notifiée.")
+                    )
+                }
+            } catch {
+                Alert.alert(t('Erreur réseau'), t('Impossible de confirmer le paiement. Réessayez ou contactez le support.'))
+            }
             pendingTxIdRef.current = null
             await fetchPaymentsRef.current()
         })
 
         addFailedListener(async () => {
             const localTxId = pendingTxIdRef.current
-            if (localTxId) {
+            const profileNow = profileRef.current
+            if (localTxId && profileNow) {
                 try {
-                    await supabase.from('paiements')
-                        .update({ status: 'failed' })
-                        .eq('transaction_id', localTxId)
+                    await fetchWithTimeout(`${API_BASE}/api/mobile/payments/verify`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            client_id: profileNow.id,
+                            local_tx_id: localTxId,
+                            status: 'failed',
+                        }),
+                        timeoutMs: 10000,
+                    })
                 } catch { /* ignore */ }
                 pendingTxIdRef.current = null
             }
