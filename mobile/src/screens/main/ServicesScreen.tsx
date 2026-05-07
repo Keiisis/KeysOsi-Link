@@ -1,14 +1,24 @@
 'use strict'
 import React, { useEffect, useState, useCallback } from 'react'
 import {
-    View, Text, ScrollView, StyleSheet, TouchableOpacity,
+    View, Text, ScrollView, StyleSheet,
     Dimensions, Platform, RefreshControl, ActivityIndicator,
 } from 'react-native'
-import { ArrowRight, Star, Tag } from 'lucide-react-native'
+import { ArrowRight, Star, Tag, Sparkles } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withDelay,
+    withSpring,
+    withTiming,
+    Easing,
+} from 'react-native-reanimated'
 import ScreenHeader from '../../components/ScreenHeader'
-import { colors, spacing, radius, shadows, typography } from '../../config/theme'
+import PressableCard from '../../components/PressableCard'
+import { SkeletonCard } from '../../components/Skeleton'
+import { colors, royal, spacing, radius, shadows, typography, fonts, motion } from '../../config/theme'
 import { useLang } from '../../contexts/LangContext'
 import { supabase } from '../../config/supabase'
 
@@ -345,6 +355,62 @@ function getIconForSlug(slug: string, icon_type?: string): keyof typeof Ionicons
     return 'briefcase-outline'
 }
 
+// ─── Sub-component : ServiceCard avec animation stagger ──────────────────────
+
+interface ServiceCardProps {
+    svc: ServiceFull
+    index: number
+    onPress: () => void
+    t: (s: string) => string
+}
+
+function ServiceCard({ svc, index, onPress, t }: ServiceCardProps) {
+    const opacity = useSharedValue(0)
+    const translateY = useSharedValue(24)
+
+    useEffect(() => {
+        opacity.value = withDelay(index * 60, withTiming(1, { duration: motion.slow, easing: Easing.out(Easing.cubic) }))
+        translateY.value = withDelay(index * 60, withSpring(0, motion.spring.soft))
+    }, [index, opacity, translateY])
+
+    const animStyle = useAnimatedStyle(() => ({
+        opacity: opacity.value,
+        transform: [{ translateY: translateY.value }],
+    }))
+
+    return (
+        <Animated.View style={[{ width: CARD_W }, animStyle]}>
+            <PressableCard
+                haptic="light"
+                onPress={onPress}
+                accessibilityLabel={`${t(svc.title)} — ${t(svc.price)}`}
+                style={styles.card}
+            >
+                <View style={[styles.cardTopBar, { backgroundColor: svc.color }]} />
+                <View style={styles.cardInner}>
+                    <View style={[styles.cardIconWrap, { borderColor: svc.color + '22', backgroundColor: svc.color + '10' }]}>
+                        <Ionicons name={svc.icon} size={26} color={svc.color} />
+                    </View>
+                    <Text style={styles.cardTitle} numberOfLines={2}>{t(svc.title)}</Text>
+                    <Text style={styles.cardDesc} numberOfLines={3}>{t(svc.desc)}</Text>
+
+                    <View style={styles.cardMeta}>
+                        <View style={[styles.metaBadge, { backgroundColor: svc.color + '12' }]}>
+                            <Tag size={9} color={svc.color} strokeWidth={1.75} />
+                            <Text style={[styles.metaText, { color: svc.color }]} numberOfLines={1}>{t(svc.price)}</Text>
+                        </View>
+                    </View>
+
+                    <View style={[styles.cardFooter, { backgroundColor: svc.color + '10' }]}>
+                        <Text style={[styles.cardActionText, { color: svc.color }]}>{t('En savoir plus')}</Text>
+                        <ArrowRight size={11} color={svc.color} strokeWidth={1.75} />
+                    </View>
+                </View>
+            </PressableCard>
+        </Animated.View>
+    )
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ServicesScreen({ navigation }: any) {
@@ -471,54 +537,44 @@ export default function ServicesScreen({ navigation }: any) {
             )}
 
             {loading ? (
-                <View style={styles.loadingWrap}>
-                    <ActivityIndicator color={colors.primary} size="large" />
+                <View style={styles.grid}>
+                    {Array.from({ length: 6 }).map((_, i) => (
+                        <SkeletonCard key={i} style={{ width: CARD_W, height: 200 }} />
+                    ))}
                 </View>
             ) : (
                 <View style={styles.grid}>
-                    {services.map((svc) => (
-                        <TouchableOpacity
+                    {services.map((svc, idx) => (
+                        <ServiceCard
                             key={svc.id}
-                            style={styles.card}
-                            activeOpacity={0.82}
+                            svc={svc}
+                            index={idx}
                             onPress={() => handlePress(svc)}
-                        >
-                            <View style={[styles.cardTopBar, { backgroundColor: svc.color }]} />
-                            <View style={styles.cardInner}>
-                                <View style={[styles.cardIconWrap, { borderColor: svc.color + '22' }]}>
-                                    <Ionicons name={svc.icon} size={28} color={svc.color} />
-                                </View>
-                                <Text style={styles.cardTitle} numberOfLines={2}>{t(svc.title)}</Text>
-                                <Text style={styles.cardDesc} numberOfLines={3}>{t(svc.desc)}</Text>
-
-                                {/* Badge prix */}
-                                <View style={styles.cardMeta}>
-                                    <View style={[styles.metaBadge, { backgroundColor: svc.color + '12' }]}>
-                                        <Tag size={9} color={svc.color} strokeWidth={1.75} />
-                                        <Text style={[styles.metaText, { color: svc.color }]} numberOfLines={1}>{t(svc.price)}</Text>
-                                    </View>
-                                </View>
-
-                                <View style={[styles.cardFooter, { backgroundColor: svc.color + '10' }]}>
-                                    <Text style={[styles.cardActionText, { color: svc.color }]}>{t('En savoir plus')}</Text>
-                                    <ArrowRight size={11} color={svc.color} strokeWidth={1.75} />
-                                </View>
-                            </View>
-                        </TouchableOpacity>
+                            t={t}
+                        />
                     ))}
                 </View>
             )}
 
-            {/* Bandeau VIP */}
+            {/* Bandeau VIP — gradient gold premium */}
             {!loading && (
-                <TouchableOpacity
-                    style={styles.vipBanner}
-                    activeOpacity={0.88}
+                <PressableCard
+                    haptic="medium"
                     onPress={() => handlePress(services.find(s => s.id === 'nationalite-vip') || services[0])}
+                    accessibilityLabel={t('Nationalité Béninoise VIP — Le plus populaire')}
+                    style={styles.vipBanner}
                 >
+                    <LinearGradient
+                        colors={['#A68B3C', colors.gold, '#E2C97E']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={StyleSheet.absoluteFillObject}
+                    />
+                    <View style={styles.vipShine} />
+
                     <View style={styles.vipBannerLeft}>
                         <View style={styles.vipBadge}>
-                            <Star size={10} color={colors.primary} strokeWidth={1.75} />
+                            <Star size={11} color="#FFFFFF" fill="#FFFFFF" strokeWidth={1.5} />
                             <Text style={styles.vipBadgeText}>{t('LE PLUS POPULAIRE')}</Text>
                         </View>
                         <Text style={styles.vipTitle}>{t('Nationalité Béninoise VIP')}</Text>
@@ -527,9 +583,9 @@ export default function ServicesScreen({ navigation }: any) {
                         </Text>
                     </View>
                     <View style={styles.vipArrow}>
-                        <ArrowRight size={20} color={colors.primary} strokeWidth={1.75} />
+                        <ArrowRight size={22} color={colors.goldDark} strokeWidth={2.5} />
                     </View>
-                </TouchableOpacity>
+                </PressableCard>
             )}
 
             <View style={{ height: 100 }} />
@@ -584,24 +640,43 @@ const styles = StyleSheet.create({
     vipBanner: {
         flexDirection: 'row', alignItems: 'center',
         marginHorizontal: spacing.lg, marginTop: spacing.lg,
-        backgroundColor: colors.surface,
-        borderRadius: radius.lg, padding: spacing.lg,
-        borderWidth: 1, borderColor: colors.primaryGlow,
-        ...shadows.primary,
+        borderRadius: radius.xl, padding: spacing.lg,
+        overflow: 'hidden',
+        borderWidth: 1, borderColor: colors.borderGold,
+        ...shadows.gold,
+    },
+    vipShine: {
+        position: 'absolute',
+        top: -40, right: -40,
+        width: 120, height: 120, borderRadius: 60,
+        backgroundColor: 'rgba(255, 255, 255, 0.25)',
     },
     vipBannerLeft: { flex: 1, gap: 6 },
     vipBadge: {
-        flexDirection: 'row', alignItems: 'center', gap: 4,
-        backgroundColor: colors.primaryMuted, borderRadius: 20,
-        paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start',
+        flexDirection: 'row', alignItems: 'center', gap: 5,
+        backgroundColor: 'rgba(255, 255, 255, 0.30)',
+        borderRadius: 999,
+        paddingHorizontal: 10, paddingVertical: 5, alignSelf: 'flex-start',
+        borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.45)',
     },
-    vipBadgeText: { fontSize: 9, fontFamily: 'Inter_700Bold', color: colors.primary, letterSpacing: 0.8 },
-    vipTitle: { ...typography.h3, color: colors.textOnDark, fontSize: 16 },
-    vipDesc: { ...typography.caption, color: 'rgba(255,255,255,0.55)', lineHeight: 18 },
+    vipBadgeText: {
+        fontSize: 9, fontFamily: fonts.bodyBold,
+        color: '#FFFFFF', letterSpacing: 1.2,
+    },
+    vipTitle: {
+        fontFamily: fonts.heading, fontSize: 18,
+        color: '#FFFFFF', letterSpacing: 0.3,
+    },
+    vipDesc: {
+        ...typography.caption,
+        color: 'rgba(255, 255, 255, 0.92)',
+        lineHeight: 18,
+    },
     vipArrow: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: colors.primaryMuted,
+        width: 44, height: 44, borderRadius: 22,
+        backgroundColor: '#FFFFFF',
         alignItems: 'center', justifyContent: 'center',
+        ...shadows.sm,
     },
 
     translatingBanner: {
