@@ -2,8 +2,9 @@ import React, { useEffect, useState, useCallback, useRef } from 'react'
 import {
     View, Text, ScrollView, StyleSheet, TouchableOpacity,
     RefreshControl, Platform, Alert, ActivityIndicator,
+    Modal, TextInput, KeyboardAvoidingView,
 } from 'react-native'
-import { ArrowLeft, CreditCard, PlusCircle, Receipt, ShieldCheck } from 'lucide-react-native'
+import { ArrowLeft, CreditCard, PlusCircle, Receipt, ShieldCheck, X } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
 import ScreenHeader from '../../components/ScreenHeader'
 import { useKkiapay } from '@kkiapay-org/react-native-sdk'
@@ -58,6 +59,8 @@ export default function PaymentsScreen({ navigation }: { navigation: Nav }) {
     const [payments, setPayments] = useState<Payment[]>([])
     const [loading, setLoading] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
+    const [amountModalOpen, setAmountModalOpen] = useState(false)
+    const [amountInput, setAmountInput] = useState('')
     // Settings préchargés au démarrage de l'app via PaymentSettingsContext
     // → ouverture du widget instantanée, pas de round-trip Supabase
     const { kkiapayPublicKey: kkiapayKey, kkiapaySandbox: sandbox } = usePaymentSettings()
@@ -257,35 +260,14 @@ export default function PaymentsScreen({ navigation }: { navigation: Nav }) {
                 </View>
             </View>
 
-            {/* Bouton nouveau paiement (si un dossier existe) */}
+            {/* Bouton nouveau paiement — ouvre un modal custom (Android-compat,
+                Alert.prompt n'existe pas sur Android — cf piège connu n°3) */}
             <TouchableOpacity
                 style={styles.newPaymentBtn}
                 activeOpacity={0.8}
                 onPress={() => {
-                    Alert.prompt?.(
-                        t('Montant à payer'),
-                        t('Entrez le montant en FCFA'),
-                        [
-                            { text: t('Annuler'), style: 'cancel' },
-                            {
-                                text: t('Payer via Kkiapay'),
-                                onPress: (value: string | undefined) => {
-                                    const amount = parseInt(value || '0', 10)
-                                    if (!amount || amount < 100) {
-                                        Alert.alert(t('Montant invalide'), t('Veuillez entrer un montant valide.'))
-                                        return
-                                    }
-                                    handleInitPayment(amount, t('Paiement service Retour Gagnant'))
-                                },
-                            },
-                        ],
-                        'plain-text',
-                        '',
-                        'numeric'
-                    ) ?? Alert.alert(
-                        t('Paiement Kkiapay'),
-                        t('Contactez notre équipe pour effectuer un paiement ou consultez votre dossier.')
-                    )
+                    setAmountInput('')
+                    setAmountModalOpen(true)
                 }}
             >
                 <PlusCircle size={20} color="#FFF" strokeWidth={1.75} />
@@ -355,6 +337,70 @@ export default function PaymentsScreen({ navigation }: { navigation: Nav }) {
 
             <View style={{ height: 100 }} />
             </ScrollView>
+
+            {/* ── Modal saisie montant — compat Android (Alert.prompt iOS-only) ── */}
+            <Modal
+                visible={amountModalOpen}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setAmountModalOpen(false)}
+            >
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                    style={styles.modalBackdrop}
+                >
+                    <View style={styles.modalCard}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>{t('Montant à payer')}</Text>
+                            <TouchableOpacity
+                                onPress={() => setAmountModalOpen(false)}
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            >
+                                <X size={20} color={colors.textMuted} strokeWidth={2} />
+                            </TouchableOpacity>
+                        </View>
+                        <Text style={styles.modalHint}>{t('Entrez le montant en FCFA (minimum 100)')}</Text>
+                        <TextInput
+                            style={styles.modalInput}
+                            value={amountInput}
+                            onChangeText={(v) => setAmountInput(v.replace(/[^0-9]/g, ''))}
+                            placeholder="0"
+                            placeholderTextColor={colors.textMuted}
+                            keyboardType="numeric"
+                            autoFocus
+                            maxLength={9}
+                        />
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity
+                                style={[styles.modalBtn, styles.modalBtnGhost]}
+                                onPress={() => setAmountModalOpen(false)}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={styles.modalBtnGhostText}>{t('Annuler')}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.modalBtn, styles.modalBtnPrimary]}
+                                onPress={() => {
+                                    const amount = parseInt(amountInput || '0', 10)
+                                    if (!amount || amount < 100) {
+                                        Alert.alert(
+                                            t('Montant invalide'),
+                                            t('Veuillez entrer un montant supérieur ou égal à 100 FCFA.')
+                                        )
+                                        return
+                                    }
+                                    setAmountModalOpen(false)
+                                    handleInitPayment(amount, t('Paiement service Retour Gagnant'))
+                                }}
+                                activeOpacity={0.85}
+                            >
+                                <CreditCard size={16} color="#FFF" strokeWidth={2} />
+                                <Text style={styles.modalBtnPrimaryText}>{t('Payer via Kkiapay')}</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
         </View>
     )
 }
@@ -444,4 +490,82 @@ const styles = StyleSheet.create({
         marginTop: spacing.lg, marginHorizontal: spacing.lg,
     },
     kkiapayNoteText: { ...typography.caption, color: colors.textMuted, textAlign: 'center' },
+
+    /* ── Modal saisie montant ── */
+    modalBackdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(15, 28, 51, 0.55)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: spacing.lg,
+    },
+    modalCard: {
+        width: '100%',
+        maxWidth: 380,
+        backgroundColor: colors.surface,
+        borderRadius: radius.lg,
+        padding: spacing.lg,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+        ...shadows.md,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 6,
+    },
+    modalTitle: {
+        ...typography.h3,
+        color: colors.textPrimary,
+        fontSize: 17,
+    },
+    modalHint: {
+        ...typography.caption,
+        color: colors.textMuted,
+        marginBottom: spacing.md,
+    },
+    modalInput: {
+        ...typography.h2,
+        fontSize: 26,
+        color: colors.textPrimary,
+        textAlign: 'center',
+        backgroundColor: colors.surfaceElevated,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+        paddingVertical: 14,
+        paddingHorizontal: 12,
+        marginBottom: spacing.lg,
+    },
+    modalActions: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    modalBtn: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        paddingVertical: 13,
+        borderRadius: radius.md,
+    },
+    modalBtnGhost: {
+        backgroundColor: colors.surfaceElevated,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+    },
+    modalBtnGhostText: {
+        ...typography.button,
+        color: colors.textSecondary,
+    },
+    modalBtnPrimary: {
+        backgroundColor: colors.primary,
+        ...shadows.primary,
+    },
+    modalBtnPrimaryText: {
+        ...typography.button,
+        color: '#FFF',
+    },
 })

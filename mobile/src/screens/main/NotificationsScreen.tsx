@@ -7,6 +7,7 @@ import { ArrowLeft, Bell } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
 import ScreenHeader from '../../components/ScreenHeader'
 import * as Notifications from 'expo-notifications'
+import Constants from 'expo-constants'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../config/supabase'
@@ -22,7 +23,7 @@ interface AppNotification {
     id: string
     title: string
     body: string
-    type: 'dossier' | 'message' | 'payment' | 'appointment' | 'system'
+    type: 'dossier' | 'message' | 'payment' | 'appointment' | 'event' | 'system'
     is_read: boolean
     created_at: string
 }
@@ -32,6 +33,7 @@ const TYPE_CONFIG: Record<string, { icon: keyof typeof Ionicons.glyphMap; color:
     message:     { icon: 'chatbubble-ellipses-outline', color: colors.info,   bg: colors.info + '12' },
     payment:     { icon: 'card-outline',              color: colors.success, bg: colors.success + '12' },
     appointment: { icon: 'calendar-outline',          color: '#7C5CCA',      bg: '#7C5CCA12' },
+    event:       { icon: 'sparkles-outline',          color: colors.gold,    bg: colors.gold + '12' },
     system:      { icon: 'information-circle-outline', color: colors.textMuted, bg: colors.surfaceElevated },
 }
 
@@ -101,10 +103,18 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
                     return
                 }
 
-                // EAS project ID lu depuis app.json (extra.eas.projectId)
-                const tokenData = await Notifications.getExpoPushTokenAsync({
-                    projectId: '6101f41c-f687-4263-af3e-049669ec6973',
-                })
+                // EAS project ID lu dynamiquement depuis app.json (extra.eas.projectId)
+                const projectId =
+                    Constants.expoConfig?.extra?.eas?.projectId
+                    ?? Constants.easConfig?.projectId
+                if (!projectId) {
+                    Alert.alert(
+                        t('Configuration'),
+                        t('Identifiant projet EAS introuvable. Contactez le support.')
+                    )
+                    return
+                }
+                const tokenData = await Notifications.getExpoPushTokenAsync({ projectId })
                 const token = tokenData.data
 
                 await updateProfile({ push_token: token })
