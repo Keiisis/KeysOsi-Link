@@ -156,7 +156,7 @@ function calcTrend(curr: number, prev: number) {
     return ((curr - prev) / prev * 100 >= 0 ? '+' : '') + ((curr - prev) / prev * 100).toFixed(1)
 }
 
-const VALID_CURRENCIES = ['XOF', 'XAF', 'EUR', 'USD', 'GBP']
+const VALID_CURRENCIES = ['XOF', 'XAF', 'EUR', 'USD', 'GBP', 'HTG']
 const fmt = (val: number, currency = 'XOF') => {
     const cur = VALID_CURRENCIES.includes(currency) ? currency : 'XOF'
     return new Intl.NumberFormat('fr-BJ', { style: 'currency', currency: cur, maximumFractionDigits: 0 }).format(val)

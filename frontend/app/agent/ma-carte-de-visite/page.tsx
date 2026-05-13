@@ -5,9 +5,10 @@ import { supabase } from '@/lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toPng } from 'html-to-image'
 import jsPDF from 'jspdf'
-import { CreditCard, Download, FileImage, Loader2, RotateCcw, Info, Building2, Compass } from 'lucide-react'
+import { CreditCard, Download, FileImage, FileType, Loader2, RotateCcw, Info, Building2, Compass } from 'lucide-react'
 import { CardRecto as RGBRecto, CardVerso as RGBVerso, type CardData } from '@/components/business-card/BusinessCard'
 import { CardRecto as OuidahRecto, CardVerso as OuidahVerso } from '@/components/business-card/OuidahCard'
+import { downloadSVGCard } from '@/lib/svg-card-generator'
 
 /* ══════════════════════════════════════════════════════════════
    TABS CONFIG
@@ -98,6 +99,17 @@ export default function MaCarteDeVisite() {
             link.download = `${prefix}-carte-${side}-${card.prenom}-${card.nom}.png`
             link.href = dataUrl
             link.click()
+        } finally {
+            setDownloading(null)
+        }
+    }
+
+    const handleDownloadSvg = async () => {
+        if (!card) return
+        setDownloading('svg')
+        try {
+            const prefix = activeTab === 'rgb' ? 'RGB' : 'Ouidah-Heritage'
+            await downloadSVGCard(card, `Carte-VIP-${prefix}-${card.prenom}-${card.nom}`)
         } finally {
             setDownloading(null)
         }
@@ -299,32 +311,59 @@ export default function MaCarteDeVisite() {
                     Télécharger — {currentTab.label}
                 </h2>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <button type="button" onClick={() => downloadPNG('recto')} disabled={downloading !== null}
-                        className="flex items-center justify-center gap-2 py-3 bg-white/[0.03] border border-white/10 rounded-xl text-sm text-gray-300 hover:text-white hover:border-white/20 transition-all disabled:opacity-40 font-medium">
-                        {downloading === 'recto-png' ? <Loader2 size={15} className="animate-spin" /> : <FileImage size={15} />}
-                        Recto — PNG
-                    </button>
-                    <button type="button" onClick={() => downloadPNG('verso')} disabled={downloading !== null}
-                        className="flex items-center justify-center gap-2 py-3 bg-white/[0.03] border border-white/10 rounded-xl text-sm text-gray-300 hover:text-white hover:border-white/20 transition-all disabled:opacity-40 font-medium">
-                        {downloading === 'verso-png' ? <Loader2 size={15} className="animate-spin" /> : <FileImage size={15} />}
-                        Verso — PNG
-                    </button>
-                    <button type="button" onClick={downloadPDF} disabled={downloading !== null}
-                        className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm transition-all disabled:opacity-40 font-bold"
-                        style={{
-                            background: `${currentTab.accent}15`,
-                            border: `1px solid ${currentTab.accent}30`,
-                            color: currentTab.accent,
-                        }}>
-                        {downloading === 'pdf' ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
-                        PDF Recto+Verso
-                    </button>
+                {/* ── Formats Vectoriels (Recommandés) ── */}
+                <div className="mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="w-1.5 h-1.5 rounded-full" style={{ background: currentTab.accent }} />
+                        <span className="text-[10px] font-bold uppercase tracking-[0.15em]" style={{ color: currentTab.accent }}>Vectoriel — Recommandé pour impression</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button type="button" onClick={handleDownloadSvg} disabled={downloading !== null}
+                            className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm transition-all disabled:opacity-40 font-bold"
+                            style={{
+                                background: `${currentTab.accent}15`,
+                                border: `1px solid ${currentTab.accent}30`,
+                                color: currentTab.accent,
+                            }}>
+                            {downloading === 'svg' ? <Loader2 size={15} className="animate-spin" /> : <FileType size={15} />}
+                            SVG Recto+Verso
+                        </button>
+                        <button type="button" onClick={downloadPDF} disabled={downloading !== null}
+                            className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm transition-all disabled:opacity-40 font-bold"
+                            style={{
+                                background: `${currentTab.accent}15`,
+                                border: `1px solid ${currentTab.accent}30`,
+                                color: currentTab.accent,
+                            }}>
+                            {downloading === 'pdf' ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
+                            PDF Recto+Verso
+                        </button>
+                    </div>
+                </div>
+
+                {/* ── Formats Raster (Classiques) ── */}
+                <div>
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-gray-500" />
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.15em]">Raster — Usage écran / web</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button type="button" onClick={() => downloadPNG('recto')} disabled={downloading !== null}
+                            className="flex items-center justify-center gap-2 py-3 bg-white/[0.03] border border-white/10 rounded-xl text-sm text-gray-300 hover:text-white hover:border-white/20 transition-all disabled:opacity-40 font-medium">
+                            {downloading === 'recto-png' ? <Loader2 size={15} className="animate-spin" /> : <FileImage size={15} />}
+                            Recto — PNG
+                        </button>
+                        <button type="button" onClick={() => downloadPNG('verso')} disabled={downloading !== null}
+                            className="flex items-center justify-center gap-2 py-3 bg-white/[0.03] border border-white/10 rounded-xl text-sm text-gray-300 hover:text-white hover:border-white/20 transition-all disabled:opacity-40 font-medium">
+                            {downloading === 'verso-png' ? <Loader2 size={15} className="animate-spin" /> : <FileImage size={15} />}
+                            Verso — PNG
+                        </button>
+                    </div>
                 </div>
 
                 <div className="mt-4 flex items-start gap-2 text-xs text-gray-600">
                     <Info size={12} className="mt-0.5 flex-shrink-0" style={{ color: `${currentTab.accent}80` }} />
-                    <p>Les fichiers PNG sont exportés en haute résolution pour impression. Le PDF génère deux pages au format A4 avec la carte centrée à sa dimension Premium Oversized (93×60mm) avec traits de coupe professionnels.</p>
+                    <p><strong style={{ color: `${currentTab.accent}` }}>SVG (vectoriel)</strong> : tracés nets, aucune pixellisation, Recto+Verso dans un seul fichier avec traits de coupe. Compatible impression et gravure laser. <strong>PNG</strong> : haute résolution (4×) pour usage web.</p>
                 </div>
             </motion.div>
 

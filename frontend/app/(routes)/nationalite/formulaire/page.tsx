@@ -681,10 +681,10 @@ export default function NationaliteFormPage() {
                         <div className="relative z-10">
 
                             {step === 1 && <div className="space-y-5">
-                                <h2 className="text-lg font-black text-gray-900"><T>Votre identification Afro-descendante</T></h2>
+                                <h2 className="text-lg font-black text-white"><T>Votre identification Afro-descendante</T></h2>
                                 <div><label className={LC}><T>Êtes-vous afro-descendant(e) ?</T><span className={RQ}>*</span></label><div className="flex gap-3 mt-1">{[true, false].map(v => <button key={String(v)} onClick={() => u('is_afro_descendant', v)} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${form.is_afro_descendant === v ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400' : 'bg-white/5 border border-gray-200 text-gray-500'}`}>{v ? t('Oui') : t('Non')}</button>)}</div></div>
                                 <div><label className={LC}><T>Comment êtes-vous afro-descendant(e) ?</T><span className={RQ}>*</span></label><textarea rows={4} value={form.afro_descendant_description} onChange={e => u('afro_descendant_description', e.target.value)} placeholder={t("Décrivez en quelques mots votre ascendance...")} className={IC + ' resize-none'} /></div>
-                                <div className="border-t border-gray-200 pt-5"><h3 className="text-sm font-black text-gray-900 mb-4"><T>Informations sur vos ancêtres</T></h3>
+                                <div className="border-t border-gray-200 pt-5"><h3 className="text-sm font-black text-white mb-4"><T>Informations sur votre Ascendance</T></h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{[1, 2].map(n => {
                                         const f = form as Record<string, any>
                                         return (
@@ -705,7 +705,7 @@ export default function NationaliteFormPage() {
                             </div>}
 
                             {step === 2 && <div className="space-y-5">
-                                <h2 className="text-lg font-black text-gray-900"><T>Informations Personnelles</T></h2>
+                                <h2 className="text-lg font-black text-white"><T>Informations Personnelles</T></h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div><label className={LC}><T>Nom</T><span className={RQ}>*</span></label><input title={t("Votre Nom")} value={form.nom} onChange={e => u('nom', e.target.value)} className={IC} placeholder={t('Nom de famille')} /></div>
                                     <div><label className={LC}><T>Prénom(s)</T><span className={RQ}>*</span></label><input title={t("Votre Prénom")} value={form.prenom} onChange={e => u('prenom', e.target.value)} className={IC} placeholder={t('Prénom(s)')} /></div>
@@ -722,7 +722,7 @@ export default function NationaliteFormPage() {
                                 </div>
 
                                 <div className="border-t border-gray-200 pt-5 space-y-4">
-                                    <h3 className="text-sm font-black text-gray-900"><T>Situation familiale</T></h3>
+                                    <h3 className="text-sm font-black text-white"><T>Situation familiale</T></h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div><label className={LC}><T>Situation matrimoniale</T></label><select title={t("Situation matrimoniale")} value={form.situation_matrimoniale} onChange={e => u('situation_matrimoniale', e.target.value)} className={IC}><option value="">{t("Choisir")}</option><option value="celibataire">{t("Célibataire")}</option><option value="marie">{t("Marié(e)")}</option><option value="divorce">{t("Divorcé(e)")}</option><option value="veuf">{t("Veuf/Veuve")}</option><option value="union_libre">{t("Union libre")}</option></select></div>
                                         <div><label className={LC}><T>Nombre d&apos;enfants</T></label><input title={t("Nombre d'enfants")} type="number" min={0} value={form.nombre_enfants} onChange={e => u('nombre_enfants', Number(e.target.value))} className={IC} placeholder="0" /></div>
@@ -736,7 +736,7 @@ export default function NationaliteFormPage() {
                             </div>}
 
                             {step === 3 && <div className="space-y-5">
-                                <h2 className="text-lg font-black text-gray-900"><T>Document d&apos;identité &amp; Parents</T></h2>
+                                <h2 className="text-lg font-black text-white"><T>Document d&apos;identité &amp; Parents</T></h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div><label className={LC}><T>Type de document</T><span className={RQ}>*</span></label><select title={t("Type de document d&apos;identité")} value={form.type_document_identite} onChange={e => u('type_document_identite', e.target.value)} className={IC}><option value="">{t("Choisir")}</option><option value="passeport">{t("Passeport")}</option><option value="cni">{t("CNI")}</option><option value="carte_electeur">Carte d&apos;électeur</option><option value="autre">{t("Autre")}</option></select></div>
                                     <div><label className={LC}><T>Autorité de délivrance</T></label><input title={t("Autorité de délivrance")} value={form.autorite_delivrance} onChange={e => u('autorite_delivrance', e.target.value)} className={IC} /></div>
@@ -748,7 +748,7 @@ export default function NationaliteFormPage() {
 
                                 {/* Upload du document d'identité */}
                                 <div className="border-t border-gray-200 pt-5">
-                                    <h3 className="text-sm font-black text-gray-900 mb-3"><T>Scan / Photo du document</T></h3>
+                                    <h3 className="text-sm font-black text-white mb-3"><T>Scan / Photo du document</T></h3>
                                     <p className="text-[11px] text-gray-500 mb-3">{t('Joignez une photo ou un scan lisible de votre')} {form.type_document_identite === 'passeport' ? t('passeport') : form.type_document_identite === 'cni' ? t('carte d\'identité') : t('document')}.</p>
                                     <label className="cursor-pointer block bg-gray-50 border border-dashed border-emerald-500/30 rounded-xl p-5 text-center hover:border-emerald-500/60 transition-all">
                                         <FileText size={24} className="mx-auto text-emerald-400/50 mb-2" />
@@ -759,7 +759,7 @@ export default function NationaliteFormPage() {
                                     </label>
                                 </div>
 
-                                <div className="border-t border-gray-200 pt-5"><h3 className="text-sm font-black text-gray-900 mb-4"><T>Informations sur vos parents</T></h3>
+                                <div className="border-t border-gray-200 pt-5"><h3 className="text-sm font-black text-white mb-4"><T>Informations sur vos parents</T></h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{[t('Père'), 'Mère'].map(p => {
                                         const k = p === 'Père' ? 'pere' : 'mere';
                                         const f = form as Record<string, any>
@@ -775,7 +775,7 @@ export default function NationaliteFormPage() {
 
                                 {/* Motivation et RGPD */}
                                 <div className="border-t border-gray-200 pt-5 space-y-4">
-                                    <h3 className="text-sm font-black text-gray-900"><T>Lettre de motivation</T></h3>
+                                    <h3 className="text-sm font-black text-white"><T>Lettre de motivation</T></h3>
                                     <p className="text-[11px] text-gray-500"><T>Expliquez pourquoi cette démarche est importante pour vous. Ce texte sera joint a votre dossier.</T></p>
                                     <textarea title={t("Votre motivation")} rows={5} value={form.motivation_lettre} onChange={e => u('motivation_lettre', e.target.value)} placeholder={t('Rédigez ici votre motivation pour obtenir la nationalité béninoise...')} className={IC + ' resize-none'} />
                                 </div>
@@ -835,7 +835,7 @@ export default function NationaliteFormPage() {
                                 return (
                                     <div className="space-y-5">
                                         <div>
-                                            <h2 className="text-lg font-black text-gray-900"><T>Pièces à joindre</T></h2>
+                                            <h2 className="text-lg font-black text-white"><T>Pièces à joindre</T></h2>
                                             <p className="text-xs text-gray-500 mt-1"><T>Formats : PNG, JPG, JPEG, PDF. Taille max : 5 Mo par fichier.</T></p>
                                         </div>
 
@@ -890,7 +890,7 @@ export default function NationaliteFormPage() {
                             })()}
 
                             {step === 6 && <div className="space-y-5">
-                                <h2 className="text-lg font-black text-gray-900"><T>Paiement des frais de traitement</T></h2>
+                                <h2 className="text-lg font-black text-white"><T>Paiement des frais de traitement</T></h2>
                                 <div className="bg-gradient-to-r from-emerald-900/20 to-yellow-900/10 border border-emerald-500/10 rounded-2xl p-6 text-center">
                                     <p className="text-3xl font-black text-[#FCD116]"><Price amount={formAmount} currency={formCurrency} showOriginal /></p>
                                     <p className="text-xs text-gray-500 mt-1"><T>Frais de traitement de dossier</T></p>
@@ -923,7 +923,7 @@ export default function NationaliteFormPage() {
                             </div>}
 
                             {step === 5 && <div className="space-y-5">
-                                <h2 className="text-lg font-black text-gray-900"><T>Récapitulatif de votre demande</T></h2>
+                                <h2 className="text-lg font-black text-white"><T>Récapitulatif de votre demande</T></h2>
                                 <p className="text-xs text-gray-500"><T>Vérifiez attentivement vos informations avant de procéder au paiement.</T></p>
                                 {[
                                     { title: t('Identité'), items: [[t('Nom complet'), `${form.prenom} ${form.nom}`], [t('Genre'), form.genre], [t('Né(e) le'), form.date_naissance], [t('Nationalité'), form.nationalite], [t('Résidence'), `${form.adresse_residence ? form.adresse_residence + ', ' : ''}${form.pays_residence}`], [t('Email'), form.email], [t('Téléphone'), form.telephone], [t('Profession'), form.profession]] },
