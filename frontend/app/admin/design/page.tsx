@@ -8,13 +8,14 @@ import jsPDF from 'jspdf'
 import { Document, Packer, Paragraph, ImageRun, AlignmentType } from 'docx'
 import { saveAs } from 'file-saver'
 import {
-    CreditCard, Download, FileImage, User, Plus, Trash2,
+    CreditCard, Download, FileImage, FileType, User, Plus, Trash2,
     CheckCircle, AlertCircle, Loader2, Eye, UserCheck, RefreshCw,
     Search, ExternalLink, BookOpen, ChevronRight, Building2, Compass
 } from 'lucide-react'
 import Link from 'next/link'
 import { CardRecto as RGBRecto, CardVerso as RGBVerso, type CardData } from '@/components/business-card/BusinessCard'
 import { CardRecto as OuidahRecto, CardVerso as OuidahVerso } from '@/components/business-card/OuidahCard'
+import { downloadSVGCard } from '@/lib/svg-card-generator'
 
 type TabKey = 'rgb' | 'ouidah'
 
@@ -341,6 +342,20 @@ export default function AdminDesignPage() {
         }
     }
 
+    const handleDownloadSvg = async () => {
+        setDownloading('svg')
+        try {
+            const name = isValid ? `${form.prenom}-${form.nom}` : 'vide'
+            await downloadSVGCard(form, `Carte-VIP-${name}`)
+            setStatus({ type: 'success', msg: 'SVG vectoriel natif Recto+Verso téléchargé ! Tracés nets, prêt pour Illustrator, Inkscape, impression et gravure laser.' })
+        } catch (e) {
+            console.error('Erreur export SVG :', e)
+            setStatus({ type: 'error', msg: `Erreur export SVG : ${getErrorMessage(e)}` })
+        } finally {
+            setDownloading(null)
+        }
+    }
+
     /* ─── Suppression ─── */
     const deleteCard = async (id: string) => {
         if (!confirm('Supprimer cette carte ?')) return
@@ -357,7 +372,7 @@ export default function AdminDesignPage() {
     }
 
     /* ─── Téléchargement depuis une carte sauvegardée ─── */
-    const downloadSaved = async (card: SavedCard, type: 'recto-png' | 'verso-png' | 'pdf' | 'docx') => {
+    const downloadSaved = async (card: SavedCard, type: 'recto-png' | 'verso-png' | 'svg' | 'pdf' | 'docx') => {
         setDownloading(card.id + type)
         const cardData: CardData = {
             prenom:   card.employee_prenom,
@@ -373,6 +388,7 @@ export default function AdminDesignPage() {
             const refs = getActiveRefs()
             if (type === 'recto-png')      await downloadPNG(refs.recto, `recto-${fullName}.png`)
             else if (type === 'verso-png') await downloadPNG(refs.verso, `verso-${fullName}.png`)
+            else if (type === 'svg')       await downloadSVGCard(cardData, `Carte-VIP-${fullName}`)
             else if (type === 'pdf')       await downloadPDF(refs.recto, refs.verso, fullName)
             else if (type === 'docx')      await downloadDOCX(refs.recto, refs.verso, fullName)
         } catch (e) {
@@ -395,7 +411,7 @@ export default function AdminDesignPage() {
         <div className="space-y-8">
 
             {/* ── Navigation sous-sections ── */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div className="relative overflow-hidden rounded-2xl bg-[#C9A84C]/8 border-2 border-[#C9A84C]/30 p-5 flex items-center gap-4">
                     <div className="w-11 h-11 rounded-xl bg-[#C9A84C]/20 border border-[#C9A84C]/30 flex items-center justify-center flex-shrink-0">
                         <CreditCard size={20} className="text-[#C9A84C]" />
@@ -427,6 +443,17 @@ export default function AdminDesignPage() {
                         <p className="text-gray-600 text-xs">85×200cm — Haute Définition</p>
                     </div>
                     <ChevronRight size={16} className="text-gray-600 group-hover:text-[#C9A84C] transition-colors" />
+                </Link>
+                <Link href="/admin/design/plexiglas"
+                    className="group relative overflow-hidden rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-emerald-500/30 hover:bg-emerald-500/5 p-5 flex items-center gap-4 transition-all text-left">
+                    <div className="w-11 h-11 rounded-xl bg-white/[0.04] border border-white/[0.08] group-hover:bg-emerald-500/15 group-hover:border-emerald-500/25 flex items-center justify-center flex-shrink-0 transition-all">
+                        <Download size={20} className="text-gray-500 group-hover:text-emerald-400 transition-colors" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-gray-300 font-bold text-sm group-hover:text-white transition-colors">Plexiglas SVG</p>
+                        <p className="text-gray-600 text-xs">80×120cm — Forme arche</p>
+                    </div>
+                    <ChevronRight size={16} className="text-gray-600 group-hover:text-emerald-400 transition-colors" />
                 </Link>
             </div>
 
@@ -609,6 +636,15 @@ CREATE POLICY "Admins full access" ON public.business_cards
                             <span>Imprimer (PDF - 90x54)</span>
                         </button>
                         
+                        <button
+                            onClick={handleDownloadSvg}
+                            disabled={!isValid || downloading !== null}
+                            className="flex w-full sm:w-auto items-center justify-center gap-2 group px-6 py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-500 rounded-xl font-semibold text-white shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all hover:-translate-y-1 overflow-hidden relative"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:animate-shimmer" />
+                            {downloading === 'svg' ? <Loader2 size={18} className="animate-spin" /> : <FileType size={18} />}
+                            <span>Vectoriel (SVG)</span>
+                        </button>
                         <button
                             onClick={handleDownloadPng}
                             disabled={!isValid || downloading !== null}
@@ -815,6 +851,13 @@ CREATE POLICY "Admins full access" ON public.business_cards
                                             className="flex items-center gap-1 px-2 py-1.5 bg-white/[0.03] border border-white/10 rounded-lg text-xs text-gray-400 hover:text-white transition-colors disabled:opacity-40"
                                             title="PNG Verso">
                                             <FileImage size={12} /> V
+                                        </button>
+                                        <button type="button"
+                                            onClick={() => downloadSaved(card, 'svg')}
+                                            disabled={downloading !== null}
+                                            className="flex items-center gap-1 px-2 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs text-emerald-400 hover:bg-emerald-500/20 transition-colors disabled:opacity-40"
+                                            title="SVG Vectoriel Recto+Verso">
+                                            <FileType size={12} /> SVG
                                         </button>
                                         <button type="button"
                                             onClick={() => downloadSaved(card, 'pdf')}

@@ -135,55 +135,42 @@ export const CardRecto = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
                     padding: `${10 * s}px ${30 * s}px`,
                 }}>
 
-                    {/* LOGO — ÉNORME */}
+                    {/* LOGO — MAXIMUM */}
                     <img
                         src="/images/logo-transparent.png"
                         alt="Retour Gagnant Bénin"
                         style={{
-                            width: 250 * s,
-                            height: 250 * s,
+                            width: 340 * s,
+                            height: 340 * s,
                             objectFit: 'contain',
-                            marginBottom: 4 * s,
+                            marginBottom: 0,
                         }}
                     />
 
-                    {/* NOM — Montserrat Black TRÈS GROS */}
+                    {/* NOM — RETOUR GAGNANT BÉNIN sur une seule ligne */}
                     <div style={{
                         color: DARK,
-                        fontSize: 29 * s,
+                        fontSize: 27 * s,
                         fontWeight: 900,
-                        letterSpacing: '0.12em',
+                        letterSpacing: '0.06em',
                         textTransform: 'uppercase',
                         fontFamily: FONT,
                         textAlign: 'center',
-                        lineHeight: 1.15,
+                        lineHeight: 1,
+                        whiteSpace: 'nowrap',
                     }}>
-                        Retour Gagnant
+                        Retour Gagnant Bénin
                     </div>
 
-                    <div style={{
-                        color: DARK,
-                        fontSize: 29 * s,
-                        fontWeight: 900,
-                        letterSpacing: '0.12em',
-                        textTransform: 'uppercase',
-                        fontFamily: FONT,
-                        textAlign: 'center',
-                        lineHeight: 1.15,
-                        marginTop: 2 * s,
-                    }}>
-                        Bénin
-                    </div>
-
-                    {/* Tagline — dorée, BIEN VISIBLE, gras */}
+                    {/* Tagline — dorée, ULTRA VISIBLE, gras */}
                     <div style={{
                         color: GOLD_D,
-                        fontSize: 14 * s,
-                        letterSpacing: '0.05em',
+                        fontSize: 21 * s,
+                        letterSpacing: '0.02em',
                         textAlign: 'center',
-                        fontWeight: 700,
+                        fontWeight: 900,
                         fontFamily: FONT,
-                        marginTop: 10 * s,
+                        marginTop: 6 * s,
                     }}>
                         L&apos;Agence du Retour des Afro-descendants
                     </div>
@@ -331,28 +318,28 @@ export const CardVerso = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
                         {/* Espace flexible → pousse le footer en bas */}
                         <div style={{ flex: 1, minHeight: 12 * s }} />
 
-                        {/* ── FOOTER — TRES GROS infos génériques ── */}
+                        {/* ── FOOTER — ULTRA GROS, lisible même pour malvoyants ── */}
                         <div style={{
                             display: 'flex', flexDirection: 'column',
-                            gap: 10 * s,
+                            gap: 12 * s,
                         }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 * s }}>
-                                <IcoGlobe sz={Math.round(18 * s)} col={GOLD} />
+                                <IcoGlobe sz={Math.round(24 * s)} col={GOLD} />
                                 <span style={{
                                     color: DARK,
-                                    fontSize: 13.5 * s,
-                                    fontWeight: 800,
+                                    fontSize: 17 * s,
+                                    fontWeight: 900,
                                     letterSpacing: '0.01em',
                                 }}>
                                     contact@retourgagnantbenin.bj — www.retourgagnantbenin.bj
                                 </span>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 * s }}>
-                                <IcoPin sz={Math.round(18 * s)} col={GOLD} />
+                                <IcoPin sz={Math.round(24 * s)} col={GOLD} />
                                 <span style={{
                                     color: DARK,
-                                    fontSize: 13.5 * s,
-                                    fontWeight: 800,
+                                    fontSize: 17 * s,
+                                    fontWeight: 900,
                                 }}>
                                     Haie-Vive Cocotiers, Carré N°1158, Cotonou — BÉNIN
                                 </span>
@@ -389,7 +376,7 @@ export const CardVerso = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
                             textTransform: 'uppercase',
                             textAlign: 'center',
                         }}>
-                            Scanner
+                            Scannez
                         </div>
                     </div>
                 </div>
