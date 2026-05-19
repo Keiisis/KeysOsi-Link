@@ -124,17 +124,20 @@ export default function DossierScreen() {
                 .upload(filePath, arrayBuffer, { contentType: mimeType, upsert: false })
             if (uploadError) throw uploadError
 
-            const { data: { publicUrl } } = supabase.storage.from('dossier-documents').getPublicUrl(filePath)
+            // Générer une URL signée temporaire (1h) au lieu d'une URL publique permanente
+            // Sécurité : les passeports et pièces d'identité ne doivent JAMAIS avoir d'URL permanente
+            const { data: signedData } = await supabase.storage.from('dossier-documents').createSignedUrl(filePath, 60 * 60)
+            const secureUrl = signedData?.signedUrl || filePath // fallback sur le path si erreur
 
             // Essayer les deux tables
             const { error: dbErr } = await supabase.from('dossier_documents').insert({
                 dossier_id: target.id, client_id: profile.id,
-                file_name: safeName, file_url: publicUrl, file_type: mimeType, status: 'pending',
+                file_name: safeName, file_url: secureUrl, file_type: mimeType, status: 'pending',
             })
             if (dbErr) {
                 await supabase.from('documents').insert({
                     dossier_id: target.id, client_id: profile.id,
-                    file_name: safeName, file_url: publicUrl, file_type: mimeType, status: 'pending',
+                    file_name: safeName, file_url: secureUrl, file_type: mimeType, status: 'pending',
                 })
             }
             Alert.alert(t('Document envoyé'), t('Notre équipe le vérifiera sous 24–48h.'))
