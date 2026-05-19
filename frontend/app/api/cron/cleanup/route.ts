@@ -189,19 +189,21 @@ async function runPurge() {
     }
 
     // ── 3. Journaliser la purge dans security_logs ───────────
-    await supabase.from('security_logs').insert({
-        action: 'auto_purge_24h',
-        details: {
-            timestamp: now.toISOString(),
-            retention_hours: RETENTION_HOURS,
-            dossiers_found: expiredDossiers.length,
-            dossiers_archived_by_email: results.dossiersArchived,
-            dossiers_deleted: results.dossiersDeleted,
-            files_deleted: results.filesDeleted,
-            errors: results.errors,
-        },
-        records_affected: results.dossiersDeleted,
-    }).catch(() => { /* fail silently */ })
+    try {
+        await supabase.from('security_logs').insert({
+            action: 'auto_purge_24h',
+            details: {
+                timestamp: now.toISOString(),
+                retention_hours: RETENTION_HOURS,
+                dossiers_found: expiredDossiers.length,
+                dossiers_archived_by_email: results.dossiersArchived,
+                dossiers_deleted: results.dossiersDeleted,
+                files_deleted: results.filesDeleted,
+                errors: results.errors,
+            },
+            records_affected: results.dossiersDeleted,
+        })
+    } catch { /* fail silently */ }
 
     // ── 4. Envoyer un rapport de purge à l'admin ─────────────
     if (transporter && emailConfig.adminEmail && results.dossiersDeleted > 0) {
