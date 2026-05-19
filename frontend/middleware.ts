@@ -451,9 +451,13 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
     matcher: [
-        '/agent/:path*',
-        '/admin/:path*',
-        '/client/:path*',
-        '/ceo/:path*',
+        /*
+         * Match ALL routes EXCEPT:
+         * - _next/static (fichiers statiques Next.js)
+         * - _next/image (optimisation images)
+         * - favicon.ico, sw.js, robots.txt, sitemap.xml
+         * - Fichiers statiques publics (images, fonts, icons)
+         */
+        '/((?!_next/static|_next/image|favicon\\.ico|sw\\.js|robots\\.txt|sitemap\\.xml|manifest\\.json|icons/|images/|fonts/|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|ttf|eot|mp4|webm|mp3|pdf)$).*)',
     ],
 }

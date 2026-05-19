@@ -21,15 +21,18 @@ C'est l'un des piliers les plus critiques de notre sécurité, notamment pour le
 
 ## 2. Le Garde du Corps : WAF Autonome (Web Application Firewall) et Mémoire d'Apprentissage
 
-Contrairement aux pares-feux statiques (firewalls traditionnels), Retour Gagnant Bénin est protégé par un système implanté au cœur même de la base de données.
+Contrairement aux pares-feux statiques (firewalls traditionnels), Retour Gagnant Bénin est protégé par un système implanté au cœur même du serveur et de la base de données. Il s'agit d'un WAF intelligent basé sur l'OWASP CRS.
 
 * **Analyse et Détection en Temps Réel** : Chaque requête provenant de l'application mobile ou du web est scannée. Le WAF identifie les signatures d'attaques complexes (Injections SQL, Cross-Site Scripting XSS, attaques par force brute).
 * **Intelligence Mémorielle (Memory Learning)** : 
-   - Le serveur se souvient de ses agresseurs. Si une adresse IP a un comportement atypique (ex: scanner des failles, tenter 5 faux mots de passe), le système la place sous surveillance et "mémorise" son empreinte.
+   - Le serveur se souvient de ses agresseurs via la table `waf_ip_memory`. Si une adresse IP a un comportement atypique, le système la place sous surveillance et "mémorise" son empreinte avec un système de `trust_score` dynamique.
+   - Le système détecte les payloads récurrents, génère des signatures d'attaque (`waf_learned_rules`), et les promeut en règles actives si le volume dépasse un seuil.
+* **Coordination et Bannissement (Subnet)** : Détection d'attaques distribuées via des réseaux entiers (`/24`) entraînant un bannissement global.
+* **Protection Anti-BruteForce** : Les pages de connexion (`/admin/login`, `/client/login`, etc.) sont exemptées des vérifications de syntaxe (payload) pour éviter les faux positifs, mais subissent *obligatoirement* le Rate Limiting et le contrôle d'IP bannies.
 * **Escalade Automatique des Sanctions (Autonomous WAF)** :
    - **Niveau 1 (Throttling / Ralentissement)** : Si un script automatisé est détecté, le WAF ralentit drastiquement le temps de réponse pour briser la rentabilité de l'attaque.
-   - **Niveau 2 (Quarantaine)** : Rejet total et instantané des requêtes (Erreur 403) pendant plusieurs heures.
-   - **Niveau 3 (Blacklist Définitive)** : L'adresse IP est inscrite sur une liste noire au niveau du serveur DNS et pare-feu réseau. L'attaquant frappe "dans le vide", il ne peut même plus afficher la page d'accueil.
+   - **Niveau 2 (Quarantaine)** : Rejet total et instantané des requêtes (Erreur 403) pendant plusieurs heures, visible dans la table `waf_alerts`.
+   - **Niveau 3 (Blacklist Définitive)** : L'adresse IP est inscrite sur une liste noire. L'attaquant frappe "dans le vide", il ne peut même plus afficher la page d'accueil.
 
 ---
 
