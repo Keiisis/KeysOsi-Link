@@ -1,8 +1,14 @@
-import React, { useRef, useEffect } from 'react'
+import React, { useEffect } from 'react'
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    Modal, Animated, Dimensions, Platform, Pressable,
+    Modal, Dimensions, Platform, Pressable,
 } from 'react-native'
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withSpring,
+    withTiming,
+} from 'react-native-reanimated'
 import { Check, ChevronRight, Globe, X } from 'lucide-react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useLang, SUPPORTED_LANGUAGES, type LangCode } from '../contexts/LangContext'
@@ -18,35 +24,27 @@ interface LanguagePickerProps {
 
 export default function LanguagePicker({ visible, onClose }: LanguagePickerProps) {
     const { lang, setLang, t } = useLang()
-    const slideAnim = useRef(new Animated.Value(SHEET_H)).current
-    const fadeAnim  = useRef(new Animated.Value(0)).current
+    const slide = useSharedValue(SHEET_H)
+    const fade = useSharedValue(0)
 
     // ── Open / close animation ──
     useEffect(() => {
         if (visible) {
-            Animated.parallel([
-                Animated.timing(fadeAnim, {
-                    toValue: 1, duration: 240,
-                    useNativeDriver: true,
-                }),
-                Animated.spring(slideAnim, {
-                    toValue: 0, damping: 22, stiffness: 260,
-                    useNativeDriver: true,
-                }),
-            ]).start()
+            fade.value = withTiming(1, { duration: 240 })
+            slide.value = withSpring(0, { damping: 22, stiffness: 260 })
         } else {
-            Animated.parallel([
-                Animated.timing(fadeAnim, {
-                    toValue: 0, duration: 180,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(slideAnim, {
-                    toValue: SHEET_H, duration: 200,
-                    useNativeDriver: true,
-                }),
-            ]).start()
+            fade.value = withTiming(0, { duration: 180 })
+            slide.value = withTiming(SHEET_H, { duration: 200 })
         }
-    }, [visible, fadeAnim, slideAnim])
+    }, [visible, fade, slide])
+
+    const backdropStyle = useAnimatedStyle(() => ({
+        opacity: fade.value,
+    }))
+
+    const sheetStyle = useAnimatedStyle(() => ({
+        transform: [{ translateY: slide.value }],
+    }))
 
     const handleSelect = (code: LangCode) => {
         setLang(code)
@@ -56,12 +54,12 @@ export default function LanguagePicker({ visible, onClose }: LanguagePickerProps
     return (
         <Modal transparent visible={visible} animationType="none" statusBarTranslucent onRequestClose={onClose}>
             {/* Backdrop */}
-            <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)' }, { opacity: fadeAnim }]}>
+            <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)' }, backdropStyle]}>
                 <Pressable style={StyleSheet.absoluteFill} onPress={onClose}/>
             </Animated.View>
 
             {/* Bottom sheet */}
-            <Animated.View style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}>
+            <Animated.View style={[styles.sheet, sheetStyle]}>
                 {/* Handle */}
                 <View style={styles.handle}/>
 

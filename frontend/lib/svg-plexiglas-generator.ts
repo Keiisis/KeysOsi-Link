@@ -97,8 +97,8 @@ function buildSVG(logoB64: string, qrB64: string): string {
     const servicesRight = [
         '5.  Conseil Juridique',
         '6.  Logistique du Retour',
-        '7.  Production M\u00e9dias',
-        '8.  C\u00e9r\u00e9monies & \u00c9v\u00e9nements',
+        '7.  C\u00e9r\u00e9monies & \u00c9v\u00e9nements',
+        '',
         '',
     ]
 

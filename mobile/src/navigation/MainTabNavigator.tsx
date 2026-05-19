@@ -53,9 +53,10 @@ interface TabButtonProps {
     onLongPress: () => void
     accessibilityLabel?: string
     testID?: string
+    badgeCount?: number
 }
 
-function TabButton({ label, Icon, focused, onPress, onLongPress, accessibilityLabel, testID }: TabButtonProps) {
+function TabButton({ label, Icon, focused, onPress, onLongPress, accessibilityLabel, testID, badgeCount }: TabButtonProps) {
     const scale = useSharedValue(focused ? 1 : 0.92)
     const dotScale = useSharedValue(focused ? 1 : 0)
     const labelOpacity = useSharedValue(focused ? 1 : 0.7)
@@ -95,6 +96,11 @@ function TabButton({ label, Icon, focused, onPress, onLongPress, accessibilityLa
             <View style={styles.tabBtnInner}>
                 <Animated.View style={[styles.iconWrap, iconStyle]}>
                     <Icon size={22} color={tint} strokeWidth={strokeWidth} />
+                    {(badgeCount != null && badgeCount > 0) && (
+                        <View style={styles.badge}>
+                            <Text style={styles.badgeText}>{badgeCount > 9 ? '9+' : badgeCount}</Text>
+                        </View>
+                    )}
                 </Animated.View>
                 <Animated.Text
                     numberOfLines={1}
@@ -224,7 +230,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     label: {
-        fontSize: 10,
+        fontSize: 11,
         letterSpacing: 0.2,
         marginTop: 2,
     } as { fontSize: number; letterSpacing: number; marginTop: number },
@@ -235,5 +241,25 @@ const styles = StyleSheet.create({
         height: 4,
         borderRadius: 2,
         backgroundColor: colors.gold,
+    },
+    badge: {
+        position: 'absolute',
+        top: -4,
+        right: -8,
+        minWidth: 16,
+        height: 16,
+        borderRadius: 8,
+        backgroundColor: '#EF4444',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 3,
+        borderWidth: 1.5,
+        borderColor: colors.surface,
+    },
+    badgeText: {
+        fontSize: 9,
+        fontFamily: fonts.bodyBold,
+        color: '#FFFFFF',
+        lineHeight: 12,
     },
 })

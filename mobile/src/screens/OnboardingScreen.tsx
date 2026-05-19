@@ -1,60 +1,73 @@
 import React, { useRef, useState } from 'react'
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    Animated, Dimensions, Platform, Image,
+    Animated, Dimensions, Platform, Pressable, ImageBackground,
 } from 'react-native'
-import { ArrowRight, ChevronRight } from 'lucide-react-native'
-import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
-import { colors, spacing, radius, typography, fonts } from '../config/theme'
+import Svg, { Path } from 'react-native-svg'
 import { useLang } from '../contexts/LangContext'
 
 const { width, height } = Dimensions.get('window')
 
+/* ═══════════════════════════════════════
+   Types
+═══════════════════════════════════════ */
 interface OnboardingScreenProps {
     onComplete: () => void
 }
 
-const SLIDES = [
+interface Slide {
+    key: string
+    kicker: string
+    title: string
+    body: string
+    image: any
+    accent: string
+}
+
+/* ═══════════════════════════════════════
+   Slides — Storytelling cinématique
+═══════════════════════════════════════ */
+const SLIDES: Slide[] = [
     {
-        key: '1',
-        icon: 'ribbon-outline' as const,
-        iconColor: '#F59E0B',
-        title: 'Votre Retour\nSimplifié',
-        subtitle: 'Nationalité, passeport, démarches… Nous vous accompagnons à chaque étape avec une expertise VIP.',
-        bg: ['#059669', '#064E3B'] as [string, string],
-        accent: '#F59E0B',
+        key: 'roots',
+        kicker: 'Vos Racines',
+        title: 'Retrouvez\nvotre terre\nd\'origine',
+        body: 'Vous êtes Afro-descendant et le Bénin vous appelle. Retour Gagnant vous accompagne pour reconnecter avec vos racines.',
+        image: require('../../assets/onboarding/slide_1_roots.png'),
+        accent: '#009639',  // Vert Bénin
     },
     {
-        key: '2',
-        icon: 'document-text-outline' as const,
-        iconColor: '#3B82F6',
-        title: 'Suivi\nen Temps Réel',
-        subtitle: 'Déposez vos documents et suivez l\'avancement de vos démarches avec une transparence absolue.',
-        bg: ['#2563EB', '#1E3A8A'] as [string, string],
-        accent: '#3B82F6',
+        key: 'process',
+        kicker: 'Votre Dossier',
+        title: 'Nationalité,\npasseport,\nsimplifié',
+        body: 'Démarches administratives, obtention de la nationalité béninoise, passeport — notre expertise VIP transforme le complexe en simple.',
+        image: require('../../assets/onboarding/slide_2_process.png'),
+        accent: '#FCD116',  // Jaune Bénin
     },
     {
-        key: '3',
-        icon: 'shield-checkmark-outline' as const,
-        iconColor: '#10B981',
-        title: 'Excellence &\nSécurité',
-        subtitle: 'Messagerie, paiements, rendez-vous : un espace client luxueux et 100% sécurisé.',
-        bg: ['#0F766E', '#134E4A'] as [string, string],
-        accent: '#10B981',
+        key: 'home',
+        kicker: 'Votre Retour',
+        title: 'Bienvenue\nchez vous,\nau Bénin',
+        body: 'Au-delà des papiers, c\'est une nouvelle vie qui commence. Installation, communauté, héritage — votre retour gagnant.',
+        image: require('../../assets/onboarding/slide_3_home.png'),
+        accent: '#EF2B2D',  // Rouge Bénin
     },
 ]
 
+/* ═══════════════════════════════════════
+   Composant principal
+═══════════════════════════════════════ */
 export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
     const { t } = useLang()
     const [current, setCurrent] = useState(0)
-    const flatRef = useRef<Animated.FlatList<any>>(null)
+    const flatRef = useRef<Animated.FlatList<Slide>>(null)
     const scrollX = useRef(new Animated.Value(0)).current
 
     const goNext = () => {
         if (current < SLIDES.length - 1) {
             const next = current + 1
-            // @ts-ignore
+            // @ts-ignore — FlatList ref typing quirk
             flatRef.current?.scrollToIndex({ index: next, animated: true })
             setCurrent(next)
         } else {
@@ -66,23 +79,21 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
 
     return (
         <View style={styles.container}>
-            {/* Arrière-plans colorés animés via Parallax */}
-            {SLIDES.map((slide, index) => {
-                const opacity = scrollX.interpolate({
-                    inputRange: [(index - 1) * width, index * width, (index + 1) * width],
-                    outputRange: [0, 1, 0],
-                    extrapolate: 'clamp',
-                })
-                return (
-                    <Animated.View key={index} style={[StyleSheet.absoluteFillObject, { opacity }]}>
-                        <LinearGradient colors={slide.bg} style={StyleSheet.absoluteFillObject} />
-                    </Animated.View>
-                )
-            })}
+            {/* Header flottant */}
+            <View style={styles.header}>
+                <View style={styles.chapterPill}>
+                    <Text style={styles.chapterText}>
+                        {String(current + 1).padStart(2, '0')}
+                        <Text style={styles.chapterDim}> / {String(SLIDES.length).padStart(2, '0')}</Text>
+                    </Text>
+                </View>
 
-            {/* Formes pour plus de "vivance" */}
-            <View style={styles.circleTopRight} />
-            <View style={styles.circleBottomLeft} />
+                {!isLast && (
+                    <Pressable hitSlop={12} onPress={onComplete}>
+                        <Text style={styles.skipText}>{t('Passer')}</Text>
+                    </Pressable>
+                )}
+            </View>
 
             <Animated.FlatList
                 ref={flatRef}
@@ -90,109 +101,65 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
                 keyExtractor={item => item.key}
                 horizontal
                 pagingEnabled
-                scrollEnabled={true}
                 showsHorizontalScrollIndicator={false}
                 onScroll={Animated.event(
                     [{ nativeEvent: { contentOffset: { x: scrollX } } }],
                     { useNativeDriver: true }
                 )}
-                renderItem={({ item, index }) => {
-                    const inputRange = [
-                        (index - 1) * width,
-                        index * width,
-                        (index + 1) * width,
-                    ]
-
-                    const scale = scrollX.interpolate({
-                        inputRange,
-                        outputRange: [0.85, 1, 0.85],
-                        extrapolate: 'clamp',
-                    })
-                    const translateY = scrollX.interpolate({
-                        inputRange,
-                        outputRange: [60, 0, 60],
-                        extrapolate: 'clamp',
-                    })
-                    const opacity = scrollX.interpolate({
-                        inputRange,
-                        outputRange: [0, 1, 0],
-                        extrapolate: 'clamp',
-                    })
-
-                    return (
-                        <View style={styles.slide}>
-                            <Animated.View style={[styles.card, { opacity, transform: [{ scale }, { translateY }] }]}>
-                                
-                                <View style={[styles.iconWrap, { backgroundColor: item.accent + '15' }]}>
-                                    <Ionicons name={item.icon} size={50} color={item.accent} />
-                                </View>
-
-                                <Text style={styles.title}>{t(item.title)}</Text>
-                                <View style={[styles.divider, { backgroundColor: item.accent }]} />
-                                <Text style={styles.subtitle}>{t(item.subtitle)}</Text>
-                            </Animated.View>
-                        </View>
-                    )
+                onMomentumScrollEnd={(e) => {
+                    const idx = Math.round(e.nativeEvent.contentOffset.x / width)
+                    setCurrent(idx)
                 }}
+                renderItem={({ item, index }) => (
+                    <SlideView item={item} index={index} scrollX={scrollX} />
+                )}
             />
 
-            {/* Footer Épuré Blanc */}
+            {/* Footer flottant */}
             <View style={styles.footer}>
-                <View style={styles.dots}>
-                    {SLIDES.map((_, i) => {
-                        const inputRange = [(i - 1) * width, i * width, (i + 1) * width]
-                        const dotWidth = scrollX.interpolate({
-                            inputRange,
-                            outputRange: [8, 24, 8],
-                            extrapolate: 'clamp',
-                        })
-                        const dotOpacity = scrollX.interpolate({
-                            inputRange,
-                            outputRange: [0.3, 1, 0.3],
-                            extrapolate: 'clamp',
-                        })
-                        const dotColor = scrollX.interpolate({
-                            inputRange,
-                            outputRange: ['#A0AEC0', SLIDES[current]?.accent || '#F59E0B', '#A0AEC0'],
-                            extrapolate: 'clamp',
-                        })
+                <LinearGradient
+                    colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.85)']}
+                    locations={[0, 0.4, 1]}
+                    style={StyleSheet.absoluteFillObject}
+                    pointerEvents="none"
+                />
 
-                        return (
-                            <Animated.View
-                                key={i}
-                                style={[
-                                    styles.dot,
-                                    { width: dotWidth, opacity: dotOpacity, backgroundColor: dotColor },
-                                ]}
-                            />
-                        )
-                    })}
-                </View>
-
-                <View style={styles.btns}>
-                    {!isLast && (
-                        <TouchableOpacity style={styles.skipBtn} onPress={onComplete} activeOpacity={0.6}>
-                            <Text style={styles.skipText}>{t('Passer')}</Text>
-                        </TouchableOpacity>
-                    )}
+                <View style={styles.footerInner}>
+                    {/* Progress segments */}
+                    <View style={styles.progressTrack}>
+                        {SLIDES.map((_, i) => {
+                            const inputRange = [(i - 1) * width, i * width, (i + 1) * width]
+                            const flex = scrollX.interpolate({
+                                inputRange,
+                                outputRange: [1, 3, 1],
+                                extrapolate: 'clamp',
+                            })
+                            const opacity = scrollX.interpolate({
+                                inputRange,
+                                outputRange: [0.3, 1, 0.3],
+                                extrapolate: 'clamp',
+                            })
+                            return (
+                                <Animated.View
+                                    key={i}
+                                    style={[
+                                        styles.progressSeg,
+                                        { flex, opacity, backgroundColor: '#FFFFFF' },
+                                    ]}
+                                />
+                            )
+                        })}
+                    </View>
 
                     <TouchableOpacity
-                        style={[
-                            styles.nextBtn, 
-                            isLast && styles.nextBtnFull,
-                            { backgroundColor: SLIDES[current]?.accent || '#F59E0B' }
-                        ]}
+                        activeOpacity={0.85}
                         onPress={goNext}
-                        activeOpacity={0.8}
+                        style={styles.cta}
                     >
-                        {isLast ? (
-                            <>
-                                <Text style={styles.nextText}>{t('Démarrer')}</Text>
-                                <ArrowRight size={20} color="#FFFFFF" strokeWidth={3} />
-                            </>
-                        ) : (
-                            <ChevronRight size={28} color="#FFFFFF" strokeWidth={3} />
-                        )}
+                        <Text style={styles.ctaText}>
+                            {isLast ? t('Commencer mon retour') : t('Continuer')}
+                        </Text>
+                        <ArrowIcon />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -200,93 +167,254 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     )
 }
 
+/* ═══════════════════════════════════════
+   Slide individuel — Ken Burns + Parallax
+═══════════════════════════════════════ */
+function SlideView({
+    item,
+    index,
+    scrollX,
+}: {
+    item: Slide
+    index: number
+    scrollX: Animated.Value
+}) {
+    const { t } = useLang()
+    const inputRange = [(index - 1) * width, index * width, (index + 1) * width]
+
+    // Ken Burns effect : zoom léger + parallax
+    const imageScale = scrollX.interpolate({
+        inputRange,
+        outputRange: [1.15, 1, 1.15],
+        extrapolate: 'clamp',
+    })
+    const imageTranslate = scrollX.interpolate({
+        inputRange,
+        outputRange: [width * 0.3, 0, -width * 0.3],
+        extrapolate: 'clamp',
+    })
+    const textOpacity = scrollX.interpolate({
+        inputRange,
+        outputRange: [0, 1, 0],
+        extrapolate: 'clamp',
+    })
+    const textTranslate = scrollX.interpolate({
+        inputRange,
+        outputRange: [40, 0, -40],
+        extrapolate: 'clamp',
+    })
+
+    return (
+        <View style={styles.slide}>
+            {/* Image avec parallax + Ken Burns */}
+            <Animated.View
+                style={[
+                    styles.imageWrap,
+                    {
+                        transform: [
+                            { scale: imageScale },
+                            { translateX: imageTranslate },
+                        ],
+                    },
+                ]}
+            >
+                <ImageBackground source={item.image} style={styles.image} />
+            </Animated.View>
+
+            {/* Vignette sombre pour la lisibilité du texte */}
+            <LinearGradient
+                colors={[
+                    'rgba(0,0,0,0.1)',
+                    'rgba(0,0,0,0.3)',
+                    'rgba(0,0,0,0.75)',
+                    'rgba(0,0,0,0.95)',
+                ]}
+                locations={[0, 0.35, 0.7, 1]}
+                style={StyleSheet.absoluteFillObject}
+                pointerEvents="none"
+            />
+
+            {/* Texte */}
+            <Animated.View
+                style={[
+                    styles.textBlock,
+                    {
+                        opacity: textOpacity,
+                        transform: [{ translateY: textTranslate }],
+                    },
+                ]}
+            >
+                <Text style={[styles.kicker, { color: item.accent }]}>
+                    {t(item.kicker).toUpperCase()}
+                </Text>
+
+                <Text style={styles.title}>{t(item.title)}</Text>
+
+                <View style={[styles.accentLine, { backgroundColor: item.accent }]} />
+
+                <Text style={styles.body}>{t(item.body)}</Text>
+            </Animated.View>
+        </View>
+    )
+}
+
+/* ═══════════════════════════════════════
+   Arrow Icon (inline SVG)
+═══════════════════════════════════════ */
+function ArrowIcon() {
+    return (
+        <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+            <Path
+                d="M5 12h14M13 6l6 6-6 6"
+                stroke="#1A1613"
+                strokeWidth={2.2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+        </Svg>
+    )
+}
+
+/* ═══════════════════════════════════════
+   STYLES
+═══════════════════════════════════════ */
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#059669' },
-    
-    circleTopRight: {
-        position: 'absolute', top: -50, right: -50,
-        width: 300, height: 300, borderRadius: 150,
-        backgroundColor: '#FFFFFF', opacity: 0.1,
+    container: {
+        flex: 1,
+        backgroundColor: '#000',
     },
-    circleBottomLeft: {
-        position: 'absolute', bottom: -100, left: -100,
-        width: 400, height: 400, borderRadius: 200,
-        backgroundColor: '#000000', opacity: 0.05,
+    header: {
+        position: 'absolute',
+        top: Platform.OS === 'ios' ? 60 : 44,
+        left: 24,
+        right: 24,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        zIndex: 10,
+    },
+    chapterPill: {
+        paddingHorizontal: 14,
+        paddingVertical: 7,
+        borderRadius: 100,
+        backgroundColor: 'rgba(255, 255, 255, 0.18)',
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: 'rgba(255, 255, 255, 0.25)',
+    },
+    chapterText: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#FFFFFF',
+        letterSpacing: 1.5,
+    },
+    chapterDim: {
+        color: 'rgba(255, 255, 255, 0.55)',
+        fontWeight: '500',
+    },
+    skipText: {
+        fontSize: 14,
+        color: 'rgba(255, 255, 255, 0.85)',
+        fontWeight: '500',
+        letterSpacing: -0.2,
+        textShadowColor: 'rgba(0,0,0,0.5)',
+        textShadowRadius: 8,
     },
 
     slide: {
-        width, height,
-        alignItems: 'center', justifyContent: 'center',
-        paddingHorizontal: spacing.lg,
-        paddingBottom: 150,
+        width,
+        height,
+        backgroundColor: '#000',
     },
-    card: {
+    imageWrap: {
+        ...StyleSheet.absoluteFillObject,
+    },
+    image: {
         width: '100%',
-        padding: spacing.xl, paddingTop: 40, paddingBottom: 40,
-        backgroundColor: '#FFFFFF',
-        borderRadius: 32,
-        alignItems: 'center',
-        shadowColor: '#000', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.15, shadowRadius: 30, elevation: 15,
-    },
-    iconWrap: {
-        width: 110, height: 110, borderRadius: 55,
-        alignItems: 'center', justifyContent: 'center',
-        marginBottom: spacing.xl,
-    },
-    title: {
-        fontFamily: fonts.heading,
-        fontSize: 32,
-        color: '#111827',
-        textAlign: 'center',
-        lineHeight: 40,
-        letterSpacing: 0.5,
-    },
-    divider: {
-        width: 40, height: 4,
-        borderRadius: 2,
-        marginVertical: spacing.lg,
-    },
-    subtitle: {
-        fontFamily: fonts.bodyMedium,
-        fontSize: 16,
-        color: '#6B7280',
-        textAlign: 'center',
-        lineHeight: 26,
+        height: '100%',
     },
 
-    // Footer (Blanc & Clean)
+    textBlock: {
+        position: 'absolute',
+        left: 28,
+        right: 28,
+        bottom: 200,
+    },
+    kicker: {
+        fontSize: 11,
+        fontWeight: '700',
+        letterSpacing: 3,
+        marginBottom: 18,
+    },
+    title: {
+        fontSize: 44,
+        fontWeight: '700',
+        color: '#FFFFFF',
+        letterSpacing: -1.5,
+        lineHeight: 48,
+        fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+        marginBottom: 22,
+        textShadowColor: 'rgba(0,0,0,0.4)',
+        textShadowRadius: 12,
+    },
+    accentLine: {
+        width: 36,
+        height: 2,
+        borderRadius: 1,
+        marginBottom: 22,
+    },
+    body: {
+        fontSize: 17,
+        color: 'rgba(255, 255, 255, 0.88)',
+        lineHeight: 26,
+        letterSpacing: -0.2,
+        fontWeight: '400',
+        textShadowColor: 'rgba(0,0,0,0.3)',
+        textShadowRadius: 8,
+    },
+
     footer: {
-        position: 'absolute', bottom: 0, left: 0, right: 0,
-        paddingHorizontal: spacing.xl, paddingTop: spacing.xl,
-        paddingBottom: Platform.OS === 'ios' ? 40 : spacing.xl,
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 180,
+    },
+    footerInner: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        paddingHorizontal: 24,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 28,
+    },
+    progressTrack: {
+        flexDirection: 'row',
+        height: 3,
+        gap: 6,
+        marginBottom: 22,
+    },
+    progressSeg: {
+        height: 3,
+        borderRadius: 2,
+    },
+    cta: {
+        height: 58,
+        borderRadius: 16,
         backgroundColor: '#FFFFFF',
-        borderTopLeftRadius: 32, borderTopRightRadius: 32,
-        shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.05, shadowRadius: 20, elevation: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        shadowColor: '#000',
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        shadowOffset: { width: 0, height: 8 },
+        elevation: 10,
     },
-    dots: {
-        flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
-        gap: 8, marginBottom: spacing.xl,
-    },
-    dot: { height: 6, borderRadius: 3 },
-    btns: {
-        flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 16,
-    },
-    skipBtn: {
-        flex: 1, paddingVertical: 16, alignItems: 'center',
-    },
-    skipText: {
-        fontFamily: fonts.bodySemibold, fontSize: 16, color: '#9CA3AF', letterSpacing: 0.5,
-    },
-    nextBtn: {
-        width: 64, height: 64, borderRadius: 32,
-        alignItems: 'center', justifyContent: 'center',
-        shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 8,
-    },
-    nextBtnFull: {
-        flex: 1, width: 'auto', borderRadius: 20,
-        flexDirection: 'row', gap: 12, paddingHorizontal: spacing.xl, height: 64,
-    },
-    nextText: {
-        fontFamily: fonts.heading, fontSize: 20, color: '#FFFFFF', letterSpacing: 0.5,
+    ctaText: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#1A1613',
+        letterSpacing: -0.3,
     },
 })

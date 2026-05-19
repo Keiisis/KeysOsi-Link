@@ -154,13 +154,6 @@ export async function middleware(request: NextRequest) {
     // L'auth Supabase reste active pour protéger les données
     const emergencyBypass = process.env.WAF_EMERGENCY_BYPASS === 'true'
 
-    // ─── 1. ABSOLUTE BYPASS (login, reset, 2fa) ──────────────
-    // Ces chemins ne doivent JAMAIS être bloqués — même IP bloquée
-    // → L'admin doit toujours pouvoir se reconnecter
-    if (isAbsoluteBypass(pathname)) {
-        return response
-    }
-
     // ─── Refresh config WAF (async, non bloquant) ────────────
     if (!emergencyBypass) {
         refreshWafConfig().catch(() => {})
@@ -251,20 +244,26 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    // ─── 5. WAF CRS ANALYSIS ─────────────────────────────────
-    //
-    // RÈGLE D'OR : Les panels internes /admin/*, /agent/*, /client/*
-    // sont EXEMPTÉS du scan WAF CRS car :
-    //   1. Leurs URLs sont générées par l'application (routing Next.js)
-    //   2. Ils sont protégés par l'auth Supabase (étape 6)
-    //   3. Le WAF CRS sur ces URLs = 100% faux positifs
-    //      (UUIDs, mots "create/update/delete" dans les routes REST)
-    //
-    // Le WAF CRS RESTE actif sur :
-    //   - User-Agent (détection scanners)
-    //   - Query strings avec contenu suspect
-    //
-    if (!emergencyBypass) {
+    // ─── 4c. BYPASS LOGIN PAGES (WAF CRS ONLY) ────────────────
+    // Si c'est une page de login, on la laisse passer MAINTENANT
+    // (après que le rate limiting et les blocs IP l'aient protégée du bruteforce)
+    if (isAbsoluteBypass(pathname)) {
+        // Optionnel : on pourrait appliquer un WAF CRS très léger ici, 
+        // mais pour éviter de bloquer un admin, on passe.
+    } else if (!emergencyBypass) {
+        // ─── 5. WAF CRS ANALYSIS ─────────────────────────────────
+        //
+        // RÈGLE D'OR : Les panels internes /admin/*, /agent/*, /client/*
+        // sont EXEMPTÉS du scan WAF CRS car :
+        //   1. Leurs URLs sont générées par l'application (routing Next.js)
+        //   2. Ils sont protégés par l'auth Supabase (étape 6)
+        //   3. Le WAF CRS sur ces URLs = 100% faux positifs
+        //      (UUIDs, mots "create/update/delete" dans les routes REST)
+        //
+        // Le WAF CRS RESTE actif sur :
+        //   - User-Agent (détection scanners)
+        //   - Query strings avec contenu suspect
+        //
         if (isInternalPanelPath) {
             // Pour les panels internes : scanner le User-Agent uniquement
             // (détection bots/scanners qui ciblent les panels admin)

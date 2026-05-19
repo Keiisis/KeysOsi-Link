@@ -108,7 +108,7 @@ export default function App() {
 
     // Attendre que les polices soient prêtes avant d'afficher l'app
     if (!fontsLoaded) {
-        return <SplashScreen />
+        return <SplashScreen isLoading />
     }
 
     return (

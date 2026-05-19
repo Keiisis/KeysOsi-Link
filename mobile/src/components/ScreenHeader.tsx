@@ -4,12 +4,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native
 import { LinearGradient } from 'expo-linear-gradient'
 import { ArrowLeft } from 'lucide-react-native'
 
-const royal = {
-    emerald: '#0B4A2B',
-    lightEmerald: '#12683E',
-    gold: '#DCA540',
-    softGold: '#F8E9C7',
-}
+import { royal } from '../config/theme'
 
 interface ScreenHeaderProps {
     title: string
@@ -27,7 +22,7 @@ export default function ScreenHeader({ title, subtitle, onBack, rightAction }: S
     return (
         <View style={styles.header}>
             <View style={styles.headerBgWrap}>
-                <LinearGradient colors={[royal.emerald, royal.lightEmerald]} style={StyleSheet.absoluteFillObject} />
+                <LinearGradient colors={[royal.deepEmerald, royal.deepLightEmerald]} style={StyleSheet.absoluteFillObject} />
             </View>
             <View style={styles.headerTopRow}>
                 {onBack ? (
@@ -58,7 +53,7 @@ const styles = StyleSheet.create({
         paddingTop: Platform.OS === 'ios' ? 56 : 44,
         paddingBottom: 24,
         paddingHorizontal: 20,
-        shadowColor: royal.emerald,
+        shadowColor: royal.deepEmerald,
         shadowOpacity: 0.3,
         shadowRadius: 20,
         shadowOffset: { width: 0, height: 10 },
@@ -96,7 +91,7 @@ const styles = StyleSheet.create({
     titleDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: royal.gold, opacity: 0.8 },
     headerSub: {
         fontFamily: 'Inter_500Medium', fontSize: 14,
-        color: royal.softGold, textAlign: 'center', fontStyle: 'italic',
+        color: royal.goldSoft, textAlign: 'center', fontStyle: 'italic',
         marginTop: 4,
     },
 })

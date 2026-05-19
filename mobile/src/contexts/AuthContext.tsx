@@ -105,24 +105,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const signIn = async (email: string, password: string) => {
-        const { error } = await supabase.auth.signInWithPassword({ email, password })
-        return { error: error as Error | null }
+        try {
+            const { error, data } = await supabase.auth.signInWithPassword({ email, password })
+            console.log('Login attempt:', email, data, error)
+            return { error: error as Error | null }
+        } catch (e: any) {
+            console.error('Login error:', e)
+            return { error: e }
+        }
     }
 
     const signUp = async (email: string, password: string, metadata?: Record<string, unknown>) => {
-        const { error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: { data: metadata },
-        })
-        return { error: error as Error | null }
+        try {
+            const { error, data } = await supabase.auth.signUp({
+                email,
+                password,
+                options: { data: metadata },
+            })
+            console.log('Register attempt:', email, data, error)
+            return { error: error as Error | null }
+        } catch (e: any) {
+            console.error('Register error:', e)
+            return { error: e }
+        }
     }
 
     const signOut = async () => {
-        if (state.user?.id) {
-            await clearPushToken(state.user.id).catch(() => {})
+        try {
+            if (state.user?.id) {
+                await clearPushToken(state.user.id).catch(() => {})
+            }
+            await supabase.auth.signOut()
+        } catch (e) {
+            console.error('Sign out error:', e)
         }
-        await supabase.auth.signOut()
         setState({ session: null, user: null, loading: false, profile: null })
     }
 

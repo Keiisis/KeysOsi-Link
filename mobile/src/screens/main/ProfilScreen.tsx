@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
     View, Text, ScrollView, StyleSheet, TouchableOpacity,
     Image, Alert, Platform, ActivityIndicator,
@@ -7,9 +7,11 @@ import { Calendar, Camera, ChevronRight, CreditCard, FolderOpen, LogOut, MapPin,
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import * as ImagePicker from 'expo-image-picker'
+import * as FileSystem from 'expo-file-system'
+import { decode } from 'base64-arraybuffer'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../config/supabase'
-import { colors, spacing, radius, shadows, typography } from '../../config/theme'
+import { colors, spacing, radius, shadows, typography, fonts, royal, motion } from '../../config/theme'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { RootStackParamList } from '../../navigation/AppNavigator'
@@ -17,6 +19,13 @@ import ScreenHeader from '../../components/ScreenHeader'
 import { useLang } from '../../contexts/LangContext'
 import LanguagePicker from '../../components/LanguagePicker'
 import { Modal } from 'react-native'
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withDelay,
+    withSpring,
+    withTiming,
+} from 'react-native-reanimated'
 
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
@@ -102,9 +111,10 @@ export default function ProfilScreen() {
 
         setUploadingAvatar(true)
         try {
-            // Lire le fichier en base64
-            const response = await fetch(asset.uri)
-            const blob = await response.blob()
+            // Lire le fichier en base64 (méthode fiable sur RN)
+            const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+                encoding: FileSystem.EncodingType.Base64,
+            })
 
             const ext = asset.uri.split('.').pop()?.toLowerCase() || 'jpg'
             const fileName = `avatar_${userId}_${Date.now()}.${ext}`
@@ -113,7 +123,7 @@ export default function ProfilScreen() {
             // Upload dans le bucket Supabase "avatars"
             const { error: uploadError } = await supabase.storage
                 .from('avatars')
-                .upload(filePath, blob, {
+                .upload(filePath, decode(base64), {
                     contentType: asset.mimeType || `image/${ext}`,
                     upsert: true,
                 })
@@ -162,14 +172,15 @@ export default function ProfilScreen() {
 
         setUploadingAvatar(true)
         try {
-            const response = await fetch(asset.uri)
-            const blob = await response.blob()
+            const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+                encoding: FileSystem.EncodingType.Base64,
+            })
             const fileName = `avatar_${userId}_${Date.now()}.jpg`
             const filePath = `${userId}/${fileName}`
 
             const { error: uploadError } = await supabase.storage
                 .from('avatars')
-                .upload(filePath, blob, { contentType: 'image/jpeg', upsert: true })
+                .upload(filePath, decode(base64), { contentType: 'image/jpeg', upsert: true })
 
             if (uploadError) throw uploadError
 
@@ -529,12 +540,12 @@ const styles = StyleSheet.create({
         backgroundColor: colors.primary + '20', borderWidth: 3, borderColor: colors.primary + '50',
         alignItems: 'center', justifyContent: 'center',
     },
-    avatarInitials: { fontSize: 28, fontFamily: 'Inter_700Bold', color: colors.primaryLight },
+    avatarInitials: { fontSize: 28, fontFamily: fonts.bodyBold, color: colors.primaryLight },
     cameraBadge: {
         position: 'absolute', bottom: 2, right: 2,
         width: 28, height: 28, borderRadius: 14,
         backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
-        borderWidth: 2, borderColor: colors.headerBg,
+        borderWidth: 2, borderColor: colors.surface,
     },
 
     userName: { ...typography.h2, color: colors.textPrimary },
@@ -546,13 +557,13 @@ const styles = StyleSheet.create({
         backgroundColor: colors.primary + '15', borderRadius: 20,
         paddingHorizontal: 12, paddingVertical: 5,
     },
-    roleText: { fontSize: 11, fontFamily: 'Inter_700Bold', color: colors.primary, letterSpacing: 0.5 },
+    roleText: { fontSize: 11, fontFamily: fonts.bodyBold, color: colors.primary, letterSpacing: 0.5 },
     villeBadge: {
         flexDirection: 'row', alignItems: 'center', gap: 4,
         backgroundColor: colors.surfaceElevated, borderRadius: 20,
         paddingHorizontal: 10, paddingVertical: 5,
     },
-    villeText: { fontSize: 11, fontFamily: 'Inter_500Medium', color: colors.textSecondary },
+    villeText: { fontSize: 11, fontFamily: fonts.bodyMedium, color: colors.textSecondary },
 
     editShortcut: {
         flexDirection: 'row', alignItems: 'center', gap: 5,
@@ -561,7 +572,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16, paddingVertical: 7,
         borderRadius: 20,
     },
-    editShortcutText: { fontSize: 12, fontFamily: 'Inter_600SemiBold', color: colors.primary },
+    editShortcutText: { fontSize: 12, fontFamily: fonts.bodySemibold, color: colors.primary },
 
     statsRow: {
         flexDirection: 'row',
@@ -599,7 +610,7 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center', marginRight: 12,
     },
     menuTextWrap: { flex: 1 },
-    menuLabel: { ...typography.bodySmall, fontFamily: 'Inter_600SemiBold', color: colors.textPrimary },
+    menuLabel: { ...typography.bodySmall, fontFamily: fonts.bodySemibold, color: colors.textPrimary },
     menuSub: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
 
     logoutBtn: {

@@ -101,16 +101,35 @@ export default function AppNavigator() {
     const { session, loading } = useAuth()
     const [onboardingChecked, setOnboardingChecked] = useState(false)
     const [onboardingDone, setOnboardingDone] = useState(false)
+    const [langChosen, setLangChosen] = useState(false)
+    const [langChecked, setLangChecked] = useState(false)
 
     useEffect(() => {
-        AsyncStorage.getItem('onboarding_complete').then(val => {
-            setOnboardingDone(val === 'true')
+        Promise.all([
+            AsyncStorage.getItem('onboarding_complete'),
+            AsyncStorage.getItem('lang_chosen'),
+        ]).then(([obVal, langVal]) => {
+            setOnboardingDone(obVal === 'true')
+            setLangChosen(langVal === 'true')
             setOnboardingChecked(true)
+            setLangChecked(true)
         })
     }, [])
 
-    if (loading || !onboardingChecked) {
-        return <SplashScreen />
+    if (loading || !onboardingChecked || !langChecked) {
+        return <SplashScreen isLoading />
+    }
+
+    // ── First launch: show language selection on splash screen ──
+    if (!langChosen) {
+        return (
+            <SplashScreen
+                onContinue={async () => {
+                    await AsyncStorage.setItem('lang_chosen', 'true')
+                    setLangChosen(true)
+                }}
+            />
+        )
     }
 
     return (

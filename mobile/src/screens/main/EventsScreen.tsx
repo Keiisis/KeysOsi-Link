@@ -7,10 +7,19 @@ import {
 import { ArrowRight, Calendar, CheckCircle, Clock, MapPin, Star } from 'lucide-react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import ScreenHeader from '../../components/ScreenHeader'
+import PressableCard from '../../components/PressableCard'
+import { SkeletonCard } from '../../components/Skeleton'
 import { useAuth } from '../../contexts/AuthContext'
-import { colors, spacing, radius, shadows, typography, royal } from '../../config/theme'
+import { colors, spacing, radius, shadows, typography, royal, fonts, motion } from '../../config/theme'
 import { useLang } from '../../contexts/LangContext'
 import { fetchWithTimeout } from '../../lib/fetch'
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withDelay,
+    withSpring,
+    withTiming,
+} from 'react-native-reanimated'
 
 const { width } = Dimensions.get('window')
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
@@ -213,8 +222,9 @@ export default function EventsScreen({ navigation }: any) {
 
             {loading ? (
                 <View style={styles.loadingWrap}>
-                    <ActivityIndicator color={colors.primary} size="large" />
-                    <Text style={styles.loadingText}>{t('Chargement des événements…')}</Text>
+                    {[0,1,2].map(i => (
+                        <SkeletonCard key={i} style={{ marginHorizontal: spacing.lg, marginBottom: 14 }} />
+                    ))}
                 </View>
             ) : events.length === 0 ? (
                 /* ── État vide global : aucun événement dans la base ── */
@@ -236,7 +246,7 @@ export default function EventsScreen({ navigation }: any) {
                             activeOpacity={0.88}
                             onPress={() => navigation.navigate('EventDetail', { event: featured })}
                         >
-                            <View style={[styles.featuredCover, { backgroundColor: colors.surface }]}>
+                         <View style={[styles.featuredCover]}>
                                 <View style={styles.featuredPattern} />
                                 <View style={styles.featuredTopRow}>
                                     <View style={styles.featuredLabel}>
@@ -368,7 +378,7 @@ const styles = StyleSheet.create({
     emptyWrap: { alignItems: 'center', paddingVertical: 40, gap: 12 },
     emptyText: { ...typography.bodySmall, color: colors.textMuted, textAlign: 'center' },
     featuredCard: { margin: spacing.lg, borderRadius: radius.xl, overflow: 'hidden', ...shadows.md },
-    featuredCover: { padding: spacing.lg, minHeight: 200, justifyContent: 'space-between' },
+    featuredCover: { padding: spacing.lg, minHeight: 200, justifyContent: 'space-between', backgroundColor: royal.deepEmerald },
     featuredPattern: {
         position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
         opacity: 0.07,
@@ -389,11 +399,11 @@ const styles = StyleSheet.create({
     registeredTextLg: { fontSize: 11, fontFamily: 'Inter_600SemiBold', color: colors.success },
 
     featuredInfo: { gap: 8, marginTop: 16 },
-    featuredTitle: { ...typography.h2, color: '#FFF', lineHeight: 28 },
+    featuredTitle: { ...typography.h2, color: royal.textLight, lineHeight: 28 },
     featuredMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    featuredMetaText: { ...typography.caption, color: colors.primary + 'BB', flex: 1 },
+    featuredMetaText: { ...typography.caption, color: 'rgba(255,255,255,0.7)', flex: 1 },
     featuredBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
-    featuredPrice: { ...typography.label, color: colors.primary },
+    featuredPrice: { ...typography.label, color: royal.goldSoft },
     featuredBtn: {
         flexDirection: 'row', alignItems: 'center', gap: 6,
         backgroundColor: colors.primary, borderRadius: radius.md,

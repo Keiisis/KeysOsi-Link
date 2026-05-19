@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, Animated, Platform } from 'react-native'
+import { View, Text, StyleSheet, Platform } from 'react-native'
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withSpring,
+} from 'react-native-reanimated'
 import NetInfo from '@react-native-community/netinfo'
 import { WifiOff } from 'lucide-react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -9,11 +14,12 @@ import { useLang } from '../contexts/LangContext'
 /* ═══════════════════════════════════════════════════════════
    OfflineBanner — Displayed at top when device is offline.
    Automatically hides when connectivity is restored.
+   Migrated to Reanimated (UI thread).
 ═══════════════════════════════════════════════════════════ */
 
 export default function OfflineBanner() {
     const [isOffline, setIsOffline] = useState(false)
-    const slideAnim = useState(new Animated.Value(-80))[0]
+    const slide = useSharedValue(-80)
     const { t } = useLang()
     const insets = useSafeAreaInsets()
 
@@ -21,17 +27,15 @@ export default function OfflineBanner() {
         const unsubscribe = NetInfo.addEventListener(state => {
             const offline = !(state.isConnected && state.isInternetReachable !== false)
             setIsOffline(offline)
-
-            Animated.spring(slideAnim, {
-                toValue: offline ? 0 : -80,
-                useNativeDriver: true,
-                tension: 60,
-                friction: 10,
-            }).start()
+            slide.value = withSpring(offline ? 0 : -80, { damping: 16, stiffness: 120 })
         })
 
         return () => unsubscribe()
-    }, [slideAnim])
+    }, [slide])
+
+    const bannerStyle = useAnimatedStyle(() => ({
+        transform: [{ translateY: slide.value }],
+    }))
 
     if (!isOffline) return null
 
@@ -39,7 +43,8 @@ export default function OfflineBanner() {
         <Animated.View
             style={[
                 styles.banner,
-                { paddingTop: insets.top + 8, transform: [{ translateY: slideAnim }] },
+                { paddingTop: insets.top + 8 },
+                bannerStyle,
             ]}
         >
             <WifiOff size={18} color="#FFF" strokeWidth={2} />

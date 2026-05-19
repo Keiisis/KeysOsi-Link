@@ -9,6 +9,7 @@ import { CreditCard, Download, FileImage, FileType, Loader2, RotateCcw, Info, Bu
 import { CardRecto as RGBRecto, CardVerso as RGBVerso, type CardData } from '@/components/business-card/BusinessCard'
 import { CardRecto as OuidahRecto, CardVerso as OuidahVerso } from '@/components/business-card/OuidahCard'
 import { downloadSVGCard } from '@/lib/svg-card-generator'
+import { downloadOuidahSVGCard } from '@/lib/svg-ouidah-generator'
 
 /* ══════════════════════════════════════════════════════════════
    TABS CONFIG
@@ -109,7 +110,11 @@ export default function MaCarteDeVisite() {
         setDownloading('svg')
         try {
             const prefix = activeTab === 'rgb' ? 'RGB' : 'Ouidah-Heritage'
-            await downloadSVGCard(card, `Carte-VIP-${prefix}-${card.prenom}-${card.nom}`)
+            if (activeTab === 'ouidah') {
+                await downloadOuidahSVGCard(card, `Carte-VIP-${prefix}-${card.prenom}-${card.nom}`)
+            } else {
+                await downloadSVGCard(card, `Carte-VIP-${prefix}-${card.prenom}-${card.nom}`)
+            }
         } finally {
             setDownloading(null)
         }

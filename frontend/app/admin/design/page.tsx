@@ -16,6 +16,7 @@ import Link from 'next/link'
 import { CardRecto as RGBRecto, CardVerso as RGBVerso, type CardData } from '@/components/business-card/BusinessCard'
 import { CardRecto as OuidahRecto, CardVerso as OuidahVerso } from '@/components/business-card/OuidahCard'
 import { downloadSVGCard } from '@/lib/svg-card-generator'
+import { downloadOuidahSVGCard } from '@/lib/svg-ouidah-generator'
 
 type TabKey = 'rgb' | 'ouidah'
 
@@ -346,7 +347,11 @@ export default function AdminDesignPage() {
         setDownloading('svg')
         try {
             const name = isValid ? `${form.prenom}-${form.nom}` : 'vide'
-            await downloadSVGCard(form, `Carte-VIP-${name}`)
+            if (activeTab === 'ouidah') {
+                await downloadOuidahSVGCard(form, `Carte-VIP-Ouidah-${name}`)
+            } else {
+                await downloadSVGCard(form, `Carte-VIP-${name}`)
+            }
             setStatus({ type: 'success', msg: 'SVG vectoriel natif Recto+Verso téléchargé ! Tracés nets, prêt pour Illustrator, Inkscape, impression et gravure laser.' })
         } catch (e) {
             console.error('Erreur export SVG :', e)
@@ -388,7 +393,13 @@ export default function AdminDesignPage() {
             const refs = getActiveRefs()
             if (type === 'recto-png')      await downloadPNG(refs.recto, `recto-${fullName}.png`)
             else if (type === 'verso-png') await downloadPNG(refs.verso, `verso-${fullName}.png`)
-            else if (type === 'svg')       await downloadSVGCard(cardData, `Carte-VIP-${fullName}`)
+            else if (type === 'svg') {
+                if (activeTab === 'ouidah') {
+                    await downloadOuidahSVGCard(cardData, `Carte-VIP-Ouidah-${fullName}`)
+                } else {
+                    await downloadSVGCard(cardData, `Carte-VIP-${fullName}`)
+                }
+            }
             else if (type === 'pdf')       await downloadPDF(refs.recto, refs.verso, fullName)
             else if (type === 'docx')      await downloadDOCX(refs.recto, refs.verso, fullName)
         } catch (e) {
@@ -454,6 +465,17 @@ export default function AdminDesignPage() {
                         <p className="text-gray-600 text-xs">80×120cm — Forme arche</p>
                     </div>
                     <ChevronRight size={16} className="text-gray-600 group-hover:text-emerald-400 transition-colors" />
+                </Link>
+                <Link href="/admin/design/plexiglas-horaires"
+                    className="group relative overflow-hidden rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-[#C88B2A]/30 hover:bg-[#C88B2A]/5 p-5 flex items-center gap-4 transition-all text-left">
+                    <div className="w-11 h-11 rounded-xl bg-white/[0.04] border border-white/[0.08] group-hover:bg-[#C88B2A]/15 group-hover:border-[#C88B2A]/25 flex items-center justify-center flex-shrink-0 transition-all">
+                        <Download size={20} className="text-gray-500 group-hover:text-[#C88B2A] transition-colors" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-gray-300 font-bold text-sm group-hover:text-white transition-colors">Plexiglas Horaires</p>
+                        <p className="text-gray-600 text-xs">80×120cm — R.G.B / O.H.T / A.C.S.T</p>
+                    </div>
+                    <ChevronRight size={16} className="text-gray-600 group-hover:text-[#C88B2A] transition-colors" />
                 </Link>
             </div>
 

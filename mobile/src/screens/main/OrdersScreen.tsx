@@ -3,8 +3,16 @@ import React, { useEffect, useState, useCallback } from 'react'
 import {
     View, Text, ScrollView, StyleSheet, TouchableOpacity,
     RefreshControl, Platform, ActivityIndicator, TextInput, Alert,
-    Animated, Easing, Image, Dimensions
+    Image, Dimensions
 } from 'react-native'
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withTiming,
+    withRepeat,
+    withSequence,
+    Easing as REasing,
+} from 'react-native-reanimated'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Video, ResizeMode } from 'expo-av'
 import { ArrowLeft, Package, Search, Truck, CheckCircle, Clock, AlertTriangle, ShoppingBag } from 'lucide-react-native'
@@ -13,22 +21,12 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useLang } from '../../contexts/LangContext'
 import ScreenHeader from '../../components/ScreenHeader'
 import { fetchWithTimeout } from '../../lib/fetch'
-import { colors, spacing, radius, shadows, typography } from '../../config/theme'
+import { colors, spacing, radius, shadows, typography, royal } from '../../config/theme'
 import { RootStackParamList } from '../../navigation/AppNavigator'
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
 
-const royal = {
-    bg: '#FDF9F1',
-    surface: '#FFFFFF',
-    textDark: '#0A1A14',
-    emerald: '#0B4A2B',
-    lightEmerald: '#12683E',
-    gold: '#DCA540',
-    terracotta: '#D45B3E',
-    softGold: '#F8E9C7',
-    border: '#EBE2CD'
-}
+
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Orders'>
 
 export interface OrderListItem {
@@ -84,20 +82,26 @@ const { width } = Dimensions.get('window')
 
 /* ── Animation Héro Livreur VIP ── */
 const DeliveryHeroAnimation = () => {
-    const scaleAnim = React.useRef(new Animated.Value(1)).current;
+    const scale = useSharedValue(1)
 
-    React.useEffect(() => {
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(scaleAnim, { toValue: 1.08, duration: 12000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-                Animated.timing(scaleAnim, { toValue: 1, duration: 12000, easing: Easing.inOut(Easing.ease), useNativeDriver: true })
-            ])
-        ).start();
-    }, []);
+    useEffect(() => {
+        scale.value = withRepeat(
+            withSequence(
+                withTiming(1.08, { duration: 12000, easing: REasing.inOut(REasing.ease) }),
+                withTiming(1, { duration: 12000, easing: REasing.inOut(REasing.ease) }),
+            ),
+            -1,
+            false,
+        )
+    }, [scale])
+
+    const animStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: scale.value }],
+    }))
 
     return (
         <View style={styles.heroContainer}>
-            <Animated.View style={[StyleSheet.absoluteFillObject, { transform: [{ scale: scaleAnim }] }]}>
+            <Animated.View style={[StyleSheet.absoluteFillObject, animStyle]}>
                 <Video
                     source={require('../../../assets/images/delivery_video.mp4')}
                     style={{ width: '100%', height: '100%' }}

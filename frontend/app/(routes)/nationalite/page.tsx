@@ -84,10 +84,10 @@ export default function NationalitePage() {
                 <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }} className="relative z-10 text-center px-4 max-w-4xl mx-auto">
                     <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-xl border border-gray-200 rounded-full px-5 py-2 mb-8">
                         <Globe2 size={14} className="text-emerald-400" />
-                        <span className="text-[11px] font-bold uppercase tracking-[0.3em] text-white/60">{t('Loi N° 2024-31')}</span>
+                        <span className="text-[11px] font-bold uppercase tracking-[0.3em] text-white/70">{t('Loi N° 2024-31')}</span>
                     </div>
 
-                    <h1 className="text-4xl sm:text-5xl md:text-7xl font-black text-gray-900 leading-[0.95] mb-4">
+                    <h1 className="text-4xl sm:text-5xl md:text-7xl font-black text-white leading-[0.95] mb-4">
                         {t(content.hero_title || 'Reconnaissance de Nationalité Béninoise')}
                         <br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D]">
@@ -95,7 +95,7 @@ export default function NationalitePage() {
                         </span>
                     </h1>
 
-                    <p className="text-sm md:text-base text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed">
+                    <p className="text-sm md:text-base text-white/70 max-w-2xl mx-auto mb-10 leading-relaxed">
                         {t(content.hero_description || 'Reconnectez-vous à vos racines. Acquérez la nationalité béninoise grâce à un processus officiel, encadré et sécurisé.')}
                     </p>
 
@@ -106,8 +106,8 @@ export default function NationalitePage() {
                         <div className="flex items-center gap-3 bg-white/5 backdrop-blur-xl border border-gray-200 rounded-2xl px-6 py-4">
                             <span className="text-3xl font-black text-[#FCD116]"><Price amount={formAmount} currency={formCurrency} /></span>
                             <div className="text-left">
-                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{t("Frais de traitement")}</p>
-                                <p className="text-[10px] text-gray-400 flex items-center gap-1"><Clock size={10} /> {t(content.processing_time || '3 mois')}</p>
+                                <p className="text-[10px] text-white/60 font-bold uppercase tracking-wider">{t("Frais de traitement")}</p>
+                                <p className="text-[10px] text-white/50 flex items-center gap-1"><Clock size={10} /> {t(content.processing_time || '3 mois')}</p>
                             </div>
                         </div>
                     </div>
@@ -115,8 +115,8 @@ export default function NationalitePage() {
                     {/* Trust badges */}
                     <div className="flex items-center justify-center gap-6 flex-wrap">
                         {['Processus officiel', 'Données sécurisées', 'Accompagnement expert'].map((txt, i) => (
-                            <div key={i} className="flex items-center gap-2 text-[10px] text-gray-500 font-bold uppercase tracking-wider">
-                                <CheckCircle2 size={12} className="text-emerald-500/60" /> {t(txt)}
+                            <div key={i} className="flex items-center gap-2 text-[10px] text-white/60 font-bold uppercase tracking-wider">
+                                <CheckCircle2 size={12} className="text-emerald-400/80" /> {t(txt)}
                             </div>
                         ))}
                     </div>
@@ -191,8 +191,8 @@ export default function NationalitePage() {
                                 <Scale size={28} className="text-emerald-400" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-black text-gray-900 mb-4">{t(content.eligibility_title || 'Critères d\'Éligibilité')}</h3>
-                                <p className="text-sm text-gray-500 leading-relaxed mb-6">{t(content.eligibility_desc || 'Toute personne âgée de 18 ans révolus ayant un ascendant d\'Afrique subsaharienne déporté dans le cadre de la traite négrière.')}</p>
+                                <h3 className="text-2xl font-black text-white mb-4">{t(content.eligibility_title || 'Critères d\'Éligibilité')}</h3>
+                                <p className="text-sm text-gray-300 leading-relaxed mb-6">{t(content.eligibility_desc || 'Toute personne âgée de 18 ans révolus ayant un ascendant d\'Afrique subsaharienne déporté dans le cadre de la traite négrière.')}</p>
                                 <div className="space-y-3">
                                     {['Personne âgée de 18 ans ou plus', 'Ascendant d\'Afrique subsaharienne déporté (traite négrière)', 'Filiation directe établie avec un Afro-descendant reconnu'].map((c, i) => (
                                         <div key={i} className="flex items-center gap-3 text-sm text-gray-300">
@@ -223,7 +223,7 @@ export default function NationalitePage() {
                                     className={`rounded-2xl overflow-hidden transition-all duration-500 ${isOpen ? 'bg-gradient-to-br from-emerald-500/[0.06] to-white/[0.02] border border-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.05)]' : 'bg-gray-50 border border-white/[0.04] hover:border-gray-200'}`}>
                                     <button onClick={() => setOpenFaq(isOpen ? null : faq.id)} className="w-full p-5 md:p-6 flex items-start gap-4 text-left group">
                                         <span className={`text-[10px] font-black w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 mt-0.5 ${isOpen ? 'bg-emerald-500 text-white' : 'bg-white/5 text-gray-400 group-hover:text-gray-900 group-hover:bg-gray-100'}`}>{idx + 1}</span>
-                                        <span className={`text-sm font-bold flex-1 pr-4 transition-colors duration-300 ${isOpen ? 'text-emerald-400' : 'text-white'}`}>{t(faq.question_fr)}</span>
+                                        <span className={`text-sm font-bold flex-1 pr-4 transition-colors duration-300 ${isOpen ? 'text-emerald-600' : 'text-gray-900'}`}>{t(faq.question_fr)}</span>
                                         <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.3, ease: 'easeInOut' }} className="shrink-0 mt-0.5">
                                             <ChevronDown size={18} className={`transition-colors duration-300 ${isOpen ? 'text-emerald-400' : 'text-gray-400'}`} />
                                         </motion.div>
@@ -255,13 +255,13 @@ export default function NationalitePage() {
                     <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
                         className="bg-gradient-to-br from-emerald-900/30 via-[#0a0f14] to-yellow-900/20 border border-emerald-500/10 rounded-3xl p-10 md:p-16">
                         <Globe2 size={40} className="text-emerald-400 mx-auto mb-6" />
-                        <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-4">{t(content.cta_title || 'Prêt à retrouver vos racines ?')}</h2>
-                        <p className="text-sm text-gray-500 max-w-xl mx-auto mb-8">{t(content.cta_desc || 'Notre équipe vous accompagne à chaque étape.')}</p>
+                        <h2 className="text-3xl md:text-4xl font-black text-white mb-4">{t(content.cta_title || 'Prêt à retrouver vos racines ?')}</h2>
+                        <p className="text-sm text-gray-300 max-w-xl mx-auto mb-8">{t(content.cta_desc || 'Notre équipe vous accompagne à chaque étape.')}</p>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                             <Link href="/nationalite/formulaire" className="group bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-sm px-8 py-4 rounded-2xl transition-all shadow-[0_0_40px_rgba(16,185,129,0.3)] flex items-center gap-3">
                                 {t("Commencer ma demande")} <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                             </Link>
-                            <Link href="/contact" className="bg-white/5 hover:bg-gray-100 text-gray-900 font-bold text-sm px-8 py-4 rounded-2xl border border-gray-200 transition-all">
+                            <Link href="/contact" className="bg-white/10 hover:bg-white/20 text-white font-bold text-sm px-8 py-4 rounded-2xl border border-white/20 transition-all">
                                 {t("Nous contacter")}
                             </Link>
                         </div>

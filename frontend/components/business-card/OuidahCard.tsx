@@ -150,55 +150,42 @@ export const CardRecto = forwardRef<HTMLDivElement, { data: CardData; scale?: nu
           padding: `${10 * s}px ${30 * s}px`,
         }}>
 
-          {/* LOGO — ÉNORME — identique au ratio RGB */}
+          {/* LOGO — MAXIMUM */}
           <img
             src="/images/ouidah-logo.png"
             alt="Ouidah Heritage Tour"
             style={{
-              width: 250 * s,
-              height: 250 * s,
+              width: 340 * s,
+              height: 340 * s,
               objectFit: 'contain',
-              marginBottom: 4 * s,
+              marginBottom: 0,
             }}
           />
 
-          {/* NOM — Montserrat Black TRÈS GROS */}
+          {/* NOM — OUIDAH HERITAGE TOUR sur une seule ligne */}
           <div style={{
             color: NAVY_DEEP,
-            fontSize: 29 * s,
+            fontSize: 24 * s,
             fontWeight: 900,
-            letterSpacing: '0.10em',
+            letterSpacing: '0.06em',
             textTransform: 'uppercase',
             fontFamily: FONT,
             textAlign: 'center',
-            lineHeight: 1.15,
+            lineHeight: 1,
+            whiteSpace: 'nowrap',
           }}>
-            Ouidah Heritage
+            Ouidah Heritage Tour
           </div>
 
-          <div style={{
-            color: NAVY_DEEP,
-            fontSize: 29 * s,
-            fontWeight: 900,
-            letterSpacing: '0.10em',
-            textTransform: 'uppercase',
-            fontFamily: FONT,
-            textAlign: 'center',
-            lineHeight: 1.15,
-            marginTop: 2 * s,
-          }}>
-            Tour
-          </div>
-
-          {/* Tagline — ambrée, BIEN VISIBLE, gras */}
+          {/* Tagline — terracotta, ULTRA VISIBLE, gras */}
           <div style={{
             color: TERRACOTTA,
-            fontSize: 14 * s,
-            letterSpacing: '0.05em',
+            fontSize: 21 * s,
+            letterSpacing: '0.02em',
             textAlign: 'center',
-            fontWeight: 700,
+            fontWeight: 900,
             fontFamily: FONT,
-            marginTop: 10 * s,
+            marginTop: 6 * s,
           }}>
             Retour aux sources — Voyage dans la mémoire
           </div>

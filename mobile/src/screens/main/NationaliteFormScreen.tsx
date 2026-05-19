@@ -1,8 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View, Text, ScrollView, StyleSheet, TouchableOpacity,
-    TextInput, ActivityIndicator, Alert, Platform, KeyboardAvoidingView, Switch, Animated
+    TextInput, ActivityIndicator, Alert, Platform, KeyboardAvoidingView, Switch
 } from 'react-native';
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withSpring,
+    withTiming,
+    withDelay,
+} from 'react-native-reanimated';
 import { ArrowLeft, Check, ChevronRight, UploadCloud, FileText, X, Sparkles, Feather, Scale, Fingerprint, ShieldCheck } from 'lucide-react-native';
 import * as DocumentPicker from 'expo-document-picker';
 // expo-file-system : on utilise l'API legacy pour readAsStringAsync + EncodingType
@@ -50,22 +57,20 @@ const DEFAULT_DOC_SLOTS = [
 ];
 
 const FadeInView = ({ children, delay = 0, style }: any) => {
-    const fadeAnim = useRef(new Animated.Value(0)).current;
-    const translateY = useRef(new Animated.Value(20)).current;
+    const opacity = useSharedValue(0);
+    const translateY = useSharedValue(20);
 
     useEffect(() => {
-        fadeAnim.setValue(0);
-        translateY.setValue(20);
-        Animated.sequence([
-            Animated.delay(delay),
-            Animated.parallel([
-                Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
-                Animated.spring(translateY, { toValue: 0, friction: 8, tension: 40, useNativeDriver: true })
-            ])
-        ]).start();
-    }, [delay, fadeAnim, translateY]);
+        opacity.value = withDelay(delay, withTiming(1, { duration: 500 }));
+        translateY.value = withDelay(delay, withSpring(0, { damping: 14, stiffness: 80 }));
+    }, [delay, opacity, translateY]);
 
-    return <Animated.View style={[style, { opacity: fadeAnim, transform: [{ translateY }] }]}>{children}</Animated.View>;
+    const animStyle = useAnimatedStyle(() => ({
+        opacity: opacity.value,
+        transform: [{ translateY: translateY.value }],
+    }));
+
+    return <Animated.View style={[style, animStyle]}>{children}</Animated.View>;
 };
 
 export default function NationaliteFormScreen({ navigation }: any) {

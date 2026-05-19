@@ -1,10 +1,22 @@
-'use strict'
-import React, { useEffect, useState, useRef, useCallback } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import {
     View, Text, StyleSheet, TouchableOpacity, TouchableWithoutFeedback,
-    Image, Dimensions, Platform, RefreshControl, ActivityIndicator, Animated, Easing,
+    Image, Dimensions, Platform, RefreshControl, ActivityIndicator,
     ScrollView,
 } from 'react-native'
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    useAnimatedScrollHandler,
+    withSpring,
+    withTiming,
+    withDelay,
+    withRepeat,
+    withSequence,
+    interpolate,
+    Extrapolation,
+    Easing as REasing,
+} from 'react-native-reanimated'
 import { ShoppingBag, ArrowLeft, Plus, Minus, X, Truck, Sparkles, Crown } from 'lucide-react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Video, ResizeMode } from 'expo-av'
@@ -13,40 +25,35 @@ import { useLang } from '../../contexts/LangContext'
 import { useCart } from '../../contexts/CartContext'
 import { fetchWithTimeout } from '../../lib/fetch'
 import { RootStackParamList, BoutiqueProduct } from '../../navigation/AppNavigator'
+import { royal, fonts, motion } from '../../config/theme'
 
 const { width, height } = Dimensions.get('window')
 const CARD_GAP = 16
 const CARD_W = (width - 40 - CARD_GAP) / 2
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
 
-const royal = {
-    bg: '#FDF9F1',
-    surface: '#FFFFFF',
-    textDark: '#0A1A14',
-    emerald: '#0B4A2B',
-    lightEmerald: '#12683E',
-    gold: '#DCA540',
-    terracotta: '#D45B3E',
-    softGold: '#F8E9C7',
-    border: '#EBE2CD'
-}
+
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Boutique'>
 
 /* ── Animation Hyper-Réaliste de la Vitrine (Vidéo) ── */
 const StorefrontAnimation = () => {
-    const scaleAnim = useRef(new Animated.Value(0.95)).current;
+    const scale = useSharedValue(0.95)
 
     useEffect(() => {
-        Animated.spring(scaleAnim, { toValue: 1, friction: 5, tension: 20, useNativeDriver: true }).start();
-    }, []);
+        scale.value = withSpring(1, { damping: 10, stiffness: 60 })
+    }, [scale])
+
+    const animStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: scale.value }],
+    }))
 
     // Dimensions adaptées à la vidéo
     const STORE_WIDTH = width - 40;
     const STORE_HEIGHT = 220; 
 
     return (
-        <Animated.View style={[storeStyles.container, { width: STORE_WIDTH, height: STORE_HEIGHT, transform: [{ scale: scaleAnim }], backgroundColor: '#000' }]}>
+        <Animated.View style={[storeStyles.container, { width: STORE_WIDTH, height: STORE_HEIGHT, backgroundColor: '#000' }, animStyle]}>
             <Video
                 source={require('../../../assets/images/boutique_video.mp4')}
                 style={StyleSheet.absoluteFillObject}
@@ -57,7 +64,7 @@ const StorefrontAnimation = () => {
             />
 
             {/* Fondu de transition au sol pour se fondre doucement dans le dégradé chic */}
-            <LinearGradient colors={['transparent', 'rgba(246,238,220,1)']} style={StyleSheet.absoluteFillObject} start={{x:0, y:0.75}} end={{x:0, y:1}} pointerEvents="none" />
+            <LinearGradient colors={['transparent', `${royal.bgWarm}`]} style={StyleSheet.absoluteFillObject} start={{x:0, y:0.75}} end={{x:0, y:1}} pointerEvents="none" />
         </Animated.View>
     );
 };
@@ -69,24 +76,32 @@ const storeStyles = StyleSheet.create({
 /* ── Produit Card ── */
 const ProductCard3D = ({ item, index, navigation, inCart, addToCart, removeFromCart, hasDiscount, displayPrice, outOfStock }: any) => {
     const { t } = useLang();
-    const scaleAnim = useRef(new Animated.Value(0.85)).current;
-    const fadeAnim = useRef(new Animated.Value(0)).current;
-    const translateY = useRef(new Animated.Value(40)).current;
-    const pressScale = useRef(new Animated.Value(1)).current;
+    const cardScale = useSharedValue(0.85)
+    const cardOpacity = useSharedValue(0)
+    const cardTranslateY = useSharedValue(40)
+    const pressScaleVal = useSharedValue(1)
 
     useEffect(() => {
-        Animated.parallel([
-            Animated.timing(fadeAnim, { toValue: 1, duration: 500, delay: index * 120, useNativeDriver: true }),
-            Animated.spring(scaleAnim, { toValue: 1, friction: 6, tension: 40, delay: index * 120, useNativeDriver: true }),
-            Animated.spring(translateY, { toValue: 0, friction: 6, tension: 40, delay: index * 120, useNativeDriver: true })
-        ]).start();
-    }, []);
+        const delay = index * 120
+        cardOpacity.value = withDelay(delay, withTiming(1, { duration: 500 }))
+        cardScale.value = withDelay(delay, withSpring(1, { damping: 12, stiffness: 80 }))
+        cardTranslateY.value = withDelay(delay, withSpring(0, { damping: 12, stiffness: 80 }))
+    }, [index, cardOpacity, cardScale, cardTranslateY])
 
-    const onPressIn = () => Animated.spring(pressScale, { toValue: 0.94, useNativeDriver: true }).start();
-    const onPressOut = () => Animated.spring(pressScale, { toValue: 1, friction: 4, tension: 50, useNativeDriver: true }).start();
+    const onPressIn = () => { pressScaleVal.value = withSpring(0.94, { damping: 15, stiffness: 150 }) }
+    const onPressOut = () => { pressScaleVal.value = withSpring(1, { damping: 10, stiffness: 120 }) }
+
+    const cardStyle = useAnimatedStyle(() => ({
+        opacity: cardOpacity.value,
+        transform: [
+            { scale: cardScale.value },
+            { translateY: cardTranslateY.value },
+            { scale: pressScaleVal.value },
+        ],
+    }))
 
     return (
-        <Animated.View style={{ opacity: fadeAnim, transform: [{ scale: scaleAnim }, { translateY }, { scale: pressScale }], width: CARD_W }}>
+        <Animated.View style={[{ width: CARD_W }, cardStyle]}>
             <TouchableWithoutFeedback 
                 onPressIn={onPressIn} onPressOut={onPressOut}
                 onPress={() => navigation.navigate('ProductDetail', { product: item, onAddToCart: (qty: number) => addToCart(item, qty) })}
@@ -147,7 +162,8 @@ export default function BoutiqueScreen({ navigation }: { navigation: Nav }) {
     const { t, lang, isTranslating, preloadTexts } = useLang()
     const { cart, addToCart, removeFromCart, clearItem, cartCount, cartTotal } = useCart()
 
-    const scrollY = useRef(new Animated.Value(0)).current;
+    const scrollY = useSharedValue(0)
+    const pulseScale = useSharedValue(1)
 
     const fetchProducts = useCallback(async () => {
         try {
@@ -173,25 +189,43 @@ export default function BoutiqueScreen({ navigation }: { navigation: Nav }) {
         preloadTexts(texts)
     }, [loading, products, lang, preloadTexts])
 
+    // Pulse animation for cart FAB
+    useEffect(() => {
+        pulseScale.value = withRepeat(
+            withSequence(
+                withTiming(1.03, { duration: 1500, easing: REasing.inOut(REasing.ease) }),
+                withTiming(1, { duration: 1500, easing: REasing.inOut(REasing.ease) }),
+            ),
+            -1,
+            false,
+        )
+    }, [pulseScale])
+
     const getProductPrice = (p: BoutiqueProduct) => (p.sale_price && p.sale_price < p.price) ? p.sale_price : p.price
     const formatPrice = (n: number) => n.toLocaleString('fr-FR') + ' FCFA'
     const cartItemForProduct = (id: string) => cart.find(c => c.product.id === id)
 
-    const headerHeight = scrollY.interpolate({
-        inputRange: [0, 200],
-        outputRange: [Platform.OS === 'ios' ? 120 : 100, Platform.OS === 'ios' ? 100 : 80],
-        extrapolate: 'clamp'
-    });
+    // Animated scroll handler (UI thread)
+    const scrollHandler = useAnimatedScrollHandler({
+        onScroll: (event) => {
+            scrollY.value = event.contentOffset.y
+        },
+    })
 
-    const pulseAnim = useRef(new Animated.Value(1)).current;
-    useEffect(() => {
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(pulseAnim, { toValue: 1.03, duration: 1500, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-                Animated.timing(pulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true, easing: Easing.inOut(Easing.ease) })
-            ])
-        ).start();
-    }, []);
+    // Header height shrinks on scroll
+    const headerAnimStyle = useAnimatedStyle(() => ({
+        height: interpolate(
+            scrollY.value,
+            [0, 200],
+            [Platform.OS === 'ios' ? 120 : 100, Platform.OS === 'ios' ? 100 : 80],
+            Extrapolation.CLAMP,
+        ),
+    }))
+
+    // Cart FAB pulse
+    const pulseStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: pulseScale.value }],
+    }))
 
     const renderHeader = () => (
         <View style={styles.headerSpacer}>
@@ -221,14 +255,14 @@ export default function BoutiqueScreen({ navigation }: { navigation: Nav }) {
         <View style={styles.container}>
             {/* Arrière-plan Dégradé Chic Lumineux (Option 1) */}
             <LinearGradient 
-                colors={['rgba(220,165,64,0.18)', '#FDF9F1', '#FDF9F1']} 
+                colors={['rgba(220,165,64,0.18)', royal.bgWarm, royal.bgWarm]} 
                 locations={[0, 0.4, 1]}
                 style={StyleSheet.absoluteFillObject} 
             />
 
             {/* Nav Bar Fixe */}
-            <Animated.View style={[styles.stickyHeader, { height: headerHeight }]}>
-                <LinearGradient colors={[royal.emerald, royal.lightEmerald]} style={StyleSheet.absoluteFillObject} />
+            <Animated.View style={[styles.stickyHeader, headerAnimStyle]}>
+                <LinearGradient colors={[royal.deepEmerald, royal.deepLightEmerald]} style={StyleSheet.absoluteFillObject} />
                 <View style={styles.navRow}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
                         <ArrowLeft size={24} color="#FFF" strokeWidth={2} />
@@ -273,13 +307,13 @@ export default function BoutiqueScreen({ navigation }: { navigation: Nav }) {
                     ListHeaderComponent={renderHeader}
                     showsVerticalScrollIndicator={false}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={royal.gold} progressViewOffset={100} />}
-                    onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
+                    onScroll={scrollHandler}
                     scrollEventThrottle={16}
                 />
             )}
 
             {cartCount > 0 && (
-                <Animated.View style={[styles.cartFloatWrap, { transform: [{ scale: pulseAnim }] }]}>
+                <Animated.View style={[styles.cartFloatWrap, pulseStyle]}>
                     <TouchableOpacity style={styles.cartFloatBtn} activeOpacity={0.9} onPress={() => setShowCart(true)}>
                         <LinearGradient colors={[royal.gold, '#B8860B']} style={[StyleSheet.absoluteFillObject, { borderRadius: 30 }]} />
                         <View style={styles.cartIconBadge}>
@@ -331,7 +365,7 @@ export default function BoutiqueScreen({ navigation }: { navigation: Nav }) {
                                 activeOpacity={0.8}
                                 onPress={() => { setShowCart(false); navigation.navigate('Checkout', { cart, total: cartTotal }); }}
                             >
-                                <LinearGradient colors={[royal.emerald, royal.lightEmerald]} style={[StyleSheet.absoluteFillObject, { borderRadius: 20 }]} />
+                                <LinearGradient colors={[royal.deepEmerald, royal.deepLightEmerald]} style={[StyleSheet.absoluteFillObject, { borderRadius: 20 }]} />
                                 <Sparkles size={20} color={royal.gold} style={{marginRight: 10}}/>
                                 <Text style={styles.checkoutBtnText}>{t('Sceller la Commande')}</Text>
                             </TouchableOpacity>
@@ -344,7 +378,7 @@ export default function BoutiqueScreen({ navigation }: { navigation: Nav }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: royal.bg },
+    container: { flex: 1, backgroundColor: royal.bgWarm },
     
     stickyHeader: {
         position: 'absolute', top: 0, left: 0, right: 0,
@@ -352,17 +386,17 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
         paddingBottom: 20, paddingHorizontal: 20,
         borderBottomLeftRadius: 30, borderBottomRightRadius: 30,
-        shadowColor: royal.emerald, shadowOpacity: 0.3, shadowRadius: 20, shadowOffset: {width:0, height:10}, elevation: 15
+        shadowColor: royal.deepEmerald, shadowOpacity: 0.3, shadowRadius: 20, shadowOffset: {width:0, height:10}, elevation: 15
     },
     navRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     iconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
     
     stickyTitleWrapper: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(220,165,64,0.15)', paddingHorizontal: 20, paddingVertical: 8, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(220,165,64,0.3)' },
-    stickyTitle: { fontFamily: 'PlayfairDisplay_700Bold', fontSize: 16, color: royal.gold, letterSpacing: 3, textTransform: 'uppercase' },
+    stickyTitle: { fontFamily: fonts.heading, fontSize: 16, color: royal.gold, letterSpacing: 3, textTransform: 'uppercase' },
     titleDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: royal.gold, opacity: 0.8 },
 
     headerSpacer: { paddingTop: Platform.OS === 'ios' ? 140 : 120, paddingHorizontal: 20, paddingBottom: 30, alignItems: 'center' },
-    mainTitle: { fontFamily: 'PlayfairDisplay_700Bold', fontSize: 38, color: royal.emerald, marginBottom: 8, textAlign: 'center' },
+    mainTitle: { fontFamily: fonts.heading, fontSize: 38, color: royal.deepEmerald, marginBottom: 8, textAlign: 'center' },
     subTitle: { fontFamily: 'Inter_500Medium', fontSize: 15, color: royal.terracotta, textAlign: 'center', fontStyle: 'italic' },
     decoratorLine: { width: 60, height: 3, backgroundColor: royal.gold, marginTop: 15, borderRadius: 2, alignSelf: 'center' },
 
@@ -381,7 +415,7 @@ const styles = StyleSheet.create({
     },
     imageContainer: { width: '100%', aspectRatio: 0.8, borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden', position: 'relative' },
     cardImage: { width: '100%', height: '100%' },
-    placeholderImage: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: royal.softGold },
+    placeholderImage: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: royal.goldSoft },
     imageGradient: { position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%' },
     
     tagContainer: { position: 'absolute', top: 12, left: 12, gap: 6, alignItems: 'flex-start' },
@@ -389,17 +423,17 @@ const styles = StyleSheet.create({
     discountTag: { backgroundColor: royal.terracotta, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, shadowColor: royal.terracotta, shadowOpacity: 0.5, shadowRadius: 5, shadowOffset: {width:0, height:3} },
     tagTextWhite: { fontFamily: 'Inter_700Bold', fontSize: 10, color: '#FFF', letterSpacing: 0.5 },
 
-    quickAddBtn3D: { position: 'absolute', bottom: 12, right: 12, width: 40, height: 40, borderRadius: 20, backgroundColor: royal.emerald, alignItems: 'center', justifyContent: 'center', shadowColor: royal.emerald, shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: {width:0, height:4}, elevation: 5 },
+    quickAddBtn3D: { position: 'absolute', bottom: 12, right: 12, width: 40, height: 40, borderRadius: 20, backgroundColor: royal.deepEmerald, alignItems: 'center', justifyContent: 'center', shadowColor: royal.deepEmerald, shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: {width:0, height:4}, elevation: 5 },
     quickAddBtnActive: { backgroundColor: royal.terracotta },
 
     cardContent: { padding: 14, paddingTop: 12 },
     categoryText: { fontFamily: 'Inter_700Bold', fontSize: 9, color: royal.terracotta, letterSpacing: 1.5, marginBottom: 4 },
     productTitle: { fontFamily: 'PlayfairDisplay_600SemiBold', fontSize: 15, color: royal.textDark, lineHeight: 20, marginBottom: 8 },
     priceRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    priceText: { fontFamily: 'Inter_700Bold', fontSize: 15, color: royal.emerald },
+    priceText: { fontFamily: 'Inter_700Bold', fontSize: 15, color: royal.deepEmerald },
     priceOld: { fontFamily: 'Inter_500Medium', fontSize: 12, color: royal.textDark, opacity: 0.4, textDecorationLine: 'line-through' },
     
-    inCartIndicator: { marginTop: 8, backgroundColor: royal.softGold, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+    inCartIndicator: { marginTop: 8, backgroundColor: royal.goldSoft, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
     inCartText: { fontFamily: 'Inter_600SemiBold', fontSize: 10, color: royal.textDark },
 
     cartFloatWrap: { position: 'absolute', bottom: 30, left: 20, right: 20, alignItems: 'center' },
@@ -414,7 +448,7 @@ const styles = StyleSheet.create({
     bottomSheet: { backgroundColor: royal.bg, borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 24, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 30, shadowOffset: {width:0, height:-15}, elevation: 20 },
     sheetHandle: { width: 50, height: 5, backgroundColor: royal.border, borderRadius: 3, alignSelf: 'center', marginBottom: 24 },
     sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-    sheetTitle: { fontFamily: 'PlayfairDisplay_700Bold', fontSize: 26, color: royal.emerald },
+    sheetTitle: { fontFamily: fonts.heading, fontSize: 26, color: royal.deepEmerald },
     closeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: royal.border, alignItems: 'center', justifyContent: 'center' },
 
     cartItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: royal.border },
@@ -423,7 +457,7 @@ const styles = StyleSheet.create({
     cartInfo: { flex: 1, marginLeft: 16 },
     cartItemBrand: { fontFamily: 'Inter_700Bold', fontSize: 10, color: royal.terracotta, letterSpacing: 1, marginBottom: 4 },
     cartItemName: { fontFamily: 'PlayfairDisplay_600SemiBold', fontSize: 17, color: royal.textDark, marginBottom: 6 },
-    cartItemPrice: { fontFamily: 'Inter_600SemiBold', fontSize: 15, color: royal.emerald },
+    cartItemPrice: { fontFamily: 'Inter_600SemiBold', fontSize: 15, color: royal.deepEmerald },
     
     cartActions: { flexDirection: 'row', alignItems: 'center', backgroundColor: royal.surface, borderRadius: 20, paddingHorizontal: 6, paddingVertical: 4, shadowColor: royal.textDark, shadowOpacity: 0.05, shadowRadius: 5, shadowOffset: {width:0, height:2}, elevation: 2 },
     cartActionBtn: { padding: 8 },
@@ -434,9 +468,9 @@ const styles = StyleSheet.create({
     totalLabel: { fontFamily: 'Inter_500Medium', fontSize: 16, color: royal.textDark, opacity: 0.7 },
     totalValue: { fontFamily: 'PlayfairDisplay_700Bold', fontSize: 28, color: royal.emerald },
     
-    checkoutBtn: { flexDirection: 'row', paddingVertical: 20, borderRadius: 20, alignItems: 'center', justifyContent: 'center', shadowColor: royal.emerald, shadowOpacity: 0.4, shadowRadius: 20, shadowOffset: {width:0, height:8}, elevation: 10, overflow: 'hidden' },
+    checkoutBtn: { flexDirection: 'row', paddingVertical: 20, borderRadius: 20, alignItems: 'center', justifyContent: 'center', shadowColor: royal.deepEmerald, shadowOpacity: 0.4, shadowRadius: 20, shadowOffset: {width:0, height:8}, elevation: 10, overflow: 'hidden' },
     checkoutBtnText: { fontFamily: 'Inter_700Bold', fontSize: 17, color: royal.gold, letterSpacing: 0.5 },
 
-    translatingBanner: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: 10, backgroundColor: royal.softGold, gap: 10 },
-    translatingText: { fontFamily: 'Inter_600SemiBold', fontSize: 12, color: royal.emerald }
+    translatingBanner: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: 10, backgroundColor: royal.goldSoft, gap: 10 },
+    translatingText: { fontFamily: 'Inter_600SemiBold', fontSize: 12, color: royal.deepEmerald }
 });

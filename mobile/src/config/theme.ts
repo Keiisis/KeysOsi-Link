@@ -196,14 +196,21 @@ export const typography = {
 /* ── Royal — Tokens dorés/chic utilisés par les écrans premium ── */
 export const royal = {
     bg: colors.background,
+    bgWarm: '#FDF9F1',           // Fond chaud Boutique
+    surface: colors.surface,
     gold: colors.gold,
     goldLight: colors.goldLight,
     goldDark: colors.goldDark,
-    goldSoft: colors.goldSoft,
+    goldSoft: '#F8E9C7',         // Or très pâle (backgrounds)
+    goldShimmer: colors.goldShimmer,
     emerald: colors.primary,
     lightEmerald: colors.primaryLight,
+    deepEmerald: '#0B4A2B',      // Vert très profond (headers, nav bars)
+    deepLightEmerald: '#12683E', // Vert profond clair (gradients)
+    terracotta: '#D45B3E',       // Accent chaud (badges, prix soldés)
     textDark: colors.textPrimary,
     textLight: colors.textOnDark,
+    border: '#EBE2CD',           // Bordure douce chaude
 }
 
 /* ═══════════════════════════════════════════════════════════
