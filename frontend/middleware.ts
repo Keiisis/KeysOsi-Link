@@ -13,6 +13,7 @@ import {
     logWafEvent,
     trackViolation,
     setWafConfig,
+    getWafConfig,
     setCustomRulesCache,
     getCustomRulesCache,
     checkIpTrustScore,
@@ -230,17 +231,22 @@ export async function middleware(request: NextRequest) {
 
     // ─── 4. RATE LIMITING ────────────────────────────────────
     if (!emergencyBypass) {
-        const rlCategory = getRateLimitCategory(pathname)
-        if (checkRateLimit(ip, rlCategory)) {
-            if (SUPA_URL && SUPA_KEY) {
-                logWafEvent({
-                    ip, method, path: pathname, userAgent,
-                    threatType: 'rate_limit', detail: `Catégorie: ${rlCategory}`,
-                    supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
-                })
-                trackViolation(ip, SUPA_URL, SUPA_KEY, { threatType: 'rate_limit' })
+        const config = getWafConfig()
+        const isWhitelisted = config.whitelistedIps && config.whitelistedIps.includes(ip)
+        
+        if (!isWhitelisted) {
+            const rlCategory = getRateLimitCategory(pathname)
+            if (checkRateLimit(ip, rlCategory)) {
+                if (SUPA_URL && SUPA_KEY) {
+                    logWafEvent({
+                        ip, method, path: pathname, userAgent,
+                        threatType: 'rate_limit', detail: `Catégorie: ${rlCategory}`,
+                        supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                    })
+                    trackViolation(ip, SUPA_URL, SUPA_KEY, { threatType: 'rate_limit' })
+                }
+                return wafBlock('Trop de requêtes. Réessayez dans quelques instants.', 429)
             }
-            return wafBlock('Trop de requêtes. Réessayez dans quelques instants.', 429)
         }
     }
 
