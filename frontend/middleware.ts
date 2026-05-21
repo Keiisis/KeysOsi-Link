@@ -155,14 +155,20 @@ export async function middleware(request: NextRequest) {
     // L'auth Supabase reste active pour protéger les données
     const emergencyBypass = process.env.WAF_EMERGENCY_BYPASS === 'true'
 
-    // ─── Refresh config WAF (async, non bloquant) ────────────
+    // ─── Refresh config WAF (AWAIT pour garantir que la whitelist est chargée) ─
     if (!emergencyBypass) {
-        refreshWafConfig().catch(() => {})
+        await refreshWafConfig().catch(() => {})
     }
+
+    // ─── Vérifier si l'IP est dans la liste blanche ──────────
+    // Les IPs whitelistées sont exemptées de TOUS les contrôles WAF
+    // (IP bloquée, trust score, rate limiting, CRS) mais PAS de l'auth
+    const wafConfig = getWafConfig()
+    const isIpWhitelisted = !emergencyBypass && wafConfig.whitelistedIps && wafConfig.whitelistedIps.includes(ip)
 
     // ─── 2. HONEYPOT — Ban immédiat si chemin piège ──────────
     // Ces chemins ne sont jamais accédés légitimement — uniquement par des bots/scanners
-    if (!emergencyBypass && isHoneypotPath(pathname)) {
+    if (!emergencyBypass && !isIpWhitelisted && isHoneypotPath(pathname)) {
         if (SUPA_URL && SUPA_KEY) triggerHoneypot(ip, pathname, SUPA_URL, SUPA_KEY)
         return wafBlock('Not Found.', 404)   // Retourner 404 pour ne pas alerter le hacker
     }
@@ -180,7 +186,7 @@ export async function middleware(request: NextRequest) {
         pathname.startsWith('/ceo')
     )
 
-    if (!emergencyBypass && !isInternalPanelPath) {
+    if (!emergencyBypass && !isIpWhitelisted && !isInternalPanelPath) {
         // 3a. Check sous-réseau banni (en mémoire, ultra-rapide)
         if (checkSubnetBanned(ip)) {
             return wafBlock('Accès refusé.', 403)
@@ -209,7 +215,7 @@ export async function middleware(request: NextRequest) {
                 return wafBlock('Accès refusé.', 403)
             }
         }
-    } else if (!emergencyBypass && isInternalPanelPath) {
+    } else if (!emergencyBypass && !isIpWhitelisted && isInternalPanelPath) {
         // Pour les panels : vérifier uniquement le sous-réseau banni
         if (checkSubnetBanned(ip)) {
             return wafBlock('Accès refusé.', 403)
@@ -217,7 +223,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // ─── 4b. GÉO-BLOCAGE ─────────────────────────────────────
-    if (!emergencyBypass) {
+    if (!emergencyBypass && !isIpWhitelisted) {
         const geo = checkGeoBlock(request.headers)
         if (geo.blocked) {
             if (SUPA_URL && SUPA_KEY) logWafEvent({
@@ -230,23 +236,18 @@ export async function middleware(request: NextRequest) {
     }
 
     // ─── 4. RATE LIMITING ────────────────────────────────────
-    if (!emergencyBypass) {
-        const config = getWafConfig()
-        const isWhitelisted = config.whitelistedIps && config.whitelistedIps.includes(ip)
-        
-        if (!isWhitelisted) {
-            const rlCategory = getRateLimitCategory(pathname)
-            if (checkRateLimit(ip, rlCategory)) {
-                if (SUPA_URL && SUPA_KEY) {
-                    logWafEvent({
-                        ip, method, path: pathname, userAgent,
-                        threatType: 'rate_limit', detail: `Catégorie: ${rlCategory}`,
-                        supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
-                    })
-                    trackViolation(ip, SUPA_URL, SUPA_KEY, { threatType: 'rate_limit' })
-                }
-                return wafBlock('Trop de requêtes. Réessayez dans quelques instants.', 429)
+    if (!emergencyBypass && !isIpWhitelisted) {
+        const rlCategory = getRateLimitCategory(pathname)
+        if (checkRateLimit(ip, rlCategory)) {
+            if (SUPA_URL && SUPA_KEY) {
+                logWafEvent({
+                    ip, method, path: pathname, userAgent,
+                    threatType: 'rate_limit', detail: `Catégorie: ${rlCategory}`,
+                    supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                })
+                trackViolation(ip, SUPA_URL, SUPA_KEY, { threatType: 'rate_limit' })
             }
+            return wafBlock('Trop de requêtes. Réessayez dans quelques instants.', 429)
         }
     }
 
@@ -256,7 +257,7 @@ export async function middleware(request: NextRequest) {
     if (isAbsoluteBypass(pathname)) {
         // Optionnel : on pourrait appliquer un WAF CRS très léger ici, 
         // mais pour éviter de bloquer un admin, on passe.
-    } else if (!emergencyBypass) {
+    } else if (!emergencyBypass && !isIpWhitelisted) {
         // ─── 5. WAF CRS ANALYSIS ─────────────────────────────────
         //
         // RÈGLE D'OR : Les panels internes /admin/*, /agent/*, /client/*
