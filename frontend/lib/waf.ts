@@ -17,7 +17,7 @@ const rateLimitMap = new Map<string, RateEntry>()
 const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
     default: { max: 120, windowMs: 60_000 },
     api:     { max: 60,  windowMs: 60_000 },
-    login:   { max: 10,  windowMs: 15 * 60_000 },
+    login:   { max: 30,  windowMs: 15 * 60_000 },
     upload:  { max: 20,  windowMs: 60_000 },
     admin:   { max: 200, windowMs: 60_000 },
 }

@@ -249,7 +249,12 @@ export async function middleware(request: NextRequest) {
                     threatType: 'rate_limit', detail: `Catégorie: ${rlCategory}`,
                     supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
                 })
-                trackViolation(ip, SUPA_URL, SUPA_KEY, { threatType: 'rate_limit' })
+                // Ne cascader en violation (→ ban IP) QUE pour les rate limits non-login
+                // Un admin/agent/client qui se trompe de mot de passe ≠ un attaquant
+                // Le login est déjà protégé par l'auth Supabase (lockout temporaire)
+                if (rlCategory !== 'login') {
+                    trackViolation(ip, SUPA_URL, SUPA_KEY, { threatType: 'rate_limit' })
+                }
             }
             return wafBlock('Trop de requêtes. Réessayez dans quelques instants.', 429)
         }
@@ -312,13 +317,21 @@ export async function middleware(request: NextRequest) {
                         score: verdict.score,
                         supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
                     })
-                    trackViolation(ip, SUPA_URL, SUPA_KEY, {
-                        threatType:  verdict.topThreat || 'waf_block',
-                        payloadHash: topMatch?.snippet
-                            ? Buffer.from(topMatch.snippet.slice(0, 64)).toString('base64').slice(0, 32)
-                            : undefined,
-                        snippet:     topMatch?.snippet?.slice(0, 120),
-                    })
+                    // Ne pas cascader en violation pour les APIs internes du site
+                    // Ces requêtes sont générées par l'app elle-même (analytics, cron, etc.)
+                    // et peuvent contenir des données utilisateur qui ressemblent à du XSS/SQL
+                    const isInternalApi = pathname.startsWith('/api/analytics') ||
+                                          pathname.startsWith('/api/cron') ||
+                                          pathname.startsWith('/api/ceo')
+                    if (!isInternalApi) {
+                        trackViolation(ip, SUPA_URL, SUPA_KEY, {
+                            threatType:  verdict.topThreat || 'waf_block',
+                            payloadHash: topMatch?.snippet
+                                ? Buffer.from(topMatch.snippet.slice(0, 64)).toString('base64').slice(0, 32)
+                                : undefined,
+                            snippet:     topMatch?.snippet?.slice(0, 120),
+                        })
+                    }
                 }
                 return wafBlock('Requête bloquée par le pare-feu applicatif.', 403)
             }
