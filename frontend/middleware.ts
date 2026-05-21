@@ -187,7 +187,13 @@ export async function middleware(request: NextRequest) {
         pathname.startsWith('/admin') ||
         pathname.startsWith('/agent') ||
         pathname.startsWith('/client') ||
-        pathname.startsWith('/ceo')
+        pathname.startsWith('/ceo') ||
+        // Les API endpoints de ces panels sont aussi internes
+        // (appelés par le JS de l'app, pas par des utilisateurs externes)
+        pathname.startsWith('/api/admin') ||
+        pathname.startsWith('/api/agent') ||
+        pathname.startsWith('/api/client') ||
+        pathname.startsWith('/api/ceo')
     )
 
     if (!emergencyBypass && !isIpWhitelisted && !isInternalPanelPath) {
