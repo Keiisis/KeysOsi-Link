@@ -69,6 +69,19 @@ const SEV_LABELS: Record<number, { label: string; color: string }> = {
 }
 const PAGE_SIZE = 20
 
+// ── Helpers pour le formatage sécurisé des dates (évite les crashs si timestamps invalides) ──
+const formatTimeSafe = (dateStr: string | null | undefined) => {
+    if (!dateStr) return 'N/A'
+    const d = new Date(dateStr)
+    return isNaN(d.getTime()) ? 'N/A' : d.toLocaleTimeString('fr-FR')
+}
+
+const formatDateTimeSafe = (dateStr: string | null | undefined) => {
+    if (!dateStr) return 'N/A'
+    const d = new Date(dateStr)
+    return isNaN(d.getTime()) ? 'N/A' : d.toLocaleString('fr-FR')
+}
+
 // ══════════════════════════════════════════════════════════════
 export default function SecuritePage() {
     const [tab, setTab]           = useState<'overview' | 'logs' | 'blocks' | 'rules' | 'config'>('overview')
@@ -399,7 +412,7 @@ export default function SecuritePage() {
                                             <span className="text-xs text-gray-500">{block.violation_count} violation(s)</span>
                                         </div>
                                         <p className="text-gray-400 text-xs">{block.reason}</p>
-                                        <p className="text-gray-500 text-xs"><Clock className="w-3 h-3 inline mr-1" />{new Date(block.blocked_at).toLocaleString('fr-FR')}</p>
+                                        <p className="text-gray-500 text-xs"><Clock className="w-3 h-3 inline mr-1" />{formatDateTimeSafe(block.blocked_at)}</p>
                                     </div>
                                     <button onClick={() => unblockIp(block.ip)}
                                         className="flex items-center gap-1 text-green-400 hover:text-green-300 text-xs font-medium px-3 py-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 transition-colors">
@@ -712,7 +725,7 @@ function LogRow({ log, detailed = false }: { log: WafLog; detailed?: boolean }) 
                 <span className="text-gray-500 truncate max-w-xs hidden lg:block">{log.threat_detail}</span>
             )}
             <span className="text-gray-600 whitespace-nowrap shrink-0">
-                {new Date(log.created_at).toLocaleTimeString('fr-FR')}
+                {formatTimeSafe(log.created_at)}
             </span>
         </div>
     )
