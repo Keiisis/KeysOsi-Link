@@ -25,9 +25,10 @@ const ROLES = [
 ]
 
 function roleColor(r: string) { return ROLES.find(x => x.value === r)?.color ?? '#6b7280' }
-function fmtDate(d: string | null) {
+function fmtDate(d: string | null | undefined) {
     if (!d) return '—'
-    return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+    const dateObj = new Date(d)
+    return isNaN(dateObj.getTime()) ? '—' : dateObj.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 export default function CeoUtilisateurs() {

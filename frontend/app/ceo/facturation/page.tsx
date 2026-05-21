@@ -8,7 +8,11 @@ const GOLD = '#D4AF37'; const YELLOW = '#FCD116'; const GREEN = '#008751'
 const GREEN_L = '#00A86B'; const RED = '#E8112D'; const BG = '#0B1F0D'; const TEXT = '#F0EBD8'
 
 function fmt(n: number) { return `${n.toLocaleString('fr-FR')} FCFA` }
-function fmtDate(d: string) { return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) }
+function fmtDate(d: string | null | undefined) {
+    if (!d) return '—'
+    const dateObj = new Date(d)
+    return isNaN(dateObj.getTime()) ? '—' : dateObj.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+}
 
 interface Doc { id: string; created_at: string; number?: string; type?: string; total_amount?: number; status?: string; client_email?: string; client_name?: string; due_date?: string }
 

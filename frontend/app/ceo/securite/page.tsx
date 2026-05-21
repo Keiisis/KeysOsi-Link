@@ -7,7 +7,11 @@ import { ShieldCheck, Ban, RefreshCw, Loader2, Globe, Zap, Lock } from 'lucide-r
 const GOLD = '#D4AF37'; const YELLOW = '#FCD116'; const GREEN = '#008751'
 const GREEN_L = '#00A86B'; const RED = '#E8112D'; const BG = '#0B1F0D'; const TEXT = '#F0EBD8'
 
-function fmtDate(d: string) { return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) }
+function fmtDate(d: string | null | undefined) {
+    if (!d) return 'N/A'
+    const dateObj = new Date(d)
+    return isNaN(dateObj.getTime()) ? 'N/A' : dateObj.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+}
 
 interface WafLog { id: string; created_at: string; ip: string; threat_type?: string; path?: string; is_blocked?: boolean; country_code?: string }
 interface IpBlock { id: string; created_at: string; ip: string; reason?: string; blocked_by?: string; violation_count?: number; unblocked_at?: string | null }
