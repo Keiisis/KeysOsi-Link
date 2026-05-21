@@ -161,14 +161,18 @@ export async function middleware(request: NextRequest) {
     }
 
     // ─── Vérifier si l'IP est dans la liste blanche ──────────
-    // Les IPs whitelistées sont exemptées de TOUS les contrôles WAF
-    // (IP bloquée, trust score, rate limiting, CRS) mais PAS de l'auth
+    // Les IPs whitelistées sont exemptées des contrôles de BLOCAGE :
+    //   - IP bloquée, trust score, rate limiting, géo-blocage
+    // Mais RESTENT soumises aux contrôles de DÉTECTION :
+    //   - Honeypot (accès à des chemins malveillants = toujours suspect)
+    //   - WAF CRS (détection d'attaques dans les requêtes)
     const wafConfig = getWafConfig()
     const isIpWhitelisted = !emergencyBypass && wafConfig.whitelistedIps && wafConfig.whitelistedIps.includes(ip)
 
     // ─── 2. HONEYPOT — Ban immédiat si chemin piège ──────────
     // Ces chemins ne sont jamais accédés légitimement — uniquement par des bots/scanners
-    if (!emergencyBypass && !isIpWhitelisted && isHoneypotPath(pathname)) {
+    // ACTIF même pour les IPs whitelistées (sécurité critique)
+    if (!emergencyBypass && isHoneypotPath(pathname)) {
         if (SUPA_URL && SUPA_KEY) triggerHoneypot(ip, pathname, SUPA_URL, SUPA_KEY)
         return wafBlock('Not Found.', 404)   // Retourner 404 pour ne pas alerter le hacker
     }
@@ -257,7 +261,7 @@ export async function middleware(request: NextRequest) {
     if (isAbsoluteBypass(pathname)) {
         // Optionnel : on pourrait appliquer un WAF CRS très léger ici, 
         // mais pour éviter de bloquer un admin, on passe.
-    } else if (!emergencyBypass && !isIpWhitelisted) {
+    } else if (!emergencyBypass) {
         // ─── 5. WAF CRS ANALYSIS ─────────────────────────────────
         //
         // RÈGLE D'OR : Les panels internes /admin/*, /agent/*, /client/*
@@ -332,6 +336,10 @@ export async function middleware(request: NextRequest) {
     const isClientRoute = pathname.startsWith('/client')
     const isCeoRoute    = pathname.startsWith('/ceo')
     if (!isAgentRoute && !isAdminRoute && !isClientRoute && !isCeoRoute) return response
+
+    // Pages de login/register/reset : accès public, pas de check auth
+    // Sans ça → boucle de redirection infinie (pas de session → redirect login → pas de session → ...)
+    if (isAbsoluteBypass(pathname)) return response
 
     let supabaseResponse = response
 
