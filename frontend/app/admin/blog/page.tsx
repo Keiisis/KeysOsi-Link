@@ -231,7 +231,25 @@ export default function AdminBlogPage() {
         if (!form.title) return
         setSaving(true)
         const slug = form.slug || generateSlug(form.title)
-        await supabase.from('blog_posts').insert({ ...form, slug, author: 'Retour Gagnant' })
+        
+        const payload = {
+            title: form.title,
+            slug,
+            excerpt: form.excerpt,
+            content: form.content,
+            cover_image: form.cover_image,
+            category: form.category,
+            is_published: form.is_published,
+            author: 'Retour Gagnant'
+        }
+
+        const { error } = await supabase.from('blog_posts').insert(payload)
+        if (error) {
+            alert(`Erreur lors de la création de l'article : ${error.message}`)
+            setSaving(false)
+            return
+        }
+
         setCreating(false)
         resetForm()
         fetchPosts()
@@ -241,7 +259,8 @@ export default function AdminBlogPage() {
     const handleUpdate = async () => {
         if (!editing) return
         setSaving(true)
-        await supabase.from('blog_posts').update({
+        
+        const payload = {
             title: form.title,
             slug: form.slug,
             excerpt: form.excerpt,
@@ -249,11 +268,16 @@ export default function AdminBlogPage() {
             cover_image: form.cover_image,
             category: form.category,
             is_published: form.is_published,
-            meta_title: form.meta_title,
-            meta_description: form.meta_description,
-            tags: form.tags,
             updated_at: new Date().toISOString(),
-        }).eq('id', editing.id)
+        }
+
+        const { error } = await supabase.from('blog_posts').update(payload).eq('id', editing.id)
+        if (error) {
+            alert(`Erreur lors de la mise à jour de l'article : ${error.message}`)
+            setSaving(false)
+            return
+        }
+
         setEditing(null)
         resetForm()
         fetchPosts()
