@@ -114,8 +114,11 @@ export default function AdminBlogPage() {
 
     // Tags management
     const tags = useMemo(() => {
-        const text = form.tags || ''
-        return text ? text.split(',').map(t => t.trim()).filter(Boolean) : []
+        const raw = form.tags
+        if (!raw) return []
+        if (Array.isArray(raw)) return (raw as unknown as string[]).filter(Boolean)
+        if (typeof raw === 'string') return raw.split(',').map(t => t.trim()).filter(Boolean)
+        return []
     }, [form.tags])
 
     const addTag = () => {
@@ -236,6 +239,8 @@ export default function AdminBlogPage() {
         setSaving(true)
         const slug = form.slug || generateSlug(form.title)
         
+        const tagsArray = form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : []
+        
         const payload = {
             title: form.title,
             slug,
@@ -244,6 +249,7 @@ export default function AdminBlogPage() {
             cover_image: form.cover_image,
             category: form.category,
             is_published: form.is_published,
+            tags: tagsArray,
             author: 'Retour Gagnant'
         }
 
@@ -264,6 +270,8 @@ export default function AdminBlogPage() {
         if (!editing) return
         setSaving(true)
         
+        const tagsArray = form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : []
+        
         const payload = {
             title: form.title,
             slug: form.slug,
@@ -272,6 +280,7 @@ export default function AdminBlogPage() {
             cover_image: form.cover_image,
             category: form.category,
             is_published: form.is_published,
+            tags: tagsArray,
             updated_at: new Date().toISOString(),
         }
 
@@ -312,7 +321,7 @@ export default function AdminBlogPage() {
             is_published: !!post.is_published,
             meta_title: post.meta_title || '',
             meta_description: post.meta_description || '',
-            tags: post.tags || '',
+            tags: Array.isArray(post.tags) ? (post.tags as string[]).join(', ') : (post.tags || ''),
         })
         setActiveTab('write')
         setUndoStack([])
@@ -333,10 +342,12 @@ export default function AdminBlogPage() {
         setFullscreen(false)
     }
 
-    const filtered = posts.filter(p =>
-        p.title.toLowerCase().includes(search.toLowerCase()) ||
-        p.category.toLowerCase().includes(search.toLowerCase())
-    )
+    const filtered = posts.filter(p => {
+        const s = search.toLowerCase()
+        const title = (p.title || '').toLowerCase()
+        const cat = (p.category || '').toLowerCase()
+        return title.includes(s) || cat.includes(s)
+    })
 
     // Simple Markdown to HTML converter for preview
     const renderMarkdown = (text: string): string => {
@@ -661,7 +672,7 @@ export default function AdminBlogPage() {
                                 <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                                     <Sparkles size={12} /> <T>Publication</T>
                                 </h3>
-                                <label className="flex items-center gap-3 cursor-pointer group">
+                                <label onClick={() => setForm(f => ({ ...f, is_published: !f.is_published }))} className="flex items-center gap-3 cursor-pointer group">
                                     <div className={`relative w-10 h-5 rounded-full transition-colors ${form.is_published ? 'bg-emerald-500' : 'bg-white/10'}`}>
                                         <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${form.is_published ? 'translate-x-5' : 'translate-x-0.5'}`} />
                                     </div>
@@ -815,11 +826,11 @@ export default function AdminBlogPage() {
                                         <p className="text-[9px] text-gray-500 font-bold uppercase"><T>Min lecture</T></p>
                                     </div>
                                     <div className="bg-white/5 rounded-xl p-3 text-center">
-                                        <p className="text-lg font-black text-white">{form.content.split('\n').length}</p>
+                                        <p className="text-lg font-black text-white">{(form.content || '').split('\n').length}</p>
                                         <p className="text-[9px] text-gray-500 font-bold uppercase"><T>Lignes</T></p>
                                     </div>
                                     <div className="bg-white/5 rounded-xl p-3 text-center">
-                                        <p className="text-lg font-black text-white">{(form.content.match(/!\[/g) || []).length}</p>
+                                        <p className="text-lg font-black text-white">{((form.content || '').match(/!\[/g) || []).length}</p>
                                         <p className="text-[9px] text-gray-500 font-bold uppercase"><T>Médias</T></p>
                                     </div>
                                 </div>
@@ -918,8 +929,8 @@ export default function AdminBlogPage() {
                                 </div>
                                 {/* Content */}
                                 <div className="p-4">
-                                    <p className="text-sm font-bold text-white truncate mb-1">{post.title}</p>
-                                    <p className="text-[10px] text-gray-500 line-clamp-2 mb-3">{post.excerpt}</p>
+                                    <p className="text-sm font-bold text-white truncate mb-1">{post.title || 'Sans titre'}</p>
+                                    <p className="text-[10px] text-gray-500 line-clamp-2 mb-3">{post.excerpt || ''}</p>
                                     <div className="flex items-center justify-between">
                                         <span className="text-[10px] text-gray-600 flex items-center gap-1">
                                             <Calendar size={10} /> {formatDateSafe(post.created_at)}
@@ -960,7 +971,7 @@ export default function AdminBlogPage() {
                                     )}
                                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${post.is_published ? 'bg-emerald-400' : 'bg-gray-600'}`} />
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-sm font-bold text-white truncate">{post.title}</p>
+                                        <p className="text-sm font-bold text-white truncate">{post.title || 'Sans titre'}</p>
                                         <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-500 flex-wrap">
                                             <span className="flex items-center gap-1">
                                                 {CATEGORIES.find(c => c.value === post.category)?.icon} {post.category}

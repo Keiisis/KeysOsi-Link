@@ -54,8 +54,9 @@ export default function BlogPage() {
     }, [])
 
     const filtered = posts.filter(p => {
-        const matchSearch = p.title.toLowerCase().includes(search.toLowerCase()) ||
-            p.excerpt.toLowerCase().includes(search.toLowerCase())
+        const s = search.toLowerCase()
+        const matchSearch = (p.title || '').toLowerCase().includes(s) ||
+            (p.excerpt || '').toLowerCase().includes(s)
         const matchCat = category === 'all' || p.category === category
         return matchSearch && matchCat
     })
