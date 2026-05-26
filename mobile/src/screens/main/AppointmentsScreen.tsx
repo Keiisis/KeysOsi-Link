@@ -1,19 +1,58 @@
+'use strict'
 import React, { useEffect, useState, useCallback } from 'react'
 import {
     View, Text, ScrollView, StyleSheet, TouchableOpacity,
     RefreshControl, Platform, Alert, ActivityIndicator, Modal,
-    TextInput,
+    TextInput, Pressable, Dimensions,
 } from 'react-native'
-import { ArrowLeft, Calendar, Clock, Plus, Send, User, XCircle } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { LinearGradient } from 'expo-linear-gradient'
-import ScreenHeader from '../../components/ScreenHeader'
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withTiming,
+    withDelay,
+    withRepeat,
+    withSequence,
+    withSpring,
+    Easing,
+    interpolate,
+    interpolateColor,
+} from 'react-native-reanimated'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../config/supabase'
 import { useLang } from '../../contexts/LangContext'
-import { colors, spacing, radius, shadows, typography, royal } from '../../config/theme'
 import { RootStackParamList } from '../../navigation/AppNavigator'
+
+/* ═══════════════════════════════════════════════════════════
+   AppointmentsScreen — THEME "CORPORATE PREMIUM 2026"
+   (Aligné avec Register / Services / Signature / Boutique / About)
+═══════════════════════════════════════════════════════════ */
+
+const { width, height } = Dimensions.get('window')
+
+// Palette de l'agence (strictement identique aux autres écrans)
+const C = {
+    bg: '#F8F9FA',
+    surface: 'rgba(255, 255, 255, 0.85)',
+    surfaceSolid: '#FFFFFF',
+    border: '#E2E8F0',
+
+    primary: '#047857',      // Bleu Profond (Agence)
+    primaryDark: '#022C22',
+    accent: '#C9A84C',       // Or (Agence)
+    accentDark: '#A68B3C',
+    accentLight: '#E2C97E',
+    auraGreen: '#10B981',    // Vert (Agence)
+    error: '#EF4444',        // Rouge (Agence)
+    success: '#10B981',
+    warning: '#C9A84C',      // = accent
+
+    textSec: '#64748B',
+    textMuted: '#94A3B8',
+    placeholder: '#94A3B8',
+    primaryText: '#FFFFFF',
+}
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Appointments'>
 
@@ -28,20 +67,134 @@ interface Appointment {
 }
 
 const TYPE_CONFIG = {
-    video:     { icon: 'videocam-outline'     as const, label: 'Visioconférence', color: '#7C5CCA' },
-    phone:     { icon: 'call-outline'         as const, label: 'Appel téléphonique', color: colors.info },
-    in_person: { icon: 'location-outline'     as const, label: 'En présentiel', color: colors.primary },
+    video: { icon: 'videocam-outline' as const, label: 'Visioconférence', shortLabel: 'Visio' },
+    phone: { icon: 'call-outline' as const, label: 'Appel téléphonique', shortLabel: 'Appel' },
+    in_person: { icon: 'location-outline' as const, label: 'En présentiel', shortLabel: 'Présentiel' },
 }
 
 const STATUS_CONFIG = {
-    confirmed: { label: 'Confirmé',  color: colors.success, bg: colors.success + '12' },
-    pending:   { label: 'En attente', color: colors.warning, bg: colors.warning + '12' },
-    cancelled: { label: 'Annulé',    color: colors.danger,  bg: colors.danger  + '12' },
-    completed: { label: 'Terminé',   color: colors.textMuted, bg: colors.surfaceElevated },
+    confirmed: { label: 'Confirmé', color: C.success, bg: 'rgba(10, 107, 59, 0.10)', dot: C.success },
+    pending: { label: 'En attente', color: C.accentDark, bg: 'rgba(212, 160, 23, 0.10)', dot: C.accent },
+    cancelled: { label: 'Annulé', color: C.error, bg: 'rgba(163, 34, 0, 0.08)', dot: C.error },
+    completed: { label: 'Terminé', color: C.textSec, bg: 'rgba(100, 116, 139, 0.10)', dot: C.textSec },
 }
 
 /* ═══════════════════════════════════════════════════════════
-   Appointments Screen — RDV + demande de nouveau RDV
+   COMPOSANT : ANIMATED SECTION
+═══════════════════════════════════════════════════════════ */
+
+function AnimatedSection({
+    children, delay = 0, style,
+}: {
+    children: React.ReactNode
+    delay?: number
+    style?: any
+}) {
+    const anim = useSharedValue(0)
+
+    useEffect(() => {
+        anim.value = withDelay(delay, withTiming(1, {
+            duration: 800,
+            easing: Easing.out(Easing.quad),
+        }))
+    }, [delay])
+
+    const animStyle = useAnimatedStyle(() => ({
+        opacity: anim.value,
+        transform: [{ translateY: 30 * (1 - anim.value) }],
+    }))
+
+    return <Animated.View style={[animStyle, style]}>{children}</Animated.View>
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COMPOSANT : APPOINTMENT CARD
+═══════════════════════════════════════════════════════════ */
+
+function AppointmentCard({
+    appt, index, onCancel, t, formatDateShort,
+}: {
+    appt: Appointment
+    index: number
+    onCancel: (id: string) => void
+    t: (s: string) => string
+    formatDateShort: (iso: string | null) => { day: string; month: string }
+}) {
+    const enterAnim = useSharedValue(0)
+
+    useEffect(() => {
+        enterAnim.value = withDelay(
+            index * 70,
+            withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) })
+        )
+    }, [index])
+
+    const enterStyle = useAnimatedStyle(() => ({
+        opacity: enterAnim.value,
+        transform: [{ translateY: 25 * (1 - enterAnim.value) }],
+    }))
+
+    const tc = TYPE_CONFIG[appt.type] || TYPE_CONFIG.phone
+    const sc = STATUS_CONFIG[appt.status] || STATUS_CONFIG.pending
+    const canCancel = appt.status === 'confirmed' || appt.status === 'pending'
+    const { day, month } = formatDateShort(appt.scheduled_at)
+
+    return (
+        <Animated.View style={enterStyle}>
+            <View style={styles.rdvCard}>
+                {/* Colonne date */}
+                <View style={styles.rdvDateCol}>
+                    <Text style={styles.rdvDay}>{day}</Text>
+                    <Text style={styles.rdvMonth}>{month}</Text>
+                </View>
+
+                <View style={styles.rdvDivider} />
+
+                {/* Infos */}
+                <View style={styles.rdvInfo}>
+                    <View style={styles.rdvTypeRow}>
+                        <Ionicons name={tc.icon} size={13} color={C.accent} />
+                        <Text style={styles.rdvType}>{t(tc.label)}</Text>
+                    </View>
+
+                    <View style={styles.rdvMeta}>
+                        <Ionicons name="time-outline" size={11} color={C.textMuted} />
+                        <Text style={styles.rdvMetaText}>30 min</Text>
+                        {appt.agent_name && (
+                            <>
+                                <Text style={styles.rdvMetaDot}>·</Text>
+                                <Text style={styles.rdvMetaText} numberOfLines={1}>
+                                    {appt.agent_name}
+                                </Text>
+                            </>
+                        )}
+                    </View>
+
+                    <View style={[styles.rdvStatus, { backgroundColor: sc.bg }]}>
+                        <View style={[styles.rdvStatusDot, { backgroundColor: sc.dot }]} />
+                        <Text style={[styles.rdvStatusText, { color: sc.color }]}>
+                            {t(sc.label)}
+                        </Text>
+                    </View>
+                </View>
+
+                {/* Action annuler */}
+                {canCancel && (
+                    <Pressable
+                        onPress={() => onCancel(appt.id)}
+                        style={styles.cancelBtn}
+                        hitSlop={10}
+                    >
+                        <Ionicons name="close-circle-outline" size={22} color={C.error} />
+                    </Pressable>
+                )}
+            </View>
+        </Animated.View>
+    )
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ÉCRAN PRINCIPAL : APPOINTMENTS
 ═══════════════════════════════════════════════════════════ */
 
 export default function AppointmentsScreen({ navigation }: { navigation: Nav }) {
@@ -57,6 +210,61 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
     /* ── Form état ── */
     const [formType, setFormType] = useState<'video' | 'phone' | 'in_person'>('video')
     const [formNotes, setFormNotes] = useState('')
+    const [notesFocused, setNotesFocused] = useState(false)
+
+    /* ── Animations Corporate ── */
+    const headerAnim = useSharedValue(0)
+    const aura1Y = useSharedValue(0)
+    const aura2X = useSharedValue(0)
+    const tabIndicator = useSharedValue(0)
+
+    /* ── Modal sheet animation ── */
+    const sheetAnim = useSharedValue(0)
+
+    useEffect(() => {
+        headerAnim.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.quad) })
+
+        aura1Y.value = withRepeat(
+            withSequence(
+                withTiming(25, { duration: 6000, easing: Easing.inOut(Easing.quad) }),
+                withTiming(-10, { duration: 6000, easing: Easing.inOut(Easing.quad) })
+            ), -1, true
+        )
+        aura2X.value = withRepeat(
+            withSequence(
+                withTiming(-30, { duration: 7000, easing: Easing.inOut(Easing.quad) }),
+                withTiming(15, { duration: 7000, easing: Easing.inOut(Easing.quad) })
+            ), -1, true
+        )
+    }, [])
+
+    useEffect(() => {
+        tabIndicator.value = withSpring(tab === 'upcoming' ? 0 : 1, { damping: 18, stiffness: 180 })
+    }, [tab])
+
+    useEffect(() => {
+        sheetAnim.value = withSpring(showModal ? 1 : 0, { damping: 20, stiffness: 180 })
+    }, [showModal])
+
+    const styleHeader = useAnimatedStyle(() => ({
+        opacity: headerAnim.value,
+        transform: [{ translateY: 30 * (1 - headerAnim.value) }],
+    }))
+    const aura1Style = useAnimatedStyle(() => ({ transform: [{ translateY: aura1Y.value }] }))
+    const aura2Style = useAnimatedStyle(() => ({ transform: [{ translateX: aura2X.value }] }))
+
+    const indicatorStyle = useAnimatedStyle(() => ({
+        transform: [{ translateX: interpolate(tabIndicator.value, [0, 1], [0, 1]) * (((width - 40 - 8) / 2)) }],
+    }))
+
+    const sheetStyle = useAnimatedStyle(() => ({
+        opacity: sheetAnim.value,
+        transform: [{ translateY: interpolate(sheetAnim.value, [0, 1], [400, 0]) }],
+    }))
+
+    const overlayStyle = useAnimatedStyle(() => ({
+        opacity: sheetAnim.value,
+    }))
 
     const fetchAppointments = useCallback(async () => {
         if (!profile) return
@@ -94,7 +302,7 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
     /* ── Demander un RDV ── */
     const handleRequestAppointment = async () => {
         if (!formNotes.trim()) {
-            Alert.alert(t('Champ requis'), t('Décrivez brièvement l\'objet de votre rendez-vous.'))
+            Alert.alert(t('Champ requis'), t("Décrivez brièvement l'objet de votre rendez-vous."))
             return
         }
 
@@ -110,7 +318,6 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
 
             if (error) throw error
 
-            // Notif pour le client (stockée en FR — traduite à l'affichage via t() dans NotificationsScreen)
             await supabase.from('notifications').insert({
                 user_id: profile!.id,
                 title: 'Demande de RDV envoyée',
@@ -119,15 +326,12 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
                 is_read: false,
                 created_at: new Date().toISOString(),
             })
-            // Note: les strings ci-dessus sont stockées en français dans la DB
-            // mais le NotificationsScreen les passe par t() pour les afficher
-            // dans la langue du client.
 
             setShowModal(false)
             setFormNotes('')
             Alert.alert(
                 t('Demande envoyée'),
-                t('Notre équipe vous contactera sous 24h pour confirmer la date et l\'heure de votre rendez-vous.'),
+                t("Notre équipe vous contactera sous 24h pour confirmer la date et l'heure de votre rendez-vous."),
             )
             await fetchAppointments()
         } catch (e: unknown) {
@@ -168,341 +372,913 @@ export default function AppointmentsScreen({ navigation }: { navigation: Nav }) 
     }
 
     const formatDateShort = (iso: string | null) => {
-        if (!iso) return '—'
+        if (!iso) return { day: '—', month: '' }
         const d = new Date(iso)
-        return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+        return {
+            day: d.toLocaleDateString('fr-FR', { day: '2-digit' }),
+            month: d.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '').toUpperCase(),
+        }
     }
+
+    const nextRdv = upcoming[0]
 
     return (
         <View style={styles.container}>
-            <LinearGradient 
-                colors={['rgba(220,165,64,0.15)', royal.bg, royal.bg]} 
-                locations={[0, 0.4, 1]}
-                style={StyleSheet.absoluteFillObject} 
-            />
-            <ScrollView
-                showsVerticalScrollIndicator={false}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={royal.gold} />}
-            >
-                <ScreenHeader
-                title={t('Rendez-vous')}
-                subtitle={upcoming.length > 0 ? `${upcoming.length} ${t('RDV à venir')}` : t('Aucun RDV à venir')}
-                onBack={() => navigation.goBack()}
-                rightAction={
-                    <TouchableOpacity style={styles.newRdvBtn} onPress={() => setShowModal(true)} activeOpacity={0.8}>
-                        <Plus size={18} color="#FFF" strokeWidth={1.75} />
-                        <Text style={styles.newRdvText}>{t('Demander')}</Text>
-                    </TouchableOpacity>
-                }
-            />
+            {/* 🎨 BACKGROUND PREMIUM : Auras diffuses */}
+            <Animated.View style={[styles.aura, styles.aura1, aura1Style]} />
+            <Animated.View style={[styles.aura, styles.aura2, aura2Style]} />
 
-            {/* Prochain RDV highlight */}
-            {upcoming[0] && (
-                <View style={styles.nextRdvCard}>
-                    <View style={styles.nextRdvBadge}>
-                        <Clock size={12} color={colors.primary} strokeWidth={1.75} />
-                        <Text style={styles.nextRdvBadgeText}>{t('Prochain rendez-vous')}</Text>
+            {/* NAV BAR */}
+            <View style={styles.navBar}>
+                <Pressable onPress={() => navigation.goBack()} style={styles.navBack}>
+                    <View style={styles.iconContainer}>
+                        <Ionicons name="arrow-back" size={22} color={C.primary} />
                     </View>
-                    <Text style={styles.nextRdvTitle}>{t(TYPE_CONFIG[upcoming[0].type]?.label || 'Rendez-vous')}</Text>
-                    <View style={styles.nextRdvRow}>
-                        <Calendar size={14} color={colors.primary + 'AA'} strokeWidth={1.75} />
-                        <Text style={styles.nextRdvDate}>{formatDateTime(upcoming[0].scheduled_at)}</Text>
-                    </View>
-                    {upcoming[0].agent_name && (
-                        <View style={styles.nextRdvRow}>
-                            <User size={14} color={colors.primary + 'AA'} strokeWidth={1.75} />
-                            <Text style={styles.nextRdvDate}>{t('Avec')} {upcoming[0].agent_name}</Text>
-                        </View>
-                    )}
-                    <View style={styles.nextRdvType}>
-                        <Ionicons
-                            name={TYPE_CONFIG[upcoming[0].type]?.icon || 'call-outline'}
-                            size={14}
-                            color={TYPE_CONFIG[upcoming[0].type]?.color || colors.primary}
-                        />
-                        <Text style={[styles.nextRdvTypeText, { color: TYPE_CONFIG[upcoming[0].type]?.color }]}>
-                            {t(TYPE_CONFIG[upcoming[0].type]?.label)}
-                        </Text>
-                        <Text style={styles.nextRdvDuration}>• 30 min</Text>
-                    </View>
-                </View>
-            )}
+                </Pressable>
 
-            {/* Tabs */}
-            <View style={styles.tabs}>
-                {(['upcoming', 'past'] as const).map((tabKey) => (
-                    <TouchableOpacity
-                        key={tabKey}
-                        style={[styles.tab, tab === tabKey && styles.tabActive]}
-                        onPress={() => setTab(tabKey)}
-                    >
-                        <Text style={[styles.tabText, tab === tabKey && styles.tabTextActive]}>
-                            {tabKey === 'upcoming' ? `${t('À venir')} (${upcoming.length})` : `${t('Passés')} (${past.length})`}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
+                <Pressable onPress={() => setShowModal(true)} style={styles.navAddBtn}>
+                    <Ionicons name="add" size={18} color={C.accent} />
+                    <Text style={styles.navAddText}>{t('Demander')}</Text>
+                </Pressable>
             </View>
 
-            {/* Liste */}
-            {loading ? (
-                <View style={styles.centerState}>
-                    <ActivityIndicator color={colors.primary} size="large" />
-                </View>
-            ) : displayed.length === 0 ? (
-                <View style={styles.emptyCard}>
-                    <View style={styles.emptyIconWrap}>
-                        <Calendar size={36} color={colors.textMuted} strokeWidth={1.75} />
-                    </View>
-                    <Text style={styles.emptyTitle}>
-                        {tab === 'upcoming' ? t('Aucun rendez-vous à venir') : t('Aucun rendez-vous passé')}
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.scroll}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primary} />
+                }
+            >
+                {/* HEADER TITRE */}
+                <Animated.View style={[styles.headerContainer, styleHeader]}>
+                    <Text style={styles.title}>{t('Vos')}</Text>
+                    <Text style={styles.titleHighlight}>{t('rendez-vous.')}</Text>
+                    <Text style={styles.subtitle}>
+                        {upcoming.length > 0
+                            ? `${upcoming.length} ${upcoming.length > 1 ? t('rendez-vous à venir avec votre équipe.') : t('rendez-vous à venir avec votre équipe.')}`
+                            : t('Échangez avec votre équipe dédiée à tout moment.')}
                     </Text>
-                    <Text style={styles.emptyText}>
-                        {tab === 'upcoming'
-                            ? t('Demandez un rendez-vous avec notre équipe pour discuter de votre dossier.')
-                            : t('L\'historique de vos rendez-vous apparaîtra ici.')}
-                    </Text>
-                    {tab === 'upcoming' && (
-                        <TouchableOpacity style={styles.emptyBtn} onPress={() => setShowModal(true)} activeOpacity={0.8}>
-                            <Calendar size={16} color="#FFF" strokeWidth={1.75} />
-                            <Text style={styles.emptyBtnText}>{t('Prendre rendez-vous')}</Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
-            ) : (
-                <View style={styles.rdvList}>
-                    {displayed.map((appt, i) => {
-                        const tc = TYPE_CONFIG[appt.type] || TYPE_CONFIG.phone
-                        const sc = STATUS_CONFIG[appt.status] || STATUS_CONFIG.pending
-                        const canCancel = appt.status === 'confirmed' || appt.status === 'pending'
-                        return (
-                            <View key={appt.id} style={[styles.rdvCard, i < displayed.length - 1 && styles.rdvCardBorder]}>
-                                <View style={styles.rdvDateCol}>
-                                    <Text style={styles.rdvDay}>{formatDateShort(appt.scheduled_at).split(' ')[0]}</Text>
-                                    <Text style={styles.rdvMonth}>{formatDateShort(appt.scheduled_at).split(' ')[1] || ''}</Text>
-                                </View>
-                                <View style={styles.rdvInfo}>
-                                    <Text style={styles.rdvTitle} numberOfLines={1}>{t(tc.label)}</Text>
-                                    <View style={styles.rdvMeta}>
-                                        <Ionicons name={tc.icon} size={12} color={tc.color} />
-                                        <Text style={[styles.rdvMetaText, { color: tc.color }]}>{t(tc.label)}</Text>
-                                        <Text style={styles.rdvMetaDot}>•</Text>
-                                        <Text style={styles.rdvMetaText}>30 min</Text>
-                                    </View>
-                                    {appt.agent_name && (
-                                        <Text style={styles.rdvAgent}>{t('Avec')} {appt.agent_name}</Text>
-                                    )}
-                                </View>
-                                <View style={styles.rdvRight}>
-                                    <View style={[styles.rdvStatus, { backgroundColor: sc.bg }]}>
-                                        <Text style={[styles.rdvStatusText, { color: sc.color }]}>{t(sc.label)}</Text>
-                                    </View>
-                                    {canCancel && (
-                                        <TouchableOpacity onPress={() => handleCancel(appt.id)} style={styles.cancelBtn}>
-                                            <XCircle size={18} color={colors.danger} strokeWidth={1.75} />
-                                        </TouchableOpacity>
-                                    )}
-                                </View>
+                </Animated.View>
+
+                {/* ═══ PROCHAIN RDV HIGHLIGHT (Card Bleu massif corporate) ═══ */}
+                {nextRdv && (
+                    <AnimatedSection delay={150}>
+                        <View style={styles.nextRdvCard}>
+                            {/* Halo doré en arrière-plan */}
+                            <View style={styles.nextRdvGlow} />
+
+                            <View style={styles.nextRdvBadge}>
+                                <View style={styles.nextRdvBadgeDot} />
+                                <Text style={styles.nextRdvBadgeText}>
+                                    {t('PROCHAIN RENDEZ-VOUS')}
+                                </Text>
                             </View>
-                        )
-                    })}
-                </View>
-            )}
 
-            <View style={{ height: 100 }} />
+                            <Text style={styles.nextRdvTitle}>
+                                {t(TYPE_CONFIG[nextRdv.type]?.label || 'Rendez-vous')}
+                            </Text>
 
-            {/* ── Modal demande de RDV ── */}
-            <Modal visible={showModal} transparent animationType="slide" onRequestClose={() => setShowModal(false)}>
-                <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowModal(false)}>
-                    <View style={styles.modalSheet}>
-                        <View style={styles.modalHandle} />
-                        <Text style={styles.modalTitle}>{t('Demander un rendez-vous')}</Text>
-                        <Text style={styles.modalSub}>{t('Notre équipe vous confirmera la date sous 24h')}</Text>
+                            <View style={styles.nextRdvDivider} />
 
-                        {/* Type de RDV */}
-                        <Text style={styles.modalLabel}>{t('Type de rendez-vous')}</Text>
-                        <View style={styles.typeRow}>
-                            {(Object.entries(TYPE_CONFIG) as [keyof typeof TYPE_CONFIG, typeof TYPE_CONFIG[keyof typeof TYPE_CONFIG]][]).map(([key, cfg]) => (
-                                <TouchableOpacity
-                                    key={key}
-                                    style={[styles.typeBtn, formType === key && { backgroundColor: cfg.color + '15', borderColor: cfg.color }]}
-                                    onPress={() => setFormType(key)}
-                                    activeOpacity={0.7}
-                                >
-                                    <Ionicons name={cfg.icon} size={18} color={formType === key ? cfg.color : colors.textMuted} />
-                                    <Text style={[styles.typeBtnText, formType === key && { color: cfg.color }]}>
-                                        {t(cfg.label)}
+                            <View style={styles.nextRdvRow}>
+                                <View style={styles.nextRdvIconWrap}>
+                                    <Ionicons name="calendar-outline" size={14} color={C.accent} />
+                                </View>
+                                <Text style={styles.nextRdvDate}>
+                                    {formatDateTime(nextRdv.scheduled_at)}
+                                </Text>
+                            </View>
+
+                            {nextRdv.agent_name && (
+                                <View style={styles.nextRdvRow}>
+                                    <View style={styles.nextRdvIconWrap}>
+                                        <Ionicons name="person-outline" size={14} color={C.accent} />
+                                    </View>
+                                    <Text style={styles.nextRdvDate}>
+                                        {t('Avec')} {nextRdv.agent_name}
                                     </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-
-                        {/* Notes */}
-                        <Text style={styles.modalLabel}>{t('Objet et disponibilités')} *</Text>
-                        <TextInput
-                            style={styles.notesInput}
-                            value={formNotes}
-                            onChangeText={setFormNotes}
-                            placeholder={t("Ex : Suivi de mon dossier nationalité, disponible lundi et mercredi matin…")}
-                            placeholderTextColor={colors.textMuted}
-                            multiline
-                            numberOfLines={4}
-                            textAlignVertical="top"
-                        />
-
-                        <TouchableOpacity
-                            style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
-                            onPress={handleRequestAppointment}
-                            disabled={submitting}
-                            activeOpacity={0.85}
-                        >
-                            {submitting ? (
-                                <ActivityIndicator color="#FFF" size="small" />
-                            ) : (
-                                <>
-                                    <Send size={18} color="#FFF" strokeWidth={1.75} />
-                                    <Text style={styles.submitBtnText}>{t('Envoyer la demande')}</Text>
-                                </>
+                                </View>
                             )}
-                        </TouchableOpacity>
+
+                            <View style={styles.nextRdvRow}>
+                                <View style={styles.nextRdvIconWrap}>
+                                    <Ionicons
+                                        name={TYPE_CONFIG[nextRdv.type]?.icon || 'call-outline'}
+                                        size={14}
+                                        color={C.accent}
+                                    />
+                                </View>
+                                <Text style={styles.nextRdvDate}>
+                                    {t(TYPE_CONFIG[nextRdv.type]?.label)} · 30 min
+                                </Text>
+                            </View>
+                        </View>
+                    </AnimatedSection>
+                )}
+
+                {/* ═══ TABS ═══ */}
+                <AnimatedSection delay={250}>
+                    <View style={styles.tabsWrap}>
+                        <Animated.View style={[styles.tabIndicator, indicatorStyle]} />
+                        {(['upcoming', 'past'] as const).map((tabKey, i) => (
+                            <Pressable
+                                key={tabKey}
+                                style={styles.tab}
+                                onPress={() => setTab(tabKey)}
+                            >
+                                <Text style={[styles.tabText, tab === tabKey && styles.tabTextActive]}>
+                                    {tabKey === 'upcoming' ? t('À venir') : t('Passés')}
+                                </Text>
+                                <View style={[styles.tabBadge, tab === tabKey && styles.tabBadgeActive]}>
+                                    <Text style={[styles.tabBadgeText, tab === tabKey && styles.tabBadgeTextActive]}>
+                                        {tabKey === 'upcoming' ? upcoming.length : past.length}
+                                    </Text>
+                                </View>
+                            </Pressable>
+                        ))}
                     </View>
-                </TouchableOpacity>
-            </Modal>
+                </AnimatedSection>
+
+                {/* ═══ LISTE ═══ */}
+                {loading ? (
+                    <View style={styles.centerState}>
+                        <ActivityIndicator color={C.primary} size="large" />
+                        <Text style={styles.loadingText}>{t('Chargement de vos rendez-vous...')}</Text>
+                    </View>
+                ) : displayed.length === 0 ? (
+                    <AnimatedSection delay={350}>
+                        <View style={styles.emptyCard}>
+                            <View style={styles.emptyIconWrap}>
+                                <Ionicons name="calendar-outline" size={36} color={C.accent} />
+                            </View>
+                            <Text style={styles.emptyTitle}>
+                                {tab === 'upcoming'
+                                    ? t('Aucun rendez-vous à venir')
+                                    : t('Aucun rendez-vous passé')}
+                            </Text>
+                            <Text style={styles.emptyText}>
+                                {tab === 'upcoming'
+                                    ? t('Demandez un rendez-vous avec notre équipe pour discuter de votre dossier.')
+                                    : t("L'historique de vos rendez-vous apparaîtra ici.")}
+                            </Text>
+                            {tab === 'upcoming' && (
+                                <TouchableOpacity
+                                    style={styles.emptyBtn}
+                                    onPress={() => setShowModal(true)}
+                                    activeOpacity={0.85}
+                                >
+                                    <Ionicons name="calendar" size={16} color={C.accent} style={{ marginRight: 8 }} />
+                                    <Text style={styles.emptyBtnText}>{t('Prendre rendez-vous')}</Text>
+                                    <Ionicons name="arrow-forward" size={16} color={C.accent} style={{ marginLeft: 8 }} />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </AnimatedSection>
+                ) : (
+                    <View style={styles.rdvList}>
+                        {displayed.map((appt, idx) => (
+                            <AppointmentCard
+                                key={appt.id}
+                                appt={appt}
+                                index={idx}
+                                onCancel={handleCancel}
+                                t={t}
+                                formatDateShort={formatDateShort}
+                            />
+                        ))}
+                    </View>
+                )}
+
+                <View style={{ height: 80 }} />
             </ScrollView>
+
+            {/* ═══ MODAL DEMANDE DE RDV ═══ */}
+            {showModal && (
+                <Modal
+                    visible={showModal}
+                    transparent
+                    animationType="none"
+                    onRequestClose={() => setShowModal(false)}
+                >
+                    <View style={styles.modalOverlayContainer}>
+                        <Animated.View style={[styles.modalBg, overlayStyle]}>
+                            <Pressable
+                                style={StyleSheet.absoluteFillObject}
+                                onPress={() => setShowModal(false)}
+                            />
+                        </Animated.View>
+
+                        <Animated.View style={[styles.modalSheet, sheetStyle]}>
+                            <View style={styles.modalHandle} />
+
+                            <View style={styles.modalHeader}>
+                                <View>
+                                    <Text style={styles.modalSubtitle}>{t('Nouvelle demande')}</Text>
+                                    <Text style={styles.modalTitle}>{t('Demander un rendez-vous')}</Text>
+                                </View>
+                                <Pressable onPress={() => setShowModal(false)} style={styles.modalCloseBtn}>
+                                    <Ionicons name="close" size={20} color={C.primary} />
+                                </Pressable>
+                            </View>
+
+                            <Text style={styles.modalSub}>
+                                {t('Notre équipe vous confirmera la date sous 24 heures.')}
+                            </Text>
+
+                            {/* Type de RDV */}
+                            <Text style={styles.modalLabel}>{t('Type de rendez-vous')}</Text>
+                            <View style={styles.typeRow}>
+                                {(Object.entries(TYPE_CONFIG) as [keyof typeof TYPE_CONFIG, typeof TYPE_CONFIG[keyof typeof TYPE_CONFIG]][]).map(([key, cfg]) => {
+                                    const active = formType === key
+                                    return (
+                                        <TouchableOpacity
+                                            key={key}
+                                            style={[styles.typeBtn, active && styles.typeBtnActive]}
+                                            onPress={() => setFormType(key)}
+                                            activeOpacity={0.8}
+                                        >
+                                            <View style={[styles.typeIconWrap, active && styles.typeIconWrapActive]}>
+                                                <Ionicons
+                                                    name={cfg.icon}
+                                                    size={18}
+                                                    color={active ? C.accent : C.textSec}
+                                                />
+                                            </View>
+                                            <Text style={[styles.typeBtnText, active && styles.typeBtnTextActive]}>
+                                                {t(cfg.shortLabel)}
+                                            </Text>
+                                            {active && (
+                                                <View style={styles.typeCheckBadge}>
+                                                    <Ionicons name="checkmark" size={10} color={C.primaryText} />
+                                                </View>
+                                            )}
+                                        </TouchableOpacity>
+                                    )
+                                })}
+                            </View>
+
+                            {/* Notes */}
+                            <View style={styles.labelRow}>
+                                <Text style={styles.modalLabel}>{t('Objet et disponibilités')}</Text>
+                                <Text style={styles.required}>{t('Requis')}</Text>
+                            </View>
+
+                            <View style={[styles.notesWrap, notesFocused && styles.notesWrapFocused]}>
+                                <TextInput
+                                    style={styles.notesInput}
+                                    value={formNotes}
+                                    onChangeText={setFormNotes}
+                                    onFocus={() => setNotesFocused(true)}
+                                    onBlur={() => setNotesFocused(false)}
+                                    placeholder={t("Ex : Suivi de mon dossier nationalité, disponible lundi et mercredi matin…")}
+                                    placeholderTextColor={C.placeholder}
+                                    multiline
+                                    numberOfLines={4}
+                                    textAlignVertical="top"
+                                />
+                            </View>
+
+                            <TouchableOpacity
+                                style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
+                                onPress={handleRequestAppointment}
+                                disabled={submitting}
+                                activeOpacity={0.85}
+                            >
+                                {submitting ? (
+                                    <ActivityIndicator color={C.primaryText} size="small" />
+                                ) : (
+                                    <>
+                                        <Ionicons name="paper-plane-outline" size={18} color={C.accent} style={{ marginRight: 8 }} />
+                                        <Text style={styles.submitBtnText}>{t('Envoyer la demande')}</Text>
+                                        <Ionicons name="arrow-forward" size={18} color={C.accent} style={{ marginLeft: 8 }} />
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        </Animated.View>
+                    </View>
+                </Modal>
+            )}
         </View>
     )
 }
 
+/* ═══════════════════════════════════════════════════════════
+   STYLES
+═══════════════════════════════════════════════════════════ */
+
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: royal.bg },
-
-    newRdvBtn: {
-        flexDirection: 'row', alignItems: 'center', gap: 6,
-        backgroundColor: 'rgba(220,165,64,0.3)', borderRadius: 22,
-        paddingHorizontal: 14, paddingVertical: 9,
-        borderWidth: 1, borderColor: 'rgba(220,165,64,0.4)',
+    container: {
+        flex: 1,
+        backgroundColor: C.bg,
     },
-    newRdvText: { ...typography.caption, color: '#FFF', fontFamily: 'Inter_700Bold' },
 
+    /* ── Auras Corporate ── */
+    aura: {
+        position: 'absolute',
+        width: width * 0.9,
+        height: width * 0.9,
+        borderRadius: width,
+        opacity: 0.05,
+    },
+    aura1: {
+        top: -100,
+        right: -100,
+        backgroundColor: C.primary,
+    },
+    aura2: {
+        bottom: 50,
+        left: -100,
+        backgroundColor: C.auraGreen,
+    },
+
+    /* ── Nav Bar ── */
+    navBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingTop: Platform.OS === 'ios' ? 60 : 40,
+        paddingHorizontal: 20,
+        paddingBottom: 10,
+        zIndex: 10,
+    },
+    navBack: {
+        width: 44,
+        height: 44,
+        justifyContent: 'center',
+    },
+    iconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: C.surface,
+        borderWidth: 1,
+        borderColor: C.border,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    navAddBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        height: 40,
+        paddingHorizontal: 14,
+        borderRadius: 20,
+        backgroundColor: C.primary,
+        shadowColor: C.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    navAddText: {
+        color: C.primaryText,
+        fontSize: 13,
+        fontWeight: '700',
+        letterSpacing: 0.2,
+    },
+
+    scroll: {
+        paddingHorizontal: 20,
+        paddingBottom: 40,
+    },
+
+    /* ── Header (identique RegisterScreen) ── */
+    headerContainer: {
+        marginTop: 8,
+        marginBottom: 24,
+        paddingHorizontal: 8,
+    },
+    title: {
+        fontSize: 38,
+        fontWeight: '700',
+        color: C.primary,
+        letterSpacing: -0.5,
+    },
+    titleHighlight: {
+        fontSize: 38,
+        fontWeight: '800',
+        color: C.accent,
+        letterSpacing: -0.5,
+        marginTop: -4,
+    },
+    subtitle: {
+        fontSize: 15,
+        color: C.textSec,
+        marginTop: 14,
+        lineHeight: 22,
+        fontWeight: '400',
+    },
+
+    /* ── Next RDV Card (Bleu massif corporate) ── */
     nextRdvCard: {
-        margin: spacing.lg,
-        backgroundColor: colors.headerBg,
-        borderRadius: radius.lg, padding: spacing.lg,
-        borderWidth: 1, borderColor: colors.primary + '30',
-        ...shadows.md,
+        backgroundColor: C.primary,
+        borderRadius: 20,
+        padding: 22,
+        marginBottom: 24,
+        overflow: 'hidden',
+        shadowColor: C.primary,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.25,
+        shadowRadius: 18,
+        elevation: 8,
+    },
+    nextRdvGlow: {
+        position: 'absolute',
+        top: -80,
+        right: -80,
+        width: 200,
+        height: 200,
+        borderRadius: 100,
+        backgroundColor: C.accent,
+        opacity: 0.15,
     },
     nextRdvBadge: {
-        flexDirection: 'row', alignItems: 'center', gap: 5,
-        marginBottom: spacing.sm,
-    },
-    nextRdvBadgeText: { fontSize: 10, fontFamily: 'Inter_700Bold', color: colors.primary, letterSpacing: 0.8 },
-    nextRdvTitle: { ...typography.h3, color: colors.textOnDark, marginBottom: 8 },
-    nextRdvRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-    nextRdvDate: { ...typography.bodySmall, color: colors.primary + 'CC' },
-    nextRdvType: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
-    nextRdvTypeText: { ...typography.caption, fontFamily: 'Inter_600SemiBold' },
-    nextRdvDuration: { ...typography.caption, color: colors.textMuted },
-
-    tabs: {
         flexDirection: 'row',
-        marginHorizontal: spacing.lg,
-        marginBottom: spacing.sm,
-        backgroundColor: colors.surface,
-        borderRadius: radius.md,
-        borderWidth: 1, borderColor: colors.borderLight,
-        overflow: 'hidden',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: 'rgba(212, 160, 23, 0.18)',
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        alignSelf: 'flex-start',
+        borderWidth: 1,
+        borderColor: 'rgba(212, 160, 23, 0.4)',
+        marginBottom: 14,
     },
-    tab: { flex: 1, paddingVertical: 12, alignItems: 'center' },
-    tabActive: { backgroundColor: colors.primary },
-    tabText: { ...typography.label, color: colors.textMuted },
-    tabTextActive: { color: '#FFF' },
+    nextRdvBadgeDot: {
+        width: 5,
+        height: 5,
+        borderRadius: 2.5,
+        backgroundColor: C.accent,
+    },
+    nextRdvBadgeText: {
+        fontSize: 9,
+        fontWeight: '800',
+        color: C.accent,
+        letterSpacing: 1.2,
+    },
+    nextRdvTitle: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: C.primaryText,
+        letterSpacing: -0.3,
+        marginBottom: 12,
+    },
+    nextRdvDivider: {
+        height: 1,
+        backgroundColor: 'rgba(255,255,255,0.12)',
+        marginBottom: 14,
+    },
+    nextRdvRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 8,
+    },
+    nextRdvIconWrap: {
+        width: 26,
+        height: 26,
+        borderRadius: 13,
+        backgroundColor: 'rgba(212, 160, 23, 0.15)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(212, 160, 23, 0.3)',
+    },
+    nextRdvDate: {
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.85)',
+        fontWeight: '500',
+        flex: 1,
+    },
 
-    centerState: { padding: spacing.xxl, alignItems: 'center' },
+    /* ── Tabs ── */
+    tabsWrap: {
+        flexDirection: 'row',
+        backgroundColor: C.surface,
+        borderRadius: 14,
+        padding: 4,
+        borderWidth: 1.2,
+        borderColor: C.border,
+        marginBottom: 20,
+        position: 'relative',
+    },
+    tabIndicator: {
+        position: 'absolute',
+        top: 4,
+        bottom: 4,
+        left: 4,
+        width: '50%',
+        backgroundColor: C.primary,
+        borderRadius: 10,
+        marginLeft: -4,
+    },
+    tab: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 7,
+        paddingVertical: 11,
+        zIndex: 1,
+    },
+    tabText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: C.textSec,
+        letterSpacing: 0.2,
+    },
+    tabTextActive: {
+        color: C.primaryText,
+        fontWeight: '700',
+    },
+    tabBadge: {
+        minWidth: 22,
+        height: 18,
+        paddingHorizontal: 6,
+        borderRadius: 9,
+        backgroundColor: C.border,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    tabBadgeActive: {
+        backgroundColor: C.accent,
+    },
+    tabBadgeText: {
+        fontSize: 10,
+        fontWeight: '800',
+        color: C.textSec,
+    },
+    tabBadgeTextActive: {
+        color: C.primary,
+    },
 
+    /* ── Loading ── */
+    centerState: {
+        paddingVertical: 60,
+        alignItems: 'center',
+        gap: 12,
+    },
+    loadingText: {
+        fontSize: 13,
+        color: C.textSec,
+        fontWeight: '500',
+    },
+
+    /* ── Empty Card ── */
     emptyCard: {
-        marginHorizontal: spacing.lg,
-        backgroundColor: colors.surface,
-        borderRadius: radius.lg,
-        padding: spacing.xl, alignItems: 'center',
-        borderWidth: 1, borderColor: colors.borderLight,
+        backgroundColor: C.surface,
+        borderRadius: 16,
+        padding: 28,
+        alignItems: 'center',
+        borderWidth: 1.2,
+        borderColor: C.border,
+        shadowColor: C.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 12,
+        elevation: 2,
     },
     emptyIconWrap: {
-        width: 70, height: 70, borderRadius: 35,
-        backgroundColor: colors.surfaceElevated,
-        alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+        width: 72,
+        height: 72,
+        borderRadius: 20,
+        backgroundColor: 'rgba(212, 160, 23, 0.10)',
+        borderWidth: 1,
+        borderColor: 'rgba(212, 160, 23, 0.2)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
     },
-    emptyTitle: { ...typography.h3, color: colors.textPrimary, marginBottom: 8 },
-    emptyText: { ...typography.bodySmall, color: colors.textSecondary, textAlign: 'center', lineHeight: 20, marginBottom: 16 },
-    emptyBtn: {
-        flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: colors.primary, borderRadius: radius.md,
-        paddingHorizontal: 20, paddingVertical: 12, ...shadows.gold,
-    },
-    emptyBtnText: { ...typography.button, color: '#FFF', fontSize: 14 },
-
-    rdvList: { marginHorizontal: spacing.lg },
-    rdvCard: {
-        flexDirection: 'row', alignItems: 'flex-start',
-        backgroundColor: colors.surface,
-        borderRadius: radius.md, padding: 14,
+    emptyTitle: {
+        fontSize: 17,
+        fontWeight: '800',
+        color: C.primary,
         marginBottom: 8,
-        borderWidth: 1, borderColor: colors.borderLight,
-        ...shadows.xs,
+        letterSpacing: -0.3,
+        textAlign: 'center',
     },
-    rdvCardBorder: { borderBottomWidth: 0 },
-    rdvDateCol: {
-        width: 44, alignItems: 'center',
-        backgroundColor: colors.primary + '12',
-        borderRadius: 10, paddingVertical: 8, marginRight: 12,
+    emptyText: {
+        fontSize: 13,
+        color: C.textSec,
+        textAlign: 'center',
+        lineHeight: 19,
+        marginBottom: 20,
+        fontWeight: '400',
     },
-    rdvDay: { fontSize: 18, fontFamily: 'Inter_700Bold', color: colors.primary },
-    rdvMonth: { fontSize: 10, fontFamily: 'Inter_600SemiBold', color: colors.primary + 'AA', textTransform: 'uppercase' },
-    rdvInfo: { flex: 1 },
-    rdvTitle: { ...typography.label, color: colors.textPrimary, marginBottom: 4 },
-    rdvMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    rdvMetaText: { fontSize: 11, fontFamily: 'Inter_500Medium', color: colors.textMuted },
-    rdvMetaDot: { fontSize: 11, color: colors.textMuted },
-    rdvAgent: { ...typography.caption, color: colors.textMuted, marginTop: 3 },
-    rdvRight: { alignItems: 'flex-end', gap: 8 },
-    rdvStatus: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-    rdvStatusText: { fontSize: 10, fontFamily: 'Inter_700Bold' },
-    cancelBtn: { padding: 2 },
+    emptyBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: C.primary,
+        height: 50,
+        borderRadius: 14,
+        paddingHorizontal: 24,
+        shadowColor: C.primary,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
+        elevation: 6,
+    },
+    emptyBtnText: {
+        color: C.primaryText,
+        fontSize: 14,
+        fontWeight: '700',
+        letterSpacing: 0.2,
+    },
 
-    /* Modal */
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+    /* ── RDV List ── */
+    rdvList: {
+        gap: 10,
+    },
+    rdvCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: C.surface,
+        borderRadius: 14,
+        padding: 14,
+        borderWidth: 1.2,
+        borderColor: C.border,
+        shadowColor: C.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
+        elevation: 1,
+    },
+    rdvDateCol: {
+        width: 52,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 8,
+        backgroundColor: 'rgba(13, 43, 78, 0.06)',
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: 'rgba(13, 43, 78, 0.08)',
+    },
+    rdvDay: {
+        fontSize: 18,
+        fontWeight: '800',
+        color: C.primary,
+        letterSpacing: -0.5,
+    },
+    rdvMonth: {
+        fontSize: 9,
+        fontWeight: '700',
+        color: C.accentDark,
+        letterSpacing: 1,
+        marginTop: 1,
+    },
+    rdvDivider: {
+        width: 1,
+        height: 50,
+        backgroundColor: C.border,
+        marginHorizontal: 12,
+    },
+    rdvInfo: {
+        flex: 1,
+        gap: 5,
+    },
+    rdvTypeRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    rdvType: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: C.primary,
+        letterSpacing: -0.2,
+    },
+    rdvMeta: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+    },
+    rdvMetaText: {
+        fontSize: 11,
+        color: C.textSec,
+        fontWeight: '500',
+        flexShrink: 1,
+    },
+    rdvMetaDot: {
+        fontSize: 11,
+        color: C.textMuted,
+    },
+    rdvStatus: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        alignSelf: 'flex-start',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
+        marginTop: 2,
+    },
+    rdvStatusDot: {
+        width: 5,
+        height: 5,
+        borderRadius: 2.5,
+    },
+    rdvStatusText: {
+        fontSize: 10,
+        fontWeight: '800',
+        letterSpacing: 0.3,
+    },
+    cancelBtn: {
+        marginLeft: 8,
+        padding: 4,
+    },
+
+    /* ═══ MODAL ═══ */
+    modalOverlayContainer: {
+        flex: 1,
+        justifyContent: 'flex-end',
+    },
+    modalBg: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(13, 43, 78, 0.55)',
+    },
     modalSheet: {
-        backgroundColor: colors.surface,
-        borderTopLeftRadius: 24, borderTopRightRadius: 24,
-        padding: spacing.lg,
-        paddingBottom: Platform.OS === 'ios' ? 44 : spacing.xl,
+        backgroundColor: C.bg,
+        borderTopLeftRadius: 28,
+        borderTopRightRadius: 28,
+        paddingHorizontal: 24,
+        paddingTop: 12,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+        shadowColor: C.primary,
+        shadowOpacity: 0.3,
+        shadowRadius: 30,
+        shadowOffset: { width: 0, height: -15 },
+        elevation: 20,
+        borderTopWidth: 1,
+        borderColor: C.border,
     },
     modalHandle: {
-        width: 36, height: 4, borderRadius: 2,
-        backgroundColor: colors.border, alignSelf: 'center', marginBottom: 20,
+        width: 44,
+        height: 4,
+        backgroundColor: C.border,
+        borderRadius: 2,
+        alignSelf: 'center',
+        marginBottom: 18,
     },
-    modalTitle: { ...typography.h3, color: colors.textPrimary, marginBottom: 4 },
-    modalSub: { ...typography.bodySmall, color: colors.textSecondary, marginBottom: spacing.lg },
-    modalLabel: { ...typography.label, color: colors.textPrimary, marginBottom: 10 },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 8,
+    },
+    modalSubtitle: {
+        fontSize: 11,
+        fontWeight: '800',
+        color: C.accentDark,
+        letterSpacing: 1.2,
+        textTransform: 'uppercase',
+        marginBottom: 4,
+    },
+    modalTitle: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: C.primary,
+        letterSpacing: -0.4,
+    },
+    modalCloseBtn: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: C.surface,
+        borderWidth: 1,
+        borderColor: C.border,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modalSub: {
+        fontSize: 13,
+        color: C.textSec,
+        marginBottom: 22,
+        lineHeight: 18,
+    },
+    modalLabel: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: C.primary,
+        letterSpacing: 0.3,
+        marginBottom: 10,
+        textTransform: 'uppercase',
+    },
+    labelRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    required: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: C.error,
+        letterSpacing: 0.5,
+    },
 
-    typeRow: { flexDirection: 'row', gap: 8, marginBottom: spacing.lg },
+    /* Types de RDV */
+    typeRow: {
+        flexDirection: 'row',
+        gap: 8,
+        marginBottom: 20,
+    },
     typeBtn: {
-        flex: 1, alignItems: 'center', gap: 6, paddingVertical: 10,
-        borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.border,
-        backgroundColor: colors.surfaceElevated,
+        flex: 1,
+        alignItems: 'center',
+        gap: 8,
+        paddingVertical: 14,
+        paddingHorizontal: 8,
+        borderRadius: 14,
+        borderWidth: 1.5,
+        borderColor: C.border,
+        backgroundColor: C.surface,
+        position: 'relative',
     },
-    typeBtnText: { fontSize: 10, fontFamily: 'Inter_600SemiBold', color: colors.textMuted, textAlign: 'center' },
+    typeBtnActive: {
+        borderColor: C.accent,
+        backgroundColor: 'rgba(212, 160, 23, 0.06)',
+    },
+    typeIconWrap: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        backgroundColor: 'rgba(13, 43, 78, 0.06)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(13, 43, 78, 0.08)',
+    },
+    typeIconWrapActive: {
+        backgroundColor: 'rgba(212, 160, 23, 0.15)',
+        borderColor: 'rgba(212, 160, 23, 0.4)',
+    },
+    typeBtnText: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: C.textSec,
+        textAlign: 'center',
+        letterSpacing: 0.2,
+    },
+    typeBtnTextActive: {
+        color: C.primary,
+    },
+    typeCheckBadge: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        width: 18,
+        height: 18,
+        borderRadius: 9,
+        backgroundColor: C.accent,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
 
+    /* Notes */
+    notesWrap: {
+        backgroundColor: C.surface,
+        borderRadius: 14,
+        borderWidth: 1.5,
+        borderColor: C.border,
+        marginBottom: 24,
+        padding: 14,
+        minHeight: 110,
+    },
+    notesWrapFocused: {
+        borderColor: C.accent,
+        backgroundColor: C.surfaceSolid,
+    },
     notesInput: {
-        backgroundColor: colors.surfaceElevated,
-        borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.border,
-        padding: spacing.md, minHeight: 100,
-        fontSize: 15, color: colors.textPrimary, fontFamily: 'Inter_400Regular',
-        marginBottom: spacing.lg,
+        fontSize: 14,
+        color: C.primary,
+        fontWeight: '400',
+        lineHeight: 20,
+        minHeight: 80,
     },
+
+    /* Submit button */
     submitBtn: {
-        backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: 16,
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
-        ...shadows.gold,
+        height: 60,
+        backgroundColor: C.primary,
+        borderRadius: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: C.primary,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
+        shadowRadius: 16,
+        elevation: 8,
     },
-    submitBtnDisabled: { opacity: 0.6 },
-    submitBtnText: { ...typography.button, color: '#FFF' },
+    submitBtnDisabled: {
+        backgroundColor: '#CBD5E1',
+        shadowOpacity: 0,
+        elevation: 0,
+    },
+    submitBtnText: {
+        color: C.primaryText,
+        fontSize: 16,
+        fontWeight: '700',
+        letterSpacing: 0.2,
+    },
 })

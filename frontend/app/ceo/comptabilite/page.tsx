@@ -66,7 +66,9 @@ function fmt(n: number) {
     return `${n.toLocaleString('fr-FR')} FCFA`
 }
 function fmtDate(d: string) {
-    return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+    if (!d) return '—'
+    const dateObj = new Date(d)
+    return isNaN(dateObj.getTime()) ? '—' : dateObj.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 interface DocumentItem {

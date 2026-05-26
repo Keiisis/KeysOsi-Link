@@ -838,7 +838,7 @@ CREATE POLICY "Admins full access" ON public.business_cards
                                             <p className="text-gray-600 text-xs mt-0.5">Non attribuée</p>
                                         )}
                                         <p className="text-gray-600 text-xs mt-0.5">
-                                            {new Date(card.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                            {!card.created_at || isNaN(new Date(card.created_at).getTime()) ? '—' : new Date(card.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
                                         </p>
                                     </div>
 

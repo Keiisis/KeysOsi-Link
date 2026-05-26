@@ -24,7 +24,11 @@ const STATUS_ICON: Record<string, LucideIcon> = {
     pending: Clock, processing: AlertCircle, completed: CheckCircle2, rejected: Ban,
 }
 
-function fmt(d: string) { return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) }
+function fmt(d: string) {
+    if (!d) return '—'
+    const dateObj = new Date(d)
+    return isNaN(dateObj.getTime()) ? '—' : dateObj.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+}
 
 export default function CeoNationalite() {
     const [items, setItems] = useState<NatRequest[]>([])

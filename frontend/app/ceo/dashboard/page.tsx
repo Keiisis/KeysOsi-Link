@@ -135,9 +135,11 @@ function SecurityRing({ score }: { score: number }) {
 export default function CeoDashboardPage() {
     const [kpis, setKpis]           = useState<KpiData | null>(null)
     const [loading, setLoading]     = useState(true)
-    const [lastUpdate, setLastUpdate] = useState(new Date())
+    const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
+    const [mounted, setMounted]     = useState(false)
 
     useEffect(() => {
+        setMounted(true)
         const load = async () => {
             setLoading(true)
             try { const d = await fetchKpis(); setKpis(d); setLastUpdate(new Date()) }
@@ -172,7 +174,7 @@ export default function CeoDashboardPage() {
                     <div className="flex-1" style={{ background: RED }} />
                 </div>
                 <p className="text-xs ml-12 flex items-center gap-2" style={{ color: `${TEXT}45` }}>
-                    Actualisé à {lastUpdate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    Actualisé à {lastUpdate ? lastUpdate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '—'}
                     <span className="inline-flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: GREEN_L }} />
                         Temps réel
@@ -185,10 +187,10 @@ export default function CeoDashboardPage() {
                 <KpiCard title="Revenu Total"      value={kpis ? formatXOF(kpis.revenue_total) : '—'}
                     sub="Depuis la création" icon={TrendingUp} color={GOLD} href="/ceo/revenus" trend="up" delay={0.05} />
                 <KpiCard title="Revenu du Mois"    value={kpis ? formatXOF(kpis.revenue_month) : '—'}
-                    sub={new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+                    sub={mounted ? new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : '—'}
                     icon={Receipt} color={GREEN_L} href="/ceo/revenus" trend="up" delay={0.1} />
                 <KpiCard title="Revenu Aujourd'hui" value={kpis ? formatXOF(kpis.revenue_today) : '—'}
-                    sub={new Date().toLocaleDateString('fr-FR')}
+                    sub={mounted ? new Date().toLocaleDateString('fr-FR') : '—'}
                     icon={Zap} color={YELLOW} href="/ceo/revenus" delay={0.15} />
             </div>
 

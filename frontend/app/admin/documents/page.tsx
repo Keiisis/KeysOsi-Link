@@ -22,6 +22,12 @@ interface ClientDocument {
     created_at: string
 }
 
+const formatDate = (val: string | null | undefined) => {
+    if (!val) return '—'
+    const d = new Date(val)
+    return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('fr-FR')
+}
+
 export default function AdminDocumentsPage() {
     const [documents, setDocuments] = useState<ClientDocument[]>([])
     const [loading, setLoading] = useState(true)
@@ -103,7 +109,7 @@ export default function AdminDocumentsPage() {
                                                 <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-500 flex-wrap">
                                                     <span className="flex items-center gap-1"><User size={10} /> {doc.client_nom || 'N/A'}</span>
                                                     <span className="flex items-center gap-1"><Mail size={10} /> {doc.client_email}</span>
-                                                    <span className="flex items-center gap-1"><Calendar size={10} /> {new Date(doc.created_at).toLocaleDateString('fr-FR')}</span>
+                                                    <span className="flex items-center gap-1"><Calendar size={10} /> {formatDate(doc.created_at)}</span>
                                                     {doc.file_size > 0 && <span>{(doc.file_size / 1024).toFixed(0)} KB</span>}
                                                 </div>
                                             </div>

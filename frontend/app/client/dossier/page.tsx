@@ -80,7 +80,11 @@ const fmtSize = (bytes: number) => {
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
     return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
-const fmtDate = (d: string) => new Date(d).toLocaleDateString('fr-FR')
+const fmtDate = (d: string) => {
+    if (!d) return '—'
+    const dateObj = new Date(d)
+    return isNaN(dateObj.getTime()) ? '—' : dateObj.toLocaleDateString('fr-FR')
+}
 const fmtN = (n: number) => Math.round(n).toLocaleString('fr-FR')
 
 const ACCEPTED_TYPES = '.pdf,.doc,.docx,.jpg,.jpeg,.png,.gif'

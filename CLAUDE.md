@@ -517,6 +517,15 @@ git log --oneline -20           # Historique
 
 > **Format** : `[Date] — Résumé de session`
 
+### 2026-05-26 — Session 5 (Web & Mobile theme sync, compilation checks)
+- Démarrage du serveur web dev Next.js sur le port 3000.
+- Correction des erreurs de typecheck TypeScript (`npx tsc --noEmit`) sur l'application mobile Expo :
+  - `sheetLargestUndimmedDetent` changé en `sheetLargestUndimmedDetentIndex: 0` dans `AppNavigator.tsx`.
+  - `borderTopStyle` web remplacé par `borderStyle` standard dans `OrderDetailScreen.tsx`.
+  - Casting `(item as any).accent` pour corriger les erreurs d'union dans `ProfilScreen.tsx`.
+- Nettoyage des placeholders email et téléphone dans `FAQScreen.tsx` (remplacé par les vrais contacts avec redirection `Linking`).
+- Validation réussie de la compilation sans erreur pour le frontend Next.js et l'application mobile Expo.
+
 ### 2026-04-27 — Session 4 (Mémoire v3.1, refonte CLAUDE.md)
 - Audit complet du décalage entre CLAUDE.md (2026-04-13) et état réel du repo
 - Mise à jour majeure : design system Nexus Emerald (mode clair), Expo SDK 54, paiement v2 SDK natif, 5 providers web (Stripe + PayPal ajoutés), traduction mobile P1 marquée DONE

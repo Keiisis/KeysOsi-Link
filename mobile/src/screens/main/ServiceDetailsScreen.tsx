@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from 'react'
+'use strict'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
-    View, Text, ScrollView, StyleSheet,
-    Platform, Alert, ActivityIndicator,
+    View, Text, ScrollView, StyleSheet, Pressable,
+    Platform, Alert, ActivityIndicator, Dimensions,
 } from 'react-native'
-import { ArrowLeft, Calendar, Check, Clock, CreditCard, Star, Tag, Users } from 'lucide-react-native'
+import {
+    ArrowLeft, Calendar, Check, Clock, CreditCard, Star, Tag, Users,
+    Sparkles, ShieldCheck, Award, ChevronRight, Zap, FileText,
+} from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import Animated, {
@@ -11,35 +15,237 @@ import Animated, {
     useAnimatedStyle,
     withSpring,
     withTiming,
+    withRepeat,
+    withDelay,
+    withSequence,
     Easing,
+    interpolate,
+    Extrapolation,
+    useAnimatedScrollHandler,
+    interpolateColor,
 } from 'react-native-reanimated'
-import PressableCard from '../../components/PressableCard'
-import { colors, spacing, radius, shadows, typography, fonts, motion } from '../../config/theme'
+import { colors as themeColors, spacing, radius, shadows, typography, fonts, motion } from '../../config/theme'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLang } from '../../contexts/LangContext'
 import KkiapayModal from '../../components/KkiapayModal'
 import { fetchWithTimeout } from '../../lib/fetch'
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
+const { width: SCREEN_W } = Dimensions.get('window')
 
 /* ═══════════════════════════════════════════════════════════
-   Service Details Screen — Synchronisé avec le site web
-   Affiche : description, features/pièces, tarifs, processus
-   
-   IMPORTANT: This screen receives RAW (untranslated) data from
-   ServicesScreen and calls t() dynamically so translations
-   update reactively without requiring a page reload.
+   CORPORATE PREMIUM 2026 — Palette signature
 ═══════════════════════════════════════════════════════════ */
-
-interface PricingOption {
-    label: string
-    price: string
+const C = {
+    bg: '#FFFFFF',           // Ivoire
+    bgDeep: '#EDE6D8',
+    surface: '#FFFFFF',
+    surfaceWarm: '#FBF7EF',
+    primary: '#047857',      // Bleu nuit
+    primaryLight: '#1B4480',
+    primaryGlow: 'rgba(13,43,78,0.10)',
+    gold: '#C9A84C',         // Or signature
+    goldSoft: '#E8C760',
+    goldGlow: 'rgba(212,160,23,0.18)',
+    emerald: '#10B981',      // Aura verte
+    ruby: '#9B2226',
+    text: '#0A1A2E',
+    textMuted: '#6B7280',
+    textSubtle: '#9AA3B2',
+    border: 'rgba(13,43,78,0.10)',
+    borderStrong: 'rgba(13,43,78,0.18)',
+    overlay: 'rgba(13,43,78,0.55)',
 }
 
+interface PricingOption { label: string; price: string }
+
+/* ═══════════════════════════════════════════════════════════
+   AURAS FLOTTANTES — décor de fond
+═══════════════════════════════════════════════════════════ */
+const FloatingAura = ({
+    size, color, top, left, right, bottom, delay = 0, duration = 8000,
+}: any) => {
+    const t = useSharedValue(0)
+    useEffect(() => {
+        t.value = withDelay(delay, withRepeat(
+            withTiming(1, { duration, easing: Easing.inOut(Easing.quad) }),
+            -1, true,
+        ))
+    }, [t, delay, duration])
+
+    const style = useAnimatedStyle(() => ({
+        transform: [
+            { translateY: interpolate(t.value, [0, 1], [0, -24]) },
+            { translateX: interpolate(t.value, [0, 1], [0, 16]) },
+            { scale: interpolate(t.value, [0, 1], [1, 1.08]) },
+        ],
+        opacity: interpolate(t.value, [0, 1], [0.55, 0.85]),
+    }))
+
+    return (
+        <Animated.View
+            pointerEvents="none"
+            style={[
+                {
+                    position: 'absolute', width: size, height: size, borderRadius: size / 2,
+                    backgroundColor: color, top, left, right, bottom,
+                },
+                style,
+            ]}
+        />
+    )
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ANIMATED SECTION — fade + slide staggered
+═══════════════════════════════════════════════════════════ */
+const AnimatedSection = ({ children, delay = 0, style }: any) => {
+    const o = useSharedValue(0)
+    const y = useSharedValue(24)
+    useEffect(() => {
+        o.value = withDelay(delay, withTiming(1, { duration: 520, easing: Easing.out(Easing.cubic) }))
+        y.value = withDelay(delay, withSpring(0, { damping: 16, stiffness: 120 }))
+    }, [o, y, delay])
+    const s = useAnimatedStyle(() => ({
+        opacity: o.value,
+        transform: [{ translateY: y.value }],
+    }))
+    return <Animated.View style={[s, style]}>{children}</Animated.View>
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INTERACTIVE BUTTON — press feedback premium
+═══════════════════════════════════════════════════════════ */
+const InteractiveButton = ({ children, onPress, style, disabled, accessibilityLabel }: any) => {
+    const scale = useSharedValue(1)
+    const s = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
+    return (
+        <Animated.View style={[s]}>
+            <Pressable
+                disabled={disabled}
+                onPressIn={() => { scale.value = withSpring(0.97, { damping: 18, stiffness: 320 }) }}
+                onPressOut={() => { scale.value = withSpring(1, { damping: 14, stiffness: 220 }) }}
+                onPress={onPress}
+                accessibilityLabel={accessibilityLabel}
+                style={style}
+            >
+                {children}
+            </Pressable>
+        </Animated.View>
+    )
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HERO SERVICE — gradient bleu nuit + shimmer or + icône premium
+═══════════════════════════════════════════════════════════ */
+const ServiceHero = ({ icon, title, subtitle, accent, onBack, t }: any) => {
+    const shine = useSharedValue(-1)
+    const iconScale = useSharedValue(0.6)
+    const iconRotate = useSharedValue(-12)
+    const badgePulse = useSharedValue(1)
+
+    useEffect(() => {
+        shine.value = withRepeat(
+            withTiming(1, { duration: 3500, easing: Easing.inOut(Easing.quad) }),
+            -1, false,
+        )
+        iconScale.value = withSpring(1, { damping: 10, stiffness: 110 })
+        iconRotate.value = withSpring(0, { damping: 12, stiffness: 90 })
+        badgePulse.value = withRepeat(
+            withSequence(
+                withTiming(1.06, { duration: 1400 }),
+                withTiming(1, { duration: 1400 }),
+            ), -1, true,
+        )
+    }, [shine, iconScale, iconRotate, badgePulse])
+
+    const shineStyle = useAnimatedStyle(() => ({
+        transform: [{ translateX: interpolate(shine.value, [-1, 1], [-SCREEN_W, SCREEN_W]) }],
+        opacity: interpolate(shine.value, [-1, 0, 1], [0, 0.7, 0]),
+    }))
+
+    const iconStyle = useAnimatedStyle(() => ({
+        transform: [
+            { scale: iconScale.value },
+            { rotate: `${iconRotate.value}deg` },
+        ],
+    }))
+
+    const badgeStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: badgePulse.value }],
+    }))
+
+    return (
+        <View style={hero.wrap}>
+            <LinearGradient
+                colors={[C.primary, C.primaryLight, C.primary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFillObject}
+            />
+
+            {/* Auras décoratives dans le hero */}
+            <FloatingAura size={260} color={C.goldGlow} top={-90} right={-70} duration={9000} />
+            <FloatingAura size={180} color="rgba(255,255,255,0.06)" bottom={-60} left={-40} duration={11000} delay={1200} />
+
+            {/* Shimmer doré qui balaye */}
+            <Animated.View style={[hero.shine, shineStyle]} pointerEvents="none">
+                <LinearGradient
+                    colors={['transparent', 'rgba(212,160,23,0.35)', 'transparent']}
+                    start={{ x: 0, y: 0.5 }}
+                    end={{ x: 1, y: 0.5 }}
+                    style={StyleSheet.absoluteFillObject}
+                />
+            </Animated.View>
+
+            {/* Back */}
+            <InteractiveButton onPress={onBack} accessibilityLabel={t('Retour')} style={hero.backBtn}>
+                <View style={hero.backCircle}>
+                    <ArrowLeft size={20} color="#FFF" strokeWidth={2.2} />
+                </View>
+            </InteractiveButton>
+
+            {/* Badge premium */}
+            <Animated.View style={[hero.premiumBadge, badgeStyle]}>
+                <Sparkles size={11} color={C.gold} fill={C.gold} strokeWidth={0} />
+                <Text style={hero.premiumBadgeText}>{t('Service Premium')}</Text>
+            </Animated.View>
+
+            {/* Cercle d'icône doré */}
+            <Animated.View style={[hero.iconRing, iconStyle]}>
+                <LinearGradient
+                    colors={[C.gold, C.goldSoft]}
+                    style={hero.iconRingGradient}
+                >
+                    <View style={hero.iconInner}>
+                        <Ionicons name={icon || 'briefcase-outline'} size={42} color={C.primary} />
+                    </View>
+                </LinearGradient>
+            </Animated.View>
+
+            {/* Titre + sous-titre */}
+            <Text style={hero.title} numberOfLines={2}>{t(title || 'Détails du Service')}</Text>
+            {subtitle ? (
+                <Text style={hero.subtitle} numberOfLines={2}>{t(subtitle)}</Text>
+            ) : null}
+
+            {/* Diviseur doré */}
+            <View style={hero.divider}>
+                <View style={hero.dividerLine} />
+                <Star size={10} color={C.gold} fill={C.gold} strokeWidth={0} />
+                <View style={hero.dividerLine} />
+            </View>
+        </View>
+    )
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ÉCRAN PRINCIPAL
+═══════════════════════════════════════════════════════════ */
 export default function ServiceDetailsScreen({ route, navigation }: any) {
     const {
         serviceId, title, subtitle, desc, fullDescription,
-        color, icon, duration: paramDuration, price: paramPrice, documents: paramDocuments,
+        icon, duration: paramDuration, price: paramPrice, documents: paramDocuments,
         features: paramFeatures,
         pricing_options: paramPricingOptions,
     } = route.params || {}
@@ -48,31 +254,8 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
     const { t, lang, preloadTexts } = useLang()
     const [loading, setLoading] = useState(false)
     const [showKkiapay, setShowKkiapay] = useState(false)
-    const serviceColor = color || colors.primary
 
-    /* ── Animations Reanimated ── */
-    const headerOpacity = useSharedValue(0)
-    const headerTranslate = useSharedValue(-20)
-    const iconScale = useSharedValue(0.7)
-
-    useEffect(() => {
-        headerOpacity.value = withTiming(1, { duration: motion.slow, easing: Easing.out(Easing.cubic) })
-        headerTranslate.value = withSpring(0, motion.spring.soft)
-        iconScale.value = withSpring(1, motion.spring.bounce)
-    }, [headerOpacity, headerTranslate, iconScale])
-
-    const headerEnterStyle = useAnimatedStyle(() => ({
-        opacity: headerOpacity.value,
-        transform: [{ translateY: headerTranslate.value }],
-    }))
-
-    const iconEnterStyle = useAnimatedStyle(() => ({
-        transform: [{ scale: iconScale.value }],
-    }))
-
-    /* ── Données dynamiques DB (priorité), avec fallback sur route.params hardcoded ──
-       L'admin peut changer le prix via le panel admin → la DB est mise à jour →
-       le mobile fetch ce nouveau prix automatiquement → Kkiapay facture le bon montant. */
+    /* ── Données dynamiques DB ── */
     const [dynamicPrice, setDynamicPrice] = useState<string | null>(null)
     const [dynamicPricingOptions, setDynamicPricingOptions] = useState<PricingOption[] | null>(null)
     const [dynamicFeatures, setDynamicFeatures] = useState<string[] | null>(null)
@@ -89,21 +272,12 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
                 const json = await res.json().catch(() => ({}))
                 const data = json.service
                 if (!data || cancelled) return
-
-                // Override avec valeurs DB si présentes (sinon on garde les params)
                 if (data.price_display) setDynamicPrice(data.price_display)
-                if (Array.isArray(data.pricing_options) && data.pricing_options.length > 0) {
-                    setDynamicPricingOptions(data.pricing_options)
-                }
-                if (Array.isArray(data.features) && data.features.length > 0) {
-                    setDynamicFeatures(data.features)
-                }
-                if (Array.isArray(data.documents) && data.documents.length > 0) {
-                    setDynamicDocuments(data.documents)
-                }
+                if (Array.isArray(data.pricing_options) && data.pricing_options.length > 0) setDynamicPricingOptions(data.pricing_options)
+                if (Array.isArray(data.features) && data.features.length > 0) setDynamicFeatures(data.features)
+                if (Array.isArray(data.documents) && data.documents.length > 0) setDynamicDocuments(data.documents)
                 if (data.duration) setDynamicDuration(data.duration)
             } catch (e) {
-                // Réseau coupé / API down → on garde les valeurs hardcoded de route.params
                 console.warn('[ServiceDetails] Fetch DB failed, using params fallback:', e)
             }
         }
@@ -111,7 +285,6 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
         return () => { cancelled = true }
     }, [serviceId])
 
-    // Valeurs effectives : DB en priorité, params en fallback
     const price = dynamicPrice ?? paramPrice
     const duration = dynamicDuration ?? paramDuration
     const features: string[] = dynamicFeatures ?? (paramFeatures?.length ? paramFeatures : [
@@ -126,29 +299,21 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
     ])
     const pricingOptions: PricingOption[] = dynamicPricingOptions ?? (paramPricingOptions?.length ? paramPricingOptions : [])
 
-    // ── Preload ALL texts visible on this screen ──
+    /* ── Preload des textes pour traduction ── */
     useEffect(() => {
         if (lang === 'fr') return
         const texts: string[] = []
-
-        // Core content
         if (title) texts.push(title)
         if (subtitle) texts.push(subtitle)
         if (fullDescription || desc) texts.push(fullDescription || desc)
         if (duration) texts.push(duration)
         if (price) texts.push(price)
-
-        // Features & documents
         for (const f of features) if (f) texts.push(f)
         for (const d of requiredDocs) if (d) texts.push(d)
-
-        // Pricing options (both labels and prices)
         for (const po of pricingOptions) {
             if (po.label) texts.push(po.label)
             if (po.price) texts.push(po.price)
         }
-
-        // UI strings on this screen
         texts.push(
             'Service Premium', 'Détails du Service', 'Délai moyen', 'Tarif',
             'Support', 'Dédié', 'Sur devis',
@@ -165,42 +330,29 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
             'Payer avec Kkiapay', 'Premier appel de 15 min gratuit',
             'Paiement 100% sécurisé via Mobile Money ou Carte Bancaire.',
             'Non connecté', 'Veuillez vous connecter pour commander ce service.',
+            'Garantie', 'Sécurisé', 'Confidentiel',
         )
-
-        console.log(`[ServiceDetails] Pre-loading ${texts.length} texts for translation`)
         preloadTexts(texts)
-    }, [lang]) // Only run once per language change
+    }, [lang])
 
-    // Le titre de la section "features" change selon le service (comme sur le site web)
     const featuresTitle = serviceId === 'passeport'
         ? t('Pièces à fournir pour les afro-descendants')
         : t('Ce que nous proposons')
 
-    const initiateCheckout = () => {
+    const initiateCheckout = useCallback(() => {
         if (!profile) {
             Alert.alert(t('Non connecté'), t('Veuillez vous connecter pour commander ce service.'))
             return
         }
-
         const isSurDevis = !price || price.toString().toLowerCase().includes('devis')
         const numericPrice = price ? parseFloat(price.toString().replace(/[^0-9.-]+/g, '')) : 0
-
         if (isSurDevis || numericPrice === 0) {
-            // Service sans paiement immédiat → création du dossier directement via API
             createDossierViaApi(null, 0)
         } else {
             setShowKkiapay(true)
         }
-    }
+    }, [profile, price])
 
-    /* ── Création de dossier via API serveur sécurisée ──
-       Pourquoi pas un insert Supabase direct ? Parce que :
-       1. La vérification Kkiapay (anti-fraude) doit être faite côté serveur
-       2. service_type doit être le SLUG canonique (pas le title traduit qui
-          changerait selon la langue de l'app)
-       3. /api/mobile/dossiers POST gère aussi : idempotence, création
-          client_profiles, notification client, et garde-fou doublon
-    */
     const createDossierViaApi = async (transactionId: string | null, numericPrice: number) => {
         if (!profile?.id) {
             Alert.alert(t('Non connecté'), t('Veuillez vous connecter pour commander ce service.'))
@@ -214,7 +366,6 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
                 timeoutMs: 20000,
                 body: JSON.stringify({
                     client_id: profile.id,
-                    // service_type = SLUG canonique (stable en DB quelle que soit la langue)
                     service_type: serviceId || title,
                     service_id: serviceId || null,
                     payment_tx_id: transactionId,
@@ -237,7 +388,6 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
             if (!res.ok) {
                 const msg = (json.error as string) || `Erreur ${res.status}`
                 if (res.status === 402) {
-                    // Paiement non confirmé par Kkiapay
                     Alert.alert(
                         t('Paiement non confirmé'),
                         t('Le paiement n\'a pas pu être vérifié auprès de Kkiapay. Si vous avez bien été débité, contactez le support avec la référence : ') + (transactionId || ''),
@@ -266,203 +416,293 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
         await createDossierViaApi(transactionId, numericPrice)
     }
 
+    /* ── Scroll handler pour header fade ── */
+    const scrollY = useSharedValue(0)
+    const onScroll = useAnimatedScrollHandler({
+        onScroll: e => { scrollY.value = e.contentOffset.y },
+    })
+
+    const stickyHeaderStyle = useAnimatedStyle(() => ({
+        opacity: interpolate(scrollY.value, [180, 260], [0, 1], Extrapolation.CLAMP),
+        transform: [{ translateY: interpolate(scrollY.value, [180, 260], [-12, 0], Extrapolation.CLAMP) }],
+    }))
+
     return (
-        <LinearGradient colors={[colors.background, colors.surfaceWarm]} style={styles.container}>
-            <ScrollView
-                style={{ flex: 1 }}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.scroll}
-            >
-            {/* Header coloré — gradient subtil + glow circle décoratif */}
-            <Animated.View style={[styles.header, headerEnterStyle]}>
+        <View style={styles.container}>
+            {/* Fond ivoire + auras globales */}
+            <LinearGradient
+                colors={[C.bg, C.bgDeep, C.bg]}
+                style={StyleSheet.absoluteFillObject}
+            />
+            <FloatingAura size={320} color={C.goldGlow} top={140} right={-120} duration={12000} />
+            <FloatingAura size={260} color="rgba(10,107,59,0.10)" bottom={120} left={-100} duration={14000} delay={2000} />
+            <FloatingAura size={200} color={C.primaryGlow} top={500} left={-60} duration={10000} delay={3500} />
+
+            {/* Sticky header (apparait au scroll) */}
+            <Animated.View style={[styles.stickyHeader, stickyHeaderStyle]} pointerEvents="box-none">
                 <LinearGradient
-                    colors={[serviceColor, serviceColor + 'E0', serviceColor + 'B0']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
+                    colors={['rgba(255,255,255,0.96)', 'rgba(255,255,255,0.86)']}
                     style={StyleSheet.absoluteFillObject}
                 />
-                <View style={styles.headerGlowOrb} />
-
-                <PressableCard
-                    haptic="light"
-                    onPress={() => navigation.goBack()}
-                    accessibilityLabel={t('Retour')}
-                    style={styles.backBtn}
-                >
-                    <View style={styles.backBtnCircle}>
-                        <ArrowLeft size={20} color="#FFF" strokeWidth={2} />
-                    </View>
-                </PressableCard>
-
-                <Animated.View style={[styles.headerIconWrap, iconEnterStyle]}>
-                    <Ionicons name={icon || 'briefcase-outline'} size={40} color={serviceColor} />
-                </Animated.View>
-
-                <View style={styles.headerBadge}>
-                    <Star size={10} color={serviceColor} fill={serviceColor} strokeWidth={1.75} />
-                    <Text style={[styles.headerBadgeText, { color: serviceColor }]}>{t('Service Premium')}</Text>
+                <View style={styles.stickyRow}>
+                    <InteractiveButton onPress={() => navigation.goBack()} style={styles.stickyBack}>
+                        <ArrowLeft size={20} color={C.primary} strokeWidth={2.2} />
+                    </InteractiveButton>
+                    <Text style={styles.stickyTitle} numberOfLines={1}>{t(title || 'Détails du Service')}</Text>
+                    <View style={styles.stickyBack} />
                 </View>
             </Animated.View>
 
-            {/* Carte contenu */}
-            <View style={styles.card}>
-                <Text style={styles.title}>{t(title || 'Détails du Service')}</Text>
-                {subtitle ? (
-                    <Text style={styles.subtitle}>{t(subtitle)}</Text>
-                ) : null}
-                <Text style={styles.desc}>
-                    {t(fullDescription || desc || 'Informations concernant ce service et accompagnement personnalisé.')}
-                </Text>
+            <Animated.ScrollView
+                onScroll={onScroll}
+                scrollEventThrottle={16}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.scroll}
+            >
+                {/* HERO */}
+                <ServiceHero
+                    icon={icon}
+                    title={title}
+                    subtitle={subtitle}
+                    accent={C.gold}
+                    onBack={() => navigation.goBack()}
+                    t={t}
+                />
 
-                {/* Infos clés — ALL values wrapped with t() */}
-                <View style={styles.infoRow}>
-                    <View style={styles.infoItem}>
-                        <Clock size={18} color={serviceColor} strokeWidth={1.75} />
-                        <View>
-                            <Text style={styles.infoLabel}>{t('Délai moyen')}</Text>
-                            <Text style={styles.infoValue} numberOfLines={2}>{t(duration || '4–8 semaines')}</Text>
-                        </View>
-                    </View>
-                    <View style={[styles.infoItem, styles.infoItemBorder]}>
-                        <Tag size={18} color={serviceColor} strokeWidth={1.75} />
-                        <View>
-                            <Text style={styles.infoLabel}>{t('Tarif')}</Text>
-                            <Text style={styles.infoValue} numberOfLines={2}>{t(price || 'Sur devis')}</Text>
-                        </View>
-                    </View>
-                    <View style={styles.infoItem}>
-                        <Users size={18} color={serviceColor} strokeWidth={1.75} />
-                        <View>
-                            <Text style={styles.infoLabel}>{t('Support')}</Text>
-                            <Text style={styles.infoValue}>{t('Dédié')}</Text>
-                        </View>
-                    </View>
-                </View>
+                {/* CARTE PRINCIPALE */}
+                <View style={styles.cardWrap}>
 
-                <View style={styles.divider} />
-
-                {/* Features / Pièces à fournir — titre dynamique comme le site web */}
-                <Text style={styles.sectionTitle}>{featuresTitle}</Text>
-                {features.map((feature: string, i: number) => (
-                    <View key={i} style={styles.featureRow}>
-                        <View style={[styles.featureCheck, { backgroundColor: serviceColor + '15' }]}>
-                            <Check size={14} color={serviceColor} strokeWidth={1.75} />
-                        </View>
-                        <Text style={styles.featureText}>{t(feature)}</Text>
-                    </View>
-                ))}
-
-                {/* Section Pack VIP — uniquement pour le passeport (comme le site web) */}
-                {serviceId === 'passeport' && (
-                    <>
-                        <View style={styles.divider} />
-                        <View style={styles.vipSection}>
-                            <View style={styles.vipSectionHeader}>
-                                <Ionicons name="sparkles" size={18} color={colors.primary} />
-                                <Text style={styles.vipSectionTitle}>{t('Pack VIP Retour Gagnant')}</Text>
-                            </View>
-                            <Text style={styles.vipSectionDesc}>
-                                {t("Un accompagnement intégral en une seule journée — de l'état civil à la délivrance de votre passeport.")}
+                    {/* DESCRIPTION */}
+                    <AnimatedSection delay={80}>
+                        <View style={styles.descCard}>
+                            <Text style={styles.desc}>
+                                {t(fullDescription || desc || 'Informations concernant ce service et accompagnement personnalisé.')}
                             </Text>
-                            {[
-                                { num: '01', title: 'Enrôlement État Civil', desc: "Obtention de votre extrait de naissance certifié conforme auprès des autorités de l'état civil béninois." },
-                                { num: '02', title: "Carte d'Identité Personnelle (CIP A)", desc: "Constitution du dossier et enrôlement biométrique pour votre titre d'identité officiel béninois." },
-                                { num: '03', title: 'Passeport Express Jour-J', desc: "Prise en charge prioritaire de votre demande de passeport biométrique — déposée et traitée le jour même." },
-                            ].map((step) => (
-                                <View key={step.num} style={styles.vipStep}>
-                                    <Text style={styles.vipStepNum}>{step.num}</Text>
+                        </View>
+                    </AnimatedSection>
+
+                    {/* INFOS CLÉS — 3 piliers premium */}
+                    <AnimatedSection delay={140}>
+                        <View style={styles.infoGrid}>
+                            <InfoPill
+                                icon={<Clock size={18} color={C.gold} strokeWidth={2} />}
+                                label={t('Délai moyen')}
+                                value={t(duration || '4–8 semaines')}
+                            />
+                            <InfoPill
+                                icon={<Tag size={18} color={C.gold} strokeWidth={2} />}
+                                label={t('Tarif')}
+                                value={t(price || 'Sur devis')}
+                            />
+                            <InfoPill
+                                icon={<Users size={18} color={C.gold} strokeWidth={2} />}
+                                label={t('Support')}
+                                value={t('Dédié')}
+                            />
+                        </View>
+                    </AnimatedSection>
+
+                    {/* TRUST ROW — garanties */}
+                    <AnimatedSection delay={200}>
+                        <View style={styles.trustRow}>
+                            <TrustChip icon={<ShieldCheck size={14} color={C.emerald} strokeWidth={2.2} />} label={t('Sécurisé')} />
+                            <TrustChip icon={<Award size={14} color={C.gold} strokeWidth={2.2} />} label={t('Garantie')} />
+                            <TrustChip icon={<Zap size={14} color={C.primary} strokeWidth={2.2} />} label={t('Confidentiel')} />
+                        </View>
+                    </AnimatedSection>
+
+                    {/* FEATURES / PIÈCES */}
+                    <AnimatedSection delay={260}>
+                        <SectionHeader icon={<Check size={16} color={C.gold} strokeWidth={2.4} />} title={featuresTitle} />
+                        <View style={styles.featuresList}>
+                            {features.map((feature, i) => (
+                                <View key={i} style={styles.featureRow}>
+                                    <LinearGradient
+                                        colors={[C.gold, C.goldSoft]}
+                                        style={styles.featureCheck}
+                                    >
+                                        <Check size={13} color="#FFF" strokeWidth={3} />
+                                    </LinearGradient>
+                                    <Text style={styles.featureText}>{t(feature)}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    </AnimatedSection>
+
+                    {/* PACK VIP (uniquement passeport) */}
+                    {serviceId === 'passeport' && (
+                        <AnimatedSection delay={320}>
+                            <View style={styles.vipCard}>
+                                <LinearGradient
+                                    colors={[C.primary, C.primaryLight]}
+                                    style={StyleSheet.absoluteFillObject}
+                                />
+                                <FloatingAura size={140} color={C.goldGlow} top={-40} right={-30} duration={8000} />
+
+                                <View style={styles.vipHeader}>
+                                    <LinearGradient
+                                        colors={[C.gold, C.goldSoft]}
+                                        style={styles.vipBadgeIcon}
+                                    >
+                                        <Sparkles size={14} color={C.primary} strokeWidth={2.4} />
+                                    </LinearGradient>
                                     <View style={{ flex: 1 }}>
-                                        <Text style={styles.vipStepTitle}>{t(step.title)}</Text>
-                                        <Text style={styles.vipStepDesc}>{t(step.desc)}</Text>
+                                        <Text style={styles.vipTitle}>{t('Pack VIP Retour Gagnant')}</Text>
+                                        <Text style={styles.vipSubtitle}>
+                                            {t("Un accompagnement intégral en une seule journée — de l'état civil à la délivrance de votre passeport.")}
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                {[
+                                    { num: '01', title: 'Enrôlement État Civil', desc: "Obtention de votre extrait de naissance certifié conforme auprès des autorités de l'état civil béninois." },
+                                    { num: '02', title: "Carte d'Identité Personnelle (CIP A)", desc: "Constitution du dossier et enrôlement biométrique pour votre titre d'identité officiel béninois." },
+                                    { num: '03', title: 'Passeport Express Jour-J', desc: "Prise en charge prioritaire de votre demande de passeport biométrique — déposée et traitée le jour même." },
+                                ].map((step) => (
+                                    <View key={step.num} style={styles.vipStep}>
+                                        <Text style={styles.vipStepNum}>{step.num}</Text>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={styles.vipStepTitle}>{t(step.title)}</Text>
+                                            <Text style={styles.vipStepDesc}>{t(step.desc)}</Text>
+                                        </View>
+                                    </View>
+                                ))}
+                            </View>
+                        </AnimatedSection>
+                    )}
+
+                    {/* TARIFICATION */}
+                    {pricingOptions.length > 0 && (
+                        <AnimatedSection delay={380}>
+                            <SectionHeader icon={<Tag size={16} color={C.gold} strokeWidth={2.4} />} title={t('Tarification')} />
+                            <View style={styles.pricingList}>
+                                {pricingOptions.map((opt, i) => (
+                                    <PressableCardLite key={i}>
+                                        <View style={styles.pricingCard}>
+                                            <View style={styles.pricingAccent} />
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={styles.pricingLabel}>{t(opt.label)}</Text>
+                                            </View>
+                                            <LinearGradient
+                                                colors={[C.gold, C.goldSoft]}
+                                                style={styles.pricingChip}
+                                            >
+                                                <Text style={styles.pricingPrice}>{t(opt.price)}</Text>
+                                            </LinearGradient>
+                                        </View>
+                                    </PressableCardLite>
+                                ))}
+                            </View>
+                        </AnimatedSection>
+                    )}
+
+                    {/* PROCESSUS */}
+                    <AnimatedSection delay={440}>
+                        <SectionHeader icon={<ChevronRight size={16} color={C.gold} strokeWidth={2.4} />} title={t('Comment ça marche ?')} />
+                        <View style={styles.timeline}>
+                            <View style={styles.timelineLine} />
+                            {[
+                                { step: '1', label: t('Commandez le service'), icon: 'cart-outline' as const },
+                                { step: '2', label: t('Déposez vos documents'), icon: 'cloud-upload-outline' as const },
+                                { step: '3', label: t('Suivi en temps réel'), icon: 'pulse-outline' as const },
+                                { step: '4', label: t('Résultat final'), icon: 'ribbon-outline' as const },
+                            ].map((item, idx) => (
+                                <View key={item.step} style={styles.processRow}>
+                                    <LinearGradient
+                                        colors={idx === 0 ? [C.gold, C.goldSoft] : [C.primary, C.primaryLight]}
+                                        style={styles.processStep}
+                                    >
+                                        <Text style={styles.processStepNum}>{item.step}</Text>
+                                    </LinearGradient>
+                                    <View style={styles.processCard}>
+                                        <Ionicons name={item.icon} size={18} color={C.primary} />
+                                        <Text style={styles.processLabel}>{item.label}</Text>
                                     </View>
                                 </View>
                             ))}
                         </View>
-                    </>
-                )}
+                    </AnimatedSection>
 
-                <View style={styles.divider} />
-
-                {/* Grille de tarifs — ALL wrapped with t() including prices */}
-                {pricingOptions.length > 0 && (
-                    <>
-                        <Text style={styles.sectionTitle}>{t('Tarification')}</Text>
-                        <View style={styles.pricingList}>
-                            {pricingOptions.map((opt: PricingOption, i: number) => (
-                                <View key={i} style={[styles.pricingCard, { borderLeftColor: serviceColor }]}>
-                                    <Text style={styles.pricingLabel}>{t(opt.label)}</Text>
-                                    <Text style={[styles.pricingPrice, { color: serviceColor }]}>{t(opt.price)}</Text>
+                    {/* DOCUMENTS REQUIS */}
+                    <AnimatedSection delay={500}>
+                        <SectionHeader icon={<FileText size={16} color={C.gold} strokeWidth={2.4} />} title={t('Documents requis')} />
+                        <View style={styles.docsList}>
+                            {requiredDocs.map((doc, i) => (
+                                <View key={i} style={styles.docRow}>
+                                    <View style={styles.docBullet}>
+                                        <Text style={styles.docNum}>{String(i + 1).padStart(2, '0')}</Text>
+                                    </View>
+                                    <Text style={styles.docText}>{t(doc)}</Text>
                                 </View>
                             ))}
                         </View>
-                        <View style={styles.divider} />
-                    </>
-                )}
+                    </AnimatedSection>
 
-                {/* Processus */}
-                <Text style={styles.sectionTitle}>{t('Comment ça marche ?')}</Text>
-                {[
-                    { step: '1', label: t('Commandez le service'), icon: 'cart-outline' as const },
-                    { step: '2', label: t('Déposez vos documents'), icon: 'cloud-upload-outline' as const },
-                    { step: '3', label: t('Suivi en temps réel'), icon: 'pulse-outline' as const },
-                    { step: '4', label: t('Résultat final'), icon: 'ribbon-outline' as const },
-                ].map((item) => (
-                    <View key={item.step} style={styles.processRow}>
-                        <View style={[styles.processStep, { backgroundColor: serviceColor + '15', borderColor: serviceColor + '30' }]}>
-                            <Text style={[styles.processStepNum, { color: serviceColor }]}>{item.step}</Text>
+                    {/* CTA PRÊT À DÉMARRER */}
+                    <AnimatedSection delay={560}>
+                        <View style={styles.ctaCard}>
+                            <LinearGradient
+                                colors={[C.primary, C.primaryLight, C.primary]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={StyleSheet.absoluteFillObject}
+                            />
+                            <FloatingAura size={180} color={C.goldGlow} top={-50} right={-40} duration={9000} />
+                            <FloatingAura size={120} color="rgba(255,255,255,0.06)" bottom={-30} left={-30} duration={11000} delay={1500} />
+
+                            <View style={styles.ctaHeader}>
+                                <LinearGradient colors={[C.gold, C.goldSoft]} style={styles.ctaIcon}>
+                                    <Calendar size={18} color={C.primary} strokeWidth={2.4} />
+                                </LinearGradient>
+                                <Text style={styles.ctaTitle}>{t('Prêt à démarrer ?')}</Text>
+                            </View>
+                            <Text style={styles.ctaSubtitle}>
+                                {t('Réservez un créneau avec nos experts pour concrétiser votre projet.')}
+                            </Text>
+
+                            <InteractiveButton
+                                disabled={loading}
+                                onPress={initiateCheckout}
+                                accessibilityLabel={t('Payer avec Kkiapay')}
+                                style={[styles.payBtn, loading && { opacity: 0.7 }]}
+                            >
+                                <LinearGradient
+                                    colors={[C.gold, C.goldSoft]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={styles.payBtnGradient}
+                                >
+                                    {loading ? (
+                                        <ActivityIndicator color={C.primary} size="small" />
+                                    ) : (
+                                        <>
+                                            <CreditCard size={20} color={C.primary} strokeWidth={2.4} />
+                                            <Text style={styles.payBtnText}>{t('Payer avec Kkiapay')}</Text>
+                                        </>
+                                    )}
+                                </LinearGradient>
+                            </InteractiveButton>
+
+                            <View style={styles.ctaFreeRow}>
+                                <Sparkles size={11} color={C.gold} fill={C.gold} strokeWidth={0} />
+                                <Text style={styles.ctaFreeNote}>{t('Premier appel de 15 min gratuit')}</Text>
+                            </View>
                         </View>
-                        <Ionicons name={item.icon} size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
-                        <Text style={styles.processLabel}>{item.label}</Text>
-                    </View>
-                ))}
+                    </AnimatedSection>
 
-                <View style={styles.divider} />
-
-                {/* Pièces à fournir */}
-                <Text style={styles.sectionTitle}>{t('Documents requis')}</Text>
-                {requiredDocs.map((doc: string, i: number) => (
-                    <View key={i} style={styles.docRow}>
-                        <View style={[styles.docBullet, { backgroundColor: serviceColor + '18', borderColor: serviceColor + '30' }]}>
-                            <Text style={[styles.docNum, { color: serviceColor }]}>{i + 1}</Text>
+                    {/* NOTE PAIEMENT */}
+                    <AnimatedSection delay={620}>
+                        <View style={styles.securityBanner}>
+                            <ShieldCheck size={14} color={C.emerald} strokeWidth={2.2} />
+                            <Text style={styles.securityText}>
+                                {t('Paiement 100% sécurisé via Mobile Money ou Carte Bancaire.')}
+                            </Text>
                         </View>
-                        <Text style={styles.docText}>{t(doc)}</Text>
-                    </View>
-                ))}
-
-                {/* Section CTA — comme le site "Prêt à démarrer ?" */}
-                <View style={[styles.ctaSection, { borderColor: serviceColor + '30' }]}>
-                    <View style={[styles.ctaBar, { backgroundColor: serviceColor }]} />
-                    <Calendar size={18} color={serviceColor} strokeWidth={1.75} />
-                    <Text style={styles.ctaTitle}>{t('Prêt à démarrer ?')}</Text>
-                    <Text style={styles.ctaSubtitle}>
-                        {t('Réservez un créneau avec nos experts pour concrétiser votre projet.')}
-                    </Text>
-
-                    {/* Bouton commander / payer */}
-                    <PressableCard
-                        haptic={loading ? 'none' : 'medium'}
-                        disabled={loading}
-                        onPress={initiateCheckout}
-                        accessibilityLabel={t('Payer avec Kkiapay')}
-                        style={[styles.btn, { backgroundColor: serviceColor }, loading && styles.btnDisabled] as never}
-                    >
-                        {loading ? (
-                            <ActivityIndicator color="#FFF" size="small" />
-                        ) : (
-                            <>
-                                <CreditCard size={20} color="#FFF" strokeWidth={2} />
-                                <Text style={styles.btnText}>{t('Payer avec Kkiapay')}</Text>
-                            </>
-                        )}
-                    </PressableCard>
-
-                    <Text style={styles.ctaFreeNote}>{t('Premier appel de 15 min gratuit')}</Text>
+                    </AnimatedSection>
                 </View>
 
-                <Text style={styles.btnNote}>
-                    {t('Paiement 100% sécurisé via Mobile Money ou Carte Bancaire.')}
-                </Text>
-            </View>
+                <View style={{ height: 80 }} />
+            </Animated.ScrollView>
 
             <KkiapayModal
                 visible={showKkiapay}
@@ -471,171 +711,451 @@ export default function ServiceDetailsScreen({ route, navigation }: any) {
                 onClose={() => setShowKkiapay(false)}
                 onSuccess={handlePaymentSuccess}
             />
-
-            <View style={{ height: 60 }} />
-            </ScrollView>
-        </LinearGradient>
+        </View>
     )
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1 },
-    scroll: { paddingBottom: spacing.xxl },
+/* ═══════════════════════════════════════════════════════════
+   SOUS-COMPOSANTS
+═══════════════════════════════════════════════════════════ */
+const InfoPill = ({ icon, label, value }: any) => (
+    <View style={styles.infoPill}>
+        <View style={styles.infoIconWrap}>{icon}</View>
+        <Text style={styles.infoLabel}>{label}</Text>
+        <Text style={styles.infoValue} numberOfLines={2}>{value}</Text>
+    </View>
+)
 
-    header: {
+const TrustChip = ({ icon, label }: any) => (
+    <View style={styles.trustChip}>
+        {icon}
+        <Text style={styles.trustText}>{label}</Text>
+    </View>
+)
+
+const SectionHeader = ({ icon, title }: any) => (
+    <View style={styles.sectionHeader}>
+        <View style={styles.sectionIcon}>{icon}</View>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        <View style={styles.sectionLine} />
+    </View>
+)
+
+const PressableCardLite = ({ children }: any) => {
+    const scale = useSharedValue(1)
+    const s = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
+    return (
+        <Animated.View style={s}>
+            <Pressable
+                onPressIn={() => { scale.value = withSpring(0.98, { damping: 18, stiffness: 280 }) }}
+                onPressOut={() => { scale.value = withSpring(1, { damping: 14, stiffness: 220 }) }}
+            >
+                {children}
+            </Pressable>
+        </Animated.View>
+    )
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STYLES — HERO
+═══════════════════════════════════════════════════════════ */
+const hero = StyleSheet.create({
+    wrap: {
         paddingTop: Platform.OS === 'ios' ? 64 : 48,
-        paddingBottom: 64,
+        paddingBottom: 56,
+        paddingHorizontal: spacing.lg,
         alignItems: 'center',
-        borderBottomLeftRadius: 36,
-        borderBottomRightRadius: 36,
+        borderBottomLeftRadius: 40,
+        borderBottomRightRadius: 40,
         position: 'relative',
         overflow: 'hidden',
     },
-    headerGlowOrb: {
-        position: 'absolute',
-        top: -80, right: -60,
-        width: 220, height: 220, borderRadius: 110,
-        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    shine: {
+        position: 'absolute', top: 0, bottom: 0,
+        width: SCREEN_W * 0.6,
     },
-    backBtn: { position: 'absolute', top: Platform.OS === 'ios' ? 54 : 38, left: 20, zIndex: 10 },
-    backBtnCircle: {
-        width: 38, height: 38, borderRadius: 19,
-        backgroundColor: 'rgba(255,255,255,0.2)',
+    backBtn: {
+        position: 'absolute', top: Platform.OS === 'ios' ? 56 : 40, left: spacing.lg, zIndex: 10,
+    },
+    backCircle: {
+        width: 42, height: 42, borderRadius: 21,
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)',
         alignItems: 'center', justifyContent: 'center',
     },
-    headerIconWrap: {
-        width: 84, height: 84, borderRadius: 42,
-        backgroundColor: '#FFFFFF',
+    premiumBadge: {
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        backgroundColor: 'rgba(255,255,255,0.95)',
+        paddingHorizontal: 14, paddingVertical: 6,
+        borderRadius: 999, marginTop: 8,
+        borderWidth: 1, borderColor: C.goldGlow,
+    },
+    premiumBadgeText: {
+        fontSize: 10, fontFamily: fonts.bodyBold,
+        color: C.primary, letterSpacing: 1.4,
+    },
+    iconRing: {
+        marginTop: 22,
+        shadowColor: '#000', shadowOpacity: 0.35,
+        shadowRadius: 18, shadowOffset: { width: 0, height: 10 },
+        elevation: 12,
+    },
+    iconRingGradient: {
+        width: 96, height: 96, borderRadius: 48,
+        padding: 3,
         alignItems: 'center', justifyContent: 'center',
-        marginTop: 20, ...shadows.md,
     },
-    headerBadge: {
-        flexDirection: 'row', alignItems: 'center', gap: 4,
-        backgroundColor: '#FFF', borderRadius: 20,
-        paddingHorizontal: 12, paddingVertical: 5, marginTop: 14,
+    iconInner: {
+        width: '100%', height: '100%', borderRadius: 45,
+        backgroundColor: '#FFF',
+        alignItems: 'center', justifyContent: 'center',
     },
-    headerBadgeText: { fontSize: 11, fontFamily: fonts.bodyBold, letterSpacing: 1 },
-
-    card: {
-        marginHorizontal: spacing.lg,
-        marginTop: -32,
-        backgroundColor: colors.surface,
-        borderRadius: radius.xl,
-        padding: spacing.xl,
-        ...shadows.lg,
-        borderWidth: 1, borderColor: colors.borderLight,
+    title: {
+        fontSize: 24, fontFamily: fonts.heading || fonts.bodyBold,
+        color: '#FFF', marginTop: 18, textAlign: 'center',
+        letterSpacing: 0.3,
     },
-
-    title: { ...typography.h2, color: colors.textPrimary, marginBottom: 4, textAlign: 'center' },
     subtitle: {
-        ...typography.bodySmall, color: colors.primary, textAlign: 'center',
-        fontFamily: 'Inter_600SemiBold', marginBottom: 8, lineHeight: 20,
+        fontSize: 13, fontFamily: 'Inter_500Medium',
+        color: 'rgba(255,255,255,0.85)', marginTop: 6,
+        textAlign: 'center', lineHeight: 18,
+        paddingHorizontal: spacing.lg,
     },
-    desc: { ...typography.bodySmall, color: colors.textSecondary, textAlign: 'center', lineHeight: 22 },
-
-    infoRow: {
-        flexDirection: 'row',
-        marginVertical: spacing.lg,
-        backgroundColor: colors.surfaceElevated,
-        borderRadius: radius.md,
-        overflow: 'hidden',
-        borderWidth: 1, borderColor: colors.borderLight,
+    divider: {
+        flexDirection: 'row', alignItems: 'center', gap: 8,
+        marginTop: 16,
     },
-    infoItem: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12 },
-    infoItemBorder: { borderLeftWidth: 1, borderRightWidth: 1, borderColor: colors.borderLight },
-    infoLabel: { fontSize: 10, fontFamily: 'Inter_500Medium', color: colors.textMuted },
-    infoValue: { fontSize: 12, fontFamily: 'Inter_700Bold', color: colors.textPrimary, marginTop: 1 },
+    dividerLine: {
+        width: 32, height: 1,
+        backgroundColor: C.gold,
+    },
+})
 
-    divider: { height: 1, backgroundColor: colors.borderLight, marginVertical: spacing.lg },
+/* ═══════════════════════════════════════════════════════════
+   STYLES — PAGE
+═══════════════════════════════════════════════════════════ */
+const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: C.bg },
+    scroll: { paddingBottom: spacing.xxl },
 
-    sectionTitle: { ...typography.h3, fontSize: 16, color: colors.textPrimary, marginBottom: 14 },
-    featureRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
-    featureCheck: {
-        width: 26, height: 26, borderRadius: 8,
+    /* Sticky header */
+    stickyHeader: {
+        position: 'absolute', top: 0, left: 0, right: 0,
+        paddingTop: Platform.OS === 'ios' ? 50 : 30,
+        paddingBottom: 12, paddingHorizontal: spacing.lg,
+        zIndex: 100,
+        borderBottomWidth: 1, borderBottomColor: C.border,
+    },
+    stickyRow: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+    },
+    stickyBack: {
+        width: 38, height: 38, borderRadius: 19,
+        backgroundColor: C.surfaceWarm,
+        borderWidth: 1, borderColor: C.border,
         alignItems: 'center', justifyContent: 'center',
     },
-    featureText: { ...typography.bodySmall, color: colors.textSecondary, flex: 1, lineHeight: 20 },
+    stickyTitle: {
+        flex: 1, textAlign: 'center',
+        fontSize: 14, fontFamily: fonts.bodyBold, color: C.primary,
+    },
 
-    /* Pack VIP Section */
-    vipSection: {
-        backgroundColor: colors.surfaceWarm,
-        borderRadius: radius.lg, padding: spacing.lg,
-        borderWidth: 1, borderColor: colors.primary + '30',
+    /* Carte principale */
+    cardWrap: {
+        paddingHorizontal: spacing.lg,
+        marginTop: -28,
+        gap: spacing.lg,
     },
-    vipSectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-    vipSectionTitle: { ...typography.h3, fontSize: 16, color: colors.textPrimary },
-    vipSectionDesc: { ...typography.caption, color: colors.textMuted, marginBottom: 16 },
+
+    descCard: {
+        backgroundColor: C.surface,
+        borderRadius: radius.xl,
+        padding: spacing.lg,
+        borderWidth: 1, borderColor: C.border,
+        shadowColor: C.primary, shadowOpacity: 0.08,
+        shadowRadius: 20, shadowOffset: { width: 0, height: 8 },
+        elevation: 4,
+    },
+    desc: {
+        fontSize: 14, lineHeight: 22, color: C.textMuted,
+        fontFamily: 'Inter_400Regular',
+        textAlign: 'center',
+    },
+
+    /* Infos clés — 3 pills horizontaux */
+    infoGrid: {
+        flexDirection: 'row', gap: 10,
+    },
+    infoPill: {
+        flex: 1,
+        backgroundColor: C.surface,
+        borderRadius: radius.lg,
+        padding: 14,
+        alignItems: 'center',
+        borderWidth: 1, borderColor: C.border,
+        shadowColor: C.primary, shadowOpacity: 0.06,
+        shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
+        elevation: 2,
+    },
+    infoIconWrap: {
+        width: 38, height: 38, borderRadius: 19,
+        backgroundColor: C.goldGlow,
+        alignItems: 'center', justifyContent: 'center',
+        marginBottom: 8,
+    },
+    infoLabel: {
+        fontSize: 10, fontFamily: 'Inter_600SemiBold',
+        color: C.textSubtle, letterSpacing: 0.8,
+        textTransform: 'uppercase', marginBottom: 4,
+    },
+    infoValue: {
+        fontSize: 12, fontFamily: 'Inter_700Bold',
+        color: C.primary, textAlign: 'center',
+    },
+
+    /* Trust chips */
+    trustRow: {
+        flexDirection: 'row', justifyContent: 'center', gap: 8,
+        flexWrap: 'wrap',
+    },
+    trustChip: {
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        backgroundColor: C.surface,
+        paddingHorizontal: 12, paddingVertical: 7,
+        borderRadius: 999,
+        borderWidth: 1, borderColor: C.border,
+    },
+    trustText: {
+        fontSize: 11, fontFamily: 'Inter_600SemiBold',
+        color: C.primary,
+    },
+
+    /* Section header */
+    sectionHeader: {
+        flexDirection: 'row', alignItems: 'center', gap: 10,
+        marginBottom: 14,
+    },
+    sectionIcon: {
+        width: 30, height: 30, borderRadius: 8,
+        backgroundColor: C.goldGlow,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    sectionTitle: {
+        fontSize: 15, fontFamily: fonts.bodyBold, color: C.primary,
+        letterSpacing: 0.2,
+    },
+    sectionLine: {
+        flex: 1, height: 1, backgroundColor: C.border, marginLeft: 4,
+    },
+
+    /* Features */
+    featuresList: { gap: 10 },
+    featureRow: {
+        flexDirection: 'row', alignItems: 'center', gap: 12,
+        backgroundColor: C.surface,
+        padding: 12, borderRadius: radius.md,
+        borderWidth: 1, borderColor: C.border,
+    },
+    featureCheck: {
+        width: 28, height: 28, borderRadius: 8,
+        alignItems: 'center', justifyContent: 'center',
+        shadowColor: C.gold, shadowOpacity: 0.3,
+        shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
+        elevation: 3,
+    },
+    featureText: {
+        flex: 1, fontSize: 13, lineHeight: 20,
+        color: C.text, fontFamily: 'Inter_500Medium',
+    },
+
+    /* VIP Card */
+    vipCard: {
+        borderRadius: radius.xl,
+        padding: spacing.lg,
+        overflow: 'hidden',
+        shadowColor: C.primary, shadowOpacity: 0.25,
+        shadowRadius: 18, shadowOffset: { width: 0, height: 10 },
+        elevation: 8,
+    },
+    vipHeader: {
+        flexDirection: 'row', alignItems: 'flex-start', gap: 12,
+        marginBottom: 18,
+    },
+    vipBadgeIcon: {
+        width: 36, height: 36, borderRadius: 10,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    vipTitle: {
+        fontSize: 16, fontFamily: fonts.bodyBold,
+        color: '#FFF', marginBottom: 4,
+    },
+    vipSubtitle: {
+        fontSize: 12, lineHeight: 17,
+        color: 'rgba(255,255,255,0.78)',
+        fontFamily: 'Inter_400Regular',
+    },
     vipStep: {
-        flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 14,
-        backgroundColor: colors.surface, borderRadius: radius.md, padding: 14,
-        borderWidth: 1, borderColor: colors.primary + '20',
+        flexDirection: 'row', alignItems: 'flex-start', gap: 12,
+        backgroundColor: 'rgba(255,255,255,0.08)',
+        borderRadius: radius.md, padding: 12, marginBottom: 10,
+        borderWidth: 1, borderColor: 'rgba(212,160,23,0.25)',
     },
-    vipStepNum: { fontSize: 28, fontFamily: 'Inter_800ExtraBold', color: colors.primary + '40' },
-    vipStepTitle: { ...typography.label, color: colors.textPrimary, marginBottom: 2 },
-    vipStepDesc: { ...typography.caption, color: colors.textMuted, lineHeight: 17 },
+    vipStepNum: {
+        fontSize: 24, fontFamily: 'Inter_800ExtraBold',
+        color: C.gold, lineHeight: 26, width: 36,
+    },
+    vipStepTitle: {
+        fontSize: 13, fontFamily: 'Inter_700Bold',
+        color: '#FFF', marginBottom: 3,
+    },
+    vipStepDesc: {
+        fontSize: 11, lineHeight: 16,
+        color: 'rgba(255,255,255,0.7)',
+        fontFamily: 'Inter_400Regular',
+    },
 
     /* Pricing */
     pricingList: { gap: 10 },
     pricingCard: {
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        backgroundColor: colors.surfaceElevated, borderRadius: radius.md,
-        padding: 14, borderLeftWidth: 4,
-        borderWidth: 1, borderColor: colors.borderLight,
+        flexDirection: 'row', alignItems: 'center', gap: 12,
+        backgroundColor: C.surface,
+        borderRadius: radius.md, padding: 14,
+        borderWidth: 1, borderColor: C.border,
+        overflow: 'hidden',
     },
-    pricingLabel: { ...typography.bodySmall, color: colors.textPrimary, flex: 1, marginRight: 12 },
-    pricingPrice: { fontFamily: 'Inter_800ExtraBold', fontSize: 14 },
+    pricingAccent: {
+        position: 'absolute', left: 0, top: 0, bottom: 0,
+        width: 4, backgroundColor: C.gold,
+    },
+    pricingLabel: {
+        fontSize: 13, fontFamily: 'Inter_600SemiBold',
+        color: C.primary, marginLeft: 8,
+    },
+    pricingChip: {
+        paddingHorizontal: 12, paddingVertical: 6,
+        borderRadius: 8,
+    },
+    pricingPrice: {
+        fontSize: 13, fontFamily: 'Inter_800ExtraBold',
+        color: C.primary,
+    },
 
-    processRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+    /* Timeline / Processus */
+    timeline: { position: 'relative', paddingLeft: 0 },
+    timelineLine: {
+        position: 'absolute', left: 17, top: 18, bottom: 18,
+        width: 2, backgroundColor: C.border,
+    },
+    processRow: {
+        flexDirection: 'row', alignItems: 'center', gap: 12,
+        marginBottom: 10,
+    },
     processStep: {
-        width: 28, height: 28, borderRadius: 8,
+        width: 36, height: 36, borderRadius: 18,
         alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1,
+        shadowColor: C.primary, shadowOpacity: 0.2,
+        shadowRadius: 6, shadowOffset: { width: 0, height: 3 },
+        elevation: 3,
     },
-    processStepNum: { fontSize: 13, fontFamily: 'Inter_700Bold' },
-    processLabel: { ...typography.bodySmall, color: colors.textPrimary, flex: 1 },
-
-    /* CTA section — comme le site "Prêt à démarrer ?" */
-    ctaSection: {
-        backgroundColor: colors.surfaceElevated,
-        borderRadius: radius.lg, padding: spacing.lg,
-        alignItems: 'center', marginTop: spacing.sm,
-        borderWidth: 1, overflow: 'hidden',
+    processStepNum: {
+        fontSize: 14, fontFamily: 'Inter_800ExtraBold', color: '#FFF',
     },
-    ctaBar: { position: 'absolute', top: 0, left: 0, right: 0, height: 3 },
-    ctaTitle: { ...typography.h3, fontSize: 16, color: colors.textPrimary, marginTop: 8, marginBottom: 4 },
-    ctaSubtitle: { ...typography.caption, color: colors.textMuted, textAlign: 'center', marginBottom: 16 },
-    ctaFreeNote: { ...typography.caption, color: colors.textMuted, marginTop: 10 },
-
-    btn: {
-        width: '100%',
-        paddingVertical: 16,
+    processCard: {
+        flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10,
+        backgroundColor: C.surface,
+        paddingHorizontal: 14, paddingVertical: 12,
         borderRadius: radius.md,
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 10,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-        elevation: 6,
+        borderWidth: 1, borderColor: C.border,
     },
-    btnDisabled: { opacity: 0.6 },
-    btnText: { ...typography.button, color: '#FFF' },
-    btnNote: {
-        ...typography.caption,
-        color: colors.textMuted,
-        textAlign: 'center',
-        marginTop: 12,
-        lineHeight: 18,
+    processLabel: {
+        flex: 1, fontSize: 13, fontFamily: 'Inter_600SemiBold',
+        color: C.text,
     },
 
-    docRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 10 },
-    docBullet: {
-        width: 24, height: 24, borderRadius: 7,
-        borderWidth: 1,
-        alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0, marginTop: 1,
+    /* Documents */
+    docsList: { gap: 10 },
+    docRow: {
+        flexDirection: 'row', alignItems: 'center', gap: 12,
+        backgroundColor: C.surface,
+        padding: 12, borderRadius: radius.md,
+        borderWidth: 1, borderColor: C.border,
     },
-    docNum: { fontSize: 11, fontFamily: 'Inter_700Bold' },
-    docText: { ...typography.bodySmall, color: colors.textSecondary, flex: 1, lineHeight: 20 },
+    docBullet: {
+        width: 32, height: 32, borderRadius: 10,
+        backgroundColor: C.primary,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    docNum: {
+        fontSize: 11, fontFamily: 'Inter_800ExtraBold', color: C.gold,
+    },
+    docText: {
+        flex: 1, fontSize: 13, lineHeight: 20,
+        color: C.text, fontFamily: 'Inter_500Medium',
+    },
+
+    /* CTA Card */
+    ctaCard: {
+        borderRadius: radius.xl,
+        padding: spacing.xl,
+        overflow: 'hidden',
+        alignItems: 'center',
+        shadowColor: C.primary, shadowOpacity: 0.3,
+        shadowRadius: 22, shadowOffset: { width: 0, height: 12 },
+        elevation: 10,
+    },
+    ctaHeader: {
+        flexDirection: 'row', alignItems: 'center', gap: 10,
+        marginBottom: 6,
+    },
+    ctaIcon: {
+        width: 38, height: 38, borderRadius: 12,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    ctaTitle: {
+        fontSize: 18, fontFamily: fonts.bodyBold,
+        color: '#FFF', letterSpacing: 0.3,
+    },
+    ctaSubtitle: {
+        fontSize: 13, lineHeight: 19,
+        color: 'rgba(255,255,255,0.82)',
+        textAlign: 'center', marginBottom: 20,
+        fontFamily: 'Inter_400Regular',
+    },
+    payBtn: {
+        width: '100%',
+        borderRadius: radius.lg,
+        overflow: 'hidden',
+        shadowColor: C.gold, shadowOpacity: 0.45,
+        shadowRadius: 14, shadowOffset: { width: 0, height: 8 },
+        elevation: 8,
+    },
+    payBtnGradient: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+        paddingVertical: 16,
+    },
+    payBtnText: {
+        fontSize: 15, fontFamily: 'Inter_800ExtraBold',
+        color: C.primary, letterSpacing: 0.4,
+    },
+    ctaFreeRow: {
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        marginTop: 14,
+    },
+    ctaFreeNote: {
+        fontSize: 11, fontFamily: 'Inter_600SemiBold',
+        color: 'rgba(255,255,255,0.78)',
+    },
+
+    /* Security banner */
+    securityBanner: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+        backgroundColor: 'rgba(10,107,59,0.08)',
+        paddingHorizontal: 16, paddingVertical: 12,
+        borderRadius: radius.md,
+        borderWidth: 1, borderColor: 'rgba(10,107,59,0.18)',
+    },
+    securityText: {
+        fontSize: 12, fontFamily: 'Inter_500Medium',
+        color: C.emerald, textAlign: 'center',
+    },
 })

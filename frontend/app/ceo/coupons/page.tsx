@@ -145,9 +145,11 @@ export default function CeoCoupons() {
                                     {item.min_order ? <span className="opacity-40">Min: {item.min_order.toLocaleString()} FCFA</span> : null}
                                     {item.max_uses ? <span className="opacity-40">Max: {item.max_uses} utilisations</span> : null}
                                     <span className="opacity-40">{item.uses_count || 0} utilisé{(item.uses_count || 0) > 1 ? 's' : ''}</span>
-                                    {item.expires_at && <span style={{ color: expired ? RED : 'inherit', opacity: expired ? 1 : 0.4 }}>
-                                        {expired ? 'Expiré' : `Expire ${new Date(item.expires_at).toLocaleDateString('fr-FR')}`}
-                                    </span>}
+                                    {item.expires_at && (
+                                        <span style={{ color: expired ? RED : 'inherit', opacity: expired ? 1 : 0.4 }}>
+                                            {expired ? 'Expiré' : `Expire ${isNaN(new Date(item.expires_at).getTime()) ? '—' : new Date(item.expires_at).toLocaleDateString('fr-FR')}`}
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="flex gap-2 pt-2 border-t border-white/5">
                                     <button type="button" onClick={() => open(item)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold hover:opacity-80" style={{ background: `${GOLD}15`, color: GOLD }}>

@@ -1,18 +1,58 @@
 'use strict'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
     View, Text, ScrollView, StyleSheet, TouchableOpacity,
     Platform, Alert, ActivityIndicator, Modal,
+    Pressable, Dimensions,
 } from 'react-native'
-import { ArrowLeft, CheckCircle, HelpCircle, Info, Star } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { LinearGradient } from 'expo-linear-gradient'
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withTiming,
+    withDelay,
+    withRepeat,
+    withSequence,
+    withSpring,
+    Easing,
+    interpolate,
+    interpolateColor,
+} from 'react-native-reanimated'
 import { useAuth } from '../../contexts/AuthContext'
-import { colors, spacing, radius, shadows, typography } from '../../config/theme'
 import { useLang } from '../../contexts/LangContext'
 import { fetchWithTimeout } from '../../lib/fetch'
 import KkiapayModal from '../../components/KkiapayModal'
 import type { AppEvent } from './EventsScreen'
+
+/* ═══════════════════════════════════════════════════════════
+   EventDetailScreen — THEME "CORPORATE PREMIUM 2026"
+   (Aligné avec tous les autres écrans premium)
+═══════════════════════════════════════════════════════════ */
+
+const { width } = Dimensions.get('window')
+
+// Palette de l'agence (identique aux autres écrans)
+const C = {
+    bg: '#F8F9FA',
+    surface: 'rgba(255, 255, 255, 0.85)',
+    surfaceSolid: '#FFFFFF',
+    border: '#E2E8F0',
+
+    primary: '#047857',
+    primaryDark: '#022C22',
+    accent: '#C9A84C',
+    accentDark: '#A68B3C',
+    accentLight: '#E2C97E',
+    auraGreen: '#10B981',
+    error: '#EF4444',
+    success: '#10B981',
+    info: '#3B82F6',
+
+    textSec: '#64748B',
+    textMuted: '#94A3B8',
+    placeholder: '#94A3B8',
+    primaryText: '#FFFFFF',
+}
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
 
@@ -31,27 +71,320 @@ function formatPrice(price: number, currency: string, t: any) {
     return `${price.toLocaleString('fr-FR')} ${currency}`
 }
 
-const CATEGORY_COLORS: Record<string, string> = {
-    'Gala': colors.primary, 'Forum': '#3B82C4',
-    'Tourisme': '#E07B54', 'Séminaire': '#7C5CCA', 'Conférence': '#2D9F63',
+/* ═══════════════════════════════════════════════════════════
+   COMPOSANT : ANIMATED SECTION
+═══════════════════════════════════════════════════════════ */
+
+function AnimatedSection({
+    children, delay = 0, style,
+}: {
+    children: React.ReactNode
+    delay?: number
+    style?: any
+}) {
+    const anim = useSharedValue(0)
+
+    useEffect(() => {
+        anim.value = withDelay(delay, withTiming(1, {
+            duration: 800,
+            easing: Easing.out(Easing.quad),
+        }))
+    }, [delay])
+
+    const animStyle = useAnimatedStyle(() => ({
+        opacity: anim.value,
+        transform: [{ translateY: 30 * (1 - anim.value) }],
+    }))
+
+    return <Animated.View style={[animStyle, style]}>{children}</Animated.View>
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════
+   COMPOSANT : TICKET CARD (Animée, radio premium)
+═══════════════════════════════════════════════════════════ */
+
+interface TicketCardProps {
+    type: 'standard' | 'vip'
+    selected: boolean
+    onSelect: () => void
+    label: string
+    description: string
+    price: string
+    isFree?: boolean
+    isVip?: boolean
+    perks?: string[]
+}
+
+function TicketCard({
+    type, selected, onSelect, label, description, price, isFree, isVip, perks,
+}: TicketCardProps) {
+    const anim = useSharedValue(selected ? 1 : 0)
+
+    useEffect(() => {
+        anim.value = withSpring(selected ? 1 : 0, { damping: 15, stiffness: 150 })
+    }, [selected])
+
+    const wrapStyle = useAnimatedStyle(() => ({
+        borderColor: interpolateColor(anim.value, [0, 1], [C.border, C.accent]),
+        backgroundColor: interpolateColor(
+            anim.value,
+            [0, 1],
+            ['rgba(255,255,255,0.85)', 'rgba(212, 160, 23, 0.06)']
+        ),
+        transform: [{ scale: interpolate(anim.value, [0, 1], [1, 1.01]) }],
+    }))
+
+    const radioStyle = useAnimatedStyle(() => ({
+        borderColor: interpolateColor(anim.value, [0, 1], [C.border, C.accent]),
+        backgroundColor: interpolateColor(anim.value, [0, 1], [C.surfaceSolid, C.accent]),
+    }))
+
+    const innerStyle = useAnimatedStyle(() => ({
+        opacity: anim.value,
+        transform: [{ scale: anim.value }],
+    }))
+
+    return (
+        <Pressable onPress={onSelect}>
+            <Animated.View style={[ticketStyles.card, wrapStyle]}>
+                {/* Bandeau VIP doré */}
+                {isVip && (
+                    <View style={ticketStyles.vipBanner}>
+                        <Ionicons name="star" size={9} color={C.primary} />
+                        <Text style={ticketStyles.vipBannerText}>RECOMMANDÉ</Text>
+                    </View>
+                )}
+
+                <View style={ticketStyles.cardInner}>
+                    {/* Radio personnalisé */}
+                    <Animated.View style={[ticketStyles.radio, radioStyle]}>
+                        <Animated.View style={[ticketStyles.radioInner, innerStyle]}>
+                            <Ionicons name="checkmark" size={10} color={C.primary} />
+                        </Animated.View>
+                    </Animated.View>
+
+                    <View style={ticketStyles.info}>
+                        <View style={ticketStyles.titleRow}>
+                            <Text style={ticketStyles.name}>{label}</Text>
+                            {isVip && (
+                                <View style={ticketStyles.vipMiniBadge}>
+                                    <Ionicons name="star" size={8} color={C.accent} />
+                                    <Text style={ticketStyles.vipMiniText}>VIP</Text>
+                                </View>
+                            )}
+                        </View>
+                        <Text style={ticketStyles.desc} numberOfLines={2}>{description}</Text>
+
+                        {/* Perks list */}
+                        {perks && perks.length > 0 && (
+                            <View style={ticketStyles.perks}>
+                                {perks.map((perk, i) => (
+                                    <View key={i} style={ticketStyles.perkRow}>
+                                        <Ionicons name="checkmark-circle" size={11} color={C.success} />
+                                        <Text style={ticketStyles.perkText}>{perk}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        )}
+                    </View>
+
+                    <View style={ticketStyles.priceWrap}>
+                        <Text style={[
+                            ticketStyles.price,
+                            isFree && { color: C.success },
+                            selected && !isFree && { color: C.primary },
+                        ]}>
+                            {price}
+                        </Text>
+                    </View>
+                </View>
+            </Animated.View>
+        </Pressable>
+    )
+}
+
+const ticketStyles = StyleSheet.create({
+    card: {
+        borderRadius: 16,
+        borderWidth: 1.5,
+        marginBottom: 12,
+        overflow: 'hidden',
+        position: 'relative',
+    },
+    vipBanner: {
+        position: 'absolute',
+        top: 10,
+        right: -28,
+        transform: [{ rotate: '32deg' }],
+        backgroundColor: C.accent,
+        paddingHorizontal: 30,
+        paddingVertical: 3,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+        zIndex: 2,
+    },
+    vipBannerText: {
+        color: C.primary,
+        fontSize: 8,
+        fontWeight: '800',
+        letterSpacing: 0.6,
+    },
+    cardInner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 14,
+        padding: 16,
+    },
+    radio: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        borderWidth: 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    radioInner: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 11,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    info: {
+        flex: 1,
+    },
+    titleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 4,
+    },
+    name: {
+        fontSize: 14,
+        fontWeight: '800',
+        color: C.primary,
+        letterSpacing: -0.2,
+    },
+    vipMiniBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+        backgroundColor: 'rgba(13, 43, 78, 0.08)',
+        paddingHorizontal: 7,
+        paddingVertical: 3,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: 'rgba(212, 160, 23, 0.3)',
+    },
+    vipMiniText: {
+        fontSize: 9,
+        fontWeight: '800',
+        color: C.accentDark,
+    },
+    desc: {
+        fontSize: 11.5,
+        color: C.textSec,
+        fontWeight: '400',
+        lineHeight: 16,
+    },
+    perks: {
+        marginTop: 8,
+        gap: 4,
+    },
+    perkRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+    },
+    perkText: {
+        fontSize: 10.5,
+        color: C.textSec,
+        fontWeight: '500',
+    },
+    priceWrap: {
+        alignItems: 'flex-end',
+    },
+    price: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: C.primary,
+        letterSpacing: -0.3,
+    },
+})
+
+/* ═══════════════════════════════════════════════════════════
+   ÉCRAN PRINCIPAL : EVENT DETAIL
+═══════════════════════════════════════════════════════════ */
 
 export default function EventDetailScreen({ route, navigation }: any) {
     const { event } = route.params as { event: AppEvent }
     const { profile } = useAuth()
-
     const { t } = useLang()
+
     const [loading, setLoading] = useState(false)
     const [selectedTicket, setSelectedTicket] = useState<'standard' | 'vip'>('standard')
     const [showModal, setShowModal] = useState(false)
     const [registration, setRegistration] = useState(event.my_registration || null)
-    // Paiement Kkiapay direct (pour events payants)
     const [showKkiapay, setShowKkiapay] = useState(false)
     const [pendingRegistration, setPendingRegistration] = useState<{ id: string; amount: number } | null>(null)
 
-    const catColor = CATEGORY_COLORS[event.category || ''] || colors.primary
+    /* ── Animations Corporate ── */
+    const headerAnim = useSharedValue(0)
+    const aura1Y = useSharedValue(0)
+    const aura2X = useSharedValue(0)
+    const datePulse = useSharedValue(0)
+    const sheetAnim = useSharedValue(0)
+
+    useEffect(() => {
+        headerAnim.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.quad) })
+
+        aura1Y.value = withRepeat(
+            withSequence(
+                withTiming(25, { duration: 6000, easing: Easing.inOut(Easing.quad) }),
+                withTiming(-10, { duration: 6000, easing: Easing.inOut(Easing.quad) })
+            ), -1, true
+        )
+        aura2X.value = withRepeat(
+            withSequence(
+                withTiming(-30, { duration: 7000, easing: Easing.inOut(Easing.quad) }),
+                withTiming(15, { duration: 7000, easing: Easing.inOut(Easing.quad) })
+            ), -1, true
+        )
+
+        datePulse.value = withRepeat(
+            withSequence(
+                withTiming(1, { duration: 2500, easing: Easing.inOut(Easing.ease) }),
+                withTiming(0, { duration: 2500, easing: Easing.inOut(Easing.ease) }),
+            ), -1, false
+        )
+    }, [])
+
+    useEffect(() => {
+        sheetAnim.value = withSpring(showModal ? 1 : 0, { damping: 20, stiffness: 180 })
+    }, [showModal])
+
+    const styleHeader = useAnimatedStyle(() => ({
+        opacity: headerAnim.value,
+        transform: [{ translateY: 30 * (1 - headerAnim.value) }],
+    }))
+    const aura1Style = useAnimatedStyle(() => ({ transform: [{ translateY: aura1Y.value }] }))
+    const aura2Style = useAnimatedStyle(() => ({ transform: [{ translateX: aura2X.value }] }))
+
+    const dateGlowStyle = useAnimatedStyle(() => ({
+        opacity: interpolate(datePulse.value, [0, 1], [0.15, 0.45]),
+        transform: [{ scale: interpolate(datePulse.value, [0, 1], [1, 1.15]) }],
+    }))
+
+    const sheetStyle = useAnimatedStyle(() => ({
+        opacity: sheetAnim.value,
+        transform: [{ translateY: interpolate(sheetAnim.value, [0, 1], [400, 0]) }],
+    }))
+
+    const overlayStyle = useAnimatedStyle(() => ({
+        opacity: sheetAnim.value,
+    }))
+
     const isFree = event.price_standard === 0
     const hasVip = (event.price_vip ?? 0) > 0
     const isRegistered = !!registration
@@ -96,7 +429,6 @@ export default function EventDetailScreen({ route, navigation }: any) {
                 return
             }
 
-            // Inscription gratuite → confirmée immédiatement
             if (isFreeTicket) {
                 Alert.alert(
                     t('✅ Inscription confirmée !'),
@@ -106,7 +438,6 @@ export default function EventDetailScreen({ route, navigation }: any) {
                 return
             }
 
-            // Inscription payante → ouvrir Kkiapay pour finaliser tout de suite
             if (reg?.id) {
                 setPendingRegistration({ id: reg.id, amount: selectedPrice })
                 setShowKkiapay(true)
@@ -118,7 +449,6 @@ export default function EventDetailScreen({ route, navigation }: any) {
         }
     }
 
-    /* ── Confirmer le paiement Kkiapay → PATCH registration ── */
     const handlePaymentSuccess = async (txId: string) => {
         setShowKkiapay(false)
         if (!pendingRegistration) return
@@ -161,210 +491,366 @@ export default function EventDetailScreen({ route, navigation }: any) {
         }
     }
 
+    const metaInfos = [
+        {
+            icon: 'calendar-outline' as const,
+            label: t('Date'),
+            value: formatDateLong(event.start_date),
+        },
+        {
+            icon: 'time-outline' as const,
+            label: t('Heure'),
+            value: `${formatTime(event.start_date)}${event.end_date ? ` → ${formatTime(event.end_date)}` : ''}`,
+        },
+        {
+            icon: 'location-outline' as const,
+            label: t('Lieu'),
+            value: event.address || event.location || '—',
+        },
+        {
+            icon: 'people-outline' as const,
+            label: t('Capacité'),
+            value: event.max_capacity ? `${event.max_capacity} ${t('places')}` : t('Non limité'),
+        },
+    ]
+
     return (
-        <LinearGradient colors={[colors.background, colors.surfaceWarm]} style={styles.container}>
-            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+        <View style={styles.container}>
+            {/* 🎨 BACKGROUND PREMIUM : Auras */}
+            <Animated.View style={[styles.aura, styles.aura1, aura1Style]} />
+            <Animated.View style={[styles.aura, styles.aura2, aura2Style]} />
 
-                {/* Header coloré */}
-                <View style={[styles.header, { backgroundColor: catColor }]}>
-                    <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                        <View style={styles.backCircle}>
-                            <ArrowLeft size={20} color="#FFF" strokeWidth={1.75} />
-                        </View>
-                    </TouchableOpacity>
-
-                    {/* Pattern décoratif */}
-                    <View style={styles.headerPattern} />
-
-                    {/* Badges */}
-                    <View style={styles.headerBadges}>
-                        {event.is_featured && (
-                            <View style={styles.featuredBadge}>
-                                <Star size={9} color={catColor} strokeWidth={1.75} />
-                                <Text style={[styles.featuredText, { color: catColor }]}>{t('À la une')}</Text>
-                            </View>
-                        )}
-                        {event.category && (
-                            <View style={styles.catBadge}>
-                                <Text style={styles.catText}>{event.category}</Text>
-                            </View>
-                        )}
+            {/* NAV BAR */}
+            <View style={styles.navBar}>
+                <Pressable onPress={() => navigation.goBack()} style={styles.navBack}>
+                    <View style={styles.iconContainer}>
+                        <Ionicons name="arrow-back" size={22} color={C.primary} />
                     </View>
+                </Pressable>
 
-                    {/* Grande date */}
-                    <View style={styles.headerDateWrap}>
-                        <Text style={styles.headerDay}>{new Date(event.start_date).getDate()}</Text>
-                        <Text style={styles.headerMonth}>
-                            {new Date(event.start_date).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
-                        </Text>
+                <View style={{ flex: 1 }} />
+
+                {event.is_featured && (
+                    <View style={styles.featuredNavBadge}>
+                        <Ionicons name="star" size={11} color={C.accent} />
+                        <Text style={styles.featuredNavText}>{t('À la une')}</Text>
                     </View>
-
-                    {isRegistered && (
-                        <View style={styles.registeredBanner}>
-                            <CheckCircle size={16} color={colors.success} strokeWidth={1.75} />
-                            <Text style={styles.registeredText}>{t('Vous êtes inscrit')}</Text>
-                        </View>
-                    )}
-                </View>
-
-                {/* Carte principale */}
-                <View style={styles.card}>
-                    <Text style={styles.title}>{event.title}</Text>
-
-                    {/* Méta-infos */}
-                    <View style={styles.metaGrid}>
-                        {[
-                            { icon: 'calendar-outline' as const, label: t('Date'), value: formatDateLong(event.start_date) },
-                            { icon: 'time-outline' as const, label: t('Heure'), value: `${formatTime(event.start_date)}${event.end_date ? ` → ${formatTime(event.end_date)}` : ''}` },
-                            { icon: 'location-outline' as const, label: t('Lieu'), value: event.address || event.location },
-                            { icon: 'people-outline' as const, label: t('Capacité'), value: event.max_capacity ? `${event.max_capacity} ${t('places')}` : t('Non limité') },
-                        ].map((item, i) => (
-                            <View key={i} style={styles.metaItem}>
-                                <View style={[styles.metaIcon, { backgroundColor: catColor + '15' }]}>
-                                    <Ionicons name={item.icon} size={16} color={catColor} />
-                                </View>
-                                <View style={styles.metaText}>
-                                    <Text style={styles.metaLabel}>{item.label}</Text>
-                                    <Text style={styles.metaValue} numberOfLines={2}>{item.value}</Text>
-                                </View>
-                            </View>
-                        ))}
-                    </View>
-
-                    <View style={styles.divider} />
-
-                    {/* Description */}
-                    <Text style={styles.sectionTitle}>{t('À propos de l\'événement')}</Text>
-                    <Text style={styles.description}>{event.description || event.short_description || t('Rejoignez-nous pour cet événement exceptionnel organisé par Retour Gagnant Bénin.')}</Text>
-
-                    <View style={styles.divider} />
-
-                    {/* Tarifs */}
-                    <Text style={styles.sectionTitle}>{t('Tarifs & Billets')}</Text>
-
-                    {/* Standard */}
-                    <TouchableOpacity
-                        style={[styles.ticketCard, selectedTicket === 'standard' && { borderColor: catColor, backgroundColor: catColor + '08' }]}
-                        onPress={() => setSelectedTicket('standard')}
-                        activeOpacity={0.8}
-                    >
-                        <View style={[styles.ticketRadio, selectedTicket === 'standard' && { borderColor: catColor }]}>
-                            {selectedTicket === 'standard' && <View style={[styles.ticketRadioInner, { backgroundColor: catColor }]} />}
-                        </View>
-                        <View style={styles.ticketInfo}>
-                            <Text style={styles.ticketName}>{t('Billet Standard')}</Text>
-                            <Text style={styles.ticketDesc}>{t('Accès à l\'événement, networking')}</Text>
-                        </View>
-                        <Text style={[styles.ticketPrice, isFree && { color: colors.success }]}>
-                            {formatPrice(event.price_standard, event.currency, t)}
-                        </Text>
-                    </TouchableOpacity>
-
-                    {/* VIP */}
-                    {hasVip && (
-                        <TouchableOpacity
-                            style={[styles.ticketCard, selectedTicket === 'vip' && { borderColor: catColor, backgroundColor: catColor + '08' }]}
-                            onPress={() => setSelectedTicket('vip')}
-                            activeOpacity={0.8}
-                        >
-                            <View style={[styles.ticketRadio, selectedTicket === 'vip' && { borderColor: catColor }]}>
-                                {selectedTicket === 'vip' && <View style={[styles.ticketRadioInner, { backgroundColor: catColor }]} />}
-                            </View>
-                            <View style={styles.ticketInfo}>
-                                <View style={styles.vipRow}>
-                                    <Text style={styles.ticketName}>{t('Billet VIP')}</Text>
-                                    <View style={[styles.vipBadge, { backgroundColor: catColor + '20' }]}>
-                                        <Star size={8} color={catColor} strokeWidth={1.75} />
-                                        <Text style={[styles.vipBadgeText, { color: catColor }]}>VIP</Text>
-                                    </View>
-                                </View>
-                                <Text style={styles.ticketDesc}>{t('Accès prioritaire, places réservées, cocktail')}</Text>
-                            </View>
-                            <Text style={styles.ticketPrice}>
-                                {formatPrice(event.price_vip || 0, event.currency, t)}
-                            </Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
-
-                <View style={{ height: 120 }} />
-            </ScrollView>
-
-            {/* Bouton fixe bas */}
-            <View style={styles.stickyBtn}>
-                {isRegistered ? (
-                    <View style={[styles.btnRegistered, { backgroundColor: colors.successBg, borderColor: colors.success + '40' }]}>
-                        <CheckCircle size={20} color={colors.success} strokeWidth={1.75} />
-                        <Text style={[styles.btnText, { color: colors.success }]}>{t('Inscription confirmée')}</Text>
-                    </View>
-                ) : (
-                    <TouchableOpacity
-                        style={[styles.btn, { backgroundColor: catColor }, loading && styles.btnDisabled]}
-                        activeOpacity={0.88}
-                        onPress={() => setShowModal(true)}
-                        disabled={loading}
-                    >
-                        {loading ? (
-                            <ActivityIndicator color="#FFF" size="small" />
-                        ) : (
-                            <>
-                                <Ionicons name="ticket-outline" size={20} color="#FFF" />
-                                <Text style={styles.btnText}>
-                                    {t('S\'inscrire ·')} {formatPrice(selectedPrice, event.currency, t)}
-                                </Text>
-                            </>
-                        )}
-                    </TouchableOpacity>
                 )}
             </View>
 
-            {/* Modal confirmation */}
-            <Modal visible={showModal} transparent animationType="slide" onRequestClose={() => setShowModal(false)}>
-                <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowModal(false)}>
-                    <View style={styles.sheet}>
-                        <View style={styles.sheetHandle} />
-                        <Text style={styles.sheetTitle}>{t('Confirmer l\'inscription')}</Text>
-                        <Text style={styles.sheetEvent} numberOfLines={2}>{event.title}</Text>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.scroll}
+            >
+                {/* ═══ HERO : DATE + CATÉGORIE ═══ */}
+                <Animated.View style={[styles.heroContainer, styleHeader]}>
+                    {/* Halo doré derrière la date */}
+                    <Animated.View style={[styles.dateGlow, dateGlowStyle]} />
 
-                        <View style={styles.sheetInfoRow}>
-                            <Ionicons name="ticket-outline" size={16} color={catColor} />
-                            <Text style={styles.sheetInfoText}>
-                                {t('Billet')} <Text style={{ fontFamily: 'Inter_700Bold', color: catColor }}>{selectedTicket.toUpperCase()}</Text>
+                    {/* Carte date massive */}
+                    <View style={styles.dateCard}>
+                        <Text style={styles.dateDay}>
+                            {new Date(event.start_date).getDate()}
+                        </Text>
+                        <View style={styles.dateDivider} />
+                        <Text style={styles.dateMonth}>
+                            {new Date(event.start_date).toLocaleDateString('fr-FR', { month: 'short' }).toUpperCase().replace('.', '')}
+                        </Text>
+                        <Text style={styles.dateYear}>
+                            {new Date(event.start_date).getFullYear()}
+                        </Text>
+                    </View>
+
+                    {/* Catégorie + inscrit */}
+                    <View style={styles.heroBadges}>
+                        {event.category && (
+                            <View style={styles.catBadge}>
+                                <View style={styles.catDot} />
+                                <Text style={styles.catText}>{event.category.toUpperCase()}</Text>
+                            </View>
+                        )}
+                        {isRegistered && (
+                            <View style={styles.registeredBadge}>
+                                <Ionicons name="checkmark-circle" size={12} color={C.success} />
+                                <Text style={styles.registeredText}>{t('Inscrit')}</Text>
+                            </View>
+                        )}
+                    </View>
+
+                    {/* Titre */}
+                    <Text style={styles.title}>{event.title}</Text>
+
+                    {event.short_description && (
+                        <Text style={styles.subtitle}>{event.short_description}</Text>
+                    )}
+                </Animated.View>
+
+                {/* ═══ MÉTA INFOS (4 cards en grille) ═══ */}
+                <AnimatedSection delay={150}>
+                    <View style={styles.metaGrid}>
+                        {metaInfos.map((item, i) => (
+                            <View key={i} style={styles.metaCard}>
+                                <View style={styles.metaIconWrap}>
+                                    <Ionicons name={item.icon} size={16} color={C.accent} />
+                                </View>
+                                <Text style={styles.metaLabel}>{item.label}</Text>
+                                <Text style={styles.metaValue} numberOfLines={2}>
+                                    {item.value}
+                                </Text>
+                            </View>
+                        ))}
+                    </View>
+                </AnimatedSection>
+
+                {/* ═══ DESCRIPTION ═══ */}
+                <AnimatedSection delay={250}>
+                    <View style={styles.card}>
+                        <View style={styles.cardHeader}>
+                            <View style={styles.cardHeaderBadge}>
+                                <Ionicons name="information-circle-outline" size={15} color={C.primary} />
+                            </View>
+                            <Text style={styles.cardTitle}>{t("À propos de l'événement")}</Text>
+                        </View>
+
+                        <Text style={styles.description}>
+                            {event.description || event.short_description || t('Rejoignez-nous pour cet événement exceptionnel organisé par Retour Gagnant Bénin.')}
+                        </Text>
+                    </View>
+                </AnimatedSection>
+
+                {/* ═══ TARIFS & BILLETS ═══ */}
+                <AnimatedSection delay={350}>
+                    <View style={styles.card}>
+                        <View style={styles.cardHeader}>
+                            <View style={styles.cardHeaderBadge}>
+                                <Ionicons name="ticket-outline" size={15} color={C.primary} />
+                            </View>
+                            <Text style={styles.cardTitle}>{t('Tarifs & Billets')}</Text>
+                            {isFree && (
+                                <View style={styles.freeBadge}>
+                                    <Text style={styles.freeBadgeText}>{t('GRATUIT')}</Text>
+                                </View>
+                            )}
+                        </View>
+
+                        <TicketCard
+                            type="standard"
+                            selected={selectedTicket === 'standard'}
+                            onSelect={() => setSelectedTicket('standard')}
+                            label={t('Billet Standard')}
+                            description={t("Accès à l'événement, networking")}
+                            price={formatPrice(event.price_standard, event.currency, t)}
+                            isFree={isFree}
+                            perks={[
+                                t('Accès à toutes les conférences'),
+                                t('Pause-café et networking'),
+                            ]}
+                        />
+
+                        {hasVip && (
+                            <TicketCard
+                                type="vip"
+                                selected={selectedTicket === 'vip'}
+                                onSelect={() => setSelectedTicket('vip')}
+                                label={t('Billet VIP')}
+                                description={t('Accès prioritaire, places réservées, cocktail')}
+                                price={formatPrice(event.price_vip || 0, event.currency, t)}
+                                isVip
+                                perks={[
+                                    t('Accès prioritaire à toutes les sessions'),
+                                    t('Places réservées au premier rang'),
+                                    t('Cocktail VIP & networking exclusif'),
+                                    t('Goodies premium offerts'),
+                                ]}
+                            />
+                        )}
+                    </View>
+                </AnimatedSection>
+
+                {/* ═══ NOTE INFO ═══ */}
+                <AnimatedSection delay={450}>
+                    <View style={styles.infoBox}>
+                        <View style={styles.infoIconWrap}>
+                            <Ionicons name="shield-checkmark" size={16} color={C.success} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.infoTitle}>{t('Inscription sécurisée')}</Text>
+                            <Text style={styles.infoText}>
+                                {t('Vos données sont protégées · Paiement sécurisé via Kkiapay')}
                             </Text>
-                            <Text style={[styles.sheetPrice, { color: catColor }]}>
+                        </View>
+                    </View>
+                </AnimatedSection>
+
+                <View style={{ height: 130 }} />
+            </ScrollView>
+
+            {/* ═══ CTA FIXE ═══ */}
+            <View style={styles.bottomBar}>
+                {isRegistered ? (
+                    <View style={styles.registeredBtn}>
+                        <View style={styles.registeredIconWrap}>
+                            <Ionicons name="checkmark-circle" size={22} color={C.success} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.registeredBtnLabel}>{t('Vous êtes inscrit')}</Text>
+                            <Text style={styles.registeredBtnSub}>{t('Confirmation envoyée par email')}</Text>
+                        </View>
+                    </View>
+                ) : (
+                    <>
+                        <View style={styles.bottomBarPrice}>
+                            <Text style={styles.bottomBarLabel}>
+                                {selectedTicket === 'vip' ? t('Billet VIP') : t('Billet Standard')}
+                            </Text>
+                            <Text style={styles.bottomBarValue}>
                                 {formatPrice(selectedPrice, event.currency, t)}
                             </Text>
                         </View>
 
-                        {!isFreeTicket && (
-                            <View style={styles.payNotice}>
-                                <Info size={15} color={colors.info} strokeWidth={1.75} />
-                                <Text style={styles.payNoticeText}>
-                                    {t('Après inscription, vous recevrez les instructions de paiement par WhatsApp ou email.')}
-                                </Text>
-                            </View>
-                        )}
-
                         <TouchableOpacity
-                            style={[styles.confirmBtn, { backgroundColor: catColor }, loading && styles.btnDisabled]}
-                            onPress={handleRegister}
+                            style={[styles.btn, loading && styles.btnDisabled]}
+                            activeOpacity={0.85}
+                            onPress={() => setShowModal(true)}
                             disabled={loading}
                         >
-                            {loading
-                                ? <ActivityIndicator color="#FFF" size="small" />
-                                : <Text style={styles.confirmBtnText}>
-                                    {isFreeTicket ? t('Confirmer l\'inscription') : t('Confirmer et payer plus tard')}
-                                </Text>
-                            }
+                            {loading ? (
+                                <ActivityIndicator color={C.primaryText} size="small" />
+                            ) : (
+                                <>
+                                    <Ionicons name="ticket" size={18} color={C.accent} style={{ marginRight: 8 }} />
+                                    <Text style={styles.btnText}>{t("S'inscrire")}</Text>
+                                    <Ionicons name="arrow-forward" size={18} color={C.accent} style={{ marginLeft: 8 }} />
+                                </>
+                            )}
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowModal(false)}>
-                            <Text style={styles.cancelText}>{t('Annuler')}</Text>
-                        </TouchableOpacity>
-                    </View>
-                </TouchableOpacity>
-            </Modal>
+                    </>
+                )}
+            </View>
 
-            {/* Paiement Kkiapay direct (events payants) */}
+            {/* ═══ MODAL CONFIRMATION ═══ */}
+            {showModal && (
+                <Modal
+                    visible={showModal}
+                    transparent
+                    animationType="none"
+                    onRequestClose={() => setShowModal(false)}
+                >
+                    <View style={styles.modalOverlayContainer}>
+                        <Animated.View style={[styles.modalBg, overlayStyle]}>
+                            <Pressable
+                                style={StyleSheet.absoluteFillObject}
+                                onPress={() => setShowModal(false)}
+                            />
+                        </Animated.View>
+
+                        <Animated.View style={[styles.sheet, sheetStyle]}>
+                            <View style={styles.sheetHandle} />
+
+                            <View style={styles.sheetHeader}>
+                                <View>
+                                    <Text style={styles.sheetSubtitle}>{t('Confirmation')}</Text>
+                                    <Text style={styles.sheetTitle}>{t('Confirmer votre inscription')}</Text>
+                                </View>
+                                <Pressable
+                                    onPress={() => setShowModal(false)}
+                                    style={styles.sheetCloseBtn}
+                                >
+                                    <Ionicons name="close" size={20} color={C.primary} />
+                                </Pressable>
+                            </View>
+
+                            <Text style={styles.sheetEvent} numberOfLines={2}>
+                                {event.title}
+                            </Text>
+
+                            {/* Récap inscription */}
+                            <View style={styles.recap}>
+                                <View style={styles.recapRow}>
+                                    <View style={styles.recapIconWrap}>
+                                        <Ionicons name="ticket-outline" size={14} color={C.primary} />
+                                    </View>
+                                    <Text style={styles.recapLabel}>{t('Type de billet')}</Text>
+                                    <View style={styles.recapBadge}>
+                                        <Text style={styles.recapBadgeText}>
+                                            {selectedTicket.toUpperCase()}
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                <View style={styles.recapDivider} />
+
+                                <View style={styles.recapRow}>
+                                    <View style={styles.recapIconWrap}>
+                                        <Ionicons name="calendar-outline" size={14} color={C.primary} />
+                                    </View>
+                                    <Text style={styles.recapLabel}>{t('Date')}</Text>
+                                    <Text style={styles.recapValue} numberOfLines={1}>
+                                        {new Date(event.start_date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                    </Text>
+                                </View>
+
+                                <View style={styles.recapDivider} />
+
+                                <View style={styles.recapRow}>
+                                    <View style={styles.recapIconWrap}>
+                                        <Ionicons name="cash-outline" size={14} color={C.primary} />
+                                    </View>
+                                    <Text style={styles.recapLabel}>{t('Montant')}</Text>
+                                    <Text style={[
+                                        styles.recapPrice,
+                                        isFreeTicket && { color: C.success },
+                                    ]}>
+                                        {formatPrice(selectedPrice, event.currency, t)}
+                                    </Text>
+                                </View>
+                            </View>
+
+                            {!isFreeTicket && (
+                                <View style={styles.payNotice}>
+                                    <Ionicons name="information-circle" size={16} color={C.info} />
+                                    <Text style={styles.payNoticeText}>
+                                        {t('Le paiement sécurisé sera lancé immédiatement après confirmation.')}
+                                    </Text>
+                                </View>
+                            )}
+
+                            <TouchableOpacity
+                                style={[styles.confirmBtn, loading && styles.btnDisabled]}
+                                onPress={handleRegister}
+                                disabled={loading}
+                                activeOpacity={0.85}
+                            >
+                                {loading ? (
+                                    <ActivityIndicator color={C.primaryText} size="small" />
+                                ) : (
+                                    <>
+                                        <Ionicons
+                                            name={isFreeTicket ? 'checkmark-circle' : 'card-outline'}
+                                            size={18}
+                                            color={C.accent}
+                                            style={{ marginRight: 8 }}
+                                        />
+                                        <Text style={styles.confirmBtnText}>
+                                            {isFreeTicket ? t("Confirmer l'inscription") : t('Confirmer et payer')}
+                                        </Text>
+                                        <Ionicons name="arrow-forward" size={18} color={C.accent} style={{ marginLeft: 8 }} />
+                                    </>
+                                )}
+                            </TouchableOpacity>
+
+                            <Pressable
+                                style={styles.cancelBtn}
+                                onPress={() => setShowModal(false)}
+                            >
+                                <Text style={styles.cancelText}>{t('Annuler')}</Text>
+                            </Pressable>
+                        </Animated.View>
+                    </View>
+                </Modal>
+            )}
+
+            {/* Paiement Kkiapay */}
             <KkiapayModal
                 visible={showKkiapay}
                 amount={String(pendingRegistration?.amount || selectedPrice)}
@@ -372,146 +858,628 @@ export default function EventDetailScreen({ route, navigation }: any) {
                 onClose={() => setShowKkiapay(false)}
                 onSuccess={handlePaymentSuccess}
             />
-        </LinearGradient>
+        </View>
     )
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════
+   STYLES
+═══════════════════════════════════════════════════════════ */
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
-    scroll: { paddingBottom: spacing.xl },
+    container: {
+        flex: 1,
+        backgroundColor: C.bg,
+    },
 
-    header: {
-        paddingTop: Platform.OS === 'ios' ? 64 : 48,
-        paddingBottom: 60,
-        paddingHorizontal: spacing.lg,
-        position: 'relative',
+    /* ── Auras Corporate ── */
+    aura: {
+        position: 'absolute',
+        width: width * 0.9,
+        height: width * 0.9,
+        borderRadius: width,
+        opacity: 0.05,
+    },
+    aura1: {
+        top: -100,
+        right: -100,
+        backgroundColor: C.primary,
+    },
+    aura2: {
+        bottom: 50,
+        left: -100,
+        backgroundColor: C.auraGreen,
+    },
+
+    /* ── Nav Bar ── */
+    navBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingTop: Platform.OS === 'ios' ? 60 : 40,
+        paddingHorizontal: 20,
+        paddingBottom: 10,
+        zIndex: 10,
+    },
+    navBack: {
+        width: 44,
+        height: 44,
+        justifyContent: 'center',
+    },
+    iconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: C.surface,
+        borderWidth: 1,
+        borderColor: C.border,
+        justifyContent: 'center',
         alignItems: 'center',
     },
-    backBtn: { position: 'absolute', top: Platform.OS === 'ios' ? 54 : 38, left: spacing.lg },
-    backCircle: {
-        width: 38, height: 38, borderRadius: 19,
-        backgroundColor: 'rgba(255,255,255,0.22)',
-        alignItems: 'center', justifyContent: 'center',
+    featuredNavBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: 'rgba(212, 160, 23, 0.12)',
+        borderRadius: 999,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderWidth: 1,
+        borderColor: 'rgba(212, 160, 23, 0.3)',
     },
-    headerPattern: { position: 'absolute', inset: 0, opacity: 0.07 },
-    headerBadges: { flexDirection: 'row', gap: 8, marginTop: 8 },
-    featuredBadge: {
-        flexDirection: 'row', alignItems: 'center', gap: 4,
-        backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 20,
-        paddingHorizontal: 10, paddingVertical: 5,
+    featuredNavText: {
+        fontSize: 11,
+        fontWeight: '800',
+        color: C.accentDark,
+        letterSpacing: 0.3,
     },
-    featuredText: { fontSize: 10, fontFamily: 'Inter_700Bold' },
+
+    scroll: {
+        paddingHorizontal: 20,
+        paddingBottom: 40,
+    },
+
+    /* ── Hero ── */
+    heroContainer: {
+        alignItems: 'center',
+        marginTop: 12,
+        marginBottom: 28,
+        position: 'relative',
+    },
+    dateGlow: {
+        position: 'absolute',
+        top: 0,
+        width: 220,
+        height: 220,
+        borderRadius: 110,
+        backgroundColor: C.accent,
+    },
+    dateCard: {
+        backgroundColor: C.primary,
+        borderRadius: 22,
+        padding: 20,
+        alignItems: 'center',
+        minWidth: 110,
+        borderWidth: 1.5,
+        borderColor: 'rgba(212, 160, 23, 0.4)',
+        shadowColor: C.primary,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 18,
+        elevation: 10,
+        marginBottom: 20,
+    },
+    dateDay: {
+        fontSize: 56,
+        fontWeight: '800',
+        color: C.primaryText,
+        letterSpacing: -2,
+        lineHeight: 60,
+    },
+    dateDivider: {
+        width: 50,
+        height: 1.5,
+        backgroundColor: C.accent,
+        marginVertical: 6,
+        opacity: 0.6,
+    },
+    dateMonth: {
+        fontSize: 13,
+        fontWeight: '800',
+        color: C.accent,
+        letterSpacing: 3,
+    },
+    dateYear: {
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.6)',
+        fontWeight: '600',
+        marginTop: 2,
+        letterSpacing: 1,
+    },
+    heroBadges: {
+        flexDirection: 'row',
+        gap: 8,
+        marginBottom: 16,
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+    },
     catBadge: {
-        backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20,
-        paddingHorizontal: 10, paddingVertical: 5,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: C.surface,
+        borderRadius: 999,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderWidth: 1,
+        borderColor: C.border,
     },
-    catText: { fontSize: 10, fontFamily: 'Inter_700Bold', color: '#FFF' },
-    headerDateWrap: { alignItems: 'center', marginTop: 16 },
-    headerDay: { fontSize: 56, fontFamily: 'Inter_800ExtraBold', color: '#FFF', lineHeight: 60 },
-    headerMonth: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: 'rgba(255,255,255,0.85)', textTransform: 'capitalize' },
-    registeredBanner: {
-        flexDirection: 'row', alignItems: 'center', gap: 6,
-        backgroundColor: colors.successBg, borderRadius: 20,
-        paddingHorizontal: 14, paddingVertical: 7, marginTop: 14,
+    catDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: C.accent,
     },
-    registeredText: { fontSize: 12, fontFamily: 'Inter_700Bold', color: colors.success },
-
-    card: {
-        marginHorizontal: spacing.lg,
-        marginTop: -28,
-        backgroundColor: colors.surface,
-        borderRadius: radius.xl,
-        padding: spacing.xl,
-        ...shadows.lg,
-        borderWidth: 1, borderColor: colors.borderLight,
+    catText: {
+        fontSize: 10,
+        fontWeight: '800',
+        color: C.primary,
+        letterSpacing: 1,
     },
-    title: { ...typography.h2, color: colors.textPrimary, marginBottom: 16, textAlign: 'center' },
+    registeredBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        backgroundColor: 'rgba(10, 107, 59, 0.12)',
+        borderRadius: 999,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderWidth: 1,
+        borderColor: 'rgba(10, 107, 59, 0.3)',
+    },
+    registeredText: {
+        fontSize: 10,
+        fontWeight: '800',
+        color: C.success,
+        letterSpacing: 0.5,
+    },
+    title: {
+        fontSize: 26,
+        fontWeight: '800',
+        color: C.primary,
+        letterSpacing: -0.5,
+        textAlign: 'center',
+        lineHeight: 32,
+        paddingHorizontal: 8,
+    },
+    subtitle: {
+        fontSize: 13.5,
+        color: C.textSec,
+        marginTop: 10,
+        lineHeight: 19,
+        textAlign: 'center',
+        paddingHorizontal: 16,
+        fontWeight: '400',
+    },
 
-    metaGrid: { gap: 12 },
-    metaItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-    metaIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-    metaText: { flex: 1 },
-    metaLabel: { fontSize: 10, fontFamily: 'Inter_500Medium', color: colors.textMuted, marginBottom: 2 },
-    metaValue: { ...typography.bodySmall, color: colors.textPrimary, fontFamily: 'Inter_600SemiBold' },
-
-    divider: { height: 1, backgroundColor: colors.borderLight, marginVertical: spacing.lg },
-
-    sectionTitle: { ...typography.h3, fontSize: 15, color: colors.textPrimary, marginBottom: 12 },
-    description: { ...typography.bodySmall, color: colors.textSecondary, lineHeight: 22 },
-
-    // Tickets
-    ticketCard: {
-        flexDirection: 'row', alignItems: 'center', gap: 12,
-        padding: 14, borderRadius: radius.md,
-        borderWidth: 1.5, borderColor: colors.borderLight,
+    /* ── Meta Grid (2x2) ── */
+    metaGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+        marginBottom: 18,
+    },
+    metaCard: {
+        flex: 1,
+        minWidth: '47%',
+        backgroundColor: C.surface,
+        borderRadius: 14,
+        padding: 14,
+        borderWidth: 1.2,
+        borderColor: C.border,
+        shadowColor: C.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
+        elevation: 1,
+    },
+    metaIconWrap: {
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        backgroundColor: 'rgba(212, 160, 23, 0.10)',
+        alignItems: 'center',
+        justifyContent: 'center',
         marginBottom: 10,
+        borderWidth: 1,
+        borderColor: 'rgba(212, 160, 23, 0.2)',
     },
-    ticketRadio: {
-        width: 20, height: 20, borderRadius: 10,
-        borderWidth: 2, borderColor: colors.border,
-        alignItems: 'center', justifyContent: 'center',
+    metaLabel: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: C.textMuted,
+        letterSpacing: 0.5,
+        textTransform: 'uppercase',
+        marginBottom: 3,
     },
-    ticketRadioInner: { width: 10, height: 10, borderRadius: 5 },
-    ticketInfo: { flex: 1 },
-    ticketName: { ...typography.label, color: colors.textPrimary },
-    ticketDesc: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
-    ticketPrice: { ...typography.label, color: colors.textPrimary, fontSize: 14 },
-    vipRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    vipBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
-    vipBadgeText: { fontSize: 9, fontFamily: 'Inter_800ExtraBold' },
+    metaValue: {
+        fontSize: 12.5,
+        fontWeight: '600',
+        color: C.primary,
+        letterSpacing: -0.1,
+        lineHeight: 16,
+    },
 
-    // Bouton fixe
-    stickyBtn: {
-        position: 'absolute', bottom: 0, left: 0, right: 0,
-        backgroundColor: colors.surface,
-        paddingHorizontal: spacing.lg,
-        paddingBottom: Platform.OS === 'ios' ? 36 : 20,
+    /* ── Card générique ── */
+    card: {
+        backgroundColor: C.surface,
+        borderRadius: 16,
+        padding: 20,
+        borderWidth: 1.2,
+        borderColor: C.border,
+        marginBottom: 18,
+        shadowColor: C.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 12,
+        elevation: 2,
+    },
+    cardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 16,
+    },
+    cardHeaderBadge: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        backgroundColor: 'rgba(13, 43, 78, 0.06)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    cardTitle: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: C.primary,
+        letterSpacing: -0.1,
+        flex: 1,
+    },
+    freeBadge: {
+        backgroundColor: 'rgba(10, 107, 59, 0.12)',
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderWidth: 1,
+        borderColor: 'rgba(10, 107, 59, 0.3)',
+    },
+    freeBadgeText: {
+        fontSize: 10,
+        fontWeight: '800',
+        color: C.success,
+        letterSpacing: 0.5,
+    },
+    description: {
+        fontSize: 13.5,
+        color: C.textSec,
+        lineHeight: 21,
+        fontWeight: '400',
+    },
+
+    /* ── Info Box ── */
+    infoBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        backgroundColor: 'rgba(10, 107, 59, 0.07)',
+        borderRadius: 14,
+        padding: 14,
+        borderWidth: 1,
+        borderColor: 'rgba(10, 107, 59, 0.18)',
+    },
+    infoIconWrap: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        backgroundColor: 'rgba(10, 107, 59, 0.15)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    infoTitle: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: C.success,
+        letterSpacing: -0.1,
+        marginBottom: 2,
+    },
+    infoText: {
+        fontSize: 11.5,
+        color: C.textSec,
+        fontWeight: '500',
+        lineHeight: 16,
+    },
+
+    /* ── Bottom Bar ── */
+    bottomBar: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 14,
+        paddingHorizontal: 20,
         paddingTop: 14,
-        borderTopWidth: 1, borderTopColor: colors.borderLight,
-        ...shadows.md,
+        paddingBottom: Platform.OS === 'ios' ? 34 : 18,
+        backgroundColor: 'rgba(255, 255, 255, 0.96)',
+        borderTopWidth: 1,
+        borderTopColor: C.border,
+        shadowColor: C.primary,
+        shadowOffset: { width: 0, height: -8 },
+        shadowOpacity: 0.06,
+        shadowRadius: 12,
+        elevation: 10,
+    },
+    bottomBarPrice: {
+        flex: 0.85,
+    },
+    bottomBarLabel: {
+        fontSize: 11,
+        color: C.textSec,
+        fontWeight: '600',
+        letterSpacing: 0.3,
+        textTransform: 'uppercase',
+        marginBottom: 2,
+    },
+    bottomBarValue: {
+        fontSize: 18,
+        fontWeight: '800',
+        color: C.primary,
+        letterSpacing: -0.4,
     },
     btn: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        gap: 10, paddingVertical: 16, borderRadius: radius.md,
-        shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 10, elevation: 6,
+        flex: 1.15,
+        flexDirection: 'row',
+        height: 56,
+        backgroundColor: C.primary,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: C.primary,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
+        shadowRadius: 16,
+        elevation: 8,
     },
-    btnRegistered: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        gap: 10, paddingVertical: 16, borderRadius: radius.md, borderWidth: 1.5,
+    btnDisabled: {
+        backgroundColor: '#CBD5E1',
+        shadowOpacity: 0,
+        elevation: 0,
     },
-    btnDisabled: { opacity: 0.6 },
-    btnText: { fontSize: 15, fontFamily: 'Inter_700Bold', color: '#FFF' },
+    btnText: {
+        color: C.primaryText,
+        fontSize: 15,
+        fontWeight: '700',
+        letterSpacing: 0.2,
+    },
 
-    // Modal
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-    sheet: {
-        backgroundColor: colors.surface,
-        borderTopLeftRadius: 24, borderTopRightRadius: 24,
-        padding: spacing.lg,
-        paddingBottom: Platform.OS === 'ios' ? 44 : spacing.xl,
+    /* ── Inscrit (état) ── */
+    registeredBtn: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
         gap: 12,
+        height: 60,
+        backgroundColor: 'rgba(10, 107, 59, 0.10)',
+        borderRadius: 14,
+        paddingHorizontal: 18,
+        borderWidth: 1.2,
+        borderColor: 'rgba(10, 107, 59, 0.3)',
     },
-    sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 8 },
-    sheetTitle: { ...typography.h3, color: colors.textPrimary, textAlign: 'center' },
-    sheetEvent: { ...typography.bodySmall, color: colors.textSecondary, textAlign: 'center' },
-    sheetInfoRow: {
-        flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: 14,
+    registeredIconWrap: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: 'rgba(10, 107, 59, 0.18)',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    sheetInfoText: { ...typography.bodySmall, color: colors.textSecondary, flex: 1 },
-    sheetPrice: { fontSize: 14, fontFamily: 'Inter_800ExtraBold' },
+    registeredBtnLabel: {
+        fontSize: 14,
+        fontWeight: '800',
+        color: C.success,
+        letterSpacing: -0.1,
+    },
+    registeredBtnSub: {
+        fontSize: 11,
+        color: C.textSec,
+        fontWeight: '500',
+        marginTop: 2,
+    },
+
+    /* ═══ MODAL ═══ */
+    modalOverlayContainer: {
+        flex: 1,
+        justifyContent: 'flex-end',
+    },
+    modalBg: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(13, 43, 78, 0.55)',
+    },
+    sheet: {
+        backgroundColor: C.bg,
+        borderTopLeftRadius: 28,
+        borderTopRightRadius: 28,
+        paddingHorizontal: 24,
+        paddingTop: 12,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+        shadowColor: C.primary,
+        shadowOpacity: 0.3,
+        shadowRadius: 30,
+        shadowOffset: { width: 0, height: -15 },
+        elevation: 20,
+        borderTopWidth: 1,
+        borderColor: C.border,
+    },
+    sheetHandle: {
+        width: 44,
+        height: 4,
+        backgroundColor: C.border,
+        borderRadius: 2,
+        alignSelf: 'center',
+        marginBottom: 18,
+    },
+    sheetHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 12,
+    },
+    sheetSubtitle: {
+        fontSize: 11,
+        fontWeight: '800',
+        color: C.accentDark,
+        letterSpacing: 1.2,
+        textTransform: 'uppercase',
+        marginBottom: 4,
+    },
+    sheetTitle: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: C.primary,
+        letterSpacing: -0.4,
+    },
+    sheetCloseBtn: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: C.surface,
+        borderWidth: 1,
+        borderColor: C.border,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    sheetEvent: {
+        fontSize: 13,
+        color: C.textSec,
+        fontWeight: '500',
+        marginBottom: 18,
+        lineHeight: 18,
+    },
+
+    /* ── Recap ── */
+    recap: {
+        backgroundColor: C.surface,
+        borderRadius: 14,
+        padding: 16,
+        borderWidth: 1.2,
+        borderColor: C.border,
+        marginBottom: 14,
+    },
+    recapRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    recapIconWrap: {
+        width: 30,
+        height: 30,
+        borderRadius: 10,
+        backgroundColor: 'rgba(13, 43, 78, 0.06)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(13, 43, 78, 0.08)',
+    },
+    recapLabel: {
+        flex: 1,
+        fontSize: 12.5,
+        color: C.textSec,
+        fontWeight: '600',
+        letterSpacing: 0.2,
+    },
+    recapValue: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: C.primary,
+        letterSpacing: -0.1,
+    },
+    recapBadge: {
+        backgroundColor: C.primary,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 8,
+    },
+    recapBadgeText: {
+        fontSize: 10,
+        fontWeight: '800',
+        color: C.accent,
+        letterSpacing: 1,
+    },
+    recapPrice: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: C.primary,
+        letterSpacing: -0.3,
+    },
+    recapDivider: {
+        height: 1,
+        backgroundColor: C.border,
+        marginVertical: 10,
+    },
+
+    /* ── Pay Notice ── */
     payNotice: {
-        flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-        backgroundColor: colors.infoBg, borderRadius: radius.md, padding: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        backgroundColor: 'rgba(59, 130, 196, 0.08)',
+        borderRadius: 12,
+        padding: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(59, 130, 196, 0.2)',
+        marginBottom: 16,
     },
-    payNoticeText: { ...typography.caption, color: colors.info, flex: 1, lineHeight: 18 },
+    payNoticeText: {
+        flex: 1,
+        fontSize: 11.5,
+        color: C.info,
+        fontWeight: '500',
+        lineHeight: 16,
+    },
+
+    /* ── Confirm button ── */
     confirmBtn: {
-        paddingVertical: 15, borderRadius: radius.md,
-        alignItems: 'center', justifyContent: 'center',
+        height: 60,
+        backgroundColor: C.primary,
+        borderRadius: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: C.primary,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
+        shadowRadius: 16,
+        elevation: 8,
+        marginBottom: 10,
     },
-    confirmBtnText: { fontSize: 15, fontFamily: 'Inter_700Bold', color: '#FFF' },
-    cancelBtn: { paddingVertical: 12, alignItems: 'center', backgroundColor: colors.surfaceElevated, borderRadius: radius.md },
-    cancelText: { ...typography.button, color: colors.textSecondary },
+    confirmBtnText: {
+        color: C.primaryText,
+        fontSize: 15,
+        fontWeight: '700',
+        letterSpacing: 0.2,
+    },
+    cancelBtn: {
+        height: 50,
+        backgroundColor: C.surface,
+        borderRadius: 14,
+        borderWidth: 1.2,
+        borderColor: C.border,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    cancelText: {
+        color: C.textSec,
+        fontSize: 14,
+        fontWeight: '700',
+    },
 })

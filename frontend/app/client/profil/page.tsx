@@ -152,7 +152,11 @@ export default function ClientProfilPage() {
                         <Mail size={12} /> {profile?.email}
                     </p>
                     <p className="text-[10px] text-gray-700 mt-0.5">
-                        Membre depuis {profile ? new Date(profile.created_at).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : '—'}
+                        Membre depuis {(() => {
+                            if (!profile?.created_at) return '—';
+                            const d = new Date(profile.created_at);
+                            return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+                        })()}
                     </p>
                 </div>
             </div>

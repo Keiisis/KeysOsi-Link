@@ -390,11 +390,16 @@ export default function AgentDossiersPage() {
                                                                             <FileWarning size={14} className="text-red-400 animate-pulse" />
                                                                         </span>
                                                                     )}
-                                                                    {new Date().getTime() - new Date(d.updated_at || d.created_at).getTime() > 3 * 24 * 60 * 60 * 1000 && d.statut !== 'termine' && (
-                                                                        <span title="Dossier stagnant : Aucune avancée depuis 3 jours">
-                                                                            <AlertCircle size={14} className="text-amber-500" />
-                                                                        </span>
-                                                                    )}
+                                                                    {(() => {
+                                                                        const lastUpdate = d.updated_at || d.created_at;
+                                                                        const lastUpdateTime = lastUpdate && !isNaN(new Date(lastUpdate).getTime()) ? new Date(lastUpdate).getTime() : null;
+                                                                        const isStagnant = lastUpdateTime !== null && (new Date().getTime() - lastUpdateTime > 3 * 24 * 60 * 60 * 1000);
+                                                                        return isStagnant && d.statut !== 'termine' ? (
+                                                                            <span title="Dossier stagnant : Aucune avancée depuis 3 jours">
+                                                                                <AlertCircle size={14} className="text-amber-500" />
+                                                                            </span>
+                                                                        ) : null;
+                                                                    })()}
                                                                     <Eye size={14} className="text-gray-600 group-hover:text-emerald-400 transition-colors" />
                                                                 </div>
                                                             </div>
@@ -404,7 +409,9 @@ export default function AgentDossiersPage() {
                                                             <div className="flex items-center justify-between mt-3">
                                                                 <div className="flex items-center gap-1 text-[10px] text-gray-600">
                                                                     <Calendar size={10} />
-                                                                    {new Date(d.created_at).toLocaleDateString('fr-FR')}
+                                                                    {d.created_at && !isNaN(new Date(d.created_at).getTime())
+                                                                        ? new Date(d.created_at).toLocaleDateString('fr-FR')
+                                                                        : '—'}
                                                                 </div>
                                                                 <span className="text-[10px] font-mono text-emerald-500/80 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
                                                                     {d.progression || 0}%
@@ -498,7 +505,11 @@ export default function AgentDossiersPage() {
                                 </div>
                                 <div className="flex items-center gap-2 text-sm text-gray-400">
                                     <Calendar size={14} className="text-emerald-400" />
-                                    <span>{new Date(selectedDossier.created_at).toLocaleDateString('fr-FR')}</span>
+                                    <span>
+                                        {selectedDossier.created_at && !isNaN(new Date(selectedDossier.created_at).getTime())
+                                            ? new Date(selectedDossier.created_at).toLocaleDateString('fr-FR')
+                                            : '—'}
+                                    </span>
                                 </div>
                             </div>
 
@@ -639,7 +650,11 @@ export default function AgentDossiersPage() {
                                                         : 'bg-blue-500/10 border border-blue-500/15 rounded-bl-sm'
                                                     } text-gray-200`}>
                                                         <p className="whitespace-pre-wrap">{m.content}</p>
-                                                        <p className="text-[9px] text-gray-600 mt-1">{new Date(m.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
+                                                        <p className="text-[9px] text-gray-600 mt-1">
+                                                            {m.created_at && !isNaN(new Date(m.created_at).getTime())
+                                                                ? new Date(m.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+                                                                : '—'}
+                                                        </p>
                                                     </div>
                                                     {m.role === 'agent' && (
                                                         <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5">

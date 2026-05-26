@@ -1,17 +1,11 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import {
-    View, Text, StyleSheet, Image,
-    Dimensions, StatusBar,
+    View, Text, StyleSheet, Image, ScrollView,
+    Dimensions, StatusBar, Pressable,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import {
-    Shield, ArrowUpRight, Folder, MessageSquare,
-    Bell, CreditCard, FileText,
-    ChevronRight, Sparkles, ShoppingBag, Crown,
-    Calendar, Headphones, HelpCircle, Star, Zap, TrendingUp,
-} from 'lucide-react-native'
+import { Ionicons } from '@expo/vector-icons'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { LinearGradient } from 'expo-linear-gradient'
 import Animated, {
     useSharedValue, useAnimatedStyle,
     withSpring, withTiming, withRepeat, withSequence, withDelay,
@@ -20,17 +14,83 @@ import Animated, {
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../config/supabase'
 import { useLang } from '../../contexts/LangContext'
-import { colors, royal, shadows, fonts } from '../../config/theme'
-import PressableCard from '../../components/PressableCard'
-import { SkeletonCard } from '../../components/Skeleton'
 
 const { width } = Dimensions.get('window')
+
+/* ═══════════════════════════════════════════════════════════
+   PALETTE C — CORPORATE PREMIUM 2026
+═══════════════════════════════════════════════════════════ */
+const PAL = {
+    primary: '#047857',   // émeraude profond (identité app)
+    primaryDeep: '#022C22',
+    primarySoft: '#10B981',
+    accent: '#C9A84C',   // or institutionnel
+    accentSoft: '#E2C97E',
+    accentDeep: '#A68B3C',
+    auraGreen: '#10B981',
+    auraGreenSoft: '#34D399',
+    danger: '#EF4444',
+    success: '#10B981',
+    info: '#3B82F6',
+    purple: '#8B5CF6',
+    pink: '#EC4899',
+    teal: '#14B8A6',
+    bg: '#FFFFFF',   // fond clair (aligné thème global)
+    bgSoft: '#F8FAF9',
+    card: '#FFFFFF',
+    border: 'rgba(16,185,129,0.12)',
+    borderSoft: 'rgba(16,185,129,0.06)',
+    text: '#1a2332',
+    textMuted: '#4A5568',
+    textFaint: '#718096',
+    white: '#FFFFFF',
+}
+
+const FONT = {
+    heading: 'PlayfairDisplay_700Bold',
+    body: 'Inter_400Regular',
+    bodyM: 'Inter_500Medium',
+    bodySB: 'Inter_600SemiBold',
+    bodyB: 'Inter_700Bold',
+}
 
 interface DossierInfo { status: string; progress: number; service_type: string | null }
 
 const STATUS_LABEL: Record<string, string> = {
     soumis: 'Dossier soumis', verifie: 'En vérification', traitement: 'En traitement',
     validation: 'En validation', termine: 'Terminé', annule: 'Annulé',
+}
+
+/* ─── Section animée (entrée échelonnée) ─── */
+const AnimatedSection = ({ delay = 0, children, style }: any) => {
+    const o = useSharedValue(0); const y = useSharedValue(18)
+    useEffect(() => {
+        o.value = withDelay(delay, withTiming(1, { duration: 520, easing: Easing.out(Easing.cubic) }))
+        y.value = withDelay(delay, withSpring(0, { damping: 18, stiffness: 110 }))
+    }, [])
+    const s = useAnimatedStyle(() => ({ opacity: o.value, transform: [{ translateY: y.value }] }))
+    return <Animated.View style={[s, style]}>{children}</Animated.View>
+}
+
+/* ─── Aura décorative animée ─── */
+const Aura = ({ color, size = 220, top, left, right, bottom, delay = 0, opacity = 0.18 }: any) => {
+    const v = useSharedValue(0)
+    useEffect(() => {
+        v.value = withDelay(delay, withRepeat(withSequence(
+            withTiming(1, { duration: 4200, easing: Easing.inOut(Easing.ease) }),
+            withTiming(0, { duration: 4200, easing: Easing.inOut(Easing.ease) }),
+        ), -1, false))
+    }, [])
+    const s = useAnimatedStyle(() => ({
+        opacity: interpolate(v.value, [0, 1], [opacity * 0.55, opacity]),
+        transform: [{ scale: interpolate(v.value, [0, 1], [0.92, 1.1]) }],
+    }))
+    return (
+        <Animated.View pointerEvents="none" style={[{
+            position: 'absolute', width: size, height: size, borderRadius: size / 2,
+            backgroundColor: color, top, left, right, bottom,
+        }, s]} />
+    )
 }
 
 export default function HomeScreen({ navigation }: { navigation: { navigate: (route: string) => void } }) {
@@ -42,38 +102,41 @@ export default function HomeScreen({ navigation }: { navigation: { navigate: (ro
     const [unreadMessages, setUnreadMessages] = useState(0)
     const [unreadNotifs, setUnreadNotifs] = useState(0)
 
+    /* ─── Anim values ─── */
     const pulse = useSharedValue(1)
     const shimmer = useSharedValue(-1)
     const progressAnim = useSharedValue(0)
-    const bagFloat = useSharedValue(0)
+    const haloRing = useSharedValue(0)
     const crownGlow = useSharedValue(0)
 
     useEffect(() => {
         pulse.value = withRepeat(withSequence(
-            withTiming(1.06, { duration: 1400, easing: Easing.inOut(Easing.ease) }),
-            withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.ease) }),
+            withTiming(1.08, { duration: 1300, easing: Easing.inOut(Easing.ease) }),
+            withTiming(1, { duration: 1300, easing: Easing.inOut(Easing.ease) }),
         ), -1, false)
         shimmer.value = withRepeat(
-            withTiming(1, { duration: 3500, easing: Easing.inOut(Easing.ease) }), -1, false,
+            withTiming(1, { duration: 3400, easing: Easing.inOut(Easing.ease) }), -1, false,
         )
-        bagFloat.value = withRepeat(withSequence(
-            withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.ease) }),
-            withTiming(0, { duration: 2200, easing: Easing.inOut(Easing.ease) }),
+        haloRing.value = withRepeat(withSequence(
+            withTiming(1, { duration: 2400, easing: Easing.inOut(Easing.ease) }),
+            withTiming(0, { duration: 2400, easing: Easing.inOut(Easing.ease) }),
         ), -1, false)
         crownGlow.value = withRepeat(withSequence(
-            withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.ease) }),
-            withTiming(0, { duration: 1800, easing: Easing.inOut(Easing.ease) }),
+            withTiming(1, { duration: 1900, easing: Easing.inOut(Easing.ease) }),
+            withTiming(0, { duration: 1900, easing: Easing.inOut(Easing.ease) }),
         ), -1, false)
     }, [])
 
     useEffect(() => {
         if (dossier) {
-            progressAnim.value = withDelay(500, withSpring(
-                Math.max(0, Math.min(100, dossier.progress)), { damping: 18, stiffness: 90 },
+            progressAnim.value = withDelay(450, withSpring(
+                Math.max(0, Math.min(100, dossier.progress)),
+                { damping: 18, stiffness: 90 },
             ))
         }
     }, [dossier])
 
+    /* ─── Data (logique inchangée) ─── */
     const fetchData = async () => {
         if (!profile) return
         try {
@@ -100,322 +163,279 @@ export default function HomeScreen({ navigation }: { navigation: { navigate: (ro
             } else { setUnreadMessages(0) }
         } catch { /* silent */ } finally { setLoading(false) }
     }
-
     useEffect(() => { fetchData() }, [profile])
 
+    /* ─── Helpers ─── */
     const getGreeting = () => {
         const h = new Date().getHours()
         return h < 12 ? t('Bonjour') : h < 18 ? t('Bon après-midi') : t('Bonsoir')
     }
-
     const initials = ((profile?.prenom?.[0] || '') + (profile?.nom?.[0] || '')).toUpperCase() || 'RG'
     const dossierStatusLabel = dossier ? t(STATUS_LABEL[dossier.status] || dossier.status) : ''
 
     const QUICK_ACTIONS = useMemo(() => ([
-        { Icon: Folder, label: t('Dossiers'), tint: colors.info, bg: colors.infoBg, dest: 'Dossier' },
-        { Icon: MessageSquare, label: t('Messages'), tint: '#7C5CCA', bg: '#7C5CCA15', badge: unreadMessages, dest: 'Messages' },
-        { Icon: FileText, label: t('Documents'), tint: colors.gold, bg: colors.goldMuted, dest: 'Signature' },
-        { Icon: CreditCard, label: t('Paiements'), tint: colors.success, bg: colors.successBg, dest: 'Payments' },
-    ] as const), [unreadMessages, t])
+        { icon: 'folder-open-outline' as const, label: t('Dossiers'), tint: PAL.info, dest: 'Dossier' },
+        { icon: 'chatbubbles-outline' as const, label: t('Messages'), tint: PAL.purple, badge: unreadMessages, dest: 'Messages' },
+        { icon: 'document-text-outline' as const, label: t('Documents'), tint: PAL.accent, dest: 'Signature' },
+        { icon: 'card-outline' as const, label: t('Paiements'), tint: PAL.success, dest: 'Payments' },
+    ]), [unreadMessages, t])
 
-    const SECONDARY_SERVICES = useMemo(() => ([
-        { Icon: Calendar, label: t('Rendez-vous'), tint: colors.teal, bg: 'rgba(20,184,166,0.12)', dest: 'Appointments' },
-        { Icon: Headphones, label: t('Support 24/7'), tint: '#EC4899', bg: '#EC489915', dest: 'Support' },
-        { Icon: HelpCircle, label: t('Aide & FAQ'), tint: colors.warning, bg: colors.warningBg || '#F59E0B15', dest: 'Help' },
-    ] as const), [t])
+    const SECONDARY = useMemo(() => ([
+        { icon: 'calendar-outline' as const, label: t('Rendez-vous'), desc: t('Planifier un entretien'), tint: PAL.teal, dest: 'Appointments' },
+        { icon: 'headset-outline' as const, label: t('Support 24/7'), desc: t('Assistance dédiée'), tint: PAL.pink, dest: 'Messages' },
+        { icon: 'help-circle-outline' as const, label: t('Aide & FAQ'), desc: t('Questions fréquentes'), tint: PAL.accentDeep, dest: 'FAQ' },
+    ]), [t])
 
+    /* ─── Animated styles ─── */
     const pulseStyle = useAnimatedStyle(() => ({ transform: [{ scale: pulse.value }] }))
     const shimmerStyle = useAnimatedStyle(() => ({
         transform: [
             { translateX: interpolate(shimmer.value, [-1, 1], [-width, width * 1.3]) },
-            { skewX: '-20deg' },
+            { skewX: '-22deg' },
         ],
-        opacity: interpolate(shimmer.value, [-1, -0.5, 0.5, 1], [0, 0.5, 0.5, 0]),
+        opacity: interpolate(shimmer.value, [-1, -0.5, 0.5, 1], [0, 0.45, 0.45, 0]),
     }))
     const progressBarStyle = useAnimatedStyle(() => ({ width: `${progressAnim.value}%` }))
-    const bagFloatStyle = useAnimatedStyle(() => ({
-        transform: [
-            { translateY: interpolate(bagFloat.value, [0, 1], [0, -8]) },
-            { rotate: `${interpolate(bagFloat.value, [0, 1], [-4, 4])}deg` },
-        ],
+    const haloStyle = useAnimatedStyle(() => ({
+        opacity: interpolate(haloRing.value, [0, 1], [0.15, 0.45]),
+        transform: [{ scale: interpolate(haloRing.value, [0, 1], [1, 1.18]) }],
     }))
     const crownGlowStyle = useAnimatedStyle(() => ({
-        opacity: interpolate(crownGlow.value, [0, 1], [0.4, 0.9]),
+        opacity: interpolate(crownGlow.value, [0, 1], [0.35, 0.85]),
         transform: [{ scale: interpolate(crownGlow.value, [0, 1], [0.9, 1.15]) }],
     }))
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+        <View style={[styles.container, { paddingTop: insets.top }]}>
             <StatusBar barStyle="dark-content" />
 
-            {/* ═══ HEADER ═══ */}
-            <View style={styles.header}>
-                <PressableCard haptic="light" onPress={() => navigation.navigate('Profil')} style={styles.headerLeft}>
-                    <View style={styles.avatarWrap}>
-                        {profile?.avatar_url ? (
-                            <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
-                        ) : (
-                            <LinearGradient colors={[royal.emerald, colors.primary]} style={styles.avatar}>
-                                <Text style={styles.avatarText}>{initials}</Text>
-                            </LinearGradient>
+            {/* ════════ AURAS GLOBALES ════════ */}
+            <Aura color={PAL.accent} size={300} top={-120} right={-100} opacity={0.10} />
+            <Aura color={PAL.auraGreen} size={280} top={180} left={-110} opacity={0.08} delay={1500} />
+            <Aura color={PAL.primary} size={260} bottom={120} right={-80} opacity={0.06} delay={2800} />
+
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: insets.bottom + 28 }}
+            >
+                {/* ════════ HEADER ════════ */}
+                <AnimatedSection delay={0} style={styles.header}>
+                    <Pressable onPress={() => navigation.navigate('Profil')} style={styles.headerLeft}>
+                        <View style={styles.avatarWrap}>
+                            <Animated.View style={[styles.avatarHalo, haloStyle]} />
+                            {profile?.avatar_url ? (
+                                <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
+                            ) : (
+                                <View style={[styles.avatar, { backgroundColor: PAL.primary }]}>
+                                    <Text style={styles.avatarText}>{initials}</Text>
+                                </View>
+                            )}
+                            <View style={styles.avatarRing} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.greeting}>{getGreeting()}</Text>
+                            <Text style={styles.userName} numberOfLines={1}>
+                                {profile?.prenom || t('Bienvenue')}
+                            </Text>
+                        </View>
+                    </Pressable>
+                    <Pressable onPress={() => navigation.navigate('Notifications')} style={styles.notifBtn}>
+                        <Ionicons name="notifications-outline" size={20} color={PAL.primary} />
+                        {unreadNotifs > 0 && (
+                            <Animated.View style={[styles.notifBadge, pulseStyle]}>
+                                <Text style={styles.notifBadgeText}>{unreadNotifs > 9 ? '9+' : unreadNotifs}</Text>
+                            </Animated.View>
                         )}
-                        <View style={styles.avatarRing} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.greeting}>{getGreeting()} 👋</Text>
-                        <Text style={styles.userName} numberOfLines={1}>
-                            {profile?.prenom || t('Bienvenue')}
-                        </Text>
-                    </View>
-                </PressableCard>
-                <PressableCard haptic="light" onPress={() => navigation.navigate('Notifications')} style={styles.notifBtn}>
-                    <Bell size={20} color={colors.textPrimary} strokeWidth={2} />
-                    {unreadNotifs > 0 && (
-                        <Animated.View style={[styles.notifBadge, pulseStyle]}>
-                            <Text style={styles.notifBadgeText}>{unreadNotifs > 9 ? '9+' : unreadNotifs}</Text>
-                        </Animated.View>
-                    )}
-                </PressableCard>
-            </View>
+                    </Pressable>
+                </AnimatedSection>
 
-            <View style={styles.body}>
+                {/* ════════ HERO DOSSIER (Corporate dark card) ════════ */}
+                <AnimatedSection delay={120} style={styles.heroWrap}>
+                    <Pressable onPress={() => navigation.navigate(dossier ? 'Dossier' : 'Services')}>
+                        <View style={styles.heroCard}>
+                            {/* Fond corporate */}
+                            <View style={StyleSheet.absoluteFillObject} />
+                            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: PAL.primaryDeep }]} />
+                            <Aura color={PAL.accent} size={180} top={-70} right={-50} opacity={0.22} />
+                            <Aura color={PAL.auraGreen} size={160} bottom={-60} left={-40} opacity={0.28} delay={900} />
 
-                {/* ─── HERO DOSSIER ─── */}
-                <Animated.View
-                    style={styles.heroWrap}
-                    entering={FadeInDown.delay(80).duration(500).springify().damping(18)}
-                >
-                    {loading ? <SkeletonCard style={styles.heroCard} /> : (
-                        <PressableCard
-                            haptic="medium"
-                            onPress={() => navigation.navigate(dossier ? 'Dossier' : 'Services')}
-                            style={styles.heroCard}
-                        >
-                            <LinearGradient
-                                colors={['#011F18', '#022C22', royal.emerald, '#065F46']}
-                                locations={[0, 0.3, 0.7, 1]}
-                                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                                style={StyleSheet.absoluteFillObject}
-                            />
-
-                            {/* Pattern grid décoratif */}
+                            {/* Grille décorative */}
                             <View style={styles.heroGrid}>
-                                {[...Array(6)].map((_, i) => (
-                                    <View key={i} style={[styles.heroGridDot, { left: 20 + i * 30, top: 15 }]} />
+                                {[...Array(8)].map((_, i) => (
+                                    <View key={i} style={[styles.heroGridDot, { left: 18 + i * 28, top: 14 }]} />
                                 ))}
                             </View>
 
-                            <View style={styles.heroOrb1} />
-                            <View style={styles.heroOrb2} />
-
+                            {/* Shimmer */}
                             <View style={styles.shimmerWrap} pointerEvents="none">
-                                <Animated.View style={[styles.shimmerBand, shimmerStyle]}>
-                                    <LinearGradient
-                                        colors={['transparent', 'rgba(255,255,255,0.12)', 'transparent']}
-                                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                                        style={StyleSheet.absoluteFillObject}
-                                    />
-                                </Animated.View>
+                                <Animated.View style={[styles.shimmerBand, shimmerStyle]} />
                             </View>
+
+                            {/* Bordure or */}
+                            <View style={styles.heroBorder} pointerEvents="none" />
 
                             <View style={styles.heroContent}>
                                 <View style={styles.heroTop}>
                                     <View style={styles.heroBadge}>
-                                        <Shield size={11} color={colors.goldLight} strokeWidth={2.5} />
+                                        <View style={styles.heroBadgeDot} />
                                         <Text style={styles.heroBadgeText}>
-                                            {dossier ? t('VOTRE DOSSIER') : t('DÉMARCHE RGB')}
+                                            {dossier ? t('VOTRE DOSSIER ACTIF') : t('DÉMARCHE CERTIFIÉE RGB')}
                                         </Text>
                                     </View>
                                     <View style={styles.heroChevron}>
-                                        <ArrowUpRight size={15} color="#FFF" strokeWidth={2.5} />
+                                        <Ionicons name="arrow-forward" size={14} color={PAL.primaryDeep} />
                                     </View>
                                 </View>
+
                                 <Text style={styles.heroTitle} numberOfLines={2}>
-                                    {dossier ? (dossier.service_type || t('Dossier en cours')) : t('Lancer une nouvelle démarche')}
+                                    {dossier
+                                        ? (dossier.service_type || t('Dossier en cours'))
+                                        : t('Initier une démarche officielle')}
                                 </Text>
+
                                 {dossier ? (
-                                    <>
+                                    <View style={{ marginTop: 8 }}>
                                         <View style={styles.progressRow}>
                                             <Text style={styles.progressLabel}>{dossierStatusLabel}</Text>
                                             <Text style={styles.progressPct}>{dossier.progress}%</Text>
                                         </View>
                                         <View style={styles.progressBg}>
-                                            <Animated.View style={[styles.progressFill, progressBarStyle]}>
-                                                <LinearGradient
-                                                    colors={[colors.goldLight, colors.gold]}
-                                                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                                                    style={StyleSheet.absoluteFillObject}
-                                                />
-                                            </Animated.View>
+                                            <Animated.View style={[styles.progressFill, progressBarStyle]} />
                                         </View>
-                                    </>
+                                    </View>
                                 ) : (
                                     <Text style={styles.heroSub} numberOfLines={2}>
-                                        {t('Obtenez votre Nationalité ou réglez vos affaires courantes au Bénin.')}
+                                        {t('Nationalité, état civil, légalisation — un accompagnement de bout en bout.')}
                                     </Text>
                                 )}
                             </View>
-                        </PressableCard>
-                    )}
-                </Animated.View>
+                        </View>
+                    </Pressable>
+                </AnimatedSection>
 
-                {/* ─── QUICK ACTIONS ─── */}
-                <Animated.View entering={FadeIn.delay(180).duration(450)} style={styles.section}>
+                {/* ════════ QUICK ACTIONS ════════ */}
+                <AnimatedSection delay={220} style={styles.section}>
                     <View style={styles.sectionHeader}>
-                        <Zap size={14} color={colors.primary} strokeWidth={2.5} fill={colors.primary} />
+                        <View style={styles.sectionBar} />
                         <Text style={styles.sectionLabel}>{t('ACCÈS RAPIDE')}</Text>
                     </View>
                     <View style={styles.actionsRow}>
                         {QUICK_ACTIONS.map((s, i) => {
-                            const badge = ('badge' in s ? s.badge : 0) as number
+                            const badge = (s as any).badge || 0
                             return (
-                                <View key={i} style={styles.actionItem}>
-                                    <PressableCard
-                                        haptic="light"
-                                        onPress={() => navigation.navigate(s.dest)}
-                                        style={styles.actionBtn}
-                                    >
-                                        <View style={[styles.actionIcon, { backgroundColor: s.bg }]}>
-                                            <s.Icon size={22} color={s.tint} strokeWidth={2.2} />
-                                            {badge > 0 && (
-                                                <Animated.View style={[styles.actionBadge, pulseStyle]}>
-                                                    <Text style={styles.actionBadgeText}>{badge > 9 ? '9+' : badge}</Text>
-                                                </Animated.View>
-                                            )}
-                                        </View>
-                                    </PressableCard>
+                                <Pressable
+                                    key={i}
+                                    onPress={() => navigation.navigate(s.dest)}
+                                    style={({ pressed }) => [
+                                        styles.actionItem,
+                                        pressed && { transform: [{ scale: 0.96 }] },
+                                    ]}
+                                >
+                                    <View style={[styles.actionIcon, { borderColor: s.tint + '40' }]}>
+                                        <View style={[styles.actionIconBg, { backgroundColor: s.tint + '14' }]} />
+                                        <Ionicons name={s.icon} size={22} color={s.tint} />
+                                        {badge > 0 && (
+                                            <Animated.View style={[styles.actionBadge, pulseStyle]}>
+                                                <Text style={styles.actionBadgeText}>{badge > 9 ? '9+' : badge}</Text>
+                                            </Animated.View>
+                                        )}
+                                    </View>
                                     <Text style={styles.actionLabel} numberOfLines={1}>{s.label}</Text>
-                                </View>
+                                </Pressable>
                             )
                         })}
                     </View>
-                </Animated.View>
+                </AnimatedSection>
 
-                {/* ═══════════════════════════════════════════
-                    🎁 DUO PREMIUM ASYMÉTRIQUE 🎁
-                    Boutique (verticale, plus large) + VIP (verticale, plus haute)
-                ═══════════════════════════════════════════ */}
-                <Animated.View
-                    style={styles.duoSection}
-                    entering={FadeInDown.delay(280).duration(600).springify().damping(16)}
-                >
+                {/* ════════ DUO PREMIUM (Boutique + VIP) ════════ */}
+                <AnimatedSection delay={320} style={styles.duoSection}>
+                    <View style={styles.sectionHeader}>
+                        <View style={[styles.sectionBar, { backgroundColor: PAL.accent }]} />
+                        <Text style={styles.sectionLabel}>{t('SIGNATURES MAISON')}</Text>
+                    </View>
+
                     <View style={styles.duoRow}>
-
-                        {/* ┃ BOUTIQUE — Card verticale (left, plus large) ┃ */}
-                        <PressableCard
-                            haptic="medium"
+                        {/* ── BOUTIQUE — Ivoire & Or ── */}
+                        <Pressable
                             onPress={() => navigation.navigate('Boutique')}
-                            style={styles.boutiqueCard}
+                            style={({ pressed }) => [styles.boutiqueCard, pressed && { transform: [{ scale: 0.98 }] }]}
                         >
-                            <LinearGradient
-                                colors={['#6B4E0F', '#A68B3C', colors.gold, '#E2C97E']}
-                                locations={[0, 0.35, 0.75, 1]}
-                                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                                style={StyleSheet.absoluteFillObject}
-                            />
+                            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: PAL.bg }]} />
+                            <Aura color={PAL.accent} size={140} top={-50} right={-40} opacity={0.32} />
+                            <Aura color={PAL.accentSoft} size={120} bottom={-50} left={-30} opacity={0.22} delay={1200} />
 
-                            {/* Orbes décoratives */}
-                            <View style={styles.boutiqueOrbTop} />
-                            <View style={styles.boutiqueOrbBottom} />
+                            <View style={styles.boutiqueBorder} pointerEvents="none" />
 
                             <View style={styles.shimmerWrap} pointerEvents="none">
-                                <Animated.View style={[styles.shimmerBand, shimmerStyle]}>
-                                    <LinearGradient
-                                        colors={['transparent', 'rgba(255,255,255,0.35)', 'transparent']}
-                                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                                        style={StyleSheet.absoluteFillObject}
-                                    />
+                                <Animated.View style={[styles.shimmerBand, shimmerStyle, { backgroundColor: 'transparent' }]}>
+                                    <View style={{ flex: 1, backgroundColor: 'rgba(212,160,23,0.22)' }} />
                                 </Animated.View>
                             </View>
 
                             <View style={styles.boutiqueContent}>
-                                {/* Header */}
                                 <View style={styles.boutiqueHeader}>
                                     <View style={styles.boutiquePill}>
                                         <View style={styles.boutiqueLiveDot} />
                                         <Text style={styles.boutiquePillText}>{t('NEW')}</Text>
                                     </View>
                                     <View style={styles.boutiqueArrowMini}>
-                                        <ArrowUpRight size={13} color={colors.goldDark} strokeWidth={3} />
+                                        <Ionicons name="arrow-forward" size={12} color={PAL.primary} />
                                     </View>
                                 </View>
 
-                                {/* Bag illustration centrale */}
                                 <View style={styles.boutiqueBagContainer}>
-                                    <Animated.View style={[styles.boutiqueBagWrap, bagFloatStyle]}>
-                                        <View style={styles.boutiqueBagGlow} />
-                                        <View style={styles.boutiqueBagCircle}>
-                                            <ShoppingBag size={24} color={colors.goldDark} strokeWidth={2} />
-                                        </View>
-                                        <View style={[styles.sparkleDot, styles.sparkleDot1]} />
-                                        <View style={[styles.sparkleDot, styles.sparkleDot2]} />
-                                        <View style={[styles.sparkleDot, styles.sparkleDot3]} />
-                                    </Animated.View>
+                                    <View style={styles.boutiqueBagGlow} />
+                                    <View style={styles.boutiqueBagCircle}>
+                                        <Ionicons name="bag-handle-outline" size={26} color={PAL.primary} />
+                                    </View>
                                 </View>
 
-                                {/* Footer */}
-                                <View style={styles.boutiqueFooter}>
+                                <View>
                                     <Text style={styles.boutiqueTitle}>{t('Boutique')}</Text>
                                     <Text style={styles.boutiqueSubtitle}>RGB</Text>
                                     <View style={styles.boutiqueRatingRow}>
-                                        <Star size={10} color="#FFF" fill="#FFF" strokeWidth={0} />
+                                        <Ionicons name="star" size={10} color={PAL.accent} />
                                         <Text style={styles.boutiqueRating}>4.9 · {t('Artisanat')}</Text>
                                     </View>
                                 </View>
                             </View>
-                        </PressableCard>
+                        </Pressable>
 
-                        {/* ┃ VIP NATIONALITÉ — Ticket vertical Apple Wallet style ┃ */}
-                        <PressableCard
-                            haptic="medium"
+                        {/* ── VIP NATIONALITÉ — Ticket sombre ── */}
+                        <Pressable
                             onPress={() => navigation.navigate('NationaliteForm')}
-                            style={styles.vipCard}
+                            style={({ pressed }) => [styles.vipCard, pressed && { transform: [{ scale: 0.98 }] }]}
                         >
-                            <LinearGradient
-                                colors={['#011F18', '#022C22', royal.emerald, '#0C1B33']}
-                                locations={[0, 0.3, 0.7, 1]}
-                                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                                style={StyleSheet.absoluteFillObject}
-                            />
+                            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: PAL.primaryDeep }]} />
+                            <Aura color={PAL.accent} size={130} top={-50} right={-35} opacity={0.22} />
+                            <Aura color={PAL.auraGreen} size={120} bottom={-40} left={-30} opacity={0.18} delay={900} />
 
-                            {/* Border or premium */}
-                            <View style={styles.vipBorder} />
+                            <View style={styles.vipBorder} pointerEvents="none" />
 
-                            {/* Pattern décoratif lines */}
-                            <View style={styles.vipPattern}>
-                                <View style={styles.vipLine1} />
-                                <View style={styles.vipLine2} />
-                                <View style={styles.vipLine3} />
+                            {/* Pattern lignes obliques */}
+                            <View style={styles.vipPattern} pointerEvents="none">
+                                <View style={[styles.vipLine, { top: 30 }]} />
+                                <View style={[styles.vipLine, { top: 75 }]} />
+                                <View style={[styles.vipLine, { top: 120 }]} />
                             </View>
 
-                            <View style={styles.vipOrb} />
-
                             <View style={styles.shimmerWrap} pointerEvents="none">
-                                <Animated.View style={[styles.shimmerBand, shimmerStyle]}>
-                                    <LinearGradient
-                                        colors={['transparent', 'rgba(212,175,55,0.3)', 'transparent']}
-                                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                                        style={StyleSheet.absoluteFillObject}
-                                    />
-                                </Animated.View>
+                                <Animated.View style={[styles.shimmerBand, shimmerStyle]} />
                             </View>
 
                             <View style={styles.vipContent}>
-                                {/* Crown avec glow animé */}
                                 <View style={styles.vipCrownWrap}>
                                     <Animated.View style={[styles.vipCrownGlow, crownGlowStyle]} />
                                     <View style={styles.vipCrownCircle}>
-                                        <Crown size={16} color={colors.goldLight} strokeWidth={2.2} fill={colors.gold} />
+                                        <Ionicons name="ribbon" size={16} color={PAL.accent} />
                                     </View>
                                 </View>
 
-                                {/* Badge VIP */}
                                 <View style={styles.vipBadge}>
                                     <Text style={styles.vipBadgeText}>{t('SERVICE VIP')}</Text>
                                 </View>
 
-                                {/* Title */}
-                                <View style={styles.vipTitleWrap}>
+                                <View>
                                     <Text style={styles.vipTitle}>{t('Nationalité')}</Text>
                                     <View style={styles.vipTitleAccentRow}>
                                         <Text style={styles.vipTitleAccent}>{t('Béninoise')}</Text>
@@ -423,574 +443,354 @@ export default function HomeScreen({ navigation }: { navigation: { navigate: (ro
                                     </View>
                                 </View>
 
-                                {/* Ligne perforée style ticket */}
                                 <View style={styles.vipPerfLine}>
-                                    {[...Array(12)].map((_, i) => (
+                                    {[...Array(14)].map((_, i) => (
                                         <View key={i} style={styles.vipPerfDot} />
                                     ))}
                                 </View>
 
-                                {/* CTA bottom */}
                                 <View style={styles.vipFooter}>
                                     <Text style={styles.vipFooterText}>{t('Découvrir')}</Text>
                                     <View style={styles.vipArrow}>
-                                        <LinearGradient
-                                            colors={[colors.goldLight, colors.gold]}
-                                            style={StyleSheet.absoluteFillObject}
-                                        />
-                                        <ArrowUpRight size={14} color={colors.primaryDark} strokeWidth={3} />
+                                        <Ionicons name="arrow-forward" size={13} color={PAL.primaryDeep} />
                                     </View>
                                 </View>
                             </View>
 
-                            {/* Demi-cercles perforés (style ticket) */}
-                            <View style={styles.vipNotchLeft} />
-                            <View style={styles.vipNotchRight} />
-                        </PressableCard>
-
+                            <View style={[styles.vipNotch, { left: -11 }]} />
+                            <View style={[styles.vipNotch, { right: -11 }]} />
+                        </Pressable>
                     </View>
-                </Animated.View>
+                </AnimatedSection>
 
-                {/* ─── AUTRES SERVICES ─── */}
-                <Animated.View
-                    entering={FadeInDown.delay(480).duration(500).springify().damping(18)}
-                    style={styles.section}
-                >
+                {/* ════════ TIP CARD (sécurité / engagement) ════════ */}
+                <AnimatedSection delay={400} style={{ paddingHorizontal: 20, marginBottom: 14 }}>
+                    <View style={styles.tipCard}>
+                        <View style={styles.tipIconWrap}>
+                            <Ionicons name="shield-checkmark" size={18} color={PAL.auraGreen} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.tipTitle}>{t('Engagement RGB')}</Text>
+                            <Text style={styles.tipDesc} numberOfLines={2}>
+                                {t('Vos données sont chiffrées et traitées par des agents certifiés.')}
+                            </Text>
+                        </View>
+                    </View>
+                </AnimatedSection>
+
+                {/* ════════ AUTRES SERVICES (formCard list) ════════ */}
+                <AnimatedSection delay={460} style={styles.section}>
                     <View style={styles.sectionHeader}>
-                        <TrendingUp size={14} color={colors.textSecondary} strokeWidth={2.5} />
+                        <View style={[styles.sectionBar, { backgroundColor: PAL.auraGreen }]} />
                         <Text style={styles.sectionLabel}>{t('AUTRES SERVICES')}</Text>
                     </View>
-                    <View style={styles.listGroup}>
-                        {SECONDARY_SERVICES.map((s, i) => {
-                            const isLast = i === SECONDARY_SERVICES.length - 1
+                    <View style={styles.formCard}>
+                        {SECONDARY.map((s, i) => {
+                            const isLast = i === SECONDARY.length - 1
                             return (
-                                <PressableCard
+                                <Pressable
                                     key={i}
-                                    haptic="light"
                                     onPress={() => navigation.navigate(s.dest)}
-                                    style={[styles.listRow, isLast && styles.listRowLast]}
+                                    style={({ pressed }) => [
+                                        styles.listRow,
+                                        !isLast && styles.listRowBorder,
+                                        pressed && { backgroundColor: PAL.bgSoft },
+                                    ]}
                                 >
-                                    <View style={[styles.listIcon, { backgroundColor: s.bg }]}>
-                                        <s.Icon size={18} color={s.tint} strokeWidth={2.2} />
+                                    <View style={[styles.listIcon, { backgroundColor: s.tint + '14', borderColor: s.tint + '35' }]}>
+                                        <Ionicons name={s.icon} size={18} color={s.tint} />
                                     </View>
-                                    <Text style={styles.listLabel}>{s.label}</Text>
-                                    <ChevronRight size={16} color={colors.textTertiary || '#C7C7CC'} strokeWidth={2} />
-                                </PressableCard>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.listLabel}>{s.label}</Text>
+                                        <Text style={styles.listDesc}>{s.desc}</Text>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={16} color={PAL.textFaint} />
+                                </Pressable>
                             )
                         })}
                     </View>
-                </Animated.View>
+                </AnimatedSection>
 
-            </View>
-
-
+                {/* ════════ FOOTER SIGNATURE ════════ */}
+                <AnimatedSection delay={540} style={styles.footerSig}>
+                    <View style={styles.footerLine} />
+                    <Text style={styles.footerText}>RGB · {t('Excellence administrative')}</Text>
+                    <View style={styles.footerLine} />
+                </AnimatedSection>
+            </ScrollView>
         </View>
     )
 }
 
+/* ═══════════════════════════════════════════════════════════
+   STYLES
+═══════════════════════════════════════════════════════════ */
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F2F2F7' },
+    container: { flex: 1, backgroundColor: PAL.bg },
 
-    // ─── Header ───
+    /* ─── Header ─── */
     header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingTop: 4,
-        paddingBottom: 8,
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+        paddingHorizontal: 20, paddingTop: 6, paddingBottom: 14,
     },
     headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-    avatarWrap: { position: 'relative' },
+    avatarWrap: { position: 'relative', width: 44, height: 44 },
+    avatarHalo: {
+        position: 'absolute', top: -4, left: -4, right: -4, bottom: -4,
+        borderRadius: 26, backgroundColor: PAL.accent,
+    },
     avatar: {
-        width: 40, height: 40, borderRadius: 20,
+        width: 44, height: 44, borderRadius: 22,
         alignItems: 'center', justifyContent: 'center',
     },
     avatarRing: {
-        position: 'absolute',
-        top: -2, left: -2, right: -2, bottom: -2,
-        borderRadius: 22,
-        borderWidth: 2,
-        borderColor: colors.gold,
-        opacity: 0.4,
+        position: 'absolute', top: -2, left: -2, right: -2, bottom: -2,
+        borderRadius: 24, borderWidth: 1.5, borderColor: PAL.accent, opacity: 0.6,
     },
-    avatarText: { fontFamily: fonts.bodyBold, fontSize: 16, color: '#FFF' },
-    greeting: {
-        fontFamily: fonts.bodyMedium, fontSize: 13,
-        color: colors.textSecondary, letterSpacing: -0.2,
-    },
-    userName: {
-        fontFamily: fonts.heading, fontSize: 22,
-        color: colors.textPrimary, letterSpacing: -0.5,
-    },
+    avatarText: { fontFamily: FONT.bodyB, fontSize: 15, color: PAL.white },
+    greeting: { fontFamily: FONT.bodyM, fontSize: 12, color: PAL.textMuted, letterSpacing: 0.3, textTransform: 'uppercase' },
+    userName: { fontFamily: FONT.heading, fontSize: 22, color: PAL.primary, letterSpacing: -0.4 },
     notifBtn: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: '#FFF',
+        width: 44, height: 44, borderRadius: 22,
+        backgroundColor: PAL.white, borderWidth: 1, borderColor: PAL.border,
         alignItems: 'center', justifyContent: 'center',
-        ...shadows.xs,
     },
     notifBadge: {
         position: 'absolute', top: -2, right: -2,
-        backgroundColor: colors.danger,
-        borderRadius: 10,
-        minWidth: 18, height: 18,
-        paddingHorizontal: 5,
+        backgroundColor: PAL.danger, borderRadius: 10,
+        minWidth: 18, height: 18, paddingHorizontal: 5,
         alignItems: 'center', justifyContent: 'center',
-        borderWidth: 2, borderColor: '#F2F2F7',
+        borderWidth: 2, borderColor: PAL.bg,
     },
-    notifBadgeText: { color: '#FFF', fontSize: 10, fontFamily: fonts.bodyBold },
+    notifBadgeText: { color: PAL.white, fontSize: 10, fontFamily: FONT.bodyB },
 
-    body: { flex: 1, flexShrink: 1 },
-
-    // ─── Section ───
-    section: { marginBottom: 10 },
+    /* ─── Section ─── */
+    section: { marginBottom: 14 },
     sectionHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        marginHorizontal: 20,
-        marginBottom: 4,
+        flexDirection: 'row', alignItems: 'center', gap: 10,
+        marginHorizontal: 20, marginBottom: 10,
     },
+    sectionBar: { width: 3, height: 14, borderRadius: 2, backgroundColor: PAL.primary },
     sectionLabel: {
-        fontFamily: fonts.bodySemibold,
-        fontSize: 12,
-        color: colors.textSecondary,
-        letterSpacing: 0.4,
-        textTransform: 'uppercase',
+        fontFamily: FONT.bodyB, fontSize: 11, color: PAL.primary,
+        letterSpacing: 1.6, textTransform: 'uppercase',
     },
 
-    // ─── Hero ───
-    heroWrap: { paddingHorizontal: 20, marginBottom: 8 },
+    /* ─── Hero ─── */
+    heroWrap: { paddingHorizontal: 20, marginBottom: 18 },
     heroCard: {
-        height: 120,
-        borderRadius: 22,
-        overflow: 'hidden',
-        ...shadows.lg,
-        shadowColor: royal.emerald,
-        shadowOpacity: 0.32,
-        shadowRadius: 16,
-        shadowOffset: { width: 0, height: 6 },
+        height: 148, borderRadius: 22, overflow: 'hidden',
+        shadowColor: PAL.primary, shadowOpacity: 0.32,
+        shadowRadius: 22, shadowOffset: { width: 0, height: 12 }, elevation: 10,
+    },
+    heroBorder: {
+        ...StyleSheet.absoluteFillObject, borderRadius: 22,
+        borderWidth: 1, borderColor: 'rgba(212,160,23,0.45)',
     },
     heroGrid: { ...StyleSheet.absoluteFillObject },
     heroGridDot: {
-        position: 'absolute',
-        width: 3, height: 3, borderRadius: 1.5,
-        backgroundColor: 'rgba(255,255,255,0.15)',
+        position: 'absolute', width: 3, height: 3, borderRadius: 1.5,
+        backgroundColor: 'rgba(255,255,255,0.18)',
     },
-    heroOrb1: {
-        position: 'absolute',
-        top: -50, right: -50,
-        width: 160, height: 160, borderRadius: 80,
-        backgroundColor: colors.goldLight,
-        opacity: 0.16,
-    },
-    heroOrb2: {
-        position: 'absolute',
-        bottom: -60, left: -30,
-        width: 140, height: 140, borderRadius: 70,
-        backgroundColor: colors.primaryLight,
-        opacity: 0.2,
-    },
-    heroContent: { flex: 1, padding: 14, justifyContent: 'space-between' },
+    heroContent: { flex: 1, padding: 16, justifyContent: 'space-between' },
     heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
     heroBadge: {
-        flexDirection: 'row', alignItems: 'center', gap: 5,
-        backgroundColor: 'rgba(255,255,255,0.15)',
-        paddingHorizontal: 8, paddingVertical: 3,
-        borderRadius: 6,
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: 'rgba(212,175,55,0.4)',
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        backgroundColor: 'rgba(212,160,23,0.18)',
+        paddingHorizontal: 9, paddingVertical: 4, borderRadius: 6,
+        borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(212,160,23,0.55)',
     },
-    heroBadgeText: {
-        fontFamily: fonts.bodyBold, fontSize: 10,
-        color: colors.goldLight, letterSpacing: 1,
-    },
+    heroBadgeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: PAL.accent },
+    heroBadgeText: { fontFamily: FONT.bodyB, fontSize: 10, color: PAL.accentSoft, letterSpacing: 1.2 },
     heroChevron: {
-        width: 28, height: 28, borderRadius: 14,
-        backgroundColor: 'rgba(255,255,255,0.18)',
-        alignItems: 'center', justifyContent: 'center',
+        width: 30, height: 30, borderRadius: 15,
+        backgroundColor: PAL.accent, alignItems: 'center', justifyContent: 'center',
     },
-    heroTitle: {
-        fontFamily: fonts.heading, fontSize: 17,
-        color: '#FFF', letterSpacing: -0.4, lineHeight: 21,
-    },
-    heroSub: {
-        fontFamily: fonts.bodyMedium, fontSize: 13,
-        color: 'rgba(255,255,255,0.80)', lineHeight: 18,
-    },
+    heroTitle: { fontFamily: FONT.heading, fontSize: 19, color: PAL.white, letterSpacing: -0.4, lineHeight: 23 },
+    heroSub: { fontFamily: FONT.body, fontSize: 13, color: 'rgba(255,255,255,0.78)', lineHeight: 18, marginTop: 6 },
     progressRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 6,
+        flexDirection: 'row', justifyContent: 'space-between',
+        alignItems: 'center', marginBottom: 6,
     },
-    progressLabel: {
-        fontFamily: fonts.bodySemibold, fontSize: 12,
-        color: 'rgba(255,255,255,0.85)',
-    },
-    progressPct: {
-        fontFamily: fonts.heading, fontSize: 16,
-        color: colors.goldLight,
-    },
+    progressLabel: { fontFamily: FONT.bodySB, fontSize: 12, color: 'rgba(255,255,255,0.85)' },
+    progressPct: { fontFamily: FONT.heading, fontSize: 16, color: PAL.accentSoft },
     progressBg: {
-        height: 5,
-        backgroundColor: 'rgba(255,255,255,0.15)',
-        borderRadius: 3,
-        overflow: 'hidden',
+        height: 5, backgroundColor: 'rgba(255,255,255,0.15)',
+        borderRadius: 3, overflow: 'hidden',
     },
-    progressFill: { height: '100%', borderRadius: 3, overflow: 'hidden' },
+    progressFill: { height: '100%', borderRadius: 3, backgroundColor: PAL.accent },
 
-    // ─── Quick Actions ───
+    /* ─── Quick actions ─── */
     actionsRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingHorizontal: 20,
+        flexDirection: 'row', justifyContent: 'space-between',
+        paddingHorizontal: 20, gap: 10,
     },
-    actionItem: { alignItems: 'center', flex: 1 },
-    actionBtn: {
-        width: 46, height: 46, borderRadius: 14,
-        backgroundColor: '#FFF',
-        alignItems: 'center', justifyContent: 'center',
-        ...shadows.xs,
-        marginBottom: 4,
-    },
+    actionItem: { alignItems: 'center', flex: 1, gap: 8 },
     actionIcon: {
-        width: 32, height: 32, borderRadius: 10,
+        width: 60, height: 60, borderRadius: 18,
+        backgroundColor: PAL.white, borderWidth: 1,
         alignItems: 'center', justifyContent: 'center',
-        position: 'relative',
+        position: 'relative', overflow: 'hidden',
     },
+    actionIconBg: { ...StyleSheet.absoluteFillObject },
     actionBadge: {
-        position: 'absolute', top: -4, right: -4,
-        backgroundColor: colors.danger,
-        borderRadius: 9,
-        minWidth: 16, height: 16,
-        paddingHorizontal: 4,
+        position: 'absolute', top: -3, right: -3,
+        backgroundColor: PAL.danger, borderRadius: 9,
+        minWidth: 18, height: 18, paddingHorizontal: 4,
         alignItems: 'center', justifyContent: 'center',
-        borderWidth: 2, borderColor: '#FFF',
+        borderWidth: 2, borderColor: PAL.white,
     },
-    actionBadgeText: { color: '#FFF', fontSize: 9, fontFamily: fonts.bodyBold },
+    actionBadgeText: { color: PAL.white, fontSize: 9, fontFamily: FONT.bodyB },
     actionLabel: {
-        fontFamily: fonts.bodyMedium, fontSize: 10.5,
-        color: colors.textPrimary, textAlign: 'center',
-        letterSpacing: -0.1,
+        fontFamily: FONT.bodyM, fontSize: 11,
+        color: PAL.primary, textAlign: 'center',
     },
 
-    // ═══════════════════════════════════════════
-    // DUO PREMIUM
-    // ═══════════════════════════════════════════
-    duoSection: { marginBottom: 10 },
-    duoRow: {
-        flexDirection: 'row',
-        paddingHorizontal: 20,
-        gap: 10,
-        height: 170,
-    },
+    /* ─── Duo Premium ─── */
+    duoSection: { marginBottom: 18 },
+    duoRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 12, height: 200 },
 
-    // ─── BOUTIQUE (verticale) ───
+    /* Boutique */
     boutiqueCard: {
-        flex: 1.05,
-        borderRadius: 20,
-        overflow: 'hidden',
-        ...shadows.gold,
-        shadowColor: colors.gold,
-        shadowOpacity: 0.45,
-        shadowRadius: 18,
-        shadowOffset: { width: 0, height: 8 },
+        flex: 1.05, borderRadius: 22, overflow: 'hidden',
+        shadowColor: PAL.accent, shadowOpacity: 0.35,
+        shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 8,
     },
-    boutiqueOrbTop: {
-        position: 'absolute',
-        top: -50, right: -40,
-        width: 140, height: 140, borderRadius: 70,
-        backgroundColor: 'rgba(255,255,255,0.22)',
+    boutiqueBorder: {
+        ...StyleSheet.absoluteFillObject, borderRadius: 22,
+        borderWidth: 1.5, borderColor: PAL.accent + '60',
     },
-    boutiqueOrbBottom: {
-        position: 'absolute',
-        bottom: -60, left: -30,
-        width: 130, height: 130, borderRadius: 65,
-        backgroundColor: 'rgba(255,255,255,0.14)',
-    },
-    boutiqueContent: {
-        flex: 1,
-        padding: 12,
-        justifyContent: 'space-between',
-    },
-    boutiqueHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
+    boutiqueContent: { flex: 1, padding: 14, justifyContent: 'space-between' },
+    boutiqueHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     boutiquePill: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 5,
-        backgroundColor: 'rgba(255,255,255,0.35)',
-        paddingHorizontal: 8, paddingVertical: 3,
-        borderRadius: 6,
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: 'rgba(255,255,255,0.4)',
+        flexDirection: 'row', alignItems: 'center', gap: 5,
+        backgroundColor: PAL.primary, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6,
     },
-    boutiqueLiveDot: {
-        width: 6, height: 6, borderRadius: 3,
-        backgroundColor: '#FFF',
-    },
-    boutiquePillText: {
-        fontFamily: fonts.bodyBold, fontSize: 9,
-        color: '#FFF', letterSpacing: 1.2,
-    },
+    boutiqueLiveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: PAL.accent },
+    boutiquePillText: { fontFamily: FONT.bodyB, fontSize: 9, color: PAL.white, letterSpacing: 1.2 },
     boutiqueArrowMini: {
-        width: 22, height: 22, borderRadius: 11,
-        backgroundColor: '#FFF',
-        alignItems: 'center', justifyContent: 'center',
-        ...shadows.sm,
+        width: 24, height: 24, borderRadius: 12,
+        backgroundColor: PAL.accent, alignItems: 'center', justifyContent: 'center',
     },
-    boutiqueBagContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    boutiqueBagWrap: {
-        width: 50, height: 50,
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-    },
+    boutiqueBagContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', position: 'relative' },
     boutiqueBagGlow: {
-        position: 'absolute',
-        width: 60, height: 60, borderRadius: 30,
-        backgroundColor: '#FFF',
-        opacity: 0.3,
+        position: 'absolute', width: 70, height: 70, borderRadius: 35,
+        backgroundColor: PAL.accent, opacity: 0.25,
     },
     boutiqueBagCircle: {
-        width: 44, height: 44, borderRadius: 22,
-        backgroundColor: '#FFF',
-        alignItems: 'center', justifyContent: 'center',
-        ...shadows.md,
+        width: 52, height: 52, borderRadius: 26,
+        backgroundColor: PAL.white, alignItems: 'center', justifyContent: 'center',
+        borderWidth: 1.5, borderColor: PAL.accent,
     },
-    sparkleDot: {
-        position: 'absolute',
-        backgroundColor: '#FFF',
-        borderRadius: 50,
-    },
-    sparkleDot1: { width: 6, height: 6, top: 0, right: 4 },
-    sparkleDot2: { width: 4, height: 4, top: 20, left: -2 },
-    sparkleDot3: { width: 5, height: 5, bottom: 8, right: -4 },
-    boutiqueFooter: {},
-    boutiqueTitle: {
-        fontFamily: fonts.heading,
-        fontSize: 17,
-        color: '#FFF',
-        letterSpacing: -0.4,
-        lineHeight: 20,
-    },
-    boutiqueSubtitle: {
-        fontFamily: fonts.heading,
-        fontSize: 17,
-        color: colors.primaryDark,
-        letterSpacing: -0.4,
-        lineHeight: 20,
-        marginTop: -1,
-    },
-    boutiqueRatingRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        marginTop: 3,
-    },
-    boutiqueRating: {
-        fontFamily: fonts.bodySemibold,
-        fontSize: 11,
-        color: 'rgba(255,255,255,0.95)',
-        letterSpacing: -0.1,
-    },
+    boutiqueTitle: { fontFamily: FONT.heading, fontSize: 18, color: PAL.primary, letterSpacing: -0.4, lineHeight: 22 },
+    boutiqueSubtitle: { fontFamily: FONT.heading, fontSize: 18, color: PAL.accentDeep, letterSpacing: -0.4, lineHeight: 22, marginTop: -2 },
+    boutiqueRatingRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+    boutiqueRating: { fontFamily: FONT.bodySB, fontSize: 11, color: PAL.textMuted },
 
-    // ─── VIP (ticket vertical) ───
+    /* VIP */
     vipCard: {
-        flex: 1,
-        borderRadius: 20,
-        overflow: 'hidden',
-        ...shadows.lg,
-        shadowColor: royal.emerald,
-        shadowOpacity: 0.4,
-        shadowRadius: 14,
-        shadowOffset: { width: 0, height: 6 },
+        flex: 1, borderRadius: 22, overflow: 'hidden',
+        shadowColor: PAL.primary, shadowOpacity: 0.4,
+        shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 8,
     },
     vipBorder: {
-        ...StyleSheet.absoluteFillObject,
-        borderRadius: 24,
-        borderWidth: 1,
-        borderColor: 'rgba(212,175,55,0.40)',
+        ...StyleSheet.absoluteFillObject, borderRadius: 22,
+        borderWidth: 1, borderColor: 'rgba(212,160,23,0.40)',
     },
-    vipPattern: { ...StyleSheet.absoluteFillObject, opacity: 0.08 },
-    vipLine1: {
-        position: 'absolute',
-        top: 30, left: -20, right: -20,
-        height: 1,
-        backgroundColor: colors.goldLight,
-        transform: [{ rotate: '-15deg' }],
+    vipPattern: { ...StyleSheet.absoluteFillObject, opacity: 0.12, overflow: 'hidden' },
+    vipLine: {
+        position: 'absolute', left: -20, right: -20, height: 1,
+        backgroundColor: PAL.accent, transform: [{ rotate: '-15deg' }],
     },
-    vipLine2: {
-        position: 'absolute',
-        top: 80, left: -20, right: -20,
-        height: 1,
-        backgroundColor: colors.goldLight,
-        transform: [{ rotate: '-15deg' }],
-    },
-    vipLine3: {
-        position: 'absolute',
-        top: 130, left: -20, right: -20,
-        height: 1,
-        backgroundColor: colors.goldLight,
-        transform: [{ rotate: '-15deg' }],
-    },
-    vipOrb: {
-        position: 'absolute',
-        top: -40, right: -30,
-        width: 120, height: 120, borderRadius: 60,
-        backgroundColor: colors.goldLight,
-        opacity: 0.15,
-    },
-    vipContent: {
-        flex: 1,
-        padding: 12,
-        justifyContent: 'space-between',
-    },
-
-    // Crown avec glow
+    vipContent: { flex: 1, padding: 14, justifyContent: 'space-between' },
     vipCrownWrap: {
-        width: 34, height: 34,
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-        alignSelf: 'flex-start',
+        width: 36, height: 36, alignItems: 'center', justifyContent: 'center',
+        position: 'relative', alignSelf: 'flex-start',
     },
     vipCrownGlow: {
-        position: 'absolute',
-        width: 34, height: 34, borderRadius: 17,
-        backgroundColor: colors.gold,
+        position: 'absolute', width: 36, height: 36, borderRadius: 18,
+        backgroundColor: PAL.accent,
     },
     vipCrownCircle: {
-        width: 30, height: 30, borderRadius: 15,
-        backgroundColor: 'rgba(212,175,55,0.15)',
+        width: 32, height: 32, borderRadius: 16,
+        backgroundColor: 'rgba(212,160,23,0.18)',
         alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(212,175,55,0.5)',
+        borderWidth: 1, borderColor: 'rgba(212,160,23,0.55)',
     },
-
     vipBadge: {
-        backgroundColor: 'rgba(212,175,55,0.18)',
-        paddingHorizontal: 7, paddingVertical: 3,
-        borderRadius: 5,
-        alignSelf: 'flex-start',
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: 'rgba(212,175,55,0.5)',
+        backgroundColor: 'rgba(212,160,23,0.18)',
+        paddingHorizontal: 8, paddingVertical: 3, borderRadius: 5,
+        alignSelf: 'flex-start', borderWidth: StyleSheet.hairlineWidth,
+        borderColor: 'rgba(212,160,23,0.55)',
     },
-    vipBadgeText: {
-        fontFamily: fonts.bodyBold,
-        fontSize: 9,
-        color: colors.goldLight,
-        letterSpacing: 0.8,
-    },
-
-    vipTitleWrap: {},
-    vipTitle: {
-        fontFamily: fonts.heading,
-        fontSize: 15,
-        color: '#FFF',
-        letterSpacing: -0.3,
-        lineHeight: 19,
-    },
-    vipTitleAccentRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-    },
-    vipTitleAccent: {
-        fontFamily: fonts.heading,
-        fontSize: 15,
-        color: colors.goldLight,
-        letterSpacing: -0.3,
-        lineHeight: 19,
-    },
-    vipDot: {
-        width: 5, height: 5, borderRadius: 2.5,
-        backgroundColor: colors.goldLight,
-    },
-
-    // Ligne perforée
-    vipPerfLine: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginVertical: 2,
-    },
-    vipPerfDot: {
-        width: 3, height: 1,
-        backgroundColor: 'rgba(212,175,55,0.4)',
-    },
-
-    vipFooter: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    vipFooterText: {
-        fontFamily: fonts.bodyBold,
-        fontSize: 12,
-        color: '#FFF',
-        letterSpacing: -0.1,
-    },
+    vipBadgeText: { fontFamily: FONT.bodyB, fontSize: 9, color: PAL.accentSoft, letterSpacing: 0.9 },
+    vipTitle: { fontFamily: FONT.heading, fontSize: 16, color: PAL.white, letterSpacing: -0.3, lineHeight: 20 },
+    vipTitleAccentRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    vipTitleAccent: { fontFamily: FONT.heading, fontSize: 16, color: PAL.accentSoft, letterSpacing: -0.3, lineHeight: 20 },
+    vipDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: PAL.accentSoft },
+    vipPerfLine: { flexDirection: 'row', justifyContent: 'space-between', marginVertical: 4 },
+    vipPerfDot: { width: 3, height: 1, backgroundColor: 'rgba(212,160,23,0.5)' },
+    vipFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    vipFooterText: { fontFamily: FONT.bodyB, fontSize: 12, color: PAL.white },
     vipArrow: {
-        width: 30, height: 30, borderRadius: 15,
+        width: 28, height: 28, borderRadius: 14,
+        backgroundColor: PAL.accent, alignItems: 'center', justifyContent: 'center',
+    },
+    vipNotch: {
+        position: 'absolute', top: '50%', width: 22, height: 22, borderRadius: 11,
+        backgroundColor: PAL.bg, marginTop: -11,
+    },
+
+    /* ─── Tip card ─── */
+    tipCard: {
+        flexDirection: 'row', alignItems: 'center', gap: 12,
+        backgroundColor: PAL.auraGreen + '10',
+        borderWidth: 1, borderColor: PAL.auraGreen + '30',
+        borderRadius: 14, padding: 12,
+    },
+    tipIconWrap: {
+        width: 36, height: 36, borderRadius: 10,
+        backgroundColor: PAL.auraGreen + '18',
         alignItems: 'center', justifyContent: 'center',
-        overflow: 'hidden',
-        ...shadows.sm,
     },
+    tipTitle: { fontFamily: FONT.bodyB, fontSize: 13, color: PAL.primary, marginBottom: 2 },
+    tipDesc: { fontFamily: FONT.body, fontSize: 12, color: PAL.textMuted, lineHeight: 16 },
 
-    // Notches ticket
-    vipNotchLeft: {
-        position: 'absolute',
-        left: -10,
-        top: '50%',
-        width: 20, height: 20, borderRadius: 10,
-        backgroundColor: '#F2F2F7',
-        marginTop: -10,
-    },
-    vipNotchRight: {
-        position: 'absolute',
-        right: -10,
-        top: '50%',
-        width: 20, height: 20, borderRadius: 10,
-        backgroundColor: '#F2F2F7',
-        marginTop: -10,
-    },
-
-    // ─── List Group ───
-    listGroup: {
-        marginHorizontal: 20,
-        backgroundColor: '#FFF',
-        borderRadius: 14,
+    /* ─── Form card list ─── */
+    formCard: {
+        marginHorizontal: 20, backgroundColor: PAL.white,
+        borderRadius: 16, borderWidth: 1, borderColor: PAL.border,
         overflow: 'hidden',
     },
     listRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 12,
-        paddingVertical: 7,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: '#E5E5EA',
+        flexDirection: 'row', alignItems: 'center', gap: 12,
+        paddingHorizontal: 14, paddingVertical: 12,
     },
-    listRowLast: { borderBottomWidth: 0 },
+    listRowBorder: {
+        borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: PAL.borderSoft,
+    },
     listIcon: {
-        width: 28, height: 28, borderRadius: 8,
+        width: 38, height: 38, borderRadius: 11, borderWidth: 1,
         alignItems: 'center', justifyContent: 'center',
-        marginRight: 10,
     },
-    listLabel: {
-        flex: 1,
-        fontFamily: fonts.bodyMedium, fontSize: 14,
-        color: colors.textPrimary, letterSpacing: -0.2,
+    listLabel: { fontFamily: FONT.bodySB, fontSize: 14, color: PAL.primary, letterSpacing: -0.2 },
+    listDesc: { fontFamily: FONT.body, fontSize: 11.5, color: PAL.textMuted, marginTop: 1 },
+
+    /* ─── Footer signature ─── */
+    footerSig: {
+        flexDirection: 'row', alignItems: 'center', gap: 10,
+        paddingHorizontal: 40, marginTop: 8,
+    },
+    footerLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: PAL.border },
+    footerText: {
+        fontFamily: FONT.bodyM, fontSize: 10, color: PAL.textFaint,
+        letterSpacing: 1.5, textTransform: 'uppercase',
     },
 
-    // ─── Shimmer ───
+    /* ─── Shimmer commun ─── */
     shimmerWrap: { ...StyleSheet.absoluteFillObject, overflow: 'hidden' },
-    shimmerBand: { position: 'absolute', top: -50, bottom: -50, width: 100 },
+    shimmerBand: {
+        position: 'absolute', top: -50, bottom: -50, width: 110,
+        backgroundColor: 'rgba(255,255,255,0.10)',
+    },
 })

@@ -7,7 +7,11 @@ import { Users, Search, RefreshCw, Loader2, MapPin, Mail, Phone, Calendar } from
 const GOLD = '#D4AF37'; const YELLOW = '#FCD116'; const GREEN = '#008751'
 const GREEN_L = '#00A86B'; const RED = '#E8112D'; const BG = '#0B1F0D'; const TEXT = '#F0EBD8'
 
-function fmtDate(d: string) { return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) }
+function fmtDate(d: string) {
+    if (!d) return '—'
+    const dateObj = new Date(d)
+    return isNaN(dateObj.getTime()) ? '—' : dateObj.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+}
 
 interface Client {
     id: string; created_at: string; email?: string; full_name?: string
@@ -60,7 +64,11 @@ export default function CeoClients() {
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                 {[
                     { label: 'Total clients', value: String(clients.length), color: GOLD },
-                    { label: 'Ce mois', value: String(clients.filter(c => new Date(c.created_at) >= new Date(new Date().setDate(1))).length), color: GREEN_L },
+                    { label: 'Ce mois', value: String(clients.filter(c => {
+                        if (!c.created_at) return false;
+                        const dateObj = new Date(c.created_at);
+                        return !isNaN(dateObj.getTime()) && dateObj >= new Date(new Date().setDate(1));
+                    }).length), color: GREEN_L },
                     { label: 'Résultats', value: String(filtered.length), color: YELLOW },
                 ].map((s, i) => (
                     <motion.div key={s.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}

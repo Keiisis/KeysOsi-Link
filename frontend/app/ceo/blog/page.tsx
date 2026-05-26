@@ -13,7 +13,11 @@ interface Post {
     author?: string; created_at: string
 }
 
-function fmt(d: string) { return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) }
+function fmt(d: string) {
+    if (!d) return '—'
+    const dateObj = new Date(d)
+    return isNaN(dateObj.getTime()) ? '—' : dateObj.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+}
 function slug(s: string) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') }
 
 const EMPTY = { title: '', slug: '', excerpt: '', content: '', cover_image: '', category: '', tags: '', is_published: false, author: '' }

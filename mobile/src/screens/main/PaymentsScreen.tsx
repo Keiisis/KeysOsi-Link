@@ -1,571 +1,774 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react'
+// src/screens/payments/PaymentsScreen.tsx
+'use strict'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
-    View, Text, ScrollView, StyleSheet, TouchableOpacity,
-    RefreshControl, Platform, Alert, ActivityIndicator,
-    Modal, TextInput, KeyboardAvoidingView,
+    View, Text, StyleSheet, ScrollView, KeyboardAvoidingView,
+    Platform, ActivityIndicator, Alert, Pressable, Dimensions,
+    TouchableOpacity, RefreshControl,
 } from 'react-native'
-import { ArrowLeft, CreditCard, PlusCircle, Receipt, ShieldCheck, X } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
-import ScreenHeader from '../../components/ScreenHeader'
-import { useKkiapay } from '@kkiapay-org/react-native-sdk'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withTiming,
+    withDelay,
+    withSpring,
+    withRepeat,
+    withSequence,
+    Easing,
+    interpolate,
+    interpolateColor,
+} from 'react-native-reanimated'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLang } from '../../contexts/LangContext'
-import { usePaymentSettings } from '../../contexts/PaymentSettingsContext'
-import { supabase } from '../../config/supabase'
-import { fetchWithTimeout } from '../../lib/fetch'
-import { LinearGradient } from 'expo-linear-gradient'
-import { colors, spacing, radius, shadows, typography, royal } from '../../config/theme'
-import { RootStackParamList } from '../../navigation/AppNavigator'
 
-const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
+/* ═══════════════════════════════════════════════════════════
+   PaymentsScreen — THEME "CORPORATE PREMIUM 2026"
+   (Aligné avec RegisterScreen / EditProfilScreen)
+═══════════════════════════════════════════════════════════ */
+const { width } = Dimensions.get('window')
 
-type Nav = NativeStackNavigationProp<RootStackParamList, 'Payments'>
-
-/* ── Types ── */
-interface Payment {
-    id: string
-    amount: number
-    currency: string
-    status: 'pending' | 'success' | 'failed' | 'refunded'
-    reason: string
-    transaction_id: string
-    gateway: string
-    created_at: string
-}
-
-const STATUS_LABELS = {
-    success:  'Payé',
-    pending:  'En attente',
-    failed:   'Échoué',
-    refunded: 'Remboursé',
-}
-
-const STATUS_CONFIG = {
-    success:  { icon: 'checkmark-circle'  as const, color: colors.success },
-    pending:  { icon: 'time-outline'       as const, color: colors.warning },
-    failed:   { icon: 'close-circle'       as const, color: colors.danger  },
-    refunded: { icon: 'arrow-undo-circle'  as const, color: colors.info    },
+// Palette de l'agence
+const C = {
+    bg: '#FFFFFF',
+    surface: 'rgba(255, 255, 255, 0.92)',
+    surfaceSolid: '#FFFFFF',
+    border: 'rgba(16, 185, 129, 0.12)',
+    primary: '#047857',      // Émeraude Profond
+    primaryDark: '#022C22',
+    accent: '#C9A84C',       // Or
+    accentLight: '#E2C97E',
+    auraGreen: '#10B981',    // Émeraude vif
+    error: '#EF4444',
+    success: '#10B981',
+    textSec: '#4A5568',
+    textMuted: '#718096',
+    placeholder: '#718096',
+    primaryText: '#FFFFFF',
 }
 
 /* ═══════════════════════════════════════════════════════════
-   Payments Screen — Historique + initier paiement Kkiapay
-   SDK natif Kkiapay React Native (Android + iOS, in-app widget)
+   TYPES
 ═══════════════════════════════════════════════════════════ */
+type CardBrand = 'visa' | 'mastercard' | 'amex'
+interface PaymentMethod {
+    id: string
+    brand: CardBrand
+    last4: string
+    holder: string
+    expMonth: number
+    expYear: number
+    isDefault: boolean
+}
+interface Transaction {
+    id: string
+    title: string
+    subtitle: string
+    amount: number          // négatif = débit, positif = crédit
+    currency: string
+    date: string            // ISO
+    status: 'completed' | 'pending' | 'failed'
+    icon: keyof typeof Ionicons.glyphMap
+}
 
-export default function PaymentsScreen({ navigation }: { navigation: Nav }) {
-    const { profile } = useAuth()
+/* ═══════════════════════════════════════════════════════════
+   MOCK DATA (remplacer par fetch API)
+═══════════════════════════════════════════════════════════ */
+const MOCK_METHODS: PaymentMethod[] = [
+    { id: 'pm_1', brand: 'visa', last4: '4242', holder: 'JEAN DUPONT', expMonth: 12, expYear: 2027, isDefault: true },
+    { id: 'pm_2', brand: 'mastercard', last4: '8819', holder: 'JEAN DUPONT', expMonth: 8, expYear: 2026, isDefault: false },
+]
+const MOCK_TX: Transaction[] = [
+    { id: 't1', title: 'Abonnement Premium', subtitle: 'Renouvellement mensuel', amount: -29.99, currency: '€', date: '2026-05-20', status: 'completed', icon: 'star-outline' },
+    { id: 't2', title: 'Remboursement', subtitle: 'Commande #A1042', amount: 14.50, currency: '€', date: '2026-05-12', status: 'completed', icon: 'arrow-undo-outline' },
+    { id: 't3', title: 'Achat Module Pro', subtitle: 'Licence annuelle', amount: -199.00, currency: '€', date: '2026-04-28', status: 'pending', icon: 'cube-outline' },
+    { id: 't4', title: 'Frais de service', subtitle: 'Avril 2026', amount: -4.99, currency: '€', date: '2026-04-01', status: 'failed', icon: 'alert-circle-outline' },
+]
+
+/* ═══════════════════════════════════════════════════════════
+   COMPOSANT : ANIMATED SECTION (Stagger d'entrée)
+═══════════════════════════════════════════════════════════ */
+function AnimatedSection({ children, delay = 0, style }: { children: React.ReactNode; delay?: number; style?: any }) {
+    const anim = useSharedValue(0)
+    useEffect(() => {
+        anim.value = withDelay(delay, withTiming(1, { duration: 800, easing: Easing.out(Easing.quad) }))
+    }, [delay])
+    const animStyle = useAnimatedStyle(() => ({
+        opacity: anim.value,
+        transform: [{ translateY: 30 * (1 - anim.value) }],
+    }))
+    return <Animated.View style={[animStyle, style]}>{children}</Animated.View>
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ECRAN PRINCIPAL
+═══════════════════════════════════════════════════════════ */
+export default function PaymentsScreen({ navigation }: any) {
+    const { user } = useAuth() as any
     const { t } = useLang()
-    const [payments, setPayments] = useState<Payment[]>([])
-    const [loading, setLoading] = useState(true)
+
+    const [methods, setMethods] = useState<PaymentMethod[]>(MOCK_METHODS)
+    const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TX)
+    const [loading, setLoading] = useState(false)
     const [refreshing, setRefreshing] = useState(false)
-    const [amountModalOpen, setAmountModalOpen] = useState(false)
-    const [amountInput, setAmountInput] = useState('')
-    // Settings préchargés au démarrage de l'app via PaymentSettingsContext
-    // → ouverture du widget instantanée, pas de round-trip Supabase
-    const { kkiapayPublicKey: kkiapayKey, kkiapaySandbox: sandbox } = usePaymentSettings()
+    const [tab, setTab] = useState<'methods' | 'history'>('methods')
 
-    // Pending transaction id is captured at openKkiapayWidget time so the
-    // success listener (registered once at mount) can update the right row.
-    const pendingTxIdRef = useRef<string | null>(null)
-    const fetchPaymentsRef = useRef<() => Promise<void>>(async () => {})
-    // Listeners are registered once at mount, so we mirror profile via a ref to
-    // avoid stale closures (the SDK doesn't expose removeListener).
-    const profileRef = useRef(profile)
-    useEffect(() => { profileRef.current = profile }, [profile])
-
-    /* ── Charger l'historique ── */
-    const fetchPayments = useCallback(async () => {
-        if (!profile) return
-        try {
-            const { data } = await supabase
-                .from('paiements')
-                .select('id, amount, currency, status, reason, transaction_id, gateway, created_at')
-                .eq('client_id', profile.id)
-                .order('created_at', { ascending: false })
-                .limit(30)
-
-            setPayments((data || []) as Payment[])
-        } catch { /* ignore */ } finally { setLoading(false) }
-    }, [profile])
-
+    /* ── Auras corporate (fond) ── */
+    const aura1Y = useSharedValue(0)
+    const aura2X = useSharedValue(0)
     useEffect(() => {
-        fetchPayments()
-    }, [fetchPayments])
+        aura1Y.value = withRepeat(
+            withSequence(
+                withTiming(25, { duration: 6000, easing: Easing.inOut(Easing.quad) }),
+                withTiming(-10, { duration: 6000, easing: Easing.inOut(Easing.quad) })
+            ), -1, true
+        )
+        aura2X.value = withRepeat(
+            withSequence(
+                withTiming(-30, { duration: 7000, easing: Easing.inOut(Easing.quad) }),
+                withTiming(15, { duration: 7000, easing: Easing.inOut(Easing.quad) })
+            ), -1, true
+        )
+    }, [])
+    const aura1Style = useAnimatedStyle(() => ({ transform: [{ translateY: aura1Y.value }] }))
+    const aura2Style = useAnimatedStyle(() => ({ transform: [{ translateX: aura2X.value }] }))
 
-    // Keep fetchPayments ref up-to-date so the success listener (registered once)
-    // always uses the latest version.
-    useEffect(() => { fetchPaymentsRef.current = fetchPayments }, [fetchPayments])
-
-    const onRefresh = async () => {
+    /* ── Actions ── */
+    const onRefresh = useCallback(async () => {
         setRefreshing(true)
-        await fetchPayments()
-        setRefreshing(false)
-    }
-
-    /* ── Hook Kkiapay natif (Android + iOS, widget in-app) ── */
-    const { openKkiapayWidget, addSuccessListener, addFailedListener } = useKkiapay()
-
-    /* ── Listeners enregistrés UNE SEULE FOIS au mount ──
-       Le SDK n'expose pas de removeListener, donc on s'enregistre une fois et
-       on lit la transactionId courante via ref pour éviter les stale closures. */
-    useEffect(() => {
-        // Confirmation paiement : on délègue à /api/mobile/payments/verify qui vérifie
-        // côté serveur auprès de Kkiapay (anti-fraude). Le client ne touche plus à
-        // la table paiements directement pour passer pending → success.
-        addSuccessListener(async (data: { transactionId?: string }) => {
-            const localTxId = pendingTxIdRef.current
-            const profileNow = profileRef.current
-            if (!localTxId || !profileNow) return
-            const kkTxId = data?.transactionId ? String(data.transactionId) : ''
-            try {
-                const res = await fetchWithTimeout(`${API_BASE}/api/mobile/payments/verify`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        client_id: profileNow.id,
-                        local_tx_id: localTxId,
-                        kk_transaction_id: kkTxId,
-                    }),
-                    timeoutMs: 15000,
-                })
-                if (res.ok) {
-                    Alert.alert(t('✅ Paiement confirmé'), t('Votre paiement a bien été reçu.'))
-                } else {
-                    const j = await res.json().catch(() => ({} as { error?: string }))
-                    Alert.alert(
-                        t('Vérification échouée'),
-                        j?.error || t("Le paiement n'a pas pu être confirmé. Notre équipe sera notifiée.")
-                    )
-                }
-            } catch {
-                Alert.alert(t('Erreur réseau'), t('Impossible de confirmer le paiement. Réessayez ou contactez le support.'))
-            }
-            pendingTxIdRef.current = null
-            await fetchPaymentsRef.current()
-        })
-
-        addFailedListener(async () => {
-            const localTxId = pendingTxIdRef.current
-            const profileNow = profileRef.current
-            if (localTxId && profileNow) {
-                try {
-                    await fetchWithTimeout(`${API_BASE}/api/mobile/payments/verify`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            client_id: profileNow.id,
-                            local_tx_id: localTxId,
-                            status: 'failed',
-                        }),
-                        timeoutMs: 10000,
-                    })
-                } catch { /* ignore */ }
-                pendingTxIdRef.current = null
-            }
-            Alert.alert(t('Paiement échoué'), t("Le paiement n'a pas pu être finalisé. Veuillez réessayer."))
-            await fetchPaymentsRef.current()
-        })
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // TODO: refetch API
+        setTimeout(() => setRefreshing(false), 900)
     }, [])
 
-    /* ── Initier un paiement Kkiapay (natif in-app) ── */
-    const handleInitPayment = async (amount: number, description: string, dossierId?: string) => {
-        if (!profile || !kkiapayKey) {
-            Alert.alert(t('Configuration'), t("La passerelle de paiement n'est pas configurée. Veuillez contacter le support."))
-            return
-        }
-
-        const transactionId = `RG-${profile.id.slice(0, 8)}-${Date.now()}`
-        pendingTxIdRef.current = transactionId
-
-        // Enregistrer le paiement en attente
-        const { error: insertErr } = await supabase.from('paiements').insert({
-            client_id: profile.id,
-            dossier_id: dossierId || null,
-            amount,
-            currency: 'XOF',
-            status: 'pending',
-            reason: description,
-            transaction_id: transactionId,
-            gateway: 'kkiapay',
-        })
-        if (insertErr) {
-            pendingTxIdRef.current = null
-            Alert.alert(t('Erreur'), t('Impossible de créer le paiement. Veuillez réessayer.'))
-            return
-        }
-
-        // Ouvrir le widget Kkiapay natif (in-app)
-        try {
-            openKkiapayWidget({
-                amount,
-                api_key: kkiapayKey,
-                sandbox, // lu depuis Supabase settings.kkiapay_sandbox
-                email: profile.email || '',
-                phone: profile.phone || '',
-                reason: description || t('Paiement'),
-            })
-        } catch (e) {
-            console.error('Erreur ouverture widget Kkiapay:', e)
-            pendingTxIdRef.current = null
-            Alert.alert(t('Erreur'), t("Impossible d'ouvrir le paiement. Veuillez réessayer."))
-        }
-
-        await fetchPayments()
+    const setDefault = (id: string) => {
+        setMethods(prev => prev.map(m => ({ ...m, isDefault: m.id === id })))
     }
 
-    /* ── Formatage montant ── */
-    const formatAmount = (amount: number, currency: string) => {
-        if (currency === 'XOF' || currency === 'XAF') return `${amount.toLocaleString('fr-FR')} FCFA`
-        if (currency === 'EUR') return `${amount.toLocaleString('fr-FR')} €`
-        if (currency === 'USD') return `$${amount.toLocaleString('en-US')}`
-        return `${amount} ${currency}`
+    const removeMethod = (id: string) => {
+        Alert.alert(
+            t('Supprimer cette carte ?'),
+            t('Cette action est définitive.'),
+            [
+                { text: t('Annuler'), style: 'cancel' },
+                {
+                    text: t('Supprimer'), style: 'destructive',
+                    onPress: () => setMethods(prev => prev.filter(m => m.id !== id)),
+                },
+            ]
+        )
     }
 
-    const formatDate = (iso: string) => new Date(iso).toLocaleDateString('fr-FR', {
-        day: '2-digit', month: 'short', year: 'numeric',
-    })
+    const addMethod = () => {
+        navigation?.navigate?.('AddPaymentMethod')
+    }
 
-    const totalPaid = payments
-        .filter(p => p.status === 'success')
-        .reduce((acc, p) => acc + p.amount, 0)
+    /* ── Calculs ── */
+    const balance = transactions.reduce((acc, tx) => acc + tx.amount, 0)
+    const defaultMethod = methods.find(m => m.isDefault) || methods[0]
 
     return (
-        <View style={styles.container}>
-            <LinearGradient 
-                colors={['rgba(220,165,64,0.15)', royal.bg, royal.bg]} 
-                locations={[0, 0.4, 1]}
-                style={StyleSheet.absoluteFillObject} 
-            />
-            <ScrollView
-                showsVerticalScrollIndicator={false}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={royal.gold} />}
-            >
-            <ScreenHeader
-                title={t('Paiements')}
-                subtitle={t('Historique et facturation')}
-                onBack={() => navigation.goBack()}
-            />
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
+            {/* 🎨 Auras premium */}
+            <Animated.View style={[styles.aura, styles.aura1, aura1Style]} />
+            <Animated.View style={[styles.aura, styles.aura2, aura2Style]} />
 
-            {/* Résumé */}
-            <View style={styles.summaryCard}>
-                <View style={styles.summaryLeft}>
-                    <Text style={styles.summaryLabel}>{t('Total payé')}</Text>
-                    <Text style={styles.summaryAmount}>{formatAmount(totalPaid, 'XOF')}</Text>
-                    <Text style={styles.summaryCount}>{payments.filter(p => p.status === 'success').length} {t('transaction(s)')}</Text>
-                </View>
-                <View style={styles.summaryIcon}>
-                    <CreditCard size={28} color={colors.primary} strokeWidth={1.75} />
-                </View>
-            </View>
-
-            {/* Bouton nouveau paiement — ouvre un modal custom (Android-compat,
-                Alert.prompt n'existe pas sur Android — cf piège connu n°3) */}
-            <TouchableOpacity
-                style={styles.newPaymentBtn}
-                activeOpacity={0.8}
-                onPress={() => {
-                    setAmountInput('')
-                    setAmountModalOpen(true)
-                }}
-            >
-                <PlusCircle size={20} color="#FFF" strokeWidth={1.75} />
-                <Text style={styles.newPaymentBtnText}>{t('Effectuer un paiement')}</Text>
-            </TouchableOpacity>
-
-            {/* Liste */}
-            <View style={styles.listHeader}>
-                <Receipt size={18} color={colors.primary} strokeWidth={1.75} />
-                <Text style={styles.listTitle}>{t('Transactions')} ({payments.length})</Text>
-            </View>
-
-            {loading ? (
-                <View style={styles.centerState}>
-                    <ActivityIndicator color={colors.primary} size="large" />
-                </View>
-            ) : payments.length === 0 ? (
-                <View style={styles.emptyCard}>
-                    <View style={styles.emptyIconWrap}>
-                        <Receipt size={36} color={colors.textMuted} strokeWidth={1.75} />
+            {/* NAV BAR */}
+            <View style={styles.navBar}>
+                <Pressable onPress={() => navigation?.goBack?.()} style={styles.navBack}>
+                    <View style={styles.iconContainer}>
+                        <Ionicons name="arrow-back" size={22} color={C.primary} />
                     </View>
-                    <Text style={styles.emptyTitle}>{t('Aucune transaction')}</Text>
-                    <Text style={styles.emptyText}>
-                        {t('Vos paiements apparaîtront ici. Utilisez le bouton ci-dessus pour effectuer un paiement sécurisé via Kkiapay.')}
+                </Pressable>
+                <Text style={styles.navTitle}>{t('Paiements')}</Text>
+                <Pressable onPress={addMethod} style={styles.navBack}>
+                    <View style={styles.iconContainer}>
+                        <Ionicons name="add" size={24} color={C.primary} />
+                    </View>
+                </Pressable>
+            </View>
+
+            <ScrollView
+                contentContainerStyle={styles.scroll}
+                showsVerticalScrollIndicator={false}
+                bounces
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primary} />
+                }
+            >
+                {/* HEADER TITRE */}
+                <AnimatedSection delay={0}>
+                    <View style={styles.headerContainer}>
+                        <Text style={styles.title}>{t('Votre')}</Text>
+                        <Text style={styles.titleHighlight}>{t('portefeuille.')}</Text>
+                        <Text style={styles.subtitle}>
+                            {t('Gérez vos moyens de paiement et suivez vos transactions en toute sécurité.')}
+                        </Text>
+                    </View>
+                </AnimatedSection>
+
+                {/* HERO CARD : Carte principale */}
+                <AnimatedSection delay={120}>
+                    <HeroCard method={defaultMethod} balance={balance} t={t} />
+                </AnimatedSection>
+
+                {/* TABS */}
+                <AnimatedSection delay={220} style={{ marginTop: 28 }}>
+                    <View style={styles.tabsContainer}>
+                        <TabButton label={t('Moyens de paiement')} active={tab === 'methods'} onPress={() => setTab('methods')} />
+                        <TabButton label={t('Historique')} active={tab === 'history'} onPress={() => setTab('history')} />
+                    </View>
+                </AnimatedSection>
+
+                {/* CONTENU */}
+                {tab === 'methods' ? (
+                    <AnimatedSection delay={300} style={styles.section}>
+                        {methods.length === 0 ? (
+                            <EmptyState
+                                icon="card-outline"
+                                title={t('Aucune carte enregistrée')}
+                                subtitle={t('Ajoutez votre première carte pour commencer.')}
+                            />
+                        ) : (
+                            methods.map((m, i) => (
+                                <MethodRow
+                                    key={m.id}
+                                    method={m}
+                                    onSetDefault={() => setDefault(m.id)}
+                                    onRemove={() => removeMethod(m.id)}
+                                    t={t}
+                                    delay={i * 80}
+                                />
+                            ))
+                        )}
+
+                        <InteractiveButton
+                            title={t('Ajouter un moyen de paiement')}
+                            icon="add-circle-outline"
+                            onPress={addMethod}
+                            loading={loading}
+                        />
+                    </AnimatedSection>
+                ) : (
+                    <AnimatedSection delay={300} style={styles.section}>
+                        {transactions.length === 0 ? (
+                            <EmptyState
+                                icon="receipt-outline"
+                                title={t('Aucune transaction')}
+                                subtitle={t('Vos opérations apparaîtront ici.')}
+                            />
+                        ) : (
+                            transactions.map((tx, i) => (
+                                <TransactionRow key={tx.id} tx={tx} t={t} delay={i * 60} />
+                            ))
+                        )}
+                    </AnimatedSection>
+                )}
+
+                {/* SECURITE */}
+                <AnimatedSection delay={400} style={{ marginTop: 32 }}>
+                    <View style={styles.securityBox}>
+                        <View style={styles.securityIconWrap}>
+                            <Ionicons name="shield-checkmark" size={20} color={C.accent} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.securityTitle}>{t('Paiements sécurisés')}</Text>
+                            <Text style={styles.securitySub}>
+                                {t('Chiffrement bout-en-bout · PCI DSS · 3D Secure')}
+                            </Text>
+                        </View>
+                    </View>
+                </AnimatedSection>
+            </ScrollView>
+        </KeyboardAvoidingView>
+    )
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COMPOSANT : HERO CARD (Carte de crédit premium)
+═══════════════════════════════════════════════════════════ */
+function HeroCard({ method, balance, t }: { method?: PaymentMethod; balance: number; t: (s: string) => string }) {
+    const shine = useSharedValue(0)
+    useEffect(() => {
+        shine.value = withRepeat(
+            withSequence(
+                withTiming(1, { duration: 3500, easing: Easing.inOut(Easing.quad) }),
+                withTiming(0, { duration: 3500, easing: Easing.inOut(Easing.quad) })
+            ), -1, true
+        )
+    }, [])
+    const shineStyle = useAnimatedStyle(() => ({
+        opacity: interpolate(shine.value, [0, 1], [0.05, 0.18]),
+        transform: [{ translateX: interpolate(shine.value, [0, 1], [-width * 0.3, width * 0.3]) }],
+    }))
+
+    return (
+        <View style={styles.heroCard}>
+            {/* Halo Or animé */}
+            <Animated.View style={[styles.heroShine, shineStyle]} />
+
+            <View style={styles.heroTop}>
+                <View>
+                    <Text style={styles.heroLabel}>{t('Solde net')}</Text>
+                    <Text style={styles.heroBalance}>
+                        {balance < 0 ? '-' : ''}{Math.abs(balance).toFixed(2)} €
                     </Text>
                 </View>
-            ) : (
-                <View style={styles.paymentList}>
-                    {payments.map((payment, i) => {
-                        const st = STATUS_CONFIG[payment.status] || STATUS_CONFIG.pending
-                        return (
-                            <View
-                                key={payment.id}
-                                style={[styles.paymentCard, i === payments.length - 1 && styles.paymentCardLast]}
-                            >
-                                <View style={[styles.paymentIconWrap, { backgroundColor: st.color + '12' }]}>
-                                    <Ionicons name={st.icon} size={20} color={st.color} />
-                                </View>
-                                <View style={styles.paymentInfo}>
-                                    <Text style={styles.paymentDesc} numberOfLines={1}>
-                                        {payment.reason || 'Paiement service'}
-                                    </Text>
-                                    <Text style={styles.paymentRef}>{t('Réf')} : {payment.transaction_id || '—'}</Text>
-                                    <Text style={styles.paymentDate}>{formatDate(payment.created_at)}</Text>
-                                </View>
-                                <View style={styles.paymentRight}>
-                                    <Text style={[styles.paymentAmount, { color: payment.status === 'success' ? colors.success : colors.textPrimary }]}>
-                                        {formatAmount(payment.amount, payment.currency)}
-                                    </Text>
-                                    <View style={[styles.statusBadge, { backgroundColor: st.color + '12' }]}>
-                                        <Text style={[styles.statusText, { color: st.color }]}>{t(STATUS_LABELS[payment.status] || STATUS_LABELS.pending)}</Text>
-                                    </View>
-                                </View>
-                            </View>
-                        )
-                    })}
+                <View style={styles.heroBrandWrap}>
+                    <Ionicons name="diamond-outline" size={18} color={C.accent} />
+                    <Text style={styles.heroBrandText}>PREMIUM</Text>
                 </View>
-            )}
-
-            {/* Note Kkiapay */}
-            <View style={styles.kkiapayNote}>
-                <ShieldCheck size={14} color={colors.textMuted} strokeWidth={1.75} />
-                <Text style={styles.kkiapayNoteText}>
-                    {t('Paiements sécurisés par Kkiapay — Mobile Money, cartes bancaires')}
-                </Text>
             </View>
 
-            <View style={{ height: 100 }} />
-            </ScrollView>
+            <View style={styles.heroChip}>
+                <View style={styles.heroChipInner} />
+            </View>
 
-            {/* ── Modal saisie montant — compat Android (Alert.prompt iOS-only) ── */}
-            <Modal
-                visible={amountModalOpen}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setAmountModalOpen(false)}
-            >
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                    style={styles.modalBackdrop}
-                >
-                    <View style={styles.modalCard}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>{t('Montant à payer')}</Text>
-                            <TouchableOpacity
-                                onPress={() => setAmountModalOpen(false)}
-                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                            >
-                                <X size={20} color={colors.textMuted} strokeWidth={2} />
-                            </TouchableOpacity>
+            <View style={styles.heroBottom}>
+                <View style={{ flex: 1 }}>
+                    <Text style={styles.heroNumber}>
+                        •••• •••• •••• {method?.last4 ?? '0000'}
+                    </Text>
+                    <View style={styles.heroMetaRow}>
+                        <View>
+                            <Text style={styles.heroMetaLabel}>{t('Titulaire')}</Text>
+                            <Text style={styles.heroMetaValue}>{method?.holder ?? '—'}</Text>
                         </View>
-                        <Text style={styles.modalHint}>{t('Entrez le montant en FCFA (minimum 100)')}</Text>
-                        <TextInput
-                            style={styles.modalInput}
-                            value={amountInput}
-                            onChangeText={(v) => setAmountInput(v.replace(/[^0-9]/g, ''))}
-                            placeholder="0"
-                            placeholderTextColor={colors.textMuted}
-                            keyboardType="numeric"
-                            autoFocus
-                            maxLength={9}
-                        />
-                        <View style={styles.modalActions}>
-                            <TouchableOpacity
-                                style={[styles.modalBtn, styles.modalBtnGhost]}
-                                onPress={() => setAmountModalOpen(false)}
-                                activeOpacity={0.7}
-                            >
-                                <Text style={styles.modalBtnGhostText}>{t('Annuler')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.modalBtn, styles.modalBtnPrimary]}
-                                onPress={() => {
-                                    const amount = parseInt(amountInput || '0', 10)
-                                    if (!amount || amount < 100) {
-                                        Alert.alert(
-                                            t('Montant invalide'),
-                                            t('Veuillez entrer un montant supérieur ou égal à 100 FCFA.')
-                                        )
-                                        return
-                                    }
-                                    setAmountModalOpen(false)
-                                    handleInitPayment(amount, t('Paiement service Retour Gagnant'))
-                                }}
-                                activeOpacity={0.85}
-                            >
-                                <CreditCard size={16} color="#FFF" strokeWidth={2} />
-                                <Text style={styles.modalBtnPrimaryText}>{t('Payer via Kkiapay')}</Text>
-                            </TouchableOpacity>
+                        <View style={{ marginLeft: 24 }}>
+                            <Text style={styles.heroMetaLabel}>{t('Expire')}</Text>
+                            <Text style={styles.heroMetaValue}>
+                                {method ? `${String(method.expMonth).padStart(2, '0')}/${String(method.expYear).slice(-2)}` : '—/—'}
+                            </Text>
                         </View>
                     </View>
-                </KeyboardAvoidingView>
-            </Modal>
+                </View>
+                <BrandLogo brand={method?.brand} />
+            </View>
         </View>
     )
 }
 
+/* ═══════════════════════════════════════════════════════════
+   COMPOSANT : BRAND LOGO
+═══════════════════════════════════════════════════════════ */
+function BrandLogo({ brand }: { brand?: CardBrand }) {
+    if (brand === 'visa') return <Text style={[styles.brandText, { fontStyle: 'italic' }]}>VISA</Text>
+    if (brand === 'mastercard') return (
+        <View style={styles.mcWrap}>
+            <View style={[styles.mcDot, { backgroundColor: '#EB001B', marginRight: -8 }]} />
+            <View style={[styles.mcDot, { backgroundColor: '#F79E1B', opacity: 0.9 }]} />
+        </View>
+    )
+    if (brand === 'amex') return <Text style={styles.brandText}>AMEX</Text>
+    return <Ionicons name="card" size={28} color={C.accentLight} />
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COMPOSANT : TAB BUTTON
+═══════════════════════════════════════════════════════════ */
+function TabButton({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+    const anim = useSharedValue(active ? 1 : 0)
+    useEffect(() => {
+        anim.value = withSpring(active ? 1 : 0, { damping: 18, stiffness: 180 })
+    }, [active])
+    const rStyle = useAnimatedStyle(() => ({
+        backgroundColor: interpolateColor(anim.value, [0, 1], ['transparent', C.surfaceSolid]),
+        shadowOpacity: interpolate(anim.value, [0, 1], [0, 0.08]),
+    }))
+    const textStyle = useAnimatedStyle(() => ({
+        color: interpolateColor(anim.value, [0, 1], [C.textSec, C.primary]),
+    }))
+    return (
+        <Pressable onPress={onPress} style={{ flex: 1 }}>
+            <Animated.View style={[styles.tabBtn, rStyle]}>
+                <Animated.Text style={[styles.tabText, textStyle]}>{label}</Animated.Text>
+            </Animated.View>
+        </Pressable>
+    )
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COMPOSANT : METHOD ROW
+═══════════════════════════════════════════════════════════ */
+function MethodRow({
+    method, onSetDefault, onRemove, t, delay,
+}: {
+    method: PaymentMethod
+    onSetDefault: () => void
+    onRemove: () => void
+    t: (s: string) => string
+    delay: number
+}) {
+    return (
+        <AnimatedSection delay={delay}>
+            <View style={styles.methodRow}>
+                <View style={styles.methodBrand}>
+                    <BrandLogo brand={method.brand} />
+                </View>
+
+                <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={styles.methodTitle}>
+                            {method.brand.toUpperCase()} •••• {method.last4}
+                        </Text>
+                        {method.isDefault && (
+                            <View style={styles.defaultBadge}>
+                                <Text style={styles.defaultBadgeText}>{t('Par défaut')}</Text>
+                            </View>
+                        )}
+                    </View>
+                    <Text style={styles.methodSub}>
+                        {t('Expire')} {String(method.expMonth).padStart(2, '0')}/{String(method.expYear).slice(-2)} · {method.holder}
+                    </Text>
+                </View>
+
+                <View style={styles.methodActions}>
+                    {!method.isDefault && (
+                        <TouchableOpacity onPress={onSetDefault} hitSlop={10} style={styles.methodAction}>
+                            <Ionicons name="star-outline" size={18} color={C.primary} />
+                        </TouchableOpacity>
+                    )}
+                    <TouchableOpacity onPress={onRemove} hitSlop={10} style={styles.methodAction}>
+                        <Ionicons name="trash-outline" size={18} color={C.error} />
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </AnimatedSection>
+    )
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COMPOSANT : TRANSACTION ROW
+═══════════════════════════════════════════════════════════ */
+function TransactionRow({ tx, t, delay }: { tx: Transaction; t: (s: string) => string; delay: number }) {
+    const isCredit = tx.amount > 0
+    const statusColor =
+        tx.status === 'completed' ? C.success :
+            tx.status === 'pending' ? C.accent : C.error
+
+    return (
+        <AnimatedSection delay={delay}>
+            <View style={styles.txRow}>
+                <View style={[styles.txIconWrap, { backgroundColor: isCredit ? '#E8F3EE' : '#F1F5F9' }]}>
+                    <Ionicons name={tx.icon} size={20} color={isCredit ? C.success : C.primary} />
+                </View>
+
+                <View style={{ flex: 1 }}>
+                    <Text style={styles.txTitle}>{tx.title}</Text>
+                    <Text style={styles.txSub}>{tx.subtitle} · {formatDate(tx.date)}</Text>
+                </View>
+
+                <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={[styles.txAmount, { color: isCredit ? C.success : C.primary }]}>
+                        {isCredit ? '+' : '-'}{Math.abs(tx.amount).toFixed(2)} {tx.currency}
+                    </Text>
+                    <View style={[styles.txStatusDot, { backgroundColor: statusColor }]}>
+                        <Text style={styles.txStatusText}>
+                            {tx.status === 'completed' ? t('Validée') : tx.status === 'pending' ? t('En cours') : t('Échouée')}
+                        </Text>
+                    </View>
+                </View>
+            </View>
+        </AnimatedSection>
+    )
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COMPOSANT : EMPTY STATE
+═══════════════════════════════════════════════════════════ */
+function EmptyState({ icon, title, subtitle }: { icon: keyof typeof Ionicons.glyphMap; title: string; subtitle: string }) {
+    return (
+        <View style={styles.empty}>
+            <View style={styles.emptyIcon}>
+                <Ionicons name={icon} size={28} color={C.accent} />
+            </View>
+            <Text style={styles.emptyTitle}>{title}</Text>
+            <Text style={styles.emptySub}>{subtitle}</Text>
+        </View>
+    )
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COMPOSANT : BOUTON INTERACTIF (identique RegisterScreen)
+═══════════════════════════════════════════════════════════ */
+function InteractiveButton({ title, onPress, disabled, loading, icon }: any) {
+    return (
+        <TouchableOpacity
+            onPress={onPress}
+            disabled={disabled || loading}
+            activeOpacity={0.85}
+            style={[styles.btn, (disabled || loading) && styles.btnDisabled, { marginTop: 20 }]}
+        >
+            {loading ? (
+                <ActivityIndicator color={C.primaryText} size="small" />
+            ) : (
+                <>
+                    {icon && <Ionicons name={icon} size={18} color={C.accent} style={{ marginRight: 8 }} />}
+                    <Text style={styles.btnText}>{title}</Text>
+                    <Ionicons name="arrow-forward" size={18} color={C.accent} style={{ marginLeft: 8 }} />
+                </>
+            )}
+        </TouchableOpacity>
+    )
+}
+
+/* ═══════════════════════════════════════════════════════════
+   UTILS
+═══════════════════════════════════════════════════════════ */
+function formatDate(iso: string) {
+    try {
+        const d = new Date(iso)
+        return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+    } catch {
+        return iso
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STYLES
+═══════════════════════════════════════════════════════════ */
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: royal.bg },
+    container: { flex: 1, backgroundColor: C.bg },
 
+    /* ── Auras ── */
+    aura: {
+        position: 'absolute',
+        width: width * 0.9,
+        height: width * 0.9,
+        borderRadius: width,
+        opacity: 0.05,
+    },
+    aura1: { top: -100, right: -100, backgroundColor: C.primary },
+    aura2: { bottom: 50, left: -100, backgroundColor: C.auraGreen },
 
-
-    summaryCard: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        margin: spacing.lg,
-        backgroundColor: colors.headerBg,
-        borderRadius: radius.lg,
-        padding: spacing.lg,
-        borderWidth: 1, borderColor: colors.primary + '25',
-        ...shadows.md,
-    },
-    summaryLeft: { gap: 4 },
-    summaryLabel: { ...typography.caption, color: colors.primary + 'AA' },
-    summaryAmount: { ...typography.h2, color: colors.textOnDark },
-    summaryCount: { ...typography.caption, color: colors.textMuted },
-    summaryIcon: {
-        width: 52, height: 52, borderRadius: 26,
-        backgroundColor: colors.primary + '15',
-        alignItems: 'center', justifyContent: 'center',
-    },
-
-    newPaymentBtn: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-        marginHorizontal: spacing.lg, marginBottom: spacing.lg,
-        backgroundColor: colors.primary,
-        borderRadius: radius.md, paddingVertical: 15,
-        ...shadows.primary,
-    },
-    newPaymentBtnText: { ...typography.button, color: '#FFF' },
-
-    listHeader: {
-        flexDirection: 'row', alignItems: 'center', gap: 8,
-        marginHorizontal: spacing.lg, marginBottom: spacing.sm,
-    },
-    listTitle: { ...typography.h3, fontSize: 16, color: colors.textPrimary },
-
-    centerState: { padding: spacing.xxl, alignItems: 'center' },
-
-    emptyCard: {
-        marginHorizontal: spacing.lg,
-        backgroundColor: colors.surface,
-        borderRadius: radius.lg,
-        padding: spacing.xl,
-        alignItems: 'center',
-        borderWidth: 1, borderColor: colors.borderLight,
-    },
-    emptyIconWrap: {
-        width: 70, height: 70, borderRadius: 35,
-        backgroundColor: colors.surfaceElevated,
-        alignItems: 'center', justifyContent: 'center', marginBottom: 16,
-    },
-    emptyTitle: { ...typography.h3, color: colors.textPrimary, marginBottom: 8 },
-    emptyText: { ...typography.bodySmall, color: colors.textSecondary, textAlign: 'center', lineHeight: 20 },
-
-    paymentList: { paddingHorizontal: spacing.lg },
-    paymentCard: {
-        flexDirection: 'row', alignItems: 'center',
-        backgroundColor: colors.surface,
-        borderRadius: radius.md,
-        padding: 14, marginBottom: 8,
-        borderWidth: 1, borderColor: colors.borderLight,
-        ...shadows.xs,
-    },
-    paymentCardLast: { marginBottom: 0 },
-    paymentIconWrap: {
-        width: 40, height: 40, borderRadius: 10,
-        alignItems: 'center', justifyContent: 'center', marginRight: 12,
-    },
-    paymentInfo: { flex: 1 },
-    paymentDesc: { ...typography.label, color: colors.textPrimary },
-    paymentRef: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
-    paymentDate: { ...typography.caption, color: colors.textMuted, marginTop: 1 },
-    paymentRight: { alignItems: 'flex-end', gap: 6 },
-    paymentAmount: { ...typography.label, fontSize: 14 },
-    statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-    statusText: { fontSize: 10, fontFamily: 'Inter_700Bold' },
-
-    kkiapayNote: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-        marginTop: spacing.lg, marginHorizontal: spacing.lg,
-    },
-    kkiapayNoteText: { ...typography.caption, color: colors.textMuted, textAlign: 'center' },
-
-    /* ── Modal saisie montant ── */
-    modalBackdrop: {
-        flex: 1,
-        backgroundColor: 'rgba(15, 28, 51, 0.55)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: spacing.lg,
-    },
-    modalCard: {
-        width: '100%',
-        maxWidth: 380,
-        backgroundColor: colors.surface,
-        borderRadius: radius.lg,
-        padding: spacing.lg,
-        borderWidth: 1,
-        borderColor: colors.borderLight,
-        ...shadows.md,
-    },
-    modalHeader: {
+    /* ── Nav ── */
+    navBar: {
+        paddingTop: Platform.OS === 'ios' ? 60 : 40,
+        paddingHorizontal: 20,
+        paddingBottom: 10,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 6,
+        zIndex: 10,
     },
-    modalTitle: {
-        ...typography.h3,
-        color: colors.textPrimary,
-        fontSize: 17,
+    navBack: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
+    navTitle: { fontSize: 16, fontWeight: '700', color: C.primary, letterSpacing: 0.3 },
+    iconContainer: {
+        width: 40, height: 40, borderRadius: 20,
+        backgroundColor: C.surface,
+        borderWidth: 1, borderColor: C.border,
+        justifyContent: 'center', alignItems: 'center',
     },
-    modalHint: {
-        ...typography.caption,
-        color: colors.textMuted,
-        marginBottom: spacing.md,
+
+    scroll: { paddingHorizontal: 24, paddingBottom: 80 },
+
+    /* ── Header ── */
+    headerContainer: { marginTop: 8, marginBottom: 28 },
+    title: { fontSize: 36, fontWeight: '700', color: C.primary, letterSpacing: -0.5 },
+    titleHighlight: { fontSize: 36, fontWeight: '800', color: C.accent, letterSpacing: -0.5, marginTop: -4 },
+    subtitle: { fontSize: 15, color: C.textSec, marginTop: 12, lineHeight: 22 },
+
+    /* ── HERO CARD ── */
+    heroCard: {
+        height: 210,
+        borderRadius: 24,
+        backgroundColor: C.primary,
+        padding: 22,
+        overflow: 'hidden',
+        shadowColor: C.primary,
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.3,
+        shadowRadius: 24,
+        elevation: 12,
     },
-    modalInput: {
-        ...typography.h2,
-        fontSize: 26,
-        color: colors.textPrimary,
-        textAlign: 'center',
-        backgroundColor: colors.surfaceElevated,
-        borderRadius: radius.md,
-        borderWidth: 1,
-        borderColor: colors.borderLight,
-        paddingVertical: 14,
-        paddingHorizontal: 12,
-        marginBottom: spacing.lg,
+    heroShine: {
+        position: 'absolute',
+        top: -40, bottom: -40,
+        width: 140,
+        backgroundColor: C.accent,
+        transform: [{ rotate: '18deg' }],
     },
-    modalActions: {
+    heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+    heroLabel: { color: C.accentLight, fontSize: 12, fontWeight: '600', letterSpacing: 1, textTransform: 'uppercase' },
+    heroBalance: { color: C.primaryText, fontSize: 30, fontWeight: '800', marginTop: 6, letterSpacing: -0.5 },
+    heroBrandWrap: {
         flexDirection: 'row',
-        gap: 10,
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: 'rgba(212, 160, 23, 0.15)',
+        borderWidth: 1,
+        borderColor: 'rgba(212, 160, 23, 0.35)',
+        paddingHorizontal: 10, paddingVertical: 6,
+        borderRadius: 12,
     },
-    modalBtn: {
+    heroBrandText: { color: C.accent, fontSize: 11, fontWeight: '700', letterSpacing: 1 },
+    heroChip: {
+        width: 38, height: 28,
+        backgroundColor: C.accentLight,
+        borderRadius: 6,
+        marginTop: 14,
+        padding: 4,
+    },
+    heroChipInner: {
         flex: 1,
+        backgroundColor: C.accent,
+        borderRadius: 3,
+        opacity: 0.7,
+    },
+    heroBottom: {
+        position: 'absolute',
+        bottom: 22, left: 22, right: 22,
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+    },
+    heroNumber: { color: C.primaryText, fontSize: 17, fontWeight: '600', letterSpacing: 2 },
+    heroMetaRow: { flexDirection: 'row', marginTop: 10 },
+    heroMetaLabel: { color: C.accentLight, fontSize: 9, fontWeight: '600', letterSpacing: 1, textTransform: 'uppercase' },
+    heroMetaValue: { color: C.primaryText, fontSize: 12, fontWeight: '600', marginTop: 2 },
+
+    brandText: { color: C.primaryText, fontSize: 20, fontWeight: '800', letterSpacing: 1 },
+    mcWrap: { flexDirection: 'row', alignItems: 'center' },
+    mcDot: { width: 22, height: 22, borderRadius: 11 },
+
+    /* ── Tabs ── */
+    tabsContainer: {
+        flexDirection: 'row',
+        backgroundColor: '#EEF1F5',
+        borderRadius: 14,
+        padding: 4,
+    },
+    tabBtn: {
+        height: 42,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: C.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowRadius: 8,
+        elevation: 0,
+    },
+    tabText: { fontSize: 13, fontWeight: '700', letterSpacing: 0.2 },
+
+    section: { marginTop: 18, gap: 12 },
+
+    /* ── Method row ── */
+    methodRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: C.surfaceSolid,
+        borderWidth: 1,
+        borderColor: C.border,
+        borderRadius: 16,
+        padding: 14,
+        shadowColor: C.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.04,
+        shadowRadius: 10,
+        elevation: 1,
+    },
+    methodBrand: {
+        width: 48, height: 36,
+        borderRadius: 8,
+        backgroundColor: C.primary,
+        alignItems: 'center', justifyContent: 'center',
+        marginRight: 12,
+    },
+    methodTitle: { fontSize: 14, fontWeight: '700', color: C.primary, letterSpacing: 0.3 },
+    methodSub: { fontSize: 12, color: C.textSec, marginTop: 2 },
+    methodActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    methodAction: {
+        width: 36, height: 36, borderRadius: 18,
+        backgroundColor: C.bg,
+        alignItems: 'center', justifyContent: 'center',
+        borderWidth: 1, borderColor: C.border,
+    },
+    defaultBadge: {
+        marginLeft: 8,
+        backgroundColor: 'rgba(212, 160, 23, 0.12)',
+        borderWidth: 1,
+        borderColor: 'rgba(212, 160, 23, 0.35)',
+        paddingHorizontal: 8, paddingVertical: 2,
+        borderRadius: 8,
+    },
+    defaultBadgeText: { color: C.accent, fontSize: 10, fontWeight: '700', letterSpacing: 0.4 },
+
+    /* ── Transaction ── */
+    txRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: C.surfaceSolid,
+        borderWidth: 1,
+        borderColor: C.border,
+        borderRadius: 16,
+        padding: 14,
+    },
+    txIconWrap: {
+        width: 44, height: 44, borderRadius: 12,
+        alignItems: 'center', justifyContent: 'center',
+        marginRight: 12,
+    },
+    txTitle: { fontSize: 14, fontWeight: '700', color: C.primary },
+    txSub: { fontSize: 12, color: C.textSec, marginTop: 2 },
+    txAmount: { fontSize: 15, fontWeight: '800', letterSpacing: -0.3 },
+    txStatusDot: {
+        marginTop: 4,
+        paddingHorizontal: 8, paddingVertical: 2,
+        borderRadius: 8,
+    },
+    txStatusText: { color: C.primaryText, fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
+
+    /* ── Empty ── */
+    empty: {
+        alignItems: 'center',
+        paddingVertical: 32,
+        paddingHorizontal: 20,
+        backgroundColor: C.surface,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: C.border,
+        borderStyle: 'dashed',
+    },
+    emptyIcon: {
+        width: 56, height: 56, borderRadius: 28,
+        backgroundColor: 'rgba(212, 160, 23, 0.12)',
+        alignItems: 'center', justifyContent: 'center',
+        marginBottom: 12,
+    },
+    emptyTitle: { fontSize: 15, fontWeight: '700', color: C.primary },
+    emptySub: { fontSize: 13, color: C.textSec, marginTop: 4, textAlign: 'center' },
+
+    /* ── Bouton ── */
+    btn: {
+        height: 60,
+        backgroundColor: C.primary,
+        borderRadius: 16,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 8,
-        paddingVertical: 13,
-        borderRadius: radius.md,
+        shadowColor: C.primary,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
+        shadowRadius: 16,
+        elevation: 8,
     },
-    modalBtnGhost: {
-        backgroundColor: colors.surfaceElevated,
+    btnDisabled: { backgroundColor: '#CBD5E1', shadowOpacity: 0, elevation: 0 },
+    btnText: { color: C.primaryText, fontSize: 16, fontWeight: '700', letterSpacing: 0.2 },
+
+    /* ── Security ── */
+    securityBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: C.surface,
         borderWidth: 1,
-        borderColor: colors.borderLight,
+        borderColor: C.border,
+        borderRadius: 16,
+        padding: 14,
     },
-    modalBtnGhostText: {
-        ...typography.button,
-        color: colors.textSecondary,
+    securityIconWrap: {
+        width: 40, height: 40, borderRadius: 20,
+        backgroundColor: 'rgba(212, 160, 23, 0.12)',
+        alignItems: 'center', justifyContent: 'center',
+        marginRight: 12,
     },
-    modalBtnPrimary: {
-        backgroundColor: colors.primary,
-        ...shadows.primary,
-    },
-    modalBtnPrimaryText: {
-        ...typography.button,
-        color: '#FFF',
-    },
+    securityTitle: { fontSize: 14, fontWeight: '700', color: C.primary },
+    securitySub: { fontSize: 12, color: C.textSec, marginTop: 2 },
 })

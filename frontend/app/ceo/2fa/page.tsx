@@ -14,7 +14,9 @@ const GREEN_L = '#00A86B'; const RED = '#E8112D'; const BG = '#0B1F0D'; const TE
 const PANEL = '#0D2615'
 
 function fmtDate(d: string) {
-    return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    if (!d) return '—'
+    const dateObj = new Date(d)
+    return isNaN(dateObj.getTime()) ? '—' : dateObj.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
 function copyToClipboard(text: string, setCopied: (v: string) => void, key: string) {

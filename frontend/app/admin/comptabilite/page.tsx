@@ -162,8 +162,17 @@ const fmt = (val: number, currency = 'XOF') => {
     return new Intl.NumberFormat('fr-BJ', { style: 'currency', currency: cur, maximumFractionDigits: 0 }).format(val)
 }
 
-const fmtDate = (str: string) =>
-    new Date(str).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' })
+const fmtDate = (str: string | null | undefined) => {
+    if (!str) return '—'
+    const d = new Date(str)
+    return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' })
+}
+
+const formatShortDate = (str: string | null | undefined) => {
+    if (!str) return '—'
+    const d = new Date(str)
+    return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+}
 
 // ─── Status maps ────────────────────────────────────────────────────
 const DOC_STATUS: Record<string, { label: string; cls: string }> = {
@@ -553,17 +562,17 @@ export default function AdminComptabilitePage() {
     const areaData = useMemo(() => {
         const days: Record<string, { factu: number; boutique: number; depenses: number }> = {}
         for (const d of pDocs.filter(d => d.status === 'paye' && d.type === 'facture')) {
-            const k = new Date(d.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+            const k = formatShortDate(d.created_at)
             if (!days[k]) days[k] = { factu: 0, boutique: 0, depenses: 0 }
             days[k].factu += d.total
         }
         for (const o of pOrders.filter(o => o.payment_status === 'completed')) {
-            const k = new Date(o.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+            const k = formatShortDate(o.created_at)
             if (!days[k]) days[k] = { factu: 0, boutique: 0, depenses: 0 }
             days[k].boutique += o.amount
         }
         for (const d of pDeps) {
-            const k = new Date(d.date_depense).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+            const k = formatShortDate(d.date_depense)
             if (!days[k]) days[k] = { factu: 0, boutique: 0, depenses: 0 }
             days[k].depenses += Number(d.montant)
         }

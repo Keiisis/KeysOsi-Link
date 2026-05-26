@@ -7,10 +7,20 @@ import Animated, {
     useAnimatedStyle,
     withSpring,
     withTiming,
+    Easing,
 } from 'react-native-reanimated'
+import { BlurView } from 'expo-blur'
 import * as Haptics from 'expo-haptics'
-import { Home, Folder, Briefcase, Calendar, MessageSquare, User, LucideIcon } from 'lucide-react-native'
-import { colors, fonts, motion, shadows } from '../config/theme'
+import {
+    Home,
+    Folder,
+    Briefcase,
+    Calendar,
+    MessageSquare,
+    User,
+    LucideIcon,
+} from 'lucide-react-native'
+import { colors, fonts } from '../config/theme'
 import { useLang } from '../contexts/LangContext'
 
 import HomeScreen from '../screens/main/HomeScreen'
@@ -40,9 +50,15 @@ const TAB_ICONS: Record<keyof MainTabParamList, LucideIcon> = {
     Profil: User,
 }
 
+/* ───────────── Layout constants ───────────── */
+const BAR_HEIGHT = 56
+const TOP_PADDING = 8
+
 /* ═══════════════════════════════════════════════════════════════
-   TabButton — bouton individuel avec animation scale + haptics +
-   indicateur point doré sous l'icône active.
+   TabButton — icône + label compact, jamais de débordement.
+   - Largeur contrainte par flex:1 (jamais de overflow horizontal)
+   - Icône scale au focus, gold dot sous l'icône active
+   - Haptics légers, ripple Android, hitSlop confortable
 ═══════════════════════════════════════════════════════════════ */
 
 interface TabButtonProps {
@@ -56,24 +72,57 @@ interface TabButtonProps {
     badgeCount?: number
 }
 
-function TabButton({ label, Icon, focused, onPress, onLongPress, accessibilityLabel, testID, badgeCount }: TabButtonProps) {
-    const scale = useSharedValue(focused ? 1 : 0.92)
-    const dotScale = useSharedValue(focused ? 1 : 0)
-    const labelOpacity = useSharedValue(focused ? 1 : 0.7)
+function TabButton({
+    label,
+    Icon,
+    focused,
+    onPress,
+    onLongPress,
+    accessibilityLabel,
+    testID,
+    badgeCount,
+}: TabButtonProps) {
+    const progress = useSharedValue(focused ? 1 : 0)
+    const press = useSharedValue(1)
 
     useEffect(() => {
-        scale.value = withSpring(focused ? 1.06 : 1, motion.spring.snappy)
-        dotScale.value = withSpring(focused ? 1 : 0, motion.spring.snappy)
-        labelOpacity.value = withTiming(focused ? 1 : 0.7, { duration: motion.fast })
-    }, [focused, scale, dotScale, labelOpacity])
+        progress.value = withSpring(focused ? 1 : 0, {
+            damping: 18,
+            stiffness: 240,
+            mass: 0.6,
+        })
+    }, [focused, progress])
 
-    const iconStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
-    const dotStyle = useAnimatedStyle(() => ({ transform: [{ scale: dotScale.value }], opacity: dotScale.value }))
-    const labelStyle = useAnimatedStyle(() => ({ opacity: labelOpacity.value }))
+    const iconStyle = useAnimatedStyle(() => ({
+        transform: [
+            { scale: (0.94 + progress.value * 0.12) * press.value },
+            { translateY: -progress.value * 1.5 },
+        ],
+    }))
+
+    const dotStyle = useAnimatedStyle(() => ({
+        opacity: progress.value,
+        transform: [{ scale: 0.4 + progress.value * 0.6 }],
+    }))
+
+    const labelStyle = useAnimatedStyle(() => ({
+        opacity: 0.65 + progress.value * 0.35,
+    }))
+
+    const handlePressIn = () => {
+        press.value = withTiming(0.94, { duration: 80, easing: Easing.out(Easing.quad) })
+    }
+    const handlePressOut = () => {
+        press.value = withSpring(1, { damping: 14, stiffness: 260 })
+    }
 
     const handlePress = () => {
         if (!focused) {
-            try { Haptics.selectionAsync() } catch { /* silent */ }
+            try {
+                Haptics.selectionAsync()
+            } catch {
+                /* silent */
+            }
         }
         onPress()
     }
@@ -84,34 +133,44 @@ function TabButton({ label, Icon, focused, onPress, onLongPress, accessibilityLa
     return (
         <Pressable
             onPress={handlePress}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
             onLongPress={onLongPress}
             accessibilityRole="button"
             accessibilityLabel={accessibilityLabel || label}
             accessibilityState={{ selected: focused }}
             testID={testID}
+            android_ripple={{ color: 'rgba(15,23,42,0.08)', borderless: true, radius: 28 }}
+            hitSlop={{ top: 6, bottom: 6, left: 2, right: 2 }}
             style={styles.tabBtn}
-            android_ripple={{ color: colors.primaryMuted, borderless: true, radius: 28 }}
-            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
         >
             <View style={styles.tabBtnInner}>
                 <Animated.View style={[styles.iconWrap, iconStyle]}>
                     <Icon size={22} color={tint} strokeWidth={strokeWidth} />
-                    {(badgeCount != null && badgeCount > 0) && (
+                    {badgeCount != null && badgeCount > 0 && (
                         <View style={styles.badge}>
-                            <Text style={styles.badgeText}>{badgeCount > 9 ? '9+' : badgeCount}</Text>
+                            <Text style={styles.badgeText}>
+                                {badgeCount > 9 ? '9+' : badgeCount}
+                            </Text>
                         </View>
                     )}
                 </Animated.View>
+
                 <Animated.Text
                     numberOfLines={1}
+                    allowFontScaling={false}
                     style={[
                         styles.label,
-                        { color: tint, fontFamily: focused ? fonts.bodyBold : fonts.bodyMedium },
+                        {
+                            color: tint,
+                            fontFamily: focused ? fonts.bodyBold : fonts.bodyMedium,
+                        },
                         labelStyle,
                     ]}
                 >
                     {label}
                 </Animated.Text>
+
                 <Animated.View style={[styles.activeDot, dotStyle]} />
             </View>
         </Pressable>
@@ -119,17 +178,29 @@ function TabButton({ label, Icon, focused, onPress, onLongPress, accessibilityLa
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   CustomTabBar — barre principale avec ombre subtile, fond clair,
-   gestion zone safe-area, et glow émeraude au-dessus de la barre.
+   CustomTabBar
+   - Barre ANCRÉE en bas, pleine largeur (zéro débordement possible)
+   - Hairline top border + blur léger (iOS) ou opaque (Android)
+   - Safe area respectée via insets.bottom
 ═══════════════════════════════════════════════════════════════ */
 
 function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     const insets = useSafeAreaInsets()
-    const bottomPadding = Platform.OS === 'ios' ? 24 : Math.max(insets.bottom, 6) + 10
+    const bottomPadding = Math.max(insets.bottom, Platform.OS === 'ios' ? 8 : 6)
 
     return (
         <View style={[styles.barOuter, { paddingBottom: bottomPadding }]}>
-            <View style={styles.barTopGlow} />
+            {/* Blur de fond — iOS only, sinon couleur pleine */}
+            {Platform.OS === 'ios' && (
+                <BlurView
+                    intensity={70}
+                    tint="light"
+                    style={StyleSheet.absoluteFill}
+                />
+            )}
+            <View style={styles.barTint} pointerEvents="none" />
+            <View style={styles.hairline} pointerEvents="none" />
+
             <View style={styles.barInner}>
                 {state.routes.map((route, index) => {
                     const { options } = descriptors[route.key]
@@ -179,64 +250,95 @@ export default function MainTabNavigator() {
 
     return (
         <Tab.Navigator
-            screenOptions={{ headerShown: false }}
+            screenOptions={{
+                headerShown: false,
+                tabBarHideOnKeyboard: true,
+                sceneStyle: { backgroundColor: colors.background },
+                animation: 'shift',
+            }}
             tabBar={(props) => <CustomTabBar {...props} />}
         >
-            <Tab.Screen name="Home"     component={HomeScreen}     options={{ tabBarLabel: t('Accueil') }} />
-            <Tab.Screen name="Dossier"  component={DossierScreen}  options={{ tabBarLabel: t('Dossier') }} />
+            <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarLabel: t('Accueil') }} />
+            <Tab.Screen name="Dossier" component={DossierScreen} options={{ tabBarLabel: t('Dossier') }} />
             <Tab.Screen name="Services" component={ServicesScreen} options={{ tabBarLabel: t('Services') }} />
-            <Tab.Screen name="Events"   component={EventsScreen}   options={{ tabBarLabel: t('Événements') }} />
+            <Tab.Screen name="Events" component={EventsScreen} options={{ tabBarLabel: t('Événements') }} />
             <Tab.Screen name="Messages" component={MessagesScreen} options={{ tabBarLabel: t('Messages') }} />
-            <Tab.Screen name="Profil"   component={ProfilScreen}   options={{ tabBarLabel: t('Profil') }} />
+            <Tab.Screen name="Profil" component={ProfilScreen} options={{ tabBarLabel: t('Profil') }} />
         </Tab.Navigator>
     )
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   Styles — barre ancrée, hairline, zéro overflow horizontal
+═══════════════════════════════════════════════════════════════ */
+
 const styles = StyleSheet.create({
     barOuter: {
-        backgroundColor: colors.surface,
-        borderTopWidth: StyleSheet.hairlineWidth,
-        borderTopColor: colors.borderLight,
-        ...shadows.sm,
-        shadowOffset: { width: 0, height: -3 },
-        shadowOpacity: 0.06,
+        backgroundColor:
+            Platform.OS === 'ios' ? 'transparent' : colors.surface,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: -2 },
+                shadowOpacity: 0.04,
+                shadowRadius: 8,
+            },
+            android: {
+                elevation: 12,
+            },
+        }),
     },
-    barTopGlow: {
-        height: 1,
-        backgroundColor: 'transparent',
+    barTint: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor:
+            Platform.OS === 'ios'
+                ? 'rgba(255,255,255,0.78)'
+                : 'transparent',
+    },
+    hairline: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: StyleSheet.hairlineWidth,
+        backgroundColor: 'rgba(15,23,42,0.08)',
     },
     barInner: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingTop: 8,
-        paddingHorizontal: 4,
+        height: BAR_HEIGHT,
+        paddingTop: TOP_PADDING,
     },
     tabBtn: {
         flex: 1,
+        height: BAR_HEIGHT,
         alignItems: 'center',
         justifyContent: 'center',
+        // Empêche un label long de pousser le voisin
+        minWidth: 0,
     },
     tabBtnInner: {
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 6,
-        gap: 2,
+        paddingHorizontal: 2,
+        width: '100%',
     },
     iconWrap: {
-        width: 28,
-        height: 28,
+        width: 26,
+        height: 26,
         alignItems: 'center',
         justifyContent: 'center',
     },
     label: {
-        fontSize: 11,
-        letterSpacing: 0.2,
-        marginTop: 2,
-    } as { fontSize: number; letterSpacing: number; marginTop: number },
+        fontSize: 10.5,
+        letterSpacing: 0.1,
+        marginTop: 3,
+        maxWidth: '100%',
+        textAlign: 'center',
+    },
     activeDot: {
         position: 'absolute',
-        bottom: -4,
+        bottom: -5,
         width: 4,
         height: 4,
         borderRadius: 2,
@@ -245,9 +347,9 @@ const styles = StyleSheet.create({
     badge: {
         position: 'absolute',
         top: -4,
-        right: -8,
-        minWidth: 16,
-        height: 16,
+        right: -7,
+        minWidth: 15,
+        height: 15,
         borderRadius: 8,
         backgroundColor: '#EF4444',
         alignItems: 'center',
@@ -260,6 +362,6 @@ const styles = StyleSheet.create({
         fontSize: 9,
         fontFamily: fonts.bodyBold,
         color: '#FFFFFF',
-        lineHeight: 12,
+        lineHeight: 11,
     },
 })

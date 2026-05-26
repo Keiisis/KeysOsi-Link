@@ -81,7 +81,11 @@ export default function AgentDevisPage() {
         }
 
         const allDocs = [...owned, ...linkedFactures]
-        allDocs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        allDocs.sort((a, b) => {
+            const timeA = a.created_at && !isNaN(new Date(a.created_at).getTime()) ? new Date(a.created_at).getTime() : 0
+            const timeB = b.created_at && !isNaN(new Date(b.created_at).getTime()) ? new Date(b.created_at).getTime() : 0
+            return timeB - timeA
+        })
 
         setDocuments(allDocs)
 
@@ -231,7 +235,7 @@ export default function AgentDevisPage() {
             pdf.setFontSize(8.5)
             pdf.setTextColor(80, 80, 80)
             pdf.text(`N° ${doc.numero}`, pw - mr, headerTop + 22, { align: 'right' })
-            pdf.text(`Date : ${new Date(doc.created_at).toLocaleDateString('fr-FR')}`, pw - mr, headerTop + 27, { align: 'right' })
+            pdf.text(`Date : ${doc.created_at && !isNaN(new Date(doc.created_at).getTime()) ? new Date(doc.created_at).toLocaleDateString('fr-FR') : '—'}`, pw - mr, headerTop + 27, { align: 'right' })
             pdf.text(doc.type === 'facture' ? `Délai : ${doc.validite}` : `Validité : ${doc.validite}`, pw - mr, headerTop + 32, { align: 'right' })
 
             // Status Badge
@@ -483,7 +487,7 @@ export default function AgentDevisPage() {
         const remaining = Math.max(0, doc.total - paid)
         if (remaining === 0) return { isUnpaid: false, isOverdue: false, daysLate: 0, remaining: 0 }
         const dueDays = parseValiditeDays(doc.validite)
-        const createdAt = new Date(doc.created_at).getTime()
+        const createdAt = doc.created_at && !isNaN(new Date(doc.created_at).getTime()) ? new Date(doc.created_at).getTime() : Date.now()
         const dueAt = createdAt + dueDays * 24 * 60 * 60 * 1000
         const daysLate = Math.floor((Date.now() - dueAt) / (24 * 60 * 60 * 1000))
         return { isUnpaid: true, isOverdue: daysLate > 0, daysLate: Math.max(0, daysLate), remaining }
@@ -709,7 +713,7 @@ export default function AgentDevisPage() {
                                                         </span>
                                                     )}
                                                 </p>
-                                                <p className="text-gray-500 text-[10px]">{new Date(doc.created_at).toLocaleDateString('fr-FR')}</p>
+                                                <p className="text-gray-500 text-[10px]">{doc.created_at && !isNaN(new Date(doc.created_at).getTime()) ? new Date(doc.created_at).toLocaleDateString('fr-FR') : '—'}</p>
                                             </div>
                                         </div>
                                     </td>

@@ -1,5 +1,9 @@
-import React, { useEffect, useState } from 'react'
-import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import React, { useEffect, useState, useMemo } from 'react'
+import { Platform } from 'react-native'
+import {
+    createNativeStackNavigator,
+    NativeStackNavigationOptions,
+} from '@react-navigation/native-stack'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -97,6 +101,92 @@ export type RootStackParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>()
 
+const isIOS = Platform.OS === 'ios'
+
+/* ──────────────────────────────────────────────────────────────
+   PRESETS — 100 % natifs, calibrés sur iOS UIKit / SwiftUI.
+   Aucune transition de type "web" : tout glisse, respire,
+   et respecte le rythme tactile du système.
+   ────────────────────────────────────────────────────────────── */
+
+// Push iOS premium : slide horizontal + parallax de la vue précédente
+// + swipe-back depuis n'importe où sur l'écran.
+const pushIOS: NativeStackNavigationOptions = {
+    animation: isIOS ? 'default' : 'slide_from_right',
+    animationDuration: 380,
+    gestureEnabled: true,
+    fullScreenGestureEnabled: true,
+    animationTypeForReplace: 'push',
+    contentStyle: { backgroundColor: '#FFFFFF' },
+    freezeOnBlur: true,
+}
+
+// Modale plein écran (flux long, focus total).
+const modalIOS: NativeStackNavigationOptions = {
+    presentation: 'modal',
+    animation: 'slide_from_bottom',
+    animationDuration: 420,
+    gestureEnabled: true,
+    gestureDirection: 'vertical',
+    contentStyle: { backgroundColor: '#FFFFFF' },
+    statusBarStyle: 'light',
+    statusBarAnimation: 'fade',
+}
+
+// Form sheet façon iOS 17 — la vue parent reste visible derrière,
+// coins arrondis, grabber, détents adaptatifs.
+const formSheetIOS: NativeStackNavigationOptions = {
+    presentation: isIOS ? 'formSheet' : 'modal',
+    animation: 'slide_from_bottom',
+    animationDuration: 420,
+    gestureEnabled: true,
+    gestureDirection: 'vertical',
+    sheetGrabberVisible: true,
+    sheetCornerRadius: 28,
+    sheetAllowedDetents: 'fitToContents',
+    sheetExpandsWhenScrolledToEdge: false,
+    contentStyle: { backgroundColor: '#FFFFFF' },
+}
+
+// Sheet à détents multiples (mi-hauteur puis plein écran) — type Apple Maps.
+const detentSheetIOS: NativeStackNavigationOptions = {
+    presentation: isIOS ? 'formSheet' : 'modal',
+    animation: 'slide_from_bottom',
+    animationDuration: 420,
+    gestureEnabled: true,
+    sheetGrabberVisible: true,
+    sheetCornerRadius: 28,
+    sheetAllowedDetents: [0.5, 1.0],
+    sheetLargestUndimmedDetentIndex: 0,
+    contentStyle: { backgroundColor: '#FFFFFF' },
+}
+
+// Transparent modal : la page précédente reste pleinement visible derrière
+// (parfait pour ProductDetail avec image héro qui "monte" du fond).
+const transparentPushIOS: NativeStackNavigationOptions = {
+    animation: isIOS ? 'default' : 'slide_from_right',
+    animationDuration: 400,
+    gestureEnabled: true,
+    fullScreenGestureEnabled: true,
+    contentStyle: { backgroundColor: '#FFFFFF' },
+}
+
+// Fade impactant pour les écrans "résultat".
+const fadeReveal: NativeStackNavigationOptions = {
+    animation: 'fade',
+    animationDuration: 320,
+    gestureEnabled: false,
+    contentStyle: { backgroundColor: '#FFFFFF' },
+}
+
+// Switch root sans animation visible (Login ⇄ Main après auth).
+const rootSwitch: NativeStackNavigationOptions = {
+    animation: 'fade',
+    animationDuration: 260,
+    gestureEnabled: false,
+    contentStyle: { backgroundColor: '#FFFFFF' },
+}
+
 export default function AppNavigator() {
     const { session, loading } = useAuth()
     const [onboardingChecked, setOnboardingChecked] = useState(false)
@@ -116,11 +206,28 @@ export default function AppNavigator() {
         })
     }, [])
 
+    const globalScreenOptions = useMemo<NativeStackNavigationOptions>(
+        () => ({
+            headerShown: false,
+            animation: 'fade',
+            animationDuration: 320,
+            contentStyle: { backgroundColor: '#FFFFFF' },
+            statusBarAnimation: 'fade',
+            statusBarStyle: 'dark',
+            statusBarTranslucent: true,
+            navigationBarColor: '#FFFFFF',
+            navigationBarHidden: false,
+            // Évite que les écrans non visibles consomment du CPU
+            // (animations, vidéos, listes virtualisées) — gain de fluidité réel.
+            freezeOnBlur: true,
+        }),
+        []
+    )
+
     if (loading || !onboardingChecked || !langChecked) {
         return <SplashScreen isLoading />
     }
 
-    // ── First launch: show language selection on splash screen ──
     if (!langChosen) {
         return (
             <SplashScreen
@@ -133,12 +240,11 @@ export default function AppNavigator() {
     }
 
     return (
-        <Stack.Navigator
-            screenOptions={{ headerShown: false, animation: 'fade' }}
-        >
+        <Stack.Navigator screenOptions={globalScreenOptions}>
             {!onboardingDone ? (
                 <Stack.Screen
                     name="Onboarding"
+                    options={{ gestureEnabled: false, animation: 'fade' }}
                     children={() => (
                         <OnboardingScreen
                             onComplete={async () => {
@@ -149,41 +255,72 @@ export default function AppNavigator() {
                     )}
                 />
             ) : !session ? (
-                <>
+                <Stack.Group screenOptions={rootSwitch}>
                     <Stack.Screen name="Login" component={LoginScreen} />
-                    <Stack.Screen name="Register" component={RegisterScreen} options={{ animation: 'slide_from_right' }} />
-                    <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ animation: 'slide_from_right' }} />
-                </>
+                    <Stack.Screen
+                        name="Register"
+                        component={RegisterScreen}
+                        options={pushIOS}
+                    />
+                    <Stack.Screen
+                        name="ForgotPassword"
+                        component={ForgotPasswordScreen}
+                        options={pushIOS}
+                    />
+                </Stack.Group>
             ) : (
                 <>
-                    <Stack.Screen name="Main" component={MainTabNavigator} />
-                    <Stack.Screen name="ServiceDetails" component={ServiceDetailsScreen} options={{ animation: 'slide_from_right' }} />
-                    <Stack.Screen name="EventDetail" component={EventDetailScreen} options={{ animation: 'slide_from_right' }} />
-                    <Stack.Screen name="EditProfil" component={EditProfilScreen} options={{ animation: 'slide_from_bottom' }} />
-                    <Stack.Screen name="Security" component={SecurityScreen} options={{ animation: 'slide_from_right' }} />
-                    <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ animation: 'slide_from_right' }} />
-                    <Stack.Screen name="Payments" component={PaymentsScreen} options={{ animation: 'slide_from_right' }} />
-                    <Stack.Screen name="Appointments" component={AppointmentsScreen} options={{ animation: 'slide_from_right' }} />
-                    <Stack.Screen name="FAQ" component={FAQScreen} options={{ animation: 'slide_from_right' }} />
-                    <Stack.Screen name="About" component={AboutScreen} options={{ animation: 'slide_from_right' }} />
-                    <Stack.Screen name="Boutique" component={BoutiqueScreen} options={{ animation: 'slide_from_right' }} />
+                    {/* Racine authentifiée — tabs */}
+                    <Stack.Screen
+                        name="Main"
+                        component={MainTabNavigator}
+                        options={rootSwitch}
+                    />
 
-                    {/* E-commerce flow */}
-                    <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ animation: 'slide_from_right' }} />
-                    <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ animation: 'slide_from_right' }} />
-                    <Stack.Screen name="OrderConfirmation" component={OrderConfirmationScreen} options={{ animation: 'fade' }} />
-                    <Stack.Screen name="Orders" component={OrdersScreen} options={{ animation: 'slide_from_right' }} />
-                    <Stack.Screen name="OrderDetail" component={OrderDetailScreen} options={{ animation: 'slide_from_right' }} />
+                    {/* Push iOS standard */}
+                    <Stack.Group screenOptions={pushIOS}>
+                        <Stack.Screen name="ServiceDetails" component={ServiceDetailsScreen} />
+                        <Stack.Screen name="EventDetail" component={EventDetailScreen} />
+                        <Stack.Screen name="Security" component={SecurityScreen} />
+                        <Stack.Screen name="Notifications" component={NotificationsScreen} />
+                        <Stack.Screen name="Payments" component={PaymentsScreen} />
+                        <Stack.Screen name="Appointments" component={AppointmentsScreen} />
+                        <Stack.Screen name="FAQ" component={FAQScreen} />
+                        <Stack.Screen name="About" component={AboutScreen} />
+                        <Stack.Screen name="Boutique" component={BoutiqueScreen} />
+                        <Stack.Screen name="Checkout" component={CheckoutScreen} />
+                        <Stack.Screen name="Orders" component={OrdersScreen} />
+                        <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+                        <Stack.Screen name="Invoices" component={InvoicesScreen} />
+                        <Stack.Screen name="Legal" component={LegalScreen} />
+                    </Stack.Group>
 
-                    {/* Documents personnels */}
-                    <Stack.Screen name="Signature" component={SignatureScreen} options={{ animation: 'slide_from_right' }} />
-                    <Stack.Screen name="Invoices" component={InvoicesScreen} options={{ animation: 'slide_from_right' }} />
+                    {/* Push immersif : image héro qui monte du fond */}
+                    <Stack.Screen
+                        name="ProductDetail"
+                        component={ProductDetailScreen}
+                        options={transparentPushIOS}
+                    />
 
-                    {/* Nationalité VIP — Formulaire complet */}
-                    <Stack.Screen name="NationaliteForm" component={NationaliteFormScreen} options={{ animation: 'slide_from_bottom' }} />
+                    {/* Form sheets : édition rapide, parent visible derrière */}
+                    <Stack.Group screenOptions={formSheetIOS}>
+                        <Stack.Screen name="EditProfil" component={EditProfilScreen} />
+                        <Stack.Screen name="Signature" component={SignatureScreen} />
+                    </Stack.Group>
 
-                    {/* Légal */}
-                    <Stack.Screen name="Legal" component={LegalScreen} options={{ animation: 'slide_from_right' }} />
+                    {/* Sheet à détents (mi-hauteur → plein écran) */}
+                    <Stack.Screen
+                        name="NationaliteForm"
+                        component={NationaliteFormScreen}
+                        options={detentSheetIOS}
+                    />
+
+                    {/* Confirmation : fade dramatique, pas de retour gestuel */}
+                    <Stack.Screen
+                        name="OrderConfirmation"
+                        component={OrderConfirmationScreen}
+                        options={fadeReveal}
+                    />
                 </>
             )}
         </Stack.Navigator>

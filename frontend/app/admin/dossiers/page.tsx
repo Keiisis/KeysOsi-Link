@@ -35,6 +35,12 @@ const stepStatuses = [
     { value: 'completed', label: 'Terminé', color: '#008751' },
 ]
 
+const formatDate = (val: string | null | undefined) => {
+    if (!val) return '—'
+    const d = new Date(val)
+    return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('fr-FR')
+}
+
 export default function AdminDossiersPage() {
     const { t } = useTranslation();
     const listResult = useList({
@@ -475,7 +481,7 @@ export default function AdminDossiersPage() {
                                                     </div>
                                                     <div>
                                                         <p className="text-gray-500 text-[10px] uppercase tracking-widest font-bold mb-1"><T>Créé le</T></p>
-                                                        <p className="text-gray-300">{new Date(dossier.created_at as string).toLocaleDateString('fr-FR')}</p>
+                                                        <p className="text-gray-300">{formatDate(dossier.created_at as string)}</p>
                                                     </div>
                                                     <div>
                                                         <p className="text-gray-500 text-[10px] uppercase tracking-widest font-bold mb-1"><T>Statut global</T></p>

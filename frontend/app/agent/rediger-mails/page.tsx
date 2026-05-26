@@ -1034,7 +1034,7 @@ export default function AgentRedigerMailsPage() {
                                                         </span>
                                                         <span className="text-[10px] text-[#6B7280]/60 flex items-center gap-1">
                                                             <Clock size={10} />
-                                                            {new Date(email.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                            {email.created_at && !isNaN(new Date(email.created_at).getTime()) ? new Date(email.created_at).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}
                                                         </span>
                                                     </div>
                                                 </div>

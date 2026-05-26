@@ -12,7 +12,11 @@ function fmt(n: number) {
     if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K FCFA`
     return `${n.toLocaleString('fr-FR')} FCFA`
 }
-function fmtDate(d: string) { return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) }
+function fmtDate(d: string) {
+    if (!d) return '—'
+    const dateObj = new Date(d)
+    return isNaN(dateObj.getTime()) ? '—' : dateObj.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
 
 interface Order {
     id: string; created_at: string; total_amount: number; status: string

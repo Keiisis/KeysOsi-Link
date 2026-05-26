@@ -125,13 +125,17 @@ export default function AdminOrdersPage() {
     })
 
     const formatPrice = (price: number) => new Intl.NumberFormat('fr-FR').format(price || 0)
-    const formatDate = (date: string) => new Date(date).toLocaleDateString('fr-FR', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    })
+    const formatDate = (date: string) => {
+        if (!date) return '—'
+        const d = new Date(date)
+        return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('fr-FR', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        })
+    }
 
     // Stats
     const totalRevenue = items

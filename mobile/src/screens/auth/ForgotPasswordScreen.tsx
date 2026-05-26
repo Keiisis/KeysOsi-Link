@@ -37,10 +37,10 @@ const C = {
     surfaceSolid: '#FFFFFF',
     border: '#E2E8F0',
 
-    primary: '#0D2B4E',
-    accent: '#D4A017',
-    auraGreen: '#0A6B3B',
-    error: '#A32200',
+    primary: '#047857',
+    accent: '#C9A84C',
+    auraGreen: '#10B981',
+    error: '#EF4444',
 
     textSec: '#64748B',
     placeholder: '#94A3B8',

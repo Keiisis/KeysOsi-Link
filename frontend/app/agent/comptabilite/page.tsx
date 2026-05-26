@@ -233,13 +233,17 @@ export default function AgentComptabilitePage() {
 
     const periodDocs = useMemo(() => 
         allDocs.filter(d => {
+            if (!d.created_at) return false
             const date = new Date(d.created_at)
+            if (isNaN(date.getTime())) return false
             return date >= pStart && date <= pEnd
         }), [allDocs, pStart, pEnd])
 
     const prevDocs = useMemo(() => 
         allDocs.filter(d => {
+            if (!d.created_at) return false
             const date = new Date(d.created_at)
+            if (isNaN(date.getTime())) return false
             return date >= prevStart && date <= prevEnd
         }), [allDocs, prevStart, prevEnd])
 
@@ -260,11 +264,15 @@ export default function AgentComptabilitePage() {
         }
 
         const curr = getStats(periodDocs, expenses.filter(e => {
+            if (!e.date_depense) return false
             const date = new Date(e.date_depense)
+            if (isNaN(date.getTime())) return false
             return date >= pStart && date <= pEnd
         }))
         const prev = getStats(prevDocs, expenses.filter(e => {
+            if (!e.date_depense) return false
             const date = new Date(e.date_depense)
+            if (isNaN(date.getTime())) return false
             return date >= prevStart && date <= prevEnd
         }))
 
@@ -290,8 +298,10 @@ export default function AgentComptabilitePage() {
     const chartData = useMemo(() => {
         const days: Record<string, number> = {}
         periodDocs.filter(d => d.status === 'paye').forEach(d => {
-            const day = new Date(d.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
-            days[day] = (days[day] || 0) + d.total
+            if (d.created_at && !isNaN(new Date(d.created_at).getTime())) {
+                const day = new Date(d.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+                days[day] = (days[day] || 0) + d.total
+            }
         })
         return Object.entries(days).map(([name, total]) => ({ name, total })).reverse()
     }, [periodDocs])
@@ -390,7 +400,9 @@ export default function AgentComptabilitePage() {
         // Seuls les paiements effectivement reçus sont des recettes
         const recettes: RegistreRecette[] = []
         const paiementsPeriod = paiementsList.filter(p => {
+            if (!p.date_paiement) return false
             const date = new Date(p.date_paiement)
+            if (isNaN(date.getTime())) return false
             return date >= pStart && date <= pEnd
         })
 
@@ -454,7 +466,9 @@ export default function AgentComptabilitePage() {
             autre: 'Autre depense',
         }
         const expensesPeriod = expenses.filter(e => {
+            if (!e.date_depense) return false
             const date = new Date(e.date_depense)
+            if (isNaN(date.getTime())) return false
             return date >= pStart && date <= pEnd
         })
         const depensesRegistre: RegistreDepense[] = expensesPeriod.map(e => ({
@@ -724,7 +738,9 @@ export default function AgentComptabilitePage() {
                                                 <FileText size={15} className="text-emerald-400" />
                                                 <div>
                                                     <p className="text-sm font-bold text-white">{tx.numero}</p>
-                                                    <p className="text-[9px] text-gray-500">{new Date(tx.created_at).toLocaleDateString()}</p>
+                                                    <p className="text-[9px] text-gray-500">
+                                                        {tx.created_at && !isNaN(new Date(tx.created_at).getTime()) ? new Date(tx.created_at).toLocaleDateString('fr-FR') : '—'}
+                                                    </p>
                                                 </div>
                                             </div>
                                         </td>

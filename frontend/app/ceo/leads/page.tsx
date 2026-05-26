@@ -26,7 +26,11 @@ function ScoreBadge({ score }: { score: number }) {
     )
 }
 
-function fmt(d: string) { return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) }
+function fmt(d: string) {
+    if (!d) return '—'
+    const dateObj = new Date(d)
+    return isNaN(dateObj.getTime()) ? '—' : dateObj.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+}
 
 export default function CeoLeads() {
     const [leads, setLeads] = useState<Lead[]>([])

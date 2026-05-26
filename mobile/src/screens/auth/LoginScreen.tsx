@@ -36,10 +36,10 @@ const C = {
     surfaceSolid: '#FFFFFF',
     border: '#E2E8F0',       // Gris perle pour les bordures
 
-    primary: '#0D2B4E',      // Bleu Profond (Agence) - Textes & Boutons
-    accent: '#D4A017',       // Or (Agence) - Highlights & Focus
-    auraGreen: '#0A6B3B',    // Vert (Agence) - Aura subtile fond
-    error: '#A32200',        // Rouge (Agence) - Erreurs
+    primary: '#047857',      // Bleu Profond (Agence) - Textes & Boutons
+    accent: '#C9A84C',       // Or (Agence) - Highlights & Focus
+    auraGreen: '#10B981',    // Vert (Agence) - Aura subtile fond
+    error: '#EF4444',        // Rouge (Agence) - Erreurs
 
     textSec: '#64748B',      // Gris ardoise (textes secondaires)
     placeholder: '#94A3B8',

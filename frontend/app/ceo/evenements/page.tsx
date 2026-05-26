@@ -13,7 +13,11 @@ interface Evenement {
     max_attendees?: number; attendees_count?: number; price?: number; created_at: string
 }
 
-function fmtDate(d: string) { return new Date(d).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) }
+function fmtDate(d: string) {
+    if (!d) return '—'
+    const dateObj = new Date(d)
+    return isNaN(dateObj.getTime()) ? '—' : dateObj.toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
 const EMPTY = { title: '', description: '', event_date: '', location: '', image_url: '', is_published: false, max_attendees: 0, price: 0 }
 
 export default function CeoEvenements() {
@@ -123,10 +127,10 @@ export default function CeoEvenements() {
                                 className="rounded-2xl p-5 flex items-center gap-4" style={{ background: PANEL, border: `1px solid ${coming ? `${GREEN}25` : `${GOLD}12`}` }}>
                                 <div className="w-14 h-14 rounded-2xl flex flex-col items-center justify-center flex-shrink-0" style={{ background: coming ? `${GREEN}20` : `${GOLD}12` }}>
                                     <span className="text-xs font-black" style={{ color: coming ? GREEN_L : GOLD }}>
-                                        {new Date(item.event_date).toLocaleDateString('fr-FR', { day: '2-digit' })}
+                                        {!item.event_date || isNaN(new Date(item.event_date).getTime()) ? '—' : new Date(item.event_date).toLocaleDateString('fr-FR', { day: '2-digit' })}
                                     </span>
                                     <span className="text-[9px] opacity-60 uppercase">
-                                        {new Date(item.event_date).toLocaleDateString('fr-FR', { month: 'short' })}
+                                        {!item.event_date || isNaN(new Date(item.event_date).getTime()) ? '—' : new Date(item.event_date).toLocaleDateString('fr-FR', { month: 'short' })}
                                     </span>
                                 </div>
                                 <div className="flex-1 min-w-0">

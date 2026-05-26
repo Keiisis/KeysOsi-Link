@@ -1,16 +1,61 @@
-import React, { useState } from 'react'
+'use strict'
+import React, { useState, useEffect } from 'react'
 import {
     View, Text, ScrollView, StyleSheet, TouchableOpacity,
-    Platform, TextInput,
+    Platform, TextInput, Pressable, Dimensions, LayoutAnimation,
+    UIManager, Linking,
 } from 'react-native'
-import { ArrowLeft, ChevronRight, HelpCircle, Search, XCircle } from 'lucide-react-native'
 import { Ionicons } from '@expo/vector-icons'
-import ScreenHeader from '../../components/ScreenHeader'
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withDelay,
+    withSpring,
+    withTiming,
+    withRepeat,
+    withSequence,
+    Easing,
+    interpolate,
+    interpolateColor,
+} from 'react-native-reanimated'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { LinearGradient } from 'expo-linear-gradient'
-import { colors, spacing, radius, shadows, typography, royal } from '../../config/theme'
+import { useNavigation } from '@react-navigation/native'
 import { useLang } from '../../contexts/LangContext'
 import { RootStackParamList } from '../../navigation/AppNavigator'
+
+/* ═══════════════════════════════════════════════════════════
+   FAQScreen — THEME "CORPORATE PREMIUM 2026"
+   (Aligné avec tous les autres écrans premium)
+═══════════════════════════════════════════════════════════ */
+
+const { width } = Dimensions.get('window')
+
+// Palette de l'agence (identique aux autres écrans)
+const C = {
+    bg: '#F8F9FA',
+    surface: 'rgba(255, 255, 255, 0.85)',
+    surfaceSolid: '#FFFFFF',
+    border: '#E2E8F0',
+
+    primary: '#047857',
+    primaryDark: '#022C22',
+    accent: '#C9A84C',
+    accentDark: '#A68B3C',
+    accentLight: '#E2C97E',
+    auraGreen: '#10B981',
+    error: '#EF4444',
+    success: '#10B981',
+    info: '#3B82F6',
+
+    textSec: '#64748B',
+    textMuted: '#94A3B8',
+    placeholder: '#94A3B8',
+    primaryText: '#FFFFFF',
+}
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true)
+}
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'FAQ'>
 
@@ -18,16 +63,15 @@ type Nav = NativeStackNavigationProp<RootStackParamList, 'FAQ'>
 const FAQ_DATA = [
     {
         category: 'Nationalité béninoise',
-        color: colors.primary,
         icon: 'ribbon-outline' as const,
         items: [
             {
                 q: 'Qui peut bénéficier de la nationalité béninoise ?',
-                a: 'Toute personne d\'origine béninoise ou descendant d\'Africains réduits en esclavage (diaspora africaine) peut bénéficier des dispositions de la loi sur la nationalité béninoise. Un dossier complet comprenant des pièces d\'état civil et des preuves de liens avec le Bénin est requis.',
+                a: "Toute personne d'origine béninoise ou descendant d'Africains réduits en esclavage (diaspora africaine) peut bénéficier des dispositions de la loi sur la nationalité béninoise. Un dossier complet comprenant des pièces d'état civil et des preuves de liens avec le Bénin est requis.",
             },
             {
                 q: 'Quels documents sont nécessaires pour la nationalité ?',
-                a: 'Les documents principaux incluent : acte de naissance, passeport en cours de validité, casier judiciaire, photos d\'identité, preuves de lien avec le Bénin (arbre généalogique, témoignages…). Notre équipe vous guidera selon votre situation.',
+                a: "Les documents principaux incluent : acte de naissance, passeport en cours de validité, casier judiciaire, photos d'identité, preuves de lien avec le Bénin (arbre généalogique, témoignages…). Notre équipe vous guidera selon votre situation.",
             },
             {
                 q: 'Combien de temps prend la procédure ?',
@@ -37,12 +81,11 @@ const FAQ_DATA = [
     },
     {
         category: 'Passeport béninois',
-        color: '#7C5CCA',
         icon: 'document-outline' as const,
         items: [
             {
-                q: 'Puis-je obtenir un passeport béninois depuis l\'étranger ?',
-                a: 'Oui, il est possible d\'initier la démarche depuis l\'étranger via notre service. Nous coordonnons avec les consulats et ambassades du Bénin pour faciliter votre demande.',
+                q: "Puis-je obtenir un passeport béninois depuis l'étranger ?",
+                a: "Oui, il est possible d'initier la démarche depuis l'étranger via notre service. Nous coordonnons avec les consulats et ambassades du Bénin pour faciliter votre demande.",
             },
             {
                 q: 'Quelle est la durée de validité du passeport béninois ?',
@@ -52,12 +95,11 @@ const FAQ_DATA = [
     },
     {
         category: 'Recherches ancestrales',
-        color: '#2D9F63',
         icon: 'people-outline' as const,
         items: [
             {
                 q: 'Que comprend le service de recherche ancestrale ?',
-                a: 'Ce service inclut une recherche généalogique approfondie dans les archives béninoises, la reconstruction de votre arbre familial, l\'identification de votre région et village d\'origine, et un rapport complet documenté.',
+                a: "Ce service inclut une recherche généalogique approfondie dans les archives béninoises, la reconstruction de votre arbre familial, l'identification de votre région et village d'origine, et un rapport complet documenté.",
             },
             {
                 q: 'Est-il possible de retrouver sa famille au Bénin ?',
@@ -67,7 +109,6 @@ const FAQ_DATA = [
     },
     {
         category: 'Paiements & Tarifs',
-        color: colors.info,
         icon: 'card-outline' as const,
         items: [
             {
@@ -82,201 +123,1067 @@ const FAQ_DATA = [
     },
     {
         category: 'Application & Support',
-        color: '#E07B54',
         icon: 'phone-portrait-outline' as const,
         items: [
             {
-                q: 'Comment suivre l\'avancement de mon dossier ?',
+                q: "Comment suivre l'avancement de mon dossier ?",
                 a: 'Dans la section "Mon Dossier" de l\'application, vous pouvez suivre en temps réel la progression de votre dossier, consulter vos documents, et recevoir des notifications à chaque mise à jour.',
             },
             {
                 q: 'Comment contacter le support ?',
-                a: 'Notre équipe est disponible via la messagerie intégrée de l\'application, par email à contact@retourgagnantbenin.bj, ou par téléphone/WhatsApp. Des rendez-vous peuvent être planifiés depuis l\'onglet "Rendez-vous".',
+                a: "Notre équipe est disponible via la messagerie intégrée de l'application, par email à contact@retourgagnantbenin.bj, ou par téléphone/WhatsApp. Des rendez-vous peuvent être planifiés depuis l'onglet \"Rendez-vous\".",
             },
         ],
     },
 ]
 
 /* ═══════════════════════════════════════════════════════════
-   FAQ Screen — Accordéon avec recherche
+   COMPOSANT : ANIMATED SECTION
 ═══════════════════════════════════════════════════════════ */
 
-export default function FAQScreen({ navigation }: { navigation: Nav }) {
+function AnimatedSection({
+    children, delay = 0, style,
+}: {
+    children: React.ReactNode
+    delay?: number
+    style?: any
+}) {
+    const anim = useSharedValue(0)
+
+    useEffect(() => {
+        anim.value = withDelay(delay, withTiming(1, {
+            duration: 800,
+            easing: Easing.out(Easing.quad),
+        }))
+    }, [delay])
+
+    const animStyle = useAnimatedStyle(() => ({
+        opacity: anim.value,
+        transform: [{ translateY: 30 * (1 - anim.value) }],
+    }))
+
+    return <Animated.View style={[animStyle, style]}>{children}</Animated.View>
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COMPOSANT : FAQ ITEM (Accordéon animé)
+═══════════════════════════════════════════════════════════ */
+
+function FaqItem({
+    question, answer, isOpen, onToggle, isLast,
+}: {
+    question: string
+    answer: string
+    isOpen: boolean
+    onToggle: () => void
+    isLast: boolean
+}) {
+    const anim = useSharedValue(isOpen ? 1 : 0)
+    const pressAnim = useSharedValue(0)
+
+    useEffect(() => {
+        anim.value = withSpring(isOpen ? 1 : 0, { damping: 18, stiffness: 180 })
+    }, [isOpen])
+
+    const chevronStyle = useAnimatedStyle(() => ({
+        transform: [{ rotate: `${interpolate(anim.value, [0, 1], [0, 180])}deg` }],
+    }))
+
+    const iconBgStyle = useAnimatedStyle(() => ({
+        backgroundColor: interpolateColor(
+            anim.value, [0, 1],
+            ['rgba(13, 43, 78, 0.06)', 'rgba(212, 160, 23, 0.15)']
+        ),
+        borderColor: interpolateColor(
+            anim.value, [0, 1],
+            ['rgba(13, 43, 78, 0.08)', 'rgba(212, 160, 23, 0.35)']
+        ),
+    }))
+
+    const pressStyle = useAnimatedStyle(() => ({
+        backgroundColor: interpolateColor(
+            pressAnim.value, [0, 1],
+            ['rgba(13, 43, 78, 0)', 'rgba(13, 43, 78, 0.03)']
+        ),
+    }))
+
+    return (
+        <Animated.View
+            style={[
+                faqStyles.item,
+                !isLast && faqStyles.itemBorder,
+                isOpen && faqStyles.itemActive,
+            ]}
+        >
+            <Pressable
+                onPress={() => {
+                    LayoutAnimation.configureNext({
+                        duration: 350,
+                        update: { type: 'spring', springDamping: 0.8 },
+                        create: { type: 'easeInEaseOut', property: 'opacity' },
+                    })
+                    onToggle()
+                }}
+                onPressIn={() => { pressAnim.value = withSpring(1) }}
+                onPressOut={() => { pressAnim.value = withSpring(0) }}
+            >
+                <Animated.View style={[faqStyles.question, pressStyle]}>
+                    <Animated.View style={[faqStyles.qIconWrap, iconBgStyle]}>
+                        <Ionicons
+                            name="help-circle-outline"
+                            size={16}
+                            color={isOpen ? C.accent : C.primary}
+                        />
+                    </Animated.View>
+
+                    <Text style={[faqStyles.qText, isOpen && faqStyles.qTextActive]} numberOfLines={3}>
+                        {question}
+                    </Text>
+
+                    <Animated.View style={[faqStyles.chevron, chevronStyle]}>
+                        <Ionicons
+                            name="chevron-down"
+                            size={16}
+                            color={isOpen ? C.accent : C.textMuted}
+                        />
+                    </Animated.View>
+                </Animated.View>
+            </Pressable>
+
+            {isOpen && (
+                <View style={faqStyles.answer}>
+                    <View style={faqStyles.answerBorder} />
+                    <View style={faqStyles.answerContent}>
+                        <Text style={faqStyles.aText}>{answer}</Text>
+                    </View>
+                </View>
+            )}
+        </Animated.View>
+    )
+}
+
+const faqStyles = StyleSheet.create({
+    item: {
+        overflow: 'hidden',
+    },
+    itemBorder: {
+        borderBottomWidth: 1,
+        borderBottomColor: C.border,
+    },
+    itemActive: {
+        backgroundColor: 'rgba(212, 160, 23, 0.04)',
+    },
+    question: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 16,
+        gap: 12,
+    },
+    qIconWrap: {
+        width: 32,
+        height: 32,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+    },
+    qText: {
+        flex: 1,
+        fontSize: 13.5,
+        fontWeight: '700',
+        color: C.primary,
+        letterSpacing: -0.1,
+        lineHeight: 19,
+    },
+    qTextActive: {
+        color: C.primary,
+    },
+    chevron: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    answer: {
+        flexDirection: 'row',
+        paddingLeft: 16,
+        paddingRight: 16,
+        paddingBottom: 18,
+        paddingTop: 4,
+    },
+    answerBorder: {
+        width: 3,
+        backgroundColor: C.accent,
+        borderRadius: 2,
+        marginRight: 14,
+        marginLeft: 14,
+    },
+    answerContent: {
+        flex: 1,
+    },
+    aText: {
+        fontSize: 13,
+        color: C.textSec,
+        lineHeight: 20,
+        fontWeight: '400',
+    },
+})
+
+/* ═══════════════════════════════════════════════════════════
+   COMPOSANT : QUICK TOPIC PILL
+═══════════════════════════════════════════════════════════ */
+
+function QuickTopicPill({
+    label, icon, active, onPress, count,
+}: {
+    label: string
+    icon: keyof typeof Ionicons.glyphMap
+    active: boolean
+    onPress: () => void
+    count: number
+}) {
+    const anim = useSharedValue(active ? 1 : 0)
+
+    useEffect(() => {
+        anim.value = withSpring(active ? 1 : 0, { damping: 18, stiffness: 180 })
+    }, [active])
+
+    const pillStyle = useAnimatedStyle(() => ({
+        backgroundColor: interpolateColor(
+            anim.value, [0, 1],
+            [C.surface, C.primary]
+        ),
+        borderColor: interpolateColor(
+            anim.value, [0, 1],
+            [C.border, C.primary]
+        ),
+    }))
+
+    const iconColor = active ? C.accent : C.textSec
+    const textColor = active ? C.primaryText : C.textSec
+
+    return (
+        <Pressable onPress={onPress}>
+            <Animated.View style={[styles.topicPill, pillStyle]}>
+                <Ionicons name={icon} size={13} color={iconColor} />
+                <Text style={[styles.topicText, { color: textColor }]}>
+                    {label}
+                </Text>
+                <View style={[styles.topicCount, active && styles.topicCountActive]}>
+                    <Text style={[styles.topicCountText, active && styles.topicCountTextActive]}>
+                        {count}
+                    </Text>
+                </View>
+            </Animated.View>
+        </Pressable>
+    )
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ÉCRAN PRINCIPAL : FAQ
+═══════════════════════════════════════════════════════════ */
+
+export default function FAQScreen() {
+    const navigation = useNavigation<Nav>()
     const { t } = useLang()
     const [openId, setOpenId] = useState<string | null>(null)
     const [search, setSearch] = useState('')
+    const [searchFocused, setSearchFocused] = useState(false)
+    const [activeTopic, setActiveTopic] = useState<string>('Tous')
 
-    const filteredCategories = FAQ_DATA.map(cat => ({
-        ...cat,
-        items: cat.items.filter(item =>
-            !search.trim() ||
-            t(item.q).toLowerCase().includes(search.toLowerCase()) ||
-            t(item.a).toLowerCase().includes(search.toLowerCase())
-        ),
-    })).filter(cat => cat.items.length > 0)
+    /* ── Animations Corporate ── */
+    const headerAnim = useSharedValue(0)
+    const aura1Y = useSharedValue(0)
+    const aura2X = useSharedValue(0)
+    const searchFocusAnim = useSharedValue(0)
+
+    useEffect(() => {
+        headerAnim.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.quad) })
+
+        aura1Y.value = withRepeat(
+            withSequence(
+                withTiming(25, { duration: 6000, easing: Easing.inOut(Easing.quad) }),
+                withTiming(-10, { duration: 6000, easing: Easing.inOut(Easing.quad) })
+            ), -1, true
+        )
+        aura2X.value = withRepeat(
+            withSequence(
+                withTiming(-30, { duration: 7000, easing: Easing.inOut(Easing.quad) }),
+                withTiming(15, { duration: 7000, easing: Easing.inOut(Easing.quad) })
+            ), -1, true
+        )
+    }, [])
+
+    useEffect(() => {
+        searchFocusAnim.value = withSpring(searchFocused ? 1 : 0, { damping: 15, stiffness: 150 })
+    }, [searchFocused])
+
+    const styleHeader = useAnimatedStyle(() => ({
+        opacity: headerAnim.value,
+        transform: [{ translateY: 30 * (1 - headerAnim.value) }],
+    }))
+    const aura1Style = useAnimatedStyle(() => ({ transform: [{ translateY: aura1Y.value }] }))
+    const aura2Style = useAnimatedStyle(() => ({ transform: [{ translateX: aura2X.value }] }))
+
+    const searchBarStyle = useAnimatedStyle(() => ({
+        borderColor: interpolateColor(searchFocusAnim.value, [0, 1], [C.border, C.accent]),
+        backgroundColor: searchFocused ? C.surfaceSolid : C.surface,
+        shadowOpacity: interpolate(searchFocusAnim.value, [0, 1], [0.04, 0.10]),
+    }))
+
+    /* ── Filtrage des FAQ ── */
+    const filteredCategories = FAQ_DATA
+        .filter(cat => activeTopic === 'Tous' || cat.category === activeTopic)
+        .map(cat => ({
+            ...cat,
+            items: cat.items.filter(item =>
+                !search.trim() ||
+                t(item.q).toLowerCase().includes(search.toLowerCase()) ||
+                t(item.a).toLowerCase().includes(search.toLowerCase())
+            ),
+        }))
+        .filter(cat => cat.items.length > 0)
+
+    const totalQuestions = FAQ_DATA.reduce((sum, cat) => sum + cat.items.length, 0)
+    const filteredCount = filteredCategories.reduce((sum, cat) => sum + cat.items.length, 0)
+
+    const topics = [
+        { key: 'Tous', icon: 'apps-outline' as const, count: totalQuestions },
+        ...FAQ_DATA.map(cat => ({
+            key: cat.category,
+            icon: cat.icon,
+            count: cat.items.length,
+        })),
+    ]
 
     return (
         <View style={styles.container}>
-            <LinearGradient 
-                colors={['rgba(220,165,64,0.15)', royal.bg, royal.bg]} 
-                locations={[0, 0.4, 1]}
-                style={StyleSheet.absoluteFillObject} 
-            />
-            <ScrollView showsVerticalScrollIndicator={false}>
-            <ScreenHeader
-                title={t('Aide & FAQ')}
-                subtitle={t('Questions fréquentes')}
-                onBack={() => navigation.goBack()}
-            />
+            {/* 🎨 BACKGROUND PREMIUM : Auras */}
+            <Animated.View style={[styles.aura, styles.aura1, aura1Style]} />
+            <Animated.View style={[styles.aura, styles.aura2, aura2Style]} />
 
-            {/* Barre de recherche */}
-            <View style={styles.searchWrap}>
-                <View style={styles.searchBar}>
-                    <Search size={18} color={colors.textMuted} strokeWidth={1.75} />
-                    <TextInput
-                        style={styles.searchInput}
-                        value={search}
-                        onChangeText={setSearch}
-                        placeholder={t('Rechercher une question…')}
-                        placeholderTextColor={colors.textMuted}
-                        autoCapitalize="none"
-                        returnKeyType="search"
-                    />
-                    {search.length > 0 && (
-                        <TouchableOpacity onPress={() => setSearch('')}>
-                            <XCircle size={16} color={colors.textMuted} strokeWidth={1.75} />
-                        </TouchableOpacity>
-                    )}
-                </View>
-            </View>
-
-            {/* Résultats */}
-            {filteredCategories.length === 0 ? (
-                <View style={styles.noResult}>
-                    <Search size={32} color={colors.textMuted} strokeWidth={1.75} />
-                    <Text style={styles.noResultTitle}>{t('Aucun résultat')}</Text>
-                    <Text style={styles.noResultText}>{t("Essayez avec d'autres mots-clés.")}</Text>
-                </View>
-            ) : (
-                filteredCategories.map((cat) => (
-                    <View key={cat.category} style={styles.category}>
-                        {/* En-tête catégorie */}
-                        <View style={styles.catHeader}>
-                            <View style={[styles.catIcon, { backgroundColor: cat.color + '15' }]}>
-                                <Ionicons name={cat.icon} size={16} color={cat.color} />
-                            </View>
-                            <Text style={[styles.catTitle, { color: cat.color }]}>{t(cat.category)}</Text>
-                        </View>
-
-                        {/* Items */}
-                        <View style={styles.catCard}>
-                            {cat.items.map((item, ii) => {
-                                const id = `${cat.category}-${ii}`
-                                const isOpen = openId === id
-                                return (
-                                    <View key={ii} style={[styles.faqItem, ii < cat.items.length - 1 && styles.faqItemBorder]}>
-                                        <TouchableOpacity
-                                            style={styles.faqQuestion}
-                                            onPress={() => setOpenId(isOpen ? null : id)}
-                                            activeOpacity={0.7}
-                                        >
-                                            <Text style={[styles.faqQ, isOpen && { color: cat.color }]}>
-                                                {t(item.q)}
-                                            </Text>
-                                            <Ionicons
-                                                name={isOpen ? 'chevron-up' : 'chevron-down'}
-                                                size={16}
-                                                color={isOpen ? cat.color : colors.textMuted}
-                                            />
-                                        </TouchableOpacity>
-                                        {isOpen && (
-                                            <View style={[styles.faqAnswer, { borderLeftColor: cat.color }]}>
-                                                <Text style={styles.faqA}>{t(item.a)}</Text>
-                                            </View>
-                                        )}
-                                    </View>
-                                )
-                            })}
-                        </View>
+            {/* NAV BAR */}
+            <View style={styles.navBar}>
+                <Pressable onPress={() => navigation.goBack()} style={styles.navBack}>
+                    <View style={styles.iconContainer}>
+                        <Ionicons name="arrow-back" size={22} color={C.primary} />
                     </View>
-                ))
-            )}
+                </Pressable>
 
-            {/* Contact support */}
-            <View style={styles.contactCard}>
-                <Ionicons name="chatbubble-ellipses" size={24} color={colors.primary} />
-                <View style={{ flex: 1 }}>
-                    <Text style={styles.contactTitle}>{t("Vous n'avez pas trouvé votre réponse ?")}</Text>
-                    <Text style={styles.contactText}>{t('Notre équipe est disponible pour vous aider.')}</Text>
+                {/* Badge total questions */}
+                <View style={styles.navCounter}>
+                    <Ionicons name="help-circle" size={12} color={C.accent} />
+                    <Text style={styles.navCounterText}>
+                        {totalQuestions} {t('questions')}
+                    </Text>
                 </View>
-                <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.75} />
             </View>
 
-            <View style={{ height: 100 }} />
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.scroll}
+                keyboardShouldPersistTaps="handled"
+            >
+                {/* HEADER TITRE */}
+                <Animated.View style={[styles.headerContainer, styleHeader]}>
+                    <Text style={styles.title}>{t('Centre')}</Text>
+                    <Text style={styles.titleHighlight}>{t("d'aide.")}</Text>
+                    <Text style={styles.subtitle}>
+                        {t('Trouvez rapidement les réponses à vos questions.')}
+                    </Text>
+                </Animated.View>
+
+                {/* ═══ BARRE DE RECHERCHE PREMIUM ═══ */}
+                <AnimatedSection delay={100}>
+                    <Animated.View style={[styles.searchBar, searchBarStyle]}>
+                        <Ionicons
+                            name="search"
+                            size={18}
+                            color={searchFocused ? C.accent : C.placeholder}
+                        />
+                        <TextInput
+                            style={styles.searchInput}
+                            value={search}
+                            onChangeText={setSearch}
+                            onFocus={() => setSearchFocused(true)}
+                            onBlur={() => setSearchFocused(false)}
+                            placeholder={t('Rechercher une question…')}
+                            placeholderTextColor={C.placeholder}
+                            autoCapitalize="none"
+                            returnKeyType="search"
+                            selectionColor={C.accent}
+                        />
+                        {search.length > 0 && (
+                            <Pressable
+                                onPress={() => setSearch('')}
+                                hitSlop={10}
+                                style={styles.clearBtn}
+                            >
+                                <Ionicons name="close-circle" size={18} color={C.textMuted} />
+                            </Pressable>
+                        )}
+                    </Animated.View>
+                </AnimatedSection>
+
+                {/* ═══ FILTRES PAR CATÉGORIE ═══ */}
+                <AnimatedSection delay={200}>
+                    <View style={styles.filterTitleWrap}>
+                        <Text style={styles.filterTitle}>{t('FILTRER PAR THÈME')}</Text>
+                        <View style={styles.filterUnderline} />
+                    </View>
+
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.topicsContent}
+                    >
+                        {topics.map(topic => (
+                            <QuickTopicPill
+                                key={topic.key}
+                                label={t(topic.key)}
+                                icon={topic.icon}
+                                count={topic.count}
+                                active={activeTopic === topic.key}
+                                onPress={() => setActiveTopic(topic.key)}
+                            />
+                        ))}
+                    </ScrollView>
+                </AnimatedSection>
+
+                {/* ═══ RÉSULTATS COUNT ═══ */}
+                {(search.length > 0 || activeTopic !== 'Tous') && (
+                    <AnimatedSection delay={250}>
+                        <View style={styles.resultsCount}>
+                            <Ionicons name="filter" size={12} color={C.accentDark} />
+                            <Text style={styles.resultsCountText}>
+                                {filteredCount} {filteredCount > 1 ? t('résultats') : t('résultat')}
+                                {search.length > 0 && (
+                                    <Text style={styles.resultsCountQuery}>
+                                        {' '}{t('pour')} "{search}"
+                                    </Text>
+                                )}
+                            </Text>
+                        </View>
+                    </AnimatedSection>
+                )}
+
+                {/* ═══ RÉSULTATS ═══ */}
+                {filteredCategories.length === 0 ? (
+                    <AnimatedSection delay={300}>
+                        <View style={styles.noResult}>
+                            <View style={styles.noResultIconWrap}>
+                                <Ionicons name="search" size={32} color={C.accent} />
+                            </View>
+                            <Text style={styles.noResultTitle}>{t('Aucun résultat')}</Text>
+                            <Text style={styles.noResultText}>
+                                {t("Essayez avec d'autres mots-clés ou explorez les catégories.")}
+                            </Text>
+                            <View style={styles.noResultActions}>
+                                {search.length > 0 && (
+                                    <Pressable
+                                        onPress={() => setSearch('')}
+                                        style={styles.noResultBtn}
+                                    >
+                                        <Ionicons name="close-circle-outline" size={14} color={C.accentDark} />
+                                        <Text style={styles.noResultBtnText}>
+                                            {t('Effacer la recherche')}
+                                        </Text>
+                                    </Pressable>
+                                )}
+                                {activeTopic !== 'Tous' && (
+                                    <Pressable
+                                        onPress={() => setActiveTopic('Tous')}
+                                        style={styles.noResultBtn}
+                                    >
+                                        <Ionicons name="apps-outline" size={14} color={C.accentDark} />
+                                        <Text style={styles.noResultBtnText}>
+                                            {t('Voir tout')}
+                                        </Text>
+                                    </Pressable>
+                                )}
+                            </View>
+                        </View>
+                    </AnimatedSection>
+                ) : (
+                    filteredCategories.map((cat, ci) => (
+                        <AnimatedSection key={cat.category} delay={300 + ci * 80}>
+                            {/* En-tête catégorie */}
+                            <View style={styles.catHeader}>
+                                <View style={styles.catIconWrap}>
+                                    <Ionicons name={cat.icon} size={16} color={C.accent} />
+                                </View>
+                                <Text style={styles.catTitle}>{t(cat.category)}</Text>
+                                <View style={styles.catCount}>
+                                    <Text style={styles.catCountText}>{cat.items.length}</Text>
+                                </View>
+                            </View>
+
+                            {/* Items */}
+                            <View style={styles.catCard}>
+                                {cat.items.map((item, ii) => {
+                                    const id = `${cat.category}-${ii}`
+                                    const isOpen = openId === id
+                                    return (
+                                        <FaqItem
+                                            key={ii}
+                                            question={t(item.q)}
+                                            answer={t(item.a)}
+                                            isOpen={isOpen}
+                                            onToggle={() => setOpenId(isOpen ? null : id)}
+                                            isLast={ii === cat.items.length - 1}
+                                        />
+                                    )
+                                })}
+                            </View>
+                        </AnimatedSection>
+                    ))
+                )}
+
+                {/* ═══ CARD CONTACT SUPPORT ═══ */}
+                <AnimatedSection delay={500}>
+                    <Pressable
+                        onPress={() => {
+                            // Navigation vers Appointments ou chat support
+                            navigation.navigate('Appointments' as never)
+                        }}
+                    >
+                        <View style={styles.contactCard}>
+                            {/* Halo doré */}
+                            <View style={styles.contactGlow} />
+
+                            <View style={styles.contactIconWrap}>
+                                <Ionicons name="chatbubble-ellipses" size={22} color={C.accent} />
+                            </View>
+
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.contactBadge}>{t('SUPPORT DÉDIÉ')}</Text>
+                                <Text style={styles.contactTitle}>
+                                    {t("Pas trouvé votre réponse ?")}
+                                </Text>
+                                <Text style={styles.contactText}>
+                                    {t('Notre équipe vous répond sous 24h.')}
+                                </Text>
+                            </View>
+
+                            <View style={styles.contactArrow}>
+                                <Ionicons name="arrow-forward" size={16} color={C.accent} />
+                            </View>
+                        </View>
+                    </Pressable>
+                </AnimatedSection>
+
+                {/* ═══ AUTRES CANAUX DE SUPPORT ═══ */}
+                <AnimatedSection delay={600}>
+                    <View style={styles.channelsTitleWrap}>
+                        <Text style={styles.channelsTitle}>{t('AUTRES CANAUX')}</Text>
+                        <View style={styles.channelsUnderline} />
+                    </View>
+
+                    <View style={styles.channels}>
+                        <Pressable style={styles.channelCard} onPress={() => Linking.openURL('mailto:contact@retourgagnantbenin.bj')}>
+                            <View style={styles.channelIconWrap}>
+                                <Ionicons name="mail-outline" size={18} color={C.primary} />
+                            </View>
+                            <Text style={styles.channelLabel}>{t('Email')}</Text>
+                            <Text style={styles.channelValue} numberOfLines={1}>
+                                contact@retourgagnantbenin.bj
+                            </Text>
+                        </Pressable>
+
+                        <Pressable style={styles.channelCard} onPress={() => Linking.openURL('https://wa.me/2290160322121')}>
+                            <View style={styles.channelIconWrap}>
+                                <Ionicons name="logo-whatsapp" size={18} color={C.success} />
+                            </View>
+                            <Text style={styles.channelLabel}>WhatsApp</Text>
+                            <Text style={styles.channelValue}>
+                                +229 01 60 32 21 21
+                            </Text>
+                        </Pressable>
+
+                        <Pressable style={styles.channelCard} onPress={() => Linking.openURL('tel:+2290160322121')}>
+                            <View style={styles.channelIconWrap}>
+                                <Ionicons name="call-outline" size={18} color={C.info} />
+                            </View>
+                            <Text style={styles.channelLabel}>{t('Téléphone')}</Text>
+                            <Text style={styles.channelValue}>
+                                +229 01 60 32 21 21
+                            </Text>
+                        </Pressable>
+                    </View>
+                </AnimatedSection>
+
+                <View style={{ height: 60 }} />
             </ScrollView>
         </View>
     )
 }
 
+/* ═══════════════════════════════════════════════════════════
+   STYLES
+═══════════════════════════════════════════════════════════ */
+
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: royal.bg },
+    container: {
+        flex: 1,
+        backgroundColor: C.bg,
+    },
 
+    /* ── Auras Corporate ── */
+    aura: {
+        position: 'absolute',
+        width: width * 0.9,
+        height: width * 0.9,
+        borderRadius: width,
+        opacity: 0.05,
+    },
+    aura1: {
+        top: -100,
+        right: -100,
+        backgroundColor: C.primary,
+    },
+    aura2: {
+        bottom: 50,
+        left: -100,
+        backgroundColor: C.auraGreen,
+    },
 
+    /* ── Nav Bar ── */
+    navBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingTop: Platform.OS === 'ios' ? 60 : 40,
+        paddingHorizontal: 20,
+        paddingBottom: 10,
+        zIndex: 10,
+    },
+    navBack: {
+        width: 44,
+        height: 44,
+        justifyContent: 'center',
+    },
+    iconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: C.surface,
+        borderWidth: 1,
+        borderColor: C.border,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    navCounter: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: 'rgba(212, 160, 23, 0.10)',
+        borderRadius: 999,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderWidth: 1,
+        borderColor: 'rgba(212, 160, 23, 0.25)',
+    },
+    navCounterText: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: C.accentDark,
+        letterSpacing: 0.3,
+    },
 
-    searchWrap: { padding: spacing.lg, paddingBottom: spacing.sm },
+    scroll: {
+        paddingHorizontal: 20,
+        paddingBottom: 20,
+    },
+
+    /* ── Header ── */
+    headerContainer: {
+        marginTop: 8,
+        marginBottom: 24,
+        paddingHorizontal: 8,
+    },
+    title: {
+        fontSize: 38,
+        fontWeight: '700',
+        color: C.primary,
+        letterSpacing: -0.5,
+    },
+    titleHighlight: {
+        fontSize: 38,
+        fontWeight: '800',
+        color: C.accent,
+        letterSpacing: -0.5,
+        marginTop: -4,
+    },
+    subtitle: {
+        fontSize: 15,
+        color: C.textSec,
+        marginTop: 14,
+        lineHeight: 22,
+        fontWeight: '400',
+    },
+
+    /* ── Search Bar ── */
     searchBar: {
-        flexDirection: 'row', alignItems: 'center', gap: 10,
-        backgroundColor: colors.surface, borderRadius: radius.md,
-        borderWidth: 1.5, borderColor: colors.border,
-        paddingHorizontal: spacing.md, minHeight: 48,
-        ...shadows.sm,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        borderRadius: 16,
+        borderWidth: 1.5,
+        paddingHorizontal: 16,
+        height: 56,
+        marginBottom: 20,
+        shadowColor: C.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowRadius: 12,
+        elevation: 2,
     },
-    searchInput: { flex: 1, fontSize: 15, color: colors.textPrimary, fontFamily: 'Inter_400Regular' },
+    searchInput: {
+        flex: 1,
+        fontSize: 14,
+        color: C.primary,
+        fontWeight: '500',
+    },
+    clearBtn: {
+        padding: 2,
+    },
 
-    noResult: { alignItems: 'center', padding: spacing.xxl, gap: 10 },
-    noResultTitle: { ...typography.h3, color: colors.textPrimary },
-    noResultText: { ...typography.bodySmall, color: colors.textSecondary },
+    /* ── Filter title ── */
+    filterTitleWrap: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        marginBottom: 10,
+        marginTop: 4,
+        paddingHorizontal: 4,
+    },
+    filterTitle: {
+        fontSize: 11,
+        fontWeight: '800',
+        color: C.accentDark,
+        letterSpacing: 1.5,
+    },
+    filterUnderline: {
+        flex: 1,
+        height: 1,
+        backgroundColor: C.border,
+    },
 
-    category: { marginBottom: spacing.md },
+    /* ── Topics ── */
+    topicsContent: {
+        gap: 8,
+        paddingRight: 20,
+        paddingVertical: 4,
+        marginBottom: 18,
+    },
+    topicPill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 7,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        borderRadius: 999,
+        borderWidth: 1.2,
+    },
+    topicText: {
+        fontSize: 12,
+        fontWeight: '700',
+        letterSpacing: 0.2,
+    },
+    topicCount: {
+        minWidth: 18,
+        height: 16,
+        paddingHorizontal: 5,
+        borderRadius: 8,
+        backgroundColor: 'rgba(13, 43, 78, 0.08)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    topicCountActive: {
+        backgroundColor: C.accent,
+    },
+    topicCountText: {
+        fontSize: 9.5,
+        fontWeight: '800',
+        color: C.textSec,
+    },
+    topicCountTextActive: {
+        color: C.primary,
+    },
+
+    /* ── Results count ── */
+    resultsCount: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: 'rgba(212, 160, 23, 0.08)',
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(212, 160, 23, 0.2)',
+        marginBottom: 16,
+        alignSelf: 'flex-start',
+    },
+    resultsCountText: {
+        fontSize: 11.5,
+        color: C.accentDark,
+        fontWeight: '700',
+        letterSpacing: 0.2,
+    },
+    resultsCountQuery: {
+        fontWeight: '500',
+        color: C.textSec,
+    },
+
+    /* ── No result ── */
+    noResult: {
+        backgroundColor: C.surface,
+        borderRadius: 20,
+        padding: 32,
+        alignItems: 'center',
+        borderWidth: 1.2,
+        borderColor: C.border,
+        borderStyle: 'dashed',
+        gap: 10,
+        marginTop: 12,
+    },
+    noResultIconWrap: {
+        width: 76,
+        height: 76,
+        borderRadius: 22,
+        backgroundColor: 'rgba(212, 160, 23, 0.10)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 8,
+        borderWidth: 1.2,
+        borderColor: 'rgba(212, 160, 23, 0.2)',
+    },
+    noResultTitle: {
+        fontSize: 17,
+        fontWeight: '800',
+        color: C.primary,
+        letterSpacing: -0.3,
+    },
+    noResultText: {
+        fontSize: 13,
+        color: C.textSec,
+        textAlign: 'center',
+        lineHeight: 18,
+        fontWeight: '400',
+        marginBottom: 8,
+    },
+    noResultActions: {
+        flexDirection: 'row',
+        gap: 8,
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+    },
+    noResultBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        backgroundColor: 'rgba(212, 160, 23, 0.10)',
+        paddingHorizontal: 14,
+        paddingVertical: 9,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: 'rgba(212, 160, 23, 0.3)',
+    },
+    noResultBtnText: {
+        color: C.accentDark,
+        fontSize: 11.5,
+        fontWeight: '700',
+        letterSpacing: 0.2,
+    },
+
+    /* ── Catégorie ── */
     catHeader: {
-        flexDirection: 'row', alignItems: 'center', gap: 10,
-        marginHorizontal: spacing.lg, marginBottom: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 10,
+        marginTop: 14,
+        paddingHorizontal: 4,
     },
-    catIcon: {
-        width: 30, height: 30, borderRadius: 8,
-        alignItems: 'center', justifyContent: 'center',
+    catIconWrap: {
+        width: 32,
+        height: 32,
+        borderRadius: 10,
+        backgroundColor: 'rgba(212, 160, 23, 0.10)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(212, 160, 23, 0.25)',
     },
-    catTitle: { ...typography.label, fontSize: 13 },
-
+    catTitle: {
+        flex: 1,
+        fontSize: 13,
+        fontWeight: '800',
+        color: C.primary,
+        letterSpacing: -0.1,
+    },
+    catCount: {
+        minWidth: 22,
+        height: 18,
+        paddingHorizontal: 6,
+        borderRadius: 9,
+        backgroundColor: 'rgba(13, 43, 78, 0.06)',
+        borderWidth: 1,
+        borderColor: 'rgba(13, 43, 78, 0.08)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    catCountText: {
+        fontSize: 10,
+        fontWeight: '800',
+        color: C.primary,
+    },
     catCard: {
-        marginHorizontal: spacing.lg,
-        backgroundColor: colors.surface,
-        borderRadius: radius.lg, overflow: 'hidden',
-        borderWidth: 1, borderColor: colors.borderLight,
-        ...shadows.sm,
+        backgroundColor: C.surface,
+        borderRadius: 16,
+        overflow: 'hidden',
+        borderWidth: 1.2,
+        borderColor: C.border,
+        marginBottom: 8,
+        shadowColor: C.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 12,
+        elevation: 2,
     },
-    faqItem: { },
-    faqItemBorder: { borderBottomWidth: 1, borderBottomColor: colors.borderLight },
-    faqQuestion: {
-        flexDirection: 'row', alignItems: 'flex-start',
-        padding: 16, gap: 12,
-    },
-    faqQ: { ...typography.bodySmall, color: colors.textPrimary, flex: 1, fontFamily: 'Inter_600SemiBold', lineHeight: 20 },
-    faqAnswer: {
-        paddingHorizontal: 16, paddingBottom: 16, paddingTop: 4,
-        borderLeftWidth: 3, marginLeft: 16, marginRight: 16, marginBottom: 8,
-        borderRadius: 2,
-    },
-    faqA: { ...typography.bodySmall, color: colors.textSecondary, lineHeight: 22 },
 
+    /* ── Contact Card ── */
     contactCard: {
-        flexDirection: 'row', alignItems: 'center', gap: 14,
-        marginHorizontal: spacing.lg,
-        backgroundColor: colors.primary + '10',
-        borderRadius: radius.lg, padding: spacing.lg,
-        borderWidth: 1, borderColor: colors.primary + '25',
-        marginTop: spacing.sm,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 14,
+        backgroundColor: C.primary,
+        borderRadius: 20,
+        padding: 20,
+        marginTop: 24,
+        overflow: 'hidden',
+        borderWidth: 1.5,
+        borderColor: 'rgba(212, 160, 23, 0.35)',
+        shadowColor: C.primary,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
+        shadowRadius: 16,
+        elevation: 8,
+        position: 'relative',
     },
-    contactTitle: { ...typography.label, color: colors.textPrimary },
-    contactText: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+    contactGlow: {
+        position: 'absolute',
+        top: -60,
+        right: -60,
+        width: 180,
+        height: 180,
+        borderRadius: 90,
+        backgroundColor: C.accent,
+        opacity: 0.15,
+    },
+    contactIconWrap: {
+        width: 50,
+        height: 50,
+        borderRadius: 16,
+        backgroundColor: 'rgba(212, 160, 23, 0.15)',
+        borderWidth: 1.2,
+        borderColor: 'rgba(212, 160, 23, 0.4)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    contactBadge: {
+        fontSize: 9.5,
+        fontWeight: '800',
+        color: C.accent,
+        letterSpacing: 1.2,
+        marginBottom: 4,
+    },
+    contactTitle: {
+        fontSize: 15,
+        fontWeight: '800',
+        color: C.primaryText,
+        letterSpacing: -0.2,
+    },
+    contactText: {
+        fontSize: 12,
+        color: 'rgba(255, 255, 255, 0.75)',
+        marginTop: 3,
+        fontWeight: '500',
+    },
+    contactArrow: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        backgroundColor: 'rgba(212, 160, 23, 0.15)',
+        borderWidth: 1,
+        borderColor: 'rgba(212, 160, 23, 0.3)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    /* ── Autres canaux ── */
+    channelsTitleWrap: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        marginTop: 28,
+        marginBottom: 12,
+        paddingHorizontal: 4,
+    },
+    channelsTitle: {
+        fontSize: 11,
+        fontWeight: '800',
+        color: C.accentDark,
+        letterSpacing: 1.5,
+    },
+    channelsUnderline: {
+        flex: 1,
+        height: 1,
+        backgroundColor: C.border,
+    },
+    channels: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    channelCard: {
+        flex: 1,
+        backgroundColor: C.surface,
+        borderRadius: 14,
+        padding: 14,
+        borderWidth: 1.2,
+        borderColor: C.border,
+        alignItems: 'center',
+        shadowColor: C.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
+        elevation: 1,
+    },
+    channelIconWrap: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        backgroundColor: 'rgba(13, 43, 78, 0.06)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(13, 43, 78, 0.08)',
+    },
+    channelLabel: {
+        fontSize: 11,
+        fontWeight: '800',
+        color: C.primary,
+        letterSpacing: 0.2,
+        marginBottom: 3,
+    },
+    channelValue: {
+        fontSize: 9.5,
+        color: C.textSec,
+        fontWeight: '500',
+        letterSpacing: 0.2,
+        textAlign: 'center',
+    },
 })

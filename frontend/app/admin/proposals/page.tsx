@@ -205,7 +205,7 @@ export default function AdminProposalsPage() {
                                             {prop.total_amount?.toLocaleString() || 0} <span className="text-xs text-slate-500">FCFA</span>
                                         </td>
                                         <td className="p-4 text-slate-400 text-sm">
-                                            {new Date(prop.created_at).toLocaleDateString('fr-FR')}
+                                            {!prop.created_at || isNaN(new Date(prop.created_at).getTime()) ? '—' : new Date(prop.created_at).toLocaleDateString('fr-FR')}
                                         </td>
                                         <td className="p-4 text-right">
                                             <div className="flex items-center justify-end gap-2">

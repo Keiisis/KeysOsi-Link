@@ -50,6 +50,11 @@ export default function AgentAgendaPage() {
     const [selectedRDV, setSelectedRDV] = useState<RDV | null>(null)
     const [selectedDay, setSelectedDay] = useState<number | null>(null)
     const [saving, setSaving] = useState(false)
+    const [mounted, setMounted] = useState(false)
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
 
     // Inline email reply state
     const [replyMode, setReplyMode] = useState(false)
@@ -182,14 +187,16 @@ export default function AgentAgendaPage() {
         const sA = statutOrder[a.statut] ?? 4
         const sB = statutOrder[b.statut] ?? 4
         if (sA !== sB) return sA - sB
-        if (!a.date && !b.date) return 0
-        if (!a.date) return 1
-        if (!b.date) return -1
-        return new Date(b.date).getTime() - new Date(a.date).getTime()
+        const timeA = a.date && !isNaN(new Date(a.date).getTime()) ? new Date(a.date).getTime() : 0
+        const timeB = b.date && !isNaN(new Date(b.date).getTime()) ? new Date(b.date).getTime() : 0
+        return timeB - timeA
     })
 
     const upcomingEvents = events.filter(e => {
+        if (!mounted) return false
+        if (!e.date) return false
         const d = new Date(e.date)
+        if (isNaN(d.getTime())) return false
         const diff = (d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
         return diff >= -1 && diff <= 14
     })
@@ -218,7 +225,7 @@ export default function AgentAgendaPage() {
                 <div className="xl:col-span-2 bg-white/[0.03] border border-white/5 rounded-2xl p-6">
                     <div className="flex items-center justify-between mb-6">
                         <button type="button" onClick={prevMonth} className="text-gray-500 hover:text-white transition-colors" title="Mois précédent"><ChevronLeft size={20} /></button>
-                        <h2 className="text-lg font-bold text-white capitalize">{currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</h2>
+                        <h2 className="text-lg font-bold text-white capitalize">{mounted ? currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : ''}</h2>
                         <button type="button" onClick={nextMonth} className="text-gray-500 hover:text-white transition-colors" title="Mois suivant"><ChevronRight size={20} /></button>
                     </div>
                     <div className="grid grid-cols-7 gap-1">
@@ -274,7 +281,7 @@ export default function AgentAgendaPage() {
                                     <div className="flex items-center justify-between mb-3">
                                         <div>
                                             <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">
-                                                {new Date(selectedDayItems.dateStr + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                                                {mounted && selectedDayItems?.dateStr && !isNaN(new Date(selectedDayItems.dateStr + 'T12:00:00').getTime()) ? new Date(selectedDayItems.dateStr + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) : '—'}
                                             </p>
                                             <p className="text-xs text-gray-500 mt-0.5">
                                                 {selectedDayItems.events.length + selectedDayItems.rdvs.length} élément(s)
@@ -356,7 +363,7 @@ export default function AgentAgendaPage() {
                                                     </span>
                                                 </div>
                                                 <p className="text-[10px] text-gray-500 mt-0.5">
-                                                    {rdv.date ? new Date(rdv.date + 'T12:00:00').toLocaleDateString('fr-FR') : 'Date à confirmer'}{rdv.heure ? ` à ${rdv.heure}` : ''}
+                                                    {rdv.date && !isNaN(new Date(rdv.date + 'T12:00:00').getTime()) ? new Date(rdv.date + 'T12:00:00').toLocaleDateString('fr-FR') : 'Date à confirmer'}{rdv.heure ? ` à ${rdv.heure}` : ''}
                                                 </p>
                                                 <p className="text-[10px] text-gray-600 mt-0.5 line-clamp-1">{rdv.motif}</p>
                                             </div>
@@ -382,7 +389,7 @@ export default function AgentAgendaPage() {
                                                         <Icon size={14} className="mt-0.5 flex-shrink-0" />
                                                         <div>
                                                             <p className="text-xs font-bold">{event.title}</p>
-                                                            <p className="text-[10px] opacity-70 mt-0.5">{new Date(event.date).toLocaleDateString('fr-FR')} à {event.time}</p>
+                                                            <p className="text-[10px] opacity-70 mt-0.5">{event.date && !isNaN(new Date(event.date).getTime()) ? new Date(event.date).toLocaleDateString('fr-FR') : '—'} à {event.time}</p>
                                                             {event.client && <p className="text-[10px] opacity-60">{event.client}</p>}
                                                         </div>
                                                     </div>
@@ -426,7 +433,7 @@ export default function AgentAgendaPage() {
                                     {getVisitorPhone(selectedRDV) && <div className="flex items-center gap-2 text-sm text-gray-300"><Phone size={14} className="text-emerald-400" /> {getVisitorPhone(selectedRDV)}</div>}
                                     <div className="flex items-center gap-2 text-sm text-gray-300">
                                         <CalendarDays size={14} className="text-emerald-400" />
-                                        {selectedRDV.date
+                                     {selectedRDV.date && !isNaN(new Date(selectedRDV.date + 'T12:00:00').getTime())
                                             ? new Date(selectedRDV.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
                                             : 'Date à confirmer'
                                         }{selectedRDV.heure ? ` à ${selectedRDV.heure}` : ''}
@@ -454,7 +461,7 @@ export default function AgentAgendaPage() {
                                     ) : null
                                 })()}
 
-                                <p className="text-[10px] text-gray-500">Reçu le {new Date(selectedRDV.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                                 <p className="text-[10px] text-gray-500">Reçu le {selectedRDV.created_at && !isNaN(new Date(selectedRDV.created_at).getTime()) ? new Date(selectedRDV.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}</p>
 
                                 {/* Actions statut */}
                                 {selectedRDV.statut === 'en_attente' && (

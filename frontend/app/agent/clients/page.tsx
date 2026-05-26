@@ -219,7 +219,7 @@ export default function AgentClientsPage() {
 
         allDossiers.forEach(d => {
             const email = (d.email as string) || ''
-            const ts = d.created_at ? new Date(d.created_at as string).getTime() : 0
+            const ts = d.created_at && !isNaN(new Date(d.created_at as string).getTime()) ? new Date(d.created_at as string).getTime() : 0
             bump(email, { dossiers: 1, lastActivity: ts })
         })
         ;(financRes.data || []).forEach((f: Record<string, unknown>) => {
@@ -237,8 +237,9 @@ export default function AgentClientsPage() {
         const now = Date.now()
         const enriched = baseClients.map(c => {
             const agg = countsByEmail.get(c.email.toLowerCase()) || { dossiers: 0, factures: 0, paid: 0, appts: 0, lastActivity: 0 }
-            const lastTs = Math.max(agg.lastActivity, c.created_at ? new Date(c.created_at).getTime() : 0)
-            const daysSince = lastTs ? Math.floor((now - lastTs) / (24 * 60 * 60 * 1000)) : 9999
+            const clientTs = c.created_at && !isNaN(new Date(c.created_at).getTime()) ? new Date(c.created_at).getTime() : 0
+            const lastTs = Math.max(agg.lastActivity || 0, clientTs)
+            const daysSince = lastTs > 0 ? Math.floor((now - lastTs) / (24 * 60 * 60 * 1000)) : 9999
             const recentBonus = daysSince < 30 ? 40 : daysSince < 90 ? 20 : 0
             const paidBonus = agg.paid > 0 ? 50 : 0
             const dossiersBonus = Math.min(agg.dossiers * 10, 30)
@@ -250,7 +251,7 @@ export default function AgentClientsPage() {
                 totalPaid: agg.paid,
                 totalFactures: agg.factures,
                 appointmentsCount: agg.appts,
-                lastActivity: lastTs ? new Date(lastTs).toISOString() : c.created_at,
+                lastActivity: lastTs > 0 && !isNaN(new Date(lastTs).getTime()) ? new Date(lastTs).toISOString() : c.created_at,
                 activityScore,
                 isActiveMember: agg.paid > 0 || (agg.dossiers >= 1 && daysSince < 60),
             }
@@ -425,16 +426,16 @@ export default function AgentClientsPage() {
     }).sort((a, b) => {
         if (sortMode === 'alpha') return `${a.nom}${a.prenom}`.localeCompare(`${b.nom}${b.prenom}`)
         if (sortMode === 'recent') {
-            const ta = a.lastActivity ? new Date(a.lastActivity).getTime() : 0
-            const tb = b.lastActivity ? new Date(b.lastActivity).getTime() : 0
+            const ta = a.lastActivity && !isNaN(new Date(a.lastActivity).getTime()) ? new Date(a.lastActivity).getTime() : 0
+            const tb = b.lastActivity && !isNaN(new Date(b.lastActivity).getTime()) ? new Date(b.lastActivity).getTime() : 0
             return tb - ta
         }
         // 'activity' : membres actifs d'abord, puis score décroissant, puis récent
         if (a.isActiveMember !== b.isActiveMember) return a.isActiveMember ? -1 : 1
         const sa = a.activityScore || 0, sb = b.activityScore || 0
         if (sa !== sb) return sb - sa
-        const ta = a.lastActivity ? new Date(a.lastActivity).getTime() : 0
-        const tb = b.lastActivity ? new Date(b.lastActivity).getTime() : 0
+        const ta = a.lastActivity && !isNaN(new Date(a.lastActivity).getTime()) ? new Date(a.lastActivity).getTime() : 0
+        const tb = b.lastActivity && !isNaN(new Date(b.lastActivity).getTime()) ? new Date(b.lastActivity).getTime() : 0
         return tb - ta
     })
 
@@ -699,7 +700,7 @@ export default function AgentClientsPage() {
                                         <div className="flex items-center gap-2 text-sm text-gray-300"><Mail size={14} className="text-emerald-400" /> {selectedClient.email}</div>
                                         {selectedClient.telephone && <div className="flex items-center gap-2 text-sm text-gray-300"><Phone size={14} className="text-emerald-400" /> {selectedClient.telephone}</div>}
                                         <div className="flex items-center gap-2 text-sm text-gray-300"><FileText size={14} className="text-emerald-400" /> {selectedClient.service}</div>
-                                        <div className="flex items-center gap-2 text-sm text-gray-300"><Calendar size={14} className="text-emerald-400" /> {new Date(selectedClient.created_at).toLocaleDateString('fr-FR')}</div>
+                                        <div className="flex items-center gap-2 text-sm text-gray-300"><Calendar size={14} className="text-emerald-400" /> {selectedClient.created_at && !isNaN(new Date(selectedClient.created_at).getTime()) ? new Date(selectedClient.created_at).toLocaleDateString('fr-FR') : '—'}</div>
                                     </div>
 
                                     {selectedClient.notes && (
@@ -777,7 +778,7 @@ export default function AgentClientsPage() {
                                                     <div className="space-y-1.5 max-h-24 overflow-y-auto">
                                                         {detailData.appointments.map(a => (
                                                             <div key={a.id} className="flex items-center justify-between text-xs">
-                                                                <span className="text-gray-300">{new Date(a.date).toLocaleDateString('fr-FR')} · {a.type}</span>
+                                                                <span className="text-gray-300">{a.date && !isNaN(new Date(a.date).getTime()) ? new Date(a.date).toLocaleDateString('fr-FR') : '—'} · {a.type}</span>
                                                                 <span className="text-[9px] font-bold text-gray-500">{a.status}</span>
                                                             </div>
                                                         ))}

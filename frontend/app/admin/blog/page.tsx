@@ -45,7 +45,17 @@ export default function AdminBlogPage() {
         setLoading(false)
     }
 
-    useEffect(() => { fetchPosts() }, [])
+    const [mounted, setMounted] = useState(false)
+    useEffect(() => {
+        setMounted(true)
+        fetchPosts()
+    }, [])
+
+    const formatDateSafe = (val: string) => {
+        if (!mounted || !val) return '—'
+        const d = new Date(val)
+        return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('fr-FR')
+    }
 
     const generateSlug = (title: string) => {
         return title
@@ -251,7 +261,7 @@ export default function AdminBlogPage() {
                                         <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-500">
                                             <span className="flex items-center gap-1"><Globe2 size={10} /> {post.category}</span>
                                             <span className="flex items-center gap-1"><Eye size={10} /> {post.views}</span>
-                                            <span className="flex items-center gap-1"><Calendar size={10} /> {new Date(post.created_at).toLocaleDateString('fr-FR')}</span>
+                                            <span className="flex items-center gap-1"><Calendar size={10} /> {formatDateSafe(post.created_at)}</span>
                                         </div>
                                     </div>
                                 </div>
