@@ -68,29 +68,50 @@ export function MediaUpload({
 
         setUploading(true)
         setError('')
-        setProgress(10)
+        setProgress(0)
 
         try {
-            const ext = file.name.split('.').pop() || 'bin'
-            const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+            const formData = new FormData()
+            formData.append('file', file)
+            formData.append('folder', folder)
 
-            setProgress(30)
+            const xhr = new XMLHttpRequest()
 
-            const { error: uploadErr } = await supabase.storage
-                .from(bucket)
-                .upload(fileName, file, {
-                    cacheControl: '3600',
-                    upsert: false,
-                })
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100)
+                    setProgress(percent)
+                }
+            })
 
-            if (uploadErr) throw uploadErr
+            const uploadPromise = new Promise<string>((resolve, reject) => {
+                xhr.onload = () => {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        try {
+                            const res = JSON.parse(xhr.responseText)
+                            if (res.url) {
+                                resolve(res.url)
+                            } else {
+                                reject(new Error(res.error || 'Erreur inconnue'))
+                            }
+                        } catch (err) {
+                            reject(new Error('Format de réponse invalide'))
+                        }
+                    } else {
+                        try {
+                            const res = JSON.parse(xhr.responseText)
+                            reject(new Error(res.error || `Erreur d'upload: ${xhr.status}`))
+                        } catch (err) {
+                            reject(new Error(`Erreur d'upload: ${xhr.status}`))
+                        }
+                    }
+                }
+                xhr.onerror = () => reject(new Error('Erreur réseau réseau'))
+                xhr.open('POST', '/api/upload/blog')
+                xhr.send(formData)
+            })
 
-            setProgress(80)
-
-            const { data: { publicUrl } } = supabase.storage
-                .from(bucket)
-                .getPublicUrl(fileName)
-
+            const publicUrl = await uploadPromise
             setProgress(100)
             onChange(publicUrl)
         } catch (err: unknown) {
@@ -102,7 +123,7 @@ export function MediaUpload({
                 setProgress(0)
             }, 500)
         }
-    }, [bucket, folder, onChange, accept, maxSizeMB])
+    }, [folder, onChange, accept, maxSizeMB])
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
