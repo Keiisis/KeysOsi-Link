@@ -44,8 +44,22 @@ export default function BlogPostClient({ slug }: { slug: string }) {
 
             if (data) {
                 setPost(data as BlogPost)
-                // Increment views
-                await supabase.from('blog_posts').update({ views: (data.views || 0) + 1 }).eq('id', data.id)
+                // Increment views using our server-side API route
+                try {
+                    const res = await fetch('/api/blog/views', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ id: data.id }),
+                    })
+                    const viewsData = await res.json()
+                    if (viewsData.success) {
+                        setPost(prev => prev ? { ...prev, views: viewsData.views } : null)
+                    }
+                } catch (err) {
+                    console.error('Failed to increment views:', err)
+                }
             }
             setLoading(false)
         }
@@ -138,19 +152,19 @@ export default function BlogPostClient({ slug }: { slug: string }) {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#0a0f14] flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+            <div className="min-h-screen bg-[#fafbfc] flex items-center justify-center">
+                <div className="w-8 h-8 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
             </div>
         )
     }
 
     if (!post) {
         return (
-            <div className="min-h-screen bg-[#0a0f14] flex items-center justify-center text-white text-center p-8">
+            <div className="min-h-screen bg-[#fafbfc] flex items-center justify-center text-slate-800 text-center p-8">
                 <div>
-                    <BookOpen className="mx-auto mb-4 text-gray-600" size={48} />
+                    <BookOpen className="mx-auto mb-4 text-slate-300" size={48} />
                     <h1 className="text-2xl font-bold mb-2"><T>Article introuvable</T></h1>
-                    <Link href="/blog" className="text-emerald-400 text-sm hover:underline">← <T>Retour au blog</T></Link>
+                    <Link href="/blog" className="text-emerald-600 text-sm hover:underline">← <T>Retour au blog</T></Link>
                 </div>
             </div>
         )
@@ -160,45 +174,60 @@ export default function BlogPostClient({ slug }: { slug: string }) {
     const readingTime = Math.max(1, Math.ceil((post.content || '').split(/\s+/).length / 200))
 
     return (
-        <div className="min-h-screen bg-[#0a0f14]">
-            {/* Hero Cover */}
-            <div className="relative h-64 md:h-96 overflow-hidden">
-                {post.cover_image ? (
-                    <Image src={post.cover_image} alt={post.title || ''} fill className="object-cover" priority />
-                ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-emerald-900/40 to-yellow-900/40" />
+        <div className="min-h-screen bg-[#fafbfc]">
+            {/* Hero Cover with blurred background to prevent cutouts and object-contain to avoid cropping */}
+            <div className="relative h-64 md:h-[450px] w-full bg-slate-50 flex items-center justify-center overflow-hidden border-b border-slate-100">
+                {post.cover_image && (
+                    <div
+                        className="absolute inset-0 bg-cover bg-center blur-2xl opacity-15 scale-105"
+                        style={{ backgroundImage: `url(${post.cover_image})` }}
+                    />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f14] via-[#0a0f14]/60 to-transparent" />
-                <div className="absolute top-4 left-4">
-                    <Link href="/blog" className="flex items-center gap-2 text-xs font-bold text-white/70 hover:text-white bg-black/40 backdrop-blur-md px-3 py-2 rounded-full border border-white/10 transition-all">
+                {post.cover_image ? (
+                    <div className="relative w-full h-full max-w-5xl mx-auto flex items-center justify-center p-4 z-10">
+                        <img
+                            src={post.cover_image}
+                            alt={post.title || ''}
+                            className="max-w-full max-h-full object-contain rounded-lg shadow-sm"
+                            style={{ width: 'auto', height: 'auto' }}
+                        />
+                    </div>
+                ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-emerald-500/10 to-yellow-500/10 flex items-center justify-center">
+                        <BookOpen size={48} className="text-emerald-500/20" />
+                    </div>
+                )}
+                {/* Back button */}
+                <div className="absolute top-4 left-4 z-20">
+                    <Link href="/blog" className="flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-slate-900 bg-white/90 backdrop-blur-md px-3.5 py-2 rounded-full border border-slate-200 shadow-sm transition-all hover:scale-105 hover:bg-white">
                         <ArrowLeft size={14} /> <T>Blog</T>
                     </Link>
                 </div>
             </div>
 
             {/* Article Content */}
-            <article className="max-w-3xl mx-auto px-4 -mt-20 md:-mt-32 relative z-10 pb-20">
+            <article className="max-w-3xl mx-auto px-4 pt-10 relative z-10 pb-20">
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                    <span className="text-[10px] font-bold uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
+                    <span className="text-[10px] font-bold uppercase text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-3 py-1 rounded-full">
                         {t(post.category || 'Général')}
                     </span>
 
-                    <h1 className="text-3xl md:text-4xl font-black text-white mt-4 mb-4 leading-tight">{post.title}</h1>
+                    <h1 className="text-3xl md:text-4xl font-black text-slate-900 mt-4 mb-4 leading-tight">{post.title}</h1>
 
                     {post.excerpt && (
-                        <p className="text-base text-gray-400 mb-6 leading-relaxed italic border-l-2 border-emerald-500/30 pl-4">
+                        <p className="text-base text-slate-600 mb-6 leading-relaxed italic border-l-2 border-emerald-500 pl-4 bg-slate-50/50 py-1.5 pr-2">
                             {post.excerpt}
                         </p>
                     )}
 
-                    <div className="flex items-center gap-4 text-xs text-gray-500 mb-8 pb-6 border-b border-white/5 flex-wrap">
+                    <div className="flex items-center gap-4 text-xs text-slate-500 mb-8 pb-6 border-b border-slate-100 flex-wrap">
                         <span className="flex items-center gap-1"><Clock size={12} /> {formatDate(post.created_at)}</span>
                         <span className="flex items-center gap-1"><Eye size={12} /> {post.views} {t("vues")}</span>
                         <span className="flex items-center gap-1"><Clock size={12} /> {readingTime} min {t("de lecture")}</span>
                         <span>{t("Par")} {post.author || 'Retour Gagnant'}</span>
                         <button
                             onClick={() => navigator.clipboard.writeText(window.location.href)}
-                            className="ml-auto flex items-center gap-1 text-emerald-400 hover:text-emerald-300 transition-colors"
+                            className="ml-auto flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-semibold transition-colors"
                         >
                             <Share2 size={12} /> <T>Partager</T>
                         </button>
@@ -206,35 +235,35 @@ export default function BlogPostClient({ slug }: { slug: string }) {
 
                     {/* Article body */}
                     <div
-                        className="prose prose-invert prose-emerald max-w-none
-                            prose-headings:font-black prose-headings:text-white
+                        className="prose prose-emerald max-w-none
+                            prose-headings:font-black prose-headings:text-slate-900
                             prose-h1:text-2xl prose-h1:mt-8 prose-h1:mb-4
                             prose-h2:text-xl prose-h2:mt-10 prose-h2:mb-4 prose-h2:border-l-2 prose-h2:border-emerald-500 prose-h2:pl-4
                             prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-3
-                            prose-p:text-gray-300 prose-p:leading-relaxed prose-p:text-[15px]
-                            prose-li:text-gray-300 prose-li:text-[15px]
-                            prose-strong:text-white prose-strong:font-bold
-                            prose-a:text-emerald-400 prose-a:no-underline hover:prose-a:underline
-                            prose-hr:border-white/10
-                            prose-em:text-gray-400
+                            prose-p:text-slate-700 prose-p:leading-relaxed prose-p:text-[15px]
+                            prose-li:text-slate-700 prose-li:text-[15px]
+                            prose-strong:text-slate-900 prose-strong:font-bold
+                            prose-a:text-emerald-600 prose-a:no-underline hover:prose-a:underline
+                            prose-hr:border-slate-100
+                            prose-em:text-slate-500
                             prose-blockquote:border-l-emerald-500 prose-blockquote:bg-emerald-500/5 prose-blockquote:rounded-r-xl prose-blockquote:py-2 prose-blockquote:px-4
-                            prose-code:bg-white/5 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-[#FCD116]
+                            prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-amber-700
                             prose-img:rounded-2xl"
                         dangerouslySetInnerHTML={{ __html: renderMarkdown(post.content || '') }}
                     />
 
                     {/* Tags */}
                     {postTags.length > 0 && (
-                        <div className="mt-10 pt-6 border-t border-white/5">
+                        <div className="mt-10 pt-6 border-t border-slate-100">
                             <div className="flex items-center gap-2 mb-3">
-                                <Tag size={14} className="text-gray-500" />
-                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest"><T>Tags</T></span>
+                                <Tag size={14} className="text-slate-400" />
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest"><T>Tags</T></span>
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 {postTags.map((tag, i) => (
                                     <span
                                         key={i}
-                                        className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#FCD116]/10 text-[#FCD116] border border-[#FCD116]/20 hover:bg-[#FCD116]/20 transition-colors"
+                                        className="px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100/50 transition-colors"
                                     >
                                         {tag}
                                     </span>
@@ -244,14 +273,14 @@ export default function BlogPostClient({ slug }: { slug: string }) {
                     )}
 
                     {/* CTA */}
-                    <div className="mt-12 p-6 bg-gradient-to-br from-emerald-900/20 to-yellow-900/20 border border-emerald-500/10 rounded-2xl text-center">
-                        <h3 className="text-lg font-bold text-white mb-2"><T>Prêt à passer à l&apos;action ?</T></h3>
-                        <p className="text-sm text-gray-400 mb-4"><T>Notre équipe vous accompagne dans chaque étape de votre projet.</T></p>
+                    <div className="mt-12 p-6 bg-gradient-to-br from-emerald-50/50 to-amber-50/50 border border-emerald-100/40 rounded-2xl text-center">
+                        <h3 className="text-lg font-bold text-slate-800 mb-2"><T>Prêt à passer à l&apos;action ?</T></h3>
+                        <p className="text-sm text-slate-500 mb-4"><T>Notre équipe vous accompagne dans chaque étape de votre projet.</T></p>
                         <div className="flex flex-wrap gap-3 justify-center">
-                            <Link href="/rendez-vous" className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm px-6 py-3 rounded-xl transition-all">
+                            <Link href="/rendez-vous" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm px-6 py-3 rounded-xl transition-all shadow-sm">
                                 <T>Prendre rendez-vous</T>
                             </Link>
-                            <Link href="/contact" className="bg-white/5 hover:bg-white/10 text-white font-bold text-sm px-6 py-3 rounded-xl border border-white/10 transition-all">
+                            <Link href="/contact" className="bg-white hover:bg-slate-50 text-slate-700 font-bold text-sm px-6 py-3 rounded-xl border border-slate-200 shadow-sm transition-all">
                                 <T>Nous contacter</T>
                             </Link>
                         </div>
