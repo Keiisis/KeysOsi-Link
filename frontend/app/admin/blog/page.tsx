@@ -106,14 +106,16 @@ export default function AdminBlogPage() {
 
     // Reading time estimate
     const readingTime = useMemo(() => {
-        const words = form.content.split(/\s+/).filter(w => w.length > 0).length
+        const text = form.content || ''
+        const words = text.split(/\s+/).filter(w => w.length > 0).length
         const minutes = Math.max(1, Math.ceil(words / 200))
         return { words, minutes }
     }, [form.content])
 
     // Tags management
     const tags = useMemo(() => {
-        return form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : []
+        const text = form.tags || ''
+        return text ? text.split(',').map(t => t.trim()).filter(Boolean) : []
     }, [form.tags])
 
     const addTag = () => {
@@ -130,14 +132,14 @@ export default function AdminBlogPage() {
 
     // Undo/Redo
     const pushUndo = useCallback(() => {
-        setUndoStack(prev => [...prev.slice(-30), form.content])
+        setUndoStack(prev => [...prev.slice(-30), form.content || ''])
         setRedoStack([])
     }, [form.content])
 
     const undo = () => {
         if (undoStack.length === 0) return
         const prev = undoStack[undoStack.length - 1]
-        setRedoStack(r => [...r, form.content])
+        setRedoStack(r => [...r, form.content || ''])
         setUndoStack(u => u.slice(0, -1))
         setForm(f => ({ ...f, content: prev }))
     }
@@ -145,7 +147,7 @@ export default function AdminBlogPage() {
     const redo = () => {
         if (redoStack.length === 0) return
         const next = redoStack[redoStack.length - 1]
-        setUndoStack(u => [...u, form.content])
+        setUndoStack(u => [...u, form.content || ''])
         setRedoStack(r => r.slice(0, -1))
         setForm(f => ({ ...f, content: next }))
     }
@@ -157,11 +159,12 @@ export default function AdminBlogPage() {
 
         pushUndo()
 
+        const currentContent = form.content || ''
         const start = textarea.selectionStart
         const end = textarea.selectionEnd
-        const selected = form.content.substring(start, end)
-        const before = form.content.substring(0, start)
-        const after = form.content.substring(end)
+        const selected = currentContent.substring(start, end)
+        const before = currentContent.substring(0, start)
+        const after = currentContent.substring(end)
 
         let newContent: string
         let cursorPos: number
@@ -197,13 +200,14 @@ export default function AdminBlogPage() {
         pushUndo()
 
         const textarea = contentRef.current
+        const currentContent = form.content || ''
         if (textarea) {
             const pos = textarea.selectionStart
-            const before = form.content.substring(0, pos)
-            const after = form.content.substring(pos)
+            const before = currentContent.substring(0, pos)
+            const after = currentContent.substring(pos)
             setForm(f => ({ ...f, content: before + markdown + after }))
         } else {
-            setForm(f => ({ ...f, content: f.content + markdown }))
+            setForm(f => ({ ...f, content: currentContent + markdown }))
         }
 
         setShowMediaPanel(false)
@@ -299,13 +303,13 @@ export default function AdminBlogPage() {
         setEditing(post)
         setAutoSlug(false)
         setForm({
-            title: post.title,
-            slug: post.slug,
-            excerpt: post.excerpt,
-            content: post.content,
-            cover_image: post.cover_image,
-            category: post.category,
-            is_published: post.is_published,
+            title: post.title || '',
+            slug: post.slug || '',
+            excerpt: post.excerpt || '',
+            content: post.content || '',
+            cover_image: post.cover_image || '',
+            category: post.category || 'general',
+            is_published: !!post.is_published,
             meta_title: post.meta_title || '',
             meta_description: post.meta_description || '',
             tags: post.tags || '',
