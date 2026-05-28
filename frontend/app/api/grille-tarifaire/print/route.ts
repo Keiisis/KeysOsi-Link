@@ -199,6 +199,7 @@ export async function GET(request: NextRequest) {
       flex-direction:column;
       box-shadow:0 8px 40px rgba(0,0,0,.08);
       overflow:hidden;
+      padding-top:8mm; /* Marge haute de sécurité pour que le ruban tricolore apparaisse sur le papier imprimé */
     }
 
     /* ===== RUBAN DRAPEAU ===== */
@@ -346,34 +347,34 @@ export async function GET(request: NextRequest) {
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap:6px;
+      gap:12px;
       border:2.5px solid #008751;
       border-radius:10px;
       padding:12px 14px;
       background:#f0fff6 !important;
-      width:310px;
-      min-height:155px;
+      width:400px;
+      min-height:224px;
       -webkit-print-color-adjust:exact !important;
       print-color-adjust:exact !important;
     }
 
     .sig-text{
-      width:170px;
+      width:160px;
       flex-shrink:0;
     }
-    .sig-title{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#006b40;margin-bottom:2px}
-    .sig-company{font-size:8px;font-weight:800;color:#008751;margin-bottom:8px}
-    .sig-label{font-size:9px;font-weight:700;color:#000;margin-bottom:1px}
-    .sig-name{font-size:12px;font-weight:900;color:#008751;margin-bottom:5px}
-    .sig-date{font-size:9px;font-weight:700;color:#000;margin-bottom:2px}
-    .sig-valid{font-size:7.5px;font-weight:800;text-transform:uppercase;color:#008751;letter-spacing:1px}
+    .sig-title{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#006b40;margin-bottom:2px}
+    .sig-company{font-size:9.5px;font-weight:800;color:#008751;margin-bottom:8px}
+    .sig-label{font-size:10px;font-weight:700;color:#000;margin-bottom:2px}
+    .sig-name{font-size:14px;font-weight:900;color:#008751;margin-bottom:8px}
+    .sig-date{font-size:10px;font-weight:700;color:#000;margin-bottom:3px}
+    .sig-valid{font-size:8px;font-weight:800;text-transform:uppercase;color:#008751;letter-spacing:1px}
 
-    /* Cachet DANS le cadre vert, à droite du texte, ajusté à la bonne taille */
+    /* Cachet DANS le cadre vert, à droite du texte, agrandi 4x (surface 200x200px) */
     .cachet{
-      width:100px;
-      height:100px;
+      width:200px;
+      height:200px;
       object-fit:contain;
-      opacity:.92;
+      opacity:.95;
       flex-shrink:0;
       align-self:center;
     }
@@ -403,6 +404,7 @@ export async function GET(request: NextRequest) {
         height:297mm;
         page-break-after:always;
         break-after:page;
+        padding-top:8mm !important;
       }
       .page:last-child{page-break-after:avoid;break-after:avoid}
       .flag-stripe,.flag-g,.flag-j,.flag-r{
