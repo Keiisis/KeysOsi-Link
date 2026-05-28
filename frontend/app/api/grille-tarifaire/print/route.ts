@@ -148,13 +148,15 @@ export async function GET(request: NextRequest) {
                     <!-- ZONE SIGNATURE EN BAS À DROITE -->
                     <div class="sig-zone">
                         <div class="sig-box">
-                            <div class="sig-title">DIRECTION GÉNÉRALE</div>
-                            <div class="sig-company">RETOUR GAGNANT BÉNIN</div>
-                            <div class="sig-label">La Présidente Directrice Générale :</div>
-                            <div class="sig-name">${escapeHtml(presidentName)}</div>
-                            <div class="sig-sub">Signature et Cachet officiel</div>
-                            <div class="sig-date">Fait à Cotonou, Le ${date}</div>
-                            <div class="sig-valid">Validité officielle garantie</div>
+                            <div class="sig-text">
+                                <div class="sig-title">DIRECTION GÉNÉRALE</div>
+                                <div class="sig-company">RETOUR GAGNANT BÉNIN</div>
+                                <div class="sig-label">La Présidente Directrice Générale :</div>
+                                <div class="sig-name">${escapeHtml(presidentName)}</div>
+                                <div class="sig-sub">Signature et Cachet officiel</div>
+                                <div class="sig-date">Fait à Cotonou, Le ${date}</div>
+                                <div class="sig-valid">Validité officielle garantie</div>
+                            </div>
                             <img src="${stampUrl}" alt="Cachet" class="cachet" onerror="this.style.display='none'" />
                         </div>
                     </div>
@@ -340,19 +342,25 @@ export async function GET(request: NextRequest) {
       padding:16px 0 0;
     }
 
-    /* Cadre vert — dimensions facture */
+    /* Cadre vert — dimensions facture, flex: texte à gauche, cachet à droite */
     .sig-box{
+      display:flex;
+      align-items:center;
+      gap:10px;
       border:1px solid #008751;
       border-radius:8px;
       padding:14px;
       background:#f0fff6 !important;
       min-height:90px;
-      position:relative;
       width:370px;
       -webkit-print-color-adjust:exact !important;
       print-color-adjust:exact !important;
     }
 
+    .sig-text{
+      flex:1;
+      min-width:0;
+    }
     .sig-title{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#006b40;margin-bottom:4px}
     .sig-company{font-size:8px;font-weight:700;color:#008751;margin-bottom:8px}
     .sig-label{font-size:8px;font-weight:700;color:#000;margin-bottom:2px}
@@ -361,16 +369,13 @@ export async function GET(request: NextRequest) {
     .sig-date{font-size:9px;color:#888;margin-top:4px}
     .sig-valid{font-size:7.5px;font-weight:800;text-transform:uppercase;color:#008751;letter-spacing:0.5px;margin-top:4px}
 
-    /* Cachet — triplé (360px), positionné en absolu style tampon administratif */
+    /* Cachet 100×100px — à droite du texte, dans le cadre */
     .cachet{
-      position:absolute;
-      right:-20px;
-      bottom:-30px;
-      width:360px;
-      height:360px;
-      opacity:.85;
+      width:100px;
+      height:100px;
+      flex-shrink:0;
       object-fit:contain;
-      pointer-events:none;
+      opacity:.9;
     }
 
     /* ===== PIED DE PAGE ===== */
