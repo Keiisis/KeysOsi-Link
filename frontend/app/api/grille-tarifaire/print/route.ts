@@ -148,10 +148,13 @@ export async function GET(request: NextRequest) {
                     <!-- ZONE SIGNATURE EN BAS À DROITE -->
                     <div class="sig-zone">
                         <div class="sig-box">
-                            <div class="sig-title">LA DIRECTION GÉNÉRALE</div>
+                            <div class="sig-title">DIRECTION GÉNÉRALE</div>
+                            <div class="sig-company">RETOUR GAGNANT BÉNIN</div>
+                            <div class="sig-label">La Présidente Directrice Générale :</div>
                             <div class="sig-name">${escapeHtml(presidentName)}</div>
-                            <div class="sig-company">Signature et Cachet officiel</div>
-                            <div class="sig-date">Établi le ${date}</div>
+                            <div class="sig-sub">Signature et Cachet officiel</div>
+                            <div class="sig-date">Fait à Cotonou, Le ${date}</div>
+                            <div class="sig-valid">Validité officielle garantie</div>
                             <img src="${stampUrl}" alt="Cachet" class="cachet" onerror="this.style.display='none'" />
                         </div>
                     </div>
@@ -337,7 +340,7 @@ export async function GET(request: NextRequest) {
       padding:16px 0 0;
     }
 
-    /* Cadre vert — dimensions exactes de la facture */
+    /* Cadre vert — dimensions facture */
     .sig-box{
       border:1px solid #008751;
       border-radius:8px;
@@ -345,27 +348,29 @@ export async function GET(request: NextRequest) {
       background:#f0fff6 !important;
       min-height:90px;
       position:relative;
-      overflow:hidden;
       width:370px;
       -webkit-print-color-adjust:exact !important;
       print-color-adjust:exact !important;
     }
 
-    .sig-title{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#006b40;margin-bottom:6px}
-    .sig-company{font-size:8px;font-weight:700;color:#008751;margin-bottom:4px}
+    .sig-title{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#006b40;margin-bottom:4px}
+    .sig-company{font-size:8px;font-weight:700;color:#008751;margin-bottom:8px}
     .sig-label{font-size:8px;font-weight:700;color:#000;margin-bottom:2px}
-    .sig-name{font-size:12px;font-weight:800;color:#008751;margin-top:4px}
-    .sig-date{font-size:9px;color:#888;margin-top:6px}
+    .sig-name{font-size:12px;font-weight:800;color:#008751;margin-top:2px;margin-bottom:4px}
+    .sig-sub{font-size:9px;color:#667;margin-bottom:2px}
+    .sig-date{font-size:9px;color:#888;margin-top:4px}
+    .sig-valid{font-size:7.5px;font-weight:800;text-transform:uppercase;color:#008751;letter-spacing:0.5px;margin-top:4px}
 
-    /* Cachet en position absolute — style facture, légèrement agrandi (120px vs 80px) */
+    /* Cachet — triplé (360px), positionné en absolu style tampon administratif */
     .cachet{
       position:absolute;
-      right:-10px;
-      bottom:-10px;
-      width:120px;
-      height:120px;
-      opacity:.9;
+      right:-20px;
+      bottom:-30px;
+      width:360px;
+      height:360px;
+      opacity:.85;
       object-fit:contain;
+      pointer-events:none;
     }
 
     /* ===== PIED DE PAGE ===== */
