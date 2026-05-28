@@ -177,6 +177,7 @@ export async function GET(request: NextRequest) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Grilles Tarifaires — Retour Gagnant Bénin</title>
+  <style>
     /* ===== RESET ===== */
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Segoe UI',Helvetica,Arial,sans-serif;background:#e8edf2;color:#000}
@@ -272,8 +273,8 @@ export async function GET(request: NextRequest) {
       display:flex;
       flex-direction:column;
       padding:0 32px;
-      /* Espace pour le footer absolu et légèrement surélevé */
-      padding-bottom:85px;
+      /* Espace pour le footer absolu à l'impression */
+      padding-bottom:95px;
     }
 
     /* Texte introductif - occupe l'espace du haut, bien aéré et espacé */
@@ -345,32 +346,32 @@ export async function GET(request: NextRequest) {
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap:8px;
+      gap:6px;
       border:2.5px solid #008751;
       border-radius:10px;
-      padding:14px 16px;
+      padding:12px 14px;
       background:#f0fff6 !important;
-      width:330px;
-      min-height:165px;
+      width:310px;
+      min-height:155px;
       -webkit-print-color-adjust:exact !important;
       print-color-adjust:exact !important;
     }
 
     .sig-text{
-      width:180px;
+      width:170px;
       flex-shrink:0;
     }
-    .sig-title{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#006b40;margin-bottom:2px}
-    .sig-company{font-size:9px;font-weight:800;color:#008751;margin-bottom:8px}
-    .sig-label{font-size:9.5px;font-weight:700;color:#000;margin-bottom:1px}
-    .sig-name{font-size:13.5px;font-weight:900;color:#008751;margin-bottom:5px}
-    .sig-date{font-size:9.5px;font-weight:700;color:#000;margin-bottom:2px}
-    .sig-valid{font-size:8px;font-weight:800;text-transform:uppercase;color:#008751;letter-spacing:1px}
+    .sig-title{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#006b40;margin-bottom:2px}
+    .sig-company{font-size:8px;font-weight:800;color:#008751;margin-bottom:8px}
+    .sig-label{font-size:9px;font-weight:700;color:#000;margin-bottom:1px}
+    .sig-name{font-size:12px;font-weight:900;color:#008751;margin-bottom:5px}
+    .sig-date{font-size:9px;font-weight:700;color:#000;margin-bottom:2px}
+    .sig-valid{font-size:7.5px;font-weight:800;text-transform:uppercase;color:#008751;letter-spacing:1px}
 
     /* Cachet DANS le cadre vert, à droite du texte, ajusté à la bonne taille */
     .cachet{
-      width:110px;
-      height:110px;
+      width:100px;
+      height:100px;
       object-fit:contain;
       opacity:.92;
       flex-shrink:0;
@@ -380,9 +381,9 @@ export async function GET(request: NextRequest) {
     /* ===== PIED DE PAGE ===== */
     .footer{
       position:absolute;
-      bottom:10px;left:0;right:0;
+      bottom:0;left:0;right:0;
       background:#fff;
-      padding:14px 32px 0;
+      padding:14px 32px 26px; /* Grand padding bas pour éviter la coupure par l'imprimante */
       text-align:center;
       border-top:2px solid #dde3ee;
     }
