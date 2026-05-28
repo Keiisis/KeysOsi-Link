@@ -66,7 +66,6 @@ export async function GET(request: NextRequest) {
         }
 
         const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.retourgagnantbenin.bj'
-        // Utiliser le logo transparent sans fond noir de Retour Gagnant
         const logoUrl = `${baseUrl}/images/logo-transparent.png`
         const stampUrl = `${baseUrl}/images/cachet-PDG.png`
         const date = new Date().toLocaleDateString('fr-FR', {
@@ -79,47 +78,48 @@ export async function GET(request: NextRequest) {
             const rowsHtml = grid.rows.map((row: any) => {
                 return `
                 <tr>
-                    <td class="center font-bold text-black">${escapeHtml(row.no)}</td>
-                    <td class="font-bold text-left text-black">${escapeHtml(row.service)}</td>
-                    <td class="center font-bold text-black">${escapeHtml(row.unit)}</td>
-                    <td class="right font-bold price-cell">${escapeHtml(row.price)}</td>
-                    <td class="center font-bold text-black">${escapeHtml(row.delay)}</td>
+                    <td class="center bold">${escapeHtml(row.no)}</td>
+                    <td class="bold text-left">${escapeHtml(row.service)}</td>
+                    <td class="center bold">${escapeHtml(row.unit)}</td>
+                    <td class="right bold price-cell">${escapeHtml(row.price)}</td>
+                    <td class="center bold">${escapeHtml(row.delay)}</td>
                 </tr>
                 `
             }).join('')
 
             return `
             <div class="page">
-                <!-- DRAPEAU BÉNIN -->
+                <!-- RUBAN DRAPEAU BÉNIN -->
                 <div class="flag-stripe">
-                    <div class="flag-vert"></div>
-                    <div class="flag-jaune"></div>
-                    <div class="flag-rouge"></div>
+                    <div class="flag-g"></div>
+                    <div class="flag-j"></div>
+                    <div class="flag-r"></div>
                 </div>
 
-                <!-- HEADER BLANC -->
+                <!-- ENTÊTE -->
                 <div class="header">
                     <div class="brand">
                         <img src="${logoUrl}" alt="RETOUR GAGNANT" class="logo" onerror="this.style.display='none'" />
                         <div class="brand-text">
                             <div class="brand-name">
-                                <span class="vert">RETOUR </span><span class="rouge">GAGNANT</span>
+                                <span class="c-vert">RETOUR </span><span class="c-rouge">GAGNANT</span>
                             </div>
                             <div class="brand-benin">Bénin</div>
                             <div class="brand-slogan">L'agence d'accompagnement à la Nationalité Béninoise et au retour des Afro-descendants.</div>
                         </div>
                     </div>
-                    <div class="invoice-meta">
-                        <div class="inv-type">GRILLES TARIFAIRES</div>
-                        <div class="inv-subtype">${escapeHtml(grid.title)}</div>
-                        <div class="inv-num">N° ${gridRef}</div>
-                        <div class="inv-date">Date : Cotonou, le ${date}</div>
+                    <div class="meta">
+                        <div class="meta-type">GRILLES TARIFAIRES</div>
+                        <div class="meta-sub">${escapeHtml(grid.title)}</div>
+                        <div class="meta-ref">N° ${gridRef}</div>
+                        <div class="meta-date">Date : Cotonou, le ${date}</div>
                     </div>
                 </div>
 
+                <!-- CORPS -->
                 <div class="body">
-                    <!-- TEXTE INTRODUCTIF STYLE COPYWRITER -->
-                    <div class="intro-text">
+                    <!-- TEXTE INTRODUCTIF -->
+                    <div class="intro">
                         Retour Gagnant Bénin est le partenaire stratégique de référence dédié à la réussite absolue de votre retour et de votre établissement au Bénin. De l'acquisition rigoureuse de votre nationalité béninoise à la sécurisation de vos projets de vie et d'investissement, notre agence déploie une expertise d'excellence pour chacun de vos besoins administratifs et juridiques. C'est avec le plus haut niveau d'engagement que nous vous présentons ci-dessous la grille tarifaire officielle de nos prestations pour le pôle <strong>${escapeHtml(grid.title)}</strong>.
                     </div>
 
@@ -128,11 +128,11 @@ export async function GET(request: NextRequest) {
                         <table>
                             <thead>
                                 <tr>
-                                    <th class="center" style="width: 60px">N°</th>
+                                    <th class="center" style="width:50px">N°</th>
                                     <th>Service / Prestation</th>
-                                    <th class="center" style="width: 140px">Unité</th>
-                                    <th class="right" style="width: 200px">Tarif (FCFA/EUR)</th>
-                                    <th class="center" style="width: 140px">Délai</th>
+                                    <th class="center" style="width:120px">Unité</th>
+                                    <th class="right" style="width:180px">Tarif (FCFA/EUR)</th>
+                                    <th class="center" style="width:120px">Délai</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -141,25 +141,28 @@ export async function GET(request: NextRequest) {
                         </table>
                     </div>
 
-                    <!-- ZONE SIGNATURE -->
+                    <!-- ZONE SIGNATURE + CACHET -->
                     <div class="sig-zone">
-                        <div class="sig-box-left">
-                            <div class="sig-title">DIRECTION GÉNÉRALE</div>
-                            <div class="sig-company">RETOUR GAGNANT BÉNIN</div>
-                            <div class="sig-label">La Présidente Directrice Générale :</div>
-                            <div class="sig-name">${escapeHtml(presidentName)}</div>
-                            <div class="sig-date">Fait à Cotonou, Le ${date}</div>
-                            <div class="sig-status">Validité officielle garantie</div>
-                            <!-- Cachet déplacé vers la droite pour ne pas toucher le texte -->
-                            <img src="${stampUrl}" alt="Cachet RGB" class="sig-cachet" onerror="this.style.display='none'" />
+                        <div class="sig-content">
+                            <div class="sig-box">
+                                <div class="sig-title">DIRECTION GÉNÉRALE</div>
+                                <div class="sig-company">RETOUR GAGNANT BÉNIN</div>
+                                <div class="sig-label">La Présidente Directrice Générale :</div>
+                                <div class="sig-name">${escapeHtml(presidentName)}</div>
+                                <div class="sig-date">Fait à Cotonou, Le ${date}</div>
+                                <div class="sig-valid">Validité officielle garantie</div>
+                            </div>
+                            <div class="cachet-area">
+                                <img src="${stampUrl}" alt="Cachet officiel" class="cachet-img" onerror="this.style.display='none'" />
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- FOOTER BLANC SÉCURISÉ -->
-                <div class="white-footer">
-                    <p class="footer-company-info">RETOUR GAGNANT BENIN - RCCM: RB/COT/26 B 42001 - IFU: 3202644573981 - Haie-Vive Cocotiers, Cotonou - contact@retourgagnantbenin.bj</p>
-                    <div class="doc-ref">Document N° GRI-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${grid.id.toUpperCase().slice(0, 8)} — Généré le ${new Date().toLocaleDateString('fr-FR')}</div>
+                <!-- PIED DE PAGE -->
+                <div class="footer">
+                    <p class="footer-info">RETOUR GAGNANT BENIN - RCCM: RB/COT/26 B 42001 - IFU: 3202644573981 - Haie-Vive Cocotiers, Cotonou - contact@retourgagnantbenin.bj</p>
+                    <p class="footer-ref">Document N° ${gridRef} — Généré le ${new Date().toLocaleDateString('fr-FR')}</p>
                 </div>
             </div>
             `
@@ -172,226 +175,193 @@ export async function GET(request: NextRequest) {
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Grilles Tarifaires — Retour Gagnant Bénin</title>
   <link rel="icon" type="image/png" href="${baseUrl}/icon.png">
-  <link rel="shortcut icon" href="${baseUrl}/icon.png">
   <style>
+    /* ===== RESET ===== */
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:#e8edf2;color:#000000;position:relative}
-    
-    .print-btn-container {
-      max-width: 820px;
-      margin: 20px auto 0;
-      display: flex;
-      justify-content: flex-end;
-    }
-    
-    .print-btn{
-      padding: 12px 30px;
-      background: #008751;
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      font-size: 13px;
-      font-weight: 800;
-      cursor: pointer;
-      letter-spacing: .5px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      box-shadow: 0 4px 12px rgba(0, 135, 81, 0.2);
-      transition: all 0.2s;
-    }
-    .print-btn:hover{background:#006b40;transform:translateY(-1px)}
+    body{font-family:'Segoe UI',Helvetica,Arial,sans-serif;background:#e8edf2;color:#000}
 
+    /* ===== BOUTON TÉLÉCHARGER ===== */
+    .actions{max-width:210mm;margin:18px auto 0;display:flex;justify-content:flex-end;gap:10px}
+    .btn{padding:11px 28px;border:none;border-radius:10px;font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .2s}
+    .btn-print{background:#008751;color:#fff;box-shadow:0 4px 12px rgba(0,135,81,.2)}
+    .btn-print:hover{background:#006b40;transform:translateY(-1px)}
+
+    /* ===== FEUILLE A4 ===== */
     .page{
-      width: 210mm;
-      height: 297mm;
-      margin: 20px auto 40px;
-      background: #fff;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 8px 40px rgba(0,0,0,.08);
-      padding: 12mm 16mm 20mm; /* Handles print sheet padding margins */
+      width:210mm;
+      height:297mm;
+      margin:18px auto 36px;
+      background:#fff;
+      position:relative;
+      display:flex;
+      flex-direction:column;
+      box-shadow:0 8px 40px rgba(0,0,0,.08);
+      overflow:hidden;
     }
 
-    /* Drapeau Bénin */
-    .flag-stripe{display:flex;height:5px}
-    .flag-vert{flex:1;background:#008751}
-    .flag-jaune{flex:1;background:#FCD116}
-    .flag-rouge{flex:1;background:#E8112D}
+    /* ===== RUBAN DRAPEAU ===== */
+    .flag-stripe{display:flex;height:6px;flex-shrink:0}
+    .flag-g{flex:1;background:#008751}
+    .flag-j{flex:1;background:#FCD116}
+    .flag-r{flex:1;background:#E8112D}
 
-    /* Header blanc libre de cadres/bordures superflus */
-    .header{background:#fff;padding:20px 0 15px;display:flex;justify-content:space-between;align-items:center;border-bottom:2.5px solid #008751}
-    .brand{display:flex;align-items:center;gap:20px}
-    
-    /* Logo sans cadre noir, libre et gros */
+    /* ===== ENTÊTE ===== */
+    .header{
+      display:flex;justify-content:space-between;align-items:center;
+      padding:16px 28px 14px;
+      border-bottom:2.5px solid #008751;
+      flex-shrink:0;
+    }
+    .brand{display:flex;align-items:center;gap:16px}
+
+    /* Logo libre, sans fond noir, sans cadre */
     .logo{
-      width:115px;
-      height:auto;
+      width:90px;height:auto;
       object-fit:contain;
-      border:none !important;
+      display:block;
       background:transparent !important;
+      border:none !important;
       box-shadow:none !important;
       border-radius:0 !important;
+      padding:0 !important;
     }
-    
-    .brand-text{}
-    .brand-name{font-size:26px;font-weight:900;line-height:1.1;letter-spacing:-.3px}
-    .brand-name .vert{color:#008751}
-    .brand-name .rouge{color:#E8112D}
-    .brand-benin{font-size:10px;font-weight:800;color:#000000;letter-spacing:3px;text-transform:uppercase;margin-top:3px}
-    .brand-slogan{font-size:11px;color:#000000;margin-top:6px;max-width:280px;line-height:1.4;font-weight:700}
-    
-    .invoice-meta{text-align:right}
-    .inv-type{font-size:22px;font-weight:900;color:#008751;letter-spacing:1px;line-height:1}
-    .inv-subtype{font-size:13px;font-weight:800;color:#E8112D;margin-top:6px;text-transform:uppercase}
-    .inv-num{font-size:13px;font-weight:700;color:#000000;margin-top:8px;font-family:monospace}
-    .inv-date{font-size:12px;color:#000000;margin-top:6px;font-weight:700}
 
-    /* Corps de la page */
+    .brand-name{font-size:24px;font-weight:900;line-height:1.1;letter-spacing:-.3px}
+    .c-vert{color:#008751}
+    .c-rouge{color:#E8112D}
+    .brand-benin{font-size:9px;font-weight:800;color:#000;letter-spacing:3px;text-transform:uppercase;margin-top:2px}
+    .brand-slogan{font-size:9.5px;color:#000;margin-top:4px;max-width:260px;line-height:1.35;font-weight:700}
+
+    .meta{text-align:right}
+    .meta-type{font-size:20px;font-weight:900;color:#008751;letter-spacing:1px}
+    .meta-sub{font-size:12px;font-weight:800;color:#E8112D;margin-top:4px;text-transform:uppercase}
+    .meta-ref{font-size:12px;font-weight:700;color:#000;margin-top:6px;font-family:monospace}
+    .meta-date{font-size:11px;color:#000;margin-top:4px;font-weight:700}
+
+    /* ===== CORPS ===== */
     .body{
-      padding:25px 0 0;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      padding:18px 28px 0;
     }
 
-    /* Texte introductif d'expert copywriter */
-    .intro-text {
-      font-size: 13.5px;
-      line-height: 1.6;
-      color: #000000;
-      margin-bottom: 24px;
-      text-align: justify;
-      font-weight: 700; /* Pure Black ultra visible */
+    /* Texte introductif */
+    .intro{
+      font-size:11.5px;
+      line-height:1.55;
+      color:#000;
+      margin-bottom:16px;
+      text-align:justify;
+      font-weight:700;
     }
 
-    /* Tableau des tarifs centré et structuré de façon professionnelle */
+    /* ===== TABLEAU ===== */
     .table-wrap{
-      border: 2px solid #000000;
-      border-radius:10px;
+      border:2px solid #000;
+      border-radius:8px;
       overflow:hidden;
-      margin-bottom:30px;
-      width: 100%;
+      margin-bottom:auto;
     }
-    
     table{width:100%;border-collapse:collapse}
     thead tr{background:#008751}
-    thead th{padding:14px 16px;font-size:12.5px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:#fff;text-align:left}
+    thead th{padding:10px 12px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.8px;color:#fff;text-align:left}
     thead th.right{text-align:right}
     thead th.center{text-align:center}
 
-    tbody tr{background:#ffffff;border-bottom:2px solid #000000}
+    tbody tr{background:#fff;border-bottom:1.5px solid #000}
     tbody tr:last-child{border-bottom:none}
     tbody tr:nth-child(even){background:#f8fafc}
-    
-    tbody td{padding:16px;font-size:13.5px;color:#000000;line-height:1.5;vertical-align:middle;font-weight:700}
+
+    tbody td{padding:11px 12px;font-size:12px;color:#000;line-height:1.4;vertical-align:middle}
     tbody td.right{text-align:right}
     tbody td.center{text-align:center}
     tbody td.text-left{text-align:left}
-    
-    .price-cell{color:#008751;font-size:14px;font-weight:900}
+    .bold{font-weight:700}
+    .price-cell{color:#008751;font-weight:900;font-size:12.5px}
 
-    /* Zone signature poussée tout en bas de la page à la bonne distance */
+    /* ===== ZONE SIGNATURE ===== */
     .sig-zone{
+      margin-top:auto;
+      padding-top:14px;
       display:flex;
       justify-content:flex-end;
-      margin-top:auto;
-      margin-bottom:24px;
-    }
-    
-    .sig-box-left{
-      width:380px;
-      border:2.5px solid #008751;
-      border-radius:12px;
-      padding:22px;
-      background:#f0fff6;
-      min-height:175px;
-      position:relative;
-      overflow:visible; /* Permet au cachet de déborder sur la droite sans recouvrir le texte ni être coupé */
-      box-shadow: 0 4px 15px rgba(0, 135, 81, 0.05);
-    }
-    .sig-title{font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px;color:#006b40}
-    .sig-company{font-size:12px;font-weight:800;color:#008751;margin-bottom:12px}
-    .sig-label{font-size:12px;font-weight:700;color:#000000;margin-bottom:2px}
-    .sig-name{font-size:16px;font-weight:900;color:#008751;margin-bottom:8px}
-    .sig-date{font-size:11.5px;font-weight:700;color:#000000;margin-bottom:4px}
-    .sig-status{font-size:9.5px;font-weight:800;text-transform:uppercase;color:#008751;letter-spacing:1px}
-    
-    /* Cachet PDG agrandi x4 et décalé vers la droite/bas extérieur pour ne pas toucher le texte */
-    .sig-cachet{
-      position:absolute;
-      right:-95px; /* Décalé vers la droite à l'extérieur pour ne pas toucher le texte de signature */
-      bottom:-30px;
-      width:260px;
-      height:260px;
-      opacity:0.95;
-      object-fit:contain;
-      pointer-events:none;
-      z-index: 10;
     }
 
-    /* Pied de page blanc forcé au bas absolu de la page A4 */
-    .white-footer{
+    .sig-content{
+      display:flex;
+      align-items:flex-start;
+      gap:0;
+    }
+
+    .sig-box{
+      width:300px;
+      border:2.5px solid #008751;
+      border-radius:10px;
+      padding:16px 18px;
+      background:#f0fff6;
+    }
+    .sig-title{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#006b40;margin-bottom:2px}
+    .sig-company{font-size:10px;font-weight:800;color:#008751;margin-bottom:8px}
+    .sig-label{font-size:10.5px;font-weight:700;color:#000;margin-bottom:1px}
+    .sig-name{font-size:14px;font-weight:900;color:#008751;margin-bottom:6px}
+    .sig-date{font-size:10px;font-weight:700;color:#000;margin-bottom:3px}
+    .sig-valid{font-size:8.5px;font-weight:800;text-transform:uppercase;color:#008751;letter-spacing:1px}
+
+    /* Cachet à droite de la boîte signature, décalé pour ne pas toucher le texte */
+    .cachet-area{
+      position:relative;
+      width:180px;
+      margin-left:-30px;
+      margin-top:10px;
+    }
+    .cachet-img{
+      width:180px;
+      height:180px;
+      object-fit:contain;
+      opacity:.92;
+      display:block;
+    }
+
+    /* ===== PIED DE PAGE ===== */
+    .footer{
       position:absolute;
-      bottom:0;
-      left:0;
-      width:100%;
-      background:#ffffff;
-      padding:24px 0;
+      bottom:0;left:0;right:0;
+      background:#fff;
+      padding:14px 28px;
       text-align:center;
       border-top:2px solid #dde3ee;
     }
-    
-    .white-footer p.footer-company-info{
-      font-size:11px;
-      color:#000000;
-      font-weight:900; /* Pure Black ultra visible */
-      line-height:1.6;
-      margin-bottom: 6px;
-    }
-    
-    .white-footer .doc-ref{
-      font-size:10px;
-      color:#000000;
-      font-weight:800;
-    }
+    .footer-info{font-size:9.5px;font-weight:900;color:#000;line-height:1.5;margin-bottom:3px}
+    .footer-ref{font-size:8.5px;font-weight:800;color:#000}
 
-    /* Supprime les en-têtes/pieds de page du navigateur (URL, date, titre) lors de l'impression */
-    @page{
-      size: A4;
-      margin: 0;
-    }
+    /* ===== IMPRESSION / PDF ===== */
+    @page{size:A4;margin:0}
 
     @media print{
       body{background:#fff}
-      .print-btn-container{display:none}
+      .actions{display:none !important}
       .page{
         box-shadow:none;
-        border-radius:0;
         margin:0;
-        width: 210mm;
-        height: 297mm;
-        page-break-after: always;
-        break-after: page;
+        width:210mm;
+        height:297mm;
+        page-break-after:always;
+        break-after:page;
       }
-      .page:last-child {
-        page-break-after: avoid;
-        break-after: avoid;
-      }
-      .flag-stripe{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-      .header{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .page:last-child{page-break-after:avoid;break-after:avoid}
+      /* Forcer les couleurs à l'impression */
+      .flag-stripe,.flag-g,.flag-j,.flag-r{-webkit-print-color-adjust:exact;print-color-adjust:exact}
       thead tr{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-      .sig-box-left{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .sig-box{-webkit-print-color-adjust:exact;print-color-adjust:exact}
       tbody tr:nth-child(even){-webkit-print-color-adjust:exact;print-color-adjust:exact}
       .price-cell{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-      .intro-text{-webkit-print-color-adjust:exact;print-color-adjust:exact}
     }
   </style>
 </head>
 <body>
-  <div class="print-btn-container">
-    <button class="print-btn" onclick="window.print()">🖨&nbsp; Télécharger / Imprimer la Grille</button>
+  <div class="actions">
+    <button class="btn btn-print" onclick="window.print()">🖨&nbsp; Télécharger / Imprimer la Grille</button>
   </div>
   
   ${gridsHtml}
