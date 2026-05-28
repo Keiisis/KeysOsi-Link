@@ -347,29 +347,29 @@ export async function GET(request: NextRequest) {
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap:12px;
+      gap:4px;
       border:2.5px solid #008751;
       border-radius:10px;
-      padding:12px 14px;
+      padding:10px 12px;
       background:#f0fff6 !important;
-      width:400px;
-      min-height:224px;
+      width:330px; /* Restauré la taille normale */
+      min-height:220px; /* Pour contenir le cachet de 200px et le texte */
       -webkit-print-color-adjust:exact !important;
       print-color-adjust:exact !important;
     }
 
     .sig-text{
-      width:160px;
+      width:102px;
       flex-shrink:0;
     }
-    .sig-title{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#006b40;margin-bottom:2px}
-    .sig-company{font-size:9.5px;font-weight:800;color:#008751;margin-bottom:8px}
-    .sig-label{font-size:10px;font-weight:700;color:#000;margin-bottom:2px}
-    .sig-name{font-size:14px;font-weight:900;color:#008751;margin-bottom:8px}
-    .sig-date{font-size:10px;font-weight:700;color:#000;margin-bottom:3px}
-    .sig-valid{font-size:8px;font-weight:800;text-transform:uppercase;color:#008751;letter-spacing:1px}
+    .sig-title{font-size:9.5px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:#006b40;margin-bottom:2px}
+    .sig-company{font-size:8.5px;font-weight:800;color:#008751;margin-bottom:8px}
+    .sig-label{font-size:8.5px;font-weight:700;color:#000;margin-bottom:2px}
+    .sig-name{font-size:12px;font-weight:900;color:#008751;margin-bottom:6px}
+    .sig-date{font-size:8.5px;font-weight:700;color:#000;margin-bottom:3px}
+    .sig-valid{font-size:7px;font-weight:800;text-transform:uppercase;color:#008751;letter-spacing:0.5px}
 
-    /* Cachet DANS le cadre vert, à droite du texte, agrandi 4x (surface 200x200px) */
+    /* Cachet DANS le cadre vert, à droite du texte, maintenu à 200px */
     .cachet{
       width:200px;
       height:200px;
