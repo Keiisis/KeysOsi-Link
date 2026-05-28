@@ -148,16 +148,11 @@ export async function GET(request: NextRequest) {
                     <!-- ZONE SIGNATURE EN BAS À DROITE -->
                     <div class="sig-zone">
                         <div class="sig-box">
-                            <div class="sig-text">
-                                <div class="sig-title">DIRECTION GÉNÉRALE</div>
-                                <div class="sig-company">RETOUR GAGNANT BÉNIN</div>
-                                <div class="sig-label">La Présidente Directrice Générale :</div>
-                                <div class="sig-name">${escapeHtml(presidentName)}</div>
-                                <div class="sig-date">Fait à Cotonou, Le ${date}</div>
-                                <div class="sig-valid">Validité officielle garantie</div>
-                            </div>
-                            <!-- Cachet DANS le cadre vert, à droite -->
-                            <img src="${stampUrl}" alt="Cachet officiel" class="cachet" onerror="this.style.display='none'" />
+                            <div class="sig-title">LA DIRECTION GÉNÉRALE</div>
+                            <div class="sig-name">${escapeHtml(presidentName)}</div>
+                            <div class="sig-company">Signature et Cachet officiel</div>
+                            <div class="sig-date">Établi le ${date}</div>
+                            <img src="${stampUrl}" alt="Cachet" class="cachet" onerror="this.style.display='none'" />
                         </div>
                     </div>
                 </div>
@@ -334,7 +329,7 @@ export async function GET(request: NextRequest) {
       print-color-adjust:exact !important;
     }
 
-    /* ===== ZONE SIGNATURE - en bas à droite comme document administratif ===== */
+    /* ===== ZONE SIGNATURE - en bas à droite, identique à la facture ===== */
     .sig-zone{
       flex-shrink:0;
       display:flex;
@@ -342,41 +337,35 @@ export async function GET(request: NextRequest) {
       padding:16px 0 0;
     }
 
-    /* Cadre vert contenant TOUT : texte + cachet ensemble. Ajusté pour le cachet 300px administratif. */
+    /* Cadre vert — dimensions exactes de la facture */
     .sig-box{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      border:2.5px solid #008751;
-      border-radius:10px;
-      padding:10px 14px;
+      border:1px solid #008751;
+      border-radius:8px;
+      padding:14px;
       background:#f0fff6 !important;
-      width:460px; /* Largeur optimale pour loger le cachet 300px et le texte */
-      min-height:320px; /* Pour contenir le cachet de 300px et le texte sans dépassement */
+      min-height:90px;
+      position:relative;
+      overflow:hidden;
+      width:370px;
       -webkit-print-color-adjust:exact !important;
       print-color-adjust:exact !important;
     }
 
-    .sig-text{
-      width:120px;
-      flex-shrink:0;
-    }
-    .sig-title{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:#006b40;margin-bottom:2px}
-    .sig-company{font-size:8.5px;font-weight:800;color:#008751;margin-bottom:10px}
-    .sig-label{font-size:8.5px;font-weight:700;color:#000;margin-bottom:2px}
-    .sig-name{font-size:12.5px;font-weight:900;color:#008751;margin-bottom:8px}
-    .sig-date{font-size:8.5px;font-weight:700;color:#000;margin-bottom:4px}
-    .sig-valid{font-size:7.5px;font-weight:800;text-transform:uppercase;color:#008751;letter-spacing:0.5px}
+    .sig-title{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#006b40;margin-bottom:6px}
+    .sig-company{font-size:8px;font-weight:700;color:#008751;margin-bottom:4px}
+    .sig-label{font-size:8px;font-weight:700;color:#000;margin-bottom:2px}
+    .sig-name{font-size:12px;font-weight:800;color:#008751;margin-top:4px}
+    .sig-date{font-size:9px;color:#888;margin-top:6px}
 
-    /* Cachet DANS le cadre vert, à droite du texte, agrandi à 300px */
+    /* Cachet en position absolute — style facture, légèrement agrandi (120px vs 80px) */
     .cachet{
-      width:300px;
-      height:300px;
+      position:absolute;
+      right:-10px;
+      bottom:-10px;
+      width:120px;
+      height:120px;
+      opacity:.9;
       object-fit:contain;
-      opacity:.95;
-      flex-shrink:0;
-      align-self:center;
     }
 
     /* ===== PIED DE PAGE ===== */
