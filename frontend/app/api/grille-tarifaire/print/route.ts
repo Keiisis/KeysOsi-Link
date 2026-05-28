@@ -36,11 +36,11 @@ export async function GET(request: NextRequest) {
                 id: 'documents-identite',
                 title: 'DOCUMENTS & IDENTITÉ',
                 rows: [
-                    { no: '1', service: 'Acte de naissance béninois (sécurisé)', unit: 'Par document', price: '15 000 FCFA / 23 €', delay: '72h' },
-                    { no: '2', service: 'Passeport Biométrique Béninois', unit: 'Par demande', price: '75 000 FCFA / 115 €', delay: '10 à 15 jours' },
-                    { no: '3', service: 'Carte Nationale d\'Identité (CNIB)', unit: 'Par demande', price: '30 000 FCFA / 46 €', delay: '5 à 7 jours' },
-                    { no: '4', service: 'Certificat d\'Identification Personnelle (CIP)', unit: 'Par document', price: '10 000 FCFA / 15 €', delay: '48h' },
-                    { no: '5', service: 'Casier Judiciaire Béninois', unit: 'Par document', price: '12 000 FCFA / 18 €', delay: '72h' }
+                    { no: '1', service: 'Acte de naissance béninois (sécurisé)', details: 'Copie intégrale certifiée conforme', unit: 'Par document', price: '15 000 FCFA / 23 €', delay: '72h' },
+                    { no: '2', service: 'Passeport Biométrique Béninois', details: 'Demande complète, photos, suivi', unit: 'Par demande', price: '75 000 FCFA / 115 €', delay: '10 à 15 jours' },
+                    { no: '3', service: 'Carte Nationale d\'Identité (CNIB)', details: 'Inscription, prise d\'empreintes, retrait', unit: 'Par demande', price: '30 000 FCFA / 46 €', delay: '5 à 7 jours' },
+                    { no: '4', service: 'Certificat d\'Identification Personnelle (CIP)', details: 'Vérification d\'identité officielle', unit: 'Par document', price: '10 000 FCFA / 15 €', delay: '48h' },
+                    { no: '5', service: 'Casier Judiciaire Béninois', details: 'Extrait de casier judiciaire B3', unit: 'Par document', price: '12 000 FCFA / 18 €', delay: '72h' }
                 ]
             }
         ]
@@ -79,7 +79,8 @@ export async function GET(request: NextRequest) {
                 return `
                 <tr>
                     <td class="center bold">${escapeHtml(row.no)}</td>
-                    <td class="bold text-left">${escapeHtml(row.service)}</td>
+                    <td class="bold">${escapeHtml(row.service)}</td>
+                    <td class="details-cell">${escapeHtml(row.details || '')}</td>
                     <td class="center bold">${escapeHtml(row.unit)}</td>
                     <td class="right bold price-cell">${escapeHtml(row.price)}</td>
                     <td class="center bold">${escapeHtml(row.delay)}</td>
@@ -118,33 +119,36 @@ export async function GET(request: NextRequest) {
 
                 <!-- CORPS -->
                 <div class="body">
-                    <!-- TEXTE INTRODUCTIF -->
+                    <!-- TEXTE INTRODUCTIF - occupe l'espace du haut -->
                     <div class="intro">
                         Retour Gagnant Bénin est le partenaire stratégique de référence dédié à la réussite absolue de votre retour et de votre établissement au Bénin. De l'acquisition rigoureuse de votre nationalité béninoise à la sécurisation de vos projets de vie et d'investissement, notre agence déploie une expertise d'excellence pour chacun de vos besoins administratifs et juridiques. C'est avec le plus haut niveau d'engagement que nous vous présentons ci-dessous la grille tarifaire officielle de nos prestations pour le pôle <strong>${escapeHtml(grid.title)}</strong>.
                     </div>
 
-                    <!-- TABLEAU DES TARIFS -->
-                    <div class="table-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th class="center" style="width:50px">N°</th>
-                                    <th>Service / Prestation</th>
-                                    <th class="center" style="width:120px">Unité</th>
-                                    <th class="right" style="width:180px">Tarif (FCFA/EUR)</th>
-                                    <th class="center" style="width:120px">Délai</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${rowsHtml}
-                            </tbody>
-                        </table>
+                    <!-- TABLEAU CENTRÉ AU MILIEU DE LA FEUILLE -->
+                    <div class="table-center">
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th class="center" style="width:40px">N°</th>
+                                        <th style="width:22%">Service / Prestation</th>
+                                        <th style="width:22%">Détails inclus</th>
+                                        <th class="center" style="width:12%">Unité</th>
+                                        <th class="right" style="width:18%">Tarif (FCFA/EUR)</th>
+                                        <th class="center" style="width:10%">Délai</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rowsHtml}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
-                    <!-- ZONE SIGNATURE + CACHET -->
+                    <!-- ZONE SIGNATURE EN BAS À DROITE -->
                     <div class="sig-zone">
-                        <div class="sig-content">
-                            <div class="sig-box">
+                        <div class="sig-box">
+                            <div class="sig-text">
                                 <div class="sig-title">DIRECTION GÉNÉRALE</div>
                                 <div class="sig-company">RETOUR GAGNANT BÉNIN</div>
                                 <div class="sig-label">La Présidente Directrice Générale :</div>
@@ -152,9 +156,8 @@ export async function GET(request: NextRequest) {
                                 <div class="sig-date">Fait à Cotonou, Le ${date}</div>
                                 <div class="sig-valid">Validité officielle garantie</div>
                             </div>
-                            <div class="cachet-area">
-                                <img src="${stampUrl}" alt="Cachet officiel" class="cachet-img" onerror="this.style.display='none'" />
-                            </div>
+                            <!-- Cachet DANS le cadre vert, à droite -->
+                            <img src="${stampUrl}" alt="Cachet officiel" class="cachet" onerror="this.style.display='none'" />
                         </div>
                     </div>
                 </div>
@@ -208,15 +211,15 @@ export async function GET(request: NextRequest) {
     /* ===== ENTÊTE ===== */
     .header{
       display:flex;justify-content:space-between;align-items:center;
-      padding:16px 28px 14px;
+      padding:22px 32px 18px;
       border-bottom:2.5px solid #008751;
       flex-shrink:0;
     }
-    .brand{display:flex;align-items:center;gap:16px}
+    .brand{display:flex;align-items:center;gap:18px}
 
     /* Logo libre, sans fond noir, sans cadre */
     .logo{
-      width:90px;height:auto;
+      width:95px;height:auto;
       object-fit:contain;
       display:block;
       background:transparent !important;
@@ -230,42 +233,52 @@ export async function GET(request: NextRequest) {
     .c-vert{color:#008751}
     .c-rouge{color:#E8112D}
     .brand-benin{font-size:9px;font-weight:800;color:#000;letter-spacing:3px;text-transform:uppercase;margin-top:2px}
-    .brand-slogan{font-size:9.5px;color:#000;margin-top:4px;max-width:260px;line-height:1.35;font-weight:700}
+    .brand-slogan{font-size:9.5px;color:#000;margin-top:5px;max-width:260px;line-height:1.4;font-weight:700}
 
     .meta{text-align:right}
     .meta-type{font-size:20px;font-weight:900;color:#008751;letter-spacing:1px}
-    .meta-sub{font-size:12px;font-weight:800;color:#E8112D;margin-top:4px;text-transform:uppercase}
+    .meta-sub{font-size:12px;font-weight:800;color:#E8112D;margin-top:5px;text-transform:uppercase}
     .meta-ref{font-size:12px;font-weight:700;color:#000;margin-top:6px;font-family:monospace}
-    .meta-date{font-size:11px;color:#000;margin-top:4px;font-weight:700}
+    .meta-date{font-size:11px;color:#000;margin-top:5px;font-weight:700}
 
     /* ===== CORPS ===== */
     .body{
       flex:1;
       display:flex;
       flex-direction:column;
-      padding:18px 28px 0;
+      padding:0 32px;
+      /* Espace pour le footer absolu */
+      padding-bottom:58px;
     }
 
-    /* Texte introductif */
+    /* Texte introductif - couvre l'espace du haut */
     .intro{
-      font-size:11.5px;
-      line-height:1.55;
+      font-size:12px;
+      line-height:1.65;
       color:#000;
-      margin-bottom:16px;
+      padding:22px 0 18px;
       text-align:justify;
       font-weight:700;
+      flex-shrink:0;
     }
 
-    /* ===== TABLEAU ===== */
+    /* ===== TABLEAU CENTRÉ AU MILIEU ===== */
+    .table-center{
+      flex:1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
     .table-wrap{
       border:2px solid #000;
       border-radius:8px;
       overflow:hidden;
-      margin-bottom:auto;
+      width:100%;
     }
     table{width:100%;border-collapse:collapse}
     thead tr{background:#008751}
-    thead th{padding:10px 12px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.8px;color:#fff;text-align:left}
+    thead th{padding:12px 10px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.7px;color:#fff;text-align:left}
     thead th.right{text-align:right}
     thead th.center{text-align:center}
 
@@ -273,54 +286,49 @@ export async function GET(request: NextRequest) {
     tbody tr:last-child{border-bottom:none}
     tbody tr:nth-child(even){background:#f8fafc}
 
-    tbody td{padding:11px 12px;font-size:12px;color:#000;line-height:1.4;vertical-align:middle}
+    tbody td{padding:12px 10px;font-size:11.5px;color:#000;line-height:1.45;vertical-align:middle}
     tbody td.right{text-align:right}
     tbody td.center{text-align:center}
-    tbody td.text-left{text-align:left}
     .bold{font-weight:700}
-    .price-cell{color:#008751;font-weight:900;font-size:12.5px}
+    .details-cell{font-weight:600;color:#333;font-size:10.5px;font-style:italic}
+    .price-cell{color:#008751;font-weight:900;font-size:12px}
 
-    /* ===== ZONE SIGNATURE ===== */
+    /* ===== ZONE SIGNATURE - en bas à droite comme document administratif ===== */
     .sig-zone{
-      margin-top:auto;
-      padding-top:14px;
+      flex-shrink:0;
       display:flex;
       justify-content:flex-end;
+      padding:16px 0 0;
     }
 
-    .sig-content{
+    /* Cadre vert contenant TOUT : texte + cachet ensemble */
+    .sig-box{
       display:flex;
       align-items:flex-start;
-      gap:0;
-    }
-
-    .sig-box{
-      width:300px;
+      gap:12px;
       border:2.5px solid #008751;
       border-radius:10px;
-      padding:16px 18px;
+      padding:16px 20px;
       background:#f0fff6;
+      min-width:420px;
     }
-    .sig-title{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#006b40;margin-bottom:2px}
-    .sig-company{font-size:10px;font-weight:800;color:#008751;margin-bottom:8px}
-    .sig-label{font-size:10.5px;font-weight:700;color:#000;margin-bottom:1px}
-    .sig-name{font-size:14px;font-weight:900;color:#008751;margin-bottom:6px}
-    .sig-date{font-size:10px;font-weight:700;color:#000;margin-bottom:3px}
-    .sig-valid{font-size:8.5px;font-weight:800;text-transform:uppercase;color:#008751;letter-spacing:1px}
 
-    /* Cachet à droite de la boîte signature, décalé pour ne pas toucher le texte */
-    .cachet-area{
-      position:relative;
-      width:180px;
-      margin-left:-30px;
-      margin-top:10px;
-    }
-    .cachet-img{
-      width:180px;
-      height:180px;
+    .sig-text{flex:1}
+    .sig-title{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#006b40;margin-bottom:2px}
+    .sig-company{font-size:9.5px;font-weight:800;color:#008751;margin-bottom:8px}
+    .sig-label{font-size:10px;font-weight:700;color:#000;margin-bottom:1px}
+    .sig-name{font-size:14px;font-weight:900;color:#008751;margin-bottom:5px}
+    .sig-date{font-size:10px;font-weight:700;color:#000;margin-bottom:2px}
+    .sig-valid{font-size:8px;font-weight:800;text-transform:uppercase;color:#008751;letter-spacing:1px}
+
+    /* Cachet DANS le cadre vert, à droite du texte */
+    .cachet{
+      width:140px;
+      height:140px;
       object-fit:contain;
       opacity:.92;
-      display:block;
+      flex-shrink:0;
+      align-self:center;
     }
 
     /* ===== PIED DE PAGE ===== */
@@ -328,7 +336,7 @@ export async function GET(request: NextRequest) {
       position:absolute;
       bottom:0;left:0;right:0;
       background:#fff;
-      padding:14px 28px;
+      padding:14px 32px;
       text-align:center;
       border-top:2px solid #dde3ee;
     }
@@ -350,7 +358,6 @@ export async function GET(request: NextRequest) {
         break-after:page;
       }
       .page:last-child{page-break-after:avoid;break-after:avoid}
-      /* Forcer les couleurs à l'impression */
       .flag-stripe,.flag-g,.flag-j,.flag-r{-webkit-print-color-adjust:exact;print-color-adjust:exact}
       thead tr{-webkit-print-color-adjust:exact;print-color-adjust:exact}
       .sig-box{-webkit-print-color-adjust:exact;print-color-adjust:exact}

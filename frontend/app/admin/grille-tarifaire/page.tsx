@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'
 interface TariffRow {
     no: string
     service: string
+    details: string
     unit: string
     price: string
     delay: string
@@ -72,11 +73,11 @@ export default function AdminGrilleTarifaire() {
                         id: 'documents-identite',
                         title: 'DOCUMENTS & IDENTITÉ',
                         rows: [
-                            { no: '1', service: 'Acte de naissance béninois (sécurisé)', unit: 'Par document', price: '15 000 FCFA / 23 €', delay: '72h' },
-                            { no: '2', service: 'Passeport Biométrique Béninois', unit: 'Par demande', price: '75 000 FCFA / 115 €', delay: '10 à 15 jours' },
-                            { no: '3', service: 'Carte Nationale d\'Identité (CNIB)', unit: 'Par demande', price: '30 000 FCFA / 46 €', delay: '5 à 7 jours' },
-                            { no: '4', service: 'Certificat d\'Identification Personnelle (CIP)', unit: 'Par document', price: '10 000 FCFA / 15 €', delay: '48h' },
-                            { no: '5', service: 'Casier Judiciaire Béninois', unit: 'Par document', price: '12 000 FCFA / 18 €', delay: '72h' }
+                            { no: '1', service: 'Acte de naissance béninois (sécurisé)', details: 'Copie intégrale certifiée conforme', unit: 'Par document', price: '15 000 FCFA / 23 €', delay: '72h' },
+                            { no: '2', service: 'Passeport Biométrique Béninois', details: 'Demande complète, photos, suivi', unit: 'Par demande', price: '75 000 FCFA / 115 €', delay: '10 à 15 jours' },
+                            { no: '3', service: 'Carte Nationale d\'Identité (CNIB)', details: 'Inscription, prise d\'empreintes, retrait', unit: 'Par demande', price: '30 000 FCFA / 46 €', delay: '5 à 7 jours' },
+                            { no: '4', service: 'Certificat d\'Identification Personnelle (CIP)', details: 'Vérification d\'identité officielle', unit: 'Par document', price: '10 000 FCFA / 15 €', delay: '48h' },
+                            { no: '5', service: 'Casier Judiciaire Béninois', details: 'Extrait de casier judiciaire B3', unit: 'Par document', price: '12 000 FCFA / 18 €', delay: '72h' }
                         ]
                     }
                 ]
@@ -129,7 +130,7 @@ export default function AdminGrilleTarifaire() {
             id,
             title: title.trim().toUpperCase(),
             rows: [
-                { no: '1', service: t('Exemple de service'), unit: t('Par dossier'), price: '50 000 FCFA / 76 €', delay: '5 jours' }
+                { no: '1', service: t('Exemple de service'), details: '', unit: t('Par dossier'), price: '50 000 FCFA / 76 €', delay: '5 jours' }
             ]
         }
 
@@ -182,7 +183,7 @@ export default function AdminGrilleTarifaire() {
     const handleAddRow = () => {
         if (!activeGrid) return
         const nextNo = (activeGrid.rows.length + 1).toString()
-        const newRow: TariffRow = { no: nextNo, service: '', unit: '', price: '', delay: '' }
+        const newRow: TariffRow = { no: nextNo, service: '', details: '', unit: '', price: '', delay: '' }
         const updatedRows = [...activeGrid.rows, newRow]
 
         const updatedGrids = grids.map(g => g.id === activeGrid.id ? { ...g, rows: updatedRows } : g)
@@ -370,15 +371,16 @@ export default function AdminGrilleTarifaire() {
 
                                 {/* Table Body */}
                                 <div className="overflow-x-auto">
-                                    <table className="w-full min-w-[700px] border-collapse">
+                                    <table className="w-full min-w-[900px] border-collapse">
                                         <thead>
                                             <tr className="border-b border-white/5 text-[9px] font-black text-gray-500 uppercase tracking-widest bg-white/[0.005]">
                                                 <th className="p-4 text-center w-14">N°</th>
                                                 <th className="p-4 text-left">Service / Prestation</th>
-                                                <th className="p-4 text-center w-36">Unité</th>
-                                                <th className="p-4 text-left w-56">Tarif (FCFA/EUR)</th>
-                                                <th className="p-4 text-center w-36">Délai</th>
-                                                <th className="p-4 text-center w-32">Actions</th>
+                                                <th className="p-4 text-left">Détails inclus</th>
+                                                <th className="p-4 text-center w-32">Unité</th>
+                                                <th className="p-4 text-left w-48">Tarif (FCFA/EUR)</th>
+                                                <th className="p-4 text-center w-28">Délai</th>
+                                                <th className="p-4 text-center w-28">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/5">
@@ -404,6 +406,18 @@ export default function AdminGrilleTarifaire() {
                                                             placeholder={t("ex: Acte de naissance béninois sécurisé")}
                                                             className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#008751]/50 focus:bg-white/[0.08] transition-all"
                                                             title={t("Service")}
+                                                        />
+                                                    </td>
+
+                                                    {/* Détails inclus */}
+                                                    <td className="p-3">
+                                                        <input
+                                                            type="text"
+                                                            value={row.details || ''}
+                                                            onChange={e => handleRowChange(idx, 'details', e.target.value)}
+                                                            placeholder={t("ex: Copie intégrale certifiée")}
+                                                            className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-xs text-gray-300 italic focus:outline-none focus:border-[#008751]/50 focus:bg-white/[0.08] transition-all"
+                                                            title={t("Détails inclus")}
                                                         />
                                                     </td>
 
