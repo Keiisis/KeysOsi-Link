@@ -177,8 +177,6 @@ export async function GET(request: NextRequest) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Grilles Tarifaires — Retour Gagnant Bénin</title>
-  <link rel="icon" type="image/png" href="${baseUrl}/icon.png">
-  <style>
     /* ===== RESET ===== */
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Segoe UI',Helvetica,Arial,sans-serif;background:#e8edf2;color:#000}
@@ -203,10 +201,37 @@ export async function GET(request: NextRequest) {
     }
 
     /* ===== RUBAN DRAPEAU ===== */
-    .flag-stripe{display:flex;height:6px;flex-shrink:0}
-    .flag-g{flex:1;background:#008751}
-    .flag-j{flex:1;background:#FCD116}
-    .flag-r{flex:1;background:#E8112D}
+    .flag-stripe{
+      display:flex;
+      height:6px;
+      flex-shrink:0;
+      -webkit-print-color-adjust:exact !important;
+      print-color-adjust:exact !important;
+    }
+    .flag-g{
+      flex:1;
+      height:100%;
+      background:#008751 !important;
+      border-top:6px solid #008751 !important;
+      -webkit-print-color-adjust:exact !important;
+      print-color-adjust:exact !important;
+    }
+    .flag-j{
+      flex:1;
+      height:100%;
+      background:#FCD116 !important;
+      border-top:6px solid #FCD116 !important;
+      -webkit-print-color-adjust:exact !important;
+      print-color-adjust:exact !important;
+    }
+    .flag-r{
+      flex:1;
+      height:100%;
+      background:#E8112D !important;
+      border-top:6px solid #E8112D !important;
+      -webkit-print-color-adjust:exact !important;
+      print-color-adjust:exact !important;
+    }
 
     /* ===== ENTÊTE ===== */
     .header{
@@ -247,16 +272,16 @@ export async function GET(request: NextRequest) {
       display:flex;
       flex-direction:column;
       padding:0 32px;
-      /* Espace pour le footer absolu */
-      padding-bottom:58px;
+      /* Espace pour le footer absolu et légèrement surélevé */
+      padding-bottom:85px;
     }
 
-    /* Texte introductif - couvre l'espace du haut */
+    /* Texte introductif - occupe l'espace du haut, bien aéré et espacé */
     .intro{
-      font-size:12px;
-      line-height:1.65;
+      font-size:13px;
+      line-height:1.85;
       color:#000;
-      padding:22px 0 18px;
+      padding:24px 0 16px;
       text-align:justify;
       font-weight:700;
       flex-shrink:0;
@@ -277,21 +302,35 @@ export async function GET(request: NextRequest) {
       width:100%;
     }
     table{width:100%;border-collapse:collapse}
-    thead tr{background:#008751}
+    thead tr{
+      background:#008751 !important;
+      -webkit-print-color-adjust:exact !important;
+      print-color-adjust:exact !important;
+    }
     thead th{padding:12px 10px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.7px;color:#fff;text-align:left}
     thead th.right{text-align:right}
     thead th.center{text-align:center}
 
     tbody tr{background:#fff;border-bottom:1.5px solid #000}
     tbody tr:last-child{border-bottom:none}
-    tbody tr:nth-child(even){background:#f8fafc}
+    tbody tr:nth-child(even){
+      background:#f8fafc !important;
+      -webkit-print-color-adjust:exact !important;
+      print-color-adjust:exact !important;
+    }
 
     tbody td{padding:12px 10px;font-size:11.5px;color:#000;line-height:1.45;vertical-align:middle}
     tbody td.right{text-align:right}
     tbody td.center{text-align:center}
     .bold{font-weight:700}
     .details-cell{font-weight:600;color:#333;font-size:10.5px;font-style:italic}
-    .price-cell{color:#008751;font-weight:900;font-size:12px}
+    .price-cell{
+      color:#008751 !important;
+      font-weight:900;
+      font-size:12px;
+      -webkit-print-color-adjust:exact !important;
+      print-color-adjust:exact !important;
+    }
 
     /* ===== ZONE SIGNATURE - en bas à droite comme document administratif ===== */
     .sig-zone{
@@ -301,30 +340,37 @@ export async function GET(request: NextRequest) {
       padding:16px 0 0;
     }
 
-    /* Cadre vert contenant TOUT : texte + cachet ensemble */
+    /* Cadre vert contenant TOUT : texte + cachet ensemble. Redonné la taille du début. */
     .sig-box{
       display:flex;
-      align-items:flex-start;
-      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
       border:2.5px solid #008751;
       border-radius:10px;
-      padding:16px 20px;
-      background:#f0fff6;
-      min-width:420px;
+      padding:14px 16px;
+      background:#f0fff6 !important;
+      width:330px;
+      min-height:165px;
+      -webkit-print-color-adjust:exact !important;
+      print-color-adjust:exact !important;
     }
 
-    .sig-text{flex:1}
+    .sig-text{
+      width:180px;
+      flex-shrink:0;
+    }
     .sig-title{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#006b40;margin-bottom:2px}
-    .sig-company{font-size:9.5px;font-weight:800;color:#008751;margin-bottom:8px}
-    .sig-label{font-size:10px;font-weight:700;color:#000;margin-bottom:1px}
-    .sig-name{font-size:14px;font-weight:900;color:#008751;margin-bottom:5px}
-    .sig-date{font-size:10px;font-weight:700;color:#000;margin-bottom:2px}
+    .sig-company{font-size:9px;font-weight:800;color:#008751;margin-bottom:8px}
+    .sig-label{font-size:9.5px;font-weight:700;color:#000;margin-bottom:1px}
+    .sig-name{font-size:13.5px;font-weight:900;color:#008751;margin-bottom:5px}
+    .sig-date{font-size:9.5px;font-weight:700;color:#000;margin-bottom:2px}
     .sig-valid{font-size:8px;font-weight:800;text-transform:uppercase;color:#008751;letter-spacing:1px}
 
-    /* Cachet DANS le cadre vert, à droite du texte */
+    /* Cachet DANS le cadre vert, à droite du texte, ajusté à la bonne taille */
     .cachet{
-      width:140px;
-      height:140px;
+      width:110px;
+      height:110px;
       object-fit:contain;
       opacity:.92;
       flex-shrink:0;
@@ -334,9 +380,9 @@ export async function GET(request: NextRequest) {
     /* ===== PIED DE PAGE ===== */
     .footer{
       position:absolute;
-      bottom:0;left:0;right:0;
+      bottom:10px;left:0;right:0;
       background:#fff;
-      padding:14px 32px;
+      padding:14px 32px 0;
       text-align:center;
       border-top:2px solid #dde3ee;
     }
@@ -358,11 +404,37 @@ export async function GET(request: NextRequest) {
         break-after:page;
       }
       .page:last-child{page-break-after:avoid;break-after:avoid}
-      .flag-stripe,.flag-g,.flag-j,.flag-r{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-      thead tr{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-      .sig-box{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-      tbody tr:nth-child(even){-webkit-print-color-adjust:exact;print-color-adjust:exact}
-      .price-cell{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .flag-stripe,.flag-g,.flag-j,.flag-r{
+        -webkit-print-color-adjust:exact !important;
+        print-color-adjust:exact !important;
+      }
+      .flag-g{background:#008751 !important;border-top:6px solid #008751 !important}
+      .flag-j{background:#FCD116 !important;border-top:6px solid #FCD116 !important}
+      .flag-r{background:#E8112D !important;border-top:6px solid #E8112D !important}
+      thead tr{
+        -webkit-print-color-adjust:exact !important;
+        print-color-adjust:exact !important;
+        background:#008751 !important;
+      }
+      thead th{
+        color:#fff !important;
+      }
+      .sig-box{
+        -webkit-print-color-adjust:exact !important;
+        print-color-adjust:exact !important;
+        background:#f0fff6 !important;
+        border-color:#008751 !important;
+      }
+      tbody tr:nth-child(even){
+        -webkit-print-color-adjust:exact !important;
+        print-color-adjust:exact !important;
+        background:#f8fafc !important;
+      }
+      .price-cell{
+        -webkit-print-color-adjust:exact !important;
+        print-color-adjust:exact !important;
+        color:#008751 !important;
+      }
     }
   </style>
 </head>
