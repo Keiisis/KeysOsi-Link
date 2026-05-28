@@ -274,8 +274,8 @@ export async function GET(request: NextRequest) {
       display:flex;
       flex-direction:column;
       padding:0 32px;
-      /* Espace pour le footer absolu à l'impression */
-      padding-bottom:95px;
+      /* Espace de sécurité pour remonter la signature au-dessus du footer */
+      padding-bottom:140px;
     }
 
     /* Texte introductif - occupe l'espace du haut, bien aéré et espacé */
@@ -342,37 +342,37 @@ export async function GET(request: NextRequest) {
       padding:16px 0 0;
     }
 
-    /* Cadre vert contenant TOUT : texte + cachet ensemble. Redonné la taille du début. */
+    /* Cadre vert contenant TOUT : texte + cachet ensemble. Ajusté pour le cachet 300px administratif. */
     .sig-box{
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap:4px;
+      gap:10px;
       border:2.5px solid #008751;
       border-radius:10px;
-      padding:10px 12px;
+      padding:10px 14px;
       background:#f0fff6 !important;
-      width:330px; /* Restauré la taille normale */
-      min-height:220px; /* Pour contenir le cachet de 200px et le texte */
+      width:460px; /* Largeur optimale pour loger le cachet 300px et le texte */
+      min-height:320px; /* Pour contenir le cachet de 300px et le texte sans dépassement */
       -webkit-print-color-adjust:exact !important;
       print-color-adjust:exact !important;
     }
 
     .sig-text{
-      width:102px;
+      width:120px;
       flex-shrink:0;
     }
-    .sig-title{font-size:9.5px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:#006b40;margin-bottom:2px}
-    .sig-company{font-size:8.5px;font-weight:800;color:#008751;margin-bottom:8px}
+    .sig-title{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:#006b40;margin-bottom:2px}
+    .sig-company{font-size:8.5px;font-weight:800;color:#008751;margin-bottom:10px}
     .sig-label{font-size:8.5px;font-weight:700;color:#000;margin-bottom:2px}
-    .sig-name{font-size:12px;font-weight:900;color:#008751;margin-bottom:6px}
-    .sig-date{font-size:8.5px;font-weight:700;color:#000;margin-bottom:3px}
-    .sig-valid{font-size:7px;font-weight:800;text-transform:uppercase;color:#008751;letter-spacing:0.5px}
+    .sig-name{font-size:12.5px;font-weight:900;color:#008751;margin-bottom:8px}
+    .sig-date{font-size:8.5px;font-weight:700;color:#000;margin-bottom:4px}
+    .sig-valid{font-size:7.5px;font-weight:800;text-transform:uppercase;color:#008751;letter-spacing:0.5px}
 
-    /* Cachet DANS le cadre vert, à droite du texte, maintenu à 200px */
+    /* Cachet DANS le cadre vert, à droite du texte, agrandi à 300px */
     .cachet{
-      width:200px;
-      height:200px;
+      width:300px;
+      height:300px;
       object-fit:contain;
       opacity:.95;
       flex-shrink:0;
