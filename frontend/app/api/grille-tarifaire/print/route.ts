@@ -369,11 +369,10 @@ export async function GET(request: NextRequest) {
     .sig-date{font-size:9px;color:#888;margin-top:4px}
     .sig-valid{font-size:7.5px;font-weight:800;text-transform:uppercase;color:#008751;letter-spacing:0.5px;margin-top:4px}
 
-    /* Cachet — même hauteur que le texte, à droite, dans le cadre */
+    /* Cachet — taille = hauteur du texte (~110px), à droite, dans le cadre */
     .cachet{
-      align-self:stretch;
-      width:auto;
-      height:auto;
+      width:110px;
+      height:110px;
       flex-shrink:0;
       object-fit:contain;
       opacity:.9;
