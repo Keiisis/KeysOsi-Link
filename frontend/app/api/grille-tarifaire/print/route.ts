@@ -342,24 +342,22 @@ export async function GET(request: NextRequest) {
       padding:16px 0 0;
     }
 
-    /* Cadre vert — dimensions facture, flex: texte à gauche, cachet à droite */
+    /* Cadre vert — dimensions facture */
     .sig-box{
-      display:flex;
-      align-items:center;
-      gap:10px;
       border:1px solid #008751;
       border-radius:8px;
       padding:14px;
       background:#f0fff6 !important;
       min-height:90px;
+      position:relative;
       width:370px;
       -webkit-print-color-adjust:exact !important;
       print-color-adjust:exact !important;
     }
 
     .sig-text{
-      flex:1;
-      min-width:0;
+      position:relative;
+      z-index:1;
     }
     .sig-title{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#006b40;margin-bottom:4px}
     .sig-company{font-size:8px;font-weight:700;color:#008751;margin-bottom:8px}
@@ -369,13 +367,17 @@ export async function GET(request: NextRequest) {
     .sig-date{font-size:9px;color:#888;margin-top:4px}
     .sig-valid{font-size:7.5px;font-weight:800;text-transform:uppercase;color:#008751;letter-spacing:0.5px;margin-top:4px}
 
-    /* Cachet — taille = hauteur du texte (~110px), à droite, dans le cadre */
+    /* Cachet 200px — mix-blend-mode:multiply rend le blanc invisible, comme un vrai tampon */
     .cachet{
-      width:110px;
-      height:110px;
-      flex-shrink:0;
+      position:absolute;
+      right:5px;
+      top:50%;
+      transform:translateY(-50%);
+      width:200px;
+      height:200px;
       object-fit:contain;
-      opacity:.9;
+      mix-blend-mode:multiply;
+      opacity:.95;
     }
 
     /* ===== PIED DE PAGE ===== */
