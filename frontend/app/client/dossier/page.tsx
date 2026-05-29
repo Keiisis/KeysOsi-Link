@@ -307,6 +307,18 @@ export default function ClientDossierPage() {
 
     const handleDeleteDossier = async (id: string) => {
         if (!confirm('Supprimer ce dossier ?')) return
+        try {
+            const { data: docs } = await supabase.from('client_documents').select('storage_path, id').eq('dossier_id', id)
+            if (docs && docs.length > 0) {
+                const paths = docs.map(d => d.storage_path).filter(Boolean)
+                if (paths.length > 0) {
+                    await supabase.storage.from('client-documents').remove(paths)
+                }
+                await supabase.from('client_documents').delete().eq('dossier_id', id)
+            }
+        } catch (e) {
+            console.error('Failed to cleanup physical files:', e)
+        }
         await supabase.from('dossier_tracking').delete().eq('id', id)
         setDossiers(prev => prev.filter(d => d.id !== id))
     }
@@ -338,6 +350,21 @@ export default function ClientDossierPage() {
         if (totalCount === 0) return
         if (!confirm(`Supprimer ${totalCount} élément(s) sélectionné(s) ?`)) return
         setDeleting(true)
+        try {
+            const dossierIds = Array.from(selectedDossiers)
+            if (dossierIds.length > 0) {
+                const { data: docs } = await supabase.from('client_documents').select('storage_path, id').in('dossier_id', dossierIds)
+                if (docs && docs.length > 0) {
+                    const paths = docs.map(d => d.storage_path).filter(Boolean)
+                    if (paths.length > 0) {
+                        await supabase.storage.from('client-documents').remove(paths)
+                    }
+                    await supabase.from('client_documents').delete().in('dossier_id', dossierIds)
+                }
+            }
+        } catch (e) {
+            console.error('Failed to cleanup physical files for bulk delete:', e)
+        }
         const ops: Promise<unknown>[] = []
         selectedDossiers.forEach(id => ops.push(supabase.from('dossier_tracking').delete().eq('id', id) as unknown as Promise<unknown>))
         selectedOrders.forEach(id => ops.push(supabase.from('orders').delete().eq('id', id) as unknown as Promise<unknown>))

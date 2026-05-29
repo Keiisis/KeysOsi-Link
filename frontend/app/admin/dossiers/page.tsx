@@ -4,7 +4,7 @@ import { useTranslation, T } from '@/lib/translation';
 import { useList, useUpdate } from '@refinedev/core'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, FileText, Clock, CheckCircle2, Zap, AlertTriangle, ChevronDown, ChevronUp, Save, Plus, X, Download, RefreshCw, MessageSquare, Send, User, Mail, Loader2 } from 'lucide-react'
+import { Search, FileText, Clock, CheckCircle2, Zap, AlertTriangle, ChevronDown, ChevronUp, Save, Plus, X, Download, RefreshCw, MessageSquare, Send, User, Mail, Loader2, Trash2 } from 'lucide-react'
 import { exportToExcel } from '@/lib/exportExcel'
 import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
@@ -140,6 +140,39 @@ export default function AdminDossiersPage() {
     const [dossierDocs, setDossierDocs] = useState<any[]>([])
     const [loadingDocs, setLoadingDocs] = useState(false)
 
+    const deletePhysicalFile = async (url: string, sourceTable: string) => {
+        if (!url) return;
+        try {
+            let bucket = 'client-documents';
+            if (sourceTable === 'dossier_documents') {
+                bucket = 'dossier-documents';
+            } else if (sourceTable === 'documents') {
+                bucket = 'dossier-documents';
+            }
+            
+            let path = '';
+            if (url.includes(`/storage/v1/object/public/${bucket}/`)) {
+                path = decodeURIComponent(url.split(`/storage/v1/object/public/${bucket}/`)[1].split('?')[0]);
+            } else if (url.includes(`/storage/v1/object/sign/${bucket}/`)) {
+                path = decodeURIComponent(url.split(`/storage/v1/object/sign/${bucket}/`)[1].split('?')[0]);
+            } else {
+                for (const b of ['client-documents', 'dossier-documents']) {
+                    if (url.includes(`/${b}/`)) {
+                        bucket = b;
+                        path = decodeURIComponent(url.split(`/${b}/`)[1].split('?')[0]);
+                        break;
+                    }
+                }
+            }
+            
+            if (path) {
+                await supabase.storage.from(bucket).remove([path]);
+            }
+        } catch (e) {
+            console.error('Failed to delete physical file from storage:', e);
+        }
+    };
+
     const loadDossierDocs = async (dossierTrackingId: string, dossierRefId?: string) => {
         setLoadingDocs(true)
         setDossierDocs([])
@@ -156,8 +189,13 @@ export default function AdminDossiersPage() {
             supabase.from('documents').select('*').in('dossier_id', ids),
         ])
         
+        // Tag their source table
+        const docs1 = (r1.data || []).map(d => ({ ...d, sourceTable: 'dossier_documents' }))
+        const docs2 = (r2.data || []).map(d => ({ ...d, sourceTable: 'client_documents' }))
+        const docs3 = (r3.data || []).map(d => ({ ...d, sourceTable: 'documents' }))
+
         // Merge and deduplicate by id
-        const all = [...(r1.data || []), ...(r2.data || []), ...(r3.data || [])]
+        const all = [...docs1, ...docs2, ...docs3]
         const seen = new Set<string>()
         const unique = all.filter(d => {
             if (seen.has(d.id)) return false
@@ -168,6 +206,65 @@ export default function AdminDossiersPage() {
         setDossierDocs(unique)
         setLoadingDocs(false)
     }
+
+    const handleDeleteDossierDoc = async (doc: any) => {
+        if (!confirm('Supprimer définitivement ce document et son fichier physique ?')) return;
+
+        if (doc.file_url) {
+            await deletePhysicalFile(doc.file_url, doc.sourceTable);
+        }
+
+        const table = doc.sourceTable || 'dossier_documents';
+        const { error } = await supabase.from(table).delete().eq('id', doc.id);
+        
+        if (error) {
+            alert('Erreur lors de la suppression du document : ' + error.message);
+        } else {
+            setDossierDocs(prev => prev.filter(d => d.id !== doc.id));
+        }
+    };
+
+    const handleDeleteDossier = async (dossier: any) => {
+        if (!confirm(`Supprimer définitivement le dossier ${dossier.num_dossier} ainsi que TOUS ses documents physiques associés ? Cette action est irréversible.`)) return;
+
+        try {
+            const ids = [dossier.id, dossier.dossier_ref_id].filter(Boolean) as string[];
+            
+            const [r1, r2, r3] = await Promise.all([
+                supabase.from('dossier_documents').select('file_url').in('dossier_id', ids),
+                supabase.from('client_documents').select('file_url').in('dossier_id', ids),
+                supabase.from('documents').select('file_url').in('dossier_id', ids),
+            ]);
+
+            const allUrls = [
+                ...(r1.data || []).map(d => ({ url: d.file_url, table: 'dossier_documents' })),
+                ...(r2.data || []).map(d => ({ url: d.file_url, table: 'client_documents' })),
+                ...(r3.data || []).map(d => ({ url: d.file_url, table: 'documents' })),
+            ];
+
+            for (const item of allUrls) {
+                if (item.url) {
+                    await deletePhysicalFile(item.url, item.table);
+                }
+            }
+
+            await Promise.all([
+                supabase.from('dossier_documents').delete().in('dossier_id', ids),
+                supabase.from('client_documents').delete().in('dossier_id', ids),
+                supabase.from('documents').delete().in('dossier_id', ids),
+                supabase.from('dossier_tracking').delete().eq('id', dossier.id),
+            ]);
+
+            if (dossier.dossier_ref_id) {
+                await supabase.from('dossiers').delete().eq('id', dossier.dossier_ref_id);
+            }
+
+            refetch();
+            setExpandedId(null);
+        } catch (e) {
+            alert(e instanceof Error ? e.message : 'Erreur lors de la suppression complète');
+        }
+    };
 
     // Create form state
     const [newDossier, setNewDossier] = useState({
@@ -470,7 +567,7 @@ export default function AdminDossiersPage() {
                                         >
                                             <div className="p-6 space-y-6">
                                                 {/* Client Info */}
-                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 text-sm">
                                                     <div>
                                                         <p className="text-gray-500 text-[10px] uppercase tracking-widest font-bold mb-1"><T>Email</T></p>
                                                         <p className="text-gray-300">{dossier.client_email as string}</p>
@@ -492,9 +589,19 @@ export default function AdminDossiersPage() {
                                                             className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-[#008751]"
                                                         >
                                                             {Object.entries(statutLabels).map(([val, lab]) => (
-                                                                <option key={val} value={val} className="bg-[#0a0f18]">{lab}</option>
+                                                                 <option key={val} value={val} className="bg-[#0a0f18]">{lab}</option>
                                                             ))}
                                                         </select>
+                                                    </div>
+                                                    <div className="flex flex-col justify-end">
+                                                        <p className="text-gray-500 text-[10px] uppercase tracking-widest font-bold mb-1"><T>Actions</T></p>
+                                                        <button
+                                                            onClick={() => handleDeleteDossier(dossier)}
+                                                            className="flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold text-xs px-4 py-2.5 rounded-xl transition-all w-fit border border-red-500/20"
+                                                        >
+                                                            <Trash2 size={12} />
+                                                            Supprimer
+                                                        </button>
                                                     </div>
                                                 </div>
 
@@ -514,19 +621,28 @@ export default function AdminDossiersPage() {
                                                                 <div key={doc.id} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm">
                                                                     <div className="flex items-center gap-2 overflow-hidden">
                                                                         <FileText size={14} className="text-[#008751] shrink-0" />
-                                                                        <span className="text-gray-300 truncate">{doc.file_name}</span>
+                                                                        <span className="text-gray-300 truncate">{doc.file_name || doc.filename}</span>
                                                                     </div>
-                                                                    {doc.file_url && (
-                                                                        <a 
-                                                                            href={doc.file_url}
-                                                                            target="_blank"
-                                                                            rel="noreferrer"
-                                                                            className="ml-2 p-1.5 bg-[#008751]/10 text-[#008751] hover:bg-[#008751]/20 rounded transition-colors shrink-0"
-                                                                            title={t("Télécharger/Voir")}
+                                                                    <div className="flex items-center gap-1.5 shrink-0">
+                                                                        {doc.file_url && (
+                                                                            <a 
+                                                                                href={doc.file_url}
+                                                                                target="_blank"
+                                                                                rel="noreferrer"
+                                                                                className="p-1.5 bg-[#008751]/10 text-[#008751] hover:bg-[#008751]/20 rounded transition-colors"
+                                                                                title={t("Télécharger/Voir")}
+                                                                            >
+                                                                                <Download size={14} />
+                                                                            </a>
+                                                                        )}
+                                                                        <button
+                                                                            onClick={() => handleDeleteDossierDoc(doc)}
+                                                                            className="p-1.5 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded transition-colors"
+                                                                            title="Supprimer"
                                                                         >
-                                                                            <Download size={14} />
-                                                                        </a>
-                                                                    )}
+                                                                            <Trash2 size={14} />
+                                                                        </button>
+                                                                    </div>
                                                                 </div>
                                                             ))
                                                         ) : (

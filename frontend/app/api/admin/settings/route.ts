@@ -32,7 +32,7 @@ const GENERAL_DEFAULTS: Array<{ key: string; value: string; label: string; type:
 
 // GET /api/admin/settings — retourne tous les paramètres groupés par catégorie
 export async function GET(request: NextRequest) {
-    const auth = await verifyApiAuth(request, 'admin')
+    const auth = await verifyApiAuth(request, 'agent')
     if (!auth.authenticated) return auth.error!
 
     try {
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
 
 // PATCH /api/admin/settings — mise à jour d'un paramètre par clé
 export async function PATCH(request: NextRequest) {
-    const auth = await verifyApiAuth(request, 'admin')
+    const auth = await verifyApiAuth(request, 'agent')
     if (!auth.authenticated) return auth.error!
 
     try {
