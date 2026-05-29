@@ -371,7 +371,7 @@ export async function GET(request: NextRequest) {
     .cachet{
       position:absolute;
       right:5px;
-      top:50%;
+      top:38%;
       transform:translateY(-50%);
       width:250px;
       height:250px;
