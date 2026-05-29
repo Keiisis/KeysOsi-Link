@@ -373,8 +373,8 @@ export async function GET(request: NextRequest) {
       right:5px;
       top:50%;
       transform:translateY(-50%);
-      width:200px;
-      height:200px;
+      width:250px;
+      height:250px;
       object-fit:contain;
       mix-blend-mode:multiply;
       opacity:.95;
