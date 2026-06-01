@@ -19,34 +19,50 @@ import {
     checkIpTrustScore,
     checkSubnetBanned,
     isHoneypotPath,
-    triggerHoneypot,
     updateIpMemory,
     createAlert,
+    // ── Nouveaux modules Défense Active ──
+    extractFingerprint,
+    registerFingerprint,
+    detectHeadlessBrowser,
+    evaluateRequestRPC,
+    getDeceptionPayload,
+    buildDeceptionResponse,
+    refreshDeceptionPayloads,
+    logDeceptionInteraction,
+    applyTarpit,
     type ThreatType,
 } from '@/lib/waf'
 
 // ═══════════════════════════════════════════════════════════════
-// 🛡️ MIDDLEWARE — WAF OWASP CRS + Auth Protection
+// 🛡️ MIDDLEWARE — WAF ULTIME · Défense Active · Cyber-Déception
 // ═══════════════════════════════════════════════════════════════
 //
 // ARCHITECTURE DE SÉCURITÉ (ordre strict) :
 //
 //  0. WAF_EMERGENCY_BYPASS → passe auth uniquement, WAF désactivé
 //  1. Chemins login/reset/2fa → accès immédiat, zéro check
-//  2. IP bloquée → 403 (sauf chemins login)
-//  3. Géo-blocage → 403
-//  4. Rate Limiting → 429
-//  5. WAF CRS → UNIQUEMENT sur chemins non-panel (API, public)
-//     Les panels /admin, /agent, /client sont protégés par auth
-//     WAF sur ces chemins = 100% faux positifs sur routes légitimes
-//  6. Auth Supabase + rôles
+//  2. Fingerprint extraction (headers HTTP → hash stable)
+//  3. Honeypot → faux payload WordPress/PHP crédible (déception)
+//  4. WAF SENTINEL RPC → waf_evaluate_request() retourne:
+//     - 'allow'   → continuer normalement
+//     - 'tarpit'  → appliquer un délai, puis continuer
+//     - 'deceive' → retourner un faux payload crédible (200 OK)
+//     - 'block'   → retourner 403
+//     - 'honeypot'→ retourner un faux formulaire WordPress
+//  5. FALLBACK CRS JS (si RPC échoue) :
+//     - IP bloquée / Trust score → 403
+//     - Géo-blocage → 403
+//     - Rate Limiting → 429
+//     - WAF CRS OWASP → scan regex (non-panel uniquement)
+//  6. Auth Supabase + rôles (inchangé)
 //
 // PANELS INTERNES : /admin/*, /agent/*, /client/*
 //   → Jamais bloqués par WAF CRS (URL générée par l'app)
 //   → Protégés par l'auth Supabase (étape 6)
 //
-// ACTIVATION D'URGENCE : WAF_EMERGENCY_BYPASS=true dans .env
-//   → Désactive tous les checks WAF, garde l'auth
+// FAIL-OPEN : Si Supabase est injoignable, toutes les requêtes
+//   passent (l'auth protège les panels, le site public est ouvert)
 // ═══════════════════════════════════════════════════════════════
 
 const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL  || ''
@@ -169,182 +185,314 @@ export async function middleware(request: NextRequest) {
     const wafConfig = getWafConfig()
     const isIpWhitelisted = !emergencyBypass && wafConfig.whitelistedIps && wafConfig.whitelistedIps.includes(ip)
 
-    // ─── 2. HONEYPOT — Ban immédiat si chemin piège ──────────
-    // Ces chemins ne sont jamais accédés légitimement — uniquement par des bots/scanners
-    // ACTIF même pour les IPs whitelistées (sécurité critique)
-    if (!emergencyBypass && isHoneypotPath(pathname)) {
-        if (SUPA_URL && SUPA_KEY) triggerHoneypot(ip, pathname, SUPA_URL, SUPA_KEY)
-        return wafBlock('Not Found.', 404)   // Retourner 404 pour ne pas alerter le hacker
-    }
-
-    // ─── 3. IP BLOQUÉE + TRUST SCORE + SOUS-RÉSEAU ───────────
-    //
-    // IMPORTANT : Les panels internes (/admin/*, /agent/*, /client/*, /ceo/*)
-    // sont EXEMPTÉS du check IP bloquée.
-    // Raison : Ces panels sont protégés par l'auth Supabase (étape 6).
-    //
+    // ── Définir si on est sur un panel interne ────────────────
     const isInternalPanelPath = (
         pathname.startsWith('/admin') ||
         pathname.startsWith('/agent') ||
         pathname.startsWith('/client') ||
         pathname.startsWith('/ceo') ||
-        // Les API endpoints de ces panels sont aussi internes
-        // (appelés par le JS de l'app, pas par des utilisateurs externes)
         pathname.startsWith('/api/admin') ||
         pathname.startsWith('/api/agent') ||
         pathname.startsWith('/api/client') ||
         pathname.startsWith('/api/ceo')
     )
 
-    if (!emergencyBypass && !isIpWhitelisted && !isInternalPanelPath) {
-        // 3a. Check sous-réseau banni (en mémoire, ultra-rapide)
-        if (checkSubnetBanned(ip)) {
-            return wafBlock('Accès refusé.', 403)
-        }
+    // ─── 2. FINGERPRINT EXTRACTION ─────────────────────────────
+    // Extraire l'empreinte navigateur depuis les headers HTTP
+    // Utilisé pour traquer les attaquants même après changement d'IP
+    let fingerprintHash = ''
+    if (!emergencyBypass && ip !== 'unknown') {
+        try {
+            const fp = extractFingerprint(request.headers)
+            fingerprintHash = fp.hash
 
-        // 3b. Check IP bloquée (cache + Supabase)
-        if (ip !== 'unknown' && await isIpBlocked(ip)) {
-            if (SUPA_URL && SUPA_KEY) logWafEvent({
-                ip, method, path: pathname, userAgent,
-                threatType: 'blocked_ip', detail: 'IP dans la liste de blocage',
+            // Enregistrer le fingerprint en arrière-plan (fire-and-forget)
+            if (SUPA_URL && SUPA_KEY) {
+                registerFingerprint({
+                    ip, hash: fp.hash, components: fp.components,
+                    supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                })
+            }
+
+            // Détection heuristique de navigateurs headless (bots)
+            const headless = detectHeadlessBrowser(request.headers)
+            if (headless.isHeadless && !isInternalPanelPath) {
+                if (SUPA_URL && SUPA_KEY) {
+                    createAlert({
+                        level: 'info',
+                        message: `🤖 Navigateur headless détecté: IP ${ip} — ${headless.indicators.join(', ')}`,
+                        context: { ip, indicators: headless.indicators, fingerprint: fp.hash },
+                        supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                    })
+                }
+            }
+        } catch { /* fingerprint extraction non-critique */ }
+    }
+
+    // ─── 3. HONEYPOT — Déception active sur chemins pièges ───
+    // Au lieu de retourner un simple 404, on retourne un faux
+    // formulaire WordPress/PHP crédible pour piéger l'attaquant
+    if (!emergencyBypass && isHoneypotPath(pathname)) {
+        if (SUPA_URL && SUPA_KEY) {
+            // Ban immédiat + log
+            setCachedIpBlock(ip, true)
+            updateIpMemory({ ip, isAttack: true, attackType: 'honeypot', supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY })
+            createAlert({
+                level: 'critical',
+                message: `🍯 HONEYPOT : IP ${ip} a tenté d'accéder à ${pathname} — déception activée`,
+                context: { ip, path: pathname, fingerprint: fingerprintHash },
                 supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
             })
-            return wafBlock('Accès refusé.', 403)
+            logWafEvent({
+                ip, method, path: pathname, userAgent,
+                threatType: 'honeypot',
+                detail: `Accès au leurre honeypot : ${pathname}`,
+                supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+            })
+            logDeceptionInteraction({
+                ip, path: pathname, method,
+                attackType: 'honeypot', payloadName: 'fake_wp_login',
+                fingerprintHash,
+                supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+            })
+
+            // Auto-block IP dans ip_blocks
+            fetch(`${SUPA_URL}/rest/v1/ip_blocks`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`,
+                    Prefer: 'resolution=merge-duplicates,return=minimal',
+                },
+                body: JSON.stringify({
+                    ip, reason: `Honeypot déclenché : ${pathname}`,
+                    blocked_by: 'auto', violation_count: 5,
+                }),
+            }).catch(() => {})
         }
 
-        // 3c. Check trust score (mémoire comportementale)
-        // Si trust_score < seuil → blocage autonome sans attendre N violations
-        if (ip !== 'unknown' && SUPA_URL && SUPA_KEY) {
-            const { trusted } = await checkIpTrustScore(ip, SUPA_URL, SUPA_KEY)
-            if (!trusted) {
-                logWafEvent({
+        // Retourner un faux payload WordPress crédible
+        const honeypotPayload = getDeceptionPayload('honeypot')
+        return buildDeceptionResponse(honeypotPayload)
+    }
+
+    // ─── 4. WAF SENTINEL RPC — Cerveau décisionnel SQL ───────
+    // Appelle waf_evaluate_request() qui retourne l'action optimale
+    // basée sur trust score IP + fingerprint + historique
+    let rpcHandled = false
+    if (!emergencyBypass && !isIpWhitelisted && !isInternalPanelPath && SUPA_URL && SUPA_KEY && ip !== 'unknown') {
+        // Refresh le cache des payloads de déception (fire-and-forget)
+        refreshDeceptionPayloads(SUPA_URL, SUPA_KEY).catch(() => {})
+
+        const evalResult = await evaluateRequestRPC({
+            ip, path: pathname, fingerprintHash, userAgent,
+            supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+        })
+
+        if (evalResult) {
+            rpcHandled = true
+
+            switch (evalResult.action) {
+                case 'block': {
+                    logWafEvent({
+                        ip, method, path: pathname, userAgent,
+                        threatType: 'blocked_ip',
+                        detail: `WAF Sentinel: ${evalResult.reason} (trust=${evalResult.trust_score})`,
+                        supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                    })
+                    return wafBlock('Accès refusé.', 403)
+                }
+
+                case 'deceive': {
+                    // L'attaquant reçoit un faux payload crédible
+                    // Il ne sait pas qu'il est piégé — il perd du temps
+                    const attackType = evalResult.payload
+                        ? 'sql_injection' // type par défaut si payload fourni par RPC
+                        : 'scanner_detection'
+
+                    const payload = evalResult.payload
+                        ? {
+                            status_code:      evalResult.payload.status_code,
+                            content_type:     evalResult.payload.content_type,
+                            response_body:    evalResult.payload.response_body,
+                            response_headers: evalResult.payload.response_headers || {},
+                        }
+                        : getDeceptionPayload(attackType)
+
+                    logWafEvent({
+                        ip, method, path: pathname, userAgent,
+                        threatType: 'blocked_ip',
+                        detail: `WAF Sentinel DECEIVE: ${evalResult.reason} (trust=${evalResult.trust_score})`,
+                        supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                    })
+                    logDeceptionInteraction({
+                        ip, path: pathname, method,
+                        attackType, payloadName: 'sentinel_deceive',
+                        fingerprintHash,
+                        supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                    })
+
+                    return buildDeceptionResponse(payload)
+                }
+
+                case 'tarpit': {
+                    // Ralentir la réponse pour épuiser les ressources de l'attaquant
+                    const delayMs = Math.max(0, Math.min(8000, evalResult.delay_ms || 2000))
+                    await applyTarpit(delayMs)
+
+                    logWafEvent({
+                        ip, method, path: pathname, userAgent,
+                        threatType: 'rate_limit',
+                        detail: `WAF Sentinel TARPIT: ${delayMs}ms (trust=${evalResult.trust_score})`,
+                        supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                    })
+                    // Après le tarpit, continuer le traitement normal
+                    // (la requête passe mais avec un délai punitif)
+                    break
+                }
+
+                case 'honeypot': {
+                    const hpPayload = getDeceptionPayload('honeypot')
+                    logDeceptionInteraction({
+                        ip, path: pathname, method,
+                        attackType: 'honeypot', payloadName: 'sentinel_honeypot',
+                        fingerprintHash,
+                        supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                    })
+                    return buildDeceptionResponse(hpPayload)
+                }
+
+                case 'allow':
+                default:
+                    // Requête autorisée — continuer normalement
+                    break
+            }
+        }
+    }
+
+    // ─── 5. FALLBACK CRS JS (si RPC n'a pas répondu) ─────────
+    // Si waf_evaluate_request() n'est pas disponible (DB down, pas de résultat),
+    // on utilise la logique CRS JavaScript existante comme filet de sécurité
+    if (!rpcHandled && !emergencyBypass) {
+
+        // 5a. Check sous-réseau banni + IP bloquée + trust score
+        if (!isIpWhitelisted && !isInternalPanelPath) {
+            if (checkSubnetBanned(ip)) {
+                return wafBlock('Accès refusé.', 403)
+            }
+            if (ip !== 'unknown' && await isIpBlocked(ip)) {
+                if (SUPA_URL && SUPA_KEY) logWafEvent({
                     ip, method, path: pathname, userAgent,
-                    threatType: 'blocked_ip', detail: 'Trust score insuffisant (mémoire comportementale)',
+                    threatType: 'blocked_ip', detail: 'IP dans la liste de blocage (fallback)',
                     supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
                 })
                 return wafBlock('Accès refusé.', 403)
             }
+            if (ip !== 'unknown' && SUPA_URL && SUPA_KEY) {
+                const { trusted } = await checkIpTrustScore(ip, SUPA_URL, SUPA_KEY)
+                if (!trusted) {
+                    logWafEvent({
+                        ip, method, path: pathname, userAgent,
+                        threatType: 'blocked_ip', detail: 'Trust score insuffisant (fallback)',
+                        supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                    })
+                    return wafBlock('Accès refusé.', 403)
+                }
+            }
+        } else if (!isIpWhitelisted && isInternalPanelPath) {
+            if (checkSubnetBanned(ip)) {
+                return wafBlock('Accès refusé.', 403)
+            }
         }
-    } else if (!emergencyBypass && !isIpWhitelisted && isInternalPanelPath) {
-        // Pour les panels : vérifier uniquement le sous-réseau banni
-        if (checkSubnetBanned(ip)) {
-            return wafBlock('Accès refusé.', 403)
-        }
-    }
 
-    // ─── 4b. GÉO-BLOCAGE ─────────────────────────────────────
-    if (!emergencyBypass && !isIpWhitelisted) {
-        const geo = checkGeoBlock(request.headers)
-        if (geo.blocked) {
-            if (SUPA_URL && SUPA_KEY) logWafEvent({
-                ip, method, path: pathname, userAgent,
-                threatType: 'geo_block', detail: `Pays bloqué: ${geo.country}`,
-                supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
-            })
-            return wafBlock('Accès non autorisé depuis votre région.', 403)
-        }
-    }
-
-    // ─── 4. RATE LIMITING ────────────────────────────────────
-    if (!emergencyBypass && !isIpWhitelisted) {
-        const rlCategory = getRateLimitCategory(pathname)
-        if (checkRateLimit(ip, rlCategory)) {
-            if (SUPA_URL && SUPA_KEY) {
-                logWafEvent({
+        // 5b. Géo-blocage
+        if (!isIpWhitelisted) {
+            const geo = checkGeoBlock(request.headers)
+            if (geo.blocked) {
+                if (SUPA_URL && SUPA_KEY) logWafEvent({
                     ip, method, path: pathname, userAgent,
-                    threatType: 'rate_limit', detail: `Catégorie: ${rlCategory}`,
+                    threatType: 'geo_block', detail: `Pays bloqué: ${geo.country}`,
                     supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
                 })
-                // Ne cascader en violation (→ ban IP) QUE pour les rate limits non-login
-                // Un admin/agent/client qui se trompe de mot de passe ≠ un attaquant
-                // Le login est déjà protégé par l'auth Supabase (lockout temporaire)
-                if (rlCategory !== 'login') {
-                    trackViolation(ip, SUPA_URL, SUPA_KEY, { threatType: 'rate_limit' })
-                }
+                return wafBlock('Accès non autorisé depuis votre région.', 403)
             }
-            return wafBlock('Trop de requêtes. Réessayez dans quelques instants.', 429)
         }
-    }
 
-    // ─── 4c. BYPASS LOGIN PAGES (WAF CRS ONLY) ────────────────
-    // Si c'est une page de login, on la laisse passer MAINTENANT
-    // (après que le rate limiting et les blocs IP l'aient protégée du bruteforce)
-    if (isAbsoluteBypass(pathname)) {
-        // Optionnel : on pourrait appliquer un WAF CRS très léger ici, 
-        // mais pour éviter de bloquer un admin, on passe.
-    } else if (!emergencyBypass) {
-        // ─── 5. WAF CRS ANALYSIS ─────────────────────────────────
-        //
-        // RÈGLE D'OR : Les panels internes /admin/*, /agent/*, /client/*
-        // sont EXEMPTÉS du scan WAF CRS car :
-        //   1. Leurs URLs sont générées par l'application (routing Next.js)
-        //   2. Ils sont protégés par l'auth Supabase (étape 6)
-        //   3. Le WAF CRS sur ces URLs = 100% faux positifs
-        //      (UUIDs, mots "create/update/delete" dans les routes REST)
-        //
-        // Le WAF CRS RESTE actif sur :
-        //   - User-Agent (détection scanners)
-        //   - Query strings avec contenu suspect
-        //
-        if (isInternalPanelPath) {
-            // Pour les panels internes : scanner le User-Agent uniquement
-            // (détection bots/scanners qui ciblent les panels admin)
-            const verdict = analyzeRequestFast(method, '', '', userAgent)
-            if (verdict.blocked) {
+        // 5c. Rate Limiting
+        if (!isIpWhitelisted) {
+            const rlCategory = getRateLimitCategory(pathname)
+            if (checkRateLimit(ip, rlCategory)) {
                 if (SUPA_URL && SUPA_KEY) {
                     logWafEvent({
                         ip, method, path: pathname, userAgent,
-                        threatType: verdict.topThreat as ThreatType || 'scanner_detection',
-                        detail: verdict.matches.slice(0, 3).map(m =>
-                            `[R${m.ruleId}:${m.target}] ${m.description} — "${m.snippet}"`
-                        ).join(' | '),
-                        score: verdict.score,
+                        threatType: 'rate_limit', detail: `Catégorie: ${rlCategory}`,
                         supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
                     })
-                    // Pas de trackViolation pour les panels — évite auto-blocage des admins
-                }
-                return wafBlock('Accès refusé — outil de scanning détecté.', 403)
-            }
-        } else {
-            // Pour les autres chemins (public, autres APIs) : scan complet
-            const searchParams = request.nextUrl.searchParams.toString()
-            const verdict = analyzeRequestFast(method, pathname, searchParams, userAgent)
-            if (verdict.blocked) {
-                const topMatch  = verdict.matches[0]
-                const detailStr = verdict.matches.slice(0, 3).map(m =>
-                    `[R${m.ruleId}:${m.target}] ${m.description} — "${m.snippet}"`
-                ).join(' | ')
-
-                if (SUPA_URL && SUPA_KEY) {
-                    logWafEvent({
-                        ip, method, path: pathname, userAgent,
-                        threatType: verdict.topThreat as ThreatType || 'sql_injection',
-                        detail: detailStr,
-                        score: verdict.score,
-                        supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
-                    })
-                    // Ne pas cascader en violation pour les APIs internes du site
-                    // Ces requêtes sont générées par l'app elle-même (analytics, cron, etc.)
-                    // et peuvent contenir des données utilisateur qui ressemblent à du XSS/SQL
-                    const isInternalApi = pathname.startsWith('/api/analytics') ||
-                                          pathname.startsWith('/api/cron') ||
-                                          pathname.startsWith('/api/ceo')
-                    if (!isInternalApi) {
-                        trackViolation(ip, SUPA_URL, SUPA_KEY, {
-                            threatType:  verdict.topThreat || 'waf_block',
-                            payloadHash: topMatch?.snippet
-                                ? Buffer.from(topMatch.snippet.slice(0, 64)).toString('base64').slice(0, 32)
-                                : undefined,
-                            snippet:     topMatch?.snippet?.slice(0, 120),
-                        })
+                    if (rlCategory !== 'login') {
+                        trackViolation(ip, SUPA_URL, SUPA_KEY, { threatType: 'rate_limit' })
                     }
                 }
-                return wafBlock('Requête bloquée par le pare-feu applicatif.', 403)
+                return wafBlock('Trop de requêtes. Réessayez dans quelques instants.', 429)
             }
+        }
 
-            // Récompenser les IPs légitimes (trust score +1 en arrière-plan)
-            if (SUPA_URL && SUPA_KEY && ip !== 'unknown') {
-                updateIpMemory({ ip, isAttack: false, supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY })
+        // 5d. WAF CRS OWASP Analysis (fallback)
+        if (!isAbsoluteBypass(pathname)) {
+            if (isInternalPanelPath) {
+                // Panels internes : scanner le User-Agent uniquement
+                const verdict = analyzeRequestFast(method, '', '', userAgent)
+                if (verdict.blocked) {
+                    if (SUPA_URL && SUPA_KEY) {
+                        logWafEvent({
+                            ip, method, path: pathname, userAgent,
+                            threatType: verdict.topThreat as ThreatType || 'scanner_detection',
+                            detail: verdict.matches.slice(0, 3).map(m =>
+                                `[R${m.ruleId}:${m.target}] ${m.description} — "${m.snippet}"`
+                            ).join(' | '),
+                            score: verdict.score,
+                            supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                        })
+                    }
+                    return wafBlock('Accès refusé — outil de scanning détecté.', 403)
+                }
+            } else {
+                // Chemins publics : scan complet
+                const searchParams = request.nextUrl.searchParams.toString()
+                const verdict = analyzeRequestFast(method, pathname, searchParams, userAgent)
+                if (verdict.blocked) {
+                    const topMatch  = verdict.matches[0]
+                    const detailStr = verdict.matches.slice(0, 3).map(m =>
+                        `[R${m.ruleId}:${m.target}] ${m.description} — "${m.snippet}"`
+                    ).join(' | ')
+
+                    if (SUPA_URL && SUPA_KEY) {
+                        logWafEvent({
+                            ip, method, path: pathname, userAgent,
+                            threatType: verdict.topThreat as ThreatType || 'sql_injection',
+                            detail: detailStr,
+                            score: verdict.score,
+                            supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                        })
+                        const isInternalApi = pathname.startsWith('/api/analytics') ||
+                                              pathname.startsWith('/api/cron') ||
+                                              pathname.startsWith('/api/ceo')
+                        if (!isInternalApi) {
+                            trackViolation(ip, SUPA_URL, SUPA_KEY, {
+                                threatType:  verdict.topThreat || 'waf_block',
+                                payloadHash: topMatch?.snippet
+                                    ? Buffer.from(topMatch.snippet.slice(0, 64)).toString('base64').slice(0, 32)
+                                    : undefined,
+                                snippet:     topMatch?.snippet?.slice(0, 120),
+                            })
+                        }
+                    }
+                    return wafBlock('Requête bloquée par le pare-feu applicatif.', 403)
+                }
+
+                // Récompenser les IPs légitimes (trust score +1 en arrière-plan)
+                if (SUPA_URL && SUPA_KEY && ip !== 'unknown') {
+                    updateIpMemory({ ip, isAttack: false, supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY })
+                }
             }
         }
     }

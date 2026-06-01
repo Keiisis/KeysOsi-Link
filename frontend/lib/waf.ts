@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════
-// 🛡️ lib/waf.ts — WAF Autonome · Mémoire · Apprentissage · Contre-attaque
+// 🛡️ lib/waf.ts — WAF Ultime · Défense Active · Cyber-Déception
 // ══════════════════════════════════════════════════════════════
 
 export type { ThreatType, WafVerdict, RuleMatch, CustomRule } from './waf/engine'
@@ -7,6 +7,62 @@ export { analyzeRequest, analyzeRequestFast, checkGeoBlock, verdictSummary, setC
 export { ALL_RULES, RULES_BY_CATEGORY, SEVERITY_SCORES, BLOCK_THRESHOLDS } from './waf/rules'
 export type { WafRule, RuleCategory, Severity } from './waf/rules'
 export { decode, decodeRequest } from './waf/decoder'
+
+// ── Nouveaux modules Défense Active ──────────────────────────
+export { extractFingerprint, registerFingerprint, detectHeadlessBrowser } from './waf/fingerprint'
+export type { FingerprintComponents } from './waf/fingerprint'
+export { getDeceptionPayload, buildDeceptionResponse, refreshDeceptionPayloads, logDeceptionInteraction } from './waf/deception'
+export type { DeceptionPayload, AttackType } from './waf/deception'
+export { calculateTarpitDelay, applyTarpit, parseTarpitFromRPC, getTarpitMetrics } from './waf/tarpit'
+export type { TarpitDecision } from './waf/tarpit'
+
+// ── Évaluation RPC centralisée (cerveau décisionnel SQL) ─────
+// Appelle waf_evaluate_request dans Supabase pour obtenir
+// l'action à prendre : allow | tarpit | deceive | block | honeypot
+export interface WafEvalResult {
+    action:       'allow' | 'tarpit' | 'deceive' | 'block' | 'honeypot'
+    delay_ms:     number
+    trust_score:  number
+    ip_trust:     number
+    fp_trust:     number
+    reason:       string
+    payload?:     { status_code: number; content_type: string; response_body: string; response_headers: Record<string, string> } | null
+    ip_hopper:    boolean
+}
+
+export async function evaluateRequestRPC(opts: {
+    ip: string
+    path: string
+    fingerprintHash: string
+    userAgent: string
+    supabaseUrl: string
+    serviceKey: string
+}): Promise<WafEvalResult | null> {
+    const { ip, path, fingerprintHash, userAgent, supabaseUrl, serviceKey } = opts
+    if (!supabaseUrl || !serviceKey || ip === 'unknown') return null
+
+    try {
+        const res = await fetch(`${supabaseUrl}/rest/v1/rpc/waf_evaluate_request`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                apikey: serviceKey,
+                Authorization: `Bearer ${serviceKey}`,
+            },
+            body: JSON.stringify({
+                p_ip: ip,
+                p_path: path,
+                p_fingerprint_hash: fingerprintHash || '',
+                p_user_agent: userAgent || '',
+            }),
+        })
+        if (!res.ok) return null
+        const result = await res.json()
+        return result as WafEvalResult
+    } catch {
+        return null // fail-open : si RPC échoue, on laisse passer
+    }
+}
 
 // ══════════════════════════════════════════════════════════════
 // RATE LIMITING EN MÉMOIRE
