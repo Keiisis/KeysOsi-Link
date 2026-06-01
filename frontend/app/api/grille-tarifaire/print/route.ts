@@ -111,6 +111,34 @@ export async function GET(request: NextRequest) {
             const gridRef = `GRI-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${grid.id.toUpperCase().slice(0, 8)}`
 
             const rowsHtml = grid.rows.map((row: any) => {
+                // If there are sub-options, we render using rowspan
+                if (row.options && row.options.length > 0) {
+                    const n = row.options.length
+                    const firstOption = row.options[0]
+                    const firstRowHtml = `
+                    <tr>
+                        <td rowspan="${n}" class="center bold">${escapeHtml(row.no)}</td>
+                        <td rowspan="${n}" class="bold">${escapeHtml(row.service)}</td>
+                        <td class="details-cell">${escapeHtml(firstOption.label || '')}</td>
+                        <td class="right bold price-cell">${escapeHtml(firstOption.price_fcfa)}</td>
+                        <td class="right bold price-cell" style="color: #000 !important;">${escapeHtml(firstOption.price_eur)}</td>
+                    </tr>
+                    `
+                    
+                    const otherRowsHtml = row.options.slice(1).map((opt: any) => {
+                        return `
+                        <tr>
+                            <td class="details-cell">${escapeHtml(opt.label || '')}</td>
+                            <td class="right bold price-cell">${escapeHtml(opt.price_fcfa)}</td>
+                            <td class="right bold price-cell" style="color: #000 !important;">${escapeHtml(opt.price_eur)}</td>
+                        </tr>
+                        `
+                    }).join('')
+                    
+                    return firstRowHtml + otherRowsHtml
+                }
+
+                // Default standard row
                 return `
                 <tr>
                     <td class="center bold">${escapeHtml(row.no)}</td>

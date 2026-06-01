@@ -199,6 +199,67 @@ export default function AgentGrilleTarifaire() {
         setGrids(updatedGrids)
     }
 
+    const handleOptionChange = (rowIndex: number, optionIndex: number, field: keyof TariffRowOption, value: string) => {
+        if (!activeGrid) return
+        const updatedRows = activeGrid.rows.map((row, idx) => {
+            if (idx === rowIndex) {
+                const options = [...(row.options || [])]
+                options[optionIndex] = { ...options[optionIndex], [field]: value }
+                return { ...row, options }
+            }
+            return row
+        })
+
+        const updatedGrids = grids.map(g => g.id === activeGrid.id ? { ...g, rows: updatedRows } : g)
+        setGrids(updatedGrids)
+    }
+
+    const handleAddOption = (rowIndex: number) => {
+        if (!activeGrid) return
+        const updatedRows = activeGrid.rows.map((row, idx) => {
+            if (idx === rowIndex) {
+                const options = [...(row.options || [])]
+                if (options.length === 0) {
+                    options.push({
+                        label: row.details || '',
+                        price_fcfa: row.price_fcfa || '',
+                        price_eur: row.price_eur || ''
+                    })
+                }
+                options.push({ label: '', price_fcfa: '', price_eur: '' })
+                return { ...row, options }
+            }
+            return row
+        })
+
+        const updatedGrids = grids.map(g => g.id === activeGrid.id ? { ...g, rows: updatedRows } : g)
+        setGrids(updatedGrids)
+    }
+
+    const handleDeleteOption = (rowIndex: number, optionIndex: number) => {
+        if (!activeGrid) return
+        const updatedRows = activeGrid.rows.map((row, idx) => {
+            if (idx === rowIndex) {
+                const options = (row.options || []).filter((_, oIdx) => oIdx !== optionIndex)
+                if (options.length <= 1) {
+                    const firstOpt = options[0]
+                    return {
+                        ...row,
+                        details: firstOpt?.label || '',
+                        price_fcfa: firstOpt?.price_fcfa || '',
+                        price_eur: firstOpt?.price_eur || '',
+                        options: undefined
+                    }
+                }
+                return { ...row, options }
+            }
+            return row
+        })
+
+        const updatedGrids = grids.map(g => g.id === activeGrid.id ? { ...g, rows: updatedRows } : g)
+        setGrids(updatedGrids)
+    }
+
     const handleAddRow = () => {
         if (!activeGrid) return
         const nextNo = (activeGrid.rows.length + 1).toString()
@@ -425,42 +486,105 @@ export default function AgentGrilleTarifaire() {
                                                             className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#008751]/50 focus:bg-white/[0.08] transition-all"
                                                             title={t("Service")}
                                                         />
+                                                        <button
+                                                            onClick={() => handleAddOption(idx)}
+                                                            className="mt-1.5 flex items-center gap-1 text-[10px] font-bold text-[#008751] hover:text-[#006b40] transition-colors"
+                                                        >
+                                                            <Plus size={10} />
+                                                            {row.options && row.options.length > 0 ? t("Ajouter une option") : t("Créer des options multiples")}
+                                                        </button>
                                                     </td>
 
                                                     {/* Détails inclus */}
                                                     <td className="p-3">
-                                                        <input
-                                                            type="text"
-                                                            value={row.details || ''}
-                                                            onChange={e => handleRowChange(idx, 'details', e.target.value)}
-                                                            placeholder={t("ex: Copie intégrale certifiée")}
-                                                            className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-xs text-gray-300 italic focus:outline-none focus:border-[#008751]/50 focus:bg-white/[0.08] transition-all"
-                                                            title={t("Détails inclus")}
-                                                        />
+                                                        {row.options && row.options.length > 0 ? (
+                                                            <div className="flex flex-col gap-2">
+                                                                {row.options.map((opt, oIdx) => (
+                                                                    <input
+                                                                        key={oIdx}
+                                                                        type="text"
+                                                                        value={opt.label}
+                                                                        onChange={e => handleOptionChange(idx, oIdx, 'label', e.target.value)}
+                                                                        placeholder={t("ex: Entrée Unique 30 jours")}
+                                                                        className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-xs text-gray-300 italic focus:outline-none focus:border-[#008751]/50 focus:bg-white/[0.08] transition-all"
+                                                                        title={t("Détail de l'option")}
+                                                                    />
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <input
+                                                                type="text"
+                                                                value={row.details || ''}
+                                                                onChange={e => handleRowChange(idx, 'details', e.target.value)}
+                                                                placeholder={t("ex: Copie intégrale certifiée")}
+                                                                className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-xs text-gray-300 italic focus:outline-none focus:border-[#008751]/50 focus:bg-white/[0.08] transition-all"
+                                                                title={t("Détails inclus")}
+                                                            />
+                                                        )}
                                                     </td>
 
                                                     {/* Price FCFA */}
                                                     <td className="p-3">
-                                                        <input
-                                                            type="text"
-                                                            value={row.price_fcfa}
-                                                            onChange={e => handleRowChange(idx, 'price_fcfa', e.target.value)}
-                                                            placeholder={t("ex: 15 000 FCFA")}
-                                                            className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-xs text-[#00c870] font-bold focus:outline-none focus:border-[#008751]/50 focus:bg-white/[0.08] transition-all"
-                                                            title={t("Tarif (FCFA)")}
-                                                        />
+                                                        {row.options && row.options.length > 0 ? (
+                                                            <div className="flex flex-col gap-2">
+                                                                {row.options.map((opt, oIdx) => (
+                                                                    <input
+                                                                        key={oIdx}
+                                                                        type="text"
+                                                                        value={opt.price_fcfa}
+                                                                        onChange={e => handleOptionChange(idx, oIdx, 'price_fcfa', e.target.value)}
+                                                                        placeholder={t("ex: 15 000 FCFA")}
+                                                                        className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-xs text-[#00c870] font-bold focus:outline-none focus:border-[#008751]/50 focus:bg-white/[0.08] transition-all"
+                                                                        title={t("Tarif (FCFA)")}
+                                                                    />
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <input
+                                                                type="text"
+                                                                value={row.price_fcfa}
+                                                                onChange={e => handleRowChange(idx, 'price_fcfa', e.target.value)}
+                                                                placeholder={t("ex: 15 000 FCFA")}
+                                                                className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-xs text-[#00c870] font-bold focus:outline-none focus:border-[#008751]/50 focus:bg-white/[0.08] transition-all"
+                                                                title={t("Tarif (FCFA)")}
+                                                            />
+                                                        )}
                                                     </td>
 
                                                     {/* Price EUR */}
                                                     <td className="p-3">
-                                                        <input
-                                                            type="text"
-                                                            value={row.price_eur}
-                                                            onChange={e => handleRowChange(idx, 'price_eur', e.target.value)}
-                                                            placeholder={t("ex: 23 €")}
-                                                            className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#008751]/50 focus:bg-white/[0.08] transition-all"
-                                                            title={t("Tarif (EUR)")}
-                                                        />
+                                                        {row.options && row.options.length > 0 ? (
+                                                            <div className="flex flex-col gap-2">
+                                                                {row.options.map((opt, oIdx) => (
+                                                                    <div key={oIdx} className="flex items-center gap-1.5">
+                                                                        <input
+                                                                            type="text"
+                                                                            value={opt.price_eur}
+                                                                            onChange={e => handleOptionChange(idx, oIdx, 'price_eur', e.target.value)}
+                                                                            placeholder={t("ex: 23 €")}
+                                                                            className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#008751]/50 focus:bg-white/[0.08] transition-all"
+                                                                            title={t("Tarif (EUR)")}
+                                                                        />
+                                                                        <button
+                                                                            onClick={() => handleDeleteOption(idx, oIdx)}
+                                                                            className="p-1.5 hover:bg-red-500/10 text-gray-500 hover:text-red-400 rounded-md transition-all shrink-0"
+                                                                            title={t("Supprimer l'option")}
+                                                                        >
+                                                                            <Trash2 size={12} />
+                                                                        </button>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <input
+                                                                type="text"
+                                                                value={row.price_eur}
+                                                                onChange={e => handleRowChange(idx, 'price_eur', e.target.value)}
+                                                                placeholder={t("ex: 23 €")}
+                                                                className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#008751]/50 focus:bg-white/[0.08] transition-all"
+                                                                title={t("Tarif (EUR)")}
+                                                            />
+                                                        )}
                                                     </td>
 
                                                     {/* Row manipulation */}
