@@ -191,14 +191,15 @@ export async function GET(request: NextRequest) {
     /* ===== FEUILLE A4 ===== */
     .page{
       width:210mm;
-      min-height:297mm;
-      height:auto;
+      height:297mm;
+      max-height:297mm;
       margin:18px auto 36px;
       background:#fff;
       position:relative;
       display:flex;
       flex-direction:column;
       box-shadow:0 8px 40px rgba(0,0,0,.08);
+      overflow:hidden;
       padding-top:8mm; /* Marge haute de sécurité pour que le ruban tricolore apparaisse sur le papier imprimé */
     }
 
@@ -238,7 +239,7 @@ export async function GET(request: NextRequest) {
     /* ===== ENTÊTE ===== */
     .header{
       display:flex;justify-content:space-between;align-items:center;
-      padding:22px 32px 18px;
+      padding:12px 32px 10px;
       border-bottom:2.5px solid #008751;
       flex-shrink:0;
     }
@@ -279,10 +280,10 @@ export async function GET(request: NextRequest) {
 
     /* Texte introductif - occupe l'espace du haut, bien aéré et espacé */
     .intro{
-      font-size:12px;
-      line-height:1.7;
+      font-size:11px;
+      line-height:1.55;
       color:#000;
-      padding:16px 0 12px;
+      padding:10px 0 6px;
       text-align:justify;
       font-weight:700;
       flex-shrink:0;
@@ -306,7 +307,7 @@ export async function GET(request: NextRequest) {
       -webkit-print-color-adjust:exact !important;
       print-color-adjust:exact !important;
     }
-    thead th{padding:9px 10px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.7px;color:#fff;text-align:left}
+    thead th{padding:7px 10px;font-size:9.5px;font-weight:900;text-transform:uppercase;letter-spacing:.7px;color:#fff;text-align:left}
     thead th.right{text-align:right}
     thead th.center{text-align:center}
 
@@ -318,7 +319,7 @@ export async function GET(request: NextRequest) {
       print-color-adjust:exact !important;
     }
 
-    tbody td{padding:8px 10px;font-size:11px;color:#000;line-height:1.45;vertical-align:middle}
+    tbody td{padding:6px 10px;font-size:10.5px;color:#000;line-height:1.35;vertical-align:middle}
     tbody td.right{text-align:right}
     tbody td.center{text-align:center}
     .bold{font-weight:700}
@@ -336,7 +337,7 @@ export async function GET(request: NextRequest) {
       flex-shrink:0;
       display:flex;
       justify-content:flex-end;
-      padding:16px 0 0;
+      padding:8px 0 0;
       page-break-inside:avoid;
       break-inside:avoid;
     }
@@ -345,9 +346,9 @@ export async function GET(request: NextRequest) {
     .sig-box{
       border:1px solid #008751;
       border-radius:8px;
-      padding:14px;
+      padding:10px 14px;
       background:#f0fff6 !important;
-      min-height:90px;
+      min-height:80px;
       position:relative;
       width:370px;
       -webkit-print-color-adjust:exact !important;
@@ -383,7 +384,7 @@ export async function GET(request: NextRequest) {
     .footer{
       margin-top:auto;
       background:#fff;
-      padding:14px 32px 26px; /* Grand padding bas pour éviter la coupure par l'imprimante */
+      padding:10px 32px 14px; /* Grand padding bas pour éviter la coupure par l'imprimante */
       text-align:center;
       border-top:2px solid #dde3ee;
     }
@@ -400,8 +401,9 @@ export async function GET(request: NextRequest) {
         box-shadow:none;
         margin:0;
         width:210mm;
-        min-height:297mm;
-        height:auto;
+        height:297mm;
+        max-height:297mm;
+        overflow:hidden;
         page-break-after:always;
         break-after:page;
         padding-top:8mm !important;
