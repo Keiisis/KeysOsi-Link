@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { escapeHtml } from '@/lib/security'
 
+export const dynamic = 'force-dynamic'
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
@@ -65,7 +67,8 @@ export async function GET(request: NextRequest) {
                             service: row.service || '',
                             details: row.details || '',
                             price_fcfa,
-                            price_eur
+                            price_eur,
+                            options: row.options || undefined
                         }
                     })
                 }))
@@ -110,6 +113,87 @@ export async function GET(request: NextRequest) {
         const gridsHtml = grids.map((grid) => {
             const gridRef = `GRI-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${grid.id.toUpperCase().slice(0, 8)}`
 
+            const totalLines = grid.rows.reduce((acc: number, r: any) => {
+                if (r.options && r.options.length > 0) {
+                    return acc + r.options.length
+                }
+                return acc + 1
+            }, 0)
+
+            // Calculate total text length in table to assess density
+            let totalTextLength = 0
+            grid.rows.forEach((row: any) => {
+                totalTextLength += (row.service || '').length
+                totalTextLength += (row.details || '').length
+                if (row.options) {
+                    row.options.forEach((opt: any) => {
+                        totalTextLength += (opt.label || '').length
+                    })
+                }
+            })
+
+            // Spacing variables to scale dynamically
+            let introFontSize = '11px'
+            let introLineHeight = '1.55'
+            let introPadding = '10px 0 6px'
+            let cellPadding = '6px 10px'
+            let cellFontSize = '10.5px'
+            let cellLineHeight = '1.35'
+            let sigPadding = '8px 0 0'
+            let sigMinHeight = '80px'
+            let sigPaddingInternal = '10px 14px'
+            let tableMarginTopBottom = 'auto'
+
+            if (totalLines >= 11 || (totalLines >= 9 && totalTextLength > 400)) {
+                // Extreme density - minimize margins and font sizes to avoid overflow
+                introFontSize = '8.2px'
+                introLineHeight = '1.2'
+                introPadding = '1px 0 1px'
+                cellPadding = '3px 6px'
+                cellFontSize = '8.2px'
+                cellLineHeight = '1.1'
+                sigPadding = '1px 0 0'
+                sigMinHeight = '50px'
+                sigPaddingInternal = '3px 6px'
+                tableMarginTopBottom = '4px'
+            } else if (totalLines >= 9 || (totalLines >= 7 && totalTextLength > 350)) {
+                // High density
+                introFontSize = '9.2px'
+                introLineHeight = '1.3'
+                introPadding = '4px 0 2px'
+                cellPadding = '4px 8px'
+                cellFontSize = '9px'
+                cellLineHeight = '1.2'
+                sigPadding = '3px 0 0'
+                sigMinHeight = '65px'
+                sigPaddingInternal = '6px 10px'
+                tableMarginTopBottom = '8px'
+            } else if (totalLines >= 7 || (totalLines >= 5 && totalTextLength > 280)) {
+                // Medium-high density
+                introFontSize = '10px'
+                introLineHeight = '1.45'
+                introPadding = '6px 0 4px'
+                cellPadding = '5px 8px'
+                cellFontSize = '9.5px'
+                cellLineHeight = '1.3'
+                sigPadding = '6px 0 0'
+                sigMinHeight = '75px'
+                sigPaddingInternal = '8px 12px'
+                tableMarginTopBottom = '12px'
+            } else if (totalLines <= 4 && totalTextLength < 180) {
+                // Very low density - center table and give full room
+                introFontSize = '12.5px'
+                introLineHeight = '1.75'
+                introPadding = '22px 0 16px'
+                cellPadding = '10px 12px'
+                cellFontSize = '11.5px'
+                cellLineHeight = '1.5'
+                sigPadding = '20px 0 0'
+                sigMinHeight = '95px'
+                sigPaddingInternal = '14px'
+                tableMarginTopBottom = 'auto'
+            }
+
             const rowsHtml = grid.rows.map((row: any) => {
                 // If there are sub-options, we render using rowspan
                 if (row.options && row.options.length > 0) {
@@ -151,7 +235,7 @@ export async function GET(request: NextRequest) {
             }).join('')
 
             return `
-            <div class="page">
+            <div class="page" style="--intro-font-size:${introFontSize}; --intro-line-height:${introLineHeight}; --intro-padding:${introPadding}; --cell-padding:${cellPadding}; --cell-font-size:${cellFontSize}; --cell-line-height:${cellLineHeight}; --sig-padding:${sigPadding}; --sig-min-height:${sigMinHeight}; --sig-padding-internal:${sigPaddingInternal}; --table-margin-top-bottom:${tableMarginTopBottom};">
                 <!-- RUBAN DRAPEAU BÉNIN -->
                 <div class="flag-stripe">
                     <div class="flag-g"></div>
@@ -341,10 +425,10 @@ export async function GET(request: NextRequest) {
 
     /* Texte introductif - occupe l'espace du haut, bien aéré et espacé */
     .intro{
-      font-size:11px;
-      line-height:1.55;
+      font-size: var(--intro-font-size, 11px);
+      line-height: var(--intro-line-height, 1.55);
       color:#000;
-      padding:10px 0 6px;
+      padding: var(--intro-padding, 10px 0 6px);
       text-align:justify;
       font-weight:700;
       flex-shrink:0;
@@ -352,7 +436,7 @@ export async function GET(request: NextRequest) {
 
     /* ===== TABLEAU CENTRÉ AU MILIEU ===== */
     .table-center{
-      margin:auto 0;
+      margin: var(--table-margin-top-bottom, auto) 0;
       width:100%;
     }
 
@@ -368,7 +452,7 @@ export async function GET(request: NextRequest) {
       -webkit-print-color-adjust:exact !important;
       print-color-adjust:exact !important;
     }
-    thead th{padding:7px 10px;font-size:9.5px;font-weight:900;text-transform:uppercase;letter-spacing:.7px;color:#fff;text-align:left}
+    thead th{padding: var(--cell-padding, 7px 10px);font-size: calc(var(--cell-font-size, 10.5px) - 1px);font-weight:900;text-transform:uppercase;letter-spacing:.7px;color:#fff;text-align:left}
     thead th.right{text-align:right}
     thead th.center{text-align:center}
 
@@ -380,7 +464,7 @@ export async function GET(request: NextRequest) {
       print-color-adjust:exact !important;
     }
 
-    tbody td{padding:6px 10px;font-size:10.5px;color:#000;line-height:1.35;vertical-align:middle}
+    tbody td{padding: var(--cell-padding, 6px 10px);font-size: var(--cell-font-size, 10.5px);color:#000;line-height: var(--cell-line-height, 1.35);vertical-align:middle}
     tbody td.right{text-align:right}
     tbody td.center{text-align:center}
     .bold{font-weight:700}
@@ -398,7 +482,7 @@ export async function GET(request: NextRequest) {
       flex-shrink:0;
       display:flex;
       justify-content:flex-end;
-      padding:8px 0 0;
+      padding: var(--sig-padding, 8px 0 0);
       page-break-inside:avoid;
       break-inside:avoid;
     }
@@ -407,9 +491,9 @@ export async function GET(request: NextRequest) {
     .sig-box{
       border:1px solid #008751;
       border-radius:8px;
-      padding:10px 14px;
+      padding: var(--sig-padding-internal, 10px 14px);
       background:#f0fff6 !important;
-      min-height:80px;
+      min-height: var(--sig-min-height, 80px);
       position:relative;
       width:370px;
       -webkit-print-color-adjust:exact !important;

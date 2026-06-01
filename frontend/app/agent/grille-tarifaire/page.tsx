@@ -57,7 +57,7 @@ export default function AgentGrilleTarifaire() {
         setLoading(true)
         setError('')
         try {
-            const res = await fetch('/api/admin/settings')
+            const res = await fetch('/api/admin/settings?t=' + Date.now(), { cache: 'no-store' })
             const data = await res.json()
             if (!res.ok) throw new Error(data.error || 'Erreur lors du chargement des paramètres')
 
@@ -81,7 +81,8 @@ export default function AgentGrilleTarifaire() {
                                 service: row.service || '',
                                 details: row.details || '',
                                 price_fcfa,
-                                price_eur
+                                price_eur,
+                                options: row.options || undefined
                             }
                         })
                     }))
@@ -137,6 +138,7 @@ export default function AgentGrilleTarifaire() {
             if (!res.ok) throw new Error(data.error || 'Erreur lors de la sauvegarde')
 
             addToast('success', t('Grilles tarifaires sauvegardées avec succès'))
+            fetchGrids()
         } catch (e) {
             addToast('error', e instanceof Error ? e.message : 'Erreur inconnue')
         } finally {
