@@ -23,6 +23,7 @@ interface WafSummary {
     recentLogs: WafLog[]; blockedIps: IpBlock[]
     threatStats: Record<string, number>; topIps: { ip: string; count: number }[]
     totalLogs24h: number; totalBlocked: number
+    error?: string;
 }
 interface CustomRule {
     id: string; name: string; pattern: string; category: string
@@ -125,14 +126,34 @@ export default function SecuritePage() {
                 fetch('/api/admin/waf/rules'),
                 fetch('/api/admin/waf/config'),
             ])
-            const [s, l, r, c] = await Promise.all([sRes.json(), lRes.json(), rRes.json(), cRes.json()])
-            setSummary(s)
-            setLogs(l.logs || [])
-            setTotalLogs(l.total || 0)
-            setRules(r.rules || [])
-            setConfig(c.config || null)
-            setEditConfig(c.config || {})
-        } catch { /* silencieux */ } finally {
+            const [s, l, r, c] = await Promise.all([
+                sRes.ok ? sRes.json().catch(() => null) : null,
+                lRes.ok ? lRes.json().catch(() => null) : null,
+                rRes.ok ? rRes.json().catch(() => null) : null,
+                cRes.ok ? cRes.json().catch(() => null) : null,
+            ])
+
+            if (s && !s.error) {
+                setSummary(s)
+            } else {
+                setSummary({
+                    recentLogs: [],
+                    blockedIps: [],
+                    threatStats: {},
+                    topIps: [],
+                    totalLogs24h: 0,
+                    totalBlocked: 0,
+                    error: s?.error || 'Erreur lors du chargement des statistiques WAF'
+                })
+            }
+            setLogs(l?.logs || [])
+            setTotalLogs(l?.total || 0)
+            setRules(r?.rules || [])
+            setConfig(c?.config || null)
+            setEditConfig(c?.config || {})
+        } catch (err) {
+            console.error('Error loading security data:', err)
+        } finally {
             setLoading(false); setRefreshing(false)
         }
     }, [logsPage])
@@ -222,6 +243,16 @@ export default function SecuritePage() {
 
     return (
         <div className="space-y-6 p-6">
+            {summary?.error && (
+                <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                    <div>
+                        <h3 className="text-red-400 font-semibold text-sm">Erreur système WAF</h3>
+                        <p className="text-gray-300 text-sm mt-1">{summary.error}</p>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">

@@ -3,6 +3,9 @@ import { createClient } from '@supabase/supabase-js'
 import { verifyApiAuth } from '@/lib/api-auth'
 import { invalidateIpCache } from '@/lib/waf'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type IpBlockRow = Record<string, any>
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const serviceKey  = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
@@ -106,28 +109,62 @@ export async function GET(request: NextRequest) {
                 supabase.from('ip_blocks').select('*').is('unblocked_at', null).order('blocked_at', { ascending: false }).limit(100),
             ])
 
+            // Normaliser les top_threats (JSON array) en threatStats (Record)
+            const threatStats: Record<string, number> = {}
+            if (Array.isArray(rpcStats.top_threats)) {
+                for (const t of rpcStats.top_threats) {
+                    if (t?.threat_type) threatStats[t.threat_type] = t.count || 0
+                }
+            }
+
+            // Normaliser top_attackers en topIps
+            const topIps = Array.isArray(rpcStats.top_attackers)
+                ? rpcStats.top_attackers.map((a: { ip: string; count: number }) => ({ ip: a.ip, count: a.count }))
+                : []
+
             return NextResponse.json({
-                ...rpcStats,
-                recentLogs: logsRes.data || [],
-                blockedIps: blocksRes.data || [],
+                recentLogs:   logsRes.data || [],
+                blockedIps:   blocksRes.data || [],
+                threatStats,
+                topIps,
+                totalLogs24h: rpcStats.total_events || 0,
+                totalBlocked: rpcStats.ip_blocks_active || blocksRes.data?.length || 0,
+                // Champs enrichis depuis le RPC
+                tarpit_count:     rpcStats.tarpit_count || 0,
+                deceive_count:    rpcStats.deceive_count || 0,
+                honeypot_count:   rpcStats.honeypot_count || 0,
+                ip_hoppers:       rpcStats.ip_hoppers || 0,
+                active_campaigns: rpcStats.active_campaigns || 0,
+                learned_rules:    rpcStats.learned_rules || 0,
+                known_bad_fps:    rpcStats.known_bad_fps || 0,
+                total_fingerprints: rpcStats.total_fingerprints || 0,
             })
         }
     } catch { /* fallback ci-dessous */ }
 
     // Fallback si RPC indisponible
-    const [logsRes, blocksRes, statsRes] = await Promise.all([
-        supabase.from('waf_logs').select('threat_type, created_at').order('created_at', { ascending: false }).limit(500),
-        supabase.from('ip_blocks').select('*').is('unblocked_at', null).order('blocked_at', { ascending: false }).limit(100),
-        supabase.from('waf_logs').select('ip, threat_type').gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
-    ])
+    let logsData: { threat_type: string; created_at: string }[] = []
+    let blocksData: IpBlockRow[] = []
+    let statsData: { ip: string; threat_type: string }[] = []
+
+    try {
+        const [logsRes, blocksRes, statsRes] = await Promise.all([
+            supabase.from('waf_logs').select('threat_type, created_at').order('created_at', { ascending: false }).limit(500),
+            supabase.from('ip_blocks').select('*').is('unblocked_at', null).order('blocked_at', { ascending: false }).limit(100),
+            supabase.from('waf_logs').select('ip, threat_type').gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+        ])
+        logsData = logsRes.data || []
+        blocksData = blocksRes.data || []
+        statsData = statsRes.data || []
+    } catch { /* tables might not exist yet */ }
 
     const threatStats: Record<string, number> = {}
-    for (const row of (statsRes.data || [])) {
+    for (const row of statsData) {
         threatStats[row.threat_type] = (threatStats[row.threat_type] || 0) + 1
     }
 
     const ipCounts: Record<string, number> = {}
-    for (const row of (statsRes.data || [])) {
+    for (const row of statsData) {
         ipCounts[row.ip] = (ipCounts[row.ip] || 0) + 1
     }
     const topIps = Object.entries(ipCounts)
@@ -136,12 +173,12 @@ export async function GET(request: NextRequest) {
         .map(([ip, count]) => ({ ip, count }))
 
     return NextResponse.json({
-        recentLogs:   (logsRes.data || []).slice(0, 20),
-        blockedIps:   blocksRes.data || [],
+        recentLogs:   logsData.slice(0, 20),
+        blockedIps:   blocksData,
         threatStats,
         topIps,
-        totalLogs24h: statsRes.data?.length || 0,
-        totalBlocked: blocksRes.data?.length || 0,
+        totalLogs24h: statsData.length || 0,
+        totalBlocked: blocksData.length || 0,
     })
 }
 
