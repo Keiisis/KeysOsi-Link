@@ -9,12 +9,19 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+interface TariffRowOption {
+    label: string
+    price_fcfa: string
+    price_eur: string
+}
+
 interface TariffRow {
     no: string
     service: string
     details: string
     price_fcfa: string
     price_eur: string
+    options?: TariffRowOption[]
 }
 
 interface TariffGrid {
