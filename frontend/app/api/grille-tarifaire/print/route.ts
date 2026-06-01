@@ -144,36 +144,36 @@ export async function GET(request: NextRequest) {
             let sigPaddingInternal = '10px 14px'
             let tableMarginTopBottom = 'auto'
 
-            if (totalLines > 9) {
-                introFontSize = '9px'
-                introLineHeight = '1.3'
-                introPadding = '3px 0 1px'
-                cellPadding = '4px 8px'
-                cellFontSize = '9px'
-                cellLineHeight = '1.2'
-                sigPadding = '2px 0 0'
-                sigMinHeight = '65px'
-                sigPaddingInternal = '5px 10px'
-            } else if (totalLines > 7) {
+            if (totalLines > 11) {
                 introFontSize = '10px'
-                introLineHeight = '1.45'
-                introPadding = '6px 0 4px'
-                cellPadding = '5px 8px'
+                introLineHeight = '1.4'
+                introPadding = '5px 0 3px'
+                cellPadding = '6px 10px'
                 cellFontSize = '9.5px'
                 cellLineHeight = '1.3'
-                sigPadding = '6px 0 0'
-                sigMinHeight = '75px'
+                sigPadding = '5px 0 0'
+                sigMinHeight = '70px'
                 sigPaddingInternal = '8px 12px'
-            } else if (totalLines <= 4) {
+            } else if (totalLines > 8) {
                 introFontSize = '12px'
-                introLineHeight = '1.75'
-                introPadding = '20px 0 14px'
-                cellPadding = '9px 10px'
-                cellFontSize = '11.5px'
-                cellLineHeight = '1.45'
-                sigPadding = '16px 0 0'
+                introLineHeight = '1.6'
+                introPadding = '10px 0 6px'
+                cellPadding = '9px 14px'
+                cellFontSize = '11px'
+                cellLineHeight = '1.4'
+                sigPadding = '8px 0 0'
+                sigMinHeight = '80px'
+                sigPaddingInternal = '10px 14px'
+            } else {
+                introFontSize = '13.5px'
+                introLineHeight = '1.8'
+                introPadding = '18px 0 12px'
+                cellPadding = '12px 16px'
+                cellFontSize = '12px'
+                cellLineHeight = '1.5'
+                sigPadding = '15px 0 0'
                 sigMinHeight = '90px'
-                sigPaddingInternal = '14px'
+                sigPaddingInternal = '12px 14px'
             }
 
             const rowsHtml = grid.rows.map((row: any) => {
@@ -450,11 +450,11 @@ export async function GET(request: NextRequest) {
     tbody td.right{text-align:right}
     tbody td.center{text-align:center}
     .bold{font-weight:700}
-    .details-cell{font-weight:600;color:#333;font-size:10.5px;font-style:italic}
+    .details-cell{font-weight:600;color:#333;font-size: var(--cell-font-size, 10.5px);font-style:italic}
     .price-cell{
       color:#008751 !important;
       font-weight:900;
-      font-size:12px;
+      font-size: calc(var(--cell-font-size, 10.5px) + 1px);
       -webkit-print-color-adjust:exact !important;
       print-color-adjust:exact !important;
     }
