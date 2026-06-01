@@ -144,32 +144,17 @@ export async function GET(request: NextRequest) {
             let sigPaddingInternal = '10px 14px'
             let tableMarginTopBottom = 'auto'
 
-            if (totalLines >= 11 || (totalLines >= 9 && totalTextLength > 400)) {
-                // Extreme density - minimize margins and font sizes to avoid overflow
-                introFontSize = '8.2px'
-                introLineHeight = '1.2'
-                introPadding = '1px 0 1px'
-                cellPadding = '3px 6px'
-                cellFontSize = '8.2px'
-                cellLineHeight = '1.1'
-                sigPadding = '1px 0 0'
-                sigMinHeight = '50px'
-                sigPaddingInternal = '3px 6px'
-                tableMarginTopBottom = '4px'
-            } else if (totalLines >= 9 || (totalLines >= 7 && totalTextLength > 350)) {
-                // High density
-                introFontSize = '9.2px'
+            if (totalLines > 9) {
+                introFontSize = '9px'
                 introLineHeight = '1.3'
-                introPadding = '4px 0 2px'
+                introPadding = '3px 0 1px'
                 cellPadding = '4px 8px'
                 cellFontSize = '9px'
                 cellLineHeight = '1.2'
-                sigPadding = '3px 0 0'
+                sigPadding = '2px 0 0'
                 sigMinHeight = '65px'
-                sigPaddingInternal = '6px 10px'
-                tableMarginTopBottom = '8px'
-            } else if (totalLines >= 7 || (totalLines >= 5 && totalTextLength > 280)) {
-                // Medium-high density
+                sigPaddingInternal = '5px 10px'
+            } else if (totalLines > 7) {
                 introFontSize = '10px'
                 introLineHeight = '1.45'
                 introPadding = '6px 0 4px'
@@ -179,19 +164,16 @@ export async function GET(request: NextRequest) {
                 sigPadding = '6px 0 0'
                 sigMinHeight = '75px'
                 sigPaddingInternal = '8px 12px'
-                tableMarginTopBottom = '12px'
-            } else if (totalLines <= 4 && totalTextLength < 180) {
-                // Very low density - center table and give full room
-                introFontSize = '12.5px'
+            } else if (totalLines <= 4) {
+                introFontSize = '12px'
                 introLineHeight = '1.75'
-                introPadding = '22px 0 16px'
-                cellPadding = '10px 12px'
+                introPadding = '20px 0 14px'
+                cellPadding = '9px 10px'
                 cellFontSize = '11.5px'
-                cellLineHeight = '1.5'
-                sigPadding = '20px 0 0'
-                sigMinHeight = '95px'
+                cellLineHeight = '1.45'
+                sigPadding = '16px 0 0'
+                sigMinHeight = '90px'
                 sigPaddingInternal = '14px'
-                tableMarginTopBottom = 'auto'
             }
 
             const rowsHtml = grid.rows.map((row: any) => {
