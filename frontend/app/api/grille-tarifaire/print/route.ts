@@ -48,10 +48,45 @@ export async function GET(request: NextRequest) {
         let grids = defaultGrids
         if (settingsData?.value) {
             try {
-                grids = JSON.parse(settingsData.value)
+                const parsed = JSON.parse(settingsData.value)
+                // Normalize older schema structure (price, unit, delay) to the new structure (price_fcfa, price_eur)
+                grids = parsed.map((grid: any) => ({
+                    ...grid,
+                    rows: grid.rows.map((row: any) => {
+                        let price_fcfa = row.price_fcfa || ''
+                        let price_eur = row.price_eur || ''
+                        if (!price_fcfa && row.price) {
+                            const parts = row.price.split('/')
+                            price_fcfa = parts[0]?.trim() || ''
+                            price_eur = parts[1]?.trim() || ''
+                        }
+                        return {
+                            no: row.no || '',
+                            service: row.service || '',
+                            details: row.details || '',
+                            price_fcfa,
+                            price_eur
+                        }
+                    })
+                }))
             } catch (e) {
                 console.error('Error parsing grilles_tarifaires settings:', e)
             }
+        } else {
+            // Normalize default grids
+            grids = defaultGrids.map((grid: any) => ({
+                ...grid,
+                rows: grid.rows.map((row: any) => {
+                    const parts = row.price.split('/')
+                    return {
+                        no: row.no,
+                        service: row.service,
+                        details: row.details,
+                        price_fcfa: parts[0]?.trim() || '',
+                        price_eur: parts[1]?.trim() || ''
+                    }
+                })
+            }))
         }
 
         // Filter if gridId is provided
@@ -81,9 +116,8 @@ export async function GET(request: NextRequest) {
                     <td class="center bold">${escapeHtml(row.no)}</td>
                     <td class="bold">${escapeHtml(row.service)}</td>
                     <td class="details-cell">${escapeHtml(row.details || '')}</td>
-                    <td class="center bold">${escapeHtml(row.unit)}</td>
-                    <td class="right bold price-cell">${escapeHtml(row.price)}</td>
-                    <td class="center bold">${escapeHtml(row.delay)}</td>
+                    <td class="right bold price-cell">${escapeHtml(row.price_fcfa)}</td>
+                    <td class="right bold price-cell" style="color: #000 !important;">${escapeHtml(row.price_eur)}</td>
                 </tr>
                 `
             }).join('')
@@ -131,11 +165,10 @@ export async function GET(request: NextRequest) {
                                 <thead>
                                     <tr>
                                         <th class="center" style="width:40px">N°</th>
-                                        <th style="width:22%">Service / Prestation</th>
-                                        <th style="width:22%">Détails inclus</th>
-                                        <th class="center" style="width:12%">Unité</th>
-                                        <th class="right" style="width:18%">Tarif (FCFA/EUR)</th>
-                                        <th class="center" style="width:10%">Délai</th>
+                                        <th style="width:32%">Service / Prestation</th>
+                                        <th style="width:32%">Détails inclus</th>
+                                        <th class="right" style="width:18%">Tarif (FCFA)</th>
+                                        <th class="right" style="width:18%">Tarif (EUR)</th>
                                     </tr>
                                 </thead>
                                 <tbody>

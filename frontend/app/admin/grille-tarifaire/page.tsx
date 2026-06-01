@@ -13,9 +13,8 @@ interface TariffRow {
     no: string
     service: string
     details: string
-    unit: string
-    price: string
-    delay: string
+    price_fcfa: string
+    price_eur: string
 }
 
 interface TariffGrid {
@@ -59,9 +58,29 @@ export default function AdminGrilleTarifaire() {
             if (rawValue) {
                 try {
                     const parsed = JSON.parse(rawValue)
-                    setGrids(parsed)
-                    if (parsed.length > 0) {
-                        setActiveGridId(parsed[0].id)
+                    // Normalize older schema structure (price, unit, delay) to the new structure (price_fcfa, price_eur)
+                    const normalized = parsed.map((grid: any) => ({
+                        ...grid,
+                        rows: grid.rows.map((row: any) => {
+                            let price_fcfa = row.price_fcfa || ''
+                            let price_eur = row.price_eur || ''
+                            if (!price_fcfa && row.price) {
+                                const parts = row.price.split('/')
+                                price_fcfa = parts[0]?.trim() || ''
+                                price_eur = parts[1]?.trim() || ''
+                            }
+                            return {
+                                no: row.no || '',
+                                service: row.service || '',
+                                details: row.details || '',
+                                price_fcfa,
+                                price_eur
+                            }
+                        })
+                    }))
+                    setGrids(normalized)
+                    if (normalized.length > 0) {
+                        setActiveGridId(normalized[0].id)
                     }
                 } catch (e) {
                     throw new Error('Format de données corrompu pour la grille tarifaire')
@@ -73,11 +92,11 @@ export default function AdminGrilleTarifaire() {
                         id: 'documents-identite',
                         title: 'DOCUMENTS & IDENTITÉ',
                         rows: [
-                            { no: '1', service: 'Acte de naissance béninois (sécurisé)', details: 'Copie intégrale certifiée conforme', unit: 'Par document', price: '15 000 FCFA / 23 €', delay: '72h' },
-                            { no: '2', service: 'Passeport Biométrique Béninois', details: 'Demande complète, photos, suivi', unit: 'Par demande', price: '75 000 FCFA / 115 €', delay: '10 à 15 jours' },
-                            { no: '3', service: 'Carte Nationale d\'Identité (CNIB)', details: 'Inscription, prise d\'empreintes, retrait', unit: 'Par demande', price: '30 000 FCFA / 46 €', delay: '5 à 7 jours' },
-                            { no: '4', service: 'Certificat d\'Identification Personnelle (CIP)', details: 'Vérification d\'identité officielle', unit: 'Par document', price: '10 000 FCFA / 15 €', delay: '48h' },
-                            { no: '5', service: 'Casier Judiciaire Béninois', details: 'Extrait de casier judiciaire B3', unit: 'Par document', price: '12 000 FCFA / 18 €', delay: '72h' }
+                            { no: '1', service: 'Acte de naissance béninois (sécurisé)', details: 'Copie intégrale certifiée conforme', price_fcfa: '15 000 FCFA', price_eur: '23 €' },
+                            { no: '2', service: 'Passeport Biométrique Béninois', details: 'Demande complète, photos, suivi', price_fcfa: '75 000 FCFA', price_eur: '115 €' },
+                            { no: '3', service: 'Carte Nationale d\'Identité (CNIB)', details: 'Inscription, prise d\'empreintes, retrait', price_fcfa: '30 000 FCFA', price_eur: '46 €' },
+                            { no: '4', service: 'Certificat d\'Identification Personnelle (CIP)', details: 'Vérification d\'identité officielle', price_fcfa: '10 000 FCFA', price_eur: '15 €' },
+                            { no: '5', service: 'Casier Judiciaire Béninois', details: 'Extrait de casier judiciaire B3', price_fcfa: '12 000 FCFA', price_eur: '18 €' }
                         ]
                     }
                 ]
@@ -130,7 +149,7 @@ export default function AdminGrilleTarifaire() {
             id,
             title: title.trim().toUpperCase(),
             rows: [
-                { no: '1', service: t('Exemple de service'), details: '', unit: t('Par dossier'), price: '50 000 FCFA / 76 €', delay: '5 jours' }
+                { no: '1', service: t('Exemple de service'), details: '', price_fcfa: '50 000 FCFA', price_eur: '76 €' }
             ]
         }
 
@@ -183,7 +202,7 @@ export default function AdminGrilleTarifaire() {
     const handleAddRow = () => {
         if (!activeGrid) return
         const nextNo = (activeGrid.rows.length + 1).toString()
-        const newRow: TariffRow = { no: nextNo, service: '', details: '', unit: '', price: '', delay: '' }
+        const newRow: TariffRow = { no: nextNo, service: '', details: '', price_fcfa: '', price_eur: '' }
         const updatedRows = [...activeGrid.rows, newRow]
 
         const updatedGrids = grids.map(g => g.id === activeGrid.id ? { ...g, rows: updatedRows } : g)
@@ -377,9 +396,8 @@ export default function AdminGrilleTarifaire() {
                                                 <th className="p-4 text-center w-14">N°</th>
                                                 <th className="p-4 text-left">Service / Prestation</th>
                                                 <th className="p-4 text-left">Détails inclus</th>
-                                                <th className="p-4 text-center w-32">Unité</th>
-                                                <th className="p-4 text-left w-48">Tarif (FCFA/EUR)</th>
-                                                <th className="p-4 text-center w-28">Délai</th>
+                                                <th className="p-4 text-left w-48">Tarif (FCFA)</th>
+                                                <th className="p-4 text-left w-48">Tarif (EUR)</th>
                                                 <th className="p-4 text-center w-28">Actions</th>
                                             </tr>
                                         </thead>
@@ -421,39 +439,27 @@ export default function AdminGrilleTarifaire() {
                                                         />
                                                     </td>
 
-                                                    {/* Unit */}
+                                                    {/* Price FCFA */}
                                                     <td className="p-3">
                                                         <input
                                                             type="text"
-                                                            value={row.unit}
-                                                            onChange={e => handleRowChange(idx, 'unit', e.target.value)}
-                                                            placeholder={t("ex: Par document")}
-                                                            className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-xs text-white text-center focus:outline-none focus:border-[#008751]/50 focus:bg-white/[0.08] transition-all"
-                                                            title={t("Unité")}
-                                                        />
-                                                    </td>
-
-                                                    {/* Price */}
-                                                    <td className="p-3">
-                                                        <input
-                                                            type="text"
-                                                            value={row.price}
-                                                            onChange={e => handleRowChange(idx, 'price', e.target.value)}
-                                                            placeholder={t("ex: 15 000 FCFA / 23 €")}
+                                                            value={row.price_fcfa}
+                                                            onChange={e => handleRowChange(idx, 'price_fcfa', e.target.value)}
+                                                            placeholder={t("ex: 15 000 FCFA")}
                                                             className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-xs text-[#00c870] font-bold focus:outline-none focus:border-[#008751]/50 focus:bg-white/[0.08] transition-all"
-                                                            title={t("Tarif")}
+                                                            title={t("Tarif (FCFA)")}
                                                         />
                                                     </td>
 
-                                                    {/* Delay */}
+                                                    {/* Price EUR */}
                                                     <td className="p-3">
                                                         <input
                                                             type="text"
-                                                            value={row.delay}
-                                                            onChange={e => handleRowChange(idx, 'delay', e.target.value)}
-                                                            placeholder={t("ex: 72h")}
-                                                            className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-xs text-white text-center focus:outline-none focus:border-[#008751]/50 focus:bg-white/[0.08] transition-all"
-                                                            title={t("Délai")}
+                                                            value={row.price_eur}
+                                                            onChange={e => handleRowChange(idx, 'price_eur', e.target.value)}
+                                                            placeholder={t("ex: 23 €")}
+                                                            className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#008751]/50 focus:bg-white/[0.08] transition-all"
+                                                            title={t("Tarif (EUR)")}
                                                         />
                                                     </td>
 
