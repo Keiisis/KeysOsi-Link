@@ -191,14 +191,14 @@ export async function GET(request: NextRequest) {
     /* ===== FEUILLE A4 ===== */
     .page{
       width:210mm;
-      height:297mm;
+      min-height:297mm;
+      height:auto;
       margin:18px auto 36px;
       background:#fff;
       position:relative;
       display:flex;
       flex-direction:column;
       box-shadow:0 8px 40px rgba(0,0,0,.08);
-      overflow:hidden;
       padding-top:8mm; /* Marge haute de sécurité pour que le ruban tricolore apparaisse sur le papier imprimé */
     }
 
@@ -274,16 +274,15 @@ export async function GET(request: NextRequest) {
       display:flex;
       flex-direction:column;
       padding:0 32px;
-      /* Espace de sécurité pour remonter la signature au-dessus du footer */
-      padding-bottom:140px;
+      padding-bottom:24px;
     }
 
     /* Texte introductif - occupe l'espace du haut, bien aéré et espacé */
     .intro{
-      font-size:13px;
-      line-height:1.85;
+      font-size:12px;
+      line-height:1.7;
       color:#000;
-      padding:24px 0 16px;
+      padding:16px 0 12px;
       text-align:justify;
       font-weight:700;
       flex-shrink:0;
@@ -291,10 +290,8 @@ export async function GET(request: NextRequest) {
 
     /* ===== TABLEAU CENTRÉ AU MILIEU ===== */
     .table-center{
-      flex:1;
-      display:flex;
-      align-items:center;
-      justify-content:center;
+      margin:auto 0;
+      width:100%;
     }
 
     .table-wrap{
@@ -309,11 +306,11 @@ export async function GET(request: NextRequest) {
       -webkit-print-color-adjust:exact !important;
       print-color-adjust:exact !important;
     }
-    thead th{padding:12px 10px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.7px;color:#fff;text-align:left}
+    thead th{padding:9px 10px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.7px;color:#fff;text-align:left}
     thead th.right{text-align:right}
     thead th.center{text-align:center}
 
-    tbody tr{background:#fff;border-bottom:1.5px solid #000}
+    tbody tr{background:#fff;border-bottom:1.5px solid #000;page-break-inside:avoid;break-inside:avoid}
     tbody tr:last-child{border-bottom:none}
     tbody tr:nth-child(even){
       background:#f8fafc !important;
@@ -321,7 +318,7 @@ export async function GET(request: NextRequest) {
       print-color-adjust:exact !important;
     }
 
-    tbody td{padding:12px 10px;font-size:11.5px;color:#000;line-height:1.45;vertical-align:middle}
+    tbody td{padding:8px 10px;font-size:11px;color:#000;line-height:1.45;vertical-align:middle}
     tbody td.right{text-align:right}
     tbody td.center{text-align:center}
     .bold{font-weight:700}
@@ -340,6 +337,8 @@ export async function GET(request: NextRequest) {
       display:flex;
       justify-content:flex-end;
       padding:16px 0 0;
+      page-break-inside:avoid;
+      break-inside:avoid;
     }
 
     /* Cadre vert — dimensions facture */
@@ -382,8 +381,7 @@ export async function GET(request: NextRequest) {
 
     /* ===== PIED DE PAGE ===== */
     .footer{
-      position:absolute;
-      bottom:0;left:0;right:0;
+      margin-top:auto;
       background:#fff;
       padding:14px 32px 26px; /* Grand padding bas pour éviter la coupure par l'imprimante */
       text-align:center;
@@ -402,7 +400,8 @@ export async function GET(request: NextRequest) {
         box-shadow:none;
         margin:0;
         width:210mm;
-        height:297mm;
+        min-height:297mm;
+        height:auto;
         page-break-after:always;
         break-after:page;
         padding-top:8mm !important;
