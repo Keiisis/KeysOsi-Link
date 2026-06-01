@@ -92,6 +92,82 @@ BEGIN
     -- → un attaquant qui change d'IP garde son mauvais fingerprint
     v_effective_trust := LEAST(v_ip_trust, v_fp_trust);
 
+    -- ══ CORRECTION 5 : Corrélation Campaign ══════════════════
+    -- Si le fingerprint est associé à une campagne d'attaque active,
+    -- forcer la déception ou le blocage même si le trust est élevé
+    IF p_fingerprint_hash != '' THEN
+        DECLARE
+            v_campaign_count INTEGER := 0;
+        BEGIN
+            -- Vérifier si une des IPs associées au fingerprint
+            -- fait partie d'une campagne active
+            SELECT COUNT(*) INTO v_campaign_count
+            FROM public.waf_campaigns c
+            WHERE c.status = 'active'
+            AND EXISTS (
+                SELECT 1 FROM public.waf_device_fingerprints fp
+                WHERE fp.hash = p_fingerprint_hash
+                AND fp.associated_ips && c.source_ips
+            );
+
+            IF v_campaign_count > 0 THEN
+                -- L'IP fait partie d'une campagne organisée
+                -- → Forcer la déception pour récolter plus d'infos
+                v_effective_trust := LEAST(v_effective_trust, 12);
+
+                -- Marquer l'IP comme liée à une campagne
+                UPDATE public.waf_ip_memory
+                SET trust_score = LEAST(trust_score, 12),
+                    ip_hopper = true
+                WHERE ip = p_ip;
+            END IF;
+        END;
+    END IF;
+
+    -- ══ Check Honeypot Path ═══════════════════════════════════
+    -- Si le chemin accédé est un piège connu, activer la déception
+    IF p_path ~ '^\/(wp-admin|wp-login\.php|phpmyadmin|\.env|\.git|adminer|xmlrpc|actuator|server-status|admin\.php|shell\.php|c99\.php|r57\.php|backup\.zip|config\.php|debug)' THEN
+        -- Chemin piège → répondre avec un honeypot
+        v_action := 'honeypot';
+
+        SELECT json_build_object(
+            'status_code', dp.status_code,
+            'content_type', dp.content_type,
+            'response_body', dp.response_body,
+            'response_headers', dp.response_headers
+        ) INTO v_payload
+        FROM public.waf_deception_payloads dp
+        WHERE dp.attack_type = 'honeypot' AND dp.enabled = true
+        ORDER BY random()
+        LIMIT 1;
+
+        -- Dégrader le trust pour accès honeypot
+        UPDATE public.waf_ip_memory
+        SET trust_score = GREATEST(0, trust_score - 25),
+            last_action = 'honeypot'
+        WHERE ip = p_ip;
+
+        -- Log l'interaction honeypot
+        INSERT INTO public.waf_honeypot_interactions (
+            ip, path, method, user_agent, fingerprint_hash,
+            attack_type, payload_served
+        ) VALUES (
+            p_ip, p_path, 'GET', p_user_agent, p_fingerprint_hash,
+            'honeypot', COALESCE(v_payload::text, '{}')
+        );
+
+        RETURN json_build_object(
+            'action',        'honeypot',
+            'delay_ms',      0,
+            'trust_score',   v_effective_trust,
+            'ip_trust',      v_ip_trust,
+            'fp_trust',      v_fp_trust,
+            'reason',        format('Honeypot path: %s', p_path),
+            'payload',       v_payload,
+            'ip_hopper',     v_ip_hopper
+        );
+    END IF;
+
     -- ── Décision par seuils ──────────────────────────────────
     IF v_effective_trust < 5 THEN
         -- BLOCAGE TOTAL : menace critique confirmée
@@ -143,7 +219,9 @@ BEGIN
 
         -- Mettre à jour le niveau de tarpit
         UPDATE public.waf_ip_memory
-        SET tarpit_level = GREATEST(tarpit_level, (30 - v_effective_trust) / 5)
+        SET tarpit_level = GREATEST(tarpit_level, (30 - v_effective_trust) / 5),
+            -- ══ TARPIT DECAY : chaque tarpit dégrade le trust (-3) ══
+            trust_score = GREATEST(0, trust_score - 3)
         WHERE ip = p_ip;
 
     ELSE
@@ -167,7 +245,7 @@ BEGIN
         'reason',        CASE v_action
             WHEN 'block'   THEN 'Trust score critique'
             WHEN 'deceive' THEN 'Déception active — faux payload envoyé'
-            WHEN 'tarpit'  THEN format('Tarpitting %sms', v_delay_ms)
+            WHEN 'tarpit'  THEN format('Tarpitting %sms (trust decay -3)', v_delay_ms)
             ELSE 'Requête autorisée'
         END,
         'payload',       v_payload,

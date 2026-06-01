@@ -458,6 +458,10 @@ export function logWafEvent(opts: {
     ip: string; method: string; path: string
     userAgent: string; threatType: string
     detail?: string; score?: number
+    // ── Nouveaux champs Défense Active ──
+    fingerprintHash?: string
+    action?: 'allow' | 'block' | 'tarpit' | 'deceive' | 'honeypot'
+    responseDelayMs?: number
     supabaseUrl: string; serviceKey: string
 }): void {
     const { supabaseUrl, serviceKey, ...payload } = opts
@@ -470,14 +474,18 @@ export function logWafEvent(opts: {
             Prefer: 'return=minimal',
         },
         body: JSON.stringify({
-            ip:            payload.ip,
-            method:        payload.method,
-            path:          payload.path.slice(0, 500),
-            user_agent:    payload.userAgent.slice(0, 500),
-            threat_type:   payload.threatType,
-            threat_detail: (payload.detail || `score=${payload.score ?? '?'}`).slice(0, 500),
-            is_blocked:    true,
-            score:         payload.score ?? 0,
+            ip:               payload.ip,
+            method:           payload.method,
+            path:             payload.path.slice(0, 500),
+            user_agent:       payload.userAgent.slice(0, 500),
+            threat_type:      payload.threatType,
+            threat_detail:    (payload.detail || `score=${payload.score ?? '?'}`).slice(0, 500),
+            is_blocked:       payload.action === 'block' || (!payload.action),
+            score:            payload.score ?? 0,
+            // ── Colonnes Défense Active ──
+            fingerprint_hash: payload.fingerprintHash || '',
+            action:           payload.action || 'block',
+            response_delay_ms: payload.responseDelayMs || 0,
         }),
     }).catch(() => {})
 }

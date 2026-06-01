@@ -298,18 +298,36 @@ export async function middleware(request: NextRequest) {
                         ip, method, path: pathname, userAgent,
                         threatType: 'blocked_ip',
                         detail: `WAF Sentinel: ${evalResult.reason} (trust=${evalResult.trust_score})`,
+                        fingerprintHash,
+                        action: 'block',
                         supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
                     })
                     return wafBlock('Accès refusé.', 403)
                 }
 
                 case 'deceive': {
-                    // L'attaquant reçoit un faux payload crédible
-                    // Il ne sait pas qu'il est piégé — il perd du temps
-                    const attackType = evalResult.payload
-                        ? 'sql_injection' // type par défaut si payload fourni par RPC
-                        : 'scanner_detection'
+                    // ── CORRECTION 3 : Déception contextuelle ──────────
+                    // On lance le CRS pour identifier le TYPE d'attaque exact
+                    // puis on choisit le payload de déception correspondant
+                    // SQLi → faux MySQL, XSS → faux cookie, LFI → faux passwd
+                    const searchParams = request.nextUrl.searchParams.toString()
+                    const deceiveVerdict = analyzeRequestFast(method, pathname, searchParams, userAgent)
+                    const detectedType = deceiveVerdict.topThreat || 'scanner_detection'
 
+                    // Mapper le type CRS vers le type de déception
+                    type DeceptionType = 'sql_injection' | 'xss' | 'lfi' | 'rce' | 'scanner_detection' | 'honeypot'
+                    const typeMap: Record<string, DeceptionType> = {
+                        sql_injection: 'sql_injection',
+                        xss: 'xss',
+                        lfi: 'lfi',
+                        rce: 'rce',
+                        command_injection: 'rce',
+                        scanner_detection: 'scanner_detection',
+                        protocol_attack: 'scanner_detection',
+                    }
+                    const attackType: DeceptionType = typeMap[detectedType] || 'scanner_detection'
+
+                    // Utiliser le payload RPC si fourni, sinon payload contextuel
                     const payload = evalResult.payload
                         ? {
                             status_code:      evalResult.payload.status_code,
@@ -321,16 +339,26 @@ export async function middleware(request: NextRequest) {
 
                     logWafEvent({
                         ip, method, path: pathname, userAgent,
-                        threatType: 'blocked_ip',
-                        detail: `WAF Sentinel DECEIVE: ${evalResult.reason} (trust=${evalResult.trust_score})`,
+                        threatType: detectedType,
+                        detail: `WAF Sentinel DECEIVE [${attackType}]: ${evalResult.reason} (trust=${evalResult.trust_score})`,
+                        fingerprintHash,
+                        action: 'deceive',
                         supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
                     })
                     logDeceptionInteraction({
                         ip, path: pathname, method,
-                        attackType, payloadName: 'sentinel_deceive',
+                        attackType, payloadName: `sentinel_${attackType}`,
                         fingerprintHash,
                         supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
                     })
+
+                    // Nourrir l'apprentissage avec les détails CRS
+                    if (deceiveVerdict.blocked && deceiveVerdict.matches[0]?.snippet) {
+                        trackViolation(ip, SUPA_URL, SUPA_KEY, {
+                            threatType: detectedType,
+                            snippet: deceiveVerdict.matches[0].snippet.slice(0, 120),
+                        })
+                    }
 
                     return buildDeceptionResponse(payload)
                 }
@@ -344,10 +372,22 @@ export async function middleware(request: NextRequest) {
                         ip, method, path: pathname, userAgent,
                         threatType: 'rate_limit',
                         detail: `WAF Sentinel TARPIT: ${delayMs}ms (trust=${evalResult.trust_score})`,
+                        fingerprintHash,
+                        action: 'tarpit',
+                        responseDelayMs: delayMs,
                         supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
                     })
+
+                    // ── CORRECTION 4 : Trust decay sur tarpit ─────────
+                    // Chaque requête tarpitée dégrade le trust score (-3)
+                    // Ça fait progresser l'attaquant vers le blocage/déception
+                    updateIpMemory({
+                        ip, isAttack: true,
+                        attackType: 'tarpit_escalation',
+                        supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                    })
+
                     // Après le tarpit, continuer le traitement normal
-                    // (la requête passe mais avec un délai punitif)
                     break
                 }
 
@@ -367,6 +407,36 @@ export async function middleware(request: NextRequest) {
                     // Requête autorisée — continuer normalement
                     break
             }
+        }
+    }
+
+    // ─── 4b. CRS OBSERVATION MODE (post-RPC) ─────────────────
+    // CORRECTION 2 : Même quand le RPC a répondu 'allow' ou 'tarpit',
+    // on lance le CRS en mode OBSERVATION (pas de blocage) pour :
+    //   - Nourrir l'apprentissage automatique (learnAttackPattern)
+    //   - Détecter les campagnes (trackCampaign)
+    //   - Récompenser les IPs légitimes (trust +1)
+    //   - Enrichir les métriques WAF
+    if (rpcHandled && !emergencyBypass && !isAbsoluteBypass(pathname) && !isInternalPanelPath && SUPA_URL && SUPA_KEY) {
+        const searchParamsObs = request.nextUrl.searchParams.toString()
+        const obsVerdict = analyzeRequestFast(method, pathname, searchParamsObs, userAgent)
+
+        if (obsVerdict.blocked && obsVerdict.matches.length > 0) {
+            // Le CRS a détecté une menace que le RPC a laissé passer
+            // → On ne bloque PAS (le RPC a déjà décidé), mais on nourrit l'apprentissage
+            const topMatch = obsVerdict.matches[0]
+            const isInternalApi = pathname.startsWith('/api/analytics') ||
+                                  pathname.startsWith('/api/cron') ||
+                                  pathname.startsWith('/api/ceo')
+            if (!isInternalApi) {
+                trackViolation(ip, SUPA_URL, SUPA_KEY, {
+                    threatType: obsVerdict.topThreat || 'waf_observe',
+                    snippet: topMatch?.snippet?.slice(0, 120),
+                })
+            }
+        } else if (ip !== 'unknown') {
+            // Requête propre → récompenser le trust score (+1)
+            updateIpMemory({ ip, isAttack: false, supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY })
         }
     }
 
