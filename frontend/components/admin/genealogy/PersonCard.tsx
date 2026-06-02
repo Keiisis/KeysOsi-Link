@@ -2,7 +2,7 @@
 
 import { Person } from '@/lib/genealogy/types';
 import { ROLE_LABELS } from '@/lib/genealogy/requirements';
-import { User, CheckCircle2, AlertTriangle, AlertCircle } from 'lucide-react';
+import { User, CheckCircle2, AlertTriangle, AlertCircle, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PersonCardProps {
@@ -13,81 +13,139 @@ interface PersonCardProps {
 }
 
 export default function PersonCard({ person, status, onClick, selected }: PersonCardProps) {
-  const isMale = person.gender === 'male';
-  
-  // Custom classes and styles based on state
-  const statusStyles = {
+  const isSelf = person.is_self || person.relation_role === 'self';
+
+  const statusConfig = {
     complete: {
-      border: 'border-[#008751]/30 hover:border-[#008751]',
+      border: 'border-[#008751]/40',
+      ring: 'ring-[#008751]/30',
       text: 'text-[#008751]',
       bgGlow: 'bg-[#008751]/5',
       icon: CheckCircle2,
-      dotColor: 'bg-[#008751]'
+      dotColor: 'bg-[#008751]',
+      label: 'Complet',
     },
     partial: {
-      border: 'border-[#FCD116]/30 hover:border-[#FCD116]',
+      border: 'border-[#FCD116]/40',
+      ring: 'ring-[#FCD116]/30',
       text: 'text-[#FCD116]',
       bgGlow: 'bg-[#FCD116]/5',
       icon: AlertTriangle,
-      dotColor: 'bg-[#FCD116]'
+      dotColor: 'bg-[#FCD116]',
+      label: 'Partiel',
     },
     missing: {
-      border: 'border-[#E8112D]/20 hover:border-[#E8112D]/60',
+      border: 'border-[#E8112D]/20',
+      ring: 'ring-[#E8112D]/20',
       text: 'text-[#E8112D]/80',
-      bgGlow: 'bg-[#E8112D]/2',
+      bgGlow: 'bg-[#E8112D]/3',
       icon: AlertCircle,
-      dotColor: 'bg-[#E8112D]'
-    }
+      dotColor: 'bg-[#E8112D]',
+      label: 'Manquant',
+    },
   }[status];
 
-  const StatusIcon = statusStyles.icon;
+  const StatusIcon = statusConfig.icon;
+
+  // Avatar initials
+  const initials = [
+    (person.first_name || '')[0],
+    (person.last_name || '')[0],
+  ]
+    .filter(Boolean)
+    .join('')
+    .toUpperCase() || '?';
+
+  // Gender-based accent
+  const genderAccent =
+    person.gender === 'male'
+      ? 'from-blue-500/20 to-blue-900/10'
+      : person.gender === 'female'
+      ? 'from-pink-500/20 to-pink-900/10'
+      : 'from-gray-500/20 to-gray-700/10';
 
   return (
     <div
       onClick={onClick}
       className={cn(
-        "relative flex flex-col justify-between p-4 w-[190px] min-h-[110px] rounded-2xl cursor-pointer transition-all duration-300",
-        "bg-[#0a0f18]/80 backdrop-blur-md border border-white/5",
-        statusStyles.border,
-        selected ? "ring-2 ring-[#FCD116]/50 shadow-[0_0_20px_rgba(252,209,22,0.15)] bg-white/[0.04]" : "hover:bg-white/[0.02]"
+        'relative flex flex-col items-center w-[160px] min-h-[100px] rounded-2xl cursor-pointer transition-all duration-300 p-3',
+        'bg-[#0a0f18]/90 backdrop-blur-md border',
+        statusConfig.border,
+        selected
+          ? `ring-2 ${statusConfig.ring} shadow-lg shadow-white/5 bg-white/[0.06] scale-105`
+          : 'hover:bg-white/[0.03] hover:scale-[1.02]'
       )}
     >
-      {/* Background soft glow indicator */}
-      <div className={cn("absolute inset-0 rounded-2xl pointer-events-none -z-10 transition-opacity opacity-50 group-hover:opacity-100", statusStyles.bgGlow)} />
+      {/* Background gradient */}
+      <div
+        className={cn(
+          'absolute inset-0 rounded-2xl bg-gradient-to-b pointer-events-none -z-10 opacity-60',
+          genderAccent
+        )}
+      />
 
-      {/* Top Header Row */}
-      <div className="flex items-start justify-between gap-1.5">
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-black tracking-widest text-gray-500 uppercase">
-            {person.relation_role ? (ROLE_LABELS[person.relation_role] || person.relation_role) : 'Individu'}
-          </p>
-          <h4 className="text-[13px] font-black text-white truncate mt-1">
-            {person.first_name || 'Sans prénom'}
-          </h4>
-          <h4 className="text-[13px] font-black text-white truncate -mt-0.5">
-            {person.last_name || 'Sans nom'}
-          </h4>
+      {/* Self crown badge */}
+      {isSelf && (
+        <div className="absolute -top-2 -right-1 w-6 h-6 rounded-full bg-[#FCD116]/20 border border-[#FCD116]/30 flex items-center justify-center z-20">
+          <Crown size={10} className="text-[#FCD116]" />
         </div>
-        
-        {/* Status dot with ambient glow */}
-        <div className="flex-shrink-0 flex items-center justify-center mt-1">
-          <span className={cn("w-2.5 h-2.5 rounded-full relative flex", statusStyles.dotColor)}>
-            {status !== 'missing' && (
-              <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", statusStyles.dotColor)} />
-            )}
-          </span>
-        </div>
+      )}
+
+      {/* Avatar circle */}
+      <div
+        className={cn(
+          'w-11 h-11 rounded-full flex items-center justify-center text-sm font-black border-2 transition-all mb-2',
+          person.gender === 'male'
+            ? 'bg-blue-500/10 border-blue-500/20 text-blue-400'
+            : person.gender === 'female'
+            ? 'bg-pink-500/10 border-pink-500/20 text-pink-400'
+            : 'bg-gray-500/10 border-gray-500/20 text-gray-400'
+        )}
+      >
+        {initials}
       </div>
 
-      {/* Bottom Info Row */}
-      <div className="flex items-center justify-between border-t border-white/5 pt-2 mt-2">
-        <span className="text-[10px] font-semibold text-gray-400 font-mono">
+      {/* Name */}
+      <div className="text-center min-w-0 w-full">
+        <p className="text-[11px] font-black text-white truncate leading-tight">
+          {person.first_name || 'Sans prénom'}
+        </p>
+        <p className="text-[11px] font-bold text-gray-300 truncate leading-tight -mt-0.5">
+          {person.last_name || 'Sans nom'}
+        </p>
+      </div>
+
+      {/* Role label */}
+      <span className="text-[8px] font-mono font-bold text-gray-500 uppercase tracking-widest mt-1.5">
+        {person.relation_role
+          ? ROLE_LABELS[person.relation_role] || person.relation_role
+          : 'Individu'}
+      </span>
+
+      {/* Bottom status bar */}
+      <div className="flex items-center justify-between w-full border-t border-white/5 pt-1.5 mt-1.5">
+        <span className="text-[9px] font-semibold text-gray-500 font-mono">
           {person.birth_date ? new Date(person.birth_date).getFullYear() : '—'}
-          {person.death_date ? ` - ${new Date(person.death_date).getFullYear()}` : ''}
+          {person.death_date ? ` – ${new Date(person.death_date).getFullYear()}` : ''}
         </span>
-        
+
         <div className="flex items-center gap-1">
-          <StatusIcon size={12} className={statusStyles.text} />
+          <StatusIcon size={10} className={statusConfig.text} />
+          <span
+            className={cn(
+              'w-1.5 h-1.5 rounded-full relative',
+              statusConfig.dotColor
+            )}
+          >
+            {status === 'complete' && (
+              <span
+                className={cn(
+                  'animate-ping absolute inline-flex h-full w-full rounded-full opacity-50',
+                  statusConfig.dotColor
+                )}
+              />
+            )}
+          </span>
         </div>
       </div>
     </div>
