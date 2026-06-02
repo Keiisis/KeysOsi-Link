@@ -62,7 +62,7 @@ export default function DocumentUploader({
       const isExpirable = ['address_proof', 'criminal_record', 'identity', 'profession_proof', 'afro_descent_proof'].includes(docType);
 
       // Insert record inside documents table
-      const { error: insErr } = await supabase.from('documents').insert({
+      const { error: insErr } = await supabase.from('genealogy_documents').insert({
         user_id: user.id,
         tree_id: treeId,
         person_id: personId,

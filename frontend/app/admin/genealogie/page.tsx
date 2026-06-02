@@ -55,7 +55,7 @@ export default function AdminGenealogyPage() {
       // 2. Fetch persons and documents
       const [personsRes, docsRes] = await Promise.all([
         supabase.from('persons').select('*').eq('tree_id', tree!.id),
-        supabase.from('documents').select('*').eq('tree_id', tree!.id),
+        supabase.from('genealogy_documents').select('*').eq('tree_id', tree!.id),
       ]);
 
       if (personsRes.error) throw personsRes.error;
