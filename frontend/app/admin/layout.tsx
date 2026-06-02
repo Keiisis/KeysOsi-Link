@@ -13,7 +13,7 @@ import {
     Mail, FileText, Compass, X, PanelLeftClose, PanelLeft,
     BarChart3, FileSignature, FolderOpen, Palette, Calendar, Star,
     Languages, Radar, Box, Coins, Megaphone, Activity, Layers, Landmark,
-    ShieldAlert, KeyRound
+    ShieldAlert, KeyRound, GitFork
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -120,6 +120,7 @@ function AdminLayoutContent({
         { title: 'Documents', icon: FolderOpen, href: '/admin/documents' },
         { title: 'Contrats', icon: FileSignature, href: '/admin/contrats' },
         { title: 'Demandes Nat.', icon: Globe, href: '/admin/nationalite' },
+        { title: 'Généalogie', icon: GitFork, href: '/admin/genealogie' },
         { title: 'FAQ Nationalité', icon: HelpCircle, href: '/admin/nationalite/faq' },
 
         { title: 'Emails', icon: Mail, href: '/admin/email-templates' },
