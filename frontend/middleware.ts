@@ -21,7 +21,7 @@ import {
     isHoneypotPath,
     updateIpMemory,
     createAlert,
-    // ── Nouveaux modules Défense Active ──
+    // ── Modules Défense Active ──
     extractFingerprint,
     registerFingerprint,
     detectHeadlessBrowser,
@@ -31,6 +31,15 @@ import {
     refreshDeceptionPayloads,
     logDeceptionInteraction,
     applyTarpit,
+    // ── Modules Système Immunitaire ──
+    scanForSmuggling,
+    scanForSSRF,
+    scanForRCE,
+    trackIDORAttempt,
+    checkParameterTampering,
+    checkCanaryInRequest,
+    refreshCanaryCache,
+    reportCanaryTriggered,
     type ThreatType,
 } from '@/lib/waf'
 
@@ -43,6 +52,7 @@ import {
 //  0. WAF_EMERGENCY_BYPASS → passe auth uniquement, WAF désactivé
 //  1. Chemins login/reset/2fa → accès immédiat, zéro check
 //  2. Fingerprint extraction (headers HTTP → hash stable)
+//  2b. REQUEST SMUGGLING check (headers uniquement, ultra-rapide)
 //  3. Honeypot → faux payload WordPress/PHP crédible (déception)
 //  4. WAF SENTINEL RPC → waf_evaluate_request() retourne:
 //     - 'allow'   → continuer normalement
@@ -50,6 +60,11 @@ import {
 //     - 'deceive' → retourner un faux payload crédible (200 OK)
 //     - 'block'   → retourner 403
 //     - 'honeypot'→ retourner un faux formulaire WordPress
+//  4b. SYSTÈME IMMUNITAIRE (post-RPC, routes publiques) :
+//     - SSRF scan (query params + path → IPs internes, cloud metadata)
+//     - RCE scan (désérialisation, injection de commandes)
+//     - IDOR tracking (énumération séquentielle d'IDs)
+//     - CANARY tokens (réutilisation d'infos volées)
 //  5. FALLBACK CRS JS (si RPC échoue) :
 //     - IP bloquée / Trust score → 403
 //     - Géo-blocage → 403
@@ -229,6 +244,36 @@ export async function middleware(request: NextRequest) {
         } catch { /* fingerprint extraction non-critique */ }
     }
 
+    // ─── 2b. REQUEST SMUGGLING — Headers conflictuels ────────
+    // Détecte CL/TE conflicts, TE obfuscation, double CL, CRLF injection
+    // C'est TOUJOURS malveillant → blocage immédiat, aucun bypass
+    if (!emergencyBypass && ip !== 'unknown') {
+        try {
+            const smuggling = scanForSmuggling(request.headers)
+            if (smuggling.detected) {
+                if (SUPA_URL && SUPA_KEY) {
+                    logWafEvent({
+                        ip, method, path: pathname, userAgent,
+                        threatType: 'protocol_attack',
+                        detail: `REQUEST SMUGGLING [${smuggling.pattern}]: ${smuggling.detail} (confidence=${smuggling.confidence})`,
+                        fingerprintHash,
+                        action: 'block',
+                        score: smuggling.confidence,
+                        supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                    })
+                    createAlert({
+                        level: 'nuclear',
+                        message: `🔀 HTTP REQUEST SMUGGLING: IP ${ip} — ${smuggling.detail}`,
+                        context: { ip, pattern: smuggling.pattern, detail: smuggling.detail, fingerprint: fingerprintHash },
+                        supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                    })
+                    trackViolation(ip, SUPA_URL, SUPA_KEY, { threatType: 'protocol_attack' })
+                }
+                return wafBlock('Requête invalide.', 400)
+            }
+        } catch { /* non-critique */ }
+    }
+
     // ─── 3. HONEYPOT — Déception active sur chemins pièges ───
     // Au lieu de retourner un simple 404, on retourne un faux
     // formulaire WordPress/PHP crédible pour piéger l'attaquant
@@ -286,20 +331,29 @@ export async function middleware(request: NextRequest) {
 
         const evalResult = await evaluateRequestRPC({
             ip, path: pathname, fingerprintHash, userAgent,
+            method,
             supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
         })
 
         if (evalResult) {
             rpcHandled = true
 
-            switch (evalResult.action) {
+            // Normaliser les actions de l'ENUM WAF Ultimate v2 pour rétrocompatibilité
+            let normalizedAction = evalResult.action as string
+            if (normalizedAction === 'ban') normalizedAction = 'block'
+            if (normalizedAction === 'shadowban') normalizedAction = 'deceive'
+            if (normalizedAction === 'challenge') normalizedAction = 'tarpit'
+            if (normalizedAction === 'monitor') normalizedAction = 'allow'
+
+            switch (normalizedAction) {
                 case 'block': {
                     logWafEvent({
                         ip, method, path: pathname, userAgent,
                         threatType: 'blocked_ip',
-                        detail: `WAF Sentinel: ${evalResult.reason} (trust=${evalResult.trust_score})`,
+                        detail: `WAF Sentinel: ${evalResult.reason} (trust=${evalResult.trust_score}, risk=${evalResult.risk_score || 0})`,
                         fingerprintHash,
                         action: 'block',
+                        score: evalResult.risk_score ? Math.round(evalResult.risk_score) : 0,
                         supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
                     })
                     return wafBlock('Accès refusé.', 403)
@@ -340,9 +394,10 @@ export async function middleware(request: NextRequest) {
                     logWafEvent({
                         ip, method, path: pathname, userAgent,
                         threatType: detectedType,
-                        detail: `WAF Sentinel DECEIVE [${attackType}]: ${evalResult.reason} (trust=${evalResult.trust_score})`,
+                        detail: `WAF Sentinel DECEIVE [${attackType}]: ${evalResult.reason} (trust=${evalResult.trust_score}, risk=${evalResult.risk_score || 0})`,
                         fingerprintHash,
                         action: 'deceive',
+                        score: evalResult.risk_score ? Math.round(evalResult.risk_score) : 0,
                         supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
                     })
                     logDeceptionInteraction({
@@ -371,10 +426,11 @@ export async function middleware(request: NextRequest) {
                     logWafEvent({
                         ip, method, path: pathname, userAgent,
                         threatType: 'rate_limit',
-                        detail: `WAF Sentinel TARPIT: ${delayMs}ms (trust=${evalResult.trust_score})`,
+                        detail: `WAF Sentinel TARPIT: ${delayMs}ms (trust=${evalResult.trust_score}, risk=${evalResult.risk_score || 0})`,
                         fingerprintHash,
                         action: 'tarpit',
                         responseDelayMs: delayMs,
+                        score: evalResult.risk_score ? Math.round(evalResult.risk_score) : 0,
                         supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
                     })
 
@@ -410,20 +466,151 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    // ─── 4b. CRS OBSERVATION MODE (post-RPC) ─────────────────
-    // CORRECTION 2 : Même quand le RPC a répondu 'allow' ou 'tarpit',
-    // on lance le CRS en mode OBSERVATION (pas de blocage) pour :
-    //   - Nourrir l'apprentissage automatique (learnAttackPattern)
-    //   - Détecter les campagnes (trackCampaign)
-    //   - Récompenser les IPs légitimes (trust +1)
-    //   - Enrichir les métriques WAF
+    // ─── 4b. SYSTÈME IMMUNITAIRE (post-RPC) ───────────────────
+    // Couches de détection avancées qui complètent le RPC :
+    //   - SSRF, RCE, IDOR, Canary tokens
+    //   - CRS observation mode (apprentissage)
     if (rpcHandled && !emergencyBypass && !isAbsoluteBypass(pathname) && !isInternalPanelPath && SUPA_URL && SUPA_KEY) {
         const searchParamsObs = request.nextUrl.searchParams.toString()
+
+        // ── 4b.1 SSRF Detection ──────────────────────────────
+        // Scanne les query params et le path pour des IPs internes,
+        // cloud metadata endpoints, et schémas dangereux
+        try {
+            const ssrf = scanForSSRF(pathname, searchParamsObs)
+            if (ssrf.detected && ssrf.confidence >= 80) {
+                logWafEvent({
+                    ip, method, path: pathname, userAgent,
+                    threatType: 'ssrf' as ThreatType,
+                    detail: `SSRF [${ssrf.category}]: ${ssrf.detail} (confidence=${ssrf.confidence})`,
+                    fingerprintHash,
+                    action: 'block',
+                    score: ssrf.confidence,
+                    supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                })
+                createAlert({
+                    level: ssrf.confidence >= 95 ? 'nuclear' : 'critical',
+                    message: `🕳️ SSRF BLOQUÉ: IP ${ip} — ${ssrf.detail}`,
+                    context: { ip, category: ssrf.category, pattern: ssrf.pattern, fingerprint: fingerprintHash },
+                    supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                })
+                trackViolation(ip, SUPA_URL, SUPA_KEY, { threatType: 'ssrf' })
+                return wafBlock('Requête bloquée par le pare-feu applicatif.', 403)
+            }
+        } catch { /* non-critique */ }
+
+        // ── 4b.2 RCE Detection ───────────────────────────────
+        // Scanne pour désérialisation malveillante, injection shell,
+        // SSTI, et expression language injection
+        try {
+            const rce = scanForRCE(pathname, searchParamsObs)
+            if (rce.detected && rce.confidence >= 80) {
+                logWafEvent({
+                    ip, method, path: pathname, userAgent,
+                    threatType: 'command_injection' as ThreatType,
+                    detail: `RCE [${rce.category}]: ${rce.detail} (confidence=${rce.confidence})`,
+                    fingerprintHash,
+                    action: 'block',
+                    score: rce.confidence,
+                    supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                })
+                createAlert({
+                    level: rce.confidence >= 95 ? 'nuclear' : 'critical',
+                    message: `💀 RCE BLOQUÉ [${rce.category}]: IP ${ip} — ${rce.pattern}`,
+                    context: { ip, category: rce.category, pattern: rce.pattern, fingerprint: fingerprintHash },
+                    supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                })
+                trackViolation(ip, SUPA_URL, SUPA_KEY, { threatType: 'command_injection' })
+                return wafBlock('Requête bloquée par le pare-feu applicatif.', 403)
+            }
+        } catch { /* non-critique */ }
+
+        // ── 4b.3 IDOR / BOLA Tracking ────────────────────────
+        // Surveille l'accès à des IDs différents sur les endpoints API
+        // Détecte l'énumération séquentielle et le bruteforce d'UUIDs
+        if (pathname.startsWith('/api/')) {
+            try {
+                const idor = trackIDORAttempt(ip, pathname, searchParamsObs, fingerprintHash)
+                if (idor.suspicious && idor.confidence >= 80) {
+                    logWafEvent({
+                        ip, method, path: pathname, userAgent,
+                        threatType: 'scanner_detection' as ThreatType,
+                        detail: `IDOR [${idor.pattern}]: ${idor.detail} (${idor.distinctIds} IDs)`,
+                        fingerprintHash,
+                        action: 'block',
+                        score: idor.confidence,
+                        supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                    })
+                    createAlert({
+                        level: 'critical',
+                        message: `🔐 IDOR DÉTECTÉ [${idor.pattern}]: IP ${ip} — ${idor.distinctIds} IDs sur ${idor.endpointPattern}`,
+                        context: { ip, pattern: idor.pattern, distinctIds: idor.distinctIds, endpoint: idor.endpointPattern, fingerprint: fingerprintHash },
+                        supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                    })
+                    trackViolation(ip, SUPA_URL, SUPA_KEY, { threatType: 'enumeration' })
+                    return wafBlock('Accès refusé — activité suspecte détectée.', 403)
+                }
+
+                // Parameter tampering check (mass assignment)
+                const tampering = checkParameterTampering(searchParamsObs)
+                if (tampering.detected) {
+                    logWafEvent({
+                        ip, method, path: pathname, userAgent,
+                        threatType: 'scanner_detection' as ThreatType,
+                        detail: `PARAMETER TAMPERING: ${tampering.detail}`,
+                        fingerprintHash,
+                        action: 'tarpit',
+                        supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                    })
+                    // Ne bloque pas mais dégrade le trust
+                    updateIpMemory({ ip, isAttack: true, attackType: 'mass_assignment', supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY })
+                }
+            } catch { /* non-critique */ }
+        }
+
+        // ── 4b.4 Canary Token Detection ───────────────────────
+        // Vérifie si la requête contient un canary token réutilisé
+        // (info volée d'un faux payload de déception)
+        try {
+            refreshCanaryCache(SUPA_URL, SUPA_KEY).catch(() => {})
+            const canary = checkCanaryInRequest(pathname, searchParamsObs)
+            if (canary.triggered) {
+                logWafEvent({
+                    ip, method, path: pathname, userAgent,
+                    threatType: 'honeypot' as ThreatType,
+                    detail: `🐦 CANARY TOKEN: ${canary.detail}`,
+                    fingerprintHash,
+                    action: 'block',
+                    score: 100,
+                    supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                })
+                createAlert({
+                    level: 'nuclear',
+                    message: `🐦 CANARY TOKEN RÉUTILISÉ: IP ${ip} a utilisé des infos volées — ${canary.tokens.join(', ')}`,
+                    context: { ip, tokens: canary.tokens, path: pathname, fingerprint: fingerprintHash },
+                    supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                })
+                // Rapporter chaque token déclenché
+                for (const token of canary.tokens) {
+                    reportCanaryTriggered({
+                        token, ip, path: pathname,
+                        context: { userAgent, fingerprint: fingerprintHash },
+                        supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                    })
+                }
+                setCachedIpBlock(ip, true)
+                return wafBlock('Accès refusé.', 403)
+            }
+        } catch { /* non-critique */ }
+
+        // ── 4b.5 CRS OBSERVATION MODE ────────────────────────
+        // Le CRS en mode observation (pas de blocage) pour :
+        //   - Nourrir l'apprentissage automatique
+        //   - Détecter les campagnes
+        //   - Récompenser les IPs légitimes
         const obsVerdict = analyzeRequestFast(method, pathname, searchParamsObs, userAgent)
 
         if (obsVerdict.blocked && obsVerdict.matches.length > 0) {
-            // Le CRS a détecté une menace que le RPC a laissé passer
-            // → On ne bloque PAS (le RPC a déjà décidé), mais on nourrit l'apprentissage
             const topMatch = obsVerdict.matches[0]
             const isInternalApi = pathname.startsWith('/api/analytics') ||
                                   pathname.startsWith('/api/cron') ||
@@ -435,7 +622,6 @@ export async function middleware(request: NextRequest) {
                 })
             }
         } else if (ip !== 'unknown') {
-            // Requête propre → récompenser le trust score (+1)
             updateIpMemory({ ip, isAttack: false, supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY })
         }
     }

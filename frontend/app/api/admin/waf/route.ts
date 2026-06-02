@@ -9,7 +9,7 @@ type IpBlockRow = Record<string, any>
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const serviceKey  = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-// GET /api/admin/waf?view=logs|blocks|fingerprints|deceptions|honeypots|campaigns|tarpits&limit=100&offset=0
+// GET /api/admin/waf?view=logs|blocks|fingerprints|deceptions|honeypots|campaigns|tarpits|canaries|honey_records|ssrf_attempts|idor_patterns&limit=100&offset=0
 export async function GET(request: NextRequest) {
     const auth = await verifyApiAuth(request, 'admin')
     if (!auth.authenticated) return auth.error!
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
 
     if (view === 'campaigns') {
         const { data, count, error } = await supabase
-            .from('waf_campaigns')
+            .from('waf_attack_campaigns')
             .select('*', { count: 'exact' })
             .order('last_seen', { ascending: false })
             .range(offset, offset + limit - 1)
@@ -96,6 +96,49 @@ export async function GET(request: NextRequest) {
             .limit(50)
 
         return NextResponse.json({ config: config || [], tarpitedIps: tarpitedIps || [] })
+    }
+
+    // ── Vues Système Immunitaire ───────────────────────────────
+    if (view === 'canaries') {
+        const { data, count, error } = await supabase
+            .from('waf_canary_tokens')
+            .select('*', { count: 'exact' })
+            .order('triggered_count', { ascending: false })
+            .range(offset, offset + limit - 1)
+
+        return NextResponse.json({ canaries: data || [], total: count || 0, error: error?.message })
+    }
+
+    if (view === 'honey_records') {
+        const { data, count, error } = await supabase
+            .from('waf_honey_records')
+            .select('*', { count: 'exact' })
+            .order('access_count', { ascending: false })
+            .range(offset, offset + limit - 1)
+
+        return NextResponse.json({ honeyRecords: data || [], total: count || 0, error: error?.message })
+    }
+
+    if (view === 'ssrf_attempts') {
+        const { data, count, error } = await supabase
+            .from('waf_logs')
+            .select('*', { count: 'exact' })
+            .in('threat_type', ['ssrf', 'protocol_attack'])
+            .order('created_at', { ascending: false })
+            .range(offset, offset + limit - 1)
+
+        return NextResponse.json({ ssrfAttempts: data || [], total: count || 0, error: error?.message })
+    }
+
+    if (view === 'idor_patterns') {
+        const { data, count, error } = await supabase
+            .from('waf_idor_tracking')
+            .select('*', { count: 'exact' })
+            .eq('is_suspicious', true)
+            .order('created_at', { ascending: false })
+            .range(offset, offset + limit - 1)
+
+        return NextResponse.json({ idorPatterns: data || [], total: count || 0, error: error?.message })
     }
 
     // ── Vue résumé enrichie (utilise RPC get_waf_stats) ───────
@@ -207,6 +250,17 @@ export async function POST(request: NextRequest) {
         const { data, error } = await supabase.rpc('waf_daily_maintenance')
         if (error) return NextResponse.json({ error: error.message }, { status: 500 })
         return NextResponse.json({ success: true, maintenance: data })
+    }
+
+    // ── Nuclear Challenge — Mode Miroir ──────────────────────
+    if (action === 'nuclear_challenge') {
+        const targetIp = ip || ''
+        const { data, error } = await supabase.rpc('waf_trigger_nuclear_challenge', {
+            p_ip: targetIp,
+            p_reason: reason || 'admin_manual',
+        })
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+        return NextResponse.json({ success: true, nuclear: data })
     }
 
     // ── Bloquer une IP manuellement (action par défaut) ──────

@@ -1,252 +1,448 @@
 -- ══════════════════════════════════════════════════════════════
--- MIGRATION : WAF Ultime — Défense Active · Tables & Colonnes
+-- MIGRATION : WAF ULTIMATE v2 — Défense Active & Adaptative
+-- Cyber-déception · Corrélation comportementale · Auto-scoring
 -- À EXÉCUTER dans Supabase Dashboard > SQL Editor
--- Dépendances : 20260405_waf_memory_learning, 20260406_waf_autonomous
+-- Dépendances : 20260405_waf_memory_learning, 20260406_waf_autonomous,
+--               20260601_waf_ultimate_defense
 -- ══════════════════════════════════════════════════════════════
 
--- ── 1. Colonnes supplémentaires sur waf_ip_memory ─────────────
+-- ── 0. Types ENUM stricts (intégrité + perf vs TEXT libre) ────
+DO $$ BEGIN
+    CREATE TYPE waf_action AS ENUM (
+        'allow', 'monitor', 'challenge', 'tarpit',
+        'deceive', 'block', 'ban', 'shadowban'
+    );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE waf_attack_class AS ENUM (
+        'sql_injection', 'xss', 'lfi', 'rfi', 'rce', 'ssrf',
+        'ssti', 'xxe', 'path_traversal', 'scanner_detection',
+        'brute_force', 'credential_stuffing', 'enumeration',
+        'honeypot', 'protocol_anomaly', 'rate_abuse', 'unknown'
+    );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ── 1. Enrichissement waf_ip_memory (scoring + géo + ASN) ─────
 ALTER TABLE public.waf_ip_memory
-    ADD COLUMN IF NOT EXISTS fingerprint_hashes TEXT[] DEFAULT '{}',
-    ADD COLUMN IF NOT EXISTS tarpit_level       INTEGER DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS deception_count    INTEGER DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS last_action        TEXT DEFAULT 'allow',
-    ADD COLUMN IF NOT EXISTS ip_hopper          BOOLEAN DEFAULT false;
+    ADD COLUMN IF NOT EXISTS fingerprint_hashes  TEXT[]  DEFAULT '{}',
+    ADD COLUMN IF NOT EXISTS tarpit_level         INTEGER DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS deception_count      INTEGER DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS last_action          TEXT    DEFAULT 'allow',
+    ADD COLUMN IF NOT EXISTS ip_hopper            BOOLEAN DEFAULT false,
+    -- Nouveaux : enrichissement threat intel
+    ADD COLUMN IF NOT EXISTS asn                  INTEGER,
+    ADD COLUMN IF NOT EXISTS asn_org              TEXT,
+    ADD COLUMN IF NOT EXISTS country_code         TEXT,
+    ADD COLUMN IF NOT EXISTS is_datacenter        BOOLEAN DEFAULT false,
+    ADD COLUMN IF NOT EXISTS is_tor               BOOLEAN DEFAULT false,
+    ADD COLUMN IF NOT EXISTS is_vpn               BOOLEAN DEFAULT false,
+    -- Scoring décroissant dans le temps (threat decay)
+    ADD COLUMN IF NOT EXISTS threat_score         NUMERIC(6,2) DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS threat_velocity      NUMERIC(8,4) DEFAULT 0,  -- vitesse d'escalade
+    ADD COLUMN IF NOT EXISTS score_decay_at       TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS campaign_id          UUID,
+    ADD COLUMN IF NOT EXISTS attack_vectors       waf_attack_class[] DEFAULT '{}';
 
--- ── 2. Colonnes supplémentaires sur waf_logs ──────────────────
+-- ── 2. Enrichissement waf_logs (forensic + corrélation) ───────
 ALTER TABLE public.waf_logs
-    ADD COLUMN IF NOT EXISTS action           TEXT DEFAULT 'block',
-    ADD COLUMN IF NOT EXISTS response_delay_ms INTEGER DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS fingerprint_hash TEXT DEFAULT '';
+    ADD COLUMN IF NOT EXISTS action             TEXT    DEFAULT 'block',
+    ADD COLUMN IF NOT EXISTS response_delay_ms  INTEGER DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS fingerprint_hash   TEXT    DEFAULT '',
+    -- Nouveaux : richesse forensique
+    ADD COLUMN IF NOT EXISTS attack_class       waf_attack_class DEFAULT 'unknown',
+    ADD COLUMN IF NOT EXISTS confidence         NUMERIC(5,2) DEFAULT 0,    -- 0-100
+    ADD COLUMN IF NOT EXISTS matched_rule_ids   TEXT[]  DEFAULT '{}',
+    ADD COLUMN IF NOT EXISTS request_entropy    NUMERIC(6,3),              -- détection payload obfusqué
+    ADD COLUMN IF NOT EXISTS campaign_id        UUID,
+    ADD COLUMN IF NOT EXISTS geo_country        TEXT,
+    ADD COLUMN IF NOT EXISTS asn                INTEGER;
 
--- ── 3. Table : Device Fingerprints ────────────────────────────
--- Empreintes navigateur persistantes pour traquer les attaquants
--- même après changement d'IP (proxy, VPN, Tor)
+-- ── 3. Table : Device Fingerprints (avec décroissance + entropie) ─
 CREATE TABLE IF NOT EXISTS public.waf_device_fingerprints (
     hash            TEXT PRIMARY KEY,
     components      JSONB NOT NULL DEFAULT '{}',
-    -- Composants : ua_family, os, accept_lang, accept_enc,
-    --   sec_ch_ua, sec_ch_platform, sec_ch_mobile, timezone_offset,
-    --   screen_res, canvas_hash, webgl_vendor, fonts_hash
     associated_ips  TEXT[] DEFAULT '{}' NOT NULL,
+    asn_history     INTEGER[] DEFAULT '{}' NOT NULL,   -- ASN traversés
+    country_history TEXT[] DEFAULT '{}' NOT NULL,      -- pays traversés
     first_seen      TIMESTAMPTZ DEFAULT now() NOT NULL,
     last_seen       TIMESTAMPTZ DEFAULT now() NOT NULL,
-    trust_score     INTEGER DEFAULT 50 NOT NULL,
-    total_requests  INTEGER DEFAULT 0 NOT NULL,
-    blocked_count   INTEGER DEFAULT 0 NOT NULL,
+    trust_score     NUMERIC(6,2) DEFAULT 50 NOT NULL,
+    stability_score NUMERIC(6,2) DEFAULT 50 NOT NULL,  -- cohérence des composants
+    total_requests  BIGINT  DEFAULT 0 NOT NULL,
+    blocked_count   BIGINT  DEFAULT 0 NOT NULL,
+    deceived_count  BIGINT  DEFAULT 0 NOT NULL,
+    distinct_ips    INTEGER DEFAULT 0 NOT NULL,         -- cardinalité = signal hopper
     is_known_bad    BOOLEAN DEFAULT false NOT NULL,
     tags            TEXT[] DEFAULT '{}' NOT NULL,
-    -- Tags possibles : 'ip_hopper', 'scanner', 'bot', 'tor_exit',
-    --   'proxy', 'headless', 'automated'
-    CONSTRAINT fp_trust_range CHECK (trust_score >= 0 AND trust_score <= 100)
+    campaign_id     UUID,
+    CONSTRAINT fp_trust_range CHECK (trust_score >= 0 AND trust_score <= 100),
+    CONSTRAINT fp_stab_range  CHECK (stability_score >= 0 AND stability_score <= 100)
 );
 
 CREATE INDEX IF NOT EXISTS idx_waf_fp_trust
-    ON public.waf_device_fingerprints(trust_score)
-    WHERE trust_score < 30;
+    ON public.waf_device_fingerprints(trust_score) WHERE trust_score < 30;
 CREATE INDEX IF NOT EXISTS idx_waf_fp_bad
-    ON public.waf_device_fingerprints(is_known_bad)
-    WHERE is_known_bad = true;
+    ON public.waf_device_fingerprints(is_known_bad) WHERE is_known_bad = true;
 CREATE INDEX IF NOT EXISTS idx_waf_fp_last_seen
     ON public.waf_device_fingerprints(last_seen DESC);
+CREATE INDEX IF NOT EXISTS idx_waf_fp_campaign
+    ON public.waf_device_fingerprints(campaign_id) WHERE campaign_id IS NOT NULL;
+-- Recherche GIN sur IP associées (jointure rapide hopper)
+CREATE INDEX IF NOT EXISTS idx_waf_fp_ips_gin
+    ON public.waf_device_fingerprints USING GIN (associated_ips);
+CREATE INDEX IF NOT EXISTS idx_waf_fp_tags_gin
+    ON public.waf_device_fingerprints USING GIN (tags);
 
--- ── 4. Table : Configuration Tarpitting ───────────────────────
--- Délais progressifs selon le niveau de menace
+-- ── 4. Table : Campagnes d'attaque (corrélation multi-IP) ─────
+-- Regroupe des attaquants distincts en une seule campagne coordonnée
+CREATE TABLE IF NOT EXISTS public.waf_attack_campaigns (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    label           TEXT NOT NULL DEFAULT 'auto-detected',
+    signature_hash  TEXT,                                -- pattern commun (TTP)
+    attack_classes  waf_attack_class[] DEFAULT '{}',
+    distinct_ips    INTEGER DEFAULT 0,
+    distinct_fps    INTEGER DEFAULT 0,
+    total_events    BIGINT  DEFAULT 0,
+    severity        INTEGER DEFAULT 1,                   -- 1-10
+    is_active       BOOLEAN DEFAULT true,
+    first_seen      TIMESTAMPTZ DEFAULT now() NOT NULL,
+    last_seen       TIMESTAMPTZ DEFAULT now() NOT NULL,
+    notes           TEXT DEFAULT '',
+    CONSTRAINT camp_sev CHECK (severity BETWEEN 1 AND 10)
+);
+CREATE INDEX IF NOT EXISTS idx_waf_camp_active
+    ON public.waf_attack_campaigns(is_active, severity DESC) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_waf_camp_sig
+    ON public.waf_attack_campaigns(signature_hash);
+
+-- ── 5. Table : Configuration Tarpitting (adaptative) ──────────
 CREATE TABLE IF NOT EXISTS public.waf_tarpit_config (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    trust_min       INTEGER NOT NULL,  -- trust score minimum (inclusive)
-    trust_max       INTEGER NOT NULL,  -- trust score maximum (exclusive)
-    delay_ms        INTEGER NOT NULL,  -- délai de réponse en millisecondes
-    jitter_ms       INTEGER DEFAULT 0, -- variation aléatoire (+/-)
+    trust_min       INTEGER NOT NULL,
+    trust_max       INTEGER NOT NULL,
+    delay_ms        INTEGER NOT NULL,
+    jitter_ms       INTEGER DEFAULT 0,
+    -- Nouveaux : escalade dynamique
+    backoff_factor  NUMERIC(4,2) DEFAULT 1.0,   -- multiplicateur par récidive
+    max_delay_ms    INTEGER DEFAULT 30000,
+    drip_bytes      INTEGER DEFAULT 0,          -- slow-drip de la réponse (octets/intervalle)
     description     TEXT NOT NULL DEFAULT '',
     enabled         BOOLEAN DEFAULT true NOT NULL,
-    CONSTRAINT trust_order CHECK (trust_min < trust_max),
-    CONSTRAINT delay_positive CHECK (delay_ms >= 0 AND delay_ms <= 30000)
+    CONSTRAINT trust_order    CHECK (trust_min < trust_max),
+    CONSTRAINT delay_positive CHECK (delay_ms >= 0 AND delay_ms <= 30000),
+    CONSTRAINT backoff_pos    CHECK (backoff_factor >= 1.0)
 );
 
--- Configuration par défaut : escalade progressive
-INSERT INTO public.waf_tarpit_config (trust_min, trust_max, delay_ms, jitter_ms, description) VALUES
-    (40, 50, 0,    0,    'Neutre — aucun délai'),
-    (30, 40, 500,  200,  'Suspicion légère — 0.5s'),
-    (20, 30, 2000, 500,  'Suspicion modérée — 2s'),
-    (10, 20, 5000, 1000, 'Haute suspicion — 5s'),
-    (0,  10, 8000, 2000, 'Danger critique — 8s (max Vercel)')
+INSERT INTO public.waf_tarpit_config
+    (trust_min, trust_max, delay_ms, jitter_ms, backoff_factor, drip_bytes, description) VALUES
+    (40, 50, 0,    0,    1.0, 0,  'Neutre — aucun délai'),
+    (30, 40, 500,  200,  1.3, 0,  'Suspicion légère — 0.5s, backoff x1.3'),
+    (20, 30, 2000, 500,  1.5, 64, 'Suspicion modérée — 2s + slow-drip 64o'),
+    (10, 20, 5000, 1000, 1.8, 16, 'Haute suspicion — 5s + drip 16o'),
+    (0,  10, 8000, 2000, 2.0, 4,  'Danger critique — 8s + drip 4o (étranglement max)')
 ON CONFLICT DO NOTHING;
 
--- ── 5. Table : Payloads de Déception ──────────────────────────
--- Bibliothèque de faux payloads par type d'attaque
--- L'attaquant reçoit une réponse crédible mais totalement fausse
+-- ── 6. Table : Payloads de Déception (rotation pondérée + TTP) ─
 CREATE TABLE IF NOT EXISTS public.waf_deception_payloads (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    attack_type     TEXT NOT NULL,       -- sql_injection, xss, lfi, rce, scanner, etc.
-    payload_name    TEXT NOT NULL,        -- identifiant lisible
-    status_code     INTEGER DEFAULT 200,  -- code HTTP de la réponse
-    content_type    TEXT DEFAULT 'text/html',
-    response_body   TEXT NOT NULL,        -- corps de la fausse réponse
-    response_headers JSONB DEFAULT '{}',  -- headers additionnels
-    description     TEXT DEFAULT '',
-    rotation_weight INTEGER DEFAULT 1,    -- poids pour la rotation aléatoire
-    enabled         BOOLEAN DEFAULT true NOT NULL,
-    created_at      TIMESTAMPTZ DEFAULT now() NOT NULL
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    attack_type      waf_attack_class NOT NULL,
+    payload_name     TEXT NOT NULL,
+    status_code      INTEGER DEFAULT 200,
+    content_type     TEXT DEFAULT 'text/html',
+    response_body    TEXT NOT NULL,
+    response_headers JSONB DEFAULT '{}',
+    description      TEXT DEFAULT '',
+    rotation_weight  INTEGER DEFAULT 1,
+    served_count     BIGINT  DEFAULT 0,          -- stats d'usage
+    bait_tokens      TEXT[]  DEFAULT '{}',       -- canary tokens injectés (traque réutilisation)
+    enabled          BOOLEAN DEFAULT true NOT NULL,
+    created_at       TIMESTAMPTZ DEFAULT now() NOT NULL,
+    CONSTRAINT dec_weight CHECK (rotation_weight >= 0)
 );
-
 CREATE INDEX IF NOT EXISTS idx_waf_deception_type
-    ON public.waf_deception_payloads(attack_type, enabled)
-    WHERE enabled = true;
+    ON public.waf_deception_payloads(attack_type, enabled) WHERE enabled = true;
 
--- ── 6. Payloads de déception pré-chargés ──────────────────────
+-- (Tes payloads existants restent valides — exemple condensé conservé)
+INSERT INTO public.waf_deception_payloads
+    (attack_type, payload_name, status_code, content_type, response_body, response_headers, bait_tokens, description) VALUES
+('sql_injection','fake_mysql_error',500,'text/html; charset=utf-8',
+ E'<!DOCTYPE html><html><head><title>Database Error</title></head><body><h1>Database Error</h1><p><b>MySQL Error 1045:</b> Access denied for user ''webapp_prod''@''10.0.3.42'' (using password: YES)</p><p>Server: <code>db-replica-03.internal.corp</code></p></body></html>',
+ '{"X-Powered-By":"PHP/7.4.33","Server":"Apache/2.4.41 (Ubuntu)"}',
+ ARRAY['db-replica-03.internal.corp','webapp_prod'],
+ 'Faux MySQL avec canary tokens — détecte la réutilisation des infos leak')
+ON CONFLICT DO NOTHING;
 
--- SQL Injection → Faux dump MySQL
-INSERT INTO public.waf_deception_payloads (attack_type, payload_name, status_code, content_type, response_body, response_headers, description) VALUES
-(
-    'sql_injection',
-    'fake_mysql_error',
-    500,
-    'text/html; charset=utf-8',
-    E'<!DOCTYPE html>\n<html><head><title>Database Error</title></head><body>\n<h1>Database Error</h1>\n<p><b>MySQL Error 1045:</b> Access denied for user ''webapp_prod''@''10.0.3.42'' (using password: YES)</p>\n<p>Query: <code>SELECT * FROM users WHERE id = ''''</code></p>\n<p>Table: <code>prod_users_v2</code></p>\n<p>Server: <code>db-replica-03.internal.corp</code></p>\n<!-- Debug: MySQL 5.7.38-log, InnoDB engine, connection pool: 3/50 -->\n</body></html>',
-    '{"X-Powered-By": "PHP/7.4.33", "Server": "Apache/2.4.41 (Ubuntu)", "X-DB-Host": "db-replica-03.internal.corp"}',
-    'Faux message erreur MySQL avec infos serveur fictives — attire l''attaquant vers des cibles inexistantes'
-),
-(
-    'sql_injection',
-    'fake_table_dump',
-    200,
-    'text/html; charset=utf-8',
-    E'<!DOCTYPE html>\n<html><body>\n<h2>Query Results</h2>\n<table border="1">\n<tr><th>id</th><th>username</th><th>email</th><th>password_hash</th><th>role</th></tr>\n<tr><td>1</td><td>admin_legacy</td><td>admin@old-system.local</td><td>$2b$10$xK9Zq.FAKE.HASH.NOT.REAL.JUST.HONEYPOT</td><td>admin</td></tr>\n<tr><td>2</td><td>dev_test</td><td>dev@test.internal</td><td>$2b$10$pQ8Yw.FAKE.HASH.DECOY.TRAP.LURE.BAIT</td><td>developer</td></tr>\n<tr><td>3</td><td>backup_svc</td><td>backup@automation.local</td><td>$2b$10$rM7Xv.FAKE.HASH.DEAD.END.NULL.VOID</td><td>service</td></tr>\n</table>\n<p><small>3 rows in set (0.023 sec) — prod_users_v2@db-replica-03</small></p>\n</body></html>',
-    '{"X-Powered-By": "PHP/7.4.33", "Server": "Apache/2.4.41 (Ubuntu)"}',
-    'Fausse table users avec hash bcrypt fictifs — l''attaquant perd du temps à cracker des hash inexistants'
-),
--- XSS → Faux cookie de session
-(
-    'xss',
-    'fake_session_cookie',
-    200,
-    'text/html; charset=utf-8',
-    E'<!DOCTYPE html>\n<html><head><title>Dashboard</title></head><body>\n<script>\n// Session token refresh\ndocument.cookie = "PHPSESSID=fake_" + Math.random().toString(36).substr(2, 32) + "; path=/; HttpOnly";\ndocument.cookie = "csrf_token=decoy_" + Date.now().toString(36) + "; path=/";\ndocument.cookie = "user_role=admin; path=/";\n// API endpoint: /api/v1/internal/admin\nconsole.log("Session refreshed for user: admin_legacy");\n</script>\n<h1>Welcome back, Admin</h1>\n<p>Last login: 2 hours ago from 10.0.1.55</p>\n</body></html>',
-    '{"Set-Cookie": "PHPSESSID=decoy_session_trap_not_real; path=/; HttpOnly", "X-Powered-By": "Express/4.18.2"}',
-    'Faux cookie de session avec infos admin fictives — l''attaquant tente d''utiliser un token invalide'
-),
--- LFI → Faux /etc/passwd
-(
-    'lfi',
-    'fake_etc_passwd',
-    200,
-    'text/plain',
-    E'root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\nbin:x:2:2:bin:/bin:/usr/sbin/nologin\nsys:x:3:3:sys:/dev:/usr/sbin/nologin\nwww-data:x:33:33:www-data:/var/www:/usr/sbin/nologin\npostgres:x:109:117:PostgreSQL administrator,,,:/var/lib/postgresql:/bin/bash\nwebapp:x:1001:1001:Web Application:/home/webapp:/bin/bash\nbackup:x:1002:1002:Backup Service:/var/backups:/usr/sbin/nologin\ndeploy:x:1003:1003:Deploy CI/CD:/opt/deploy:/bin/bash\nredis:x:110:120::/var/lib/redis:/usr/sbin/nologin\nmysql:x:111:121:MySQL Server,,,:/var/lib/mysql:/bin/false\njira_svc:x:1004:1004:Jira Service:/opt/jira:/usr/sbin/nologin',
-    '{"Server": "nginx/1.18.0", "X-Served-By": "web-prod-02"}',
-    'Faux fichier /etc/passwd avec comptes système fictifs — l''attaquant tente de bruteforcer des comptes inexistants'
-),
--- Scanner → Faux serveur obsolète
-(
-    'scanner_detection',
-    'fake_vulnerable_server',
-    200,
-    'text/html; charset=utf-8',
-    E'<!DOCTYPE html>\n<html>\n<head><title>Apache2 Ubuntu Default Page: It works</title></head>\n<body>\n<h1>It works!</h1>\n<p>This is the default welcome page used to test the correct operation of the Apache2 server after installation on Ubuntu systems.</p>\n<p>Server: Apache/2.2.22 (Ubuntu)</p>\n<p>PHP Version: 5.4.45</p>\n<!-- phpinfo() available at /info.php -->\n<!-- Admin panel: /administrator/ -->\n<!-- Backup: /backup/db_dump_2024.sql.gz -->\n</body></html>',
-    '{"Server": "Apache/2.2.22 (Ubuntu)", "X-Powered-By": "PHP/5.4.45", "X-Generator": "WordPress 4.1.1"}',
-    'Fausse page Apache/PHP obsolète avec commentaires HTML alléchants — le scanner pense avoir trouvé un serveur vulnérable'
-),
--- RCE → Faux output shell
-(
-    'rce',
-    'fake_shell_output',
-    200,
-    'text/plain',
-    E'bash: /usr/bin/id: Permission denied\nwww-data@web-prod-02:/var/www/html$ whoami\nwww-data\nwww-data@web-prod-02:/var/www/html$ cat /etc/hostname\nweb-prod-02\nwww-data@web-prod-02:/var/www/html$ uname -a\nLinux web-prod-02 4.15.0-213-generic #224-Ubuntu SMP Mon Jun 19 13:30:12 UTC 2023 x86_64\nwww-data@web-prod-02:/var/www/html$ ls -la /home/\ntotal 16\ndrwxr-xr-x  4 root   root   4096 Jan 15 08:30 .\ndrwxr-xr-x 23 root   root   4096 Jan 15 08:25 ..\ndrwxr-xr-x  5 webapp webapp 4096 Mar 22 14:10 webapp\ndrwxr-xr-x  3 deploy deploy 4096 Feb 28 09:45 deploy\nwww-data@web-prod-02:/var/www/html$ sudo -l\n[sudo] password for www-data: \nSorry, user www-data may not run sudo on web-prod-02.',
-    '{"Server": "nginx/1.18.0"}',
-    'Faux output shell avec hostname et users fictifs — l''attaquant pense avoir un accès shell limité'
-),
--- Honeypot → Faux login WordPress
-(
-    'honeypot',
-    'fake_wp_login',
-    200,
-    'text/html; charset=utf-8',
-    E'<!DOCTYPE html>\n<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US">\n<head>\n<title>Log In &lsaquo; Corporate Blog &#8212; WordPress</title>\n<meta name="robots" content="noindex,nofollow" />\n<style>body{background:#f1f1f1;font-family:-apple-system,sans-serif}.login{width:320px;margin:0 auto;padding:8% 0 0}#login h1 a{background:url(/wp-admin/images/wordpress-logo.svg) no-repeat center;width:84px;height:84px;display:block;margin:0 auto 25px}form{background:#fff;border:1px solid #c3c4c7;padding:26px 24px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.04)}input[type=text],input[type=password]{width:100%;padding:6px 10px;margin:4px 0 16px;border:1px solid #8c8f94;border-radius:4px;font-size:24px}input[type=submit]{background:#2271b1;border:1px solid #2271b1;color:#fff;padding:6px 30px;border-radius:4px;font-size:13px;cursor:pointer}input[type=submit]:hover{background:#135e96}.forgetmenot{float:left;margin:8px 0}</style>\n</head>\n<body class="login">\n<div id="login">\n<h1><a href="https://wordpress.org/" title="Powered by WordPress"></a></h1>\n<form method="post" action="/wp-login.php">\n<p><label for="user_login">Username or Email Address</label>\n<input type="text" name="log" id="user_login" size="20" autocapitalize="off" /></p>\n<p><label for="user_pass">Password</label>\n<input type="password" name="pwd" id="user_pass" size="20" /></p>\n<p class="forgetmenot"><input name="rememberme" type="checkbox" id="rememberme" value="forever" /> <label for="rememberme">Remember Me</label></p>\n<p><input type="submit" name="wp-submit" value="Log In" /></p>\n<input type="hidden" name="redirect_to" value="/wp-admin/" />\n</form>\n<p><a href="/wp-login.php?action=lostpassword">Lost your password?</a></p>\n</div>\n<!-- WP 6.4.2 | Theme: flavor-developer | MySQL: db-master-01 -->\n</body></html>',
-    '{"Server": "Apache/2.4.57", "X-Powered-By": "PHP/8.1.27", "X-Pingback": "/xmlrpc.php"}',
-    'Faux formulaire de login WordPress — capture les credentials tentés par l''attaquant'
-);
-
--- ── 7. Table : Interactions Honeypot ──────────────────────────
--- Journal détaillé des interactions avec les honeypots
+-- ── 7. Table : Interactions Honeypot (forensic enrichi) ───────
 CREATE TABLE IF NOT EXISTS public.waf_honeypot_interactions (
     id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     ip               TEXT NOT NULL,
     fingerprint_hash TEXT DEFAULT '',
+    campaign_id      UUID,
     path             TEXT NOT NULL,
     method           TEXT DEFAULT 'GET',
-    payload_used     TEXT DEFAULT '',      -- quel payload de déception a été envoyé
-    request_headers  JSONB DEFAULT '{}',   -- headers de la requête attaquante
-    request_body     TEXT DEFAULT '',       -- body soumis (ex: credentials sur faux wp-login)
-    duration_ms      INTEGER DEFAULT 0,    -- temps passé par l'attaquant
+    attack_class     waf_attack_class DEFAULT 'honeypot',
+    payload_used     TEXT DEFAULT '',
+    request_headers  JSONB DEFAULT '{}',
+    request_body     TEXT DEFAULT '',
+    captured_creds   JSONB DEFAULT '{}',     -- credentials extraits du faux login
+    duration_ms      INTEGER DEFAULT 0,
+    engagement_depth INTEGER DEFAULT 1,      -- nb d'étapes suivies dans le piège
     created_at       TIMESTAMPTZ DEFAULT now() NOT NULL
 );
-
-CREATE INDEX IF NOT EXISTS idx_waf_hp_ip ON public.waf_honeypot_interactions(ip, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_waf_hp_ip   ON public.waf_honeypot_interactions(ip, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_waf_hp_date ON public.waf_honeypot_interactions(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_waf_hp_camp ON public.waf_honeypot_interactions(campaign_id) WHERE campaign_id IS NOT NULL;
 
--- ── 8. RLS pour les nouvelles tables ──────────────────────────
-ALTER TABLE public.waf_device_fingerprints ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.waf_tarpit_config ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.waf_deception_payloads ENABLE ROW LEVEL SECURITY;
+-- ── 8. FONCTION : Calcul de l'action adaptative ───────────────
+-- Le cœur intelligent : décide allow/tarpit/deceive/block à partir
+-- du trust score, de la vélocité et du contexte threat intel.
+CREATE OR REPLACE FUNCTION public.waf_decide_action(
+    p_trust_score   NUMERIC,
+    p_threat_score  NUMERIC,
+    p_is_hopper     BOOLEAN DEFAULT false,
+    p_is_tor        BOOLEAN DEFAULT false,
+    p_known_bad     BOOLEAN DEFAULT false
+) RETURNS waf_action
+LANGUAGE plpgsql IMMUTABLE AS $$
+BEGIN
+    IF p_known_bad OR p_threat_score >= 90 THEN RETURN 'ban';        END IF;
+    IF p_is_hopper AND p_threat_score >= 60 THEN RETURN 'shadowban'; END IF;
+    IF p_trust_score < 10 OR p_threat_score >= 75 THEN RETURN 'deceive'; END IF;
+    IF p_trust_score < 30 OR p_threat_score >= 50 THEN RETURN 'tarpit';  END IF;
+    IF p_is_tor OR p_trust_score < 40            THEN RETURN 'challenge';END IF;
+    IF p_trust_score < 50                         THEN RETURN 'monitor'; END IF;
+    RETURN 'allow';
+END $$;
+
+-- ── 9. FONCTION : Décroissance temporelle du threat score ─────
+-- Le danger s'estompe avec le temps (évite le bannissement éternel
+-- d'IP dynamiques recyclées + concentre la défense sur menaces vives)
+CREATE OR REPLACE FUNCTION public.waf_decay_threat_scores(
+    p_half_life_hours NUMERIC DEFAULT 24
+) RETURNS INTEGER
+LANGUAGE plpgsql AS $$
+DECLARE v_count INTEGER;
+BEGIN
+    UPDATE public.waf_ip_memory
+    SET threat_score = GREATEST(0, threat_score *
+            POWER(0.5, EXTRACT(EPOCH FROM (now() - COALESCE(score_decay_at, now())))
+                       / (p_half_life_hours * 3600))),
+        score_decay_at = now()
+    WHERE threat_score > 0
+      AND COALESCE(score_decay_at, first_seen) < now() - INTERVAL '1 hour';
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RETURN v_count;
+END $$;
+
+-- ── 10. TRIGGER : Auto-détection ip_hopper + maj fingerprint ──
+CREATE OR REPLACE FUNCTION public.waf_fp_maintenance() RETURNS TRIGGER
+LANGUAGE plpgsql AS $$
+BEGIN
+    NEW.distinct_ips := COALESCE(array_length(NEW.associated_ips, 1), 0);
+    NEW.last_seen    := now();
+    -- Marque hopper si > 3 IP distinctes OU traversée de plusieurs ASN
+    IF NEW.distinct_ips > 3
+       OR COALESCE(array_length(NEW.asn_history, 1), 0) > 2 THEN
+        IF NOT ('ip_hopper' = ANY(NEW.tags)) THEN
+            NEW.tags := array_append(NEW.tags, 'ip_hopper');
+        END IF;
+        NEW.trust_score := GREATEST(0, NEW.trust_score - 15);
+    END IF;
+    -- Trust auto-dégradé selon taux de blocage
+    IF NEW.total_requests > 0 THEN
+        NEW.stability_score := GREATEST(0, 100 -
+            (NEW.blocked_count::NUMERIC / NEW.total_requests * 100));
+    END IF;
+    RETURN NEW;
+END $$;
+
+DROP TRIGGER IF EXISTS trg_waf_fp_maintenance ON public.waf_device_fingerprints;
+CREATE TRIGGER trg_waf_fp_maintenance
+    BEFORE INSERT OR UPDATE ON public.waf_device_fingerprints
+    FOR EACH ROW EXECUTE FUNCTION public.waf_fp_maintenance();
+
+-- ── 11. VUE MATÉRIALISÉE : Top menaces temps réel ─────────────
+CREATE MATERIALIZED VIEW IF NOT EXISTS public.waf_threat_dashboard AS
+SELECT
+    m.ip,
+    m.threat_score,
+    m.country_code,
+    m.asn_org,
+    m.ip_hopper,
+    m.attack_vectors,
+    public.waf_decide_action(50, m.threat_score, m.ip_hopper, m.is_tor, false) AS recommended_action,
+    c.label   AS campaign,
+    c.severity,
+    m.last_action
+FROM public.waf_ip_memory m
+LEFT JOIN public.waf_attack_campaigns c ON c.id = m.campaign_id
+WHERE m.threat_score > 0
+ORDER BY m.threat_score DESC;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_waf_dashboard_ip
+    ON public.waf_threat_dashboard(ip);
+
+-- ── 12. RLS pour toutes les nouvelles tables ──────────────────
+ALTER TABLE public.waf_device_fingerprints   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.waf_tarpit_config         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.waf_deception_payloads    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.waf_honeypot_interactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.waf_attack_campaigns      ENABLE ROW LEVEL SECURITY;
 
--- Admin + CEO read/write
-CREATE POLICY "admin_waf_fingerprints" ON public.waf_device_fingerprints
-    FOR ALL TO authenticated
-    USING (EXISTS (
-        SELECT 1 FROM public.user_profiles
-        WHERE id = auth.uid()
-        AND role IN ('admin', 'super_admin', 'superadmin', 'ceo')
-    ));
+DO $$
+DECLARE t TEXT;
+BEGIN
+    FOREACH t IN ARRAY ARRAY[
+        'waf_device_fingerprints','waf_tarpit_config','waf_deception_payloads',
+        'waf_honeypot_interactions','waf_attack_campaigns'
+    ] LOOP
+        EXECUTE format($f$
+            CREATE POLICY %1$I ON public.%2$I FOR ALL TO authenticated
+            USING (EXISTS (SELECT 1 FROM public.user_profiles
+                   WHERE id = auth.uid()
+                   AND role IN ('admin','super_admin','superadmin','ceo')));
+        $f$, 'admin_'||t, t);
+        EXECUTE format($f$
+            CREATE POLICY %1$I ON public.%2$I FOR ALL TO service_role USING (true);
+        $f$, 'service_'||t, t);
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END LOOP;
+END $$;
 
-CREATE POLICY "admin_waf_tarpit" ON public.waf_tarpit_config
-    FOR ALL TO authenticated
-    USING (EXISTS (
-        SELECT 1 FROM public.user_profiles
-        WHERE id = auth.uid()
-        AND role IN ('admin', 'super_admin', 'superadmin', 'ceo')
-    ));
-
-CREATE POLICY "admin_waf_deception" ON public.waf_deception_payloads
-    FOR ALL TO authenticated
-    USING (EXISTS (
-        SELECT 1 FROM public.user_profiles
-        WHERE id = auth.uid()
-        AND role IN ('admin', 'super_admin', 'superadmin', 'ceo')
-    ));
-
-CREATE POLICY "admin_waf_honeypot_int" ON public.waf_honeypot_interactions
-    FOR ALL TO authenticated
-    USING (EXISTS (
-        SELECT 1 FROM public.user_profiles
-        WHERE id = auth.uid()
-        AND role IN ('admin', 'super_admin', 'superadmin', 'ceo')
-    ));
-
--- Service role full access
-CREATE POLICY "service_waf_fingerprints" ON public.waf_device_fingerprints
-    FOR ALL TO service_role USING (true);
-CREATE POLICY "service_waf_tarpit" ON public.waf_tarpit_config
-    FOR ALL TO service_role USING (true);
-CREATE POLICY "service_waf_deception" ON public.waf_deception_payloads
-    FOR ALL TO service_role USING (true);
-CREATE POLICY "service_waf_honeypot_int" ON public.waf_honeypot_interactions
-    FOR ALL TO service_role USING (true);
-
--- ── 9. Index performance supplémentaires ──────────────────────
+-- ── 13. Index performance supplémentaires ─────────────────────
 CREATE INDEX IF NOT EXISTS idx_waf_logs_action
     ON public.waf_logs(action, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_waf_logs_fingerprint
-    ON public.waf_logs(fingerprint_hash)
-    WHERE fingerprint_hash != '';
+    ON public.waf_logs(fingerprint_hash) WHERE fingerprint_hash != '';
+CREATE INDEX IF NOT EXISTS idx_waf_logs_class
+    ON public.waf_logs(attack_class, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_waf_logs_campaign
+    ON public.waf_logs(campaign_id) WHERE campaign_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_waf_ip_memory_hopper
-    ON public.waf_ip_memory(ip_hopper)
-    WHERE ip_hopper = true;
+    ON public.waf_ip_memory(ip_hopper) WHERE ip_hopper = true;
+CREATE INDEX IF NOT EXISTS idx_waf_ip_memory_threat
+    ON public.waf_ip_memory(threat_score DESC) WHERE threat_score > 0;
 
--- ── 10. Vérification ─────────────────────────────────────────
-SELECT 'waf_device_fingerprints' AS table_name, count(*) AS rows FROM public.waf_device_fingerprints
-UNION ALL SELECT 'waf_tarpit_config', count(*) FROM public.waf_tarpit_config
-UNION ALL SELECT 'waf_deception_payloads', count(*) FROM public.waf_deception_payloads
-UNION ALL SELECT 'waf_honeypot_interactions', count(*) FROM public.waf_honeypot_interactions;
+-- ── 14. ENUM : Nouvelles classes d'attaque (système immunitaire) ─
+-- Ajout sécurisé des nouvelles valeurs (ne casse pas si déjà existantes)
+DO $$ BEGIN ALTER TYPE waf_attack_class ADD VALUE IF NOT EXISTS 'idor'; EXCEPTION WHEN OTHERS THEN NULL; END $$;
+DO $$ BEGIN ALTER TYPE waf_attack_class ADD VALUE IF NOT EXISTS 'bola'; EXCEPTION WHEN OTHERS THEN NULL; END $$;
+DO $$ BEGIN ALTER TYPE waf_attack_class ADD VALUE IF NOT EXISTS 'request_smuggling'; EXCEPTION WHEN OTHERS THEN NULL; END $$;
+DO $$ BEGIN ALTER TYPE waf_attack_class ADD VALUE IF NOT EXISTS 'mass_assignment'; EXCEPTION WHEN OTHERS THEN NULL; END $$;
+DO $$ BEGIN ALTER TYPE waf_attack_class ADD VALUE IF NOT EXISTS 'business_logic'; EXCEPTION WHEN OTHERS THEN NULL; END $$;
+DO $$ BEGIN ALTER TYPE waf_attack_class ADD VALUE IF NOT EXISTS 'deserialization'; EXCEPTION WHEN OTHERS THEN NULL; END $$;
 
-SELECT 'Migration 20260601_waf_ultimate_defense : OK' AS status;
+-- ── 15. Table : Honey-Records (pièges dans la base de données) ─
+-- Des enregistrements "empoisonnés" insérés dans les tables réelles.
+-- Toute lecture déclenche une alerte + destruction de session.
+CREATE TABLE IF NOT EXISTS public.waf_honey_records (
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    table_name       TEXT NOT NULL,              -- ex: 'client_profiles', 'documents'
+    record_id        UUID NOT NULL,              -- ID réel de l'enregistrement piège
+    canary_token     TEXT NOT NULL UNIQUE,        -- token unique traçable
+    trap_type        TEXT NOT NULL DEFAULT 'fake_user',
+    -- Types : email_canary, fake_user, fake_document, fake_api_key, fake_payment
+    description      TEXT DEFAULT '',
+    access_count     INTEGER DEFAULT 0,
+    last_accessed_by TEXT DEFAULT '',              -- IP du dernier accès
+    last_accessed_at TIMESTAMPTZ,
+    alerted          BOOLEAN DEFAULT false,
+    auto_destroy     BOOLEAN DEFAULT true,        -- détruire la session automatiquement
+    created_at       TIMESTAMPTZ DEFAULT now() NOT NULL,
+    CONSTRAINT hr_trap_type CHECK (trap_type IN (
+        'email_canary','fake_user','fake_document','fake_api_key','fake_payment','fake_admin'
+    ))
+);
+
+CREATE INDEX IF NOT EXISTS idx_waf_honey_table
+    ON public.waf_honey_records(table_name, record_id);
+CREATE INDEX IF NOT EXISTS idx_waf_honey_token
+    ON public.waf_honey_records(canary_token);
+CREATE INDEX IF NOT EXISTS idx_waf_honey_accessed
+    ON public.waf_honey_records(access_count DESC) WHERE access_count > 0;
+
+-- ── 16. Table : Canary Tokens (traque des fuites de données) ──
+-- Tokens uniques injectés dans les payloads de déception.
+-- Si un attaquant RÉUTILISE une info du faux payload, le token le trahit.
+CREATE TABLE IF NOT EXISTS public.waf_canary_tokens (
+    token            TEXT PRIMARY KEY,             -- token unique (ex: UUID ou string aléatoire)
+    token_type       TEXT NOT NULL DEFAULT 'data_leak',
+    -- Types : data_leak, api_key, email, url, credential, dns
+    embedded_in      TEXT DEFAULT '',              -- quel payload de déception l'utilise
+    source_payload   UUID,                         -- FK vers waf_deception_payloads
+    triggered_count  INTEGER DEFAULT 0,
+    first_triggered  TIMESTAMPTZ,
+    last_triggered   TIMESTAMPTZ,
+    source_ip        TEXT DEFAULT '',
+    source_context   JSONB DEFAULT '{}',           -- headers, path, etc. du déclencheur
+    is_active        BOOLEAN DEFAULT true,
+    created_at       TIMESTAMPTZ DEFAULT now() NOT NULL,
+    CONSTRAINT ct_type CHECK (token_type IN (
+        'data_leak','api_key','email','url','credential','dns','hostname','db_name'
+    ))
+);
+
+CREATE INDEX IF NOT EXISTS idx_waf_canary_active
+    ON public.waf_canary_tokens(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_waf_canary_triggered
+    ON public.waf_canary_tokens(triggered_count DESC) WHERE triggered_count > 0;
+CREATE INDEX IF NOT EXISTS idx_waf_canary_type
+    ON public.waf_canary_tokens(token_type);
+
+-- ── 17. Table : IDOR Tracking (suivi des accès par pattern) ───
+-- Détecte les tentatives d'énumération séquentielle d'endpoints
+CREATE TABLE IF NOT EXISTS public.waf_idor_tracking (
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ip               TEXT NOT NULL,
+    fingerprint_hash TEXT DEFAULT '',
+    endpoint_pattern TEXT NOT NULL,                 -- ex: '/api/client/dossier/*'
+    distinct_ids     INTEGER DEFAULT 1,            -- nb d'IDs distincts accédés
+    accessed_ids     TEXT[] DEFAULT '{}',           -- IDs tentés (max 50 conservés)
+    time_window_start TIMESTAMPTZ DEFAULT now(),
+    time_window_end  TIMESTAMPTZ DEFAULT now(),
+    is_suspicious    BOOLEAN DEFAULT false,
+    escalated        BOOLEAN DEFAULT false,         -- alerte envoyée
+    created_at       TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_waf_idor_ip
+    ON public.waf_idor_tracking(ip, endpoint_pattern, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_waf_idor_suspicious
+    ON public.waf_idor_tracking(is_suspicious) WHERE is_suspicious = true;
+
+-- ── 18. RLS pour les nouvelles tables ─────────────────────────
+ALTER TABLE public.waf_honey_records   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.waf_canary_tokens   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.waf_idor_tracking   ENABLE ROW LEVEL SECURITY;
+
+DO $$
+DECLARE t TEXT;
+BEGIN
+    FOREACH t IN ARRAY ARRAY[
+        'waf_honey_records','waf_canary_tokens','waf_idor_tracking'
+    ] LOOP
+        EXECUTE format($f$
+            CREATE POLICY %1$I ON public.%2$I FOR ALL TO authenticated
+            USING (EXISTS (SELECT 1 FROM public.user_profiles
+                   WHERE id = auth.uid()
+                   AND role IN ('admin','super_admin','superadmin','ceo')));
+        $f$, 'admin_'||t, t);
+        EXECUTE format($f$
+            CREATE POLICY %1$I ON public.%2$I FOR ALL TO service_role USING (true);
+        $f$, 'service_'||t, t);
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END LOOP;
+END $$;
+
+-- ── 19. Vérification ──────────────────────────────────────────
+SELECT 'waf_device_fingerprints' AS t, count(*) FROM public.waf_device_fingerprints
+UNION ALL SELECT 'waf_tarpit_config',         count(*) FROM public.waf_tarpit_config
+UNION ALL SELECT 'waf_deception_payloads',    count(*) FROM public.waf_deception_payloads
+UNION ALL SELECT 'waf_honeypot_interactions', count(*) FROM public.waf_honeypot_interactions
+UNION ALL SELECT 'waf_attack_campaigns',      count(*) FROM public.waf_attack_campaigns
+UNION ALL SELECT 'waf_honey_records',         count(*) FROM public.waf_honey_records
+UNION ALL SELECT 'waf_canary_tokens',         count(*) FROM public.waf_canary_tokens
+UNION ALL SELECT 'waf_idor_tracking',         count(*) FROM public.waf_idor_tracking;
+
+SELECT 'Migration 20260602_waf_ultimate_v2 + immune_system : OK' AS status;

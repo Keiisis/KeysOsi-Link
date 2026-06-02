@@ -16,6 +16,18 @@ export type { DeceptionPayload, AttackType } from './waf/deception'
 export { calculateTarpitDelay, applyTarpit, parseTarpitFromRPC, getTarpitMetrics } from './waf/tarpit'
 export type { TarpitDecision } from './waf/tarpit'
 
+// ── Modules Système Immunitaire (Phase 6-8) ──────────────────
+export { scanForSSRF } from './waf/ssrf'
+export type { SSRFResult, SSRFCategory } from './waf/ssrf'
+export { scanForRCE } from './waf/rce'
+export type { RCEResult, RCECategory } from './waf/rce'
+export { trackIDORAttempt, checkParameterTampering } from './waf/idor'
+export type { IDORResult, IDORPattern } from './waf/idor'
+export { scanForSmuggling } from './waf/smuggling'
+export type { SmugglingResult, SmugglingPattern } from './waf/smuggling'
+export { checkCanaryInRequest, refreshCanaryCache, reportCanaryTriggered, registerHoneyAccess, generateCanaryToken } from './waf/canary'
+export type { CanaryCheckResult, CanaryToken, CanaryTokenType } from './waf/canary'
+
 // ── Évaluation RPC centralisée (cerveau décisionnel SQL) ─────
 // Appelle waf_evaluate_request dans Supabase pour obtenir
 // l'action à prendre : allow | tarpit | deceive | block | honeypot
@@ -28,6 +40,9 @@ export interface WafEvalResult {
     reason:       string
     payload?:     { status_code: number; content_type: string; response_body: string; response_headers: Record<string, string> } | null
     ip_hopper:    boolean
+    risk_score?:  number
+    velocity_rpm?: number
+    attack_class?: string
 }
 
 export async function evaluateRequestRPC(opts: {
@@ -35,10 +50,11 @@ export async function evaluateRequestRPC(opts: {
     path: string
     fingerprintHash: string
     userAgent: string
+    method?: string
     supabaseUrl: string
     serviceKey: string
 }): Promise<WafEvalResult | null> {
-    const { ip, path, fingerprintHash, userAgent, supabaseUrl, serviceKey } = opts
+    const { ip, path, fingerprintHash, userAgent, method, supabaseUrl, serviceKey } = opts
     if (!supabaseUrl || !serviceKey || ip === 'unknown') return null
 
     try {
@@ -54,6 +70,7 @@ export async function evaluateRequestRPC(opts: {
                 p_path: path,
                 p_fingerprint_hash: fingerprintHash || '',
                 p_user_agent: userAgent || '',
+                p_method: method || 'GET',
             }),
         })
         if (!res.ok) return null
@@ -324,7 +341,7 @@ export function trackCampaign(
 
     if (ips.size === CAMPAIGN_THRESHOLD) {
         // Enregistrer la campagne dans Supabase
-        fetch(`${supabaseUrl}/rest/v1/waf_campaigns`, {
+        fetch(`${supabaseUrl}/rest/v1/waf_attack_campaigns`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -333,10 +350,11 @@ export function trackCampaign(
                 Prefer: 'resolution=merge-duplicates,return=minimal',
             },
             body: JSON.stringify({
-                payload_hash:  payloadHash,
-                source_ips:    [...ips],
-                blocked_count: ips.size,
-                status:        'active',
+                signature_hash: payloadHash,
+                label:          'Auto-detected Campaign',
+                distinct_ips:   ips.size,
+                total_events:   ips.size,
+                is_active:      true,
             }),
         }).catch(() => {})
 
@@ -348,7 +366,7 @@ export function trackCampaign(
         })
     } else if (ips.size > CAMPAIGN_THRESHOLD) {
         // Mise à jour campagne existante
-        fetch(`${supabaseUrl}/rest/v1/waf_campaigns?payload_hash=eq.${encodeURIComponent(payloadHash)}`, {
+        fetch(`${supabaseUrl}/rest/v1/waf_attack_campaigns?signature_hash=eq.${encodeURIComponent(payloadHash)}`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
@@ -357,8 +375,8 @@ export function trackCampaign(
                 Prefer: 'return=minimal',
             },
             body: JSON.stringify({
-                source_ips:    [...ips],
-                blocked_count: ips.size,
+                distinct_ips:   ips.size,
+                total_events:   ips.size,
                 last_seen:     new Date().toISOString(),
             }),
         }).catch(() => {})
