@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, lazy, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Person, DocumentItem, Tree, RelationRole } from '@/lib/genealogy/types';
@@ -8,11 +8,19 @@ import { ROLE_LABELS } from '@/lib/genealogy/requirements';
 import FamilyTree from '@/components/admin/genealogy/FamilyTree';
 import PersonForm from '@/components/admin/genealogy/PersonForm';
 import DocumentUploader from '@/components/admin/genealogy/DocumentUploader';
+import { downloadGedcom } from '@/lib/genealogy/gedcom';
+import { findSiblings, buildTreeStats } from '@/lib/genealogy/siblings';
 import { useTheme } from '@/lib/theme/ThemeContext';
 import { 
   ChevronLeft, ZoomIn, ZoomOut, Maximize2, Loader2,
-  Trash2, FileText, Upload, X, Download 
+  Trash2, FileText, Upload, X, Download,
+  Map, BarChart3, TreeDeciduous, Share2, Users
 } from 'lucide-react';
+
+// Lazy load the map component (Leaflet is heavy)
+const FamilyMap = lazy(() => import('@/components/admin/genealogy/FamilyMap'));
+
+type ViewMode = 'tree' | 'map' | 'stats';
 
 export default function DedicatedTreePage() {
   const searchParams = useSearchParams();
@@ -31,6 +39,7 @@ export default function DedicatedTreePage() {
   const [refreshing, setRefreshing] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloadingPDF, setDownloadingPDF] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('tree');
 
   // Pan & Zoom States
   const [zoom, setZoom] = useState(0.9);
@@ -644,6 +653,48 @@ export default function DedicatedTreePage() {
             {downloadingPDF ? 'Export PDF…' : 'Télécharger PDF'}
           </button>
 
+          {/* GEDCOM Export Button */}
+          <button
+            onClick={() => tree && downloadGedcom(tree, persons)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all text-[11px] font-bold"
+            style={{
+              background: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.08)',
+              color: '#6366F1',
+              border: `1px solid ${isDark ? 'rgba(99,102,241,0.25)' : 'rgba(99,102,241,0.2)'}`,
+            }}
+            title="Exporter au format GEDCOM (compatible Gramps, Geneanet, FamilySearch…)"
+          >
+            <Share2 size={14} />
+            GEDCOM
+          </button>
+
+          <div className="h-6 w-[1px]" style={{ background: 'var(--panel-border)' }} />
+
+          {/* View Mode Tabs */}
+          <div className="flex items-center rounded-xl overflow-hidden" style={{ border: `1px solid ${isDark ? '#1e293b' : '#e2e8f0'}` }}>
+            {[
+              { key: 'tree' as ViewMode, icon: <TreeDeciduous size={14} />, label: 'Arbre' },
+              { key: 'map' as ViewMode, icon: <Map size={14} />, label: 'Carte' },
+              { key: 'stats' as ViewMode, icon: <BarChart3 size={14} />, label: 'Stats' },
+            ].map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setViewMode(tab.key)}
+                className="flex items-center gap-1 px-3 py-2 text-[11px] font-bold transition-all"
+                style={{
+                  background: viewMode === tab.key
+                    ? (isDark ? 'rgba(0,135,81,0.2)' : 'rgba(0,135,81,0.1)')
+                    : 'transparent',
+                  color: viewMode === tab.key ? '#008751' : (isDark ? '#94a3b8' : '#64748b'),
+                  borderRight: `1px solid ${isDark ? '#1e293b' : '#e2e8f0'}`,
+                }}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
           <div className="h-6 w-[1px]" style={{ background: 'var(--panel-border)' }} />
 
           <button
@@ -676,49 +727,280 @@ export default function DedicatedTreePage() {
         </div>
       </header>
 
-      {/* 2. Interactive Panning Canvas Container */}
-      <div 
-        ref={viewRef}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        className={`flex-1 relative overflow-hidden cursor-grab ${isDragging ? 'cursor-grabbing' : ''}`}
-        style={{ background: 'var(--panel-bg)' }}
-      >
-        {/* Subtle grid pattern background */}
+      {/* 2. Main content area — conditionally rendered based on viewMode */}
+      {viewMode === 'tree' && (
         <div 
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            opacity: isDark ? 0.15 : 0.25,
-            backgroundImage: isDark 
-              ? 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)'
-              : 'radial-gradient(circle, rgba(0,0,0,0.06) 1px, transparent 1px)',
-            backgroundSize: '24px 24px'
-          }}
-        />
-
-        {/* Tree wrapper transformed by zoom and pan state */}
-        <div
-          ref={treeContainerRef}
-          style={{
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-            transformOrigin: 'center center',
-            transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)'
-          }}
-          className="absolute inset-0 flex items-center justify-center pointer-events-auto"
+          ref={viewRef}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          className={`flex-1 relative overflow-hidden cursor-grab ${isDragging ? 'cursor-grabbing' : ''}`}
+          style={{ background: 'var(--panel-bg)' }}
         >
-          {treeId && (
-            <FamilyTree
-              persons={persons}
-              documents={documents}
-              selectedPerson={selectedPerson}
-              onSelect={handleSelectPerson}
-              onAddRelative={handleAddRelative}
-            />
-          )}
+          {/* Subtle grid pattern background */}
+          <div 
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              opacity: isDark ? 0.15 : 0.25,
+              backgroundImage: isDark 
+                ? 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)'
+                : 'radial-gradient(circle, rgba(0,0,0,0.06) 1px, transparent 1px)',
+              backgroundSize: '24px 24px'
+            }}
+          />
+
+          {/* Tree wrapper transformed by zoom and pan state */}
+          <div
+            ref={treeContainerRef}
+            style={{
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+              transformOrigin: 'center center',
+              transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)'
+            }}
+            className="absolute inset-0 flex items-center justify-center pointer-events-auto"
+          >
+            {treeId && (
+              <FamilyTree
+                persons={persons}
+                documents={documents}
+                selectedPerson={selectedPerson}
+                onSelect={handleSelectPerson}
+                onAddRelative={handleAddRelative}
+              />
+            )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Map View */}
+      {viewMode === 'map' && (
+        <div className="flex-1 relative overflow-hidden" style={{ background: 'var(--panel-bg)' }}>
+          <Suspense fallback={
+            <div className="w-full h-full flex items-center justify-center">
+              <Loader2 className="animate-spin text-[#008751]" size={32} />
+            </div>
+          }>
+            <FamilyMap persons={persons} />
+          </Suspense>
+        </div>
+      )}
+
+      {/* Stats View */}
+      {viewMode === 'stats' && (
+        <div className="flex-1 relative overflow-y-auto p-6" style={{ background: 'var(--panel-bg)' }}>
+          {(() => {
+            const stats = buildTreeStats(persons);
+            const selfPerson = persons.find(p => p.is_self || p.relation_role === 'self');
+            const selfSiblings = selfPerson ? findSiblings(selfPerson, persons) : null;
+            return (
+              <div className="max-w-4xl mx-auto space-y-6">
+                {/* Title */}
+                <div>
+                  <h2 className="text-lg font-black" style={{ color: 'var(--panel-text-heading)' }}>
+                    📊 Statistiques de l'arbre
+                  </h2>
+                  <p className="text-xs" style={{ color: 'var(--panel-text-muted)' }}>
+                    Vue d'ensemble de la famille de {tree?.client_first_name || 'l\'arbre'}
+                  </p>
+                </div>
+
+                {/* KPI Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[
+                    { label: 'Membres', value: stats.total, icon: <Users size={18} />, color: '#008751' },
+                    { label: 'Hommes', value: stats.males, icon: <span className="text-lg">♂</span>, color: '#3B82F6' },
+                    { label: 'Femmes', value: stats.females, icon: <span className="text-lg">♀</span>, color: '#EC4899' },
+                    { label: 'Générations', value: stats.generationCount, icon: <TreeDeciduous size={18} />, color: '#8B5CF6' },
+                  ].map(kpi => (
+                    <div
+                      key={kpi.label}
+                      className="rounded-2xl p-4 border"
+                      style={{
+                        background: 'var(--panel-surface)',
+                        borderColor: 'var(--panel-border)',
+                      }}
+                    >
+                      <div className="flex items-center gap-2 mb-2" style={{ color: kpi.color }}>
+                        {kpi.icon}
+                        <span className="text-[10px] font-bold uppercase tracking-wider">{kpi.label}</span>
+                      </div>
+                      <p className="text-3xl font-black" style={{ color: 'var(--panel-text-heading)' }}>
+                        {kpi.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Data completeness */}
+                <div
+                  className="rounded-2xl p-5 border"
+                  style={{ background: 'var(--panel-surface)', borderColor: 'var(--panel-border)' }}
+                >
+                  <h3 className="text-sm font-bold mb-3" style={{ color: 'var(--panel-text-heading)' }}>
+                    📋 Complétude des données
+                  </h3>
+                  <div className="space-y-3">
+                    {[
+                      { label: 'Dates de naissance', value: stats.withBirth, total: stats.total, color: '#10B981' },
+                      { label: 'Dates de décès', value: stats.withDeath, total: stats.total, color: '#F59E0B' },
+                      { label: 'Lieux renseignés', value: stats.withPlace, total: stats.total, color: '#6366F1' },
+                    ].map(bar => (
+                      <div key={bar.label}>
+                        <div className="flex justify-between text-[11px] mb-1">
+                          <span style={{ color: 'var(--panel-text-muted)' }}>{bar.label}</span>
+                          <span className="font-bold" style={{ color: bar.color }}>
+                            {bar.value}/{bar.total}
+                          </span>
+                        </div>
+                        <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: isDark ? '#1e293b' : '#e2e8f0' }}>
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${bar.total > 0 ? (bar.value / bar.total) * 100 : 0}%`,
+                              background: bar.color,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Top Places */}
+                {stats.topPlaces.length > 0 && (
+                  <div
+                    className="rounded-2xl p-5 border"
+                    style={{ background: 'var(--panel-surface)', borderColor: 'var(--panel-border)' }}
+                  >
+                    <h3 className="text-sm font-bold mb-3" style={{ color: 'var(--panel-text-heading)' }}>
+                      📍 Lieux les plus fréquents
+                    </h3>
+                    <div className="space-y-2">
+                      {stats.topPlaces.map((p, i) => (
+                        <div
+                          key={p.place}
+                          className="flex items-center justify-between p-2.5 rounded-xl"
+                          style={{ background: 'var(--panel-surface-hover)' }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white"
+                              style={{ background: ['#008751','#3B82F6','#8B5CF6','#EC4899','#F59E0B'][i] || '#6B7280' }}
+                            >
+                              {i + 1}
+                            </span>
+                            <span className="text-xs font-medium" style={{ color: 'var(--panel-text)' }}>
+                              {p.place}
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-bold" style={{ color: 'var(--panel-text-muted)' }}>
+                            {p.count} mention{p.count > 1 ? 's' : ''}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Siblings */}
+                {selfSiblings && (selfSiblings.fullSiblings.length > 0 || selfSiblings.halfSiblings.length > 0) && (
+                  <div
+                    className="rounded-2xl p-5 border"
+                    style={{ background: 'var(--panel-surface)', borderColor: 'var(--panel-border)' }}
+                  >
+                    <h3 className="text-sm font-bold mb-3" style={{ color: 'var(--panel-text-heading)' }}>
+                      👨‍👩‍👧‍👦 Fratrie du proposant
+                    </h3>
+                    {selfSiblings.fullSiblings.length > 0 && (
+                      <div className="mb-3">
+                        <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: '#10B981' }}>
+                          Frères/Sœurs (mêmes parents)
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {selfSiblings.fullSiblings.map(s => (
+                            <span
+                              key={s.id}
+                              className="px-3 py-1.5 rounded-xl text-xs font-bold"
+                              style={{
+                                background: isDark ? 'rgba(16,185,129,0.12)' : 'rgba(16,185,129,0.08)',
+                                color: '#10B981',
+                                border: `1px solid ${isDark ? 'rgba(16,185,129,0.25)' : 'rgba(16,185,129,0.15)'}`,
+                              }}
+                            >
+                              {s.first_name || 'N/A'} {s.last_name || ''}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {selfSiblings.halfSiblings.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: '#F59E0B' }}>
+                          Demi-frères/Demi-sœurs
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {selfSiblings.halfSiblings.map(s => (
+                            <span
+                              key={s.id}
+                              className="px-3 py-1.5 rounded-xl text-xs font-bold"
+                              style={{
+                                background: isDark ? 'rgba(245,158,11,0.12)' : 'rgba(245,158,11,0.08)',
+                                color: '#F59E0B',
+                                border: `1px solid ${isDark ? 'rgba(245,158,11,0.25)' : 'rgba(245,158,11,0.15)'}`,
+                              }}
+                            >
+                              {s.first_name || 'N/A'} {s.last_name || ''}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Oldest/Youngest */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {stats.oldest && (
+                    <div
+                      className="rounded-2xl p-5 border"
+                      style={{ background: 'var(--panel-surface)', borderColor: 'var(--panel-border)' }}
+                    >
+                      <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#8B5CF6' }}>
+                        🧓 Ancêtre le plus ancien
+                      </p>
+                      <p className="text-sm font-bold" style={{ color: 'var(--panel-text-heading)' }}>
+                        {stats.oldest.first_name} {stats.oldest.last_name}
+                      </p>
+                      <p className="text-xs" style={{ color: 'var(--panel-text-muted)' }}>
+                        Né(e) le {stats.oldest.birth_date}
+                        {stats.oldest.birth_place ? ` à ${stats.oldest.birth_place}` : ''}
+                      </p>
+                    </div>
+                  )}
+                  {stats.youngest && stats.youngest.id !== stats.oldest?.id && (
+                    <div
+                      className="rounded-2xl p-5 border"
+                      style={{ background: 'var(--panel-surface)', borderColor: 'var(--panel-border)' }}
+                    >
+                      <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#10B981' }}>
+                        👶 Membre le plus jeune
+                      </p>
+                      <p className="text-sm font-bold" style={{ color: 'var(--panel-text-heading)' }}>
+                        {stats.youngest.first_name} {stats.youngest.last_name}
+                      </p>
+                      <p className="text-xs" style={{ color: 'var(--panel-text-muted)' }}>
+                        Né(e) le {stats.youngest.birth_date}
+                        {stats.youngest.birth_place ? ` à ${stats.youngest.birth_place}` : ''}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
 
       {/* 3. Slider detail drawer */}
       {(selectedPerson || presetRole) && tree && (
