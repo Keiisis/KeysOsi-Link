@@ -30,6 +30,7 @@ export default function DedicatedTreePage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
 
   // Pan & Zoom States
   const [zoom, setZoom] = useState(0.9);
@@ -235,6 +236,314 @@ export default function DedicatedTreePage() {
     }
   };
 
+  /* ─── DOWNLOAD TREE AS FILLABLE PDF ─── */
+  const handleDownloadPDF = async () => {
+    setDownloadingPDF(true);
+    try {
+      // 1. Dynamic imports
+      const html2canvas = (await import('html2canvas')).default;
+      const { PDFDocument, rgb, StandardFonts } = await import('pdf-lib');
+
+      const treeEl = treeContainerRef.current;
+      if (!treeEl) throw new Error('Élément arbre introuvable');
+
+      // 2. Capture the family tree diagram as an image first
+      const oldZoom = zoom;
+      const oldPan = pan;
+      setZoom(1);
+      setPan({ x: 0, y: 0 });
+      await new Promise(r => setTimeout(r, 200));
+
+      const canvas = await html2canvas(treeEl, {
+        backgroundColor: '#FFFFFF',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+
+      setZoom(oldZoom);
+      setPan(oldPan);
+
+      const treeImgData = canvas.toDataURL('image/jpeg', 0.9);
+
+      // 3. Create PDF Doc
+      const pdfDoc = await PDFDocument.create();
+      const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      const form = pdfDoc.getForm();
+
+      // --- PAGE 1: COVER PAGE ---
+      const page1 = pdfDoc.addPage([595, 842]);
+      
+      page1.drawRectangle({
+        x: 0,
+        y: 742,
+        width: 595,
+        height: 100,
+        color: rgb(0, 0.53, 0.32),
+      });
+
+      page1.drawLine({
+        start: { x: 0, y: 742 },
+        end: { x: 595, y: 742 },
+        thickness: 3,
+        color: rgb(0.99, 0.82, 0.09),
+      });
+
+      page1.drawText('RETOUR GAGNANT BÉNIN', {
+        x: 40,
+        y: 785,
+        size: 18,
+        font: helveticaBold,
+        color: rgb(1, 1, 1),
+      });
+      page1.drawText('GÉNÉALOGIE ET HISTOIRE FAMILIALE', {
+        x: 40,
+        y: 765,
+        size: 8,
+        font: helvetica,
+        color: rgb(0.85, 0.85, 0.85),
+      });
+
+      page1.drawText('ARBRE & FICHE DE LIGNÉE DIRECTE', {
+        x: 40,
+        y: 520,
+        size: 24,
+        font: helveticaBold,
+        color: rgb(0.06, 0.1, 0.18),
+      });
+
+      page1.drawText('Document interactif et modifiable en PDF', {
+        x: 40,
+        y: 495,
+        size: 11,
+        font: helvetica,
+        color: rgb(0.42, 0.45, 0.5),
+      });
+
+      page1.drawRectangle({
+        x: 40,
+        y: 250,
+        width: 515,
+        height: 160,
+        color: rgb(0.97, 0.97, 0.97),
+        borderColor: rgb(0.9, 0.9, 0.9),
+        borderWidth: 1,
+      });
+
+      page1.drawText('INFORMATIONS DOSSIER CLIENT', {
+        x: 60,
+        y: 380,
+        size: 10,
+        font: helveticaBold,
+        color: rgb(0, 0.53, 0.32),
+      });
+
+      const cleanClientName = clientName || 'Non spécifié';
+      const cleanTreeName = tree?.name || 'Arbre de Lignée';
+      const generationDate = new Date().toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+
+      page1.drawText(`Client : ${cleanClientName}`, { x: 60, y: 345, size: 12, font: helvetica });
+      page1.drawText(`Nom de l'arbre : ${cleanTreeName}`, { x: 60, y: 315, size: 12, font: helvetica });
+      page1.drawText(`Membres enregistrés : ${persons.length}`, { x: 60, y: 285, size: 12, font: helvetica });
+
+      page1.drawLine({ start: { x: 40, y: 80 }, end: { x: 555, y: 80 }, thickness: 0.5, color: rgb(0.8, 0.8, 0.8) });
+      page1.drawText('Retour Gagnant Bénin — www.retourgagnantbenin.bj', {
+        x: 40,
+        y: 60,
+        size: 8,
+        font: helvetica,
+        color: rgb(0.5, 0.5, 0.5),
+      });
+      page1.drawText(`Date : ${generationDate}`, {
+        x: 460,
+        y: 60,
+        size: 8,
+        font: helvetica,
+        color: rgb(0.5, 0.5, 0.5),
+      });
+
+      // --- PAGE 2: FAMILY TREE VISUAL (LANDSCAPE) ---
+      const page2 = pdfDoc.addPage([842, 595]);
+      
+      page2.drawText(`ARBRE GÉNÉALOGIQUE : FAMILLE ${cleanClientName.toUpperCase()}`, {
+        x: 40,
+        y: 555,
+        size: 14,
+        font: helveticaBold,
+        color: rgb(0.06, 0.1, 0.18),
+      });
+      page2.drawLine({ start: { x: 40, y: 545 }, end: { x: 802, y: 545 }, thickness: 1, color: rgb(0, 0.53, 0.32) });
+
+      const embeddedTreeImg = await pdfDoc.embedJpg(treeImgData);
+      const imgWidth = 842 - 80;
+      const imgHeight = (embeddedTreeImg.height / embeddedTreeImg.width) * imgWidth;
+      const yOffset = imgHeight < 460 ? (460 - imgHeight) / 2 + 40 : 40;
+      
+      page2.drawImage(embeddedTreeImg, {
+        x: 40,
+        y: yOffset,
+        width: imgWidth,
+        height: Math.min(imgHeight, 460),
+      });
+
+      page2.drawText('Page 2/Arbre', {
+        x: 760,
+        y: 20,
+        size: 8,
+        font: helvetica,
+        color: rgb(0.6, 0.6, 0.6),
+      });
+
+      // --- PAGES 3+: INDIVIDUAL FORM SHEETS (PORTRAIT) ---
+      const rolesToExport = [
+        { role: 'self', label: 'SUJET (G0)' },
+        { role: 'father', label: 'PÈRE (G1)' },
+        { role: 'mother', label: 'MÈRE (G1)' },
+        { role: 'paternal_grandfather', label: 'GRAND-PÈRE PATERNEL (G2)' },
+        { role: 'paternal_grandmother', label: 'GRAND-MÈRE PATERNELLE (G2)' },
+        { role: 'maternal_grandfather', label: 'GRAND-PÈRE MATERNEL (G2)' },
+        { role: 'maternal_grandmother', label: 'GRAND-MÈRE MATERNELLE (G2)' },
+      ];
+
+      let currentPage = null;
+      let memberOnPageCount = 0;
+      let pageNum = 3;
+
+      for (let index = 0; index < rolesToExport.length; index++) {
+        const { role, label } = rolesToExport[index];
+        const person = persons.find(p => (role === 'self' && p.is_self) || p.relation_role === role);
+
+        if (memberOnPageCount % 2 === 0) {
+          currentPage = pdfDoc.addPage([595, 842]);
+          memberOnPageCount = 0;
+
+          currentPage.drawText('FICHES DES MEMBRES DE LA LIGNÉE DIRECTE (MODIFIABLES)', {
+            x: 40,
+            y: 805,
+            size: 10,
+            font: helveticaBold,
+            color: rgb(0, 0.53, 0.32),
+          });
+          currentPage.drawLine({ start: { x: 40, y: 795 }, end: { x: 555, y: 795 }, thickness: 1, color: rgb(0.9, 0.9, 0.9) });
+          
+          currentPage.drawText(`Page ${pageNum++}`, {
+            x: 520,
+            y: 20,
+            size: 8,
+            font: helvetica,
+            color: rgb(0.6, 0.6, 0.6),
+          });
+        }
+
+        const page = currentPage!;
+        const yBase = memberOnPageCount === 0 ? 440 : 80;
+
+        page.drawRectangle({
+          x: 40,
+          y: yBase,
+          width: 515,
+          height: 300,
+          color: rgb(0.99, 0.99, 0.99),
+          borderColor: rgb(0.85, 0.85, 0.85),
+          borderWidth: 1,
+        });
+
+        page.drawRectangle({
+          x: 40,
+          y: yBase + 270,
+          width: 515,
+          height: 30,
+          color: rgb(0.06, 0.1, 0.18),
+        });
+
+        page.drawText(label, {
+          x: 55,
+          y: yBase + 280,
+          size: 10,
+          font: helveticaBold,
+          color: rgb(1, 1, 1),
+        });
+
+        const drawField = (fieldName: string, label: string, val: string, x: number, y: number, w: number) => {
+          page.drawText(label, {
+            x,
+            y: y + 4,
+            size: 8,
+            font: helveticaBold,
+            color: rgb(0.3, 0.35, 0.4),
+          });
+
+          const fieldId = `${role}_${fieldName}_${index}`;
+          const textField = form.createTextField(fieldId);
+          textField.setText(val);
+          textField.setFontSize(8);
+          
+          textField.addToPage(page, {
+            x: x + 65,
+            y,
+            width: w,
+            height: 16,
+          });
+        };
+
+        const fName = person?.first_name || '';
+        const lName = person?.last_name || '';
+        const bDate = person?.birth_date || '';
+        const bPlace = person?.birth_place || '';
+        const dDate = person?.death_date || '';
+        const dPlace = person?.death_place || '';
+        const noteText = person?.notes || '';
+
+        drawField('first_name', 'Prénom :', fName, 55, yBase + 235, 150);
+        drawField('last_name', 'Nom :', lName, 55, yBase + 205, 150);
+        drawField('birth_date', 'Né(e) le :', bDate, 55, yBase + 175, 150);
+        drawField('birth_place', 'à :', bPlace, 55, yBase + 145, 150);
+
+        drawField('death_date', 'Mort(e) le :', dDate, 310, yBase + 175, 130);
+        drawField('death_place', 'à :', dPlace, 310, yBase + 145, 130);
+
+        page.drawText('Notes historiques & commentaires :', {
+          x: 55,
+          y: yBase + 115,
+          size: 8,
+          font: helveticaBold,
+          color: rgb(0.3, 0.35, 0.4),
+        });
+
+        const noteFieldId = `${role}_notes_${index}`;
+        const notesField = form.createTextField(noteFieldId);
+        notesField.setText(noteText);
+        notesField.setFontSize(7);
+        notesField.enableMultiline();
+        notesField.addToPage(page, {
+          x: 55,
+          y: yBase + 20,
+          width: 485,
+          height: 80,
+        });
+
+        memberOnPageCount++;
+      }
+
+      const pdfBytes = await pdfDoc.save();
+      const blob = new Blob([pdfBytes as any], { type: 'application/pdf' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `arbre_genealogique_${cleanClientName.replace(/\s+/g, '_').toLowerCase()}.pdf`;
+      link.click();
+    } catch (err: any) {
+      console.error('PDF error:', err);
+      alert('Erreur lors du téléchargement PDF : ' + err.message);
+    } finally {
+      setDownloadingPDF(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--panel-bg)' }}>
@@ -303,6 +612,26 @@ export default function DedicatedTreePage() {
               <Download size={14} />
             )}
             {downloading ? 'Export…' : 'Télécharger'}
+          </button>
+
+          {/* Download PDF Button */}
+          <button
+            onClick={handleDownloadPDF}
+            disabled={downloadingPDF}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all text-[11px] font-bold"
+            style={{
+              background: isDark ? 'rgba(197,168,76,0.12)' : 'rgba(197,168,76,0.08)',
+              color: 'var(--panel-accent)',
+              border: `1px solid ${isDark ? 'rgba(197,168,76,0.25)' : 'rgba(197,168,76,0.2)'}`,
+            }}
+            title="Télécharger l'arbre en PDF modifiable"
+          >
+            {downloadingPDF ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <FileText size={14} />
+            )}
+            {downloadingPDF ? 'Export PDF…' : 'Télécharger PDF'}
           </button>
 
           <div className="h-6 w-[1px]" style={{ background: 'var(--panel-border)' }} />

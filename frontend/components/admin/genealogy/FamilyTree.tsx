@@ -87,22 +87,61 @@ export default function FamilyTree({
 
   const findPerson = (role: string) => byRole[role] || undefined;
 
-  /* ─── Collateral persons ─── */
-  const siblings = persons
-    .filter(p => !p.is_self && ['brother', 'sister', 'sibling'].includes(p.relation_role || ''))
-    .sort((a, b) => a.id.localeCompare(b.id));
+  /* ─── Find key people in the tree ─── */
+  const self = useMemo(() => persons.find(p => p.is_self || p.relation_role === 'self'), [persons]);
+  const father = useMemo(() => persons.find(p => p.relation_role === 'father'), [persons]);
+  const mother = useMemo(() => persons.find(p => p.relation_role === 'mother'), [persons]);
+  const paternalGrandfather = useMemo(() => persons.find(p => p.relation_role === 'paternal_grandfather'), [persons]);
+  const paternalGrandmother = useMemo(() => persons.find(p => p.relation_role === 'paternal_grandmother'), [persons]);
+  const maternalGrandfather = useMemo(() => persons.find(p => p.relation_role === 'maternal_grandfather'), [persons]);
+  const maternalGrandmother = useMemo(() => persons.find(p => p.relation_role === 'maternal_grandmother'), [persons]);
 
-  const paternalUncles = persons
-    .filter(p => ['paternal_uncle', 'paternal_aunt'].includes(p.relation_role || ''))
-    .sort((a, b) => a.id.localeCompare(b.id));
+  /* ─── Collateral persons (linked by database IDs OR roles) ─── */
+  const siblings = useMemo(() => {
+    return persons
+      .filter(p => !p.is_self && p.relation_role !== 'self')
+      .filter(p => 
+        ['brother', 'sister', 'sibling'].includes(p.relation_role || '') ||
+        (father && p.father_id === father.id) ||
+        (mother && p.mother_id === mother.id)
+      )
+      .filter((value, index, selfArr) => selfArr.findIndex(t => t.id === value.id) === index)
+      .sort((a, b) => a.id.localeCompare(b.id));
+  }, [persons, father, mother]);
 
-  const maternalUncles = persons
-    .filter(p => ['maternal_uncle', 'maternal_aunt'].includes(p.relation_role || ''))
-    .sort((a, b) => a.id.localeCompare(b.id));
+  const paternalUncles = useMemo(() => {
+    return persons
+      .filter(p => 
+        ['paternal_uncle', 'paternal_aunt'].includes(p.relation_role || '') ||
+        (paternalGrandfather && p.father_id === paternalGrandfather.id) ||
+        (paternalGrandmother && p.mother_id === paternalGrandmother.id)
+      )
+      .filter(p => p.relation_role !== 'father' && p.relation_role !== 'paternal_grandfather' && p.relation_role !== 'paternal_grandmother')
+      .filter((value, index, selfArr) => selfArr.findIndex(t => t.id === value.id) === index)
+      .sort((a, b) => a.id.localeCompare(b.id));
+  }, [persons, paternalGrandfather, paternalGrandmother]);
 
-  const childPersons = persons
-    .filter(p => p.relation_role === 'child')
-    .sort((a, b) => a.id.localeCompare(b.id));
+  const maternalUncles = useMemo(() => {
+    return persons
+      .filter(p => 
+        ['maternal_uncle', 'maternal_aunt'].includes(p.relation_role || '') ||
+        (maternalGrandfather && p.father_id === maternalGrandfather.id) ||
+        (maternalGrandmother && p.mother_id === maternalGrandmother.id)
+      )
+      .filter(p => p.relation_role !== 'mother' && p.relation_role !== 'maternal_grandfather' && p.relation_role !== 'maternal_grandmother')
+      .filter((value, index, selfArr) => selfArr.findIndex(t => t.id === value.id) === index)
+      .sort((a, b) => a.id.localeCompare(b.id));
+  }, [persons, maternalGrandfather, maternalGrandmother]);
+
+  const childPersons = useMemo(() => {
+    return persons
+      .filter(p => 
+        p.relation_role === 'child' ||
+        (self && (p.father_id === self.id || p.mother_id === self.id))
+      )
+      .filter((value, index, selfArr) => selfArr.findIndex(t => t.id === value.id) === index)
+      .sort((a, b) => a.id.localeCompare(b.id));
+  }, [persons, self]);
 
   /* ═══════════════════════════════════════════════════════════════
      LAYOUT ENGINE — Positionnement hiérarchique
@@ -430,8 +469,8 @@ export default function FamilyTree({
         <defs>
           {/* Gradient for main tree lines */}
           <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#008751" stopOpacity="0.9" />
-            <stop offset="100%" stopColor="#FCD116" stopOpacity="0.7" />
+            <stop offset="0%" stopColor={isDark ? '#008751' : '#005B36'} stopOpacity="1" />
+            <stop offset="100%" stopColor={isDark ? '#FCD116' : '#008751'} stopOpacity="0.9" />
           </linearGradient>
           
           {/* Glow filter */}
@@ -451,8 +490,8 @@ export default function FamilyTree({
 
           {/* Subtle skeleton line style */}
           <linearGradient id="skelGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="white" stopOpacity="0.06" />
-            <stop offset="100%" stopColor="white" stopOpacity="0.02" />
+            <stop offset="0%" stopColor={isDark ? 'white' : '#005B36'} stopOpacity={isDark ? 0.15 : 0.25} />
+            <stop offset="100%" stopColor={isDark ? 'white' : '#005B36'} stopOpacity={isDark ? 0.05 : 0.12} />
           </linearGradient>
         </defs>
 
@@ -498,28 +537,28 @@ export default function FamilyTree({
           const active = hasLeft || hasRight;
 
           return (
-            <g key={`couple-${i}`} opacity={active ? 1 : 0.15}>
+            <g key={`couple-${i}`} opacity={active ? 1 : 0.45}>
               {/* Vertical drops from each card to the marriage bar level */}
               <path
                 d={`M ${lx} ${by} V ${my}`}
                 fill="none"
                 stroke={active ? 'url(#lineGrad)' : 'url(#skelGrad)'}
-                strokeWidth={active ? 2 : 1}
+                strokeWidth={active ? 3 : 1.5}
                 strokeLinecap="round"
               />
               <path
                 d={`M ${rx} ${by} V ${my}`}
                 fill="none"
                 stroke={active ? 'url(#lineGrad)' : 'url(#skelGrad)'}
-                strokeWidth={active ? 2 : 1}
+                strokeWidth={active ? 3 : 1.5}
                 strokeLinecap="round"
               />
               {/* Horizontal bar */}
               <line
                 x1={lx} y1={my}
                 x2={rx} y2={my}
-                stroke={active ? '#FCD116' : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)')}
-                strokeWidth={active ? 2.5 : 1}
+                stroke={active ? '#FCD116' : (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)')}
+                strokeWidth={active ? 3.5 : 1.5}
                 strokeLinecap="round"
               />
               {/* Marriage/union node (heart) */}

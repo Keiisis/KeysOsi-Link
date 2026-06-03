@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { RelationRole, Gender, Person } from '@/lib/genealogy/types';
 import { ROLE_LABELS } from '@/lib/genealogy/requirements';
+import { useTheme } from '@/lib/theme/ThemeContext';
 import {
   UserPlus, Save, UserCheck, Loader2, X, Calendar,
   MapPin, ScrollText, Mars, Venus, CircleUser, Sparkles,
@@ -22,16 +23,16 @@ interface PersonFormProps {
 /* ---------------------------------- styles ---------------------------------- */
 
 const IC =
-  'peer w-full bg-white/[0.02] border border-white/[0.06] rounded-xl py-2.5 pl-9 pr-3 text-white text-[13px] ' +
-  'focus:outline-none focus:border-emerald-400/60 focus:bg-emerald-500/[0.04] ' +
-  'focus:ring-2 focus:ring-emerald-400/10 placeholder:text-gray-600 transition-all duration-300';
+  'peer w-full bg-[var(--panel-surface-alt)] border border-[var(--panel-border)] rounded-xl py-2.5 pl-9 pr-3 text-[var(--panel-text)] text-[13px] ' +
+  'focus:outline-none focus:border-emerald-500/60 focus:bg-emerald-500/[0.04] ' +
+  'focus:ring-2 focus:ring-emerald-500/10 placeholder:text-[var(--panel-text-faint)] transition-all duration-300';
 
 const LC =
-  'text-[10px] font-black text-gray-500 mb-1.5 ml-0.5 block uppercase tracking-[0.18em]';
+  'text-[10px] font-black mb-1.5 ml-0.5 block uppercase tracking-[0.18em] text-[var(--panel-text-muted)]';
 
 const SEL =
-  'w-full appearance-none bg-[#080d14] border border-white/[0.06] rounded-xl py-2.5 pl-3 pr-9 ' +
-  'text-white text-[13px] focus:outline-none focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/10 ' +
+  'w-full appearance-none bg-[var(--panel-surface)] border border-[var(--panel-border)] rounded-xl py-2.5 pl-3 pr-9 ' +
+  'text-[var(--panel-text)] text-[13px] focus:outline-none focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/10 ' +
   'transition-all duration-300 cursor-pointer';
 
 /* --------------------------------- component -------------------------------- */
@@ -44,6 +45,9 @@ export default function PersonForm({
   selectedPerson,
   onCancelEdit,
 }: PersonFormProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const [form, setForm] = useState({
     first_name: '',
     last_name: '',
@@ -57,6 +61,8 @@ export default function PersonForm({
     avatar_url: '',
   });
 
+  const [fatherId, setFatherId] = useState<string | null>(null);
+  const [motherId, setMotherId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
@@ -81,6 +87,8 @@ export default function PersonForm({
         notes: selectedPerson.notes || '',
         avatar_url: selectedPerson.avatar_url || '',
       });
+      setFatherId(selectedPerson.father_id || null);
+      setMotherId(selectedPerson.mother_id || null);
     } else {
       setForm({
         first_name: '',
@@ -94,8 +102,19 @@ export default function PersonForm({
         notes: '',
         avatar_url: '',
       });
+      const { father_id, mother_id } = resolveParents((presetRole as RelationRole) || 'father');
+      setFatherId(father_id);
+      setMotherId(mother_id);
     }
-  }, [selectedPerson, presetRole]);
+  }, [selectedPerson, presetRole, persons]);
+
+  useEffect(() => {
+    if (!selectedPerson) {
+      const { father_id, mother_id } = resolveParents(form.relation_role);
+      setFatherId(father_id);
+      setMotherId(mother_id);
+    }
+  }, [form.relation_role, selectedPerson, persons]);
 
   const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -174,7 +193,6 @@ export default function PersonForm({
       if (!user) throw new Error('Non authentifié');
 
       const isEdit = !!selectedPerson;
-      const { father_id, mother_id } = resolveParents(form.relation_role);
       const payload = {
         tree_id: treeId,
         user_id: user.id,
@@ -189,8 +207,8 @@ export default function PersonForm({
         is_self: form.relation_role === 'self',
         notes: form.notes || null,
         avatar_url: form.avatar_url || null,
-        father_id,
-        mother_id,
+        father_id: fatherId || null,
+        mother_id: motherId || null,
       };
 
       if (isEdit) {
@@ -251,10 +269,16 @@ export default function PersonForm({
         }}
       />
 
-      <div className="relative bg-[#070b12]/90 backdrop-blur-2xl border border-white/[0.07] rounded-[2rem] overflow-hidden">
+      <div 
+        className="relative backdrop-blur-2xl border rounded-[2rem] overflow-hidden"
+        style={{
+          backgroundColor: 'var(--panel-surface)',
+          borderColor: 'var(--panel-border)',
+        }}
+      >
         {/* Halo de couleur en haut */}
         <div
-          className="pointer-events-none absolute -top-24 left-1/2 h-48 w-72 -translate-x-1/2 rounded-full blur-[80px] opacity-30"
+          className="pointer-events-none absolute -top-24 left-1/2 h-48 w-72 -translate-x-1/2 rounded-full blur-[80px] opacity-35"
           style={{ background: accent }}
         />
         {/* Texture grain subtile */}
@@ -284,19 +308,20 @@ export default function PersonForm({
                 disabled={uploadingAvatar}
               />
               {uploadingAvatar ? (
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5 border border-white/10">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--panel-surface-hover)] border border-[var(--panel-border)]">
                   <Loader2 size={16} className="animate-spin text-[#008751]" />
                 </div>
               ) : form.avatar_url ? (
                 <img
                   src={form.avatar_url}
                   alt="Avatar"
-                  className="h-14 w-14 rounded-2xl object-cover border border-white/10 shadow-lg ring-1 ring-white/10 group-hover/avatar:opacity-80 transition-opacity"
+                  className="h-14 w-14 rounded-2xl object-cover border border-[var(--panel-border)] shadow-lg ring-1 ring-white/10 group-hover/avatar:opacity-80 transition-opacity"
                 />
               ) : (
                 <div
-                  className="flex h-14 w-14 items-center justify-center rounded-2xl text-lg font-black text-white shadow-lg ring-1 ring-white/10 group-hover/avatar:opacity-80 transition-opacity"
+                  className="flex h-14 w-14 items-center justify-center rounded-2xl text-lg font-black shadow-lg ring-1 ring-white/10 group-hover/avatar:opacity-80 transition-opacity"
                   style={{
+                    color: '#FFFFFF',
                     background: `linear-gradient(135deg, ${accent}, ${accent}55)`,
                   }}
                 >
@@ -304,7 +329,8 @@ export default function PersonForm({
                 </div>
               )}
               <span
-                className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-lg bg-[#070b12] ring-1 ring-white/10"
+                className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-lg ring-1 ring-[var(--panel-border)]"
+                style={{ backgroundColor: 'var(--panel-surface)' }}
               >
                 {isEditing ? (
                   <UserCheck size={13} className="text-[#FCD116]" />
@@ -315,18 +341,21 @@ export default function PersonForm({
             </div>
 
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.25em] text-gray-500">
+              <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.25em] text-[var(--panel-text-muted)]">
                 <Sparkles size={10} style={{ color: accent }} />
                 {isEditing ? 'Édition' : 'Création'}
               </div>
-              <h3 className="truncate text-base font-black text-white font-heading leading-tight">
+              <h3 
+                className="truncate text-base font-black font-heading leading-tight"
+                style={{ color: 'var(--panel-text-heading)' }}
+              >
                 {form.first_name || form.last_name
                   ? `${form.first_name} ${form.last_name}`.trim()
                   : isEditing
                     ? 'Modifier la fiche'
                     : 'Nouveau parent'}
               </h3>
-              <p className="text-[11px] text-gray-500">
+              <p className="text-[11px] text-[var(--panel-text-muted)]">
                 {ROLE_LABELS[form.relation_role] ?? 'Membre de la lignée'}
               </p>
             </div>
@@ -339,7 +368,7 @@ export default function PersonForm({
               <div className="relative">
                 <CircleUser
                   size={14}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 peer-focus:text-emerald-400"
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--panel-text-faint)] peer-focus:text-emerald-400"
                 />
                 <input
                   type="text"
@@ -356,7 +385,7 @@ export default function PersonForm({
               <div className="relative">
                 <CircleUser
                   size={14}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 peer-focus:text-emerald-400"
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--panel-text-faint)] peer-focus:text-emerald-400"
                 />
                 <input
                   type="text"
@@ -383,8 +412,8 @@ export default function PersonForm({
                     className={cn(
                       'flex items-center justify-center gap-1.5 rounded-xl border py-2.5 text-[11px] font-bold transition-all duration-300',
                       active
-                        ? 'border-emerald-400/40 bg-emerald-500/10 text-white shadow-[0_0_20px_-6px_#008751]'
-                        : 'border-white/[0.06] bg-white/[0.02] text-gray-500 hover:border-white/15 hover:text-gray-300'
+                        ? 'border-emerald-400/40 bg-emerald-500/10 text-[var(--panel-text-heading)] shadow-[0_0_20px_-6px_#008751]'
+                        : 'border-[var(--panel-border)] bg-[var(--panel-surface-alt)] text-[var(--panel-text-muted)] hover:border-[var(--panel-border-strong)] hover:text-[var(--panel-text-heading)]'
                     )}
                   >
                     <Icon size={13} className={active ? 'text-emerald-400' : ''} />
@@ -405,18 +434,87 @@ export default function PersonForm({
                 onChange={(e) => set('relation_role', e.target.value as RelationRole)}
               >
                 {Object.entries(ROLE_LABELS).map(([k, l]) => (
-                  <option key={k} value={k} className="bg-[#080d14]">
+                  <option 
+                    key={k} 
+                    value={k} 
+                    style={{ backgroundColor: 'var(--panel-surface)', color: 'var(--panel-text)' }}
+                  >
                     {l}
                   </option>
                 ))}
               </select>
               <svg
-                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--panel-text-faint)]"
                 width="12" height="12" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" strokeWidth="3"
               >
                 <path d="m6 9 6 6 6-6" />
               </svg>
+            </div>
+          </div>
+
+          {/* ----------------─── Liaisons Parentales Manuelles ───--------------------- */}
+          <div className="grid grid-cols-2 gap-3 border-t border-[var(--panel-border)] pt-4">
+            <div>
+              <label className={LC}>Père (Lien)</label>
+              <div className="relative">
+                <select
+                  className={SEL}
+                  value={fatherId || ''}
+                  onChange={(e) => setFatherId(e.target.value || null)}
+                >
+                  <option value="" style={{ backgroundColor: 'var(--panel-surface)', color: 'var(--panel-text)' }}>-- Aucun / Auto --</option>
+                  {persons
+                    .filter(p => p.id !== selectedPerson?.id)
+                    .map(p => (
+                      <option 
+                        key={p.id} 
+                        value={p.id} 
+                        style={{ backgroundColor: 'var(--panel-surface)', color: 'var(--panel-text)' }}
+                      >
+                        {p.first_name || p.last_name ? `${p.first_name || ''} ${p.last_name || ''}`.trim() : 'Sans nom'} ({ROLE_LABELS[p.relation_role || ''] || p.relation_role})
+                      </option>
+                    ))}
+                </select>
+                <svg
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--panel-text-faint)]"
+                  width="12" height="12" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="3"
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </div>
+            </div>
+
+            <div>
+              <label className={LC}>Mère (Lien)</label>
+              <div className="relative">
+                <select
+                  className={SEL}
+                  value={motherId || ''}
+                  onChange={(e) => setMotherId(e.target.value || null)}
+                >
+                  <option value="" style={{ backgroundColor: 'var(--panel-surface)', color: 'var(--panel-text)' }}>-- Aucun / Auto --</option>
+                  {persons
+                    .filter(p => p.id !== selectedPerson?.id)
+                    .map(p => (
+                      <option 
+                        key={p.id} 
+                        value={p.id} 
+                        style={{ backgroundColor: 'var(--panel-surface)', color: 'var(--panel-text)' }}
+                      >
+                        {p.first_name || p.last_name ? `${p.first_name || ''} ${p.last_name || ''}`.trim() : 'Sans nom'} ({ROLE_LABELS[p.relation_role || ''] || p.relation_role})
+                      </option>
+                    ))}
+                </select>
+                <svg
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--panel-text-faint)]"
+                  width="12" height="12" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="3"
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </div>
             </div>
           </div>
 
@@ -430,14 +528,14 @@ export default function PersonForm({
               <div className="relative">
                 <label className={LC}>Date</label>
                 <div className="relative">
-                  <Calendar size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 peer-focus:text-emerald-400" />
+                  <Calendar size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--panel-text-faint)]" />
                   <input type="date" className={IC} value={form.birth_date} onChange={(e) => set('birth_date', e.target.value)} />
                 </div>
               </div>
               <div className="relative">
                 <label className={LC}>Lieu</label>
                 <div className="relative">
-                  <MapPin size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 peer-focus:text-emerald-400" />
+                  <MapPin size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--panel-text-faint)]" />
                   <input type="text" className={IC} placeholder="Cotonou, Paris…" value={form.birth_place} onChange={(e) => set('birth_place', e.target.value)} />
                 </div>
               </div>
@@ -445,23 +543,23 @@ export default function PersonForm({
           </fieldset>
 
           {/* ---------------------------------- Décès --------------------------------- */}
-          <fieldset className="rounded-2xl border border-white/[0.06] bg-white/[0.01] p-3.5 space-y-3">
-            <legend className="flex items-center gap-1.5 px-2 text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">
-              <span className="h-1.5 w-1.5 rounded-full bg-gray-600" />
-              Décès <span className="font-medium normal-case tracking-normal text-gray-600">(si applicable)</span>
+          <fieldset className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-surface-alt)]/20 p-3.5 space-y-3">
+            <legend className="flex items-center gap-1.5 px-2 text-[9px] font-black uppercase tracking-[0.2em] text-[var(--panel-text-muted)]">
+              <span className="h-1.5 w-1.5 rounded-full bg-gray-500" />
+              Décès <span className="font-medium normal-case tracking-normal text-[var(--panel-text-faint)]">(si applicable)</span>
             </legend>
             <div className="grid grid-cols-2 gap-3">
               <div className="relative">
                 <label className={LC}>Date</label>
                 <div className="relative">
-                  <Calendar size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 peer-focus:text-emerald-400" />
+                  <Calendar size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--panel-text-faint)]" />
                   <input type="date" className={IC} value={form.death_date} onChange={(e) => set('death_date', e.target.value)} />
                 </div>
               </div>
               <div className="relative">
                 <label className={LC}>Lieu</label>
                 <div className="relative">
-                  <MapPin size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 peer-focus:text-emerald-400" />
+                  <MapPin size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--panel-text-faint)]" />
                   <input type="text" className={IC} placeholder="Lieu de décès" value={form.death_place} onChange={(e) => set('death_place', e.target.value)} />
                 </div>
               </div>
@@ -472,13 +570,18 @@ export default function PersonForm({
           <div>
             <label className={LC}>Notes historiques / Anecdotes</label>
             <div className="relative">
-              <ScrollText size={14} className="pointer-events-none absolute left-3 top-3 text-gray-600" />
+              <ScrollText size={14} className="pointer-events-none absolute left-3 top-3 text-[var(--panel-text-faint)]" />
               <textarea
                 rows={2}
-                className="w-full resize-none rounded-xl border border-white/[0.06] bg-white/[0.02] py-2.5 pl-9 pr-3 text-[13px] text-white placeholder:text-gray-600 transition-all duration-300 focus:border-emerald-400/60 focus:bg-emerald-500/[0.04] focus:outline-none focus:ring-2 focus:ring-emerald-400/10"
+                className="w-full resize-none rounded-xl border py-2.5 pl-9 pr-3 text-[13px] transition-all duration-300 focus:border-emerald-400/60 focus:bg-emerald-500/[0.04] focus:outline-none focus:ring-2 focus:ring-emerald-400/10"
                 placeholder="Habitations, professions, mentions d'affranchissement…"
                 value={form.notes}
                 onChange={(e) => set('notes', e.target.value)}
+                style={{
+                  backgroundColor: 'var(--panel-surface-alt)',
+                  borderColor: 'var(--panel-border)',
+                  color: 'var(--panel-text)',
+                }}
               />
             </div>
           </div>
@@ -489,7 +592,12 @@ export default function PersonForm({
               <button
                 type="button"
                 onClick={onCancelEdit}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/[0.06] bg-white/[0.03] py-3 text-xs font-bold text-gray-300 transition-all hover:bg-white/[0.07] hover:text-white"
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border py-3 text-xs font-bold transition-all"
+                style={{
+                  borderColor: 'var(--panel-border)',
+                  backgroundColor: 'var(--panel-surface-hover)',
+                  color: 'var(--panel-text)',
+                }}
               >
                 <X size={14} /> ANNULER
               </button>
@@ -500,10 +608,10 @@ export default function PersonForm({
               onClick={save}
               disabled={saving}
               className={cn(
-                'relative flex flex-[2] items-center justify-center gap-2 overflow-hidden rounded-xl py-3 text-xs font-black uppercase tracking-wider text-white transition-all duration-300 disabled:opacity-70',
+                'relative flex flex-[2] items-center justify-center gap-2 overflow-hidden rounded-xl py-3 text-xs font-black uppercase tracking-wider transition-all duration-300 disabled:opacity-70',
                 isEditing
                   ? 'bg-gradient-to-r from-[#FCD116] to-[#f0b400] text-black shadow-[0_8px_24px_-8px_#FCD116]'
-                  : 'bg-gradient-to-r from-[#008751] to-[#00b56e] shadow-[0_8px_24px_-8px_#008751]'
+                  : 'bg-gradient-to-r from-[#008751] to-[#00b56e] text-white shadow-[0_8px_24px_-8px_#008751]'
               )}
             >
               {/* reflet animé */}
