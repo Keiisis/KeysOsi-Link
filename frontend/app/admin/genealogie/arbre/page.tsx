@@ -10,17 +10,19 @@ import PersonForm from '@/components/admin/genealogy/PersonForm';
 import DocumentUploader from '@/components/admin/genealogy/DocumentUploader';
 import { downloadGedcom } from '@/lib/genealogy/gedcom';
 import { findSiblings, buildTreeStats } from '@/lib/genealogy/siblings';
+import { buildFamilyTimeline, getUpcomingAnniversaries } from '@/lib/genealogy/timeline';
 import { useTheme } from '@/lib/theme/ThemeContext';
 import { 
   ChevronLeft, ZoomIn, ZoomOut, Maximize2, Loader2,
   Trash2, FileText, Upload, X, Download,
-  Map, BarChart3, TreeDeciduous, Share2, Users
+  Map, BarChart3, TreeDeciduous, Share2, Users,
+  Clock, Calendar, Search
 } from 'lucide-react';
 
 // Lazy load the map component (Leaflet is heavy)
 const FamilyMap = lazy(() => import('@/components/admin/genealogy/FamilyMap'));
 
-type ViewMode = 'tree' | 'map' | 'stats';
+type ViewMode = 'tree' | 'map' | 'stats' | 'timeline' | 'anniversaries';
 
 export default function DedicatedTreePage() {
   const searchParams = useSearchParams();
@@ -28,6 +30,7 @@ export default function DedicatedTreePage() {
   const treeId = searchParams.get('id');
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [tree, setTree] = useState<Tree | null>(null);
   const [persons, setPersons] = useState<Person[]>([]);
@@ -668,6 +671,81 @@ export default function DedicatedTreePage() {
             GEDCOM
           </button>
 
+          {/* Search Box */}
+          <div className="relative mr-2 hidden md:block">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--panel-text-faint)]" size={14} />
+            <input
+              type="text"
+              placeholder="Rechercher un parent..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-8 py-1.5 w-48 rounded-xl text-xs border bg-[var(--panel-surface-alt)] text-[var(--panel-text)] border-[var(--panel-border)] focus:outline-none focus:border-emerald-500/60 focus:w-64 transition-all duration-300"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+              >
+                <X size={12} />
+              </button>
+            )}
+            {/* Search Dropdown Results */}
+            {searchQuery && (
+              <div 
+                className="absolute top-full right-0 mt-2 w-72 rounded-2xl border shadow-2xl p-2 max-h-[300px] overflow-y-auto z-[999] backdrop-blur-xl"
+                style={{
+                  background: isDark ? 'rgba(7, 11, 19, 0.98)' : 'rgba(255, 255, 255, 0.98)',
+                  borderColor: 'var(--panel-border)',
+                }}
+              >
+                {persons
+                  .filter(p => 
+                    `${p.first_name || ''} ${p.last_name || ''}`
+                      .toLowerCase()
+                      .includes(searchQuery.toLowerCase())
+                  )
+                  .map(p => (
+                    <button
+                      key={p.id}
+                      onClick={() => {
+                        handleSelectPerson(p);
+                        setSearchQuery('');
+                      }}
+                      className="w-full flex items-center gap-3 p-2 rounded-xl text-left hover:bg-[var(--panel-surface-hover)] transition-all"
+                    >
+                      {p.avatar_url ? (
+                        <img src={p.avatar_url} className="w-8 h-8 rounded-lg object-cover" />
+                      ) : (
+                        <div 
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black text-white"
+                          style={{
+                            background: `linear-gradient(135deg, ${p.gender === 'female' ? '#EC4899' : '#008751'}, #6366F1)`,
+                          }}
+                        >
+                          {((p.first_name?.[0] || '') + (p.last_name?.[0] || '')).toUpperCase() || '?'}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold truncate" style={{ color: 'var(--panel-text-heading)' }}>
+                          {p.first_name} {p.last_name}
+                        </p>
+                        <p className="text-[9px] font-mono text-[var(--panel-text-faint)] uppercase">
+                          {ROLE_LABELS[p.relation_role || ''] || 'Membre'}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                {persons.filter(p => 
+                  `${p.first_name || ''} ${p.last_name || ''}`
+                    .toLowerCase()
+                    .includes(searchQuery.toLowerCase())
+                ).length === 0 && (
+                  <p className="text-[10px] text-center py-4 italic text-[var(--panel-text-faint)]">Aucun membre trouvé</p>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="h-6 w-[1px]" style={{ background: 'var(--panel-border)' }} />
 
           {/* View Mode Tabs */}
@@ -676,6 +754,8 @@ export default function DedicatedTreePage() {
               { key: 'tree' as ViewMode, icon: <TreeDeciduous size={14} />, label: 'Arbre' },
               { key: 'map' as ViewMode, icon: <Map size={14} />, label: 'Carte' },
               { key: 'stats' as ViewMode, icon: <BarChart3 size={14} />, label: 'Stats' },
+              { key: 'timeline' as ViewMode, icon: <Clock size={14} />, label: 'Chronologie' },
+              { key: 'anniversaries' as ViewMode, icon: <Calendar size={14} />, label: 'Anniv.' },
             ].map(tab => (
               <button
                 key={tab.key}
@@ -1002,6 +1082,178 @@ export default function DedicatedTreePage() {
         </div>
       )}
 
+      {/* Timeline View */}
+      {viewMode === 'timeline' && (
+        <div className="flex-1 relative overflow-y-auto p-6" style={{ background: 'var(--panel-bg)' }}>
+          <div className="max-w-3xl mx-auto space-y-6">
+            <div>
+              <h2 className="text-lg font-black" style={{ color: 'var(--panel-text-heading)' }}>
+                ⏳ Chronologie familiale
+              </h2>
+              <p className="text-xs" style={{ color: 'var(--panel-text-muted)' }}>
+                Histoire temporelle de la famille de {tree?.client_first_name || 'l\'arbre'}
+              </p>
+            </div>
+
+            <div className="relative border-l border-emerald-500/20 ml-4 pl-8 space-y-8">
+              {buildFamilyTimeline(persons).map((event, i) => {
+                const p = event.person;
+                const isBirth = event.type === 'birth';
+                return (
+                  <div key={event.id} className="relative group/item">
+                    {/* Circle Node on line */}
+                    <div 
+                      className="absolute -left-[41px] top-1.5 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300"
+                      style={{
+                        backgroundColor: isDark ? '#070b13' : '#ffffff',
+                        borderColor: isBirth ? '#10B981' : '#6B7280',
+                      }}
+                    >
+                      {isBirth ? (
+                        <span className="text-[10px]" title="Naissance">👶</span>
+                      ) : (
+                        <span className="text-[10px]" title="Décès">✝️</span>
+                      )}
+                    </div>
+
+                    {/* Timeline Event Card */}
+                    <div 
+                      onClick={() => handleSelectPerson(p)}
+                      className="p-4 rounded-2xl border cursor-pointer hover:border-emerald-500/50 hover:shadow-lg transition-all duration-300"
+                      style={{
+                        background: 'var(--panel-surface)',
+                        borderColor: 'var(--panel-border)',
+                      }}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-sm font-black font-mono text-emerald-400">
+                          {event.year}
+                        </span>
+                        <span className="text-[8px] font-mono font-black uppercase px-2 py-0.5 rounded-full"
+                          style={{
+                            background: 'var(--panel-badge-bg)',
+                            color: 'var(--panel-text-muted)',
+                            border: '1px solid var(--panel-border)',
+                          }}
+                        >
+                          {ROLE_LABELS[p.relation_role || ''] || 'Membre'}
+                        </span>
+                      </div>
+                      
+                      <h4 className="text-xs font-bold text-white group-hover/item:text-emerald-400 transition-colors">
+                        {p.first_name} {p.last_name}
+                      </h4>
+
+                      <p className="text-[11px] text-[var(--panel-text-muted)] mt-1.5">
+                        {isBirth ? (
+                          <>Naissance {event.place ? `à ${event.place}` : ''}</>
+                        ) : (
+                          <>
+                            Décès {event.place ? `à ${event.place}` : ''}
+                            {event.ageAtEvent !== null && ` à l'âge de ${event.ageAtEvent} ans`}
+                          </>
+                        )}
+                      </p>
+
+                      {p.notes && (
+                        <p className="text-[10px] italic text-[var(--panel-text-faint)] mt-2 line-clamp-2">
+                          {p.notes}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              {persons.length === 0 && (
+                <p className="text-xs italic text-[var(--panel-text-faint)]">Aucun événement à afficher.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Anniversaries View */}
+      {viewMode === 'anniversaries' && (
+        <div className="flex-1 relative overflow-y-auto p-6" style={{ background: 'var(--panel-bg)' }}>
+          <div className="max-w-2xl mx-auto space-y-6">
+            <div>
+              <h2 className="text-lg font-black" style={{ color: 'var(--panel-text-heading)' }}>
+                📅 Éphéméride & Anniversaires
+              </h2>
+              <p className="text-xs" style={{ color: 'var(--panel-text-muted)' }}>
+                Prochains événements commémoratifs à venir dans l'année
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              {getUpcomingAnniversaries(persons).map((anniv, i) => {
+                const p = anniv.person;
+                const isBirth = anniv.type === 'birth';
+                const formatDays = (days: number) => {
+                  if (days === 0) return "Aujourd'hui 🎉";
+                  if (days === 1) return "Demain";
+                  return `Dans ${days} jours`;
+                };
+
+                return (
+                  <div 
+                    key={`${p.id}-${anniv.type}-${i}`}
+                    onClick={() => handleSelectPerson(p)}
+                    className="flex justify-between items-center p-4 rounded-2xl border cursor-pointer hover:border-emerald-500/40 transition-all duration-300"
+                    style={{
+                      background: 'var(--panel-surface)',
+                      borderColor: 'var(--panel-border)',
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
+                        style={{
+                          background: isBirth ? 'rgba(16,185,129,0.1)' : 'rgba(107,114,128,0.1)',
+                          color: isBirth ? '#10B981' : '#6B7280',
+                        }}
+                      >
+                        {isBirth ? '🎂' : '🕯️'}
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-white">
+                          {p.first_name} {p.last_name}
+                        </h4>
+                        <p className="text-[10px] text-[var(--panel-text-muted)] mt-0.5">
+                          {isBirth ? (
+                            <>Anniversaire de naissance ({anniv.yearsAgo} ans)</>
+                          ) : (
+                            <>Commémoration de décès ({anniv.yearsAgo} ans)</>
+                          )}
+                          {' • '}
+                          <span className="font-mono text-[var(--panel-text-faint)]">
+                            {new Date(anniv.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <span className="text-[10px] font-black px-3 py-1.5 rounded-xl font-mono"
+                      style={{
+                        background: anniv.daysRemaining <= 30 
+                          ? 'rgba(239,68,68,0.1)' 
+                          : 'rgba(255,255,255,0.05)',
+                        color: anniv.daysRemaining <= 30 ? '#EF4444' : 'var(--panel-text-muted)',
+                        border: `1px solid ${anniv.daysRemaining <= 30 ? 'rgba(239,68,68,0.2)' : 'var(--panel-border)'}`,
+                      }}
+                    >
+                      {formatDays(anniv.daysRemaining)}
+                    </span>
+                  </div>
+                );
+              })}
+              {persons.length === 0 && (
+                <p className="text-xs italic text-[var(--panel-text-faint)]">Aucun anniversaire enregistré.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 3. Slider detail drawer */}
       {(selectedPerson || presetRole) && tree && (
         <>
@@ -1010,8 +1262,9 @@ export default function DedicatedTreePage() {
             className="fixed inset-0 animate-in fade-in duration-200"
             style={{
               zIndex: 9998,
-              background: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.5)',
-              backdropFilter: 'blur(2px)',
+              background: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(15, 23, 42, 0.45)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
             }}
             onClick={handleCancelEdit}
           />
@@ -1021,14 +1274,15 @@ export default function DedicatedTreePage() {
             style={{
               zIndex: 9999,
               top: 0,
-              background: isDark ? '#070b13' : '#ffffff',
+              backgroundColor: isDark ? '#070b13' : '#ffffff',
+              opacity: 1,
               borderLeft: `2px solid ${isDark ? '#1e293b' : '#d1d5db'}`,
               boxShadow: isDark
                 ? '-20px 0 60px rgba(0,0,0,0.9), -4px 0 20px rgba(0,0,0,0.6)'
-                : '-20px 0 80px rgba(0,0,0,0.3), -4px 0 30px rgba(0,0,0,0.15)',
+                : '-20px 0 80px rgba(0,0,0,0.35), -4px 0 30px rgba(0,0,0,0.15)',
             }}
           >
-          <div className="p-6 space-y-6">
+          <div className="p-6 space-y-6" style={{ backgroundColor: isDark ? '#070b13' : '#ffffff' }}>
             
             {/* Header of Drawer */}
             <div className="flex justify-between items-center border-b pb-3" style={{ borderColor: 'var(--panel-border)' }}>

@@ -270,10 +270,11 @@ export default function PersonForm({
       />
 
       <div 
-        className="relative backdrop-blur-2xl border rounded-[2rem] overflow-hidden"
+        className="relative border rounded-[2rem] overflow-hidden"
         style={{
-          backgroundColor: 'var(--panel-surface)',
+          backgroundColor: isDark ? 'var(--panel-surface)' : '#ffffff',
           borderColor: 'var(--panel-border)',
+          opacity: 1,
         }}
       >
         {/* Halo de couleur en haut */}
