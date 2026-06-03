@@ -408,6 +408,14 @@ export default function DedicatedTreePage() {
         { role: 'paternal_grandmother', label: 'GRAND-MÈRE PATERNELLE (G2)' },
         { role: 'maternal_grandfather', label: 'GRAND-PÈRE MATERNEL (G2)' },
         { role: 'maternal_grandmother', label: 'GRAND-MÈRE MATERNELLE (G2)' },
+        { role: 'paternal_ggf_1', label: 'ARRIÈRE-GRAND-PÈRE PATERNEL 1 (G3)' },
+        { role: 'paternal_ggm_1', label: 'ARRIÈRE-GRAND-MÈRE PATERNELLE 1 (G3)' },
+        { role: 'paternal_ggf_2', label: 'ARRIÈRE-GRAND-PÈRE PATERNEL 2 (G3)' },
+        { role: 'paternal_ggm_2', label: 'ARRIÈRE-GRAND-MÈRE PATERNELLE 2 (G3)' },
+        { role: 'maternal_ggf_1', label: 'ARRIÈRE-GRAND-PÈRE MATERNEL 1 (G3)' },
+        { role: 'maternal_ggm_1', label: 'ARRIÈRE-GRAND-MÈRE MATERNELLE 1 (G3)' },
+        { role: 'maternal_ggf_2', label: 'ARRIÈRE-GRAND-PÈRE MATERNEL 2 (G3)' },
+        { role: 'maternal_ggm_2', label: 'ARRIÈRE-GRAND-MÈRE MATERNELLE 2 (G3)' },
       ];
 
       let currentPage = null;
@@ -480,15 +488,15 @@ export default function DedicatedTreePage() {
 
           const fieldId = `${role}_${fieldName}_${index}`;
           const textField = form.createTextField(fieldId);
-          textField.acroField.setDefaultAppearance('/Helvetica 8 Tf 0 g');
+          textField.acroField.setDefaultAppearance('/Helvetica 9 Tf 0 g');
           textField.setText(val);
-          textField.setFontSize(8);
+          textField.setFontSize(9);
           
           textField.addToPage(page, {
             x: x + 65,
             y,
             width: w,
-            height: 16,
+            height: 18,
           });
         };
 
@@ -500,13 +508,13 @@ export default function DedicatedTreePage() {
         const dPlace = person?.death_place || '';
         const noteText = person?.notes || '';
 
-        drawField('first_name', 'Prénom :', fName, 55, yBase + 235, 150);
-        drawField('last_name', 'Nom :', lName, 55, yBase + 205, 150);
-        drawField('birth_date', 'Né(e) le :', bDate, 55, yBase + 175, 150);
-        drawField('birth_place', 'à :', bPlace, 55, yBase + 145, 150);
+        drawField('first_name', 'Prénom :', fName, 55, yBase + 235, 200);
+        drawField('last_name', 'Nom :', lName, 55, yBase + 205, 200);
+        drawField('birth_date', 'Né(e) le :', bDate, 55, yBase + 175, 180);
+        drawField('birth_place', 'à :', bPlace, 55, yBase + 145, 180);
 
-        drawField('death_date', 'Mort(e) le :', dDate, 310, yBase + 175, 130);
-        drawField('death_place', 'à :', dPlace, 310, yBase + 145, 130);
+        drawField('death_date', 'Mort(e) le :', dDate, 310, yBase + 175, 160);
+        drawField('death_place', 'à :', dPlace, 310, yBase + 145, 160);
 
         page.drawText('Notes historiques & commentaires :', {
           x: 55,
@@ -715,11 +723,11 @@ export default function DedicatedTreePage() {
       {/* 3. Slider detail drawer */}
       {(selectedPerson || presetRole) && tree && (
         <div
-          className="absolute top-16 right-0 bottom-0 w-[420px] border-l backdrop-blur-2xl z-50 flex flex-col overflow-y-auto animate-in slide-in-from-right duration-300 scrollbar-premium"
+          className="absolute top-16 right-0 bottom-0 w-[420px] border-l z-50 flex flex-col overflow-y-auto animate-in slide-in-from-right duration-300 scrollbar-premium"
           style={{
-            background: isDark ? 'rgba(7,11,19,0.95)' : 'rgba(255,255,255,0.97)',
+            background: isDark ? '#070b13' : '#ffffff',
             borderColor: 'var(--panel-border)',
-            boxShadow: isDark ? '-20px 0 60px rgba(0,0,0,0.8)' : '-20px 0 60px rgba(0,0,0,0.1)',
+            boxShadow: isDark ? '-20px 0 60px rgba(0,0,0,0.9)' : '-20px 0 60px rgba(0,0,0,0.15)',
           }}
         >
           <div className="p-6 space-y-6">
