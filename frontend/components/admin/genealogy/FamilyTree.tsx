@@ -49,12 +49,14 @@ interface ChildLink {
   parentMidY: number;
   childX: number;
   childTopY: number;
+  active?: boolean;
 }
 
 interface SiblingGroup {
   parentMidX: number;
   parentMidY: number;
-  children: { x: number; topY: number }[];
+  children: { x: number; topY: number; active?: boolean }[];
+  active?: boolean;
 }
 
 interface FamilyTreeProps {
@@ -356,11 +358,14 @@ export default function FamilyTree({
       });
       const childNode = nodeMap[childRole];
       if (couple && childNode) {
+        const hasParents = !!couple.leftNode.person || !!couple.rightNode.person;
+        const hasChild = !!childNode.person;
         childLinks.push({
           parentMidX: couple.midX,
           parentMidY: couple.midY,
           childX: cx(childNode),
           childTopY: top(childNode),
+          active: hasParents && hasChild,
         });
       }
     });
@@ -370,10 +375,12 @@ export default function FamilyTree({
     if (pgfCouple) {
       const fatherSiblings = [nodeMap['father'], ...paternalUncles.map(u => nodeMap[u.id])].filter(Boolean);
       if (fatherSiblings.length > 0) {
+        const hasParents = !!pgfCouple.leftNode.person || !!pgfCouple.rightNode.person;
         siblingGroups.push({
           parentMidX: pgfCouple.midX,
           parentMidY: pgfCouple.midY,
-          children: fatherSiblings.map(n => ({ x: cx(n), topY: top(n) })),
+          children: fatherSiblings.map(n => ({ x: cx(n), topY: top(n), active: hasParents && !!n.person })),
+          active: hasParents,
         });
       }
     }
@@ -382,10 +389,12 @@ export default function FamilyTree({
     if (mgfCouple) {
       const motherSiblings = [nodeMap['mother'], ...maternalUncles.map(u => nodeMap[u.id])].filter(Boolean);
       if (motherSiblings.length > 0) {
+        const hasParents = !!mgfCouple.leftNode.person || !!mgfCouple.rightNode.person;
         siblingGroups.push({
           parentMidX: mgfCouple.midX,
           parentMidY: mgfCouple.midY,
-          children: motherSiblings.map(n => ({ x: cx(n), topY: top(n) })),
+          children: motherSiblings.map(n => ({ x: cx(n), topY: top(n), active: hasParents && !!n.person })),
+          active: hasParents,
         });
       }
     }
@@ -395,10 +404,12 @@ export default function FamilyTree({
     if (parentsCouple) {
       const selfSiblings = [nodeMap['self'], ...siblings.map(s => nodeMap[s.id])].filter(Boolean);
       if (selfSiblings.length > 0) {
+        const hasParents = !!parentsCouple.leftNode.person || !!parentsCouple.rightNode.person;
         siblingGroups.push({
           parentMidX: parentsCouple.midX,
           parentMidY: parentsCouple.midY,
-          children: selfSiblings.map(n => ({ x: cx(n), topY: top(n) })),
+          children: selfSiblings.map(n => ({ x: cx(n), topY: top(n), active: hasParents && !!n.person })),
+          active: hasParents,
         });
       }
     }
@@ -408,13 +419,17 @@ export default function FamilyTree({
     if (selfNode && childPersons.length > 0) {
       const selfMidX = cx(selfNode);
       const selfMidY = bot(selfNode) + 16;
+      const hasSelf = !!selfNode.person;
       siblingGroups.push({
         parentMidX: selfMidX,
         parentMidY: selfMidY,
         children: childPersons.map(c => {
           const n = nodeMap[c.id];
-          return n ? { x: cx(n), topY: top(n) } : { x: selfMidX, topY: genY(4) };
+          return n 
+            ? { x: cx(n), topY: top(n), active: hasSelf && !!n.person } 
+            : { x: selfMidX, topY: genY(4), active: false };
         }),
+        active: hasSelf,
       });
     }
 
@@ -442,6 +457,9 @@ export default function FamilyTree({
      ═══════════════════════════════════════════════════════════════ */
 
   const { nodes, couples, childLinks, siblingGroups, width, height, offsetX } = layout;
+
+  const activeColor = isDark ? '#10B981' : '#008751';
+  const inactiveColor = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,135,81,0.35)';
 
   // Generation labels
   const genLabels: Record<number, string> = {
@@ -537,29 +555,32 @@ export default function FamilyTree({
           const active = hasLeft || hasRight;
 
           return (
-            <g key={`couple-${i}`} opacity={active ? 1 : 0.45}>
+            <g key={`couple-${i}`} opacity={active ? 1 : 0.6}>
               {/* Vertical drops from each card to the marriage bar level */}
               <path
                 d={`M ${lx} ${by} V ${my}`}
                 fill="none"
-                stroke={active ? 'url(#lineGrad)' : 'url(#skelGrad)'}
+                stroke={active ? activeColor : inactiveColor}
                 strokeWidth={active ? 3 : 1.5}
                 strokeLinecap="round"
+                strokeDasharray={active ? undefined : "4,4"}
               />
               <path
                 d={`M ${rx} ${by} V ${my}`}
                 fill="none"
-                stroke={active ? 'url(#lineGrad)' : 'url(#skelGrad)'}
+                stroke={active ? activeColor : inactiveColor}
                 strokeWidth={active ? 3 : 1.5}
                 strokeLinecap="round"
+                strokeDasharray={active ? undefined : "4,4"}
               />
               {/* Horizontal bar */}
               <line
                 x1={lx} y1={my}
                 x2={rx} y2={my}
-                stroke={active ? '#FCD116' : (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)')}
+                stroke={active ? '#FCD116' : inactiveColor}
                 strokeWidth={active ? 3.5 : 1.5}
                 strokeLinecap="round"
+                strokeDasharray={active ? undefined : "4,4"}
               />
               {/* Marriage/union node (heart) */}
               {active && (
@@ -591,36 +612,40 @@ export default function FamilyTree({
           const childCx = link.childX + offsetX;
           const childTy = link.childTopY;
           const midY = (py + childTy) / 2;
+          const active = link.active;
 
           return (
-            <g key={`child-link-${i}`}>
-              {/* Glow background */}
-              <path
-                d={`M ${px} ${py} C ${px} ${midY}, ${childCx} ${midY}, ${childCx} ${childTy}`}
-                fill="none"
-                stroke="url(#lineGrad)"
-                strokeWidth="6"
-                strokeLinecap="round"
-                opacity="0.12"
-                filter="url(#lineGlow)"
-              />
+            <g key={`child-link-${i}`} opacity={active ? 1 : 0.6}>
+              {active && (
+                /* Glow background */
+                <path
+                  d={`M ${px} ${py} C ${px} ${midY}, ${childCx} ${midY}, ${childCx} ${childTy}`}
+                  fill="none"
+                  stroke={activeColor}
+                  strokeWidth="6"
+                  strokeLinecap="round"
+                  opacity="0.15"
+                />
+              )}
               {/* Main line */}
               <path
                 d={`M ${px} ${py} C ${px} ${midY}, ${childCx} ${midY}, ${childCx} ${childTy}`}
                 fill="none"
-                stroke="url(#lineGrad)"
-                strokeWidth="2"
+                stroke={active ? activeColor : inactiveColor}
+                strokeWidth={active ? 3 : 1.5}
                 strokeLinecap="round"
-                opacity="0.85"
+                strokeDasharray={active ? undefined : "4,4"}
               />
               {/* Animated dot */}
-              <circle r="3" fill="#008751" opacity="0.8">
-                <animateMotion
-                  dur="3s"
-                  repeatCount="indefinite"
-                  path={`M ${px} ${py} C ${px} ${midY}, ${childCx} ${midY}, ${childCx} ${childTy}`}
-                />
-              </circle>
+              {active && (
+                <circle r="3" fill="#008751" opacity="0.8">
+                  <animateMotion
+                    dur="3s"
+                    repeatCount="indefinite"
+                    path={`M ${px} ${py} C ${px} ${midY}, ${childCx} ${midY}, ${childCx} ${childTy}`}
+                  />
+                </circle>
+              )}
             </g>
           );
         })}
@@ -630,6 +655,7 @@ export default function FamilyTree({
           const px = group.parentMidX + offsetX;
           const py = group.parentMidY;
           const busY = py + (V_GAP - 24) / 2 + 12;
+          const groupActive = group.active;
 
           // Sort children by x for horizontal bus
           const sorted = [...group.children].sort((a, b) => a.x - b.x);
@@ -637,29 +663,29 @@ export default function FamilyTree({
 
           const minCx = sorted[0].x + offsetX;
           const maxCx = sorted[sorted.length - 1].x + offsetX;
-          const firstTopY = sorted[0].topY;
 
           return (
-            <g key={`fork-${gi}`}>
+            <g key={`fork-${gi}`} opacity={groupActive ? 1 : 0.6}>
               {/* Vertical drop from couple mid to bus level */}
               <path
                 d={`M ${px} ${py} V ${busY}`}
                 fill="none"
-                stroke="url(#lineGrad)"
-                strokeWidth="2"
+                stroke={groupActive ? activeColor : inactiveColor}
+                strokeWidth={groupActive ? 3 : 1.5}
                 strokeLinecap="round"
-                opacity="0.75"
+                strokeDasharray={groupActive ? undefined : "4,4"}
               />
-              {/* Glow under vertical drop */}
-              <path
-                d={`M ${px} ${py} V ${busY}`}
-                fill="none"
-                stroke="url(#lineGrad)"
-                strokeWidth="8"
-                strokeLinecap="round"
-                opacity="0.08"
-                filter="url(#lineGlow)"
-              />
+              {groupActive && (
+                /* Glow under vertical drop */
+                <path
+                  d={`M ${px} ${py} V ${busY}`}
+                  fill="none"
+                  stroke={activeColor}
+                  strokeWidth="8"
+                  strokeLinecap="round"
+                  opacity="0.12"
+                />
+              )}
 
               {/* Horizontal bus bar */}
               {sorted.length > 1 && (
@@ -667,44 +693,50 @@ export default function FamilyTree({
                   <line
                     x1={minCx} y1={busY}
                     x2={maxCx} y2={busY}
-                    stroke="url(#lineGrad)"
-                    strokeWidth="2"
+                    stroke={groupActive ? activeColor : inactiveColor}
+                    strokeWidth={groupActive ? 3 : 1.5}
                     strokeLinecap="round"
-                    opacity="0.6"
+                    strokeDasharray={groupActive ? undefined : "4,4"}
                   />
-                  <line
-                    x1={minCx} y1={busY}
-                    x2={maxCx} y2={busY}
-                    stroke="url(#lineGrad)"
-                    strokeWidth="8"
-                    strokeLinecap="round"
-                    opacity="0.06"
-                    filter="url(#lineGlow)"
-                  />
+                  {groupActive && (
+                    <line
+                      x1={minCx} y1={busY}
+                      x2={maxCx} y2={busY}
+                      stroke={activeColor}
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      opacity="0.1"
+                    />
+                  )}
                 </>
               )}
 
               {/* Vertical drops to each child */}
               {sorted.map((child, ci) => {
                 const childCx = child.x + offsetX;
+                const childActive = child.active;
                 return (
                   <g key={`fork-child-${gi}-${ci}`}>
                     <path
                       d={`M ${childCx} ${busY} V ${child.topY}`}
                       fill="none"
-                      stroke="url(#lineGrad)"
-                      strokeWidth="2"
+                      stroke={childActive ? activeColor : inactiveColor}
+                      strokeWidth={childActive ? 2.5 : 1.5}
                       strokeLinecap="round"
-                      opacity="0.65"
+                      strokeDasharray={childActive ? undefined : "4,4"}
                     />
                     {/* Small dot at junction */}
-                    <circle cx={childCx} cy={busY} r="3" fill="#008751" opacity="0.5" />
+                    {childActive && (
+                      <circle cx={childCx} cy={busY} r="3.5" fill="#008751" opacity="0.8" />
+                    )}
                   </g>
                 );
               })}
 
               {/* Main junction dot */}
-              <circle cx={px} cy={busY} r="4" fill="#008751" opacity="0.7" />
+              {groupActive && (
+                <circle cx={px} cy={busY} r="4.5" fill="#008751" opacity="0.95" />
+              )}
             </g>
           );
         })}

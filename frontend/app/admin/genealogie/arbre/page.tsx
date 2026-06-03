@@ -480,6 +480,7 @@ export default function DedicatedTreePage() {
 
           const fieldId = `${role}_${fieldName}_${index}`;
           const textField = form.createTextField(fieldId);
+          textField.acroField.setDefaultAppearance('/Helvetica 8 Tf 0 g');
           textField.setText(val);
           textField.setFontSize(8);
           
@@ -517,6 +518,7 @@ export default function DedicatedTreePage() {
 
         const noteFieldId = `${role}_notes_${index}`;
         const notesField = form.createTextField(noteFieldId);
+        notesField.acroField.setDefaultAppearance('/Helvetica 7 Tf 0 g');
         notesField.setText(noteText);
         notesField.setFontSize(7);
         notesField.enableMultiline();

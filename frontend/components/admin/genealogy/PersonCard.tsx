@@ -142,10 +142,10 @@ export default function PersonCard({ person, status, onClick, selected }: Person
       {/* Info - Right side */}
       <div className="flex-1 min-w-0 flex flex-col justify-center">
         {/* Name */}
-        <p className="truncate text-[11px] font-black leading-tight text-white">
+        <p className="truncate text-[11px] font-black leading-tight text-[var(--panel-text-heading)] dark:text-white">
           {person.first_name || 'Sans prénom'}
         </p>
-        <p className="truncate text-[10px] font-bold leading-tight text-gray-400">
+        <p className="truncate text-[10px] font-bold leading-tight text-[var(--panel-text-muted)] dark:text-gray-400">
           {person.last_name || 'Sans nom'}
         </p>
 
