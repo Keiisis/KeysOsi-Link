@@ -145,6 +145,14 @@ export default function FamilyTree({
       .sort((a, b) => a.id.localeCompare(b.id));
   }, [persons, self]);
 
+  /* ─── Partners (husband, wife, fiancé, fiancée) ─── */
+  const partnerPersons = useMemo(() => {
+    return persons
+      .filter(p => ['husband', 'wife', 'fiance', 'fiancee'].includes(p.relation_role || ''))
+      .filter((value, index, selfArr) => selfArr.findIndex(t => t.id === value.id) === index)
+      .sort((a, b) => a.id.localeCompare(b.id));
+  }, [persons]);
+
   /* ═══════════════════════════════════════════════════════════════
      LAYOUT ENGINE — Positionnement hiérarchique
      
@@ -277,20 +285,40 @@ export default function FamilyTree({
       });
     });
 
-    /* ─── Gen 3: Self + siblings ─── */
+    /* ─── Gen 3: Self + partner + siblings ─── */
     const selfCol = (fatherCol + motherCol) / 2;
+
+    // If there's a partner, shift self slightly left and put partner to the right
+    const hasPartner = partnerPersons.length > 0;
+    const selfActualCol = hasPartner ? selfCol - 0.6 : selfCol;
+    const partnerCol = selfCol + 0.6;
+
     nodes.push({
       id: 'self',
       role: 'self',
       person: findPerson('self'),
-      x: selfCol * UNIT,
+      x: selfActualCol * UNIT,
       y: genY(3),
       gen: 3,
     });
 
+    // Partners next to self
+    partnerPersons.forEach((partner, i) => {
+      const col = partnerCol + i * 1.2;
+      nodes.push({
+        id: partner.id,
+        role: partner.relation_role || 'husband',
+        person: partner,
+        x: col * UNIT,
+        y: genY(3),
+        gen: 3,
+      });
+    });
+
+    // Siblings offset from self (further left to avoid overlapping partner)
     siblings.forEach((sib, i) => {
-      const offset = i % 2 === 0 ? (Math.floor(i / 2) + 1) : -(Math.floor(i / 2) + 1);
-      const col = selfCol + offset * 1.2;
+      const offset = -(Math.floor(i / 2) + 1) - (i % 2 === 0 ? 0 : 0.5);
+      const col = selfActualCol + offset * 1.2;
       nodes.push({
         id: sib.id,
         role: sib.relation_role || 'sibling',
@@ -302,9 +330,10 @@ export default function FamilyTree({
     });
 
     /* ─── Gen 4: Children ─── */
+    const childrenCenterCol = hasPartner ? (selfActualCol + partnerCol) / 2 : selfActualCol;
     childPersons.forEach((child, i) => {
       const total = childPersons.length;
-      const startCol = selfCol - ((total - 1) * 0.6) / 2;
+      const startCol = childrenCenterCol - ((total - 1) * 0.6) / 2;
       const col = startCol + i * 0.6;
       nodes.push({
         id: child.id,
@@ -331,6 +360,15 @@ export default function FamilyTree({
       ...gpCouples,
       ['father', 'mother'],
     ];
+
+    // Self + partner couple links
+    partnerPersons.forEach(partner => {
+      allCouples.push(['self', partner.id]);
+    });
+    // If no partner persons but we have empty partner slots, add placeholder couple
+    if (partnerPersons.length === 0 && hasPartner) {
+      // skip
+    }
 
     allCouples.forEach(([a, b]) => {
       const nA = nodeMap[a];
@@ -414,20 +452,25 @@ export default function FamilyTree({
       }
     }
 
-    // Self -> children
+    // Self (+ partner) -> children
     const selfNode = nodeMap['self'];
     if (selfNode && childPersons.length > 0) {
-      const selfMidX = cx(selfNode);
-      const selfMidY = bot(selfNode) + 16;
+      // Check if there is a self+partner couple
+      const selfPartnerCouple = partnerPersons.length > 0
+        ? couples.find(c => (c.leftNode.id === 'self' && partnerPersons.some(p => p.id === c.rightNode.id)))
+        : null;
+
+      const parentMidX = selfPartnerCouple ? selfPartnerCouple.midX : cx(selfNode);
+      const parentMidY = selfPartnerCouple ? selfPartnerCouple.midY : bot(selfNode) + 16;
       const hasSelf = !!selfNode.person;
       siblingGroups.push({
-        parentMidX: selfMidX,
-        parentMidY: selfMidY,
+        parentMidX,
+        parentMidY,
         children: childPersons.map(c => {
           const n = nodeMap[c.id];
           return n 
             ? { x: cx(n), topY: top(n), active: hasSelf && !!n.person } 
-            : { x: selfMidX, topY: genY(4), active: false };
+            : { x: parentMidX, topY: genY(4), active: false };
         }),
         active: hasSelf,
       });
@@ -441,7 +484,7 @@ export default function FamilyTree({
     const maxY = Math.max(...allY.map(y => y + CARD_H), CARD_H) + 60;
 
     return { nodes, couples, childLinks, siblingGroups, width: maxX - minX + 80, height: maxY + 40, offsetX: -minX + 40 };
-  }, [persons, byRole, siblings, paternalUncles, maternalUncles, childPersons]);
+  }, [persons, byRole, siblings, paternalUncles, maternalUncles, childPersons, partnerPersons]);
 
   /* ─── Document status ─── */
   function statusOf(person: Person, docs: DocumentItem[]): 'complete' | 'partial' | 'missing' {
@@ -778,6 +821,14 @@ export default function FamilyTree({
                           onClick={(e) => { e.stopPropagation(); onAddRelative?.('brother'); }}
                           title="Ajouter un frère / sœur"
                           className="p-1 text-gray-400 hover:text-[#FCD116] transition-colors"
+                        >
+                          <Plus size={12} />
+                        </button>
+                        <div className="w-px h-3" style={{ background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }} />
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onAddRelative?.('husband'); }}
+                          title="Ajouter un mari / une femme"
+                          className="p-1 text-gray-400 hover:text-[#E8112D] transition-colors"
                         >
                           <Plus size={12} />
                         </button>

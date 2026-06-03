@@ -13,6 +13,8 @@ export type RelationRole =
   | 'paternal_uncle' | 'paternal_aunt'
   | 'maternal_uncle' | 'maternal_aunt'
   | 'sibling'
+  | 'husband' | 'wife'
+  | 'fiance' | 'fiancee'
   | 'child'
   | 'other';
 

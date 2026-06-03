@@ -131,8 +131,8 @@ export default function ClientGenealogyPage() {
         <GitFork size={36} className="text-gray-500 mx-auto mb-4" />
         <h3 className="text-lg font-black text-white uppercase tracking-wider">Arbre en cours de création</h3>
         <p className="text-xs text-gray-500 mt-2 leading-relaxed">
-          Votre généalogiste n&apos;a pas encore initialisé votre arbre de famille ou n&apos;a pas encore lié cet arbre à votre compte. 
-          Dès que l&apos;arbre sera prêt, vous pourrez suivre son évolution en temps réel d&apos;ici.
+          {"Votre généalogiste n'a pas encore initialisé votre arbre de famille ou n'a pas encore lié cet arbre à votre compte. "}
+          {"Dès que l'arbre sera prêt, vous pourrez suivre son évolution en temps réel d'ici."}
         </p>
       </div>
     );

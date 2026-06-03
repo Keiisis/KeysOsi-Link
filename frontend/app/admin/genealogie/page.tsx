@@ -374,7 +374,7 @@ export default function AdminGenealogyPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">Nom de l&apos;arbre (Optionnel)</label>
+                  <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">{"Nom de l'arbre (Optionnel)"}</label>
                   <input
                     type="text"
                     value={newClient.tree_name}
@@ -414,7 +414,7 @@ export default function AdminGenealogyPage() {
                   disabled={creating}
                   className="px-5 py-2 bg-[#008751] hover:bg-[#00a865] text-white rounded-xl text-xs font-black uppercase tracking-wider disabled:opacity-50"
                 >
-                  {creating ? 'Création...' : 'Créer l&apos;arbre'}
+                  {creating ? 'Création...' : "Créer l'arbre"}
                 </button>
               </div>
             </motion.form>
@@ -528,7 +528,7 @@ export default function AdminGenealogyPage() {
                   </p>
                 </div>
                 <div>
-                  <span className="text-[9px] text-gray-500 uppercase tracking-widest font-black">Nom de l&apos;arbre</span>
+                  <span className="text-[9px] text-gray-500 uppercase tracking-widest font-black">{"Nom de l'arbre"}</span>
                   <p className="text-sm font-bold text-white mt-0.5">{selectedTree.name}</p>
                 </div>
               </div>
@@ -558,7 +558,7 @@ export default function AdminGenealogyPage() {
                   href={`/admin/genealogie/arbre?id=${selectedTree.id}`}
                   className="w-full flex items-center justify-center gap-2 bg-[#008751] hover:bg-[#00a865] text-white font-black text-xs py-3 rounded-xl transition-all shadow-[0_8px_20px_rgba(0,135,81,0.2)]"
                 >
-                  <Eye size={14} /> Visualiser l&apos;arbre complet
+                  <Eye size={14} /> {"Visualiser l'arbre complet"}
                 </Link>
               </div>
             </div>

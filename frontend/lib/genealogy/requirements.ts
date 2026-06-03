@@ -79,6 +79,10 @@ export const ROLE_LABELS: Record<string, string> = {
   maternal_uncle: 'Oncle maternel',
   maternal_aunt: 'Tante maternelle',
   sibling: 'Collatéral (Fratrie)',
+  husband: 'Mari',
+  wife: 'Femme',
+  fiance: 'Fiancé',
+  fiancee: 'Fiancée',
   child: 'Enfant',
   other: 'Autre membre',
 };

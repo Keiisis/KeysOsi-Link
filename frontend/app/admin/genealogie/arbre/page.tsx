@@ -175,6 +175,52 @@ export default function DedicatedTreePage() {
       const treeClone = treeEl.cloneNode(true) as HTMLElement;
       treeClone.style.transform = 'none';
       treeClone.style.position = 'relative';
+
+      // ★ FIX: Remove all truncation so names display fully in the export
+      treeClone.querySelectorAll('.truncate').forEach(el => {
+        (el as HTMLElement).classList.remove('truncate');
+        (el as HTMLElement).style.overflow = 'visible';
+        (el as HTMLElement).style.textOverflow = 'clip';
+        (el as HTMLElement).style.whiteSpace = 'normal';
+        (el as HTMLElement).style.wordBreak = 'break-word';
+      });
+      treeClone.querySelectorAll('.overflow-hidden').forEach(el => {
+        (el as HTMLElement).classList.remove('overflow-hidden');
+        (el as HTMLElement).style.overflow = 'visible';
+      });
+      // Expand card containers to fit full text
+      treeClone.querySelectorAll('[class*="group/card"]').forEach(el => {
+        const htmlEl = el as HTMLElement;
+        htmlEl.style.overflow = 'visible';
+        htmlEl.style.minWidth = htmlEl.style.width || '180px';
+        htmlEl.style.width = 'auto';
+        htmlEl.style.maxWidth = '280px';
+      });
+      // Ensure all text elements inside cards are visible
+      treeClone.querySelectorAll('p, span').forEach(el => {
+        const htmlEl = el as HTMLElement;
+        if (htmlEl.style.textOverflow === 'ellipsis' || htmlEl.classList.contains('truncate')) {
+          htmlEl.style.textOverflow = 'clip';
+          htmlEl.style.overflow = 'visible';
+          htmlEl.style.whiteSpace = 'normal';
+        }
+      });
+      // Make dark-mode text readable on white background
+      treeClone.querySelectorAll('[class*="text-white"]').forEach(el => {
+        (el as HTMLElement).style.color = '#1B2A4A';
+      });
+      treeClone.querySelectorAll('[class*="text-gray-"]').forEach(el => {
+        (el as HTMLElement).style.color = '#4B5563';
+      });
+      // Make card backgrounds visible on white
+      treeClone.querySelectorAll('[class*="rounded-2xl"]').forEach(el => {
+        const htmlEl = el as HTMLElement;
+        if (htmlEl.style.background?.includes('rgba(10,15,24')) {
+          htmlEl.style.background = 'rgba(240,245,250,0.95)';
+          htmlEl.style.border = '1px solid #D1D5DB';
+        }
+      });
+
       wrapper.appendChild(treeClone);
 
       // Add report section
@@ -260,21 +306,69 @@ export default function DedicatedTreePage() {
       if (!treeEl) throw new Error('Élément arbre introuvable');
 
       // 2. Capture the family tree diagram as an image first
-      const oldZoom = zoom;
-      const oldPan = pan;
-      setZoom(1);
-      setPan({ x: 0, y: 0 });
-      await new Promise(r => setTimeout(r, 200));
+      // Clone tree off-screen to avoid modifying visible DOM
+      const pdfWrapper = document.createElement('div');
+      pdfWrapper.style.cssText = 'position:absolute;left:-9999px;top:0;background:#FFFFFF;padding:20px;';
+      const pdfTreeClone = treeEl.cloneNode(true) as HTMLElement;
+      pdfTreeClone.style.transform = 'none';
+      pdfTreeClone.style.position = 'relative';
 
-      const canvas = await html2canvas(treeEl, {
+      // ★ FIX: Remove truncation so names are fully visible in PDF
+      pdfTreeClone.querySelectorAll('.truncate').forEach(el => {
+        (el as HTMLElement).classList.remove('truncate');
+        (el as HTMLElement).style.overflow = 'visible';
+        (el as HTMLElement).style.textOverflow = 'clip';
+        (el as HTMLElement).style.whiteSpace = 'normal';
+        (el as HTMLElement).style.wordBreak = 'break-word';
+      });
+      pdfTreeClone.querySelectorAll('.overflow-hidden').forEach(el => {
+        (el as HTMLElement).classList.remove('overflow-hidden');
+        (el as HTMLElement).style.overflow = 'visible';
+      });
+      pdfTreeClone.querySelectorAll('[class*="group/card"]').forEach(el => {
+        const htmlEl = el as HTMLElement;
+        htmlEl.style.overflow = 'visible';
+        htmlEl.style.minWidth = htmlEl.style.width || '180px';
+        htmlEl.style.width = 'auto';
+        htmlEl.style.maxWidth = '280px';
+      });
+      pdfTreeClone.querySelectorAll('p, span').forEach(el => {
+        const htmlEl = el as HTMLElement;
+        if (htmlEl.style.textOverflow === 'ellipsis' || htmlEl.classList.contains('truncate')) {
+          htmlEl.style.textOverflow = 'clip';
+          htmlEl.style.overflow = 'visible';
+          htmlEl.style.whiteSpace = 'normal';
+        }
+      });
+      // Make dark text readable on white
+      pdfTreeClone.querySelectorAll('[class*="text-white"]').forEach(el => {
+        (el as HTMLElement).style.color = '#1B2A4A';
+      });
+      pdfTreeClone.querySelectorAll('[class*="text-gray-"]').forEach(el => {
+        (el as HTMLElement).style.color = '#4B5563';
+      });
+      pdfTreeClone.querySelectorAll('[class*="rounded-2xl"]').forEach(el => {
+        const htmlEl = el as HTMLElement;
+        if (htmlEl.style.background?.includes('rgba(10,15,24')) {
+          htmlEl.style.background = 'rgba(240,245,250,0.95)';
+          htmlEl.style.border = '1px solid #D1D5DB';
+        }
+      });
+
+      pdfWrapper.appendChild(pdfTreeClone);
+      document.body.appendChild(pdfWrapper);
+      await new Promise(r => setTimeout(r, 300));
+
+      const canvas = await html2canvas(pdfWrapper, {
         backgroundColor: '#FFFFFF',
         scale: 2,
         useCORS: true,
         logging: false,
+        width: pdfWrapper.scrollWidth,
+        height: pdfWrapper.scrollHeight,
       });
 
-      setZoom(oldZoom);
-      setPan(oldPan);
+      document.body.removeChild(pdfWrapper);
 
       const treeImgData = canvas.toDataURL('image/jpeg', 0.9);
 

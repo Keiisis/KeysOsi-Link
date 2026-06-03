@@ -181,12 +181,27 @@ export default function PersonForm({
       case 'maternal_uncle':
       case 'maternal_aunt':
         return { father_id: findId('maternal_grandfather'), mother_id: findId('maternal_grandmother') };
+      case 'husband':
+      case 'wife':
+      case 'fiance':
+      case 'fiancee':
+        // Partners don't auto-resolve parents from the tree
+        return { father_id: null, mother_id: null };
       case 'child':
         const self = persons.find(p => p.is_self || p.relation_role === 'self');
-        if (!self) return { father_id: null, mother_id: null };
-        return self.gender === 'female' 
-          ? { father_id: null, mother_id: self.id } 
-          : { father_id: self.id, mother_id: null };
+        const partner = persons.find(p => ['husband', 'wife', 'fiance', 'fiancee'].includes(p.relation_role || ''));
+        if (!self) return { father_id: partner?.gender === 'male' ? partner.id : null, mother_id: partner?.gender === 'female' ? partner.id : null };
+        // Assign self and partner as parents based on gender
+        let fId: string | null = null;
+        let mId: string | null = null;
+        if (self.gender === 'male') { fId = self.id; } else { mId = self.id; }
+        if (partner) {
+          if (partner.gender === 'male' && !fId) { fId = partner.id; }
+          else if (partner.gender === 'female' && !mId) { mId = partner.id; }
+          else if (!fId) { fId = partner.id; }
+          else if (!mId) { mId = partner.id; }
+        }
+        return { father_id: fId, mother_id: mId };
       default:
         return { father_id: null, mother_id: null };
     }
@@ -228,12 +243,26 @@ export default function PersonForm({
           case 'maternal_uncle':
           case 'maternal_aunt':
             return { fatherId: findIdByRole('maternal_grandfather'), motherId: findIdByRole('maternal_grandmother') };
+          case 'husband':
+          case 'wife':
+          case 'fiance':
+          case 'fiancee':
+            return { fatherId: null, motherId: null };
           case 'child':
             const selfPerson = pList.find(x => x.is_self || x.relation_role === 'self');
-            if (!selfPerson) return { fatherId: null, motherId: null };
-            return selfPerson.gender === 'female'
-              ? { fatherId: null, motherId: selfPerson.id }
-              : { fatherId: selfPerson.id, motherId: null };
+            const partnerPerson = pList.find(x => ['husband', 'wife', 'fiance', 'fiancee'].includes(x.relation_role || ''));
+            let cFatherId: string | null = null;
+            let cMotherId: string | null = null;
+            if (selfPerson) {
+              if (selfPerson.gender === 'male') { cFatherId = selfPerson.id; } else { cMotherId = selfPerson.id; }
+            }
+            if (partnerPerson) {
+              if (partnerPerson.gender === 'male' && !cFatherId) { cFatherId = partnerPerson.id; }
+              else if (partnerPerson.gender === 'female' && !cMotherId) { cMotherId = partnerPerson.id; }
+              else if (!cFatherId) { cFatherId = partnerPerson.id; }
+              else if (!cMotherId) { cMotherId = partnerPerson.id; }
+            }
+            return { fatherId: cFatherId, motherId: cMotherId };
           default:
             return { fatherId: null, motherId: null };
         }
