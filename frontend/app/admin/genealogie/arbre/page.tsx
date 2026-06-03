@@ -1005,20 +1005,27 @@ export default function DedicatedTreePage() {
       {/* 3. Slider detail drawer */}
       {(selectedPerson || presetRole) && tree && (
         <>
-          {/* Backdrop overlay to dim tree content */}
+          {/* Backdrop overlay — FIXED position to cover entire viewport */}
           <div
-            className="absolute inset-0 z-40 animate-in fade-in duration-200"
-            style={{ background: isDark ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.25)' }}
+            className="fixed inset-0 animate-in fade-in duration-200"
+            style={{
+              zIndex: 9998,
+              background: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.5)',
+              backdropFilter: 'blur(2px)',
+            }}
             onClick={handleCancelEdit}
           />
+          {/* Drawer panel — FIXED position, always on top */}
           <div
-            className="absolute top-16 right-0 bottom-0 w-[420px] border-l z-50 flex flex-col overflow-y-auto animate-in slide-in-from-right duration-300 scrollbar-premium"
+            className="fixed right-0 bottom-0 w-[420px] flex flex-col overflow-y-auto animate-in slide-in-from-right duration-300 scrollbar-premium"
             style={{
+              zIndex: 9999,
+              top: 0,
               background: isDark ? '#070b13' : '#ffffff',
-              borderColor: isDark ? '#1e293b' : '#d1d5db',
+              borderLeft: `2px solid ${isDark ? '#1e293b' : '#d1d5db'}`,
               boxShadow: isDark
                 ? '-20px 0 60px rgba(0,0,0,0.9), -4px 0 20px rgba(0,0,0,0.6)'
-                : '-20px 0 60px rgba(0,0,0,0.18), -4px 0 20px rgba(0,0,0,0.08)',
+                : '-20px 0 80px rgba(0,0,0,0.3), -4px 0 30px rgba(0,0,0,0.15)',
             }}
           >
           <div className="p-6 space-y-6">
