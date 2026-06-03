@@ -14,31 +14,32 @@ interface PersonCardProps {
 
 export default function PersonCard({ person, status, onClick, selected }: PersonCardProps) {
   const isSelf = person.is_self || person.relation_role === 'self';
+  const isDeceased = !!person.death_date;
 
   const statusConfig = {
     complete: {
       border: 'border-[#008751]/40',
       ring: 'ring-[#008751]/50',
       text: 'text-[#008751]',
-      glow: 'shadow-[0_0_24px_-8px_#008751]',
+      glow: 'shadow-[0_0_32px_-8px_rgba(0,135,81,0.6)]',
       dotColor: 'bg-[#008751]',
       icon: CheckCircle2,
       label: 'Complet',
     },
     partial: {
-      border: 'border-[#FCD116]/40',
+      border: 'border-[#FCD116]/35',
       ring: 'ring-[#FCD116]/50',
       text: 'text-[#FCD116]',
-      glow: 'shadow-[0_0_24px_-8px_#FCD116]',
+      glow: 'shadow-[0_0_32px_-8px_rgba(252,209,22,0.5)]',
       dotColor: 'bg-[#FCD116]',
       icon: AlertTriangle,
       label: 'Partiel',
     },
     missing: {
-      border: 'border-[#E8112D]/25',
+      border: 'border-[#E8112D]/20',
       ring: 'ring-[#E8112D]/30',
       text: 'text-[#E8112D]/80',
-      glow: 'shadow-[0_0_24px_-10px_#E8112D]',
+      glow: 'shadow-[0_0_32px_-10px_rgba(232,17,45,0.4)]',
       dotColor: 'bg-[#E8112D]',
       icon: AlertCircle,
       label: 'Incomplet',
@@ -53,24 +54,27 @@ export default function PersonCard({ person, status, onClick, selected }: Person
       .join('')
       .toUpperCase() || '?';
 
-  // Accents selon le genre
+  // Gender-based theming
   const genderTheme =
     person.gender === 'male'
       ? {
-        backdrop: 'from-blue-500/[0.12] to-transparent',
+        backdrop: 'from-blue-500/[0.10] to-transparent',
         avatar: 'bg-blue-500/10 border-blue-400/30 text-blue-300',
-        ringHover: 'group-hover:shadow-[0_0_18px_-4px_rgba(59,130,246,0.4)]',
+        avatarGrad: 'from-blue-500/30 to-blue-700/20',
+        ringHover: 'group-hover:shadow-[0_0_20px_-4px_rgba(59,130,246,0.35)]',
       }
       : person.gender === 'female'
         ? {
-          backdrop: 'from-pink-500/[0.12] to-transparent',
+          backdrop: 'from-pink-500/[0.10] to-transparent',
           avatar: 'bg-pink-500/10 border-pink-400/30 text-pink-300',
-          ringHover: 'group-hover:shadow-[0_0_18px_-4px_rgba(236,72,153,0.4)]',
+          avatarGrad: 'from-pink-500/30 to-pink-700/20',
+          ringHover: 'group-hover:shadow-[0_0_20px_-4px_rgba(236,72,153,0.35)]',
         }
         : {
-          backdrop: 'from-violet-500/[0.10] to-transparent',
+          backdrop: 'from-violet-500/[0.08] to-transparent',
           avatar: 'bg-violet-500/10 border-violet-400/30 text-violet-300',
-          ringHover: 'group-hover:shadow-[0_0_18px_-4px_rgba(139,92,246,0.4)]',
+          avatarGrad: 'from-violet-500/30 to-violet-700/20',
+          ringHover: 'group-hover:shadow-[0_0_20px_-4px_rgba(139,92,246,0.35)]',
         };
 
   const years = `${person.birth_date ? new Date(person.birth_date).getFullYear() : '—'}${person.death_date ? ` – ${new Date(person.death_date).getFullYear()}` : ''
@@ -80,40 +84,41 @@ export default function PersonCard({ person, status, onClick, selected }: Person
     <div
       onClick={onClick}
       className={cn(
-        // ⬇️ s'emboîte pixel-perfect dans la grille (slot 168×108)
-        'group relative flex h-full w-full cursor-pointer flex-col items-center overflow-hidden rounded-2xl p-3 transition-all duration-300',
-        'border bg-[#0a0f18]/90 backdrop-blur-md',
+        'group relative flex h-full w-full cursor-pointer items-center gap-3 overflow-hidden rounded-2xl transition-all duration-300',
+        'border bg-[#0a0f18]/95 backdrop-blur-lg px-3 py-2.5',
         statusConfig.border,
+        isDeceased && 'opacity-75',
         selected
           ? cn('ring-2 scale-[1.04] bg-white/[0.06]', statusConfig.ring, statusConfig.glow)
-          : cn('hover:scale-[1.03] hover:bg-white/[0.035]', genderTheme.ringHover)
+          : cn('hover:scale-[1.03] hover:bg-white/[0.035]', genderTheme.ringHover),
+        isSelf && 'ring-1 ring-[#FCD116]/20'
       )}
     >
-      {/* Backdrop dégradé selon genre */}
+      {/* Background gradient based on gender */}
       <div
         className={cn(
-          'pointer-events-none absolute inset-0 -z-10 rounded-2xl bg-gradient-to-b opacity-70 transition-opacity duration-300 group-hover:opacity-100',
+          'pointer-events-none absolute inset-0 -z-10 rounded-2xl bg-gradient-to-br opacity-60 transition-opacity group-hover:opacity-100',
           genderTheme.backdrop
         )}
       />
 
-      {/* Liseré supérieur tricolore subtil */}
+      {/* Top accent bar (tricolore subtil) */}
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[2px] rounded-t-2xl opacity-50"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[2px] rounded-t-2xl opacity-40"
         style={{ background: 'linear-gradient(90deg, transparent, #008751, #FCD116, #E8112D, transparent)' }}
       />
 
-      {/* Badge "Vous" (couronne) */}
+      {/* "Vous" badge for self */}
       {isSelf && (
-        <div className="absolute -right-1 -top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-[#FCD116]/40 bg-[#FCD116]/20 shadow-[0_0_12px_rgba(252,209,22,0.4)]">
-          <Crown size={10} className="text-[#FCD116]" />
+        <div className="absolute -right-0.5 -top-0.5 z-20 flex h-5 w-5 items-center justify-center rounded-full border border-[#FCD116]/50 bg-[#FCD116]/25 shadow-[0_0_12px_rgba(252,209,22,0.5)]">
+          <Crown size={9} className="text-[#FCD116]" />
         </div>
       )}
 
-      {/* Avatar */}
+      {/* Avatar - Left side */}
       <div
         className={cn(
-          'mb-1.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 text-sm font-black transition-all duration-300 group-hover:scale-105 overflow-hidden',
+          'shrink-0 flex h-12 w-12 items-center justify-center rounded-xl border-2 text-sm font-black transition-all duration-300 group-hover:scale-105 overflow-hidden',
           genderTheme.avatar
         )}
       >
@@ -124,42 +129,43 @@ export default function PersonCard({ person, status, onClick, selected }: Person
             className="h-full w-full object-cover"
           />
         ) : (
-          initials
+          <span className="text-xs">{initials}</span>
         )}
       </div>
 
-      {/* Nom */}
-      <div className="w-full min-w-0 text-center">
+      {/* Info - Right side */}
+      <div className="flex-1 min-w-0 flex flex-col justify-center">
+        {/* Name */}
         <p className="truncate text-[11px] font-black leading-tight text-white">
           {person.first_name || 'Sans prénom'}
         </p>
-        <p className="-mt-0.5 truncate text-[11px] font-bold leading-tight text-gray-300">
+        <p className="truncate text-[10px] font-bold leading-tight text-gray-400">
           {person.last_name || 'Sans nom'}
         </p>
-      </div>
 
-      {/* Rôle */}
-      <span className="mt-1 truncate text-[8px] font-mono font-bold uppercase tracking-[0.18em] text-gray-500">
-        {person.relation_role
-          ? ROLE_LABELS[person.relation_role] || person.relation_role
-          : 'Individu'}
-      </span>
+        {/* Role label */}
+        <span className="mt-1 inline-block truncate text-[7px] font-black uppercase tracking-[0.16em] text-gray-600">
+          {person.relation_role
+            ? ROLE_LABELS[person.relation_role] || person.relation_role
+            : 'Individu'}
+        </span>
 
-      {/* Barre de statut */}
-      <div className="mt-auto flex w-full items-center justify-between border-t border-white/5 pt-1.5">
-        <span className="font-mono text-[9px] font-semibold text-gray-500">{years}</span>
-        <div className="flex items-center gap-1">
-          <StatusIcon size={10} className={statusConfig.text} />
-          <span className={cn('relative flex h-1.5 w-1.5 rounded-full', statusConfig.dotColor)}>
-            {status === 'complete' && (
-              <span
-                className={cn(
-                  'absolute inline-flex h-full w-full animate-ping rounded-full opacity-50',
-                  statusConfig.dotColor
-                )}
-              />
-            )}
-          </span>
+        {/* Bottom row: years + status */}
+        <div className="mt-1 flex items-center justify-between">
+          <span className="font-mono text-[8px] font-semibold text-gray-600">{years}</span>
+          <div className="flex items-center gap-1">
+            <StatusIcon size={9} className={statusConfig.text} />
+            <span className={cn('relative flex h-1.5 w-1.5 rounded-full', statusConfig.dotColor)}>
+              {status === 'complete' && (
+                <span
+                  className={cn(
+                    'absolute inline-flex h-full w-full animate-ping rounded-full opacity-50',
+                    statusConfig.dotColor
+                  )}
+                />
+              )}
+            </span>
+          </div>
         </div>
       </div>
     </div>
