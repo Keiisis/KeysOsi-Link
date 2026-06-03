@@ -6,6 +6,7 @@ import PersonCard from './PersonCard';
 import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
+import { useTheme } from '@/lib/theme/ThemeContext';
 
 /* ══════════════════════════════════════════════════════════════════
    ARBRE GÉNÉALOGIQUE PROFESSIONNEL — LAYOUT HIÉRARCHIQUE
@@ -71,6 +72,8 @@ export default function FamilyTree({
   onSelect,
   onAddRelative,
 }: FamilyTreeProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   /* ─── Helpers: find person by role ─── */
   const byRole = useMemo(() => {
@@ -470,7 +473,7 @@ export default function FamilyTree({
               <text
                 x={16}
                 y={y + CARD_H / 2 + 4}
-                fill="rgba(255,255,255,0.08)"
+                fill={isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}
                 fontSize="10"
                 fontWeight="900"
                 fontFamily="system-ui, sans-serif"
@@ -515,7 +518,7 @@ export default function FamilyTree({
               <line
                 x1={lx} y1={my}
                 x2={rx} y2={my}
-                stroke={active ? '#FCD116' : 'rgba(255,255,255,0.06)'}
+                stroke={active ? '#FCD116' : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)')}
                 strokeWidth={active ? 2.5 : 1}
                 strokeLinecap="round"
               />
@@ -526,7 +529,7 @@ export default function FamilyTree({
                     <animate attributeName="r" values={`${COUPLE_R + 2};${COUPLE_R + 6};${COUPLE_R + 2}`} dur="3s" repeatCount="indefinite" />
                     <animate attributeName="opacity" values="0.2;0.4;0.2" dur="3s" repeatCount="indefinite" />
                   </circle>
-                  <circle cx={mx} cy={my} r={COUPLE_R} fill="#0a0f18" stroke="#FCD116" strokeWidth="2" />
+                  <circle cx={mx} cy={my} r={COUPLE_R} fill={isDark ? '#0a0f18' : '#FFFFFF'} stroke="#FCD116" strokeWidth="2" />
                   <text
                     x={mx}
                     y={my + 4}
@@ -691,7 +694,13 @@ export default function FamilyTree({
                     onClick={() => onSelect(node.person!)}
                   />
                   {/* Quick action overlay on hover */}
-                  <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-all duration-300 bg-[#080d12]/95 border border-white/10 rounded-full px-2.5 py-1 z-30 shadow-2xl backdrop-blur-md">
+                  <div
+                    className="absolute -bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-all duration-300 rounded-full px-2.5 py-1 z-30 shadow-2xl backdrop-blur-md"
+                    style={{
+                      background: isDark ? 'rgba(8,13,18,0.95)' : 'rgba(255,255,255,0.95)',
+                      border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+                    }}
+                  >
                     {(node.role === 'self' || node.person.is_self) && (
                       <>
                         <button
@@ -701,7 +710,7 @@ export default function FamilyTree({
                         >
                           <Plus size={12} />
                         </button>
-                        <div className="w-px h-3 bg-white/10" />
+                        <div className="w-px h-3" style={{ background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }} />
                         <button
                           onClick={(e) => { e.stopPropagation(); onAddRelative?.('child'); }}
                           title="Ajouter un enfant"
@@ -761,7 +770,7 @@ export default function FamilyTree({
       {persons.length === 0 && (
         <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
           <div className="text-center max-w-xs">
-            <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-gradient-to-br from-[#008751]/20 to-[#FCD116]/10 flex items-center justify-center border border-white/10">
+            <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-gradient-to-br from-[#008751]/20 to-[#FCD116]/10 flex items-center justify-center" style={{ border: `1px solid var(--panel-border)` }}>
               <Plus size={24} className="text-[#008751]" />
             </div>
             <p className="text-sm font-black text-white mb-1">Commencez votre arbre</p>

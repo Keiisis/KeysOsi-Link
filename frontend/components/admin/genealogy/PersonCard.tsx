@@ -4,6 +4,7 @@ import { Person } from '@/lib/genealogy/types';
 import { ROLE_LABELS } from '@/lib/genealogy/requirements';
 import { CheckCircle2, AlertTriangle, AlertCircle, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTheme } from '@/lib/theme/ThemeContext';
 
 interface PersonCardProps {
   person: Person;
@@ -15,6 +16,8 @@ interface PersonCardProps {
 export default function PersonCard({ person, status, onClick, selected }: PersonCardProps) {
   const isSelf = person.is_self || person.relation_role === 'self';
   const isDeceased = !!person.death_date;
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   const statusConfig = {
     complete: {
@@ -85,14 +88,17 @@ export default function PersonCard({ person, status, onClick, selected }: Person
       onClick={onClick}
       className={cn(
         'group relative flex h-full w-full cursor-pointer items-center gap-3 overflow-hidden rounded-2xl transition-all duration-300',
-        'border bg-[#0a0f18]/95 backdrop-blur-lg px-3 py-2.5',
+        'border backdrop-blur-lg px-3 py-2.5',
         statusConfig.border,
         isDeceased && 'opacity-75',
         selected
-          ? cn('ring-2 scale-[1.04] bg-white/[0.06]', statusConfig.ring, statusConfig.glow)
-          : cn('hover:scale-[1.03] hover:bg-white/[0.035]', genderTheme.ringHover),
+          ? cn('ring-2 scale-[1.04]', statusConfig.ring, statusConfig.glow)
+          : cn('hover:scale-[1.03]', genderTheme.ringHover),
         isSelf && 'ring-1 ring-[#FCD116]/20'
       )}
+      style={{
+        background: isDark ? 'rgba(10,15,24,0.95)' : 'rgba(255,255,255,0.95)',
+      }}
     >
       {/* Background gradient based on gender */}
       <div
