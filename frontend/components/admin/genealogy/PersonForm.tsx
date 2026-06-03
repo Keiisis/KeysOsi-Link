@@ -163,6 +163,14 @@ export default function PersonForm({
         return { father_id: findId('paternal_grandfather'), mother_id: findId('paternal_grandmother') };
       case 'mother':
         return { father_id: findId('maternal_grandfather'), mother_id: findId('maternal_grandmother') };
+      case 'paternal_grandfather':
+        return { father_id: findId('paternal_ggf_1'), mother_id: findId('paternal_ggm_1') };
+      case 'paternal_grandmother':
+        return { father_id: findId('paternal_ggf_2'), mother_id: findId('paternal_ggm_2') };
+      case 'maternal_grandfather':
+        return { father_id: findId('maternal_ggf_1'), mother_id: findId('maternal_ggm_1') };
+      case 'maternal_grandmother':
+        return { father_id: findId('maternal_ggf_2'), mother_id: findId('maternal_ggm_2') };
       case 'brother':
       case 'sister':
       case 'sibling':
@@ -181,6 +189,74 @@ export default function PersonForm({
           : { father_id: self.id, mother_id: null };
       default:
         return { father_id: null, mother_id: null };
+    }
+  }
+
+  async function syncTreeRelations(treeId: string) {
+    try {
+      const { data: latestPersons, error } = await supabase
+        .from('persons')
+        .select('*')
+        .eq('tree_id', treeId);
+      if (error || !latestPersons) return;
+
+      const getExpectedParentsForRole = (role: RelationRole, pList: Person[]): { fatherId: string | null; motherId: string | null } => {
+        const findIdByRole = (r: RelationRole) => pList.find(x => x.relation_role === r || (r === 'self' && x.is_self))?.id || null;
+
+        switch (role) {
+          case 'self':
+            return { fatherId: findIdByRole('father'), motherId: findIdByRole('mother') };
+          case 'father':
+            return { fatherId: findIdByRole('paternal_grandfather'), motherId: findIdByRole('paternal_grandmother') };
+          case 'mother':
+            return { fatherId: findIdByRole('maternal_grandfather'), motherId: findIdByRole('maternal_grandmother') };
+          case 'paternal_grandfather':
+            return { fatherId: findIdByRole('paternal_ggf_1'), motherId: findIdByRole('paternal_ggm_1') };
+          case 'paternal_grandmother':
+            return { fatherId: findIdByRole('paternal_ggf_2'), motherId: findIdByRole('paternal_ggm_2') };
+          case 'maternal_grandfather':
+            return { fatherId: findIdByRole('maternal_ggf_1'), motherId: findIdByRole('maternal_ggm_1') };
+          case 'maternal_grandmother':
+            return { fatherId: findIdByRole('maternal_ggf_2'), motherId: findIdByRole('maternal_ggm_2') };
+          case 'brother':
+          case 'sister':
+          case 'sibling':
+            return { fatherId: findIdByRole('father'), motherId: findIdByRole('mother') };
+          case 'paternal_uncle':
+          case 'paternal_aunt':
+            return { fatherId: findIdByRole('paternal_grandfather'), motherId: findIdByRole('paternal_grandmother') };
+          case 'maternal_uncle':
+          case 'maternal_aunt':
+            return { fatherId: findIdByRole('maternal_grandfather'), motherId: findIdByRole('maternal_grandmother') };
+          case 'child':
+            const selfPerson = pList.find(x => x.is_self || x.relation_role === 'self');
+            if (!selfPerson) return { fatherId: null, motherId: null };
+            return selfPerson.gender === 'female'
+              ? { fatherId: null, motherId: selfPerson.id }
+              : { fatherId: selfPerson.id, motherId: null };
+          default:
+            return { fatherId: null, motherId: null };
+        }
+      };
+
+      for (const p of latestPersons) {
+        const role = (p.is_self ? 'self' : p.relation_role) as RelationRole;
+        if (!role) continue;
+
+        const expected = getExpectedParentsForRole(role, latestPersons);
+
+        if (p.father_id !== expected.fatherId || p.mother_id !== expected.motherId) {
+          await supabase
+            .from('persons')
+            .update({
+              father_id: expected.fatherId,
+              mother_id: expected.motherId,
+            })
+            .eq('id', p.id);
+        }
+      }
+    } catch (e) {
+      console.error('Error syncing tree relations:', e);
     }
   }
 
@@ -223,6 +299,8 @@ export default function PersonForm({
         if (error) throw error;
         flash('Membre ajouté à votre arbre', true);
       }
+
+      await syncTreeRelations(treeId);
 
       onSaved?.();
 

@@ -28,6 +28,12 @@ export type DocType =
   | 'death_certificate'
   | 'notarial_act'
   | 'military_act'
+  | 'baptism_certificate'
+  | 'notoriety_act'
+  | 'slave_register'
+  | 'census_record'
+  | 'custom_certificate'
+  | 'historical_identity'
   | 'other';
 
 export interface Tree {

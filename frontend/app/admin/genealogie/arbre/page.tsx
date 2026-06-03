@@ -420,14 +420,14 @@ export default function DedicatedTreePage() {
         { role: 'paternal_grandmother', label: 'GRAND-MÈRE PATERNELLE (G2)' },
         { role: 'maternal_grandfather', label: 'GRAND-PÈRE MATERNEL (G2)' },
         { role: 'maternal_grandmother', label: 'GRAND-MÈRE MATERNELLE (G2)' },
-        { role: 'paternal_ggf_1', label: 'ARRIÈRE-GRAND-PÈRE PATERNEL 1 (G3)' },
-        { role: 'paternal_ggm_1', label: 'ARRIÈRE-GRAND-MÈRE PATERNELLE 1 (G3)' },
-        { role: 'paternal_ggf_2', label: 'ARRIÈRE-GRAND-PÈRE PATERNEL 2 (G3)' },
-        { role: 'paternal_ggm_2', label: 'ARRIÈRE-GRAND-MÈRE PATERNELLE 2 (G3)' },
-        { role: 'maternal_ggf_1', label: 'ARRIÈRE-GRAND-PÈRE MATERNEL 1 (G3)' },
-        { role: 'maternal_ggm_1', label: 'ARRIÈRE-GRAND-MÈRE MATERNELLE 1 (G3)' },
-        { role: 'maternal_ggf_2', label: 'ARRIÈRE-GRAND-PÈRE MATERNEL 2 (G3)' },
-        { role: 'maternal_ggm_2', label: 'ARRIÈRE-GRAND-MÈRE MATERNELLE 2 (G3)' },
+        { role: 'paternal_ggf_1', label: 'ARRIÈRE-GRAND-PÈRE PATERNEL (Père du Grand-père paternel) (G3)' },
+        { role: 'paternal_ggm_1', label: 'ARRIÈRE-GRAND-MÈRE PATERNELLE (Mère du Grand-père paternel) (G3)' },
+        { role: 'paternal_ggf_2', label: 'ARRIÈRE-GRAND-PÈRE PATERNEL (Père de la Grand-mère paternelle) (G3)' },
+        { role: 'paternal_ggm_2', label: 'ARRIÈRE-GRAND-MÈRE PATERNELLE (Mère de la Grand-mère paternelle) (G3)' },
+        { role: 'maternal_ggf_1', label: 'ARRIÈRE-GRAND-PÈRE MATERNEL (Père du Grand-père maternel) (G3)' },
+        { role: 'maternal_ggm_1', label: 'ARRIÈRE-GRAND-MÈRE MATERNELLE (Mère du Grand-père maternel) (G3)' },
+        { role: 'maternal_ggf_2', label: 'ARRIÈRE-GRAND-PÈRE MATERNEL (Père de la Grand-mère maternelle) (G3)' },
+        { role: 'maternal_ggm_2', label: 'ARRIÈRE-GRAND-MÈRE MATERNELLE (Mère de la Grand-mère maternelle) (G3)' },
       ];
 
       let currentPage = null;

@@ -18,6 +18,12 @@ const DOC_TYPES: { value: DocType; label: string }[] = [
   { value: 'afro_descent_proof', label: "Preuve d'afro-descendance" },
   { value: 'notarial_act', label: 'Acte notarial' },
   { value: 'military_act', label: 'Acte militaire' },
+  { value: 'baptism_certificate', label: 'Acte de baptême' },
+  { value: 'notoriety_act', label: 'Acte de notoriété' },
+  { value: 'slave_register', label: "Registre d'esclaves / Matricule" },
+  { value: 'census_record', label: 'Recensement / Liste électorale' },
+  { value: 'custom_certificate', label: 'Certificat de coutume' },
+  { value: 'historical_identity', label: "Pièce d'identité historique" },
   { value: 'other', label: 'Autre document historique' },
 ];
 
