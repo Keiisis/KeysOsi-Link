@@ -506,8 +506,7 @@ export default function DedicatedTreePage() {
       });
 
       // --- PAGES 3+: INDIVIDUAL FORM SHEETS (PORTRAIT) ---
-      const rolesToExport = [
-        { role: 'self', label: 'SUJET (G0)' },
+      const ancestorsToExport = [
         { role: 'father', label: 'PÈRE (G1)' },
         { role: 'mother', label: 'MÈRE (G1)' },
         { role: 'paternal_grandfather', label: 'GRAND-PÈRE PATERNEL (G2)' },
@@ -524,19 +523,71 @@ export default function DedicatedTreePage() {
         { role: 'maternal_ggm_2', label: 'ARRIÈRE-GRAND-MÈRE MATERNELLE (Mère de la Grand-mère maternelle) (G3)' },
       ];
 
+      interface ExportItem {
+        person: Person | undefined;
+        role: string;
+        label: string;
+      }
+
+      const itemsToExport: ExportItem[] = [];
+
+      // 1. Proposant (self)
+      const selfPerson = persons.find(p => p.is_self || p.relation_role === 'self');
+      itemsToExport.push({
+        person: selfPerson,
+        role: 'self',
+        label: 'SUJET (G0)',
+      });
+
+      // 2. Partenaires (husband, wife, fiance, fiancee)
+      const partnerPersons = persons.filter(p => ['husband', 'wife', 'fiance', 'fiancee'].includes(p.relation_role || ''));
+      partnerPersons.forEach((partner) => {
+        const partnerRole = partner.relation_role || 'husband';
+        let roleLabel = 'CONJOINT (G0)';
+        if (partnerRole === 'husband') roleLabel = 'ÉPOUX / MARI (G0)';
+        else if (partnerRole === 'wife') roleLabel = 'ÉPOUSE / FEMME (G0)';
+        else if (partnerRole === 'fiance') roleLabel = 'FIANCÉ (G0)';
+        else if (partnerRole === 'fiancee') roleLabel = 'FIANCÉE (G0)';
+
+        itemsToExport.push({
+          person: partner,
+          role: partnerRole,
+          label: `${roleLabel} - ${partner.first_name || ''} ${partner.last_name || ''}`.trim(),
+        });
+      });
+
+      // 3. Enfants (child)
+      const childPersons = persons.filter(p => p.relation_role === 'child');
+      childPersons.forEach((child, i) => {
+        itemsToExport.push({
+          person: child,
+          role: 'child',
+          label: `ENFANT N°${i + 1} - ${child.first_name || ''} ${child.last_name || ''}`.trim(),
+        });
+      });
+
+      // 4. Ancêtres de la ligne directe
+      ancestorsToExport.forEach(item => {
+        const p = persons.find(x => x.relation_role === item.role);
+        itemsToExport.push({
+          person: p,
+          role: item.role,
+          label: item.label,
+        });
+      });
+
       let currentPage = null;
       let memberOnPageCount = 0;
       let pageNum = 3;
 
-      for (let index = 0; index < rolesToExport.length; index++) {
-        const { role, label } = rolesToExport[index];
-        const person = persons.find(p => (role === 'self' && p.is_self) || p.relation_role === role);
+      for (let index = 0; index < itemsToExport.length; index++) {
+        const { person, role, label } = itemsToExport[index];
 
         if (memberOnPageCount % 2 === 0) {
           currentPage = pdfDoc.addPage([595, 842]);
           memberOnPageCount = 0;
 
-          currentPage.drawText('FICHES DES MEMBRES DE LA LIGNÉE DIRECTE (MODIFIABLES)', {
+          currentPage.drawText('FICHES DES MEMBRES DE LA FAMILLE (MODIFIABLES)', {
             x: 40,
             y: 805,
             size: 10,
