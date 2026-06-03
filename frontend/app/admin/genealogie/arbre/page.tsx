@@ -722,14 +722,23 @@ export default function DedicatedTreePage() {
 
       {/* 3. Slider detail drawer */}
       {(selectedPerson || presetRole) && tree && (
-        <div
-          className="absolute top-16 right-0 bottom-0 w-[420px] border-l z-50 flex flex-col overflow-y-auto animate-in slide-in-from-right duration-300 scrollbar-premium"
-          style={{
-            background: isDark ? '#070b13' : '#ffffff',
-            borderColor: 'var(--panel-border)',
-            boxShadow: isDark ? '-20px 0 60px rgba(0,0,0,0.9)' : '-20px 0 60px rgba(0,0,0,0.15)',
-          }}
-        >
+        <>
+          {/* Backdrop overlay to dim tree content */}
+          <div
+            className="absolute inset-0 z-40 animate-in fade-in duration-200"
+            style={{ background: isDark ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.25)' }}
+            onClick={handleCancelEdit}
+          />
+          <div
+            className="absolute top-16 right-0 bottom-0 w-[420px] border-l z-50 flex flex-col overflow-y-auto animate-in slide-in-from-right duration-300 scrollbar-premium"
+            style={{
+              background: isDark ? '#070b13' : '#ffffff',
+              borderColor: isDark ? '#1e293b' : '#d1d5db',
+              boxShadow: isDark
+                ? '-20px 0 60px rgba(0,0,0,0.9), -4px 0 20px rgba(0,0,0,0.6)'
+                : '-20px 0 60px rgba(0,0,0,0.18), -4px 0 20px rgba(0,0,0,0.08)',
+            }}
+          >
           <div className="p-6 space-y-6">
             
             {/* Header of Drawer */}
@@ -833,6 +842,7 @@ export default function DedicatedTreePage() {
 
           </div>
         </div>
+        </>
       )}
 
     </div>
