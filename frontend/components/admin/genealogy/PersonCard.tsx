@@ -113,11 +113,19 @@ export default function PersonCard({ person, status, onClick, selected }: Person
       {/* Avatar */}
       <div
         className={cn(
-          'mb-1.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 text-sm font-black transition-all duration-300 group-hover:scale-105',
+          'mb-1.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 text-sm font-black transition-all duration-300 group-hover:scale-105 overflow-hidden',
           genderTheme.avatar
         )}
       >
-        {initials}
+        {person.avatar_url ? (
+          <img
+            src={person.avatar_url}
+            alt={`${person.first_name || ''} ${person.last_name || ''}`}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          initials
+        )}
       </div>
 
       {/* Nom */}

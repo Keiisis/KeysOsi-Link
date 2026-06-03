@@ -9,6 +9,11 @@ export type RelationRole =
   | 'paternal_ggf_2' | 'paternal_ggm_2'
   | 'maternal_ggf_1' | 'maternal_ggm_1'
   | 'maternal_ggf_2' | 'maternal_ggm_2'
+  | 'brother' | 'sister'
+  | 'paternal_uncle' | 'paternal_aunt'
+  | 'maternal_uncle' | 'maternal_aunt'
+  | 'sibling'
+  | 'child'
   | 'other';
 
 export type DocType =
@@ -25,10 +30,21 @@ export type DocType =
   | 'military_act'
   | 'other';
 
+export interface Tree {
+  id: string;
+  user_id: string | null;
+  name: string;
+  client_first_name: string | null;
+  client_last_name: string | null;
+  client_email: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Person {
   id: string;
   tree_id: string;
-  user_id: string;
+  user_id: string | null;
   first_name: string | null;
   last_name: string | null;
   gender: Gender | null;
@@ -41,6 +57,7 @@ export interface Person {
   father_id: string | null;
   mother_id: string | null;
   notes: string | null;
+  avatar_url: string | null;
 }
 
 export interface DocumentItem {

@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 
 interface PersonFormProps {
   treeId: string;
+  persons: Person[];
   onSaved?: () => void;
   presetRole?: string | null;
   selectedPerson?: Person | null;
@@ -37,6 +38,7 @@ const SEL =
 
 export default function PersonForm({
   treeId,
+  persons,
   onSaved,
   presetRole,
   selectedPerson,
@@ -52,9 +54,11 @@ export default function PersonForm({
     death_place: '',
     relation_role: 'father' as RelationRole,
     notes: '',
+    avatar_url: '',
   });
 
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
   useEffect(() => {
@@ -75,6 +79,7 @@ export default function PersonForm({
         death_place: selectedPerson.death_place || '',
         relation_role: (selectedPerson.relation_role as RelationRole) || 'other',
         notes: selectedPerson.notes || '',
+        avatar_url: selectedPerson.avatar_url || '',
       });
     } else {
       setForm({
@@ -87,6 +92,7 @@ export default function PersonForm({
         death_place: '',
         relation_role: (presetRole as RelationRole) || 'father',
         notes: '',
+        avatar_url: '',
       });
     }
   }, [selectedPerson, presetRole]);
@@ -98,6 +104,67 @@ export default function PersonForm({
     setTimeout(() => setToast(null), 3000);
   }
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    setUploadingAvatar(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Non authentifié');
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${treeId}/avatar_${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('genealogia-avatars')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('genealogia-avatars')
+        .getPublicUrl(fileName);
+
+      set('avatar_url', publicUrl);
+      flash('Photo téléchargée avec succès ! 📸', true);
+    } catch (err: any) {
+      flash('Erreur photo : ' + err.message, false);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  function resolveParents(role: RelationRole): { father_id: string | null; mother_id: string | null } {
+    const findId = (r: RelationRole) => persons.find(p => p.relation_role === r || (r === 'self' && p.is_self))?.id || null;
+    
+    switch (role) {
+      case 'self':
+        return { father_id: findId('father'), mother_id: findId('mother') };
+      case 'father':
+        return { father_id: findId('paternal_grandfather'), mother_id: findId('paternal_grandmother') };
+      case 'mother':
+        return { father_id: findId('maternal_grandfather'), mother_id: findId('maternal_grandmother') };
+      case 'brother':
+      case 'sister':
+      case 'sibling':
+        return { father_id: findId('father'), mother_id: findId('mother') };
+      case 'paternal_uncle':
+      case 'paternal_aunt':
+        return { father_id: findId('paternal_grandfather'), mother_id: findId('paternal_grandmother') };
+      case 'maternal_uncle':
+      case 'maternal_aunt':
+        return { father_id: findId('maternal_grandfather'), mother_id: findId('maternal_grandmother') };
+      case 'child':
+        const self = persons.find(p => p.is_self || p.relation_role === 'self');
+        if (!self) return { father_id: null, mother_id: null };
+        return self.gender === 'female' 
+          ? { father_id: null, mother_id: self.id } 
+          : { father_id: self.id, mother_id: null };
+      default:
+        return { father_id: null, mother_id: null };
+    }
+  }
+
   async function save() {
     setSaving(true);
     try {
@@ -107,6 +174,7 @@ export default function PersonForm({
       if (!user) throw new Error('Non authentifié');
 
       const isEdit = !!selectedPerson;
+      const { father_id, mother_id } = resolveParents(form.relation_role);
       const payload = {
         tree_id: treeId,
         user_id: user.id,
@@ -120,6 +188,9 @@ export default function PersonForm({
         relation_role: form.relation_role,
         is_self: form.relation_role === 'self',
         notes: form.notes || null,
+        avatar_url: form.avatar_url || null,
+        father_id,
+        mother_id,
       };
 
       if (isEdit) {
@@ -148,6 +219,7 @@ export default function PersonForm({
           death_place: '',
           relation_role: 'father',
           notes: '',
+          avatar_url: '',
         });
       }
     } catch (err: any) {
@@ -198,15 +270,39 @@ export default function PersonForm({
           {/* ---------------------------------- Header --------------------------------- */}
           <div className="flex items-center gap-4">
             {/* Avatar initiales */}
-            <div className="relative shrink-0">
-              <div
-                className="flex h-14 w-14 items-center justify-center rounded-2xl text-lg font-black text-white shadow-lg ring-1 ring-white/10"
-                style={{
-                  background: `linear-gradient(135deg, ${accent}, ${accent}55)`,
-                }}
-              >
-                {initials.toUpperCase()}
-              </div>
+            <div 
+              className="relative shrink-0 cursor-pointer group/avatar" 
+              onClick={() => document.getElementById('avatar-input')?.click()}
+              title="Cliquer pour téléverser une photo"
+            >
+              <input
+                id="avatar-input"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+                disabled={uploadingAvatar}
+              />
+              {uploadingAvatar ? (
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5 border border-white/10">
+                  <Loader2 size={16} className="animate-spin text-[#008751]" />
+                </div>
+              ) : form.avatar_url ? (
+                <img
+                  src={form.avatar_url}
+                  alt="Avatar"
+                  className="h-14 w-14 rounded-2xl object-cover border border-white/10 shadow-lg ring-1 ring-white/10 group-hover/avatar:opacity-80 transition-opacity"
+                />
+              ) : (
+                <div
+                  className="flex h-14 w-14 items-center justify-center rounded-2xl text-lg font-black text-white shadow-lg ring-1 ring-white/10 group-hover/avatar:opacity-80 transition-opacity"
+                  style={{
+                    background: `linear-gradient(135deg, ${accent}, ${accent}55)`,
+                  }}
+                >
+                  {initials.toUpperCase()}
+                </div>
+              )}
               <span
                 className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-lg bg-[#070b12] ring-1 ring-white/10"
               >

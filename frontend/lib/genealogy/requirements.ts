@@ -68,4 +68,13 @@ export const ROLE_LABELS: Record<string, string> = {
   paternal_ggm_1: 'Arrière-grand-mère paternelle',
   maternal_ggf_1: 'Arrière-grand-père maternel',
   maternal_ggm_1: 'Arrière-grand-mère maternelle',
+  brother: 'Frère',
+  sister: 'Sœur',
+  paternal_uncle: 'Oncle paternel',
+  paternal_aunt: 'Tante paternelle',
+  maternal_uncle: 'Oncle maternel',
+  maternal_aunt: 'Tante maternelle',
+  sibling: 'Collatéral (Fratrie)',
+  child: 'Enfant',
+  other: 'Autre membre',
 };

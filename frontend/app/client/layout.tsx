@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase'
 import {
     LayoutDashboard, FileText, FolderOpen, MessageSquare,
     CalendarDays, UserCircle, LogOut, Menu, X, Bell,
-    ChevronRight, CircleDot, Shield, Briefcase, FileSignature
+    ChevronRight, CircleDot, Shield, Briefcase, FileSignature, GitFork
 } from 'lucide-react'
 import { ThemeProvider } from '@/lib/theme/ThemeContext'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
@@ -31,6 +31,7 @@ const NAV_ITEMS: NavItem[] = [
     { title: 'Tableau de Bord', icon: LayoutDashboard, href: '/client/dashboard' },
     { title: 'Mes Documents', icon: FileText, href: '/client/documents' },
     { title: 'Mon Dossier', icon: FolderOpen, href: '/client/dossier' },
+    { title: 'Ma Généalogie', icon: GitFork, href: '/client/genealogie' },
     { title: 'Mes Services', icon: Briefcase, href: '/client/services' },
     { title: 'Messages', icon: MessageSquare, href: '/client/messages' },
     { title: 'Rendez-vous', icon: CalendarDays, href: '/client/rendez-vous' },

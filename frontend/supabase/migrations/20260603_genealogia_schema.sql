@@ -22,8 +22,11 @@ drop table if exists public.trees cascade;
 -- ============================================================
 create table if not exists public.trees (
   id uuid primary key default uuid_generate_v4(),
-  user_id uuid not null references auth.users(id) on delete cascade,
+  user_id uuid references auth.users(id) on delete cascade, -- Nullable to allow manual client creation
   name text not null default 'Mon arbre',
+  client_first_name text,
+  client_last_name text,
+  client_email text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -34,7 +37,7 @@ create table if not exists public.trees (
 create table if not exists public.persons (
   id uuid primary key default uuid_generate_v4(),
   tree_id uuid not null references public.trees(id) on delete cascade,
-  user_id uuid not null references auth.users(id) on delete cascade,
+  user_id uuid references auth.users(id) on delete cascade, -- Nullable to allow manual client creation
   first_name text,
   last_name text,
   gender text check (gender in ('male','female','other')),
@@ -47,6 +50,7 @@ create table if not exists public.persons (
   father_id uuid references public.persons(id) on delete set null,
   mother_id uuid references public.persons(id) on delete set null,
   notes text,
+  avatar_url text, -- Photo of the person
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -57,7 +61,7 @@ create table if not exists public.persons (
 -- ============================================================
 create table if not exists public.genealogy_documents (
   id uuid primary key default uuid_generate_v4(),
-  user_id uuid not null references auth.users(id) on delete cascade,
+  user_id uuid references auth.users(id) on delete cascade, -- Nullable
   tree_id uuid not null references public.trees(id) on delete cascade,
   person_id uuid references public.persons(id) on delete cascade,
   doc_type text not null,
@@ -76,7 +80,7 @@ create table if not exists public.genealogy_documents (
 create table if not exists public.dossiers (
   id uuid primary key default uuid_generate_v4(),
   tree_id uuid not null references public.trees(id) on delete cascade,
-  user_id uuid not null references auth.users(id) on delete cascade,
+  user_id uuid references auth.users(id) on delete cascade, -- Nullable
   dossier_type text not null check (dossier_type in ('afro_descendance','ancetre_esclavage')),
   status text not null default 'in_progress',
   progress numeric not null default 0,
@@ -119,22 +123,50 @@ alter table public.persons enable row level security;
 alter table public.genealogy_documents enable row level security;
 alter table public.dossiers enable row level security;
 
--- Policies: chaque utilisateur ne voit/édite que ses données
+-- Policies: chaque utilisateur ne voit/édite que ses données + admins/agents ont accès complet
 drop policy if exists "own_trees" on public.trees;
 create policy "own_trees" on public.trees
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  for all using (
+    auth.uid() = user_id 
+    or exists (select 1 from public.user_profiles where id = auth.uid() and role in ('admin', 'super_admin', 'superadmin', 'ceo', 'agent'))
+  )
+  with check (
+    auth.uid() = user_id 
+    or exists (select 1 from public.user_profiles where id = auth.uid() and role in ('admin', 'super_admin', 'superadmin', 'ceo', 'agent'))
+  );
 
 drop policy if exists "own_persons" on public.persons;
 create policy "own_persons" on public.persons
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  for all using (
+    auth.uid() = user_id 
+    or exists (select 1 from public.user_profiles where id = auth.uid() and role in ('admin', 'super_admin', 'superadmin', 'ceo', 'agent'))
+  )
+  with check (
+    auth.uid() = user_id 
+    or exists (select 1 from public.user_profiles where id = auth.uid() and role in ('admin', 'super_admin', 'superadmin', 'ceo', 'agent'))
+  );
 
 drop policy if exists "own_genealogy_documents" on public.genealogy_documents;
 create policy "own_genealogy_documents" on public.genealogy_documents
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  for all using (
+    auth.uid() = user_id 
+    or exists (select 1 from public.user_profiles where id = auth.uid() and role in ('admin', 'super_admin', 'superadmin', 'ceo', 'agent'))
+  )
+  with check (
+    auth.uid() = user_id 
+    or exists (select 1 from public.user_profiles where id = auth.uid() and role in ('admin', 'super_admin', 'superadmin', 'ceo', 'agent'))
+  );
 
 drop policy if exists "own_dossiers" on public.dossiers;
 create policy "own_dossiers" on public.dossiers
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  for all using (
+    auth.uid() = user_id 
+    or exists (select 1 from public.user_profiles where id = auth.uid() and role in ('admin', 'super_admin', 'superadmin', 'ceo', 'agent'))
+  )
+  with check (
+    auth.uid() = user_id 
+    or exists (select 1 from public.user_profiles where id = auth.uid() and role in ('admin', 'super_admin', 'superadmin', 'ceo', 'agent'))
+  );
 
 -- ============================================================
 -- STORAGE BUCKET (à créer + policies)
@@ -145,12 +177,12 @@ on conflict (id) do nothing;
 
 drop policy if exists "own_gdocs_select" on storage.objects;
 create policy "own_gdocs_select" on storage.objects
-  for select using (bucket_id = 'genealogia-docs' and auth.uid()::text = (storage.foldername(name))[1]);
+  for select using (bucket_id = 'genealogia-docs' and (auth.uid()::text = (storage.foldername(name))[1] or exists (select 1 from public.user_profiles where id = auth.uid() and role in ('admin', 'super_admin', 'superadmin', 'ceo', 'agent'))));
 
 drop policy if exists "own_gdocs_insert" on storage.objects;
 create policy "own_gdocs_insert" on storage.objects
-  for insert with check (bucket_id = 'genealogia-docs' and auth.uid()::text = (storage.foldername(name))[1]);
+  for insert with check (bucket_id = 'genealogia-docs' and (auth.uid()::text = (storage.foldername(name))[1] or exists (select 1 from public.user_profiles where id = auth.uid() and role in ('admin', 'super_admin', 'superadmin', 'ceo', 'agent'))));
 
 drop policy if exists "own_gdocs_delete" on storage.objects;
 create policy "own_gdocs_delete" on storage.objects
-  for delete using (bucket_id = 'genealogia-docs' and auth.uid()::text = (storage.foldername(name))[1]);
+  for delete using (bucket_id = 'genealogia-docs' and (auth.uid()::text = (storage.foldername(name))[1] or exists (select 1 from public.user_profiles where id = auth.uid() and role in ('admin', 'super_admin', 'superadmin', 'ceo', 'agent'))));
