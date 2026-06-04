@@ -16,6 +16,7 @@ export type RelationRole =
   | 'husband' | 'wife'
   | 'fiance' | 'fiancee'
   | 'child'
+  | 'ancestor'
   | 'other';
 
 export type DocType =

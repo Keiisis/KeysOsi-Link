@@ -84,5 +84,6 @@ export const ROLE_LABELS: Record<string, string> = {
   fiance: 'Fiancé',
   fiancee: 'Fiancée',
   child: 'Enfant',
+  ancestor: 'Ancêtre',
   other: 'Autre membre',
 };

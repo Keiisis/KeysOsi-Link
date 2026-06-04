@@ -18,6 +18,10 @@ interface PersonFormProps {
   presetRole?: string | null;
   selectedPerson?: Person | null;
   onCancelEdit?: () => void;
+  /** ID of the person from which we're adding a relative (context for add_father/add_mother/add_child) */
+  contextPersonId?: string | null;
+  /** Action type: 'add_father', 'add_mother', 'add_child', 'add_sibling', 'add_partner' */
+  addAction?: string | null;
 }
 
 /* ---------------------------------- styles ---------------------------------- */
@@ -44,6 +48,8 @@ export default function PersonForm({
   presetRole,
   selectedPerson,
   onCancelEdit,
+  contextPersonId,
+  addAction,
 }: PersonFormProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -68,10 +74,53 @@ export default function PersonForm({
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
   useEffect(() => {
-    if (presetRole) {
+    if (addAction && contextPersonId) {
+      // Context-based role assignment
+      const contextPerson = persons.find(p => p.id === contextPersonId);
+      if (addAction === 'add_father') {
+        setForm(f => ({ ...f, relation_role: 'ancestor' as RelationRole, gender: 'male' }));
+      } else if (addAction === 'add_mother') {
+        setForm(f => ({ ...f, relation_role: 'ancestor' as RelationRole, gender: 'female' }));
+      } else if (addAction === 'add_child') {
+        setForm(f => ({ ...f, relation_role: 'child' as RelationRole }));
+        // Set parent links based on context person's gender
+        if (contextPerson) {
+          if (contextPerson.gender === 'male') {
+            setFatherId(contextPerson.id);
+            // Check if context person has a partner
+            const partner = persons.find(p => 
+              ['husband', 'wife', 'fiance', 'fiancee'].includes(p.relation_role || '') ||
+              persons.some(child => 
+                (child.father_id === contextPerson.id && child.mother_id === p.id) ||
+                (child.mother_id === contextPerson.id && child.father_id === p.id)
+              )
+            );
+            if (partner && partner.gender === 'female') setMotherId(partner.id);
+          } else {
+            setMotherId(contextPerson.id);
+            const partner = persons.find(p =>
+              ['husband', 'wife', 'fiance', 'fiancee'].includes(p.relation_role || '') ||
+              persons.some(child =>
+                (child.father_id === p.id && child.mother_id === contextPerson.id) ||
+                (child.mother_id === p.id && child.father_id === contextPerson.id)
+              )
+            );
+            if (partner && partner.gender === 'male') setFatherId(partner.id);
+          }
+        }
+      } else if (addAction === 'add_sibling') {
+        setForm(f => ({ ...f, relation_role: 'sibling' as RelationRole }));
+        if (contextPerson) {
+          setFatherId(contextPerson.father_id || null);
+          setMotherId(contextPerson.mother_id || null);
+        }
+      } else if (addAction === 'add_partner') {
+        setForm(f => ({ ...f, relation_role: 'husband' as RelationRole }));
+      }
+    } else if (presetRole) {
       setForm((f) => ({ ...f, relation_role: presetRole as RelationRole }));
     }
-  }, [presetRole]);
+  }, [presetRole, addAction, contextPersonId, persons]);
 
   useEffect(() => {
     if (selectedPerson) {
@@ -89,7 +138,7 @@ export default function PersonForm({
       });
       setFatherId(selectedPerson.father_id || null);
       setMotherId(selectedPerson.mother_id || null);
-    } else {
+    } else if (!addAction) {
       setForm({
         first_name: '',
         last_name: '',
@@ -109,12 +158,12 @@ export default function PersonForm({
   }, [selectedPerson, presetRole, persons]);
 
   useEffect(() => {
-    if (!selectedPerson) {
+    if (!selectedPerson && !addAction) {
       const { father_id, mother_id } = resolveParents(form.relation_role);
       setFatherId(father_id);
       setMotherId(mother_id);
     }
-  }, [form.relation_role, selectedPerson, persons]);
+  }, [form.relation_role, selectedPerson, addAction, persons]);
 
   const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -324,8 +373,19 @@ export default function PersonForm({
         if (error) throw error;
         flash('Membre mis à jour avec succès', true);
       } else {
-        const { error } = await supabase.from('persons').insert(payload);
+        const { data: insertedData, error } = await supabase.from('persons').insert(payload).select();
         if (error) throw error;
+        
+        // If we just added a father or mother via context, update the context person's father_id/mother_id
+        if (addAction && contextPersonId && insertedData && insertedData[0]) {
+          const newPersonId = insertedData[0].id;
+          if (addAction === 'add_father') {
+            await supabase.from('persons').update({ father_id: newPersonId }).eq('id', contextPersonId);
+          } else if (addAction === 'add_mother') {
+            await supabase.from('persons').update({ mother_id: newPersonId }).eq('id', contextPersonId);
+          }
+        }
+        
         flash('Membre ajouté à votre arbre', true);
       }
 

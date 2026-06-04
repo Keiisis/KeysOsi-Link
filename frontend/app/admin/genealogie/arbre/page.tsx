@@ -37,6 +37,8 @@ export default function DedicatedTreePage() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [presetRole, setPresetRole] = useState<string | null>(null);
+  const [contextPersonId, setContextPersonId] = useState<string | null>(null);
+  const [addAction, setAddAction] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -116,17 +118,29 @@ export default function DedicatedTreePage() {
 
   const handleSelectPerson = (person: Person) => {
     setPresetRole(null);
+    setContextPersonId(null);
+    setAddAction(null);
     setSelectedPerson(person);
   };
 
-  const handleAddRelative = (role: string) => {
+  const handleAddRelative = (role: string, contextId?: string) => {
     setSelectedPerson(null);
-    setPresetRole(role);
+    if (contextId) {
+      setContextPersonId(contextId);
+      setAddAction(role);
+      setPresetRole(null);
+    } else {
+      setContextPersonId(null);
+      setAddAction(null);
+      setPresetRole(role);
+    }
   };
 
   const handleCancelEdit = () => {
     setSelectedPerson(null);
     setPresetRole(null);
+    setContextPersonId(null);
+    setAddAction(null);
   };
 
   const deletePerson = async (id: string) => {
@@ -1649,7 +1663,7 @@ export default function DedicatedTreePage() {
       )}
 
       {/* 3. Slider detail drawer */}
-      {(selectedPerson || presetRole) && tree && (
+      {(selectedPerson || presetRole || addAction) && tree && (
         <>
           {/* Backdrop overlay — FIXED position to cover entire viewport */}
           <div
@@ -1770,10 +1784,15 @@ export default function DedicatedTreePage() {
               <PersonForm
                 treeId={tree.id}
                 persons={persons}
-                onSaved={() => loadData(true)}
+                onSaved={() => {
+                  loadData(true);
+                  handleCancelEdit();
+                }}
                 presetRole={presetRole}
                 selectedPerson={selectedPerson}
                 onCancelEdit={handleCancelEdit}
+                contextPersonId={contextPersonId}
+                addAction={addAction}
               />
             </div>
 
