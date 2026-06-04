@@ -266,14 +266,14 @@ export default function AdminGenealogyPage() {
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-[#FCD116]">
             <GitFork size={18} className="animate-pulse" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.4em]">Dashboard Généalogie</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.4em]">Dashboard Plan de composition de Famille</span>
           </div>
           <h2 className="text-3xl md:text-5xl font-black text-white font-heading tracking-tight leading-none">
-            ARBRE <span className="text-benin-gradient">GÉNÉALOGIQUE</span>
+            PLAN DE <span className="text-benin-gradient">COMPOSITION DE FAMILLE</span>
           </h2>
           <p className="text-gray-500 max-w-xl font-medium text-sm">
             {selectedTree 
-              ? `Gestion de l'arbre généalogique de ${selectedTree.client_first_name} ${selectedTree.client_last_name}.`
+              ? `Gestion du plan de composition de famille de ${selectedTree.client_first_name} ${selectedTree.client_last_name}.`
               : "Reconstituez les lignées ancestrales des clients. Suivez et validez les pièces administratives d'état civil."
             }
           </p>
@@ -334,7 +334,7 @@ export default function AdminGenealogyPage() {
               className="bg-[#0c1322]/80 border border-white/5 p-6 rounded-3xl space-y-4 max-w-2xl"
             >
               <h3 className="text-sm font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">
-                Nouveau Client Généalogique
+                Nouveau Client Plan de composition de Famille
               </h3>
               
               <div className="grid grid-cols-2 gap-4">
@@ -495,7 +495,7 @@ export default function AdminGenealogyPage() {
             {filteredTrees.length === 0 && (
               <div className="col-span-full py-16 bg-[#0a0f18]/80 rounded-[2.5rem] border border-dashed border-white/10 text-center">
                 <Globe size={28} className="text-gray-600 mx-auto mb-3" />
-                <p className="text-sm font-bold text-white">Aucun arbre généalogique trouvé</p>
+                <p className="text-sm font-bold text-white">Aucun plan de composition de famille trouvé</p>
                 <p className="text-[10px] text-gray-500 mt-1">Créez un nouvel arbre ou ajustez vos critères de recherche.</p>
               </div>
             )}
@@ -549,7 +549,7 @@ export default function AdminGenealogyPage() {
                   ))}
                 </select>
                 <p className="text-[9px] text-gray-600 leading-normal">
-                  Une fois lié, le client pourra voir son arbre généalogique en temps réel depuis son espace membre.
+                  Une fois lié, le client pourra voir son plan de composition de famille en temps réel depuis son espace membre.
                 </p>
               </div>
 

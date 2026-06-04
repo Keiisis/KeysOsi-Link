@@ -146,10 +146,10 @@ export default function ClientGenealogyPage() {
         <div>
           <div className="flex items-center gap-2 text-blue-400">
             <GitFork size={16} />
-            <span className="text-[10px] font-bold uppercase tracking-[0.3em]">Mon Espace Généalogie</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.3em]">Mon Espace Plan de composition de Famille</span>
           </div>
           <h2 className="text-2xl md:text-3xl font-black text-white font-heading mt-1">
-            MA <span className="text-blue-400">GÉNÉALOGIE</span>
+            MON <span className="text-blue-400">PLAN DE COMPOSITION DE FAMILLE</span>
           </h2>
         </div>
 
@@ -342,7 +342,7 @@ export default function ClientGenealogyPage() {
               <div className="max-w-4xl mx-auto space-y-6">
                 <div>
                   <h2 className="text-lg font-black text-white">📊 Statistiques familiales</h2>
-                  <p className="text-xs text-gray-500">Vue d'ensemble de vos données généalogiques</p>
+                  <p className="text-xs text-gray-500">Vue d'ensemble de vos données de composition de famille</p>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

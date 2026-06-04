@@ -183,7 +183,7 @@ export default function DedicatedTreePage() {
           <span style="font-size:22px;font-weight:900;letter-spacing:2px;">RETOUR GAGNANT BÉNIN</span>
         </div>
         <h1 style="font-size:28px;font-weight:900;color:#0A0F18;margin:16px 0 6px;letter-spacing:1px;">
-          ARBRE GÉNÉALOGIQUE
+          PLAN DE COMPOSITION DE FAMILLE
         </h1>
         <p style="font-size:18px;font-weight:700;color:#008751;margin:0 0 4px;">
           Famille ${clientName.toUpperCase()}
@@ -375,7 +375,7 @@ export default function DedicatedTreePage() {
           <div style="display:inline-block;background:#008751;color:white;padding:10px 36px;border-radius:14px;margin-bottom:10px;">
             <span style="font-size:18px;font-weight:900;letter-spacing:2px;">RETOUR GAGNANT BÉNIN</span>
           </div>
-          <h2 style="font-size:24px;font-weight:900;margin:14px 0 6px;color:#0A0F18;">📋 RAPPORT DE L'ARBRE GÉNÉALOGIQUE</h2>
+          <h2 style="font-size:24px;font-weight:900;margin:14px 0 6px;color:#0A0F18;">📋 RAPPORT DU PLAN DE COMPOSITION DE FAMILLE</h2>
           <p style="font-size:16px;font-weight:700;color:#008751;margin:0 0 4px;">Famille ${clientName.toUpperCase()}</p>
           <p style="font-size:13px;color:#6B7280;margin:0;">
             Généré le ${new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} • ${persons.length} membre(s) enregistré(s)
@@ -448,7 +448,7 @@ export default function DedicatedTreePage() {
 
       reportHtml += `
         <div style="margin-top:40px;padding-top:20px;border-top:2px solid #E5E7EB;text-align:center;">
-          <p style="font-size:10px;color:#9CA3AF;margin:0;">RETOUR GAGNANT BÉNIN — Arbre Généalogique • www.retourgagnantbenin.bj</p>
+          <p style="font-size:10px;color:#9CA3AF;margin:0;">RETOUR GAGNANT BÉNIN — Plan de composition de Famille • www.retourgagnantbenin.bj</p>
         </div>
       `;
 
@@ -676,7 +676,7 @@ export default function DedicatedTreePage() {
         font: helveticaBold,
         color: rgb(1, 1, 1),
       });
-      page1.drawText('GÉNÉALOGIE ET HISTOIRE FAMILIALE', {
+      page1.drawText('PLAN DE COMPOSITION DE FAMILLE ET HISTOIRE FAMILIALE', {
         x: 40,
         y: 765,
         size: 8,
@@ -750,7 +750,7 @@ export default function DedicatedTreePage() {
       const isA3 = format === 'A3';
       const page2 = pdfDoc.addPage(isA3 ? [1191, 842] : [842, 595]);
       
-      page2.drawText(`ARBRE GÉNÉALOGIQUE : FAMILLE ${cleanClientName.toUpperCase()}`, {
+      page2.drawText(`PLAN DE COMPOSITION DE FAMILLE : FAMILLE ${cleanClientName.toUpperCase()}`, {
         x: 40,
         y: isA3 ? 802 : 555,
         size: 14,
@@ -990,7 +990,7 @@ export default function DedicatedTreePage() {
       const blob = new Blob([pdfBytes as any], { type: 'application/pdf' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `arbre_genealogique_${cleanClientName.replace(/\s+/g, '_').toLowerCase()}_${format}.pdf`;
+      link.download = `plan_de_composition_de_famille_${cleanClientName.replace(/\s+/g, '_').toLowerCase()}_${format}.pdf`;
       link.click();
     } catch (err: any) {
       console.error('PDF error:', err);
@@ -1040,7 +1040,7 @@ export default function DedicatedTreePage() {
 
           <div>
             <h1 className="text-sm font-black uppercase tracking-wider" style={{ color: 'var(--panel-text-heading)' }}>
-              Arbre de <span className="text-benin-gradient">{clientName}</span>
+              Plan de composition de Famille de <span className="text-benin-gradient">{clientName}</span>
             </h1>
             <p className="text-[10px] font-mono" style={{ color: 'var(--panel-text-faint)' }}>
               {tree?.name} • {persons.length} MEMBRES

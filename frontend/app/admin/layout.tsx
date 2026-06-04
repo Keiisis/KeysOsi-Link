@@ -120,7 +120,7 @@ function AdminLayoutContent({
         { title: 'Documents', icon: FolderOpen, href: '/admin/documents' },
         { title: 'Contrats', icon: FileSignature, href: '/admin/contrats' },
         { title: 'Demandes Nat.', icon: Globe, href: '/admin/nationalite' },
-        { title: 'Généalogie', icon: GitFork, href: '/admin/genealogie' },
+        { title: 'Plan de composition de Famille', icon: GitFork, href: '/admin/genealogie' },
         { title: 'FAQ Nationalité', icon: HelpCircle, href: '/admin/nationalite/faq' },
 
         { title: 'Emails', icon: Mail, href: '/admin/email-templates' },
