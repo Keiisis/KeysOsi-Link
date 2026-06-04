@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { RelationRole, Gender, Person } from '@/lib/genealogy/types';
 import { ROLE_LABELS } from '@/lib/genealogy/requirements';
@@ -72,93 +72,216 @@ export default function PersonForm({
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const lastSessionKeyRef = useRef<string | null>(null);
+  const lastRelationRoleRef = useRef<RelationRole | null>(null);
+
+  /* ── Map: for a given GG role, what trisaïeul role is the father / mother ── */
+  const TRISAIEUL_ROLE_MAP: Record<string, { father: RelationRole; mother: RelationRole }> = {
+    paternal_ggf_1: { father: 'trisaieul_paternal_ggf1_f', mother: 'trisaieul_paternal_ggf1_m' },
+    paternal_ggm_1: { father: 'trisaieul_paternal_ggm1_f', mother: 'trisaieul_paternal_ggm1_m' },
+    paternal_ggf_2: { father: 'trisaieul_paternal_ggf2_f', mother: 'trisaieul_paternal_ggf2_m' },
+    paternal_ggm_2: { father: 'trisaieul_paternal_ggm2_f', mother: 'trisaieul_paternal_ggm2_m' },
+    maternal_ggf_1: { father: 'trisaieul_maternal_ggf1_f', mother: 'trisaieul_maternal_ggf1_m' },
+    maternal_ggm_1: { father: 'trisaieul_maternal_ggm1_f', mother: 'trisaieul_maternal_ggm1_m' },
+    maternal_ggf_2: { father: 'trisaieul_maternal_ggf2_f', mother: 'trisaieul_maternal_ggf2_m' },
+    maternal_ggm_2: { father: 'trisaieul_maternal_ggm2_f', mother: 'trisaieul_maternal_ggm2_m' },
+  };
+
+  /* ── Compute correct role for add_father/add_mother based on context person's role ── */
+  function computeRoleForParentAction(action: 'add_father' | 'add_mother', ctxPerson: Person): RelationRole {
+    const ctxRole = ctxPerson.is_self ? 'self' : (ctxPerson.relation_role || '');
+    const isFather = action === 'add_father';
+
+    // Context is self → adding father/mother
+    if (ctxRole === 'self') return isFather ? 'father' : 'mother';
+    // Context is father → paternal grandparents
+    if (ctxRole === 'father') return isFather ? 'paternal_grandfather' : 'paternal_grandmother';
+    // Context is mother → maternal grandparents
+    if (ctxRole === 'mother') return isFather ? 'maternal_grandfather' : 'maternal_grandmother';
+    // Context is a grandparent → arrière-grand-parents
+    if (ctxRole === 'paternal_grandfather') return isFather ? 'paternal_ggf_1' : 'paternal_ggm_1';
+    if (ctxRole === 'paternal_grandmother') return isFather ? 'paternal_ggf_2' : 'paternal_ggm_2';
+    if (ctxRole === 'maternal_grandfather') return isFather ? 'maternal_ggf_1' : 'maternal_ggm_1';
+    if (ctxRole === 'maternal_grandmother') return isFather ? 'maternal_ggf_2' : 'maternal_ggm_2';
+    // Context is an arrière-grand-parent → trisaïeul
+    const trisMap = TRISAIEUL_ROLE_MAP[ctxRole];
+    if (trisMap) return isFather ? trisMap.father : trisMap.mother;
+    // Fallback: generic ancestor
+    return 'ancestor';
+  }
 
   useEffect(() => {
-    if (addAction && contextPersonId) {
-      // Context-based role assignment
-      const contextPerson = persons.find(p => p.id === contextPersonId);
-      if (addAction === 'add_father') {
-        setForm(f => ({ ...f, relation_role: 'ancestor' as RelationRole, gender: 'male' }));
-      } else if (addAction === 'add_mother') {
-        setForm(f => ({ ...f, relation_role: 'ancestor' as RelationRole, gender: 'female' }));
-      } else if (addAction === 'add_child') {
-        setForm(f => ({ ...f, relation_role: 'child' as RelationRole }));
-        // Set parent links based on context person's gender
-        if (contextPerson) {
-          if (contextPerson.gender === 'male') {
-            setFatherId(contextPerson.id);
-            // Check if context person has a partner
-            const partner = persons.find(p => 
-              ['husband', 'wife', 'fiance', 'fiancee'].includes(p.relation_role || '') ||
-              persons.some(child => 
-                (child.father_id === contextPerson.id && child.mother_id === p.id) ||
-                (child.mother_id === contextPerson.id && child.father_id === p.id)
-              )
-            );
-            if (partner && partner.gender === 'female') setMotherId(partner.id);
-          } else {
-            setMotherId(contextPerson.id);
-            const partner = persons.find(p =>
-              ['husband', 'wife', 'fiance', 'fiancee'].includes(p.relation_role || '') ||
-              persons.some(child =>
-                (child.father_id === p.id && child.mother_id === contextPerson.id) ||
-                (child.mother_id === p.id && child.father_id === contextPerson.id)
-              )
-            );
-            if (partner && partner.gender === 'male') setFatherId(partner.id);
+    const sessionKey = selectedPerson
+      ? `edit-${selectedPerson.id}`
+      : `add-${addAction || ''}-${contextPersonId || ''}-${presetRole || ''}`;
+
+    const hasPersons = persons.length > 0;
+    const isNewSession = lastSessionKeyRef.current !== sessionKey;
+
+    if (isNewSession && hasPersons) {
+      lastSessionKeyRef.current = sessionKey;
+
+      let targetRole: RelationRole = 'father';
+
+      if (selectedPerson) {
+        targetRole = (selectedPerson.relation_role as RelationRole) || 'other';
+        setForm({
+          first_name: selectedPerson.first_name || '',
+          last_name: selectedPerson.last_name || '',
+          gender: (selectedPerson.gender as Gender) || 'male',
+          birth_date: selectedPerson.birth_date || '',
+          birth_place: selectedPerson.birth_place || '',
+          death_date: selectedPerson.death_date || '',
+          death_place: selectedPerson.death_place || '',
+          relation_role: targetRole,
+          notes: selectedPerson.notes || '',
+          avatar_url: selectedPerson.avatar_url || '',
+        });
+        setFatherId(selectedPerson.father_id || null);
+        setMotherId(selectedPerson.mother_id || null);
+      } else if (addAction && contextPersonId) {
+        const contextPerson = persons.find(p => p.id === contextPersonId);
+        if (addAction === 'add_father') {
+          targetRole = contextPerson ? computeRoleForParentAction('add_father', contextPerson) : 'ancestor';
+          setForm({
+            first_name: '',
+            last_name: '',
+            gender: 'male',
+            birth_date: '',
+            birth_place: '',
+            death_date: '',
+            death_place: '',
+            relation_role: targetRole,
+            notes: '',
+            avatar_url: '',
+          });
+          setFatherId(null);
+          setMotherId(null);
+        } else if (addAction === 'add_mother') {
+          targetRole = contextPerson ? computeRoleForParentAction('add_mother', contextPerson) : 'ancestor';
+          setForm({
+            first_name: '',
+            last_name: '',
+            gender: 'female',
+            birth_date: '',
+            birth_place: '',
+            death_date: '',
+            death_place: '',
+            relation_role: targetRole,
+            notes: '',
+            avatar_url: '',
+          });
+          setFatherId(null);
+          setMotherId(null);
+        } else if (addAction === 'add_child') {
+          targetRole = 'child';
+          setForm({
+            first_name: '',
+            last_name: '',
+            gender: 'male',
+            birth_date: '',
+            birth_place: '',
+            death_date: '',
+            death_place: '',
+            relation_role: targetRole,
+            notes: '',
+            avatar_url: '',
+          });
+          let fId: string | null = null;
+          let mId: string | null = null;
+          if (contextPerson) {
+            if (contextPerson.gender === 'male') {
+              fId = contextPerson.id;
+              const partner = persons.find(p =>
+                persons.some(child =>
+                  (child.father_id === contextPerson.id && child.mother_id === p.id) ||
+                  (child.mother_id === contextPerson.id && child.father_id === p.id)
+                ) || (
+                  ['husband', 'wife', 'fiance', 'fiancee'].includes(p.relation_role || '') &&
+                  p.id !== contextPerson.id
+                )
+              );
+              if (partner && partner.gender === 'female') mId = partner.id;
+            } else {
+              mId = contextPerson.id;
+              const partner = persons.find(p =>
+                persons.some(child =>
+                  (child.father_id === p.id && child.mother_id === contextPerson.id) ||
+                  (child.mother_id === p.id && child.father_id === contextPerson.id)
+                ) || (
+                  ['husband', 'wife', 'fiance', 'fiancee'].includes(p.relation_role || '') &&
+                  p.id !== contextPerson.id
+                )
+              );
+              if (partner && partner.gender === 'male') fId = partner.id;
+            }
           }
+          setFatherId(fId);
+          setMotherId(mId);
+        } else if (addAction === 'add_sibling') {
+          targetRole = 'sibling';
+          setForm({
+            first_name: '',
+            last_name: '',
+            gender: 'male',
+            birth_date: '',
+            birth_place: '',
+            death_date: '',
+            death_place: '',
+            relation_role: targetRole,
+            notes: '',
+            avatar_url: '',
+          });
+          if (contextPerson) {
+            setFatherId(contextPerson.father_id || null);
+            setMotherId(contextPerson.mother_id || null);
+          } else {
+            setFatherId(null);
+            setMotherId(null);
+          }
+        } else if (addAction === 'add_partner') {
+          targetRole = 'wife';
+          setForm({
+            first_name: '',
+            last_name: '',
+            gender: 'female',
+            birth_date: '',
+            birth_place: '',
+            death_date: '',
+            death_place: '',
+            relation_role: targetRole,
+            notes: '',
+            avatar_url: '',
+          });
+          setFatherId(null);
+          setMotherId(null);
         }
-      } else if (addAction === 'add_sibling') {
-        setForm(f => ({ ...f, relation_role: 'sibling' as RelationRole }));
-        if (contextPerson) {
-          setFatherId(contextPerson.father_id || null);
-          setMotherId(contextPerson.mother_id || null);
-        }
-      } else if (addAction === 'add_partner') {
-        setForm(f => ({ ...f, relation_role: 'husband' as RelationRole }));
+      } else {
+        targetRole = (presetRole as RelationRole) || 'father';
+        setForm({
+          first_name: '',
+          last_name: '',
+          gender: 'male',
+          birth_date: '',
+          birth_place: '',
+          death_date: '',
+          death_place: '',
+          relation_role: targetRole,
+          notes: '',
+          avatar_url: '',
+        });
+        const { father_id, mother_id } = resolveParents(targetRole);
+        setFatherId(father_id);
+        setMotherId(mother_id);
       }
-    } else if (presetRole) {
-      setForm((f) => ({ ...f, relation_role: presetRole as RelationRole }));
+
+      lastRelationRoleRef.current = targetRole;
     }
-  }, [presetRole, addAction, contextPersonId, persons]);
+  }, [selectedPerson, addAction, contextPersonId, presetRole, persons]);
 
   useEffect(() => {
-    if (selectedPerson) {
-      setForm({
-        first_name: selectedPerson.first_name || '',
-        last_name: selectedPerson.last_name || '',
-        gender: (selectedPerson.gender as Gender) || 'male',
-        birth_date: selectedPerson.birth_date || '',
-        birth_place: selectedPerson.birth_place || '',
-        death_date: selectedPerson.death_date || '',
-        death_place: selectedPerson.death_place || '',
-        relation_role: (selectedPerson.relation_role as RelationRole) || 'other',
-        notes: selectedPerson.notes || '',
-        avatar_url: selectedPerson.avatar_url || '',
-      });
-      setFatherId(selectedPerson.father_id || null);
-      setMotherId(selectedPerson.mother_id || null);
-    } else if (!addAction) {
-      setForm({
-        first_name: '',
-        last_name: '',
-        gender: 'male',
-        birth_date: '',
-        birth_place: '',
-        death_date: '',
-        death_place: '',
-        relation_role: (presetRole as RelationRole) || 'father',
-        notes: '',
-        avatar_url: '',
-      });
-      const { father_id, mother_id } = resolveParents((presetRole as RelationRole) || 'father');
-      setFatherId(father_id);
-      setMotherId(mother_id);
-    }
-  }, [selectedPerson, presetRole, persons]);
-
-  useEffect(() => {
-    if (!selectedPerson && !addAction) {
+    if (!selectedPerson && !addAction && form.relation_role !== lastRelationRoleRef.current) {
+      lastRelationRoleRef.current = form.relation_role;
       const { father_id, mother_id } = resolveParents(form.relation_role);
       setFatherId(father_id);
       setMotherId(mother_id);
@@ -220,6 +343,23 @@ export default function PersonForm({
         return { father_id: findId('maternal_ggf_1'), mother_id: findId('maternal_ggm_1') };
       case 'maternal_grandmother':
         return { father_id: findId('maternal_ggf_2'), mother_id: findId('maternal_ggm_2') };
+      /* Arrière-grands-parents → trisaïeuls */
+      case 'paternal_ggf_1':
+        return { father_id: findId('trisaieul_paternal_ggf1_f'), mother_id: findId('trisaieul_paternal_ggf1_m') };
+      case 'paternal_ggm_1':
+        return { father_id: findId('trisaieul_paternal_ggm1_f'), mother_id: findId('trisaieul_paternal_ggm1_m') };
+      case 'paternal_ggf_2':
+        return { father_id: findId('trisaieul_paternal_ggf2_f'), mother_id: findId('trisaieul_paternal_ggf2_m') };
+      case 'paternal_ggm_2':
+        return { father_id: findId('trisaieul_paternal_ggm2_f'), mother_id: findId('trisaieul_paternal_ggm2_m') };
+      case 'maternal_ggf_1':
+        return { father_id: findId('trisaieul_maternal_ggf1_f'), mother_id: findId('trisaieul_maternal_ggf1_m') };
+      case 'maternal_ggm_1':
+        return { father_id: findId('trisaieul_maternal_ggm1_f'), mother_id: findId('trisaieul_maternal_ggm1_m') };
+      case 'maternal_ggf_2':
+        return { father_id: findId('trisaieul_maternal_ggf2_f'), mother_id: findId('trisaieul_maternal_ggf2_m') };
+      case 'maternal_ggm_2':
+        return { father_id: findId('trisaieul_maternal_ggm2_f'), mother_id: findId('trisaieul_maternal_ggm2_m') };
       case 'brother':
       case 'sister':
       case 'sibling':
@@ -237,6 +377,8 @@ export default function PersonForm({
         // Partners don't auto-resolve parents from the tree
         return { father_id: null, mother_id: null };
       case 'child':
+        // NOTE: When addAction is set, the useEffect already set the correct parent IDs.
+        // This branch only runs for role-dropdown changes without addAction context.
         const self = persons.find(p => p.is_self || p.relation_role === 'self');
         const partner = persons.find(p => ['husband', 'wife', 'fiance', 'fiancee'].includes(p.relation_role || ''));
         if (!self) return { father_id: partner?.gender === 'male' ? partner.id : null, mother_id: partner?.gender === 'female' ? partner.id : null };
@@ -252,6 +394,7 @@ export default function PersonForm({
         }
         return { father_id: fId, mother_id: mId };
       default:
+        // Trisaïeul roles and others don't auto-resolve parents
         return { father_id: null, mother_id: null };
     }
   }
@@ -264,8 +407,9 @@ export default function PersonForm({
         .eq('tree_id', treeId);
       if (error || !latestPersons) return;
 
-      const getExpectedParentsForRole = (role: RelationRole, pList: Person[]): { fatherId: string | null; motherId: string | null } => {
+      const getExpectedParentsForRole = (p: Person, pList: Person[]): { fatherId: string | null; motherId: string | null } => {
         const findIdByRole = (r: RelationRole) => pList.find(x => x.relation_role === r || (r === 'self' && x.is_self))?.id || null;
+        const role = (p.is_self ? 'self' : p.relation_role) as RelationRole;
 
         switch (role) {
           case 'self':
@@ -282,6 +426,22 @@ export default function PersonForm({
             return { fatherId: findIdByRole('maternal_ggf_1'), motherId: findIdByRole('maternal_ggm_1') };
           case 'maternal_grandmother':
             return { fatherId: findIdByRole('maternal_ggf_2'), motherId: findIdByRole('maternal_ggm_2') };
+          case 'paternal_ggf_1':
+            return { fatherId: findIdByRole('trisaieul_paternal_ggf1_f'), motherId: findIdByRole('trisaieul_paternal_ggf1_m') };
+          case 'paternal_ggm_1':
+            return { fatherId: findIdByRole('trisaieul_paternal_ggm1_f'), motherId: findIdByRole('trisaieul_paternal_ggm1_m') };
+          case 'paternal_ggf_2':
+            return { fatherId: findIdByRole('trisaieul_paternal_ggf2_f'), motherId: findIdByRole('trisaieul_paternal_ggf2_m') };
+          case 'paternal_ggm_2':
+            return { fatherId: findIdByRole('trisaieul_paternal_ggm2_f'), motherId: findIdByRole('trisaieul_paternal_ggm2_m') };
+          case 'maternal_ggf_1':
+            return { fatherId: findIdByRole('trisaieul_maternal_ggf1_f'), motherId: findIdByRole('trisaieul_maternal_ggf1_m') };
+          case 'maternal_ggm_1':
+            return { fatherId: findIdByRole('trisaieul_maternal_ggm1_f'), motherId: findIdByRole('trisaieul_maternal_ggm1_m') };
+          case 'maternal_ggf_2':
+            return { fatherId: findIdByRole('trisaieul_maternal_ggf2_f'), motherId: findIdByRole('trisaieul_maternal_ggf2_m') };
+          case 'maternal_ggm_2':
+            return { fatherId: findIdByRole('trisaieul_maternal_ggm2_f'), motherId: findIdByRole('trisaieul_maternal_ggm2_m') };
           case 'brother':
           case 'sister':
           case 'sibling':
@@ -292,12 +452,19 @@ export default function PersonForm({
           case 'maternal_uncle':
           case 'maternal_aunt':
             return { fatherId: findIdByRole('maternal_grandfather'), motherId: findIdByRole('maternal_grandmother') };
-          case 'husband':
-          case 'wife':
-          case 'fiance':
-          case 'fiancee':
-            return { fatherId: null, motherId: null };
           case 'child':
+            if (p.father_id) {
+              const fatherPerson = pList.find(x => x.id === p.father_id);
+              if (fatherPerson && !['self', 'husband', 'wife', 'fiance', 'fiancee'].includes(fatherPerson.relation_role || '')) {
+                return { fatherId: p.father_id, motherId: p.mother_id };
+              }
+            }
+            if (p.mother_id) {
+              const motherPerson = pList.find(x => x.id === p.mother_id);
+              if (motherPerson && !['self', 'husband', 'wife', 'fiance', 'fiancee'].includes(motherPerson.relation_role || '')) {
+                return { fatherId: p.father_id, motherId: p.mother_id };
+              }
+            }
             const selfPerson = pList.find(x => x.is_self || x.relation_role === 'self');
             const partnerPerson = pList.find(x => ['husband', 'wife', 'fiance', 'fiancee'].includes(x.relation_role || ''));
             let cFatherId: string | null = null;
@@ -313,7 +480,7 @@ export default function PersonForm({
             }
             return { fatherId: cFatherId, motherId: cMotherId };
           default:
-            return { fatherId: null, motherId: null };
+            return { fatherId: p.father_id, motherId: p.mother_id };
         }
       };
 
@@ -321,7 +488,7 @@ export default function PersonForm({
         const role = (p.is_self ? 'self' : p.relation_role) as RelationRole;
         if (!role) continue;
 
-        const expected = getExpectedParentsForRole(role, latestPersons);
+        const expected = getExpectedParentsForRole(p, latestPersons);
 
         if (p.father_id !== expected.fatherId || p.mother_id !== expected.motherId) {
           await supabase
