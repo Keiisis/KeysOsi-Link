@@ -2,15 +2,6 @@
 
 import { Person, DocumentItem } from '@/lib/genealogy/types';
 import { ROLE_LABELS } from '@/lib/genealogy/requirements';
-import {
-  computeTreeLayout,
-  getGenerationLabel,
-  CARD_W,
-  CARD_H,
-  V_GAP,
-  COUPLE_R,
-  TreeNode,
-} from '@/lib/genealogy/treeEngine';
 import PersonCard from './PersonCard';
 import { Plus, UserPlus, Users, Baby } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -18,16 +9,55 @@ import { useMemo } from 'react';
 import { useTheme } from '@/lib/theme/ThemeContext';
 
 /* ══════════════════════════════════════════════════════════════════
-   ARBRE GÉNÉALOGIQUE DYNAMIQUE — LAYOUT RÉCURSIF ILLIMITÉ
+   ARBRE GÉNÉALOGIQUE PROFESSIONNEL — LAYOUT HIÉRARCHIQUE (6 GÉNÉRATIONS)
    
    Architecture de rendu :
-   - Layout calculé par treeEngine.ts (récursif, profondeur illimitée)
-   - Chaque couple lié par un nœud mariage (♥)
-   - Enfants descendent depuis le nœud mariage
+   - Chaque génération est une ligne horizontale
+   - Les couples sont liés par un nœud mariage (♥)
+   - Les enfants descendent depuis le nœud mariage
    - Courbes de Bézier pour les connexions
    - Design premium avec dégradés et animations
-   - Boutons hover universels : ajouter père/mère/enfant sur chaque carte
    ══════════════════════════════════════════════════════════════════ */
+
+/* ─── Dimensions ─── */
+const CARD_W   = 220;
+const CARD_H   = 140;
+const H_GAP    = 48;      // espace horizontal entre cartes
+const V_GAP    = 120;     // espace vertical entre générations
+const COUPLE_R = 14;      // rayon du nœud mariage
+const UNIT     = CARD_W + H_GAP;  // unité de grille (268px)
+
+/* ─── Types internes ─── */
+interface TreeNode {
+  id: string;
+  role: string;
+  person?: Person;
+  x: number;
+  y: number;
+  gen: number;
+}
+
+interface CoupleLink {
+  leftNode: TreeNode;
+  rightNode: TreeNode;
+  midX: number;
+  midY: number;
+}
+
+interface ChildLink {
+  parentMidX: number;
+  parentMidY: number;
+  childX: number;
+  childTopY: number;
+  active?: boolean;
+}
+
+interface SiblingGroup {
+  parentMidX: number;
+  parentMidY: number;
+  children: { x: number; topY: number; active?: boolean }[];
+  active?: boolean;
+}
 
 interface FamilyTreeProps {
   persons: Person[];
@@ -47,11 +77,473 @@ export default function FamilyTree({
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
+  /* ─── Helpers: find person by role ─── */
+  const byRole = useMemo(() => {
+    const map: Record<string, Person> = {};
+    persons.forEach(p => {
+      if (p.is_self) map['self'] = p;
+      if (p.relation_role) map[p.relation_role] = p;
+    });
+    return map;
+  }, [persons]);
+
+  const findPerson = (role: string) => byRole[role] || undefined;
+
+  /* ─── Find key people in the tree ─── */
+  const self = useMemo(() => persons.find(p => p.is_self || p.relation_role === 'self'), [persons]);
+  const father = useMemo(() => persons.find(p => p.relation_role === 'father'), [persons]);
+  const mother = useMemo(() => persons.find(p => p.relation_role === 'mother'), [persons]);
+  const paternalGrandfather = useMemo(() => persons.find(p => p.relation_role === 'paternal_grandfather'), [persons]);
+  const paternalGrandmother = useMemo(() => persons.find(p => p.relation_role === 'paternal_grandmother'), [persons]);
+  const maternalGrandfather = useMemo(() => persons.find(p => p.relation_role === 'maternal_grandfather'), [persons]);
+  const maternalGrandmother = useMemo(() => persons.find(p => p.relation_role === 'maternal_grandmother'), [persons]);
+
+  /* ─── Collateral persons (linked by database IDs OR roles) ─── */
+  const siblings = useMemo(() => {
+    return persons
+      .filter(p => !p.is_self && p.relation_role !== 'self')
+      .filter(p => 
+        ['brother', 'sister', 'sibling'].includes(p.relation_role || '') ||
+        (father && p.father_id === father.id) ||
+        (mother && p.mother_id === mother.id)
+      )
+      .filter((value, index, selfArr) => selfArr.findIndex(t => t.id === value.id) === index)
+      .sort((a, b) => a.id.localeCompare(b.id));
+  }, [persons, father, mother]);
+
+  const paternalUncles = useMemo(() => {
+    return persons
+      .filter(p => 
+        ['paternal_uncle', 'paternal_aunt'].includes(p.relation_role || '') ||
+        (paternalGrandfather && p.father_id === paternalGrandfather.id) ||
+        (paternalGrandmother && p.mother_id === paternalGrandmother.id)
+      )
+      .filter(p => p.relation_role !== 'father' && p.relation_role !== 'paternal_grandfather' && p.relation_role !== 'paternal_grandmother')
+      .filter((value, index, selfArr) => selfArr.findIndex(t => t.id === value.id) === index)
+      .sort((a, b) => a.id.localeCompare(b.id));
+  }, [persons, paternalGrandfather, paternalGrandmother]);
+
+  const maternalUncles = useMemo(() => {
+    return persons
+      .filter(p => 
+        ['maternal_uncle', 'maternal_aunt'].includes(p.relation_role || '') ||
+        (maternalGrandfather && p.father_id === maternalGrandfather.id) ||
+        (maternalGrandmother && p.mother_id === maternalGrandmother.id)
+      )
+      .filter(p => p.relation_role !== 'mother' && p.relation_role !== 'maternal_grandfather' && p.relation_role !== 'maternal_grandmother')
+      .filter((value, index, selfArr) => selfArr.findIndex(t => t.id === value.id) === index)
+      .sort((a, b) => a.id.localeCompare(b.id));
+  }, [persons, maternalGrandfather, maternalGrandmother]);
+
+  const childPersons = useMemo(() => {
+    return persons
+      .filter(p => 
+        p.relation_role === 'child' ||
+        (self && (p.father_id === self.id || p.mother_id === self.id))
+      )
+      .filter((value, index, selfArr) => selfArr.findIndex(t => t.id === value.id) === index)
+      .sort((a, b) => a.id.localeCompare(b.id));
+  }, [persons, self]);
+
+  /* ─── Partners (husband, wife, fiancé, fiancée) ─── */
+  const partnerPersons = useMemo(() => {
+    return persons
+      .filter(p => ['husband', 'wife', 'fiance', 'fiancee'].includes(p.relation_role || ''))
+      .filter((value, index, selfArr) => selfArr.findIndex(t => t.id === value.id) === index)
+      .sort((a, b) => a.id.localeCompare(b.id));
+  }, [persons]);
+
   /* ═══════════════════════════════════════════════════════════════
-     LAYOUT ENGINE — Powered by treeEngine.ts (recursive, unlimited)
+     LAYOUT ENGINE — Positionnement hiérarchique (6 Générations)
+     
+     Génération 0 (haut)  : Trisaïeuls (Parents des arrière-grands-parents)
+     Génération 1         : Arrière-grands-parents
+     Génération 2         : Grands-parents
+     Génération 3         : Parents + oncles/tantes
+     Génération 4         : Self + fratrie
+     Génération 5 (bas)   : Enfants
      ═══════════════════════════════════════════════════════════════ */
 
-  const layout = useMemo(() => computeTreeLayout(persons), [persons]);
+  const layout = useMemo(() => {
+    const nodes: TreeNode[] = [];
+    const couples: CoupleLink[] = [];
+    const childLinks: ChildLink[] = [];
+    const siblingGroups: SiblingGroup[] = [];
+
+    const genY = (gen: number) => gen * (CARD_H + V_GAP) + 40;
+
+    // Helper to get center bottom / center top of a node
+    const cx = (n: TreeNode) => n.x + CARD_W / 2;
+    const bot = (n: TreeNode) => n.y + CARD_H;
+    const top = (n: TreeNode) => n.y;
+
+    /* ─── Gen 0: Trisaïeuls (16 slots potentiels) ─── */
+    const ggRolesInfo = [
+      { role: 'paternal_ggf_1', fCol: 0, mCol: 1 },
+      { role: 'paternal_ggm_1', fCol: 2, mCol: 3 },
+      { role: 'paternal_ggf_2', fCol: 4, mCol: 5 },
+      { role: 'paternal_ggm_2', fCol: 6, mCol: 7 },
+      { role: 'maternal_ggf_1', fCol: 9, mCol: 10 },
+      { role: 'maternal_ggm_1', fCol: 11, mCol: 12 },
+      { role: 'maternal_ggf_2', fCol: 13, mCol: 14 },
+      { role: 'maternal_ggm_2', fCol: 15, mCol: 16 },
+    ];
+
+    ggRolesInfo.forEach(({ role, fCol, mCol }) => {
+      const ggPerson = findPerson(role);
+      if (ggPerson) {
+        const fatherPerson = ggPerson.father_id ? persons.find(p => p.id === ggPerson.father_id) : undefined;
+        const motherPerson = ggPerson.mother_id ? persons.find(p => p.id === ggPerson.mother_id) : undefined;
+
+        // Father of GG
+        nodes.push({
+          id: `father_of_${ggPerson.id}`,
+          role: `father_of_${ggPerson.id}`,
+          person: fatherPerson,
+          x: fCol * UNIT,
+          y: genY(0),
+          gen: 0,
+        });
+
+        // Mother of GG
+        nodes.push({
+          id: `mother_of_${ggPerson.id}`,
+          role: `mother_of_${ggPerson.id}`,
+          person: motherPerson,
+          x: mCol * UNIT,
+          y: genY(0),
+          gen: 0,
+        });
+      }
+    });
+
+    /* ─── Gen 1: Arrière-grands-parents (8 slots) ─── */
+    const ggRoles = [
+      { role: 'paternal_ggf_1', col: 0.5 },
+      { role: 'paternal_ggm_1', col: 2.5 },
+      { role: 'paternal_ggf_2', col: 4.5 },
+      { role: 'paternal_ggm_2', col: 6.5 },
+      { role: 'maternal_ggf_1', col: 9.5 },
+      { role: 'maternal_ggm_1', col: 11.5 },
+      { role: 'maternal_ggf_2', col: 13.5 },
+      { role: 'maternal_ggm_2', col: 15.5 },
+    ];
+
+    ggRoles.forEach(({ role, col }) => {
+      nodes.push({
+        id: role,
+        role,
+        person: findPerson(role),
+        x: col * UNIT,
+        y: genY(1),
+        gen: 1,
+      });
+    });
+
+    // GG couples
+    const ggCouples: [string, string][] = [
+      ['paternal_ggf_1', 'paternal_ggm_1'],
+      ['paternal_ggf_2', 'paternal_ggm_2'],
+      ['maternal_ggf_1', 'maternal_ggm_1'],
+      ['maternal_ggf_2', 'maternal_ggm_2'],
+    ];
+
+    /* ─── Gen 2: Grands-parents (4 slots) ─── */
+    const gpRoles = [
+      { role: 'paternal_grandfather', col: 1.5 },
+      { role: 'paternal_grandmother', col: 5.5 },
+      { role: 'maternal_grandfather', col: 10.5 },
+      { role: 'maternal_grandmother', col: 14.5 },
+    ];
+
+    gpRoles.forEach(({ role, col }) => {
+      nodes.push({
+        id: role,
+        role,
+        person: findPerson(role),
+        x: col * UNIT,
+        y: genY(2),
+        gen: 2,
+      });
+    });
+
+    // GP couples
+    const gpCouples: [string, string][] = [
+      ['paternal_grandfather', 'paternal_grandmother'],
+      ['maternal_grandfather', 'maternal_grandmother'],
+    ];
+
+    /* ─── Gen 3: Parents + oncles/tantes ─── */
+    const fatherCol = 3.5;
+    const motherCol = 12.5;
+
+    // Father
+    nodes.push({
+      id: 'father',
+      role: 'father',
+      person: findPerson('father'),
+      x: fatherCol * UNIT,
+      y: genY(3),
+      gen: 3,
+    });
+
+    // Mother
+    nodes.push({
+      id: 'mother',
+      role: 'mother',
+      person: findPerson('mother'),
+      x: motherCol * UNIT,
+      y: genY(3),
+      gen: 3,
+    });
+
+    // Paternal uncles/aunts
+    paternalUncles.forEach((unc, i) => {
+      const offset = i % 2 === 0 ? -(Math.floor(i / 2) + 1) : (Math.floor(i / 2) + 1);
+      const col = fatherCol + offset * 2.8;
+      nodes.push({
+        id: unc.id,
+        role: unc.relation_role || 'paternal_uncle',
+        person: unc,
+        x: col * UNIT,
+        y: genY(3),
+        gen: 3,
+      });
+    });
+
+    // Maternal uncles/aunts
+    maternalUncles.forEach((unc, i) => {
+      const offset = i % 2 === 0 ? (Math.floor(i / 2) + 1) : -(Math.floor(i / 2) + 1);
+      const col = motherCol + offset * 2.8;
+      nodes.push({
+        id: unc.id,
+        role: unc.relation_role || 'maternal_uncle',
+        person: unc,
+        x: col * UNIT,
+        y: genY(3),
+        gen: 3,
+      });
+    });
+
+    /* ─── Gen 4: Self + partner + siblings ─── */
+    const selfCol = (fatherCol + motherCol) / 2;
+
+    const hasPartner = partnerPersons.length > 0;
+    const selfActualCol = hasPartner ? selfCol - 1.2 : selfCol;
+    const partnerCol = selfCol + 1.2;
+
+    nodes.push({
+      id: 'self',
+      role: 'self',
+      person: findPerson('self'),
+      x: selfActualCol * UNIT,
+      y: genY(4),
+      gen: 4,
+    });
+
+    // Partners next to self
+    partnerPersons.forEach((partner, i) => {
+      const col = partnerCol + i * 2.4;
+      nodes.push({
+        id: partner.id,
+        role: partner.relation_role || 'husband',
+        person: partner,
+        x: col * UNIT,
+        y: genY(4),
+        gen: 4,
+      });
+    });
+
+    // Siblings offset from self (linear spacing to the left to avoid overlapping partner)
+    siblings.forEach((sib, i) => {
+      const col = selfActualCol - 3.0 - i * 3.0;
+      nodes.push({
+        id: sib.id,
+        role: sib.relation_role || 'sibling',
+        person: sib,
+        x: col * UNIT,
+        y: genY(4),
+        gen: 4,
+      });
+    });
+
+    /* ─── Gen 5: Children ─── */
+    const childrenCenterCol = hasPartner ? (selfActualCol + partnerCol) / 2 : selfActualCol;
+    const CHILD_SPREAD = 4.4;  // espacement entre enfants
+    childPersons.forEach((child, i) => {
+      const total = childPersons.length;
+      const startCol = childrenCenterCol - ((total - 1) * CHILD_SPREAD) / 2;
+      const col = startCol + i * CHILD_SPREAD;
+      nodes.push({
+        id: child.id,
+        role: 'child',
+        person: child,
+        x: col * UNIT,
+        y: genY(5),
+        gen: 5,
+      });
+    });
+
+    /* ═══ BUILD CONNECTIONS ═══ */
+    const nodeMap: Record<string, TreeNode> = {};
+    nodes.forEach(n => { nodeMap[n.id] = n; });
+
+    // Build Gen 0 -> Gen 1 couples & child links
+    ggRolesInfo.forEach(({ role, fCol, mCol }) => {
+      const ggPerson = findPerson(role);
+      if (ggPerson) {
+        const fNode = nodeMap[`father_of_${ggPerson.id}`];
+        const mNode = nodeMap[`mother_of_${ggPerson.id}`];
+        const ggNode = nodeMap[role];
+
+        if (fNode && mNode && ggNode) {
+          const midX = (cx(fNode) + cx(mNode)) / 2;
+          const midY = bot(fNode) + 16;
+          couples.push({
+            leftNode: fNode,
+            rightNode: mNode,
+            midX,
+            midY,
+          });
+
+          const active = !!fNode.person || !!mNode.person;
+          childLinks.push({
+            parentMidX: midX,
+            parentMidY: midY,
+            childX: cx(ggNode),
+            childTopY: top(ggNode),
+            active: active && !!ggNode.person,
+          });
+        }
+      }
+    });
+
+    // Build couple links
+    const allCouples: [string, string][] = [
+      ...ggCouples,
+      ...gpCouples,
+      ['father', 'mother'],
+    ];
+
+    // Self + partner couple links
+    partnerPersons.forEach(partner => {
+      allCouples.push(['self', partner.id]);
+    });
+
+    allCouples.forEach(([a, b]) => {
+      const nA = nodeMap[a];
+      const nB = nodeMap[b];
+      if (nA && nB) {
+        const midX = (cx(nA) + cx(nB)) / 2;
+        const midY = bot(nA) + 16;
+        couples.push({ leftNode: nA, rightNode: nB, midX, midY });
+      }
+    });
+
+    // Build parent-to-child links using couple midpoints
+    // GG couples -> GP children
+    const ggToGp: Record<string, string> = {
+      'paternal_ggf_1,paternal_ggm_1': 'paternal_grandfather',
+      'paternal_ggf_2,paternal_ggm_2': 'paternal_grandmother',
+      'maternal_ggf_1,maternal_ggm_1': 'maternal_grandfather',
+      'maternal_ggf_2,maternal_ggm_2': 'maternal_grandmother',
+    };
+
+    Object.entries(ggToGp).forEach(([coupleKey, childRole]) => {
+      const couple = couples.find(c => {
+        const key = `${c.leftNode.id},${c.rightNode.id}`;
+        return key === coupleKey;
+      });
+      const childNode = nodeMap[childRole];
+      if (couple && childNode) {
+        const hasParents = !!couple.leftNode.person || !!couple.rightNode.person;
+        const hasChild = !!childNode.person;
+        childLinks.push({
+          parentMidX: couple.midX,
+          parentMidY: couple.midY,
+          childX: cx(childNode),
+          childTopY: top(childNode),
+          active: hasParents && hasChild,
+        });
+      }
+    });
+
+    // GP couples -> parents + uncles/aunts
+    const pgfCouple = couples.find(c => c.leftNode.id === 'paternal_grandfather' && c.rightNode.id === 'paternal_grandmother');
+    if (pgfCouple) {
+      const fatherSiblings = [nodeMap['father'], ...paternalUncles.map(u => nodeMap[u.id])].filter(Boolean);
+      if (fatherSiblings.length > 0) {
+        const hasParents = !!pgfCouple.leftNode.person || !!pgfCouple.rightNode.person;
+        siblingGroups.push({
+          parentMidX: pgfCouple.midX,
+          parentMidY: pgfCouple.midY,
+          children: fatherSiblings.map(n => ({ x: cx(n), topY: top(n), active: hasParents && !!n.person })),
+          active: hasParents,
+        });
+      }
+    }
+
+    const mgfCouple = couples.find(c => c.leftNode.id === 'maternal_grandfather' && c.rightNode.id === 'maternal_grandmother');
+    if (mgfCouple) {
+      const motherSiblings = [nodeMap['mother'], ...maternalUncles.map(u => nodeMap[u.id])].filter(Boolean);
+      if (motherSiblings.length > 0) {
+        const hasParents = !!mgfCouple.leftNode.person || !!mgfCouple.rightNode.person;
+        siblingGroups.push({
+          parentMidX: mgfCouple.midX,
+          parentMidY: mgfCouple.midY,
+          children: motherSiblings.map(n => ({ x: cx(n), topY: top(n), active: hasParents && !!n.person })),
+          active: hasParents,
+        });
+      }
+    }
+
+    // Parents couple -> self + siblings
+    const parentsCouple = couples.find(c => c.leftNode.id === 'father' && c.rightNode.id === 'mother');
+    if (parentsCouple) {
+      const selfSiblings = [nodeMap['self'], ...siblings.map(s => nodeMap[s.id])].filter(Boolean);
+      if (selfSiblings.length > 0) {
+        const hasParents = !!parentsCouple.leftNode.person || !!parentsCouple.rightNode.person;
+        siblingGroups.push({
+          parentMidX: parentsCouple.midX,
+          parentMidY: parentsCouple.midY,
+          children: selfSiblings.map(n => ({ x: cx(n), topY: top(n), active: hasParents && !!n.person })),
+          active: hasParents,
+        });
+      }
+    }
+
+    // Self (+ partner) -> children
+    const selfNode = nodeMap['self'];
+    if (selfNode && childPersons.length > 0) {
+      const selfPartnerCouple = partnerPersons.length > 0
+        ? couples.find(c => (c.leftNode.id === 'self' && partnerPersons.some(p => p.id === c.rightNode.id)))
+        : null;
+
+      const parentMidX = selfPartnerCouple ? selfPartnerCouple.midX : cx(selfNode);
+      const parentMidY = selfPartnerCouple ? selfPartnerCouple.midY : bot(selfNode) + 16;
+      const hasSelf = !!selfNode.person;
+      siblingGroups.push({
+        parentMidX,
+        parentMidY,
+        children: childPersons.map(c => {
+          const n = nodeMap[c.id];
+          return n 
+            ? { x: cx(n), topY: top(n), active: hasSelf && !!n.person } 
+            : { x: parentMidX, topY: genY(5), active: false };
+        }),
+        active: hasSelf,
+      });
+    }
+
+    // Calculate canvas dimensions
+    const allX = nodes.map(n => n.x);
+    const allY = nodes.map(n => n.y);
+    const minX = Math.min(...allX, 0);
+    const maxX = Math.max(...allX.map(x => x + CARD_W), CARD_W);
+    const maxY = Math.max(...allY.map(y => y + CARD_H), CARD_H) + 60;
+
+    return { nodes, couples, childLinks, siblingGroups, width: maxX - minX + 80, height: maxY + 40, offsetX: -minX + 40 };
+  }, [persons, byRole, siblings, paternalUncles, maternalUncles, childPersons, partnerPersons]);
 
   /* ─── Document status ─── */
   function statusOf(person: Person, docs: DocumentItem[]): 'complete' | 'partial' | 'missing' {
@@ -66,13 +558,20 @@ export default function FamilyTree({
      RENDER
      ═══════════════════════════════════════════════════════════════ */
 
-  const { nodes, couples, childLinks, siblingGroups, width, height, offsetX, minGen, maxGen } = layout;
+  const { nodes, couples, childLinks, siblingGroups, width, height, offsetX } = layout;
 
   const activeColor = isDark ? '#10B981' : '#008751';
   const inactiveColor = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,135,81,0.35)';
 
-  // Dynamic generation labels
-  const allGens = [...new Set(nodes.map(n => n.gen))].sort((a, b) => a - b);
+  // Generation labels
+  const genLabels: Record<number, string> = {
+    0: 'Trisaïeuls',
+    1: 'Arrière-grands-parents',
+    2: 'Grands-parents',
+    3: 'Parents',
+    4: 'Sujet & Fratrie',
+    5: 'Descendants',
+  };
 
   const activeGens = new Set(nodes.filter(n => n.person).map(n => n.gen));
 
@@ -118,11 +617,8 @@ export default function FamilyTree({
         </defs>
 
         {/* ── Generation bands (subtle stripes) ── */}
-        {allGens.map(gen => {
-          const genNodes = nodes.filter(n => n.gen === gen);
-          if (genNodes.length === 0) return null;
-          const y = genNodes[0].y;
-          const label = getGenerationLabel(gen, minGen, maxGen);
+        {[0, 1, 2, 3, 4, 5].map(gen => {
+          const y = gen * (CARD_H + V_GAP) + 40;
           return (
             <g key={`gen-band-${gen}`}>
               <rect
@@ -130,7 +626,7 @@ export default function FamilyTree({
                 y={y - 10}
                 width={width}
                 height={CARD_H + 20}
-                fill={Math.abs(gen) % 2 === 0 ? 'rgba(0,135,81,0.015)' : 'rgba(252,209,22,0.008)'}
+                fill={gen % 2 === 0 ? 'rgba(0,135,81,0.015)' : 'rgba(252,209,22,0.008)'}
                 rx="16"
               />
               {/* Gen label */}
@@ -144,7 +640,7 @@ export default function FamilyTree({
                 textAnchor="start"
                 letterSpacing="0.15em"
               >
-                {label.toUpperCase()}
+                {genLabels[gen]?.toUpperCase() || ''}
               </text>
             </g>
           );
@@ -257,14 +753,13 @@ export default function FamilyTree({
           );
         })}
 
-        {/* ── Sibling group fork lines (parents -> multiple children) ── */}
+        {/* ── Sibling group fork lines ── */}
         {siblingGroups.map((group, gi) => {
           const px = group.parentMidX + offsetX;
           const py = group.parentMidY;
           const busY = py + (V_GAP - 24) / 2 + 12;
           const groupActive = group.active;
 
-          // Sort children by x for horizontal bus
           const sorted = [...group.children].sort((a, b) => a.x - b.x);
           if (sorted.length === 0) return null;
 
@@ -371,7 +866,7 @@ export default function FamilyTree({
                     selected={selectedPerson?.id === node.person.id}
                     onClick={() => onSelect(node.person!)}
                   />
-                  {/* ─── Universal hover action buttons ─── */}
+                  {/* Quick action overlay on hover */}
                   <div
                     className="absolute -bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-all duration-300 rounded-full px-2.5 py-1 z-30 shadow-2xl backdrop-blur-md"
                     style={{
@@ -444,10 +939,15 @@ export default function FamilyTree({
               ) : (
                 <button
                   onClick={() => {
-                    // For placeholder nodes, determine the right action
-                    // The node id encodes the relationship path
-                    const nodeRole = node.role;
-                    onAddRelative?.(nodeRole);
+                    if (node.role.startsWith('father_of_')) {
+                      const ggId = node.role.replace('father_of_', '');
+                      onAddRelative?.('add_father', ggId);
+                    } else if (node.role.startsWith('mother_of_')) {
+                      const ggId = node.role.replace('mother_of_', '');
+                      onAddRelative?.('add_mother', ggId);
+                    } else {
+                      onAddRelative?.(node.role);
+                    }
                   }}
                   className={cn(
                     'group flex h-full w-full flex-col items-center justify-center rounded-2xl transition-all duration-300 p-4 text-center',
@@ -460,7 +960,7 @@ export default function FamilyTree({
                     <Plus size={18} className="text-gray-500 transition-colors group-hover:text-[#008751]" />
                   </div>
                   <span className="text-[10px] font-black uppercase tracking-[0.14em] text-gray-500 group-hover:text-white transition-colors leading-tight">
-                    {ROLE_LABELS[node.role] || node.label || 'Ajouter'}
+                    {node.role.startsWith('father_of_') ? 'Père' : node.role.startsWith('mother_of_') ? 'Mère' : ROLE_LABELS[node.role] || 'Ajouter'}
                   </span>
                   <span className="mt-0.5 text-[8px] font-semibold text-gray-700 group-hover:text-emerald-500/70 transition-colors uppercase tracking-wider">
                     Cliquer pour ajouter
