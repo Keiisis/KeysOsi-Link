@@ -143,17 +143,138 @@ export default function DedicatedTreePage() {
     }
   };
 
-  /* ─── DOWNLOAD TREE AS IMAGE ─── */
+  /* ─── DOWNLOAD TREE AS IMAGE (2 images: RECTO = arbre, VERSO = rapport) ─── */
   const handleDownloadTree = async () => {
     setDownloading(true);
     try {
-      // Dynamically import html2canvas
       const html2canvas = (await import('html2canvas')).default;
       
       const treeEl = treeContainerRef.current;
       if (!treeEl) throw new Error('Élément arbre introuvable');
 
-      // Build missing roles report
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const fileBase = clientName.replace(/\s+/g, '-').toLowerCase();
+
+      // ═══════════════════════════════════════════════════
+      // IMAGE 1 — RECTO : L'arbre seul, grand et lisible
+      // ═══════════════════════════════════════════════════
+      const treeWrapper = document.createElement('div');
+      treeWrapper.style.cssText = 'position:absolute;left:-9999px;top:0;background:#FFFFFF;padding:60px 60px 40px;';
+      
+      // Title header for the printed tree
+      const header = document.createElement('div');
+      header.style.cssText = 'text-align:center;margin-bottom:40px;font-family:system-ui,sans-serif;';
+      header.innerHTML = `
+        <div style="display:inline-block;background:#008751;color:white;padding:12px 40px;border-radius:16px;margin-bottom:12px;">
+          <span style="font-size:22px;font-weight:900;letter-spacing:2px;">RETOUR GAGNANT BÉNIN</span>
+        </div>
+        <h1 style="font-size:28px;font-weight:900;color:#0A0F18;margin:16px 0 6px;letter-spacing:1px;">
+          ARBRE GÉNÉALOGIQUE
+        </h1>
+        <p style="font-size:18px;font-weight:700;color:#008751;margin:0 0 4px;">
+          Famille ${clientName.toUpperCase()}
+        </p>
+        <p style="font-size:12px;color:#9CA3AF;margin:0;">
+          ${persons.length} membre(s) • Généré le ${new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+        </p>
+      `;
+      treeWrapper.appendChild(header);
+
+      // Clone tree
+      const treeClone = treeEl.cloneNode(true) as HTMLElement;
+      treeClone.style.transform = 'none';
+      treeClone.style.position = 'relative';
+
+      // Remove all truncation so names display fully
+      treeClone.querySelectorAll('.truncate').forEach(el => {
+        (el as HTMLElement).classList.remove('truncate');
+        (el as HTMLElement).style.overflow = 'visible';
+        (el as HTMLElement).style.textOverflow = 'clip';
+        (el as HTMLElement).style.whiteSpace = 'normal';
+        (el as HTMLElement).style.wordBreak = 'break-word';
+      });
+      treeClone.querySelectorAll('.overflow-hidden').forEach(el => {
+        (el as HTMLElement).classList.remove('overflow-hidden');
+        (el as HTMLElement).style.overflow = 'visible';
+      });
+
+      // Expand card containers to fit text and make them bigger for print
+      treeClone.querySelectorAll('[class*="group/card"]').forEach(el => {
+        const htmlEl = el as HTMLElement;
+        htmlEl.style.overflow = 'visible';
+        htmlEl.style.minWidth = '220px';
+        htmlEl.style.width = 'auto';
+        htmlEl.style.maxWidth = '320px';
+      });
+
+      // Increase font sizes for print readability
+      treeClone.querySelectorAll('p, span').forEach(el => {
+        const htmlEl = el as HTMLElement;
+        if (htmlEl.style.textOverflow === 'ellipsis' || htmlEl.classList.contains('truncate')) {
+          htmlEl.style.textOverflow = 'clip';
+          htmlEl.style.overflow = 'visible';
+          htmlEl.style.whiteSpace = 'normal';
+        }
+        // Boost small fonts for print
+        const computed = window.getComputedStyle(htmlEl);
+        const currentSize = parseFloat(computed.fontSize);
+        if (currentSize < 14) {
+          htmlEl.style.fontSize = `${Math.max(currentSize * 1.3, 13)}px`;
+        }
+      });
+
+      // Make dark-mode text readable on white background
+      treeClone.querySelectorAll('[class*="text-white"]').forEach(el => {
+        (el as HTMLElement).style.color = '#1B2A4A';
+      });
+      treeClone.querySelectorAll('[class*="text-gray-"]').forEach(el => {
+        (el as HTMLElement).style.color = '#4B5563';
+      });
+
+      // Make card backgrounds visible on white
+      treeClone.querySelectorAll('[class*="rounded-2xl"]').forEach(el => {
+        const htmlEl = el as HTMLElement;
+        if (htmlEl.style.background?.includes('rgba(10,15,24')) {
+          htmlEl.style.background = 'rgba(240,245,250,0.95)';
+          htmlEl.style.border = '2px solid #D1D5DB';
+          htmlEl.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
+        }
+      });
+
+      // Remove hover overlays from export
+      treeClone.querySelectorAll('[class*="opacity-0"]').forEach(el => {
+        (el as HTMLElement).style.display = 'none';
+      });
+
+      treeWrapper.appendChild(treeClone);
+      document.body.appendChild(treeWrapper);
+
+      await new Promise(r => setTimeout(r, 400));
+
+      // Render at 3x scale for high-resolution print
+      const treeCanvas = await html2canvas(treeWrapper, {
+        backgroundColor: '#FFFFFF',
+        scale: 3,
+        useCORS: true,
+        logging: false,
+        width: treeWrapper.scrollWidth,
+        height: treeWrapper.scrollHeight,
+      });
+
+      document.body.removeChild(treeWrapper);
+
+      // Download Image 1 — RECTO
+      const link1 = document.createElement('a');
+      link1.download = `arbre-${fileBase}-RECTO-${dateStr}.png`;
+      link1.href = treeCanvas.toDataURL('image/png');
+      link1.click();
+
+      // Small delay between the two downloads
+      await new Promise(r => setTimeout(r, 500));
+
+      // ═══════════════════════════════════════════════════
+      // IMAGE 2 — VERSO : Le rapport (pour le dos de l'impression)
+      // ═══════════════════════════════════════════════════
       const allDirectRoles: RelationRole[] = [
         'self', 'father', 'mother',
         'paternal_grandfather', 'paternal_grandmother',
@@ -167,124 +288,111 @@ export default function DedicatedTreePage() {
       const missingRoles = allDirectRoles.filter(r => !existingRoles.has(r));
       const incompletePersons = persons.filter(p => !p.first_name || !p.last_name || !p.birth_date);
 
-      // Create a wrapper to include the report at the bottom
-      const wrapper = document.createElement('div');
-      wrapper.style.cssText = 'position:absolute;left:-9999px;top:0;background:#FFFFFF;padding:40px;';
-      
-      // Clone tree into wrapper
-      const treeClone = treeEl.cloneNode(true) as HTMLElement;
-      treeClone.style.transform = 'none';
-      treeClone.style.position = 'relative';
+      const reportWrapper = document.createElement('div');
+      reportWrapper.style.cssText = 'position:absolute;left:-9999px;top:0;background:#FFFFFF;padding:60px;min-width:800px;max-width:1000px;font-family:system-ui,sans-serif;';
 
-      // ★ FIX: Remove all truncation so names display fully in the export
-      treeClone.querySelectorAll('.truncate').forEach(el => {
-        (el as HTMLElement).classList.remove('truncate');
-        (el as HTMLElement).style.overflow = 'visible';
-        (el as HTMLElement).style.textOverflow = 'clip';
-        (el as HTMLElement).style.whiteSpace = 'normal';
-        (el as HTMLElement).style.wordBreak = 'break-word';
-      });
-      treeClone.querySelectorAll('.overflow-hidden').forEach(el => {
-        (el as HTMLElement).classList.remove('overflow-hidden');
-        (el as HTMLElement).style.overflow = 'visible';
-      });
-      // Expand card containers to fit full text
-      treeClone.querySelectorAll('[class*="group/card"]').forEach(el => {
-        const htmlEl = el as HTMLElement;
-        htmlEl.style.overflow = 'visible';
-        htmlEl.style.minWidth = htmlEl.style.width || '180px';
-        htmlEl.style.width = 'auto';
-        htmlEl.style.maxWidth = '280px';
-      });
-      // Ensure all text elements inside cards are visible
-      treeClone.querySelectorAll('p, span').forEach(el => {
-        const htmlEl = el as HTMLElement;
-        if (htmlEl.style.textOverflow === 'ellipsis' || htmlEl.classList.contains('truncate')) {
-          htmlEl.style.textOverflow = 'clip';
-          htmlEl.style.overflow = 'visible';
-          htmlEl.style.whiteSpace = 'normal';
-        }
-      });
-      // Make dark-mode text readable on white background
-      treeClone.querySelectorAll('[class*="text-white"]').forEach(el => {
-        (el as HTMLElement).style.color = '#1B2A4A';
-      });
-      treeClone.querySelectorAll('[class*="text-gray-"]').forEach(el => {
-        (el as HTMLElement).style.color = '#4B5563';
-      });
-      // Make card backgrounds visible on white
-      treeClone.querySelectorAll('[class*="rounded-2xl"]').forEach(el => {
-        const htmlEl = el as HTMLElement;
-        if (htmlEl.style.background?.includes('rgba(10,15,24')) {
-          htmlEl.style.background = 'rgba(240,245,250,0.95)';
-          htmlEl.style.border = '1px solid #D1D5DB';
-        }
-      });
+      let reportHtml = `
+        <div style="text-align:center;margin-bottom:40px;">
+          <div style="display:inline-block;background:#008751;color:white;padding:10px 36px;border-radius:14px;margin-bottom:10px;">
+            <span style="font-size:18px;font-weight:900;letter-spacing:2px;">RETOUR GAGNANT BÉNIN</span>
+          </div>
+          <h2 style="font-size:24px;font-weight:900;margin:14px 0 6px;color:#0A0F18;">📋 RAPPORT DE L'ARBRE GÉNÉALOGIQUE</h2>
+          <p style="font-size:16px;font-weight:700;color:#008751;margin:0 0 4px;">Famille ${clientName.toUpperCase()}</p>
+          <p style="font-size:13px;color:#6B7280;margin:0;">
+            Généré le ${new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} • ${persons.length} membre(s) enregistré(s)
+          </p>
+        </div>
+      `;
 
-      wrapper.appendChild(treeClone);
+      // Summary table of all members
+      reportHtml += `
+        <div style="margin-bottom:28px;padding:24px;background:#F9FAFB;border-radius:16px;border:1px solid #E5E7EB;">
+          <h3 style="font-size:16px;font-weight:800;color:#0A0F18;margin:0 0 16px;">👥 Membres enregistrés (${persons.length})</h3>
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead>
+              <tr style="border-bottom:2px solid #D1D5DB;">
+                <th style="text-align:left;padding:8px 12px;color:#6B7280;font-weight:700;">Rôle</th>
+                <th style="text-align:left;padding:8px 12px;color:#6B7280;font-weight:700;">Prénom</th>
+                <th style="text-align:left;padding:8px 12px;color:#6B7280;font-weight:700;">Nom</th>
+                <th style="text-align:left;padding:8px 12px;color:#6B7280;font-weight:700;">Né(e) le</th>
+                <th style="text-align:left;padding:8px 12px;color:#6B7280;font-weight:700;">Lieu</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+      persons.forEach(p => {
+        const roleName = ROLE_LABELS[p.relation_role || ''] || (p.is_self ? 'Sujet' : 'Membre');
+        reportHtml += `
+          <tr style="border-bottom:1px solid #E5E7EB;">
+            <td style="padding:8px 12px;font-weight:600;color:#374151;">${roleName}</td>
+            <td style="padding:8px 12px;color:#1F2937;">${p.first_name || '—'}</td>
+            <td style="padding:8px 12px;color:#1F2937;">${p.last_name || '—'}</td>
+            <td style="padding:8px 12px;color:#1F2937;">${p.birth_date || '—'}</td>
+            <td style="padding:8px 12px;color:#1F2937;">${p.birth_place || '—'}</td>
+          </tr>
+        `;
+      });
+      reportHtml += `</tbody></table></div>`;
 
-      // Add report section
-      const report = document.createElement('div');
-      report.style.cssText = 'margin-top:48px;padding:32px;border-top:3px solid #008751;font-family:system-ui,sans-serif;color:#1B2A4A;';
-      
-      let html = `<h2 style="font-size:18px;font-weight:900;margin:0 0 6px;color:#008751;">📋 Rapport de l'arbre — ${clientName}</h2>`;
-      html += `<p style="font-size:12px;color:#6B7280;margin:0 0 20px;">Généré le ${new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} • ${persons.length} membre(s) enregistré(s)</p>`;
-      
+      // Missing roles
       if (missingRoles.length > 0) {
-        html += `<div style="margin-bottom:16px;padding:16px;background:#FEF3C7;border-radius:12px;border:1px solid #FCD34D;">`;
-        html += `<h3 style="font-size:13px;font-weight:800;color:#92400E;margin:0 0 8px;">⚠️ Membres manquants (${missingRoles.length})</h3>`;
-        html += `<ul style="margin:0;padding:0 0 0 16px;font-size:11px;color:#78350F;">`;
+        reportHtml += `<div style="margin-bottom:20px;padding:20px;background:#FEF3C7;border-radius:14px;border:1px solid #FCD34D;">`;
+        reportHtml += `<h3 style="font-size:15px;font-weight:800;color:#92400E;margin:0 0 12px;">⚠️ Membres manquants (${missingRoles.length})</h3>`;
+        reportHtml += `<ul style="margin:0;padding:0 0 0 20px;font-size:13px;color:#78350F;line-height:1.8;">`;
         missingRoles.forEach(r => {
-          html += `<li style="margin-bottom:4px;">${ROLE_LABELS[r] || r}</li>`;
+          reportHtml += `<li style="margin-bottom:4px;">${ROLE_LABELS[r] || r}</li>`;
         });
-        html += `</ul></div>`;
+        reportHtml += `</ul></div>`;
       }
       
+      // Incomplete persons
       if (incompletePersons.length > 0) {
-        html += `<div style="margin-bottom:16px;padding:16px;background:#FEE2E2;border-radius:12px;border:1px solid #FCA5A5;">`;
-        html += `<h3 style="font-size:13px;font-weight:800;color:#991B1B;margin:0 0 8px;">🔴 Fiches incomplètes (${incompletePersons.length})</h3>`;
-        html += `<ul style="margin:0;padding:0 0 0 16px;font-size:11px;color:#7F1D1D;">`;
+        reportHtml += `<div style="margin-bottom:20px;padding:20px;background:#FEE2E2;border-radius:14px;border:1px solid #FCA5A5;">`;
+        reportHtml += `<h3 style="font-size:15px;font-weight:800;color:#991B1B;margin:0 0 12px;">🔴 Fiches incomplètes (${incompletePersons.length})</h3>`;
+        reportHtml += `<ul style="margin:0;padding:0 0 0 20px;font-size:13px;color:#7F1D1D;line-height:1.8;">`;
         incompletePersons.forEach(p => {
           const missing: string[] = [];
           if (!p.first_name) missing.push('prénom');
           if (!p.last_name) missing.push('nom');
           if (!p.birth_date) missing.push('date de naissance');
-          html += `<li style="margin-bottom:4px;"><strong>${p.first_name || '?'} ${p.last_name || '?'}</strong> (${ROLE_LABELS[p.relation_role || ''] || 'Membre'}) — manque : ${missing.join(', ')}</li>`;
+          reportHtml += `<li style="margin-bottom:4px;"><strong>${p.first_name || '?'} ${p.last_name || '?'}</strong> (${ROLE_LABELS[p.relation_role || ''] || 'Membre'}) — manque : ${missing.join(', ')}</li>`;
         });
-        html += `</ul></div>`;
+        reportHtml += `</ul></div>`;
       }
 
+      // All complete message
       if (missingRoles.length === 0 && incompletePersons.length === 0) {
-        html += `<div style="padding:16px;background:#D1FAE5;border-radius:12px;border:1px solid #6EE7B7;">`;
-        html += `<p style="font-size:13px;font-weight:700;color:#065F46;margin:0;">✅ Arbre complet — Toutes les fiches sont renseignées</p>`;
-        html += `</div>`;
+        reportHtml += `<div style="padding:20px;background:#D1FAE5;border-radius:14px;border:1px solid #6EE7B7;">`;
+        reportHtml += `<p style="font-size:15px;font-weight:700;color:#065F46;margin:0;">✅ Arbre complet — Toutes les fiches sont renseignées</p>`;
+        reportHtml += `</div>`;
       }
 
-      html += `<p style="margin-top:20px;font-size:9px;color:#9CA3AF;text-align:center;">RETOUR GAGNANT BÉNIN — Arbre Généalogique • retourgagnantbenin.bj</p>`;
-      
-      report.innerHTML = html;
-      wrapper.appendChild(report);
-      document.body.appendChild(wrapper);
+      reportHtml += `
+        <div style="margin-top:40px;padding-top:20px;border-top:2px solid #E5E7EB;text-align:center;">
+          <p style="font-size:10px;color:#9CA3AF;margin:0;">RETOUR GAGNANT BÉNIN — Arbre Généalogique • www.retourgagnantbenin.bj</p>
+        </div>
+      `;
 
-      // Wait for rendering
+      reportWrapper.innerHTML = reportHtml;
+      document.body.appendChild(reportWrapper);
       await new Promise(r => setTimeout(r, 300));
 
-      const canvas = await html2canvas(wrapper, {
+      const reportCanvas = await html2canvas(reportWrapper, {
         backgroundColor: '#FFFFFF',
-        scale: 2,
+        scale: 3,
         useCORS: true,
         logging: false,
-        width: wrapper.scrollWidth,
-        height: wrapper.scrollHeight,
+        width: reportWrapper.scrollWidth,
+        height: reportWrapper.scrollHeight,
       });
 
-      document.body.removeChild(wrapper);
+      document.body.removeChild(reportWrapper);
 
-      // Download as PNG
-      const link = document.createElement('a');
-      link.download = `arbre-${clientName.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0, 10)}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+      // Download Image 2 — VERSO
+      const link2 = document.createElement('a');
+      link2.download = `arbre-${fileBase}-VERSO-${dateStr}.png`;
+      link2.href = reportCanvas.toDataURL('image/png');
+      link2.click();
 
     } catch (err: any) {
       console.error('Download error:', err);
