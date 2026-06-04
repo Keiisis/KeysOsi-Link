@@ -138,41 +138,44 @@ export default function PersonCard({ person, status, onClick, selected, childNum
       )}
 
       {/* ── Content: Names prominent, no avatar ── */}
-      <div className="flex flex-col items-center justify-center text-center gap-0.5">
+      <div className="flex flex-col items-center justify-center text-center gap-0.5 w-full">
         {/* First name — large and bold */}
-        <p className="w-full truncate text-[15px] font-black leading-tight text-[var(--panel-text-heading)] dark:text-white">
+        <p className="w-full truncate text-[16px] font-black leading-tight text-[var(--panel-text-heading)] dark:text-white">
           {person.first_name || 'Sans prénom'}
         </p>
         {/* Last name — slightly smaller, uppercase */}
-        <p className="w-full truncate text-[13px] font-extrabold uppercase tracking-wide leading-tight text-[var(--panel-text-muted)] dark:text-gray-300">
+        <p className="w-full truncate text-[13px] font-black uppercase tracking-wide leading-tight text-[var(--panel-text-muted)] dark:text-gray-300">
           {person.last_name || 'Sans nom'}
         </p>
 
         {/* Role label — gendered */}
-        <span className="mt-1.5 w-full truncate text-[8px] font-black uppercase tracking-[0.12em] leading-snug"
+        <span className="mt-1 w-full truncate text-[8px] font-black uppercase tracking-[0.12em] leading-snug"
           style={{ color: isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.40)' }}
         >
           {roleLabel}
         </span>
 
-        {/* Bottom row: full date + status */}
-        <div className="mt-1 flex w-full items-center justify-between">
-          <span className="font-mono text-[10px] font-semibold text-gray-500 dark:text-gray-400 truncate">
-            {dateDisplay || '—'}
+        {/* Birth place — bold, black/white, visible */}
+        <p className="w-full truncate text-[11px] font-black text-black dark:text-white mt-1.5 leading-snug">
+          📍 {person.birth_place || 'Lieu inconnu'}
+        </p>
+
+        {/* Birth / death dates — bold, black/white, visible */}
+        <p className="w-full truncate font-mono text-[11px] font-black text-black dark:text-white mt-0.5 leading-snug">
+          📅 {dateDisplay || 'Dates inconnues'}
+        </p>
+
+        {/* Bottom row: status */}
+        <div className="mt-1 flex items-center justify-center gap-1 shrink-0">
+          <StatusIcon size={10} className={statusConfig.text} />
+          <span className={cn('relative flex h-1.5 w-1.5 rounded-full', statusConfig.dotColor)}>
+            {status === 'complete' && (
+              <span className={cn('absolute inline-flex h-full w-full animate-ping rounded-full opacity-50', statusConfig.dotColor)} />
+            )}
           </span>
-          <div className="flex items-center gap-1 shrink-0 ml-1">
-            <StatusIcon size={9} className={statusConfig.text} />
-            <span className={cn('relative flex h-1.5 w-1.5 rounded-full', statusConfig.dotColor)}>
-              {status === 'complete' && (
-                <span
-                  className={cn(
-                    'absolute inline-flex h-full w-full animate-ping rounded-full opacity-50',
-                    statusConfig.dotColor
-                  )}
-                />
-              )}
-            </span>
-          </div>
+          <span className="text-[9px] font-bold text-gray-500 dark:text-gray-400 ml-0.5">
+            {statusConfig.label}
+          </span>
         </div>
       </div>
     </div>

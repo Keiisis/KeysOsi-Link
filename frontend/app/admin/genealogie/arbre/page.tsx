@@ -258,22 +258,26 @@ export default function DedicatedTreePage() {
           background-color: #F9FAFB !important;
         }
         .group\\/card p, .group\\/card span {
-          color: #0A0F18 !important;
+          color: #000000 !important;
+          font-weight: 900 !important;
         }
         .group\\/card p.font-black {
           font-size: 14px !important;
+          font-weight: 900 !important;
         }
         .group\\/card p.font-bold {
           font-size: 12px !important;
+          font-weight: 900 !important;
         }
         .group\\/card span.uppercase {
           color: #008751 !important;
           font-size: 9px !important;
           font-weight: 900 !important;
         }
-        .group\\/card span.font-mono {
-          color: #4B5563 !important;
-          font-size: 10px !important;
+        .group\\/card p.font-mono {
+          color: #000000 !important;
+          font-size: 11px !important;
+          font-weight: 900 !important;
         }
         .group\\/card > button {
           background-color: #F9FAFB !important;
@@ -551,22 +555,26 @@ export default function DedicatedTreePage() {
           background-color: #F9FAFB !important;
         }
         .group\\/card p, .group\\/card span {
-          color: #0A0F18 !important;
+          color: #000000 !important;
+          font-weight: 900 !important;
         }
         .group\\/card p.font-black {
           font-size: 14px !important;
+          font-weight: 900 !important;
         }
         .group\\/card p.font-bold {
           font-size: 12px !important;
+          font-weight: 900 !important;
         }
         .group\\/card span.uppercase {
           color: #008751 !important;
           font-size: 9px !important;
           font-weight: 900 !important;
         }
-        .group\\/card span.font-mono {
-          color: #4B5563 !important;
-          font-size: 10px !important;
+        .group\\/card p.font-mono {
+          color: #000000 !important;
+          font-size: 11px !important;
+          font-weight: 900 !important;
         }
         .group\\/card > button {
           background-color: #F9FAFB !important;
