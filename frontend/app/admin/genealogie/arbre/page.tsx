@@ -240,11 +240,11 @@ export default function DedicatedTreePage() {
         }
         .group\\/card {
           overflow: visible !important;
-          width: 220px !important; /* Keep fixed CARD_W to align with SVG connection lines */
+          width: 280px !important; /* Keep fixed CARD_W to align with SVG connection lines */
         }
         .group\\/card > div {
           background-color: #FFFFFF !important;
-          border: 2.5px solid #008751 !important; /* solid green border for maximum contrast */
+          border: 3px solid #008751 !important; /* solid green border for maximum contrast */
           box-shadow: 0 4px 12px rgba(0,0,0,0.06) !important;
           opacity: 1 !important;
         }
@@ -261,23 +261,29 @@ export default function DedicatedTreePage() {
           color: #000000 !important;
           font-weight: 900 !important;
         }
-        .group\\/card p.font-black {
-          font-size: 14px !important;
+        .group\\/card p.text-\\[19px\\] {
+          font-size: 19px !important;
           font-weight: 900 !important;
+          color: #000000 !important;
         }
-        .group\\/card p.font-bold {
-          font-size: 12px !important;
+        .group\\/card p.text-\\[15px\\] {
+          font-size: 15px !important;
           font-weight: 900 !important;
+          color: #000000 !important;
         }
         .group\\/card span.uppercase {
           color: #008751 !important;
-          font-size: 9px !important;
+          font-size: 10px !important;
           font-weight: 900 !important;
         }
-        .group\\/card p.font-mono {
+        .group\\/card p.text-\\[13px\\] {
           color: #000000 !important;
-          font-size: 11px !important;
+          font-size: 13px !important;
           font-weight: 900 !important;
+        }
+        .group\\/card svg {
+          stroke: #000000 !important;
+          opacity: 1 !important;
         }
         .group\\/card > button {
           background-color: #F9FAFB !important;
@@ -537,11 +543,11 @@ export default function DedicatedTreePage() {
         }
         .group\\/card {
           overflow: visible !important;
-          width: 220px !important; /* Keep fixed CARD_W to align with SVG connection lines */
+          width: 280px !important; /* Keep fixed CARD_W to align with SVG connection lines */
         }
         .group\\/card > div {
           background-color: #FFFFFF !important;
-          border: 2.5px solid #008751 !important; /* solid green border for maximum contrast */
+          border: 3px solid #008751 !important; /* solid green border for maximum contrast */
           box-shadow: 0 4px 12px rgba(0,0,0,0.06) !important;
           opacity: 1 !important;
         }
@@ -558,23 +564,29 @@ export default function DedicatedTreePage() {
           color: #000000 !important;
           font-weight: 900 !important;
         }
-        .group\\/card p.font-black {
-          font-size: 14px !important;
+        .group\\/card p.text-\\[19px\\] {
+          font-size: 19px !important;
           font-weight: 900 !important;
+          color: #000000 !important;
         }
-        .group\\/card p.font-bold {
-          font-size: 12px !important;
+        .group\\/card p.text-\\[15px\\] {
+          font-size: 15px !important;
           font-weight: 900 !important;
+          color: #000000 !important;
         }
         .group\\/card span.uppercase {
           color: #008751 !important;
-          font-size: 9px !important;
+          font-size: 10px !important;
           font-weight: 900 !important;
         }
-        .group\\/card p.font-mono {
+        .group\\/card p.text-\\[13px\\] {
           color: #000000 !important;
-          font-size: 11px !important;
+          font-size: 13px !important;
           font-weight: 900 !important;
+        }
+        .group\\/card svg {
+          stroke: #000000 !important;
+          opacity: 1 !important;
         }
         .group\\/card > button {
           background-color: #F9FAFB !important;

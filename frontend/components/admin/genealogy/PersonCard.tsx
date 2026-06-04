@@ -2,7 +2,7 @@
 
 import { Person } from '@/lib/genealogy/types';
 import { getRoleLabel } from '@/lib/genealogy/requirements';
-import { CheckCircle2, AlertTriangle, AlertCircle, Crown } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, AlertCircle, Crown, MapPin, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/lib/theme/ThemeContext';
 
@@ -132,48 +132,54 @@ export default function PersonCard({ person, status, onClick, selected, childNum
 
       {/* Crown badge for self */}
       {isSelf && (
-        <div className="absolute -right-0.5 -top-0.5 z-20 flex h-5 w-5 items-center justify-center rounded-full border border-[#FCD116]/50 bg-[#FCD116]/25 shadow-[0_0_12px_rgba(252,209,22,0.5)]">
-          <Crown size={9} className="text-[#FCD116]" />
+        <div className="absolute -right-0.5 -top-0.5 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-[#FCD116]/50 bg-[#FCD116]/25 shadow-[0_0_12px_rgba(252,209,22,0.5)]">
+          <Crown size={11} className="text-[#FCD116]" />
         </div>
       )}
 
       {/* ── Content: Names prominent, no avatar ── */}
-      <div className="flex flex-col items-center justify-center text-center gap-0.5 w-full">
+      <div className="flex flex-col items-center justify-center text-center gap-1 w-full">
         {/* First name — large and bold */}
-        <p className="w-full truncate text-[16px] font-black leading-tight text-[var(--panel-text-heading)] dark:text-white">
+        <p className="w-full truncate text-[19px] font-black leading-tight text-black dark:text-white">
           {person.first_name || 'Sans prénom'}
         </p>
         {/* Last name — slightly smaller, uppercase */}
-        <p className="w-full truncate text-[13px] font-black uppercase tracking-wide leading-tight text-[var(--panel-text-muted)] dark:text-gray-300">
+        <p className="w-full truncate text-[15px] font-black uppercase tracking-wide leading-tight text-black dark:text-white">
           {person.last_name || 'Sans nom'}
         </p>
 
         {/* Role label — gendered */}
-        <span className="mt-1 w-full truncate text-[8px] font-black uppercase tracking-[0.12em] leading-snug"
-          style={{ color: isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.40)' }}
+        <span className="mt-1 w-full truncate text-[10px] font-black uppercase tracking-[0.12em] leading-snug"
+          style={{ color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)' }}
         >
           {roleLabel}
         </span>
 
         {/* Birth place — bold, black/white, visible */}
-        <p className="w-full truncate text-[11px] font-black text-black dark:text-white mt-1.5 leading-snug">
-          📍 {person.birth_place || 'Lieu inconnu'}
-        </p>
+        <div className="flex items-center justify-center gap-1.5 w-full mt-1.5 px-1">
+          <MapPin size={14} className="shrink-0 text-black dark:text-white" />
+          <p className="truncate text-[13px] font-black text-black dark:text-white leading-snug">
+            {person.birth_place || 'Lieu inconnu'}
+          </p>
+        </div>
 
         {/* Birth / death dates — bold, black/white, visible */}
-        <p className="w-full truncate font-mono text-[11px] font-black text-black dark:text-white mt-0.5 leading-snug">
-          📅 {dateDisplay || 'Dates inconnues'}
-        </p>
+        <div className="flex items-center justify-center gap-1.5 w-full mt-0.5 px-1">
+          <Calendar size={14} className="shrink-0 text-black dark:text-white" />
+          <p className="truncate font-mono text-[13px] font-black text-black dark:text-white leading-snug">
+            {dateDisplay || 'Dates inconnues'}
+          </p>
+        </div>
 
         {/* Bottom row: status */}
-        <div className="mt-1 flex items-center justify-center gap-1 shrink-0">
-          <StatusIcon size={10} className={statusConfig.text} />
-          <span className={cn('relative flex h-1.5 w-1.5 rounded-full', statusConfig.dotColor)}>
+        <div className="mt-1.5 flex items-center justify-center gap-1.5 shrink-0">
+          <StatusIcon size={12} className={statusConfig.text} />
+          <span className={cn('relative flex h-2 w-2 rounded-full', statusConfig.dotColor)}>
             {status === 'complete' && (
               <span className={cn('absolute inline-flex h-full w-full animate-ping rounded-full opacity-50', statusConfig.dotColor)} />
             )}
           </span>
-          <span className="text-[9px] font-bold text-gray-500 dark:text-gray-400 ml-0.5">
+          <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 ml-0.5">
             {statusConfig.label}
           </span>
         </div>

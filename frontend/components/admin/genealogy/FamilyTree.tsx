@@ -20,12 +20,12 @@ import { useTheme } from '@/lib/theme/ThemeContext';
    ══════════════════════════════════════════════════════════════════ */
 
 /* ─── Dimensions ─── */
-const CARD_W   = 220;
-const CARD_H   = 140;
-const H_GAP    = 48;      // espace horizontal entre cartes
-const V_GAP    = 120;     // espace vertical entre générations
-const COUPLE_R = 14;      // rayon du nœud mariage
-const UNIT     = CARD_W + H_GAP;  // unité de grille (268px)
+const CARD_W   = 280;
+const CARD_H   = 170;
+const H_GAP    = 56;      // espace horizontal entre cartes
+const V_GAP    = 140;     // espace vertical entre générations
+const COUPLE_R = 18;      // rayon du nœud mariage
+const UNIT     = CARD_W + H_GAP;  // unité de grille
 
 /* ─── Types internes ─── */
 interface TreeNode {
@@ -836,16 +836,16 @@ export default function FamilyTree({
               {/* Marriage/union node (heart) */}
               {active && (
                 <g>
-                  <circle cx={mx} cy={my} r={COUPLE_R + 4} fill="none" stroke="#FCD116" strokeWidth="1" opacity="0.2">
-                    <animate attributeName="r" values={`${COUPLE_R + 2};${COUPLE_R + 6};${COUPLE_R + 2}`} dur="3s" repeatCount="indefinite" />
+                  <circle cx={mx} cy={my} r={COUPLE_R + 6} fill="none" stroke="#FCD116" strokeWidth="1" opacity="0.2">
+                    <animate attributeName="r" values={`${COUPLE_R + 3};${COUPLE_R + 9};${COUPLE_R + 3}`} dur="3s" repeatCount="indefinite" />
                     <animate attributeName="opacity" values="0.2;0.4;0.2" dur="3s" repeatCount="indefinite" />
                   </circle>
                   <circle cx={mx} cy={my} r={COUPLE_R} fill={isDark ? '#0a0f18' : '#FFFFFF'} stroke="#FCD116" strokeWidth="2.5" />
                   <text
                     x={mx}
-                    y={my + 5}
+                    y={my + 6}
                     textAnchor="middle"
-                    fontSize="12"
+                    fontSize="15"
                     fill="#FCD116"
                   >
                     ♥
