@@ -87,8 +87,8 @@ export default function PersonCard({ person, status, onClick, selected }: Person
     <div
       onClick={onClick}
       className={cn(
-        'group relative flex h-full w-full cursor-pointer items-center gap-3 overflow-hidden rounded-2xl transition-all duration-300',
-        'border backdrop-blur-lg px-3 py-2.5',
+        'group relative flex h-full w-full cursor-pointer items-center gap-4 overflow-hidden rounded-2xl transition-all duration-300',
+        'border-2 backdrop-blur-lg px-4 py-3',
         statusConfig.border,
         isDeceased && 'opacity-75',
         selected
@@ -124,7 +124,7 @@ export default function PersonCard({ person, status, onClick, selected }: Person
       {/* Avatar - Left side */}
       <div
         className={cn(
-          'shrink-0 flex h-12 w-12 items-center justify-center rounded-xl border-2 text-sm font-black transition-all duration-300 group-hover:scale-105 overflow-hidden',
+          'shrink-0 flex h-14 w-14 items-center justify-center rounded-xl border-2 text-base font-black transition-all duration-300 group-hover:scale-105 overflow-hidden',
           genderTheme.avatar
         )}
       >
@@ -142,15 +142,15 @@ export default function PersonCard({ person, status, onClick, selected }: Person
       {/* Info - Right side */}
       <div className="flex-1 min-w-0 flex flex-col justify-center">
         {/* Name */}
-        <p className="truncate text-[11px] font-black leading-tight text-[var(--panel-text-heading)] dark:text-white">
+        <p className="truncate text-sm font-black leading-tight text-[var(--panel-text-heading)] dark:text-white">
           {person.first_name || 'Sans prénom'}
         </p>
-        <p className="truncate text-[10px] font-bold leading-tight text-[var(--panel-text-muted)] dark:text-gray-400">
+        <p className="truncate text-[12px] font-bold leading-tight text-[var(--panel-text-muted)] dark:text-gray-400">
           {person.last_name || 'Sans nom'}
         </p>
 
         {/* Role label */}
-        <span className="mt-1 inline-block truncate text-[7px] font-black uppercase tracking-[0.16em] text-gray-600">
+        <span className="mt-1 inline-block truncate text-[9px] font-black uppercase tracking-[0.14em] text-gray-600">
           {person.relation_role
             ? ROLE_LABELS[person.relation_role] || person.relation_role
             : 'Individu'}
@@ -158,7 +158,7 @@ export default function PersonCard({ person, status, onClick, selected }: Person
 
         {/* Bottom row: years + status */}
         <div className="mt-1 flex items-center justify-between">
-          <span className="font-mono text-[8px] font-semibold text-gray-600">{years}</span>
+          <span className="font-mono text-[10px] font-semibold text-gray-600">{years}</span>
           <div className="flex items-center gap-1">
             <StatusIcon size={9} className={statusConfig.text} />
             <span className={cn('relative flex h-1.5 w-1.5 rounded-full', statusConfig.dotColor)}>

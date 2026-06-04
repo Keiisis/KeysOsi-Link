@@ -20,11 +20,11 @@ import { useTheme } from '@/lib/theme/ThemeContext';
    ══════════════════════════════════════════════════════════════════ */
 
 /* ─── Dimensions ─── */
-const CARD_W   = 180;
-const CARD_H   = 120;
-const H_GAP    = 32;      // espace horizontal entre cartes
-const V_GAP    = 100;     // espace vertical entre générations
-const COUPLE_R = 12;      // rayon du nœud mariage
+const CARD_W   = 220;
+const CARD_H   = 140;
+const H_GAP    = 48;      // espace horizontal entre cartes
+const V_GAP    = 120;     // espace vertical entre générations
+const COUPLE_R = 14;      // rayon du nœud mariage
 const UNIT     = CARD_W + H_GAP;  // unité de grille
 
 /* ─── Types internes ─── */
@@ -315,10 +315,9 @@ export default function FamilyTree({
       });
     });
 
-    // Siblings offset from self (further left to avoid overlapping partner)
+    // Siblings offset from self (linear spacing to the left to avoid overlapping partner)
     siblings.forEach((sib, i) => {
-      const offset = -(Math.floor(i / 2) + 1) - (i % 2 === 0 ? 0 : 0.5);
-      const col = selfActualCol + offset * 1.2;
+      const col = selfActualCol - 1.5 - i * 1.5;
       nodes.push({
         id: sib.id,
         role: sib.relation_role || 'sibling',
@@ -329,12 +328,13 @@ export default function FamilyTree({
       });
     });
 
-    /* ─── Gen 4: Children ─── */
+    /* ─── Gen 4: Children (well-spaced like real pedigree trees) ─── */
     const childrenCenterCol = hasPartner ? (selfActualCol + partnerCol) / 2 : selfActualCol;
+    const CHILD_SPREAD = 2.2;  // espacement entre enfants
     childPersons.forEach((child, i) => {
       const total = childPersons.length;
-      const startCol = childrenCenterCol - ((total - 1) * 0.6) / 2;
-      const col = startCol + i * 0.6;
+      const startCol = childrenCenterCol - ((total - 1) * CHILD_SPREAD) / 2;
+      const col = startCol + i * CHILD_SPREAD;
       nodes.push({
         id: child.id,
         role: 'child',
@@ -438,6 +438,8 @@ export default function FamilyTree({
     }
 
     // Parents couple -> self + siblings
+    // FIX: Use the correct couple midpoint (between father and mother centers),
+    // not the shifted self position, so the vertical line drops from the true couple center
     const parentsCouple = couples.find(c => c.leftNode.id === 'father' && c.rightNode.id === 'mother');
     if (parentsCouple) {
       const selfSiblings = [nodeMap['self'], ...siblings.map(s => nodeMap[s.id])].filter(Boolean);
@@ -574,7 +576,7 @@ export default function FamilyTree({
                 x={16}
                 y={y + CARD_H / 2 + 4}
                 fill={isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}
-                fontSize="10"
+                fontSize="12"
                 fontWeight="900"
                 fontFamily="system-ui, sans-serif"
                 textAnchor="start"
@@ -604,26 +606,26 @@ export default function FamilyTree({
                 d={`M ${lx} ${by} V ${my}`}
                 fill="none"
                 stroke={active ? activeColor : inactiveColor}
-                strokeWidth={active ? 3 : 1.5}
+                strokeWidth={active ? 3.5 : 2}
                 strokeLinecap="round"
-                strokeDasharray={active ? undefined : "4,4"}
+                strokeDasharray={active ? undefined : "6,5"}
               />
               <path
                 d={`M ${rx} ${by} V ${my}`}
                 fill="none"
                 stroke={active ? activeColor : inactiveColor}
-                strokeWidth={active ? 3 : 1.5}
+                strokeWidth={active ? 3.5 : 2}
                 strokeLinecap="round"
-                strokeDasharray={active ? undefined : "4,4"}
+                strokeDasharray={active ? undefined : "6,5"}
               />
               {/* Horizontal bar */}
               <line
                 x1={lx} y1={my}
                 x2={rx} y2={my}
                 stroke={active ? '#FCD116' : inactiveColor}
-                strokeWidth={active ? 3.5 : 1.5}
+                strokeWidth={active ? 4 : 2}
                 strokeLinecap="round"
-                strokeDasharray={active ? undefined : "4,4"}
+                strokeDasharray={active ? undefined : "6,5"}
               />
               {/* Marriage/union node (heart) */}
               {active && (
@@ -632,12 +634,12 @@ export default function FamilyTree({
                     <animate attributeName="r" values={`${COUPLE_R + 2};${COUPLE_R + 6};${COUPLE_R + 2}`} dur="3s" repeatCount="indefinite" />
                     <animate attributeName="opacity" values="0.2;0.4;0.2" dur="3s" repeatCount="indefinite" />
                   </circle>
-                  <circle cx={mx} cy={my} r={COUPLE_R} fill={isDark ? '#0a0f18' : '#FFFFFF'} stroke="#FCD116" strokeWidth="2" />
+                  <circle cx={mx} cy={my} r={COUPLE_R} fill={isDark ? '#0a0f18' : '#FFFFFF'} stroke="#FCD116" strokeWidth="2.5" />
                   <text
                     x={mx}
-                    y={my + 4}
+                    y={my + 5}
                     textAnchor="middle"
-                    fontSize="10"
+                    fontSize="12"
                     fill="#FCD116"
                   >
                     ♥
@@ -704,8 +706,8 @@ export default function FamilyTree({
           const sorted = [...group.children].sort((a, b) => a.x - b.x);
           if (sorted.length === 0) return null;
 
-          const minCx = sorted[0].x + offsetX;
-          const maxCx = sorted[sorted.length - 1].x + offsetX;
+          const minCx = Math.min(px, sorted[0].x + offsetX);
+          const maxCx = Math.max(px, sorted[sorted.length - 1].x + offsetX);
 
           return (
             <g key={`fork-${gi}`} opacity={groupActive ? 1 : 0.6}>
@@ -714,9 +716,9 @@ export default function FamilyTree({
                 d={`M ${px} ${py} V ${busY}`}
                 fill="none"
                 stroke={groupActive ? activeColor : inactiveColor}
-                strokeWidth={groupActive ? 3 : 1.5}
+                strokeWidth={groupActive ? 3.5 : 2}
                 strokeLinecap="round"
-                strokeDasharray={groupActive ? undefined : "4,4"}
+                strokeDasharray={groupActive ? undefined : "6,5"}
               />
               {groupActive && (
                 /* Glow under vertical drop */
@@ -731,15 +733,15 @@ export default function FamilyTree({
               )}
 
               {/* Horizontal bus bar */}
-              {sorted.length > 1 && (
+              {maxCx - minCx > 1 && (
                 <>
                   <line
                     x1={minCx} y1={busY}
                     x2={maxCx} y2={busY}
                     stroke={groupActive ? activeColor : inactiveColor}
-                    strokeWidth={groupActive ? 3 : 1.5}
+                    strokeWidth={groupActive ? 3.5 : 2}
                     strokeLinecap="round"
-                    strokeDasharray={groupActive ? undefined : "4,4"}
+                    strokeDasharray={groupActive ? undefined : "6,5"}
                   />
                   {groupActive && (
                     <line
@@ -764,13 +766,13 @@ export default function FamilyTree({
                       d={`M ${childCx} ${busY} V ${child.topY}`}
                       fill="none"
                       stroke={childActive ? activeColor : inactiveColor}
-                      strokeWidth={childActive ? 2.5 : 1.5}
+                      strokeWidth={childActive ? 3 : 2}
                       strokeLinecap="round"
-                      strokeDasharray={childActive ? undefined : "4,4"}
+                      strokeDasharray={childActive ? undefined : "6,5"}
                     />
                     {/* Small dot at junction */}
                     {childActive && (
-                      <circle cx={childCx} cy={busY} r="3.5" fill="#008751" opacity="0.8" />
+                      <circle cx={childCx} cy={busY} r="4" fill="#008751" opacity="0.8" />
                     )}
                   </g>
                 );
@@ -778,7 +780,7 @@ export default function FamilyTree({
 
               {/* Main junction dot */}
               {groupActive && (
-                <circle cx={px} cy={busY} r="4.5" fill="#008751" opacity="0.95" />
+                <circle cx={px} cy={busY} r="5" fill="#008751" opacity="0.95" />
               )}
             </g>
           );
@@ -866,19 +868,19 @@ export default function FamilyTree({
                 <button
                   onClick={() => onAddRelative?.(node.role)}
                   className={cn(
-                    'group flex h-full w-full flex-col items-center justify-center rounded-2xl transition-all duration-300 p-3 text-center',
+                    'group flex h-full w-full flex-col items-center justify-center rounded-2xl transition-all duration-300 p-4 text-center',
                     'border-2 border-dashed border-white/[0.07] bg-white/[0.015]',
                     'hover:border-emerald-500/30 hover:bg-emerald-500/[0.03]',
                     'hover:shadow-[0_0_30px_-12px_rgba(0,135,81,0.4)]'
                   )}
                 >
-                  <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.04] border border-white/[0.06] transition-all group-hover:scale-110 group-hover:bg-emerald-500/10 group-hover:border-emerald-500/30">
-                    <Plus size={16} className="text-gray-500 transition-colors group-hover:text-[#008751]" />
+                  <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-white/[0.04] border border-white/[0.06] transition-all group-hover:scale-110 group-hover:bg-emerald-500/10 group-hover:border-emerald-500/30">
+                    <Plus size={18} className="text-gray-500 transition-colors group-hover:text-[#008751]" />
                   </div>
-                  <span className="text-[9px] font-black uppercase tracking-[0.16em] text-gray-500 group-hover:text-white transition-colors leading-tight">
+                  <span className="text-[10px] font-black uppercase tracking-[0.14em] text-gray-500 group-hover:text-white transition-colors leading-tight">
                     {ROLE_LABELS[node.role] || 'Ajouter'}
                   </span>
-                  <span className="mt-0.5 text-[7px] font-semibold text-gray-700 group-hover:text-emerald-500/70 transition-colors uppercase tracking-wider">
+                  <span className="mt-0.5 text-[8px] font-semibold text-gray-700 group-hover:text-emerald-500/70 transition-colors uppercase tracking-wider">
                     Cliquer pour ajouter
                   </span>
                 </button>

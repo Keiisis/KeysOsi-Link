@@ -184,68 +184,99 @@ export default function DedicatedTreePage() {
       const treeClone = treeEl.cloneNode(true) as HTMLElement;
       treeClone.style.transform = 'none';
       treeClone.style.position = 'relative';
+      treeClone.id = 'print-tree-root';
 
-      // Remove all truncation so names display fully
-      treeClone.querySelectorAll('.truncate').forEach(el => {
-        (el as HTMLElement).classList.remove('truncate');
-        (el as HTMLElement).style.overflow = 'visible';
-        (el as HTMLElement).style.textOverflow = 'clip';
-        (el as HTMLElement).style.whiteSpace = 'normal';
-        (el as HTMLElement).style.wordBreak = 'break-word';
-      });
-      treeClone.querySelectorAll('.overflow-hidden').forEach(el => {
-        (el as HTMLElement).classList.remove('overflow-hidden');
-        (el as HTMLElement).style.overflow = 'visible';
-      });
-
-      // Expand card containers to fit text and make them bigger for print
-      treeClone.querySelectorAll('[class*="group/card"]').forEach(el => {
-        const htmlEl = el as HTMLElement;
-        htmlEl.style.overflow = 'visible';
-        htmlEl.style.minWidth = '220px';
-        htmlEl.style.width = 'auto';
-        htmlEl.style.maxWidth = '320px';
-      });
-
-      // Increase font sizes for print readability
-      treeClone.querySelectorAll('p, span').forEach(el => {
-        const htmlEl = el as HTMLElement;
-        if (htmlEl.style.textOverflow === 'ellipsis' || htmlEl.classList.contains('truncate')) {
-          htmlEl.style.textOverflow = 'clip';
-          htmlEl.style.overflow = 'visible';
-          htmlEl.style.whiteSpace = 'normal';
+      // Inject high-fidelity print stylesheet
+      const styleEl = document.createElement('style');
+      styleEl.innerHTML = `
+        #print-tree-root {
+          background-color: #FFFFFF !important;
+          color: #0A0F18 !important;
         }
-        // Boost small fonts for print
-        const computed = window.getComputedStyle(htmlEl);
-        const currentSize = parseFloat(computed.fontSize);
-        if (currentSize < 14) {
-          htmlEl.style.fontSize = `${Math.max(currentSize * 1.3, 13)}px`;
+        .truncate {
+          text-overflow: clip !important;
+          overflow: visible !important;
+          white-space: normal !important;
+          word-break: break-word !important;
         }
-      });
-
-      // Make dark-mode text readable on white background
-      treeClone.querySelectorAll('[class*="text-white"]').forEach(el => {
-        (el as HTMLElement).style.color = '#1B2A4A';
-      });
-      treeClone.querySelectorAll('[class*="text-gray-"]').forEach(el => {
-        (el as HTMLElement).style.color = '#4B5563';
-      });
-
-      // Make card backgrounds visible on white
-      treeClone.querySelectorAll('[class*="rounded-2xl"]').forEach(el => {
-        const htmlEl = el as HTMLElement;
-        if (htmlEl.style.background?.includes('rgba(10,15,24')) {
-          htmlEl.style.background = 'rgba(240,245,250,0.95)';
-          htmlEl.style.border = '2px solid #D1D5DB';
-          htmlEl.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
+        .overflow-hidden {
+          overflow: visible !important;
         }
-      });
-
-      // Remove hover overlays from export
-      treeClone.querySelectorAll('[class*="opacity-0"]').forEach(el => {
-        (el as HTMLElement).style.display = 'none';
-      });
-
+        .group\\/card {
+          overflow: visible !important;
+          width: 220px !important; /* Keep fixed CARD_W to align with SVG connection lines */
+        }
+        .group\\/card > div {
+          background-color: #FFFFFF !important;
+          border: 2.5px solid #008751 !important; /* solid green border for maximum contrast */
+          box-shadow: 0 4px 12px rgba(0,0,0,0.06) !important;
+          opacity: 1 !important;
+        }
+        .group\\/card > div.border-\\[\\#008751\\] {
+          border-color: #FCD116 !important; /* gold border for proposant/selected */
+          background-color: #F0FDF4 !important;
+        }
+        .group\\/card > div.opacity-75 {
+          opacity: 0.95 !important;
+          border-color: #9CA3AF !important; /* gray border for deceased */
+          background-color: #F9FAFB !important;
+        }
+        .group\\/card p, .group\\/card span {
+          color: #0A0F18 !important;
+        }
+        .group\\/card p.font-black {
+          font-size: 14px !important;
+        }
+        .group\\/card p.font-bold {
+          font-size: 12px !important;
+        }
+        .group\\/card span.uppercase {
+          color: #008751 !important;
+          font-size: 9px !important;
+          font-weight: 900 !important;
+        }
+        .group\\/card span.font-mono {
+          color: #4B5563 !important;
+          font-size: 10px !important;
+        }
+        .group\\/card > button {
+          background-color: #F9FAFB !important;
+          border: 2px dashed #D1D5DB !important;
+          opacity: 1 !important;
+        }
+        .group\\/card > button span, .group\\/card > button svg {
+          color: #6B7280 !important;
+        }
+        svg path, svg line {
+          stroke-opacity: 1 !important;
+        }
+        svg path[stroke="#10B981"], svg line[stroke="#10B981"],
+        svg path[stroke="#008751"], svg line[stroke="#008751"] {
+          stroke: #008751 !important;
+        }
+        svg path[stroke*="rgba"], svg line[stroke*="rgba"] {
+          stroke: #9CA3AF !important;
+          stroke-dasharray: 6,5 !important;
+          opacity: 0.6 !important;
+        }
+        svg path[stroke-width="6"], svg path[stroke-width="8"] {
+          display: none !important;
+        }
+        svg circle[stroke="#FCD116"] {
+          stroke: #D9A406 !important;
+          fill: #FFFFFF !important;
+        }
+        svg text[fill="#FCD116"] {
+          fill: #EAB308 !important;
+        }
+        svg line[stroke="#FCD116"] {
+          stroke: #D9A406 !important;
+        }
+        [class*="opacity-0"] {
+          display: none !important;
+        }
+      `;
+      treeWrapper.appendChild(styleEl);
       treeWrapper.appendChild(treeClone);
       document.body.appendChild(treeWrapper);
 
@@ -420,49 +451,99 @@ export default function DedicatedTreePage() {
       const pdfTreeClone = treeEl.cloneNode(true) as HTMLElement;
       pdfTreeClone.style.transform = 'none';
       pdfTreeClone.style.position = 'relative';
+      pdfTreeClone.id = 'print-tree-root';
 
-      // ★ FIX: Remove truncation so names are fully visible in PDF
-      pdfTreeClone.querySelectorAll('.truncate').forEach(el => {
-        (el as HTMLElement).classList.remove('truncate');
-        (el as HTMLElement).style.overflow = 'visible';
-        (el as HTMLElement).style.textOverflow = 'clip';
-        (el as HTMLElement).style.whiteSpace = 'normal';
-        (el as HTMLElement).style.wordBreak = 'break-word';
-      });
-      pdfTreeClone.querySelectorAll('.overflow-hidden').forEach(el => {
-        (el as HTMLElement).classList.remove('overflow-hidden');
-        (el as HTMLElement).style.overflow = 'visible';
-      });
-      pdfTreeClone.querySelectorAll('[class*="group/card"]').forEach(el => {
-        const htmlEl = el as HTMLElement;
-        htmlEl.style.overflow = 'visible';
-        htmlEl.style.minWidth = htmlEl.style.width || '180px';
-        htmlEl.style.width = 'auto';
-        htmlEl.style.maxWidth = '280px';
-      });
-      pdfTreeClone.querySelectorAll('p, span').forEach(el => {
-        const htmlEl = el as HTMLElement;
-        if (htmlEl.style.textOverflow === 'ellipsis' || htmlEl.classList.contains('truncate')) {
-          htmlEl.style.textOverflow = 'clip';
-          htmlEl.style.overflow = 'visible';
-          htmlEl.style.whiteSpace = 'normal';
+      // Inject high-fidelity print stylesheet
+      const styleEl = document.createElement('style');
+      styleEl.innerHTML = `
+        #print-tree-root {
+          background-color: #FFFFFF !important;
+          color: #0A0F18 !important;
         }
-      });
-      // Make dark text readable on white
-      pdfTreeClone.querySelectorAll('[class*="text-white"]').forEach(el => {
-        (el as HTMLElement).style.color = '#1B2A4A';
-      });
-      pdfTreeClone.querySelectorAll('[class*="text-gray-"]').forEach(el => {
-        (el as HTMLElement).style.color = '#4B5563';
-      });
-      pdfTreeClone.querySelectorAll('[class*="rounded-2xl"]').forEach(el => {
-        const htmlEl = el as HTMLElement;
-        if (htmlEl.style.background?.includes('rgba(10,15,24')) {
-          htmlEl.style.background = 'rgba(240,245,250,0.95)';
-          htmlEl.style.border = '1px solid #D1D5DB';
+        .truncate {
+          text-overflow: clip !important;
+          overflow: visible !important;
+          white-space: normal !important;
+          word-break: break-word !important;
         }
-      });
-
+        .overflow-hidden {
+          overflow: visible !important;
+        }
+        .group\\/card {
+          overflow: visible !important;
+          width: 220px !important; /* Keep fixed CARD_W to align with SVG connection lines */
+        }
+        .group\\/card > div {
+          background-color: #FFFFFF !important;
+          border: 2.5px solid #008751 !important; /* solid green border for maximum contrast */
+          box-shadow: 0 4px 12px rgba(0,0,0,0.06) !important;
+          opacity: 1 !important;
+        }
+        .group\\/card > div.border-\\[\\#008751\\] {
+          border-color: #FCD116 !important; /* gold border for proposant/selected */
+          background-color: #F0FDF4 !important;
+        }
+        .group\\/card > div.opacity-75 {
+          opacity: 0.95 !important;
+          border-color: #9CA3AF !important; /* gray border for deceased */
+          background-color: #F9FAFB !important;
+        }
+        .group\\/card p, .group\\/card span {
+          color: #0A0F18 !important;
+        }
+        .group\\/card p.font-black {
+          font-size: 14px !important;
+        }
+        .group\\/card p.font-bold {
+          font-size: 12px !important;
+        }
+        .group\\/card span.uppercase {
+          color: #008751 !important;
+          font-size: 9px !important;
+          font-weight: 900 !important;
+        }
+        .group\\/card span.font-mono {
+          color: #4B5563 !important;
+          font-size: 10px !important;
+        }
+        .group\\/card > button {
+          background-color: #F9FAFB !important;
+          border: 2px dashed #D1D5DB !important;
+          opacity: 1 !important;
+        }
+        .group\\/card > button span, .group\\/card > button svg {
+          color: #6B7280 !important;
+        }
+        svg path, svg line {
+          stroke-opacity: 1 !important;
+        }
+        svg path[stroke="#10B981"], svg line[stroke="#10B981"],
+        svg path[stroke="#008751"], svg line[stroke="#008751"] {
+          stroke: #008751 !important;
+        }
+        svg path[stroke*="rgba"], svg line[stroke*="rgba"] {
+          stroke: #9CA3AF !important;
+          stroke-dasharray: 6,5 !important;
+          opacity: 0.6 !important;
+        }
+        svg path[stroke-width="6"], svg path[stroke-width="8"] {
+          display: none !important;
+        }
+        svg circle[stroke="#FCD116"] {
+          stroke: #D9A406 !important;
+          fill: #FFFFFF !important;
+        }
+        svg text[fill="#FCD116"] {
+          fill: #EAB308 !important;
+        }
+        svg line[stroke="#FCD116"] {
+          stroke: #D9A406 !important;
+        }
+        [class*="opacity-0"] {
+          display: none !important;
+        }
+      `;
+      pdfWrapper.appendChild(styleEl);
       pdfWrapper.appendChild(pdfTreeClone);
       document.body.appendChild(pdfWrapper);
       await new Promise(r => setTimeout(r, 300));
