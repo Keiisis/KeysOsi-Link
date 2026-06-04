@@ -11,6 +11,7 @@ interface PersonCardProps {
   status: 'complete' | 'partial' | 'missing';
   onClick?: () => void;
   selected?: boolean;
+  childNumber?: number;
 }
 
 /* ── Formate une date ISO en DD/MM/YYYY ── */
@@ -27,7 +28,7 @@ function formatFullDate(iso: string | null): string {
   }
 }
 
-export default function PersonCard({ person, status, onClick, selected }: PersonCardProps) {
+export default function PersonCard({ person, status, onClick, selected, childNumber }: PersonCardProps) {
   const isSelf = person.is_self || person.relation_role === 'self';
   const isPartner = ['husband', 'wife', 'fiance', 'fiancee'].includes(person.relation_role || '');
   const isDeceased = !!person.death_date;
@@ -94,7 +95,9 @@ export default function PersonCard({ person, status, onClick, selected }: Person
     : '';
 
   // Gender-aware role label
-  const roleLabel = getRoleLabel(person.relation_role, person.gender);
+  const roleLabel = person.relation_role === 'child' && childNumber !== undefined
+    ? `${childNumber}${childNumber === 1 ? 'er' : 'ème'} Enfant`
+    : getRoleLabel(person.relation_role, person.gender);
 
   return (
     <div

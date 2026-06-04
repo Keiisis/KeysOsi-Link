@@ -325,7 +325,7 @@ export default function FamilyTree({
 
     ggSiblings.forEach((gs, i) => {
       const baseCol = ggColMap[gs.ggRole] ?? 0;
-      const col = baseCol + 1.8 + i * 2.4; // offset to the right of the GG person
+      const col = baseCol + 1.0 + i * 1.0; // offset right next to the GG person
       nodes.push({
         id: gs.person.id,
         role: 'ancestor',
@@ -369,7 +369,7 @@ export default function FamilyTree({
 
     gpSiblings.forEach((gs, i) => {
       const baseCol = gpColMap[gs.gpRole] ?? 0;
-      const col = baseCol + 1.8 + i * 2.4; // offset to the right of the GP person
+      const col = baseCol + 1.0 + i * 1.0; // offset right next to the GP person
       nodes.push({
         id: gs.person.id,
         role: gs.person.relation_role || 'sibling_of_paternal_grandfather',
@@ -1008,12 +1008,41 @@ export default function FamilyTree({
             >
               {node.person ? (
                 <>
-                  <PersonCard
-                    person={node.person}
-                    status={statusOf(node.person, documents)}
-                    selected={selectedPerson?.id === node.person.id}
-                    onClick={() => onSelect(node.person!)}
-                  />
+                  {(() => {
+                    let childNumber: number | undefined = undefined;
+                    if (node.person.relation_role === 'child') {
+                      const fatherId = node.person.father_id;
+                      const motherId = node.person.mother_id;
+                      const sameParentChildren = persons
+                        .filter(p => 
+                          p.relation_role === 'child' && 
+                          (
+                            (fatherId && p.father_id === fatherId) ||
+                            (motherId && p.mother_id === motherId) ||
+                            (!fatherId && !motherId && !p.father_id && !p.mother_id)
+                          )
+                        )
+                        .sort((a, b) => {
+                          if (!a.birth_date && !b.birth_date) return a.id.localeCompare(b.id);
+                          if (!a.birth_date) return 1;
+                          if (!b.birth_date) return -1;
+                          return a.birth_date.localeCompare(b.birth_date);
+                        });
+                      const idx = sameParentChildren.findIndex(p => p.id === node.person!.id);
+                      if (idx !== -1) {
+                        childNumber = idx + 1;
+                      }
+                    }
+                    return (
+                      <PersonCard
+                        person={node.person}
+                        status={statusOf(node.person, documents)}
+                        selected={selectedPerson?.id === node.person.id}
+                        onClick={() => onSelect(node.person!)}
+                        childNumber={childNumber}
+                      />
+                    );
+                  })()}
                   {/* Quick action overlay on hover */}
                   <div
                     className="absolute -bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-all duration-300 rounded-full px-2.5 py-1 z-30 shadow-2xl backdrop-blur-md"
