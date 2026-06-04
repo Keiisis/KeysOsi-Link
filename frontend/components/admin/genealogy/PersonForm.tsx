@@ -237,7 +237,17 @@ export default function PersonForm({
           setFatherId(fId);
           setMotherId(mId);
         } else if (addAction === 'add_sibling') {
-          targetRole = 'sibling';
+          // Determine the correct role based on context person
+          // 'sibling' means sibling of SELF only
+          // For other persons, keep them as 'ancestor' with correct parent links
+          const ctxRole = contextPerson?.is_self ? 'self' : (contextPerson?.relation_role || '');
+          if (ctxRole === 'self') {
+            targetRole = 'sibling';
+          } else {
+            // Not a sibling of self — use 'ancestor' role with correct parent IDs
+            // The tree renderer will position them based on parent links
+            targetRole = 'ancestor';
+          }
           setForm({
             first_name: '',
             last_name: '',
@@ -463,12 +473,36 @@ export default function PersonForm({
           case 'brother':
           case 'sister':
           case 'sibling':
+            if (p.father_id || p.mother_id) {
+              const fatherExists = p.father_id ? pList.some(x => x.id === p.father_id) : false;
+              const motherExists = p.mother_id ? pList.some(x => x.id === p.mother_id) : false;
+              return {
+                fatherId: fatherExists ? p.father_id : null,
+                motherId: motherExists ? p.mother_id : null,
+              };
+            }
             return { fatherId: findIdByRole('father'), motherId: findIdByRole('mother') };
           case 'paternal_uncle':
           case 'paternal_aunt':
+            if (p.father_id || p.mother_id) {
+              const fatherExists = p.father_id ? pList.some(x => x.id === p.father_id) : false;
+              const motherExists = p.mother_id ? pList.some(x => x.id === p.mother_id) : false;
+              return {
+                fatherId: fatherExists ? p.father_id : null,
+                motherId: motherExists ? p.mother_id : null,
+              };
+            }
             return { fatherId: findIdByRole('paternal_grandfather'), motherId: findIdByRole('paternal_grandmother') };
           case 'maternal_uncle':
           case 'maternal_aunt':
+            if (p.father_id || p.mother_id) {
+              const fatherExists = p.father_id ? pList.some(x => x.id === p.father_id) : false;
+              const motherExists = p.mother_id ? pList.some(x => x.id === p.mother_id) : false;
+              return {
+                fatherId: fatherExists ? p.father_id : null,
+                motherId: motherExists ? p.mother_id : null,
+              };
+            }
             return { fatherId: findIdByRole('maternal_grandfather'), motherId: findIdByRole('maternal_grandmother') };
           case 'child':
             // CRITICAL: Always preserve explicitly-set parent IDs for children.
@@ -498,6 +532,18 @@ export default function PersonForm({
               else if (!cMotherId) { cMotherId = partnerPerson.id; }
             }
             return { fatherId: cFatherId, motherId: cMotherId };
+          case 'ancestor':
+          case 'other':
+            // Preserve existing parent IDs but validate they still exist
+            if (p.father_id || p.mother_id) {
+              const fatherExists = p.father_id ? pList.some(x => x.id === p.father_id) : false;
+              const motherExists = p.mother_id ? pList.some(x => x.id === p.mother_id) : false;
+              return {
+                fatherId: fatherExists ? p.father_id : null,
+                motherId: motherExists ? p.mother_id : null,
+              };
+            }
+            return { fatherId: null, motherId: null };
           default:
             return { fatherId: p.father_id, motherId: p.mother_id };
         }

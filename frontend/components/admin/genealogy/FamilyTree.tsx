@@ -153,6 +153,33 @@ export default function FamilyTree({
       .sort((a, b) => a.id.localeCompare(b.id));
   }, [persons]);
 
+  /* ─── GG-level siblings: ancestors who share parents with a GG person ─── */
+  const ggRolesList = [
+    'paternal_ggf_1', 'paternal_ggm_1', 'paternal_ggf_2', 'paternal_ggm_2',
+    'maternal_ggf_1', 'maternal_ggm_1', 'maternal_ggf_2', 'maternal_ggm_2',
+  ];
+  const ggSiblings = useMemo(() => {
+    // Find all GG persons
+    const ggPersons = persons.filter(p => ggRolesList.includes(p.relation_role || ''));
+    // Find ancestors (non-GG) who share a parent with a GG person
+    const result: { person: Person; ggRole: string }[] = [];
+    persons.forEach(p => {
+      if (p.relation_role === 'ancestor' && (p.father_id || p.mother_id)) {
+        // Check if this ancestor shares a parent with any GG person
+        for (const gg of ggPersons) {
+          if (
+            (p.father_id && gg.father_id && p.father_id === gg.father_id) ||
+            (p.mother_id && gg.mother_id && p.mother_id === gg.mother_id)
+          ) {
+            result.push({ person: p, ggRole: gg.relation_role || '' });
+            break;
+          }
+        }
+      }
+    });
+    return result;
+  }, [persons]);
+
   /* ═══════════════════════════════════════════════════════════════
      LAYOUT ENGINE — Positionnement hiérarchique (6 Générations)
      
@@ -234,6 +261,23 @@ export default function FamilyTree({
         id: role,
         role,
         person: findPerson(role),
+        x: col * UNIT,
+        y: genY(1),
+        gen: 1,
+      });
+    });
+
+    // GG-level siblings (ancestors who share parents with a GG person)
+    const ggColMap: Record<string, number> = {};
+    ggRoles.forEach(({ role, col }) => { ggColMap[role] = col; });
+
+    ggSiblings.forEach((gs, i) => {
+      const baseCol = ggColMap[gs.ggRole] ?? 0;
+      const col = baseCol + 1.8 + i * 2.4; // offset to the right of the GG person
+      nodes.push({
+        id: gs.person.id,
+        role: 'ancestor',
+        person: gs.person,
         x: col * UNIT,
         y: genY(1),
         gen: 1,
@@ -388,7 +432,7 @@ export default function FamilyTree({
     const nodeMap: Record<string, TreeNode> = {};
     nodes.forEach(n => { nodeMap[n.id] = n; });
 
-    // Build Gen 0 -> Gen 1 couples & child links
+    // Build Gen 0 -> Gen 1 couples & child links (including GG siblings)
     ggRolesInfo.forEach(({ role, fCol, mCol }) => {
       const ggPerson = findPerson(role);
       if (ggPerson) {
@@ -407,13 +451,32 @@ export default function FamilyTree({
           });
 
           const active = !!fNode.person || !!mNode.person;
-          childLinks.push({
-            parentMidX: midX,
-            parentMidY: midY,
-            childX: cx(ggNode),
-            childTopY: top(ggNode),
-            active: active && !!ggNode.person,
-          });
+
+          // Find GG siblings for this GG person
+          const ggSiblingsForRole = ggSiblings
+            .filter(gs => gs.ggRole === role)
+            .map(gs => nodeMap[gs.person.id])
+            .filter(Boolean);
+
+          if (ggSiblingsForRole.length > 0) {
+            // Use sibling group fork for GG person + siblings
+            const allChildren = [ggNode, ...ggSiblingsForRole];
+            siblingGroups.push({
+              parentMidX: midX,
+              parentMidY: midY,
+              children: allChildren.map(n => ({ x: cx(n), topY: top(n), active: active && !!n.person })),
+              active,
+            });
+          } else {
+            // Single child link
+            childLinks.push({
+              parentMidX: midX,
+              parentMidY: midY,
+              childX: cx(ggNode),
+              childTopY: top(ggNode),
+              active: active && !!ggNode.person,
+            });
+          }
         }
       }
     });
@@ -543,7 +606,7 @@ export default function FamilyTree({
     const maxY = Math.max(...allY.map(y => y + CARD_H), CARD_H) + 60;
 
     return { nodes, couples, childLinks, siblingGroups, width: maxX - minX + 80, height: maxY + 40, offsetX: -minX + 40 };
-  }, [persons, byRole, siblings, paternalUncles, maternalUncles, childPersons, partnerPersons]);
+  }, [persons, byRole, siblings, paternalUncles, maternalUncles, childPersons, partnerPersons, ggSiblings]);
 
   /* ─── Document status ─── */
   function statusOf(person: Person, docs: DocumentItem[]): 'complete' | 'partial' | 'missing' {
@@ -908,8 +971,8 @@ export default function FamilyTree({
                     >
                       <Baby size={12} />
                     </button>
-                    {/* Add sibling (only for self) */}
-                    {(node.role === 'self' || node.person.is_self) && (
+                    {/* Add sibling (for self and GG persons who have parents) */}
+                    {(node.role === 'self' || node.person.is_self || (ggRolesList.includes(node.role) && (node.person.father_id || node.person.mother_id))) && (
                       <>
                         <div className="w-px h-3" style={{ background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }} />
                         <button
