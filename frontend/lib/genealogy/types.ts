@@ -18,9 +18,19 @@ export type RelationRole =
   | 'trisaieul_maternal_ggm1_f' | 'trisaieul_maternal_ggm1_m'
   | 'trisaieul_maternal_ggf2_f' | 'trisaieul_maternal_ggf2_m'
   | 'trisaieul_maternal_ggm2_f' | 'trisaieul_maternal_ggm2_m'
+  /* Fratrie du sujet */
   | 'brother' | 'sister'
+  /* Oncles / tantes (fratrie des parents) */
   | 'paternal_uncle' | 'paternal_aunt'
   | 'maternal_uncle' | 'maternal_aunt'
+  /* Fratrie des grands-parents (grands-oncles / grand-tantes) */
+  | 'sibling_of_paternal_grandfather' | 'sibling_of_paternal_grandmother'
+  | 'sibling_of_maternal_grandfather' | 'sibling_of_maternal_grandmother'
+  /* Fratrie des arrière-grands-parents (collatéraux Gen 1) */
+  | 'sibling_of_paternal_ggf_1' | 'sibling_of_paternal_ggm_1'
+  | 'sibling_of_paternal_ggf_2' | 'sibling_of_paternal_ggm_2'
+  | 'sibling_of_maternal_ggf_1' | 'sibling_of_maternal_ggm_1'
+  | 'sibling_of_maternal_ggf_2' | 'sibling_of_maternal_ggm_2'
   | 'sibling'
   | 'husband' | 'wife'
   | 'fiance' | 'fiancee'

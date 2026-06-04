@@ -237,17 +237,33 @@ export default function PersonForm({
           setFatherId(fId);
           setMotherId(mId);
         } else if (addAction === 'add_sibling') {
-          // Determine the correct role based on context person
-          // 'sibling' means sibling of SELF only
-          // For other persons, keep them as 'ancestor' with correct parent links
+          // Determine the correct sibling role based on context person's role
           const ctxRole = contextPerson?.is_self ? 'self' : (contextPerson?.relation_role || '');
-          if (ctxRole === 'self') {
-            targetRole = 'sibling';
-          } else {
-            // Not a sibling of self — use 'ancestor' role with correct parent IDs
-            // The tree renderer will position them based on parent links
-            targetRole = 'ancestor';
-          }
+
+          // Map each role to its corresponding sibling_of_* role
+          const siblingRoleMap: Record<string, RelationRole> = {
+            self: 'sibling',
+            // GP-level siblings
+            paternal_grandfather: 'sibling_of_paternal_grandfather',
+            paternal_grandmother: 'sibling_of_paternal_grandmother',
+            maternal_grandfather: 'sibling_of_maternal_grandfather',
+            maternal_grandmother: 'sibling_of_maternal_grandmother',
+            // GG-level siblings
+            paternal_ggf_1: 'sibling_of_paternal_ggf_1',
+            paternal_ggm_1: 'sibling_of_paternal_ggm_1',
+            paternal_ggf_2: 'sibling_of_paternal_ggf_2',
+            paternal_ggm_2: 'sibling_of_paternal_ggm_2',
+            maternal_ggf_1: 'sibling_of_maternal_ggf_1',
+            maternal_ggm_1: 'sibling_of_maternal_ggm_1',
+            maternal_ggf_2: 'sibling_of_maternal_ggf_2',
+            maternal_ggm_2: 'sibling_of_maternal_ggm_2',
+            // Parent-level siblings (oncles/tantes)
+            father: 'paternal_uncle',
+            mother: 'maternal_uncle',
+          };
+
+          targetRole = siblingRoleMap[ctxRole] || 'ancestor';
+
           setForm({
             first_name: '',
             last_name: '',
@@ -532,6 +548,19 @@ export default function PersonForm({
               else if (!cMotherId) { cMotherId = partnerPerson.id; }
             }
             return { fatherId: cFatherId, motherId: cMotherId };
+          /* Collatéraux: fratrie des GP et GG — preserve parent links */
+          case 'sibling_of_paternal_grandfather':
+          case 'sibling_of_paternal_grandmother':
+          case 'sibling_of_maternal_grandfather':
+          case 'sibling_of_maternal_grandmother':
+          case 'sibling_of_paternal_ggf_1':
+          case 'sibling_of_paternal_ggm_1':
+          case 'sibling_of_paternal_ggf_2':
+          case 'sibling_of_paternal_ggm_2':
+          case 'sibling_of_maternal_ggf_1':
+          case 'sibling_of_maternal_ggm_1':
+          case 'sibling_of_maternal_ggf_2':
+          case 'sibling_of_maternal_ggm_2':
           case 'ancestor':
           case 'other':
             // Preserve existing parent IDs but validate they still exist
