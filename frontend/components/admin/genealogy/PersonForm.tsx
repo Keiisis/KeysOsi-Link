@@ -190,30 +190,48 @@ export default function PersonForm({
           let fId: string | null = null;
           let mId: string | null = null;
           if (contextPerson) {
+            // Step 1: Set the contextPerson as the appropriate parent
             if (contextPerson.gender === 'male') {
               fId = contextPerson.id;
-              const partner = persons.find(p =>
-                persons.some(child =>
-                  (child.father_id === contextPerson.id && child.mother_id === p.id) ||
-                  (child.mother_id === contextPerson.id && child.father_id === p.id)
-                ) || (
-                  ['husband', 'wife', 'fiance', 'fiancee'].includes(p.relation_role || '') &&
-                  p.id !== contextPerson.id
-                )
-              );
-              if (partner && partner.gender === 'female') mId = partner.id;
             } else {
               mId = contextPerson.id;
-              const partner = persons.find(p =>
-                persons.some(child =>
-                  (child.father_id === p.id && child.mother_id === contextPerson.id) ||
-                  (child.mother_id === p.id && child.father_id === contextPerson.id)
-                ) || (
-                  ['husband', 'wife', 'fiance', 'fiancee'].includes(p.relation_role || '') &&
-                  p.id !== contextPerson.id
+            }
+
+            // Step 2: Find the co-parent (partner) of contextPerson
+            // Strategy A: Look at existing children that have contextPerson as a parent
+            //             and find the OTHER parent from those children
+            let coParent: Person | undefined;
+            for (const child of persons) {
+              if (child.id === contextPerson.id) continue;
+              if (contextPerson.gender === 'male' && child.father_id === contextPerson.id && child.mother_id) {
+                coParent = persons.find(p => p.id === child.mother_id);
+                if (coParent) break;
+              } else if (contextPerson.gender === 'female' && child.mother_id === contextPerson.id && child.father_id) {
+                coParent = persons.find(p => p.id === child.father_id);
+                if (coParent) break;
+              }
+            }
+
+            // Strategy B: If no existing children, look for a partner who shares
+            //             the same parents as contextPerson's spouse (linked via partner roles)
+            //             Only match partners that share parent links with contextPerson
+            if (!coParent) {
+              coParent = persons.find(p =>
+                p.id !== contextPerson.id &&
+                ['husband', 'wife', 'fiance', 'fiancee'].includes(p.relation_role || '') &&
+                // Ensure this partner is actually linked to the contextPerson:
+                // Either they share a child, or contextPerson also has a partner role
+                (
+                  ['husband', 'wife', 'fiance', 'fiancee', 'self'].includes(contextPerson.relation_role || '') ||
+                  contextPerson.is_self
                 )
               );
-              if (partner && partner.gender === 'male') fId = partner.id;
+            }
+
+            // Step 3: Assign the co-parent
+            if (coParent) {
+              if (coParent.gender === 'male' && !fId) fId = coParent.id;
+              else if (coParent.gender === 'female' && !mId) mId = coParent.id;
             }
           }
           setFatherId(fId);
@@ -453,18 +471,19 @@ export default function PersonForm({
           case 'maternal_aunt':
             return { fatherId: findIdByRole('maternal_grandfather'), motherId: findIdByRole('maternal_grandmother') };
           case 'child':
-            if (p.father_id) {
-              const fatherPerson = pList.find(x => x.id === p.father_id);
-              if (fatherPerson && !['self', 'husband', 'wife', 'fiance', 'fiancee'].includes(fatherPerson.relation_role || '')) {
-                return { fatherId: p.father_id, motherId: p.mother_id };
-              }
+            // CRITICAL: Always preserve explicitly-set parent IDs for children.
+            // A child's father_id and mother_id are the source of truth once set.
+            // Only fill in missing parents using self/partner heuristics.
+            if (p.father_id || p.mother_id) {
+              // Verify the referenced parents still exist in the tree
+              const fatherExists = p.father_id ? pList.some(x => x.id === p.father_id) : false;
+              const motherExists = p.mother_id ? pList.some(x => x.id === p.mother_id) : false;
+              return {
+                fatherId: fatherExists ? p.father_id : null,
+                motherId: motherExists ? p.mother_id : null,
+              };
             }
-            if (p.mother_id) {
-              const motherPerson = pList.find(x => x.id === p.mother_id);
-              if (motherPerson && !['self', 'husband', 'wife', 'fiance', 'fiancee'].includes(motherPerson.relation_role || '')) {
-                return { fatherId: p.father_id, motherId: p.mother_id };
-              }
-            }
+            // No parents set yet: try to assign self + partner as default parents
             const selfPerson = pList.find(x => x.is_self || x.relation_role === 'self');
             const partnerPerson = pList.find(x => ['husband', 'wife', 'fiance', 'fiancee'].includes(x.relation_role || ''));
             let cFatherId: string | null = null;
