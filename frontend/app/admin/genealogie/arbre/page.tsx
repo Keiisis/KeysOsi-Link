@@ -43,7 +43,7 @@ export default function DedicatedTreePage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const [downloadingPDF, setDownloadingPDF] = useState(false);
+  const [downloadingPDF, setDownloadingPDF] = useState<false | 'A4' | 'A3'>(false);
   const [viewMode, setViewMode] = useState<ViewMode>('tree');
 
   // Pan & Zoom States
@@ -478,8 +478,8 @@ export default function DedicatedTreePage() {
   };
 
   /* ─── DOWNLOAD TREE AS FILLABLE PDF ─── */
-  const handleDownloadPDF = async () => {
-    setDownloadingPDF(true);
+  const handleDownloadPDF = async (format: 'A4' | 'A3') => {
+    setDownloadingPDF(format);
     try {
       // 1. Dynamic imports
       const html2canvas = (await import('html2canvas')).default;
@@ -735,20 +735,26 @@ export default function DedicatedTreePage() {
       });
 
       // --- PAGE 2: FAMILY TREE VISUAL (LANDSCAPE) ---
-      const page2 = pdfDoc.addPage([842, 595]);
+      const isA3 = format === 'A3';
+      const page2 = pdfDoc.addPage(isA3 ? [1191, 842] : [842, 595]);
       
       page2.drawText(`ARBRE GÉNÉALOGIQUE : FAMILLE ${cleanClientName.toUpperCase()}`, {
         x: 40,
-        y: 555,
+        y: isA3 ? 802 : 555,
         size: 14,
         font: helveticaBold,
         color: rgb(0.06, 0.1, 0.18),
       });
-      page2.drawLine({ start: { x: 40, y: 545 }, end: { x: 802, y: 545 }, thickness: 1, color: rgb(0, 0.53, 0.32) });
+      page2.drawLine({ 
+        start: { x: 40, y: isA3 ? 792 : 545 }, 
+        end: { x: isA3 ? 1151 : 802, y: isA3 ? 792 : 545 }, 
+        thickness: 1, 
+        color: rgb(0, 0.53, 0.32) 
+      });
 
       const embeddedTreeImg = await pdfDoc.embedJpg(treeImgData);
-      const maxImgWidth = 842 - 80; // 762 pt
-      const maxImgHeight = 595 - 135; // 460 pt
+      const maxImgWidth = (isA3 ? 1191 : 842) - 80;
+      const maxImgHeight = (isA3 ? 842 : 595) - 135;
       
       let drawWidth = maxImgWidth;
       let drawHeight = (embeddedTreeImg.height / embeddedTreeImg.width) * drawWidth;
@@ -768,8 +774,8 @@ export default function DedicatedTreePage() {
         height: drawHeight,
       });
 
-      page2.drawText('Page 2/Arbre', {
-        x: 760,
+      page2.drawText(`Page 2/Arbre (${isA3 ? 'A3' : 'A4'})`, {
+        x: isA3 ? 1100 : 760,
         y: 20,
         size: 8,
         font: helvetica,
@@ -972,7 +978,7 @@ export default function DedicatedTreePage() {
       const blob = new Blob([pdfBytes as any], { type: 'application/pdf' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `arbre_genealogique_${cleanClientName.replace(/\s+/g, '_').toLowerCase()}.pdf`;
+      link.download = `arbre_genealogique_${cleanClientName.replace(/\s+/g, '_').toLowerCase()}_${format}.pdf`;
       link.click();
     } catch (err: any) {
       console.error('PDF error:', err);
@@ -1052,24 +1058,44 @@ export default function DedicatedTreePage() {
             {downloading ? 'Export…' : 'Télécharger'}
           </button>
 
-          {/* Download PDF Button */}
+          {/* Download PDF A4 Button */}
           <button
-            onClick={handleDownloadPDF}
-            disabled={downloadingPDF}
+            onClick={() => handleDownloadPDF('A4')}
+            disabled={!!downloadingPDF}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all text-[11px] font-bold"
             style={{
               background: isDark ? 'rgba(197,168,76,0.12)' : 'rgba(197,168,76,0.08)',
               color: 'var(--panel-accent)',
               border: `1px solid ${isDark ? 'rgba(197,168,76,0.25)' : 'rgba(197,168,76,0.2)'}`,
             }}
-            title="Télécharger l'arbre en PDF modifiable"
+            title="Télécharger l'arbre en PDF A4"
           >
-            {downloadingPDF ? (
+            {downloadingPDF === 'A4' ? (
               <Loader2 size={14} className="animate-spin" />
             ) : (
               <FileText size={14} />
             )}
-            {downloadingPDF ? 'Export PDF…' : 'Télécharger PDF'}
+            {downloadingPDF === 'A4' ? 'Export A4…' : 'Télécharger PDF A4'}
+          </button>
+
+          {/* Download PDF A3 Button */}
+          <button
+            onClick={() => handleDownloadPDF('A3')}
+            disabled={!!downloadingPDF}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all text-[11px] font-bold"
+            style={{
+              background: isDark ? 'rgba(16,185,129,0.12)' : 'rgba(16,185,129,0.08)',
+              color: isDark ? '#34D399' : '#059669',
+              border: `1px solid ${isDark ? 'rgba(16,185,129,0.25)' : 'rgba(16,185,129,0.2)'}`,
+            }}
+            title="Télécharger l'arbre en PDF A3 (Grand format)"
+          >
+            {downloadingPDF === 'A3' ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <FileText size={14} />
+            )}
+            {downloadingPDF === 'A3' ? 'Export A3…' : 'Télécharger PDF A3'}
           </button>
 
           {/* GEDCOM Export Button */}
