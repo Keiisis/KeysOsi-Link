@@ -159,7 +159,7 @@ export default function DedicatedTreePage() {
       // IMAGE 1 — RECTO : L'arbre seul, grand et lisible
       // ═══════════════════════════════════════════════════
       const treeWrapper = document.createElement('div');
-      treeWrapper.style.cssText = 'position:absolute;left:-9999px;top:0;background:#FFFFFF;padding:60px 60px 40px;';
+      treeWrapper.style.cssText = 'position:absolute;left:-9999px;top:0;background:#FFFFFF;padding:60px 60px 40px;display:inline-block;width:max-content;';
       
       // Title header for the printed tree
       const header = document.createElement('div');
@@ -184,7 +184,29 @@ export default function DedicatedTreePage() {
       const treeClone = treeEl.cloneNode(true) as HTMLElement;
       treeClone.style.transform = 'none';
       treeClone.style.position = 'relative';
+      treeClone.style.justifyContent = 'flex-start';
+      treeClone.style.alignItems = 'flex-start';
       treeClone.id = 'print-tree-root';
+
+      let widthNum = 2000;
+      let heightNum = 1200;
+      // Explicitly set clone and wrapper width and height based on inner FamilyTree layout to avoid edge truncation
+      const actualTree = treeClone.firstElementChild as HTMLElement;
+      if (actualTree) {
+        const w = actualTree.style.width || actualTree.style.minWidth;
+        const h = actualTree.style.height;
+        if (w) {
+          treeClone.style.width = w;
+          treeClone.style.minWidth = w;
+          widthNum = parseFloat(w);
+          treeWrapper.style.width = `${widthNum + 120}px`;
+        }
+        if (h) {
+          treeClone.style.height = h;
+          heightNum = parseFloat(h);
+          treeWrapper.style.height = `${heightNum + 220}px`;
+        }
+      }
 
       // Inject high-fidelity print stylesheet
       const styleEl = document.createElement('style');
@@ -288,8 +310,10 @@ export default function DedicatedTreePage() {
         scale: 3,
         useCORS: true,
         logging: false,
-        width: treeWrapper.scrollWidth,
-        height: treeWrapper.scrollHeight,
+        width: widthNum + 120,
+        height: heightNum + 220,
+        windowWidth: widthNum + 120,
+        windowHeight: heightNum + 220,
       });
 
       document.body.removeChild(treeWrapper);
@@ -415,6 +439,8 @@ export default function DedicatedTreePage() {
         logging: false,
         width: reportWrapper.scrollWidth,
         height: reportWrapper.scrollHeight,
+        windowWidth: reportWrapper.scrollWidth,
+        windowHeight: reportWrapper.scrollHeight,
       });
 
       document.body.removeChild(reportWrapper);
@@ -447,11 +473,33 @@ export default function DedicatedTreePage() {
       // 2. Capture the family tree diagram as an image first
       // Clone tree off-screen to avoid modifying visible DOM
       const pdfWrapper = document.createElement('div');
-      pdfWrapper.style.cssText = 'position:absolute;left:-9999px;top:0;background:#FFFFFF;padding:20px;';
+      pdfWrapper.style.cssText = 'position:absolute;left:-9999px;top:0;background:#FFFFFF;padding:40px;display:inline-block;width:max-content;';
       const pdfTreeClone = treeEl.cloneNode(true) as HTMLElement;
       pdfTreeClone.style.transform = 'none';
       pdfTreeClone.style.position = 'relative';
+      pdfTreeClone.style.justifyContent = 'flex-start';
+      pdfTreeClone.style.alignItems = 'flex-start';
       pdfTreeClone.id = 'print-tree-root';
+
+      let pdfWidthNum = 2000;
+      let pdfHeightNum = 1200;
+      // Explicitly set clone and wrapper width and height based on inner FamilyTree layout to avoid edge truncation
+      const actualTree = pdfTreeClone.firstElementChild as HTMLElement;
+      if (actualTree) {
+        const w = actualTree.style.width || actualTree.style.minWidth;
+        const h = actualTree.style.height;
+        if (w) {
+          pdfTreeClone.style.width = w;
+          pdfTreeClone.style.minWidth = w;
+          pdfWidthNum = parseFloat(w);
+          pdfWrapper.style.width = `${pdfWidthNum + 80}px`;
+        }
+        if (h) {
+          pdfTreeClone.style.height = h;
+          pdfHeightNum = parseFloat(h);
+          pdfWrapper.style.height = `${pdfHeightNum + 80}px`;
+        }
+      }
 
       // Inject high-fidelity print stylesheet
       const styleEl = document.createElement('style');
@@ -553,8 +601,10 @@ export default function DedicatedTreePage() {
         scale: 2,
         useCORS: true,
         logging: false,
-        width: pdfWrapper.scrollWidth,
-        height: pdfWrapper.scrollHeight,
+        width: pdfWidthNum + 80,
+        height: pdfHeightNum + 80,
+        windowWidth: pdfWidthNum + 80,
+        windowHeight: pdfHeightNum + 80,
       });
 
       document.body.removeChild(pdfWrapper);
@@ -675,15 +725,25 @@ export default function DedicatedTreePage() {
       page2.drawLine({ start: { x: 40, y: 545 }, end: { x: 802, y: 545 }, thickness: 1, color: rgb(0, 0.53, 0.32) });
 
       const embeddedTreeImg = await pdfDoc.embedJpg(treeImgData);
-      const imgWidth = 842 - 80;
-      const imgHeight = (embeddedTreeImg.height / embeddedTreeImg.width) * imgWidth;
-      const yOffset = imgHeight < 460 ? (460 - imgHeight) / 2 + 40 : 40;
+      const maxImgWidth = 842 - 80; // 762 pt
+      const maxImgHeight = 595 - 135; // 460 pt
+      
+      let drawWidth = maxImgWidth;
+      let drawHeight = (embeddedTreeImg.height / embeddedTreeImg.width) * drawWidth;
+      
+      if (drawHeight > maxImgHeight) {
+        drawHeight = maxImgHeight;
+        drawWidth = (embeddedTreeImg.width / embeddedTreeImg.height) * drawHeight;
+      }
+      
+      const xOffset = (maxImgWidth - drawWidth) / 2 + 40;
+      const yOffset = (maxImgHeight - drawHeight) / 2 + 65;
       
       page2.drawImage(embeddedTreeImg, {
-        x: 40,
+        x: xOffset,
         y: yOffset,
-        width: imgWidth,
-        height: Math.min(imgHeight, 460),
+        width: drawWidth,
+        height: drawHeight,
       });
 
       page2.drawText('Page 2/Arbre', {
