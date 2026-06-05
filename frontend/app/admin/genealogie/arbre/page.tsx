@@ -44,6 +44,7 @@ export default function DedicatedTreePage() {
   const [refreshing, setRefreshing] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloadingPDF, setDownloadingPDF] = useState<false | 'A4' | 'A3'>(false);
+  const [downloadingImageA4, setDownloadingImageA4] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('tree');
 
   // Pan & Zoom States
@@ -53,6 +54,7 @@ export default function DedicatedTreePage() {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const viewRef = useRef<HTMLDivElement | null>(null);
   const treeContainerRef = useRef<HTMLDivElement | null>(null);
+  const compactTreeRef = useRef<HTMLDivElement | null>(null);
 
   const loadData = useCallback(async (silent = false) => {
     if (!treeId) return;
@@ -491,23 +493,20 @@ export default function DedicatedTreePage() {
       const html2canvas = (await import('html2canvas')).default;
       const { PDFDocument, rgb, StandardFonts } = await import('pdf-lib');
 
-      const treeEl = treeContainerRef.current;
-      if (!treeEl) throw new Error('Élément arbre introuvable');
+      // 2. Capture the compact family tree from the hidden offscreen container
+      const compactEl = compactTreeRef.current;
+      if (!compactEl) throw new Error('Élément arbre compact introuvable');
 
-      // 2. Capture the family tree diagram as an image first
-      // Clone tree off-screen to avoid modifying visible DOM
+      // Clone the compact tree off-screen for print styling
       const pdfWrapper = document.createElement('div');
-      pdfWrapper.style.cssText = 'position:absolute;left:-9999px;top:0;background:#FFFFFF;padding:40px;display:inline-block;width:max-content;';
-      const pdfTreeClone = treeEl.cloneNode(true) as HTMLElement;
-      pdfTreeClone.style.transform = 'none';
+      pdfWrapper.style.cssText = 'position:absolute;left:-9999px;top:0;background:#FFFFFF;padding:30px;display:inline-block;width:max-content;';
+      const pdfTreeClone = compactEl.cloneNode(true) as HTMLElement;
       pdfTreeClone.style.position = 'relative';
-      pdfTreeClone.style.justifyContent = 'flex-start';
-      pdfTreeClone.style.alignItems = 'flex-start';
       pdfTreeClone.id = 'print-tree-root';
 
       let pdfWidthNum = 2000;
       let pdfHeightNum = 1200;
-      // Explicitly set clone and wrapper width and height based on inner FamilyTree layout to avoid edge truncation
+      // Read dimensions from the compact FamilyTree's root element
       const actualTree = pdfTreeClone.firstElementChild as HTMLElement;
       if (actualTree) {
         const w = actualTree.style.width || actualTree.style.minWidth;
@@ -516,16 +515,16 @@ export default function DedicatedTreePage() {
           pdfTreeClone.style.width = w;
           pdfTreeClone.style.minWidth = w;
           pdfWidthNum = parseFloat(w);
-          pdfWrapper.style.width = `${pdfWidthNum + 80}px`;
+          pdfWrapper.style.width = `${pdfWidthNum + 60}px`;
         }
         if (h) {
           pdfTreeClone.style.height = h;
           pdfHeightNum = parseFloat(h);
-          pdfWrapper.style.height = `${pdfHeightNum + 80}px`;
+          pdfWrapper.style.height = `${pdfHeightNum + 60}px`;
         }
       }
 
-      // Inject high-fidelity print stylesheet
+      // Inject print stylesheet adapted for compact card sizes
       const styleEl = document.createElement('style');
       styleEl.innerHTML = `
         #print-tree-root {
@@ -543,45 +542,20 @@ export default function DedicatedTreePage() {
         }
         .group\\/card {
           overflow: visible !important;
-          width: 280px !important; /* Keep fixed CARD_W to align with SVG connection lines */
         }
         .group\\/card > div {
           background-color: #FFFFFF !important;
-          border: 3px solid #008751 !important; /* solid green border for maximum contrast */
-          box-shadow: 0 4px 12px rgba(0,0,0,0.06) !important;
+          border: 2px solid #008751 !important;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.04) !important;
           opacity: 1 !important;
-        }
-        .group\\/card > div.border-\\[\\#008751\\] {
-          border-color: #FCD116 !important; /* gold border for proposant/selected */
-          background-color: #F0FDF4 !important;
         }
         .group\\/card > div.opacity-75 {
           opacity: 0.95 !important;
-          border-color: #9CA3AF !important; /* gray border for deceased */
+          border-color: #9CA3AF !important;
           background-color: #F9FAFB !important;
         }
         .group\\/card p, .group\\/card span {
           color: #000000 !important;
-          font-weight: 900 !important;
-        }
-        .group\\/card p.text-\\[19px\\] {
-          font-size: 19px !important;
-          font-weight: 900 !important;
-          color: #000000 !important;
-        }
-        .group\\/card p.text-\\[15px\\] {
-          font-size: 15px !important;
-          font-weight: 900 !important;
-          color: #000000 !important;
-        }
-        .group\\/card span.uppercase {
-          color: #008751 !important;
-          font-size: 10px !important;
-          font-weight: 900 !important;
-        }
-        .group\\/card p.text-\\[13px\\] {
-          color: #000000 !important;
-          font-size: 13px !important;
           font-weight: 900 !important;
         }
         .group\\/card svg {
@@ -590,7 +564,7 @@ export default function DedicatedTreePage() {
         }
         .group\\/card > button {
           background-color: #F9FAFB !important;
-          border: 2px dashed #D1D5DB !important;
+          border: 1px dashed #D1D5DB !important;
           opacity: 1 !important;
         }
         .group\\/card > button span, .group\\/card > button svg {
@@ -605,8 +579,8 @@ export default function DedicatedTreePage() {
         }
         svg path[stroke*="rgba"], svg line[stroke*="rgba"] {
           stroke: #9CA3AF !important;
-          stroke-dasharray: 6,5 !important;
-          opacity: 0.6 !important;
+          stroke-dasharray: 4,4 !important;
+          opacity: 0.5 !important;
         }
         svg path[stroke-width="6"], svg path[stroke-width="8"] {
           display: none !important;
@@ -628,17 +602,17 @@ export default function DedicatedTreePage() {
       pdfWrapper.appendChild(styleEl);
       pdfWrapper.appendChild(pdfTreeClone);
       document.body.appendChild(pdfWrapper);
-      await new Promise(r => setTimeout(r, 300));
+      await new Promise(r => setTimeout(r, 400));
 
       const canvas = await html2canvas(pdfWrapper, {
         backgroundColor: '#FFFFFF',
         scale: 2,
         useCORS: true,
         logging: false,
-        width: pdfWidthNum + 80,
-        height: pdfHeightNum + 80,
-        windowWidth: pdfWidthNum + 80,
-        windowHeight: pdfHeightNum + 80,
+        width: pdfWidthNum + 60,
+        height: pdfHeightNum + 60,
+        windowWidth: pdfWidthNum + 60,
+        windowHeight: pdfHeightNum + 60,
       });
 
       document.body.removeChild(pdfWrapper);
@@ -1000,6 +974,202 @@ export default function DedicatedTreePage() {
     }
   };
 
+  /* ─── DOWNLOAD TREE AS COMPACT A4 IMAGE ─── */
+  const handleDownloadImageA4 = async () => {
+    setDownloadingImageA4(true);
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      
+      const compactEl = compactTreeRef.current;
+      if (!compactEl) throw new Error('Élément arbre compact introuvable');
+
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const fileBase = clientName.replace(/\s+/g, '-').toLowerCase();
+
+      // Create a wrapper of exactly 1200x848 pixels (A4 Landscape aspect ratio: 1.415)
+      const a4Wrapper = document.createElement('div');
+      a4Wrapper.style.cssText = 'position:absolute;left:-9999px;top:0;background:#FFFFFF;padding:40px 40px 30px;display:flex;flex-direction:column;justify-content:space-between;align-items:center;width:1200px;height:848px;box-sizing:border-box;font-family:system-ui,sans-serif;';
+
+      // Header inside the image
+      const header = document.createElement('div');
+      header.style.cssText = 'text-align:center;width:100%;margin-bottom:15px;';
+      header.innerHTML = `
+        <div style="display:inline-block;background:#008751;color:white;padding:8px 30px;border-radius:12px;margin-bottom:8px;">
+          <span style="font-size:16px;font-weight:900;letter-spacing:2px;">RETOUR GAGNANT BÉNIN</span>
+        </div>
+        <h1 style="font-size:22px;font-weight:900;color:#0A0F18;margin:8px 0 4px;letter-spacing:1px;text-transform:uppercase;">
+          PLAN DE COMPOSITION DE FAMILLE
+        </h1>
+        <p style="font-size:14px;font-weight:700;color:#008751;margin:0 0 2px;">
+          Famille ${clientName.toUpperCase()}
+        </p>
+        <p style="font-size:10px;color:#9CA3AF;margin:0;">
+          ${persons.length} membre(s) • Généré le ${new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+        </p>
+      `;
+      a4Wrapper.appendChild(header);
+
+      // Compact tree container
+      const compactTreeCloneContainer = document.createElement('div');
+      compactTreeCloneContainer.style.cssText = 'width:100%;flex:1;display:flex;justify-content:center;align-items:center;overflow:hidden;position:relative;background:#FFFFFF;';
+      
+      const pdfTreeClone = compactEl.cloneNode(true) as HTMLElement;
+      pdfTreeClone.style.position = 'relative';
+      pdfTreeClone.style.left = 'auto';
+      pdfTreeClone.style.top = 'auto';
+      pdfTreeClone.id = 'print-tree-root';
+
+      let pdfWidthNum = 2000;
+      let pdfHeightNum = 1200;
+      const actualTree = pdfTreeClone.firstElementChild as HTMLElement;
+      if (actualTree) {
+        const w = actualTree.style.width || actualTree.style.minWidth;
+        const h = actualTree.style.height;
+        if (w) {
+          pdfTreeClone.style.width = w;
+          pdfTreeClone.style.minWidth = w;
+          pdfWidthNum = parseFloat(w);
+        }
+        if (h) {
+          pdfTreeClone.style.height = h;
+          pdfHeightNum = parseFloat(h);
+        }
+
+        // Fit in 1120px width and 550px height
+        const maxW = 1120;
+        const maxH = 550;
+        let scale = maxW / pdfWidthNum;
+        if (pdfHeightNum * scale > maxH) {
+          scale = maxH / pdfHeightNum;
+        }
+
+        actualTree.style.transform = `scale(${scale})`;
+        actualTree.style.transformOrigin = 'top center';
+        pdfTreeClone.style.width = `${pdfWidthNum * scale}px`;
+        pdfTreeClone.style.height = `${pdfHeightNum * scale}px`;
+        pdfTreeClone.style.display = 'flex';
+        pdfTreeClone.style.justifyContent = 'center';
+        pdfTreeClone.style.alignItems = 'center';
+      }
+
+      // Inject styling for compact tree cards in print
+      const styleEl = document.createElement('style');
+      styleEl.innerHTML = `
+        #print-tree-root {
+          background-color: #FFFFFF !important;
+          color: #0A0F18 !important;
+        }
+        .truncate {
+          text-overflow: clip !important;
+          overflow: visible !important;
+          white-space: normal !important;
+          word-break: break-word !important;
+        }
+        .overflow-hidden {
+          overflow: visible !important;
+        }
+        .group\\/card {
+          overflow: visible !important;
+        }
+        .group\\/card > div {
+          background-color: #FFFFFF !important;
+          border: 2px solid #008751 !important;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.04) !important;
+          opacity: 1 !important;
+        }
+        .group\\/card > div.opacity-75 {
+          opacity: 0.95 !important;
+          border-color: #9CA3AF !important;
+          background-color: #F9FAFB !important;
+        }
+        .group\\/card p, .group\\/card span {
+          color: #000000 !important;
+          font-weight: 900 !important;
+        }
+        .group\\/card svg {
+          stroke: #000000 !important;
+          opacity: 1 !important;
+        }
+        .group\\/card > button {
+          background-color: #F9FAFB !important;
+          border: 1px dashed #D1D5DB !important;
+          opacity: 1 !important;
+        }
+        .group\\/card > button span, .group\\/card > button svg {
+          color: #6B7280 !important;
+        }
+        svg path, svg line {
+          stroke-opacity: 1 !important;
+        }
+        svg path[stroke="#10B981"], svg line[stroke="#10B981"],
+        svg path[stroke="#008751"], svg line[stroke="#008751"] {
+          stroke: #008751 !important;
+        }
+        svg path[stroke*="rgba"], svg line[stroke*="rgba"] {
+          stroke: #9CA3AF !important;
+          stroke-dasharray: 4,4 !important;
+          opacity: 0.5 !important;
+        }
+        svg path[stroke-width="6"], svg path[stroke-width="8"] {
+          display: none !important;
+        }
+        svg circle[stroke="#FCD116"] {
+          stroke: #D9A406 !important;
+          fill: #FFFFFF !important;
+        }
+        svg text[fill="#FCD116"] {
+          fill: #EAB308 !important;
+        }
+        svg line[stroke="#FCD116"] {
+          stroke: #D9A406 !important;
+        }
+        [class*="opacity-0"] {
+          display: none !important;
+        }
+      `;
+
+      compactTreeCloneContainer.appendChild(pdfTreeClone);
+      a4Wrapper.appendChild(styleEl);
+      a4Wrapper.appendChild(compactTreeCloneContainer);
+
+      // Footer inside image
+      const footer = document.createElement('div');
+      footer.style.cssText = 'width:100%;text-align:center;border-top:1px solid #E5E7EB;padding-top:10px;margin-top:10px;';
+      footer.innerHTML = `
+        <p style="font-size:9px;color:#9CA3AF;margin:0;">
+          RETOUR GAGNANT BÉNIN — Plan de composition de Famille • www.retourgagnantbenin.bj
+        </p>
+      `;
+      a4Wrapper.appendChild(footer);
+
+      document.body.appendChild(a4Wrapper);
+      await new Promise(r => setTimeout(r, 400));
+
+      const canvas = await html2canvas(a4Wrapper, {
+        backgroundColor: '#FFFFFF',
+        scale: 3,
+        useCORS: true,
+        logging: false,
+        width: 1200,
+        height: 848,
+        windowWidth: 1200,
+        windowHeight: 848,
+      });
+
+      document.body.removeChild(a4Wrapper);
+
+      const link = document.createElement('a');
+      link.download = `plan-de-composition-de-famille-${fileBase}-A4-${dateStr}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (err: any) {
+      console.error('A4 Image error:', err);
+      alert('Erreur lors du téléchargement Image A4 : ' + err.message);
+    } finally {
+      setDownloadingImageA4(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--panel-bg)' }}>
@@ -1060,7 +1230,7 @@ export default function DedicatedTreePage() {
               color: '#008751',
               border: `1px solid ${isDark ? 'rgba(0,135,81,0.25)' : 'rgba(0,135,81,0.2)'}`,
             }}
-            title="Télécharger l'arbre en image"
+            title="Télécharger l'arbre complet en image"
           >
             {downloading ? (
               <Loader2 size={14} className="animate-spin" />
@@ -1068,6 +1238,26 @@ export default function DedicatedTreePage() {
               <Download size={14} />
             )}
             {downloading ? 'Export…' : 'Télécharger'}
+          </button>
+
+          {/* Download A4 Image Button */}
+          <button
+            onClick={handleDownloadImageA4}
+            disabled={downloadingImageA4}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all text-[11px] font-bold"
+            style={{
+              background: isDark ? 'rgba(0,135,81,0.12)' : 'rgba(0,135,81,0.08)',
+              color: '#008751',
+              border: `1px solid ${isDark ? 'rgba(0,135,81,0.25)' : 'rgba(0,135,81,0.2)'}`,
+            }}
+            title="Télécharger l'arbre compact en image A4 paysage"
+          >
+            {downloadingImageA4 ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Download size={14} />
+            )}
+            {downloadingImageA4 ? 'Export Image A4…' : 'Image A4'}
           </button>
 
           {/* Download PDF A4 Button */}
@@ -1846,6 +2036,30 @@ export default function DedicatedTreePage() {
         </div>
         </>
       )}
+
+      {/* ─── Hidden compact tree for PDF capture (off-screen) ─── */}
+      <div
+        ref={compactTreeRef}
+        aria-hidden="true"
+        style={{
+          position: 'fixed',
+          left: '-99999px',
+          top: 0,
+          pointerEvents: 'none',
+          zIndex: -1,
+          background: '#FFFFFF',
+        }}
+      >
+        {treeId && (
+          <FamilyTree
+            persons={persons}
+            documents={documents}
+            selectedPerson={null}
+            onSelect={() => {}}
+            compact={true}
+          />
+        )}
+      </div>
 
     </div>
   );

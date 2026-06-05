@@ -9,7 +9,7 @@ import { useMemo } from 'react';
 import { useTheme } from '@/lib/theme/ThemeContext';
 
 /* ══════════════════════════════════════════════════════════════════
-   ARBRE GÉNÉALOGIQUE PROFESSIONNEL — LAYOUT HIÉRARCHIQUE (6 GÉNÉRATIONS)
+   PLAN DE COMPOSITION DE FAMILLE PROFESSIONNEL — LAYOUT HIÉRARCHIQUE (6 GÉNÉRATIONS)
    
    Architecture de rendu :
    - Chaque génération est une ligne horizontale
@@ -19,13 +19,7 @@ import { useTheme } from '@/lib/theme/ThemeContext';
    - Design premium avec dégradés et animations
    ══════════════════════════════════════════════════════════════════ */
 
-/* ─── Dimensions ─── */
-const CARD_W   = 280;
-const CARD_H   = 170;
-const H_GAP    = 56;      // espace horizontal entre cartes
-const V_GAP    = 140;     // espace vertical entre générations
-const COUPLE_R = 18;      // rayon du nœud mariage
-const UNIT     = CARD_W + H_GAP;  // unité de grille
+/* ─── Dimensions (moved inside component for dynamic scaling) ─── */
 
 /* ─── Types internes ─── */
 interface TreeNode {
@@ -73,7 +67,15 @@ export default function FamilyTree({
   selectedPerson,
   onSelect,
   onAddRelative,
-}: FamilyTreeProps) {
+  compact = false,
+}: FamilyTreeProps & { compact?: boolean }) {
+  const CARD_W   = compact ? 190 : 280;
+  const CARD_H   = compact ? 95  : 170;
+  const H_GAP    = compact ? 20  : 56;
+  const V_GAP    = compact ? 50  : 140;
+  const COUPLE_R = compact ? 10  : 18;
+  const UNIT     = CARD_W + H_GAP;
+
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
@@ -691,8 +693,7 @@ export default function FamilyTree({
     const maxY = Math.max(...allY.map(y => y + CARD_H), CARD_H) + 60;
 
     return { nodes, couples, childLinks, siblingGroups, width: maxX - minX + 80, height: maxY + 40, offsetX: -minX + 40 };
-  }, [persons, byRole, siblings, paternalUncles, maternalUncles, childPersons, partnerPersons, ggSiblings, gpSiblings]);
-
+  }, [persons, byRole, siblings, paternalUncles, maternalUncles, childPersons, partnerPersons, ggSiblings, gpSiblings, compact, CARD_W, CARD_H, H_GAP, V_GAP, COUPLE_R, UNIT]);
   /* ─── Document status ─── */
   function statusOf(person: Person, docs: DocumentItem[]): 'complete' | 'partial' | 'missing' {
     const d = docs.filter(doc => doc.person_id === person.id);
@@ -995,6 +996,8 @@ export default function FamilyTree({
       {/* ─── HTML Card Layer ─── */}
       <div className="relative z-10">
         {nodes.map((node) => {
+          // In compact mode, skip empty placeholder slots
+          if (compact && !node.person) return null;
           return (
             <div
               key={node.id}
@@ -1040,10 +1043,12 @@ export default function FamilyTree({
                         selected={selectedPerson?.id === node.person.id}
                         onClick={() => onSelect(node.person!)}
                         childNumber={childNumber}
+                        compact={compact}
                       />
                     );
                   })()}
-                  {/* Quick action overlay on hover */}
+                  {/* Quick action overlay on hover (hidden in compact mode) */}
+                  {!compact && (
                   <div
                     className="absolute -bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-all duration-300 rounded-full px-2.5 py-1 z-30 shadow-2xl backdrop-blur-md"
                     style={{
@@ -1112,6 +1117,7 @@ export default function FamilyTree({
                       </>
                     )}
                   </div>
+                  )}
                 </>
               ) : (
                 <button

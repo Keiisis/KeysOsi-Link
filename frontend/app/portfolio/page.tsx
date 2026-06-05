@@ -165,7 +165,7 @@ export default function PortfolioImmersivePage() {
         { id: '05', slug: 'construction', title: t("Suivi de Chantier"), desc: t("Maîtrise d'ouvrage, coordination"), bg: "bg-[#E8112D]", text: "text-white", iconBg: "bg-white/20" },
         { id: '06', slug: 'investissement', title: t("Investissement"), desc: t("Opportunités, partenariats locaux"), bg: "bg-white", text: "text-gray-900", iconBg: "bg-[#008751]/10 text-[#008751]" },
         { id: '07', slug: 'nationalite-vip', title: t("Nationalité VIP"), desc: t("Reconnaissance prioritaire"), bg: "bg-[#008751]", text: "text-white", iconBg: "bg-white/20" },
-        { id: '08', slug: 'recherche-ancestrale', title: t("Recherche Ancestrale"), desc: t("Généalogie, archives d'esclavage"), bg: "bg-[#FCD116]", text: "text-gray-900", iconBg: "bg-white/40" },
+        { id: '08', slug: 'recherche-ancestrale', title: t("Recherche Ancestrale"), desc: t("Plan de composition de Famille, archives d'esclavage"), bg: "bg-[#FCD116]", text: "text-gray-900", iconBg: "bg-white/40" },
         { id: '09', slug: 'autres', title: t("Autres Services"), desc: t("Transport, santé, scolarité"), bg: "bg-white", text: "text-gray-900", iconBg: "bg-[#008751]/10 text-[#008751]" },
     ]
 

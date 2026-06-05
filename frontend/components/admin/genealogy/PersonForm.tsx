@@ -853,9 +853,9 @@ export default function PersonForm({
             </div>
           </div>
 
-          {/* ---------------------------- Rôle généalogique --------------------------- */}
-          <div>
-            <label className={LC}>Rôle généalogique</label>
+          {/* ---------------------------- Rôle dans le Plan de composition de Famille --------------------------- */}
+          <div className="space-y-1.5 pt-2">
+            <label className={LC}>Rôle dans le Plan de composition de Famille</label>
             <div className="relative">
               <select
                 className={SEL}

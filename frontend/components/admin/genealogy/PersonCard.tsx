@@ -12,6 +12,7 @@ interface PersonCardProps {
   onClick?: () => void;
   selected?: boolean;
   childNumber?: number;
+  compact?: boolean;
 }
 
 /* ── Formate une date ISO en DD/MM/YYYY ── */
@@ -28,7 +29,7 @@ function formatFullDate(iso: string | null): string {
   }
 }
 
-export default function PersonCard({ person, status, onClick, selected, childNumber }: PersonCardProps) {
+export default function PersonCard({ person, status, onClick, selected, childNumber, compact = false }: PersonCardProps) {
   const isSelf = person.is_self || person.relation_role === 'self';
   const isPartner = ['husband', 'wife', 'fiance', 'fiancee'].includes(person.relation_role || '');
   const isDeceased = !!person.death_date;
@@ -99,6 +100,61 @@ export default function PersonCard({ person, status, onClick, selected, childNum
     ? `${childNumber}${childNumber === 1 ? 'er' : 'ème'} Enfant`
     : getRoleLabel(person.relation_role, person.gender);
 
+  // ─── COMPACT MODE (for A4 print) ───
+  if (compact) {
+    return (
+      <div
+        onClick={onClick}
+        className={cn(
+          'group relative flex h-full w-full cursor-pointer flex-col justify-center overflow-hidden transition-all duration-200',
+          'border backdrop-blur-lg px-2 py-1.5 rounded-lg',
+          statusConfig.border,
+          isDeceased && 'opacity-75',
+          selected && cn('ring-1 scale-[1.02]', statusConfig.ring),
+          isSelf && 'ring-1 ring-[#FCD116]/20'
+        )}
+        style={{
+          background: isDark ? 'rgba(10,15,24,0.95)' : 'rgba(255,255,255,0.95)',
+        }}
+      >
+        {/* Top accent bar */}
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-[1px] rounded-t-lg opacity-40"
+          style={{ background: 'linear-gradient(90deg, transparent, #008751, #FCD116, #E8112D, transparent)' }}
+        />
+
+        {/* Crown badge for self */}
+        {isSelf && (
+          <div className="absolute -right-0.5 -top-0.5 z-20 flex h-4 w-4 items-center justify-center rounded-full border border-[#FCD116]/50 bg-[#FCD116]/25">
+            <Crown size={8} className="text-[#FCD116]" />
+          </div>
+        )}
+
+        <div className="flex flex-col items-center justify-center text-center gap-0.5 w-full">
+          {/* First name */}
+          <p className="w-full truncate text-[11px] font-black leading-tight text-black dark:text-white">
+            {person.first_name || 'Sans prénom'}
+          </p>
+          {/* Last name */}
+          <p className="w-full truncate text-[9px] font-black uppercase tracking-wide leading-tight text-black dark:text-white">
+            {person.last_name || 'Sans nom'}
+          </p>
+          {/* Role */}
+          <span className="w-full truncate text-[7px] font-bold uppercase tracking-[0.1em] leading-snug"
+            style={{ color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)' }}
+          >
+            {roleLabel}
+          </span>
+          {/* Date only */}
+          <p className="w-full truncate font-mono text-[8px] font-bold text-black dark:text-white leading-snug mt-0.5">
+            {dateDisplay || '—'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── NORMAL MODE ───
   return (
     <div
       onClick={onClick}

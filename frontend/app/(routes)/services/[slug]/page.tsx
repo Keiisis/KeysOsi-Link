@@ -167,13 +167,13 @@ const FALLBACK_SERVICES: Record<string, ServiceData> = {
     'recherche-ancestrale': {
         title: 'Recherche Ancestrale',
         subtitle: "Retrouvez la trace de ceux que l'histoire a effacés",
-        description: "Pour des millions de descendants de la diaspora africaine, une partie de l'arbre généalogique a été effacée par la traite transatlantique. Nous mobilisons archives, bases de données spécialisées et associations expertes pour reconstituer votre lignée africaine.",
+        description: "Pour des millions de descendants de la diaspora africaine, une partie du plan de composition de famille a été effacée par la traite transatlantique. Nous mobilisons archives, bases de données spécialisées et associations expertes pour reconstituer votre lignée africaine.",
         features: [
             "Extrait de naissance de vos deux parents (père et mère)",
             "Extrait de naissance ou de décès de vos grands-parents (côté paternel et maternel)",
             "Actes de mariage, notariés, militaires ou de décès des arrière-grands-parents",
             "Consultation d'archives officielles et bases de données diasporiques",
-            "Partenariats avec associations spécialisées en généalogie afro-descendante",
+            "Partenariats avec associations spécialisées dans le Plan de composition de Famille afro-descendant",
         ],
         price: '250 €',
         color: '#FCD116',
