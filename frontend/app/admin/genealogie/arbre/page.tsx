@@ -1271,11 +1271,19 @@ export default function DedicatedTreePage() {
                 }}
               >
                 {persons
-                  .filter(p => 
-                    `${p.first_name || ''} ${p.last_name || ''}`
-                      .toLowerCase()
-                      .includes(searchQuery.toLowerCase())
-                  )
+                  .filter(p => {
+                    const q = searchQuery.toLowerCase().trim()
+                    if (!q) return true
+                    // Recherche étendue : nom + lieu naissance + lieu décès + dates + rôle
+                    const haystack = [
+                      p.first_name, p.last_name,
+                      p.birth_place, p.death_place,
+                      p.birth_date, p.death_date,
+                      p.relation_role,
+                      ROLE_LABELS[p.relation_role || ''] || '',
+                    ].filter(Boolean).join(' ').toLowerCase()
+                    return haystack.includes(q)
+                  })
                   .map(p => (
                     <button
                       key={p.id}
@@ -1307,11 +1315,18 @@ export default function DedicatedTreePage() {
                       </div>
                     </button>
                   ))}
-                {persons.filter(p => 
-                  `${p.first_name || ''} ${p.last_name || ''}`
-                    .toLowerCase()
-                    .includes(searchQuery.toLowerCase())
-                ).length === 0 && (
+                {persons.filter(p => {
+                  const q = searchQuery.toLowerCase().trim()
+                  if (!q) return true
+                  const haystack = [
+                    p.first_name, p.last_name,
+                    p.birth_place, p.death_place,
+                    p.birth_date, p.death_date,
+                    p.relation_role,
+                    ROLE_LABELS[p.relation_role || ''] || '',
+                  ].filter(Boolean).join(' ').toLowerCase()
+                  return haystack.includes(q)
+                }).length === 0 && (
                   <p className="text-[10px] text-center py-4 italic text-[var(--panel-text-faint)]">Aucun membre trouvé</p>
                 )}
               </div>
