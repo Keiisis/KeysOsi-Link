@@ -8,6 +8,10 @@ import { ROLE_LABELS } from '@/lib/genealogy/requirements';
 import FamilyTree from '@/components/admin/genealogy/FamilyTree';
 import PersonForm from '@/components/admin/genealogy/PersonForm';
 import DocumentUploader from '@/components/admin/genealogy/DocumentUploader';
+import CollaboratorsModal from '@/components/admin/genealogy/CollaboratorsModal';
+import GedcomImportButton from '@/components/admin/genealogy/GedcomImportButton';
+import DossierPdfButton from '@/components/admin/genealogy/DossierPdfButton';
+import AuditLogDrawer from '@/components/admin/genealogy/AuditLogDrawer';
 import { downloadGedcom } from '@/lib/genealogy/gedcom';
 import { findSiblings, buildTreeStats } from '@/lib/genealogy/siblings';
 import { buildFamilyTimeline, getUpcomingAnniversaries } from '@/lib/genealogy/timeline';
@@ -1242,6 +1246,35 @@ export default function DedicatedTreePage() {
             <Share2 size={14} />
             GEDCOM
           </button>
+
+          {/* GEDCOM Import Button (P2.1) */}
+          {treeId && (
+            <GedcomImportButton
+              treeId={treeId}
+              onImported={() => loadData(true)}
+              isDark={isDark}
+            />
+          )}
+
+          {/* Dossier PDF complet (P2.4) */}
+          {treeId && (
+            <DossierPdfButton
+              treeId={treeId}
+              treeContainer={compactTreeRef.current}
+              suggestedFilename={`dossier-genealogique-${clientName.replace(/[^a-zA-Z0-9-]/g, '_')}`}
+              isDark={isDark}
+            />
+          )}
+
+          {/* Collaborateurs / Partage (P1.2) */}
+          {treeId && (
+            <CollaboratorsModal treeId={treeId} isDark={isDark} />
+          )}
+
+          {/* Audit log (P1.1) */}
+          {treeId && (
+            <AuditLogDrawer treeId={treeId} isDark={isDark} />
+          )}
 
           {/* Search Box */}
           <div className="relative mr-2 hidden md:block">
