@@ -279,11 +279,11 @@ export default function AdminGenealogyPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-6 bg-white/5 border border-white/10 p-4 rounded-3xl backdrop-blur-md">
+        <div className="flex items-center gap-6 admin-card border p-4 rounded-3xl backdrop-blur-md">
           {selectedTree && (
             <button
               onClick={handleBackToList}
-              className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white font-bold text-xs px-4 py-2.5 rounded-2xl transition-all"
+              className="flex items-center gap-2 admin-btn-ghost font-bold text-xs px-4 py-2.5 rounded-2xl transition-all"
             >
               <ChevronLeft size={14} /> Retour à la liste
             </button>
@@ -306,7 +306,7 @@ export default function AdminGenealogyPage() {
       {!selectedTree ? (
         // ========================================== LIST VIEW ==========================================
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-[#0a0f18]/80 border border-white/5 p-4 rounded-3xl backdrop-blur-md">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 admin-card border p-4 rounded-3xl backdrop-blur-md">
             <div className="relative w-full sm:w-80">
               <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
               <input
@@ -314,7 +314,7 @@ export default function AdminGenealogyPage() {
                 placeholder="Rechercher un client..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full bg-white/[0.02] border border-white/[0.06] rounded-2xl py-2 pl-10 pr-3 text-white text-xs placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50"
+                className="w-full admin-input border rounded-2xl py-2 pl-10 pr-3 text-xs"
               />
             </div>
             
@@ -331,9 +331,9 @@ export default function AdminGenealogyPage() {
               initial={{ opacity: 0, y: -10 }} 
               animate={{ opacity: 1, y: 0 }}
               onSubmit={handleCreateClient}
-              className="bg-[#0c1322]/80 border border-white/5 p-6 rounded-3xl space-y-4 max-w-2xl"
+              className="admin-card-alt border p-6 rounded-3xl space-y-4 max-w-2xl"
             >
-              <h3 className="text-sm font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">
+              <h3 className="text-sm font-black uppercase tracking-widest border-b pb-2" style={{ color: 'var(--panel-text-heading)', borderColor: 'var(--panel-border)' }}>
                 Nouveau Client Plan de composition de Famille
               </h3>
               
@@ -345,7 +345,7 @@ export default function AdminGenealogyPage() {
                     required
                     value={newClient.first_name}
                     onChange={e => setNewClient({ ...newClient, first_name: e.target.value })}
-                    className="w-full bg-[#080d14] border border-white/5 rounded-xl py-2 px-3 text-white text-xs"
+                    className="w-full admin-input border rounded-xl py-2 px-3 text-xs"
                     placeholder="ex: Nathalie"
                   />
                 </div>
@@ -356,7 +356,7 @@ export default function AdminGenealogyPage() {
                     required
                     value={newClient.last_name}
                     onChange={e => setNewClient({ ...newClient, last_name: e.target.value })}
-                    className="w-full bg-[#080d14] border border-white/5 rounded-xl py-2 px-3 text-white text-xs"
+                    className="w-full admin-input border rounded-xl py-2 px-3 text-xs"
                     placeholder="ex: Martin"
                   />
                 </div>
@@ -369,7 +369,7 @@ export default function AdminGenealogyPage() {
                     type="email"
                     value={newClient.email}
                     onChange={e => setNewClient({ ...newClient, email: e.target.value })}
-                    className="w-full bg-[#080d14] border border-white/5 rounded-xl py-2 px-3 text-white text-xs"
+                    className="w-full admin-input border rounded-xl py-2 px-3 text-xs"
                     placeholder="ex: nathalie.martin@example.com"
                   />
                 </div>
@@ -379,7 +379,7 @@ export default function AdminGenealogyPage() {
                     type="text"
                     value={newClient.tree_name}
                     onChange={e => setNewClient({ ...newClient, tree_name: e.target.value })}
-                    className="w-full bg-[#080d14] border border-white/5 rounded-xl py-2 px-3 text-white text-xs"
+                    className="w-full admin-input border rounded-xl py-2 px-3 text-xs"
                     placeholder="ex: Arbre de la Famille Martin"
                   />
                 </div>
@@ -390,7 +390,7 @@ export default function AdminGenealogyPage() {
                 <select
                   value={newClient.user_id}
                   onChange={e => setNewClient({ ...newClient, user_id: e.target.value })}
-                  className="w-full bg-[#080d14] border border-white/5 rounded-xl py-2 px-3 text-white text-xs"
+                  className="w-full admin-input border rounded-xl py-2 px-3 text-xs"
                 >
                   <option value="">-- Ne pas associer pour le moment --</option>
                   {userProfiles.map(u => (
@@ -405,7 +405,7 @@ export default function AdminGenealogyPage() {
                 <button
                   type="button"
                   onClick={() => setShowCreateForm(false)}
-                  className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-bold"
+                  className="px-4 py-2 admin-btn-ghost rounded-xl text-xs font-bold"
                 >
                   Annuler
                 </button>
@@ -430,7 +430,7 @@ export default function AdminGenealogyPage() {
               return (
                 <div 
                   key={t.id}
-                  className="bg-[#0a0f18]/80 backdrop-blur-md border border-white/5 hover:border-emerald-500/20 p-5 rounded-[2rem] space-y-4 relative group overflow-hidden transition-all duration-300"
+                  className="admin-card backdrop-blur-md border hover:border-emerald-500/20 p-5 rounded-[2rem] space-y-4 relative group overflow-hidden transition-all duration-300"
                 >
                   <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/[0.02] blur-3xl pointer-events-none" />
                   
@@ -476,7 +476,7 @@ export default function AdminGenealogyPage() {
                   <div className="flex gap-2 pt-2">
                     <button
                       onClick={() => handleSelectTree(t)}
-                      className="flex-1 flex items-center justify-center gap-2 bg-[#0c1322] border border-white/10 hover:border-emerald-500/40 hover:bg-white/[0.02] text-white font-bold text-xs py-2.5 rounded-xl transition-all"
+                      className="flex-1 flex items-center justify-center gap-2 admin-btn-ghost hover:border-emerald-500/40 font-bold text-xs py-2.5 rounded-xl transition-all"
                     >
                       <Activity size={12} className="text-emerald-400" /> Analyser
                     </button>
@@ -493,7 +493,7 @@ export default function AdminGenealogyPage() {
             })}
 
             {filteredTrees.length === 0 && (
-              <div className="col-span-full py-16 bg-[#0a0f18]/80 rounded-[2.5rem] border border-dashed border-white/10 text-center">
+              <div className="col-span-full py-16 admin-card rounded-[2.5rem] border border-dashed text-center">
                 <Globe size={28} className="text-gray-600 mx-auto mb-3" />
                 <p className="text-sm font-bold text-white">Aucun plan de composition de famille trouvé</p>
                 <p className="text-[10px] text-gray-500 mt-1">Créez un nouvel arbre ou ajustez vos critères de recherche.</p>
@@ -507,7 +507,7 @@ export default function AdminGenealogyPage() {
           
           {/* Left panel: Info and Association */}
           <div className="lg:col-span-4 space-y-4">
-            <div className="bg-[#0a0f18]/80 border border-white/5 p-6 rounded-[2rem] space-y-4 relative overflow-hidden">
+            <div className="admin-card border p-6 rounded-[2rem] space-y-4 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/[0.01] blur-3xl pointer-events-none" />
               
               <h3 className="text-sm font-black text-white uppercase tracking-widest border-b border-white/5 pb-2">
@@ -539,7 +539,7 @@ export default function AdminGenealogyPage() {
                 <select
                   value={selectedTree.user_id || ''}
                   onChange={e => handleLinkUser(e.target.value)}
-                  className="w-full bg-[#080d14] border border-white/5 rounded-xl py-2 px-3 text-white text-xs"
+                  className="w-full admin-input border rounded-xl py-2 px-3 text-xs"
                 >
                   <option value="">-- Non lié (hors ligne) --</option>
                   {userProfiles.map(u => (
@@ -576,7 +576,7 @@ export default function AdminGenealogyPage() {
           {/* Right: Selected Person Docs & Editing Forms */}
           <div className="lg:col-span-4 space-y-4">
             {selectedPerson ? (
-              <div className="bg-[#0a0f18]/80 border border-white/5 p-6 rounded-[2rem] space-y-4 relative overflow-hidden animate-in slide-in-from-right duration-300">
+              <div className="admin-card border p-6 rounded-[2rem] space-y-4 relative overflow-hidden animate-in slide-in-from-right duration-300">
                 <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/5 rounded-full pointer-events-none flex items-center justify-center">
                   <User size={36} className="text-white/10" />
                 </div>
@@ -621,7 +621,7 @@ export default function AdminGenealogyPage() {
                       {documents.filter(d => d.person_id === selectedPerson.id).map(d => (
                         <div 
                           key={d.id} 
-                          className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-all"
+                          className="flex items-center justify-between p-2.5 rounded-xl admin-card-alt border hover:bg-[var(--panel-surface-hover)] transition-all"
                         >
                           <div className="flex items-center gap-2 min-w-0">
                             <FileText size={12} className="text-[#008751] shrink-0" />

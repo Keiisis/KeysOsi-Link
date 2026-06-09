@@ -1030,3 +1030,45 @@
   color-scheme: light;
 }
 
+/* ═══════════════════════════════════════════════════════
+   ADMIN — utilitaires themables pour inputs et cards
+   Réagissent automatiquement aux variables --panel-*.
+   Évitent les couleurs hardcodées qui restent invisibles
+   en mode clair.
+   ═══════════════════════════════════════════════════════ */
+.admin-input {
+  background-color: var(--panel-surface-alt);
+  color: var(--panel-text);
+  border-color: var(--panel-border);
+}
+.admin-input::placeholder {
+  color: var(--panel-text-faint);
+  opacity: 1;
+}
+.admin-input:focus {
+  outline: none;
+  border-color: rgba(16, 185, 129, 0.55);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.08);
+}
+
+.admin-card {
+  background-color: var(--panel-surface);
+  border-color: var(--panel-border);
+  color: var(--panel-text);
+}
+.admin-card-alt {
+  background-color: var(--panel-surface-alt);
+  border-color: var(--panel-border);
+  color: var(--panel-text);
+}
+
+/* Bouton "ghost" themable pour les actions secondaires (Annuler, etc.) */
+.admin-btn-ghost {
+  background-color: var(--panel-surface-hover);
+  color: var(--panel-text);
+  border: 1px solid var(--panel-border);
+}
+.admin-btn-ghost:hover {
+  background-color: var(--panel-surface-active);
+}
+

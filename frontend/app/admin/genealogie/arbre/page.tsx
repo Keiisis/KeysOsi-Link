@@ -1900,29 +1900,27 @@ export default function DedicatedTreePage() {
       {/* 3. Slider detail drawer */}
       {(selectedPerson || presetRole || addAction) && tree && (
         <>
-          {/* Backdrop overlay — FIXED position to cover entire viewport */}
+          {/* Backdrop overlay — opaque, plus de blur (anti-effet "arrière-plan visible") */}
           <div
             className="fixed inset-0 animate-in fade-in duration-200"
             style={{
               zIndex: 9998,
-              background: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(15, 23, 42, 0.45)',
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
+              background: isDark ? 'rgba(2, 6, 12, 0.88)' : 'rgba(15, 23, 42, 0.72)',
             }}
             onClick={handleCancelEdit}
           />
-          {/* Drawer panel — FIXED position, always on top */}
+          {/* Drawer panel — FIXED position, top-layer, opaque, bordure et ombre marquées */}
           <div
-            className="fixed right-0 bottom-0 w-[420px] flex flex-col overflow-y-auto animate-in slide-in-from-right duration-300 scrollbar-premium"
+            className="fixed right-0 bottom-0 w-[440px] max-w-[100vw] flex flex-col overflow-y-auto animate-in slide-in-from-right duration-300 scrollbar-premium"
             style={{
               zIndex: 9999,
               top: 0,
               backgroundColor: isDark ? '#070b13' : '#ffffff',
               opacity: 1,
-              borderLeft: `2px solid ${isDark ? '#1e293b' : '#d1d5db'}`,
+              borderLeft: isDark ? '3px solid #C9A84C' : '3px solid #C9A84C',
               boxShadow: isDark
-                ? '-20px 0 60px rgba(0,0,0,0.9), -4px 0 20px rgba(0,0,0,0.6)'
-                : '-20px 0 80px rgba(0,0,0,0.35), -4px 0 30px rgba(0,0,0,0.15)',
+                ? '-24px 0 80px rgba(0,0,0,0.95), -8px 0 24px rgba(0,0,0,0.7)'
+                : '-24px 0 80px rgba(15,23,42,0.45), -8px 0 24px rgba(15,23,42,0.25)',
             }}
           >
           <div className="p-6 space-y-6" style={{ backgroundColor: isDark ? '#070b13' : '#ffffff' }}>
