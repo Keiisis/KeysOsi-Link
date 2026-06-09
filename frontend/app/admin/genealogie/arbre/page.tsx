@@ -12,6 +12,8 @@ import CollaboratorsModal from '@/components/admin/genealogy/CollaboratorsModal'
 import GedcomImportButton from '@/components/admin/genealogy/GedcomImportButton';
 import DossierPdfButton from '@/components/admin/genealogy/DossierPdfButton';
 import AuditLogDrawer from '@/components/admin/genealogy/AuditLogDrawer';
+import SuggestionsPanel from '@/components/admin/genealogy/SuggestionsPanel';
+import DedupAlert from '@/components/admin/genealogy/DedupAlert';
 import { downloadGedcom } from '@/lib/genealogy/gedcom';
 import { findSiblings, buildTreeStats } from '@/lib/genealogy/siblings';
 import { buildFamilyTimeline, getUpcomingAnniversaries } from '@/lib/genealogy/timeline';
@@ -1274,6 +1276,27 @@ export default function DedicatedTreePage() {
           {/* Audit log (P1.1) */}
           {treeId && (
             <AuditLogDrawer treeId={treeId} isDark={isDark} />
+          )}
+
+          {/* Suggestions (#7) — sélectionne la personne ciblée à l'arrivée */}
+          {treeId && (
+            <SuggestionsPanel
+              treeId={treeId}
+              isDark={isDark}
+              onSelectPerson={(pid) => {
+                const target = persons.find(p => p.id === pid);
+                if (target) handleSelectPerson(target);
+              }}
+            />
+          )}
+
+          {/* Doublons potentiels (#6) — badge masqué si rien à signaler */}
+          {treeId && (
+            <DedupAlert
+              treeId={treeId}
+              isDark={isDark}
+              onMerged={() => loadData(true)}
+            />
           )}
 
           {/* Search Box */}
