@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { sendInvoiceEmail } from '@/lib/send-invoice-email'
+import { assertOwnership, createSupabaseOwnershipResolver } from '@/lib/waf'
 
 /* ════════════════════════════════════════════════════════════════════════════
    Mobile orders endpoint.
@@ -86,6 +87,24 @@ export async function GET(req: NextRequest) {
 
         // 1. Detail by order_id
         if (orderId) {
+            // ── WAF #1 : autorisation objet (anti-IDOR/BOLA) ──────────────
+            // Sans ça, incrémenter order_id permettait de lire les PII (nom,
+            // email, téléphone, adresse) de N'IMPORTE QUELLE commande.
+            // On exige le client_id du demandeur et on vérifie qu'il possède
+            // bien la commande. rejectMode 'deceive' → 404 (ne révèle pas
+            // l'existence de la commande à un non-propriétaire).
+            if (!clientId) {
+                return NextResponse.json({ error: 'client_id requis' }, { status: 400 })
+            }
+            const { rejection } = await assertOwnership({
+                userId: clientId,
+                resourceType: 'order',
+                resourceId: orderId,
+                resolver: createSupabaseOwnershipResolver(supabase),
+                rejectMode: 'deceive',
+            })
+            if (rejection) return rejection
+
             const { data: order, error } = await supabase
                 .from('orders')
                 .select(`

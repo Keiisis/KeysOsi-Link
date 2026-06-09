@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient, getTreeIdForPerson, requireReadTree, getAuthUserId } from '@/lib/genealogy/api-auth'
+import { scanRequestBody } from '@/lib/waf'
 
 // GET /api/genealogie/persons/[id]/comments
 //   Liste les commentaires sur une fiche personne (chronologique inverse).
@@ -54,8 +55,12 @@ export async function POST(
         const { data: canRead } = await supabase.rpc('can_read_tree', { p_tree_id: treeId })
         if (!canRead) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
 
-        const body = await request.json()
-        const text = String(body.body || '').trim()
+        // ── WAF #2 : analyse structurelle du body (proto pollution / RCE / SSRF / DoS) ──
+        // scanRequestBody renvoie le body parsé → on le réutilise (pas de double req.json())
+        const { body, rejection } = await scanRequestBody(request)
+        if (rejection) return rejection
+
+        const text = String((body as { body?: unknown })?.body || '').trim()
         if (!text) return NextResponse.json({ error: 'Texte requis' }, { status: 400 })
         if (text.length > 4000) return NextResponse.json({ error: 'Texte trop long (max 4000)' }, { status: 400 })
 

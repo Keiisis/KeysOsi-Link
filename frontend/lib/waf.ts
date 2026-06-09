@@ -28,6 +28,49 @@ export type { SmugglingResult, SmugglingPattern } from './waf/smuggling'
 export { checkCanaryInRequest, refreshCanaryCache, reportCanaryTriggered, registerHoneyAccess, generateCanaryToken } from './waf/canary'
 export type { CanaryCheckResult, CanaryToken, CanaryTokenType } from './waf/canary'
 
+// ── CORE PORTABLE (extractible — zéro dépendance framework) ──
+// Ces modules forment le cœur du WAF-SDK vendable. Ils ne dépendent
+// NI de Next.js NI de Supabase. Voir lib/waf/core/README.md.
+export {
+    scanBody,
+    isInternalHost,
+    DEFAULT_SCAN_OPTIONS,
+} from './waf/core/body-scanner'
+export type {
+    BodyScanVerdict,
+    BodyScanOptions,
+    BodyThreatType,
+} from './waf/core/body-scanner'
+export {
+    verifyOwnership,
+} from './waf/core/ownership'
+export type {
+    OwnershipResolver,
+    OwnershipQuery,
+    OwnershipResolution,
+    OwnershipVerdict,
+    OwnershipDecision,
+    MissingResourcePolicy,
+    VerifyOwnershipOptions,
+} from './waf/core/ownership'
+
+// ── ADAPTERS (couche jetable par plateforme) ─────────────────
+export {
+    createSupabaseOwnershipResolver,
+    RGB_RESOURCE_MAP,
+} from './waf/adapters/supabase-ownership'
+export type { ResourceMap, ResourceMapEntry } from './waf/adapters/supabase-ownership'
+export {
+    scanRequestBody,
+    assertOwnership,
+} from './waf/adapters/nextjs'
+export type {
+    ScanRequestBodyResult,
+    ScanRequestBodyOptions,
+    AssertOwnershipParams,
+    AssertOwnershipResult,
+} from './waf/adapters/nextjs'
+
 // ── Évaluation RPC centralisée (cerveau décisionnel SQL) ─────
 // Appelle waf_evaluate_request dans Supabase pour obtenir
 // l'action à prendre : allow | tarpit | deceive | block | honeypot

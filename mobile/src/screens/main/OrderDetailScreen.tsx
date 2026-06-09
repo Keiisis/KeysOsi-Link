@@ -21,6 +21,7 @@ import * as Clipboard from 'expo-clipboard'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { RouteProp } from '@react-navigation/native'
 import { useLang } from '../../contexts/LangContext'
+import { useAuth } from '../../contexts/AuthContext'
 import { fetchWithTimeout } from '../../lib/fetch'
 import { RootStackParamList } from '../../navigation/AppNavigator'
 
@@ -221,6 +222,7 @@ function ShippingStepper({ currentIdx, statusColor }: { currentIdx: number; stat
 export default function OrderDetailScreen({ navigation, route }: { navigation: Nav; route: Route }) {
     const { orderId } = route.params
     const { t } = useLang()
+    const { profile } = useAuth()
     const [order, setOrder] = useState<OrderDetail | null>(null)
     const [events, setEvents] = useState<TrackingEvent[]>([])
     const [loading, setLoading] = useState(true)
@@ -266,9 +268,11 @@ export default function OrderDetailScreen({ navigation, route }: { navigation: N
 
     useEffect(() => {
         const fetchOrder = async () => {
+            // client_id requis par le WAF (vérif de propriété anti-IDOR côté serveur)
+            if (!profile?.id) { setLoading(false); return }
             try {
                 const res = await fetchWithTimeout(
-                    `${API_BASE}/api/mobile/orders?order_id=${orderId}`,
+                    `${API_BASE}/api/mobile/orders?order_id=${orderId}&client_id=${profile.id}`,
                     { timeoutMs: 10000 }
                 )
                 const data = await res.json().catch(() => ({}))
@@ -281,7 +285,7 @@ export default function OrderDetailScreen({ navigation, route }: { navigation: N
             }
         }
         fetchOrder()
-    }, [orderId])
+    }, [orderId, profile?.id])
 
     const formatPrice = (n: number, c: string) => {
         if (c === 'XOF' || c === 'XAF') return `${n.toLocaleString('fr-FR')} FCFA`

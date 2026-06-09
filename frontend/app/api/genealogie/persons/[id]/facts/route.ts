@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient, getTreeIdForPerson, requireReadTree, requireWriteTree } from '@/lib/genealogy/api-auth'
+import { scanRequestBody } from '@/lib/waf'
 
 const VALID_FACT_TYPES = [
     'birth_date','birth_place','death_date','death_place',
@@ -61,13 +62,17 @@ export async function POST(
         const auth = await requireWriteTree(request, treeId)
         if (auth instanceof NextResponse) return auth
 
-        const body = await request.json()
+        // ── WAF #2 : analyse structurelle du body (proto pollution / RCE / SSRF / DoS) ──
+        const { body: scanned, rejection } = await scanRequestBody(request)
+        if (rejection) return rejection
+        const body = (scanned ?? {}) as Record<string, unknown>
+
         const factType = String(body.fact_type || '')
         const value = String(body.value || '').trim()
         const valueDate = body.value_date || null
         const sourceDocId = body.source_doc_id || null
         const sourceText = body.source_text || null
-        const confidence = VALID_CONFIDENCE.includes(body.confidence) ? body.confidence : 'unverified'
+        const confidence = VALID_CONFIDENCE.includes(body.confidence as string) ? (body.confidence as string) : 'unverified'
         const notes = body.notes || null
 
         if (!factType || !VALID_FACT_TYPES.includes(factType)) {
