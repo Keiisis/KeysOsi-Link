@@ -1897,33 +1897,41 @@ export default function DedicatedTreePage() {
         </div>
       )}
 
-      {/* 3. Slider detail drawer */}
+      {/* 3. Drawer EDITER LE MEMBRE — style sidebar opaque pleine hauteur */}
       {(selectedPerson || presetRole || addAction) && tree && (
         <>
-          {/* Backdrop overlay — opaque, plus de blur (anti-effet "arrière-plan visible") */}
+          {/* Backdrop 100% OPAQUE — masque totalement l'arrière-plan (l'arbre disparaît visuellement) */}
           <div
-            className="fixed inset-0 animate-in fade-in duration-200"
+            className="fixed inset-0"
             style={{
               zIndex: 9998,
-              background: isDark ? 'rgba(2, 6, 12, 0.88)' : 'rgba(15, 23, 42, 0.72)',
+              backgroundColor: isDark ? '#02060C' : '#0F172A',
+              opacity: 1,
             }}
             onClick={handleCancelEdit}
           />
-          {/* Drawer panel — FIXED position, top-layer, opaque, bordure et ombre marquées */}
+          {/* Drawer panel — opaque solide, comme la sidebar admin, bordure or épaisse */}
           <div
-            className="fixed right-0 bottom-0 w-[440px] max-w-[100vw] flex flex-col overflow-y-auto animate-in slide-in-from-right duration-300 scrollbar-premium"
+            className="fixed right-0 top-0 bottom-0 w-[460px] max-w-[100vw] flex flex-col overflow-y-auto scrollbar-premium"
             style={{
               zIndex: 9999,
-              top: 0,
-              backgroundColor: isDark ? '#070b13' : '#ffffff',
+              backgroundColor: isDark ? '#070B13' : '#FFFFFF',
               opacity: 1,
-              borderLeft: isDark ? '3px solid #C9A84C' : '3px solid #C9A84C',
+              borderLeft: '4px solid #C9A84C',
               boxShadow: isDark
-                ? '-24px 0 80px rgba(0,0,0,0.95), -8px 0 24px rgba(0,0,0,0.7)'
-                : '-24px 0 80px rgba(15,23,42,0.45), -8px 0 24px rgba(15,23,42,0.25)',
+                ? '-30px 0 100px rgba(0,0,0,1), -12px 0 40px rgba(0,0,0,0.85)'
+                : '-30px 0 100px rgba(15,23,42,0.55), -12px 0 40px rgba(15,23,42,0.30)',
             }}
           >
-          <div className="p-6 space-y-6" style={{ backgroundColor: isDark ? '#070b13' : '#ffffff' }}>
+          {/* Ruban émeraude en tête — donne l'effet "fenêtre premium" comme la sidebar */}
+          <div
+            style={{
+              height: 6,
+              background: 'linear-gradient(90deg, #008751 0%, #FCD116 50%, #E8112D 100%)',
+              flexShrink: 0,
+            }}
+          />
+          <div className="p-6 space-y-6" style={{ backgroundColor: isDark ? '#070B13' : '#FFFFFF', opacity: 1 }}>
             
             {/* Header of Drawer */}
             <div className="flex justify-between items-center border-b pb-3" style={{ borderColor: 'var(--panel-border)' }}>
