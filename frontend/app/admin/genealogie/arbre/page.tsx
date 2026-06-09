@@ -1923,7 +1923,7 @@ export default function DedicatedTreePage() {
                 : '-30px 0 100px rgba(15,23,42,0.55), -12px 0 40px rgba(15,23,42,0.30)',
             }}
           >
-          {/* Ruban émeraude en tête — donne l'effet "fenêtre premium" comme la sidebar */}
+          {/* Ruban tricolore Bénin en tête — signature officielle */}
           <div
             style={{
               height: 6,
@@ -1931,29 +1931,108 @@ export default function DedicatedTreePage() {
               flexShrink: 0,
             }}
           />
-          <div className="p-6 space-y-6" style={{ backgroundColor: isDark ? '#070B13' : '#FFFFFF', opacity: 1 }}>
-            
-            {/* Header of Drawer */}
-            <div className="flex justify-between items-center border-b pb-3" style={{ borderColor: 'var(--panel-border)' }}>
-              <div>
-                <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">
-                  {selectedPerson ? 'Éditer le membre' : 'Ajouter un membre'}
-                </p>
-                <h3 className="text-base font-black" style={{ color: 'var(--panel-text-heading)' }}>
-                  {selectedPerson 
-                    ? `${selectedPerson.first_name || ''} ${selectedPerson.last_name || ''}`
-                    : 'Création de Parenté'
-                  }
+
+          {/* ═══════ HEADER MASSIF — fond émeraude, titre BLANC énorme ═══════ */}
+          <div
+            style={{
+              background: 'linear-gradient(135deg, #047857 0%, #065F46 60%, #064E3B 100%)',
+              padding: '24px 28px',
+              flexShrink: 0,
+              borderBottom: '3px solid #C9A84C',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Halo doré décoratif en haut à droite */}
+            <div
+              style={{
+                position: 'absolute',
+                top: -60, right: -60,
+                width: 160, height: 160, borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(201,168,76,0.35) 0%, transparent 70%)',
+                pointerEvents: 'none',
+              }}
+            />
+
+            <div className="relative flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                {/* Mini label sur badge or */}
+                <div
+                  className="inline-flex items-center gap-1.5 mb-3"
+                  style={{
+                    background: 'rgba(201,168,76,0.18)',
+                    border: '1px solid rgba(201,168,76,0.55)',
+                    padding: '4px 10px',
+                    borderRadius: 999,
+                  }}
+                >
+                  <span style={{
+                    width: 6, height: 6, borderRadius: 3, backgroundColor: '#FCD116',
+                    boxShadow: '0 0 8px rgba(252,209,22,0.8)',
+                  }} />
+                  <span style={{
+                    fontSize: 10, fontWeight: 900, letterSpacing: '0.18em',
+                    color: '#FCD116', textTransform: 'uppercase',
+                  }}>
+                    {selectedPerson ? 'Édition · Membre existant' : 'Nouveau · Création'}
+                  </span>
+                </div>
+
+                {/* Titre énorme BLANC */}
+                <h3
+                  style={{
+                    fontSize: 24,
+                    fontWeight: 900,
+                    color: '#FFFFFF',
+                    lineHeight: 1.1,
+                    letterSpacing: '-0.01em',
+                    fontFamily: 'PlayfairDisplay_700Bold, serif',
+                    textShadow: '0 2px 8px rgba(0,0,0,0.35)',
+                  }}
+                >
+                  {selectedPerson
+                    ? (`${selectedPerson.first_name || ''} ${selectedPerson.last_name || ''}`.trim() || 'Membre sans nom')
+                    : 'Création de parenté'}
                 </h3>
+
+                {/* Sous-titre */}
+                <p style={{
+                  marginTop: 4,
+                  fontSize: 12,
+                  color: 'rgba(255,255,255,0.78)',
+                  fontWeight: 600,
+                }}>
+                  {selectedPerson
+                    ? (ROLE_LABELS[selectedPerson.relation_role || ''] || 'Membre de la famille')
+                    : 'Renseignez les informations du nouveau membre'}
+                </p>
               </div>
+
+              {/* Bouton fermer en carré contrasté */}
               <button
                 onClick={handleCancelEdit}
-                className="p-2 rounded-xl transition-all"
-                style={{ color: 'var(--panel-text-muted)' }}
+                title="Fermer"
+                style={{
+                  width: 36, height: 36,
+                  borderRadius: 10,
+                  background: 'rgba(255,255,255,0.12)',
+                  border: '1px solid rgba(255,255,255,0.25)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#FFFFFF',
+                  flexShrink: 0,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.22)' }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)' }}
               >
-                <X size={16} />
+                <X size={18} strokeWidth={2.5} />
               </button>
             </div>
+          </div>
+
+          {/* ═══════ BODY du drawer — fond très blanc, contraste fort ═══════ */}
+          <div className="p-6 space-y-5" style={{ backgroundColor: isDark ? '#0B1220' : '#FFFFFF', opacity: 1, flex: 1 }}>
 
             {/* Document upload inside details */}
             {selectedPerson && (
