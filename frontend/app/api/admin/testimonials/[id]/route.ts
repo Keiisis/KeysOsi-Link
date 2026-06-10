@@ -57,8 +57,6 @@ export async function PATCH(
             return NextResponse.json({ error: 'Aucun champ à mettre à jour' }, { status: 400 })
         }
 
-        updates.updated_at = new Date().toISOString()
-
         const { data, error } = await supabase
             .from('testimonials')
             .update(updates)
