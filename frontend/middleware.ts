@@ -36,6 +36,7 @@ import {
     scanForSSRF,
     scanForRCE,
     trackIDORAttempt,
+    persistIDORAttempt,
     checkParameterTampering,
     checkCanaryInRequest,
     refreshCanaryCache,
@@ -230,16 +231,29 @@ export async function middleware(request: NextRequest) {
             }
 
             // Détection heuristique de navigateurs headless (bots)
+            // ── Durcissement : on ne se contente plus d'une alerte 'info'.
+            // On DÉGRADE le trust score (l'IP escalade vers tarpit/déception au
+            // fil des requêtes via le RPC) ET on applique un tarpit léger immédiat.
+            // On ne BLOQUE pas (faux positifs possibles : crawlers SEO légitimes,
+            // monitoring) — on ralentit + on laisse le scoring comportemental décider.
             const headless = detectHeadlessBrowser(request.headers)
-            if (headless.isHeadless && !isInternalPanelPath) {
+            if (headless.isHeadless && !isInternalPanelPath && !isIpWhitelisted) {
                 if (SUPA_URL && SUPA_KEY) {
                     createAlert({
-                        level: 'info',
+                        level: 'warning',
                         message: `🤖 Navigateur headless détecté: IP ${ip} — ${headless.indicators.join(', ')}`,
                         context: { ip, indicators: headless.indicators, fingerprint: fp.hash },
                         supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
                     })
+                    // Trust decay : marque l'IP comme suspecte (escalade progressive)
+                    updateIpMemory({
+                        ip, isAttack: true, attackType: 'headless_browser',
+                        supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                    })
                 }
+                // Tarpit léger (1.2s) — coûteux pour un bot qui scanne en masse,
+                // imperceptible pour un crawler légitime occasionnel.
+                await applyTarpit(1200)
             }
         } catch { /* fingerprint extraction non-critique */ }
     }
@@ -545,6 +559,35 @@ export async function middleware(request: NextRequest) {
                         level: 'critical',
                         message: `🔐 IDOR DÉTECTÉ [${idor.pattern}]: IP ${ip} — ${idor.distinctIds} IDs sur ${idor.endpointPattern}`,
                         context: { ip, pattern: idor.pattern, distinctIds: idor.distinctIds, endpoint: idor.endpointPattern, fingerprint: fingerprintHash },
+                        supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                    })
+                    trackViolation(ip, SUPA_URL, SUPA_KEY, { threatType: 'enumeration' })
+                    return wafBlock('Accès refusé — activité suspecte détectée.', 403)
+                }
+
+                // ── Corrélation cross-instance (serverless-safe) ──────
+                // Le détecteur mémoire ci-dessus n'a pas flaggé, mais un
+                // attaquant réparti sur plusieurs instances Vercel y échappe.
+                // persistIDORAttempt agrège l'état dans waf_idor_tracking
+                // (TOUTES instances) et renvoie le verdict global.
+                const crossInstance = await persistIDORAttempt({
+                    ip, fingerprintHash, path: pathname, queryString: searchParamsObs,
+                    supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                })
+                if (crossInstance && (crossInstance.isSuspicious || crossInstance.rapid)) {
+                    logWafEvent({
+                        ip, method, path: pathname, userAgent,
+                        threatType: 'scanner_detection' as ThreatType,
+                        detail: `IDOR cross-instance: ${crossInstance.distinctIds} IDs distincts (DB-agrégé)`,
+                        fingerprintHash,
+                        action: 'block',
+                        score: crossInstance.rapid ? 95 : 85,
+                        supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
+                    })
+                    createAlert({
+                        level: 'critical',
+                        message: `🔐 IDOR CROSS-INSTANCE: IP ${ip} — ${crossInstance.distinctIds} IDs (agrégé multi-instances)`,
+                        context: { ip, distinctIds: crossInstance.distinctIds, fingerprint: fingerprintHash },
                         supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
                     })
                     trackViolation(ip, SUPA_URL, SUPA_KEY, { threatType: 'enumeration' })

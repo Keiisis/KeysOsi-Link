@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { rateLimit, getClientIp, rateLimitHeaders, CHECKOUT_LIMIT } from '@/lib/rate-limit'
+import { scanRequestBody } from '@/lib/waf'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -28,7 +29,12 @@ export async function POST(request: Request) {
         }
 
         const supabase = createClient(supabaseUrl, supabaseServiceKey)
-        const body = await request.json()
+
+        // ── WAF #2 : analyse structurelle du body (proto pollution / RCE / SSRF / DoS) ──
+        const { body: scanned, rejection } = await scanRequestBody(request)
+        if (rejection) return rejection
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const body = (scanned ?? {}) as any
 
         const {
             product_id,

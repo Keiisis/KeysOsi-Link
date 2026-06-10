@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import nodemailer from 'nodemailer'
 import Groq from 'groq-sdk'
 import { getGroqApiKey } from '@/lib/groq'
+import { scanRequestBody } from '@/lib/waf'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 // On préfère la clé Service Role côté serveur pour contourner les restrictions RLS (sécurité maximale)
@@ -214,7 +215,11 @@ RÈGLES ABSOLUES :
 export async function POST(request: NextRequest) {
     try {
         const baseUrl = request.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.retourgagnantbenin.bj'
-        const body = await request.json()
+        // ── WAF #2 : analyse structurelle du body (proto pollution / RCE / SSRF / DoS) ──
+        const { body: scanned, rejection } = await scanRequestBody(request)
+        if (rejection) return rejection
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const body = (scanned ?? {}) as any
         const { nom, prenom, email } = body
 
         if (!nom || !prenom || !email) {

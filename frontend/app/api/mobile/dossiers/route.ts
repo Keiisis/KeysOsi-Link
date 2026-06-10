@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { scanRequestBody } from '@/lib/waf'
 
 // Service role — bypasse RLS pour créer/lire les dossiers depuis l'app mobile
 const supabase = createClient(
@@ -89,7 +90,11 @@ async function verifyKkiapayTransaction(transactionId: string): Promise<{ ok: bo
 //   pour éviter qu'un client malveillant crée un dossier sans payer.
 export async function POST(req: NextRequest) {
     try {
-        const body = await req.json()
+        // ── WAF #2 : analyse structurelle du body (proto pollution / RCE / SSRF / DoS) ──
+        const { body: scanned, rejection } = await scanRequestBody(req)
+        if (rejection) return rejection
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const body = (scanned ?? {}) as any
         const { client_id, service_type, service_id, notes } = body
         const transactionId: string | undefined = body.payment_tx_id || body.transaction_id
         const paymentAmount: number | null =

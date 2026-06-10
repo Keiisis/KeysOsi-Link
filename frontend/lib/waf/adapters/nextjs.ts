@@ -8,7 +8,7 @@
 // le core reste identique.
 // ══════════════════════════════════════════════════════════════
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import {
     scanBody,
     type BodyScanOptions,
@@ -58,7 +58,9 @@ export interface ScanRequestBodyOptions {
  *   // ... utiliser `body` normalement
  */
 export async function scanRequestBody(
-    req: NextRequest,
+    // Accepte NextRequest OU Request standard (on n'utilise que .clone().json())
+    // → plus portable : marche dans toutes les routes, App Router ou non.
+    req: Request,
     options: ScanRequestBodyOptions = {}
 ): Promise<ScanRequestBodyResult> {
     let body: unknown = undefined

@@ -286,6 +286,59 @@ export function trackIDORAttempt(
 }
 
 /**
+ * Persiste l'attaque IDOR en base (cross-instance, serverless-safe).
+ *
+ * Le tracking en mémoire (trackIDORAttempt) reste le fast-path temps réel
+ * pour bloquer dans un même burst. CETTE fonction écrit l'état dans
+ * waf_idor_tracking via la RPC waf_track_idor() pour que :
+ *   - l'état survive aux cold starts / instances multiples Vercel
+ *   - la corrélation se fasse TOUS instances confondues
+ *   - le job d'auto-block et le dashboard voient l'historique
+ *
+ * Fire-and-forget : on n'attend pas (pas de latence ajoutée sur la requête).
+ * Renvoie une Promise pour les appelants qui VEULENT le verdict cross-instance.
+ */
+export async function persistIDORAttempt(args: {
+    ip: string
+    fingerprintHash: string
+    path: string
+    queryString: string
+    supabaseUrl: string
+    serviceKey: string
+}): Promise<{ distinctIds: number; isSuspicious: boolean; rapid: boolean } | null> {
+    const ids = extractIds(args.path, args.queryString)
+    if (ids.length === 0) return null
+    if (!isSensitiveEndpoint(args.path + '?' + args.queryString)) return null
+
+    const endpointPattern = normalizeEndpoint(args.path)
+    try {
+        const res = await fetch(`${args.supabaseUrl}/rest/v1/rpc/waf_track_idor`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                apikey: args.serviceKey,
+                Authorization: `Bearer ${args.serviceKey}`,
+            },
+            body: JSON.stringify({
+                p_ip: args.ip,
+                p_fingerprint: args.fingerprintHash || '',
+                p_endpoint_pattern: endpointPattern,
+                p_ids: ids,
+            }),
+        })
+        if (!res.ok) return null
+        const data = await res.json() as { distinct_ids?: number; is_suspicious?: boolean; rapid?: boolean }
+        return {
+            distinctIds: data?.distinct_ids ?? 0,
+            isSuspicious: !!data?.is_suspicious,
+            rapid: !!data?.rapid,
+        }
+    } catch {
+        return null
+    }
+}
+
+/**
  * Vérifie le paramètre tampering dans les query params
  * Détecte si un user_id/account_id est présent et différent du contexte
  */
