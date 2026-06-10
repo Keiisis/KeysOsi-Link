@@ -19,10 +19,38 @@ export async function PATCH(
         const body = await request.json()
         const { id } = await params
 
-        const allowed = ['name', 'text', 'photo_url', 'location', 'rating', 'service', 'approved', 'role']
+        const allowed = ['name', 'text', 'rating', 'service', 'approved']
         const updates: Record<string, unknown> = {}
         for (const key of allowed) {
             if (key in body) updates[key] = body[key]
+        }
+
+        if ('photo_url' in body) {
+            updates.photo = body.photo_url || null
+        } else if ('photo' in body) {
+            updates.photo = body.photo || null
+        }
+
+        // Handle location and role combining if either is provided
+        if ('location' in body || 'role' in body) {
+            const existingRes = await supabase
+                .from('testimonials')
+                .select('location')
+                .eq('id', id)
+                .maybeSingle()
+            
+            let existingLocation = existingRes.data?.location || ''
+            let existingRole = ''
+            if (existingLocation.includes(' | ')) {
+                const parts = existingLocation.split(' | ')
+                existingLocation = parts[0]
+                existingRole = parts[1]
+            }
+
+            const newLocation = 'location' in body ? (body.location || '') : existingLocation
+            const newRole = 'role' in body ? (body.role || '') : existingRole
+
+            updates.location = newRole ? `${newLocation} | ${newRole}` : newLocation
         }
 
         if (Object.keys(updates).length === 0) {
@@ -39,11 +67,18 @@ export async function PATCH(
             .single()
 
         if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-        return NextResponse.json({ testimonial: data })
+        const testimonial = data ? {
+            ...data,
+            location: data.location && data.location.includes(' | ') ? data.location.split(' | ')[0] : (data.location || 'Bénin'),
+            role: data.location && data.location.includes(' | ') ? data.location.split(' | ')[1] : 'Client',
+            photo_url: data.photo
+        } : null
+        return NextResponse.json({ testimonial })
     } catch (e) {
         return NextResponse.json({ error: e instanceof Error ? e.message : 'Erreur serveur' }, { status: 500 })
     }
 }
+
 
 // DELETE /api/admin/testimonials/[id] — supprimer un témoignage
 export async function DELETE(

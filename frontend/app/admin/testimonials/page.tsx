@@ -20,6 +20,7 @@ export interface Testimonial {
     name: string
     role?: string | null
     text: string
+    photo?: string | null
     photo_url?: string | null
     location?: string | null
     rating?: number | null
@@ -85,8 +86,9 @@ function TestimonialModal({ item, onClose, onSave, saving }: ModalProps) {
     const [form, setForm] = useState({
         name: item?.name || '',
         text: item?.text || '',
-        photo_url: item?.photo_url || '',
+        photo: item?.photo || item?.photo_url || '',
         location: item?.location || '',
+        role: item?.role || '',
         rating: item?.rating ?? 5,
         service: item?.service || '',
         approved: item?.approved ?? false,
@@ -139,21 +141,32 @@ function TestimonialModal({ item, onClose, onSave, saving }: ModalProps) {
 
                     {/* Body */}
                     <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
-                        {/* Name + Location */}
+                        {/* Name */}
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Nom *</label>
+                            <input value={form.name} onChange={e => set('name', e.target.value)}
+                                placeholder="Jean-Baptiste K." maxLength={80}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#3b82f6]/50 transition-all"
+                            />
+                        </div>
+
+                        {/* Location + Role */}
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Nom *</label>
-                                <input value={form.name} onChange={e => set('name', e.target.value)}
-                                    placeholder="Jean-Baptiste K." maxLength={80}
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#3b82f6]/50 transition-all"
-                                />
-                            </div>
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
                                     <MapPin size={10} /> Localisation
                                 </label>
                                 <input value={form.location} onChange={e => set('location', e.target.value)}
                                     placeholder="Paris, France" maxLength={80}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#3b82f6]/50 transition-all"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                                    Rôle (Profession)
+                                </label>
+                                <input value={form.role} onChange={e => set('role', e.target.value)}
+                                    placeholder="Entrepreneur" maxLength={80}
                                     className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#3b82f6]/50 transition-all"
                                 />
                             </div>
@@ -193,13 +206,13 @@ function TestimonialModal({ item, onClose, onSave, saving }: ModalProps) {
                                 <Link2 size={10} /> URL Photo (optionnel)
                             </label>
                             <div className="flex gap-2 items-center">
-                                <input value={form.photo_url} onChange={e => set('photo_url', e.target.value)}
+                                <input value={form.photo} onChange={e => set('photo', e.target.value)}
                                     placeholder="https://..." type="url"
                                     className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#3b82f6]/50 transition-all"
                                 />
-                                {form.photo_url && (
+                                {form.photo && (
                                     <div className="relative w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 border border-white/10">
-                                        <Image src={form.photo_url} alt="preview" fill className="object-cover" unoptimized />
+                                        <Image src={form.photo} alt="preview" fill className="object-cover" unoptimized />
                                     </div>
                                 )}
                             </div>
@@ -536,9 +549,9 @@ export default function AdminTestimonialsPage() {
                                         {/* Avatar + info */}
                                         <div className="flex items-center gap-3.5 pr-20">
                                             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#008751] to-[#FCD116] p-[1.5px] shadow-lg flex-shrink-0">
-                                                <div className="w-full h-full bg-[#0a0f18] rounded-[14px] flex items-center justify-center overflow-hidden">
-                                                    {item.photo_url
-                                                        ? <Image src={item.photo_url} alt={item.name} fill className="object-cover" unoptimized />
+                                                <div className="w-full h-full bg-[#0a0f18] rounded-[14px] flex items-center justify-center overflow-hidden relative">
+                                                    {item.photo_url || item.photo
+                                                        ? <Image src={item.photo_url || item.photo || ''} alt={item.name} fill className="object-cover" unoptimized />
                                                         : <User size={20} className="text-gray-600" />
                                                     }
                                                 </div>

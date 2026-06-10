@@ -31,7 +31,7 @@ export default function TestimonialsCreate() {
         text: "",
         rating: 5,
         service: "",
-        photo_url: "",
+        photo: "",
         approved: true
     });
 
@@ -188,8 +188,8 @@ export default function TestimonialsCreate() {
                             <div className="space-y-3">
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] ml-1"><T>URL de la photo (Optionnel)</T></label>
                                 <input
-                                    name="photo_url"
-                                    value={formData.photo_url || ''}
+                                    name="photo"
+                                    value={formData.photo || ''}
                                     onChange={handleChange}
                                     placeholder="https://..."
                                     className="w-full bg-white/5 border-2 border-white/5 rounded-2xl py-4 px-6 text-white text-xs font-mono focus:outline-none"
@@ -209,7 +209,7 @@ export default function TestimonialsCreate() {
                                 <div className="flex items-center gap-4">
                                     <div className="w-16 h-16 rounded-2xl bg-benin-gradient p-1 shadow-2xl">
                                         <div className="w-full h-full bg-[#0a0f18] rounded-[1.2rem] flex items-center justify-center overflow-hidden">
-                                            {formData.photo_url ? <Image src={formData.photo_url} alt={t("Avatar")} fill className="object-cover" /> : <User size={24} className="text-gray-800" />}
+                                            {formData.photo ? <Image src={formData.photo} alt={t("Avatar")} fill className="object-cover" /> : <User size={24} className="text-gray-800" />}
                                         </div>
                                     </div>
                                     <div>

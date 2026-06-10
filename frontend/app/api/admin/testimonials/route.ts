@@ -27,7 +27,23 @@ export async function GET(request: NextRequest) {
         const { data, error } = await query
         if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-        return NextResponse.json({ testimonials: data || [] })
+        const testimonials = (data || []).map(t => {
+            let location = t.location || '';
+            let role = t.role || '';
+            if (!role && location.includes(' | ')) {
+                const parts = location.split(' | ');
+                location = parts[0];
+                role = parts[1];
+            }
+            return {
+                ...t,
+                location: location || 'Bénin',
+                role: role || 'Client',
+                photo_url: t.photo
+            };
+        })
+
+        return NextResponse.json({ testimonials })
     } catch (e) {
         return NextResponse.json({ error: e instanceof Error ? e.message : 'Erreur serveur' }, { status: 500 })
     }
@@ -39,19 +55,21 @@ export async function POST(request: NextRequest) {
         const supabase = getSupabase()
         const body = await request.json()
 
-        const { name, text, photo_url, location, rating, service, approved } = body
+        const { name, text, photo_url, photo, location, role, rating, service, approved } = body
 
         if (!name?.trim() || !text?.trim()) {
             return NextResponse.json({ error: 'Le nom et le témoignage sont obligatoires' }, { status: 400 })
         }
+
+        const combinedLocation = role ? `${location || ''} | ${role}` : (location || null);
 
         const { data, error } = await supabase
             .from('testimonials')
             .insert({
                 name: name.trim(),
                 text: text.trim(),
-                photo_url: photo_url || null,
-                location: location || null,
+                photo: photo_url || photo || null,
+                location: combinedLocation,
                 rating: rating ?? 5,
                 service: service || null,
                 approved: approved ?? false,
@@ -61,8 +79,15 @@ export async function POST(request: NextRequest) {
             .single()
 
         if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-        return NextResponse.json({ testimonial: data }, { status: 201 })
+        const testimonial = data ? {
+            ...data,
+            location: data.location && data.location.includes(' | ') ? data.location.split(' | ')[0] : (data.location || 'Bénin'),
+            role: data.location && data.location.includes(' | ') ? data.location.split(' | ')[1] : 'Client',
+            photo_url: data.photo
+        } : null
+        return NextResponse.json({ testimonial }, { status: 201 })
     } catch (e) {
         return NextResponse.json({ error: e instanceof Error ? e.message : 'Erreur serveur' }, { status: 500 })
     }
 }
+
