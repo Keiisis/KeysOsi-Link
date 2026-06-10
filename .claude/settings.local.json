@@ -238,7 +238,13 @@
       "Bash(cat)",
       "Bash(python /tmp/fix_brochure.py)",
       "Bash(python fix_brochure.py)",
-      "Bash(claude mcp *)"
+      "Bash(claude mcp *)",
+      "Bash(rm -rf WAF_KeysO)",
+      "Bash(mkdir -p WAF_KeysO/src/core WAF_KeysO/src/adapters WAF_KeysO/php WAF_KeysO/examples)",
+      "Bash(cp \"RETOUR GAGNANT TEMPLATE/frontend/lib/waf/core/body-scanner.ts\" WAF_KeysO/src/core/)",
+      "Bash(cp \"RETOUR GAGNANT TEMPLATE/frontend/lib/waf/core/ownership.ts\" WAF_KeysO/src/core/)",
+      "Bash(cp \"RETOUR GAGNANT TEMPLATE/frontend/lib/waf/adapters/nextjs.ts\" WAF_KeysO/src/adapters/)",
+      "Bash(git config *)"
     ],
     "additionalDirectories": [
       "c:\\Users\\HP\\Desktop\\RETOUR GAGNANT TEMPLATE\\frontend\\app\\api\\admin\\users"

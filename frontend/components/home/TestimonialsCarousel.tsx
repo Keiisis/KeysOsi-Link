@@ -136,28 +136,36 @@ function SubmissionForm() {
                     .from('testimonials')
                     .upload(fileName, photo);
 
-                if (uploadError) throw uploadError;
-                const { data: { publicUrl } } = supabase.storage.from('testimonials').getPublicUrl(fileName);
-                photoUrl = publicUrl;
+                if (!uploadError) {
+                    const { data: { publicUrl } } = supabase.storage.from('testimonials').getPublicUrl(fileName);
+                    photoUrl = publicUrl;
+                }
+                // Photo upload failure is non-blocking — testimonial still submits
             }
 
-            const { error: insertError } = await supabase
-                .from('testimonials')
-                .insert([{
+            const res = await fetch('/api/testimonials', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
                     ...formData,
                     photo_url: photoUrl,
-                    approved: false
-                }]);
+                }),
+            });
 
-            if (insertError) throw insertError;
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || 'Erreur serveur');
+            }
+
             setIsSubmitted(true);
         } catch (error) {
             console.error("Submission failed", error);
-            setIsSubmitted(true);
+            alert("Erreur lors de l'envoi. Veuillez réessayer.");
         } finally {
             setIsLoading(false);
         }
     };
+
 
     if (isSubmitted) {
         return (

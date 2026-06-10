@@ -18,8 +18,9 @@ export interface Testimonial {
     id: string
     created_at: string
     name: string
+    role?: string | null
     text: string
-    photo?: string | null
+    photo_url?: string | null
     location?: string | null
     rating?: number | null
     service?: string | null
@@ -84,7 +85,7 @@ function TestimonialModal({ item, onClose, onSave, saving }: ModalProps) {
     const [form, setForm] = useState({
         name: item?.name || '',
         text: item?.text || '',
-        photo: item?.photo || '',
+        photo_url: item?.photo_url || '',
         location: item?.location || '',
         rating: item?.rating ?? 5,
         service: item?.service || '',
@@ -192,13 +193,13 @@ function TestimonialModal({ item, onClose, onSave, saving }: ModalProps) {
                                 <Link2 size={10} /> URL Photo (optionnel)
                             </label>
                             <div className="flex gap-2 items-center">
-                                <input value={form.photo} onChange={e => set('photo', e.target.value)}
+                                <input value={form.photo_url} onChange={e => set('photo_url', e.target.value)}
                                     placeholder="https://..." type="url"
                                     className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#3b82f6]/50 transition-all"
                                 />
-                                {form.photo && (
+                                {form.photo_url && (
                                     <div className="relative w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 border border-white/10">
-                                        <Image src={form.photo} alt="preview" fill className="object-cover" unoptimized />
+                                        <Image src={form.photo_url} alt="preview" fill className="object-cover" unoptimized />
                                     </div>
                                 )}
                             </div>
@@ -536,8 +537,8 @@ export default function AdminTestimonialsPage() {
                                         <div className="flex items-center gap-3.5 pr-20">
                                             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#008751] to-[#FCD116] p-[1.5px] shadow-lg flex-shrink-0">
                                                 <div className="w-full h-full bg-[#0a0f18] rounded-[14px] flex items-center justify-center overflow-hidden">
-                                                    {item.photo
-                                                        ? <Image src={item.photo} alt={item.name} fill className="object-cover" unoptimized />
+                                                    {item.photo_url
+                                                        ? <Image src={item.photo_url} alt={item.name} fill className="object-cover" unoptimized />
                                                         : <User size={20} className="text-gray-600" />
                                                     }
                                                 </div>

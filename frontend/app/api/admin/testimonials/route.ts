@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
         const supabase = getSupabase()
         const body = await request.json()
 
-        const { name, text, photo, location, rating, service, approved } = body
+        const { name, text, photo_url, location, rating, service, approved } = body
 
         if (!name?.trim() || !text?.trim()) {
             return NextResponse.json({ error: 'Le nom et le témoignage sont obligatoires' }, { status: 400 })
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
             .insert({
                 name: name.trim(),
                 text: text.trim(),
-                photo: photo || null,
+                photo_url: photo_url || null,
                 location: location || null,
                 rating: rating ?? 5,
                 service: service || null,
