@@ -97,7 +97,7 @@ export default function CeoCoupons() {
                     <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-90" style={{ background: GOLD, color: BG }}>
                         <Plus size={14}/> Créer
                     </button>
-                    <button onClick={() => setRefresh(r => r + 1)} className="px-3 py-2 rounded-xl hover:opacity-80" style={{ background: `${GREEN}25`, color: GREEN_L }}>
+                    <button onClick={() => setRefresh(r => r + 1)} className="px-3 py-2 rounded-xl hover:opacity-80" style={{ background: `${GREEN}25`, color: GREEN_L }} aria-label="Actualiser">
                         <RefreshCw size={14} className={loading ? 'animate-spin' : ''}/>
                     </button>
                 </div>
@@ -155,7 +155,7 @@ export default function CeoCoupons() {
                                     <button type="button" onClick={() => open(item)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold hover:opacity-80" style={{ background: `${GOLD}15`, color: GOLD }}>
                                         Modifier
                                     </button>
-                                    <button type="button" onClick={() => toggle(item)} className="p-2 rounded-xl hover:opacity-80" style={{ background: item.is_active ? `${RED}15` : `${GREEN}20`, color: item.is_active ? RED : GREEN_L }}>
+                                    <button type="button" onClick={() => toggle(item)} className="p-2 rounded-xl hover:opacity-80" style={{ background: item.is_active ? `${RED}15` : `${GREEN}20`, color: item.is_active ? RED : GREEN_L }} aria-label={item.is_active ? 'Désactiver le coupon' : 'Activer le coupon'}>
                                         {item.is_active ? <ToggleRight size={16}/> : <ToggleLeft size={16}/>}
                                     </button>
                                 </div>
@@ -174,7 +174,7 @@ export default function CeoCoupons() {
                             className="w-full max-w-md rounded-3xl p-6" style={{ background: PANEL, border: `1px solid ${GOLD}30` }}>
                             <div className="flex items-center justify-between mb-5">
                                 <h3 className="font-black" style={{ color: GOLD }}>Modifier le coupon</h3>
-                                <button type="button" onClick={() => setSelected(null)} className="opacity-40 hover:opacity-70 p-1"><X size={18}/></button>
+                                <button type="button" onClick={() => setSelected(null)} className="opacity-40 hover:opacity-70 p-1" aria-label="Fermer"><X size={18}/></button>
                             </div>
                             <div className="space-y-3 mb-5">
                                 <div>
@@ -208,7 +208,7 @@ export default function CeoCoupons() {
                                 </div>
                             </div>
                             <div className="flex gap-3">
-                                <button type="button" onClick={() => del(selected.id)} className="p-2.5 rounded-xl hover:opacity-80" style={{ background: `${RED}20`, color: RED }}><Trash2 size={16}/></button>
+                                <button type="button" onClick={() => del(selected.id)} className="p-2.5 rounded-xl hover:opacity-80" style={{ background: `${RED}20`, color: RED }} aria-label="Supprimer le coupon"><Trash2 size={16}/></button>
                                 <button type="button" onClick={save} disabled={saving}
                                     className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm hover:opacity-90"
                                     style={{ background: GREEN, color: '#fff' }}>
@@ -228,7 +228,7 @@ export default function CeoCoupons() {
                             className="w-full max-w-md rounded-3xl p-6" style={{ background: PANEL, border: `1px solid ${GOLD}30` }}>
                             <div className="flex items-center justify-between mb-5">
                                 <h3 className="font-black" style={{ color: GOLD }}>Nouveau coupon</h3>
-                                <button type="button" onClick={() => setShowCreate(false)} className="opacity-40 hover:opacity-70 p-1"><X size={18}/></button>
+                                <button type="button" onClick={() => setShowCreate(false)} className="opacity-40 hover:opacity-70 p-1" aria-label="Fermer"><X size={18}/></button>
                             </div>
                             <div className="space-y-3 mb-5">
                                 <div className="flex gap-2">
@@ -236,7 +236,7 @@ export default function CeoCoupons() {
                                         <label className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Code *</label>
                                         <input type="text" value={newItem.code} onChange={e => setNewItem(p => ({ ...p, code: e.target.value.toUpperCase() }))} className={inp} style={inpStyle}/>
                                     </div>
-                                    <button type="button" onClick={() => setNewItem(p => ({ ...p, code: randomCode() }))} className="mt-6 px-3 py-2.5 rounded-xl text-xs opacity-40 hover:opacity-70" style={{ background: `${GOLD}15`, color: GOLD }}>
+                                    <button type="button" onClick={() => setNewItem(p => ({ ...p, code: randomCode() }))} className="mt-6 px-3 py-2.5 rounded-xl text-xs opacity-40 hover:opacity-70" style={{ background: `${GOLD}15`, color: GOLD }} aria-label="Générer un nouveau code">
                                         ⟳
                                     </button>
                                 </div>

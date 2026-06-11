@@ -391,6 +391,7 @@ export default function AdminGenealogyPage() {
                   value={newClient.user_id}
                   onChange={e => setNewClient({ ...newClient, user_id: e.target.value })}
                   className="w-full admin-input border rounded-xl py-2 px-3 text-xs"
+                  aria-label="Associer à un compte utilisateur"
                 >
                   <option value="">-- Ne pas associer pour le moment --</option>
                   {userProfiles.map(u => (
@@ -540,6 +541,7 @@ export default function AdminGenealogyPage() {
                   value={selectedTree.user_id || ''}
                   onChange={e => handleLinkUser(e.target.value)}
                   className="w-full admin-input border rounded-xl py-2 px-3 text-xs"
+                  aria-label="Lien de compte utilisateur"
                 >
                   <option value="">-- Non lié (hors ligne) --</option>
                   {userProfiles.map(u => (

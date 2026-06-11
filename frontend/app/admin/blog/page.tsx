@@ -737,7 +737,7 @@ export default function AdminBlogPage() {
                                             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#FCD116]/10 text-[#FCD116] border border-[#FCD116]/20"
                                         >
                                             {tag}
-                                            <button onClick={() => removeTag(i)} className="hover:text-white transition-colors">
+                                            <button onClick={() => removeTag(i)} className="hover:text-white transition-colors" title="Supprimer le tag" aria-label="Supprimer le tag">
                                                 <X size={10} />
                                             </button>
                                         </span>
@@ -757,6 +757,8 @@ export default function AdminBlogPage() {
                                     <button
                                         onClick={addTag}
                                         className="p-2 rounded-xl bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                                        title="Ajouter un tag"
+                                        aria-label="Ajouter un tag"
                                     >
                                         <Plus size={14} />
                                     </button>
@@ -860,12 +862,16 @@ export default function AdminBlogPage() {
                             <button
                                 onClick={() => setViewMode('list')}
                                 className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white/10 text-white' : 'text-gray-500'}`}
+                                title="Vue liste"
+                                aria-label="Vue liste"
                             >
                                 <LayoutList size={14} />
                             </button>
                             <button
                                 onClick={() => setViewMode('grid')}
                                 className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white/10 text-white' : 'text-gray-500'}`}
+                                title="Vue grille"
+                                aria-label="Vue grille"
                             >
                                 <LayoutGrid size={14} />
                             </button>
@@ -936,13 +942,13 @@ export default function AdminBlogPage() {
                                             <Calendar size={10} /> {formatDateSafe(post.created_at)}
                                         </span>
                                         <div className="flex items-center gap-1">
-                                            <button onClick={() => togglePublish(post)} className={`p-1.5 rounded-lg transition-all ${post.is_published ? 'text-emerald-400' : 'text-gray-600'}`}>
+                                            <button onClick={() => togglePublish(post)} className={`p-1.5 rounded-lg transition-all ${post.is_published ? 'text-emerald-400' : 'text-gray-600'}`} title={post.is_published ? 'Dépublier' : 'Publier'} aria-label={post.is_published ? 'Dépublier' : 'Publier'}>
                                                 {post.is_published ? <Eye size={12} /> : <EyeOff size={12} />}
                                             </button>
-                                            <button onClick={() => startEdit(post)} className="p-1.5 rounded-lg text-gray-500 hover:text-white transition-all">
+                                            <button onClick={() => startEdit(post)} className="p-1.5 rounded-lg text-gray-500 hover:text-white transition-all" title="Modifier" aria-label="Modifier l'article">
                                                 <Edit3 size={12} />
                                             </button>
-                                            <button onClick={() => handleDelete(post.id)} className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 transition-all">
+                                            <button onClick={() => handleDelete(post.id)} className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 transition-all" title="Supprimer" aria-label="Supprimer l'article">
                                                 <Trash2 size={12} />
                                             </button>
                                         </div>
@@ -985,8 +991,8 @@ export default function AdminBlogPage() {
                                     <button onClick={() => togglePublish(post)} className={`p-2 rounded-lg transition-all ${post.is_published ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-gray-500'}`} title={post.is_published ? 'Dépublier' : 'Publier'}>
                                         {post.is_published ? <Eye size={14} /> : <EyeOff size={14} />}
                                     </button>
-                                    <button onClick={() => startEdit(post)} className="p-2 rounded-lg bg-white/5 text-gray-400 hover:text-white transition-all"><Edit3 size={14} /></button>
-                                    <button onClick={() => handleDelete(post.id)} className="p-2 rounded-lg bg-white/5 text-gray-400 hover:text-red-400 transition-all"><Trash2 size={14} /></button>
+                                    <button onClick={() => startEdit(post)} className="p-2 rounded-lg bg-white/5 text-gray-400 hover:text-white transition-all" title="Modifier" aria-label="Modifier l'article"><Edit3 size={14} /></button>
+                                    <button onClick={() => handleDelete(post.id)} className="p-2 rounded-lg bg-white/5 text-gray-400 hover:text-red-400 transition-all" title="Supprimer" aria-label="Supprimer l'article"><Trash2 size={14} /></button>
                                 </div>
                             </motion.div>
                         ))}

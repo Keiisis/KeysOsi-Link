@@ -395,11 +395,13 @@ export default function SecuritePage() {
                             </span>
                             <div className="flex gap-1">
                                 <button onClick={() => setLogsPage(p => Math.max(0, p - 1))} disabled={logsPage === 0}
-                                    className="p-1.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-400 disabled:opacity-40 hover:bg-gray-700 transition-colors">
+                                    className="p-1.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-400 disabled:opacity-40 hover:bg-gray-700 transition-colors"
+                                    aria-label="Page précédente">
                                     <ChevronLeft className="w-4 h-4" />
                                 </button>
                                 <button onClick={() => setLogsPage(p => p + 1)} disabled={(logsPage + 1) * PAGE_SIZE >= totalLogs}
-                                    className="p-1.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-400 disabled:opacity-40 hover:bg-gray-700 transition-colors">
+                                    className="p-1.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-400 disabled:opacity-40 hover:bg-gray-700 transition-colors"
+                                    aria-label="Page suivante">
                                     <ChevronRight className="w-4 h-4" />
                                 </button>
                             </div>
@@ -482,7 +484,8 @@ export default function SecuritePage() {
                                 <div>
                                     <label className="text-gray-400 text-xs mb-1 block">Catégorie</label>
                                     <select value={ruleForm.category} onChange={e => setRuleForm(f => ({ ...f, category: e.target.value }))}
-                                        className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500">
+                                        className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500"
+                                        aria-label="Catégorie de la règle">
                                         {['custom', 'sql_injection', 'xss', 'rce', 'scanner_detection', 'ssrf', 'lfi', 'rfi'].map(c => (
                                             <option key={c} value={c}>{THREAT_LABELS[c] || c}</option>
                                         ))}
@@ -514,7 +517,8 @@ export default function SecuritePage() {
                                 <div>
                                     <label className="text-gray-400 text-xs mb-1 block">Sévérité</label>
                                     <select value={ruleForm.severity} onChange={e => setRuleForm(f => ({ ...f, severity: parseInt(e.target.value) }))}
-                                        className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500">
+                                        className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500"
+                                        aria-label="Sévérité de la règle">
                                         {Object.entries(SEV_LABELS).map(([v, { label }]) => (
                                             <option key={v} value={v}>{label} (+{6 - parseInt(v)} pts)</option>
                                         ))}
@@ -523,7 +527,8 @@ export default function SecuritePage() {
                                 <div>
                                     <label className="text-gray-400 text-xs mb-1 block">Cibles</label>
                                     <select value={ruleForm.targets[0]} onChange={e => setRuleForm(f => ({ ...f, targets: [e.target.value] }))}
-                                        className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500">
+                                        className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500"
+                                        aria-label="Cibles de la règle">
                                         {['all', 'url', 'query', 'body', 'userAgent', 'referer', 'cookie'].map(t => (
                                             <option key={t} value={t}>{t}</option>
                                         ))}

@@ -604,7 +604,7 @@ export default function AgentRedigerMailsPage() {
                                             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#008751]/8 text-[#008751] text-xs font-semibold border border-[#008751]/15">
                                                 <User size={11} />
                                                 {toName}
-                                                <button onClick={() => { setToEmail(''); setToName('') }} className="ml-1 hover:text-[#E8112D] transition-colors">
+                                                <button onClick={() => { setToEmail(''); setToName('') }} className="ml-1 hover:text-[#E8112D] transition-colors" aria-label="Retirer le destinataire">
                                                     <X size={11} />
                                                 </button>
                                             </span>

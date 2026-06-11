@@ -135,7 +135,7 @@ export default function CeoMessages() {
                             onClick={e => e.stopPropagation()} className="w-full max-w-lg rounded-3xl p-6" style={{ background: '#0D2615', border: `1px solid ${GOLD}30` }}>
                             <div className="flex items-center justify-between mb-5">
                                 <h3 className="font-black" style={{ color: GOLD }}>{selected.subject || 'Message'}</h3>
-                                <button onClick={() => setSelected(null)} title="Fermer" className="opacity-40 hover:opacity-70 transition-opacity p-1"><X size={18} /></button>
+                                <button onClick={() => setSelected(null)} title="Fermer" aria-label="Fermer" className="opacity-40 hover:opacity-70 transition-opacity p-1"><X size={18} /></button>
                             </div>
                             <div className="space-y-2 mb-5">
                                 {[['De', selected.name], ['Email', selected.email], ['Téléphone', selected.phone], ['Date', fmtDate(selected.created_at)]].filter(([, v]) => v).map(([k, v]) => (

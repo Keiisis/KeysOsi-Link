@@ -1313,6 +1313,7 @@ export default function DedicatedTreePage() {
               <button
                 onClick={() => setSearchQuery('')}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+                aria-label="Effacer la recherche"
               >
                 <X size={12} />
               </button>
@@ -1350,7 +1351,7 @@ export default function DedicatedTreePage() {
                       className="w-full flex items-center gap-3 p-2 rounded-xl text-left hover:bg-[var(--panel-surface-hover)] transition-all"
                     >
                       {p.avatar_url ? (
-                        <img src={p.avatar_url} className="w-8 h-8 rounded-lg object-cover" />
+                        <img src={p.avatar_url} className="w-8 h-8 rounded-lg object-cover" alt={`${p.first_name || ''} ${p.last_name || ''}`} />
                       ) : (
                         <div 
                           className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black text-white"

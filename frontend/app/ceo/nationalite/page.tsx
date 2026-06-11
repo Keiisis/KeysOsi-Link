@@ -91,7 +91,9 @@ export default function CeoNationalite() {
                 ].map((s, i) => (
                     <motion.div key={s.key} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
                         onClick={() => setFilter(s.key)}
-                        className="rounded-2xl p-4 cursor-pointer hover:opacity-90 transition-opacity" style={{ background: PANEL, border: `1px solid ${filter === s.key ? s.color : `${s.color}20`}` }}>
+                        role="button" tabIndex={0}
+                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setFilter(s.key); } }}
+                        className="rounded-2xl p-4 cursor-pointer hover:opacity-90 transition-opacity focus:outline-none focus:ring-1 focus:ring-[#D4AF37]" style={{ background: PANEL, border: `1px solid ${filter === s.key ? s.color : `${s.color}20`}` }}>
                         <div className="text-xs opacity-40 uppercase tracking-wider mb-1">{s.label}</div>
                         <div className="text-2xl font-black" style={{ color: s.color }}>{counts[s.key as keyof typeof counts]}</div>
                     </motion.div>
@@ -109,7 +111,10 @@ export default function CeoNationalite() {
                         return (
                             <motion.div key={item.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 10) * 0.04 }}
                                 className="rounded-2xl overflow-hidden" style={{ background: PANEL, border: `1px solid ${meta.color}20` }}>
-                                <div className="flex items-center gap-4 p-5 cursor-pointer" onClick={() => setExpanded(isOpen ? null : item.id)}>
+                                <div className="flex items-center gap-4 p-5 cursor-pointer focus:outline-none focus:bg-white/[0.02]" 
+                                    role="button" aria-expanded={isOpen} tabIndex={0}
+                                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded(isOpen ? null : item.id); } }}
+                                    onClick={() => setExpanded(isOpen ? null : item.id)}>
                                     <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: meta.bg }}>
                                         <Icon size={16} style={{ color: meta.color }}/>
                                     </div>
@@ -148,6 +153,7 @@ export default function CeoNationalite() {
                                                         <div>
                                                             <label className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Statut</label>
                                                             <select value={editData.status} onChange={e => setEditData(p => ({ ...p, status: e.target.value }))}
+                                                                aria-label="Statut du dossier"
                                                                 className="w-full px-4 py-2.5 rounded-xl text-sm outline-none" style={{ background: BG, border: `1px solid ${GOLD}25`, color: TEXT }}>
                                                                 <option value="pending">En attente</option>
                                                                 <option value="processing">En traitement</option>
@@ -158,6 +164,7 @@ export default function CeoNationalite() {
                                                         <div>
                                                             <label className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Notes internes</label>
                                                             <textarea value={editData.notes} onChange={e => setEditData(p => ({ ...p, notes: e.target.value }))}
+                                                                aria-label="Notes internes"
                                                                 rows={2} className="w-full px-4 py-3 rounded-xl text-sm outline-none resize-none" style={{ background: BG, border: `1px solid ${GOLD}25`, color: TEXT }}/>
                                                         </div>
                                                         <div className="flex gap-2">

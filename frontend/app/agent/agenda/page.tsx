@@ -224,9 +224,9 @@ export default function AgentAgendaPage() {
                 {/* Calendar */}
                 <div className="xl:col-span-2 bg-white/[0.03] border border-white/5 rounded-2xl p-6">
                     <div className="flex items-center justify-between mb-6">
-                        <button type="button" onClick={prevMonth} className="text-gray-500 hover:text-white transition-colors" title="Mois précédent"><ChevronLeft size={20} /></button>
+                        <button type="button" onClick={prevMonth} className="text-gray-500 hover:text-white transition-colors" title="Mois précédent" aria-label="Mois précédent"><ChevronLeft size={20} /></button>
                         <h2 className="text-lg font-bold text-white capitalize">{mounted ? currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : ''}</h2>
-                        <button type="button" onClick={nextMonth} className="text-gray-500 hover:text-white transition-colors" title="Mois suivant"><ChevronRight size={20} /></button>
+                        <button type="button" onClick={nextMonth} className="text-gray-500 hover:text-white transition-colors" title="Mois suivant" aria-label="Mois suivant"><ChevronRight size={20} /></button>
                     </div>
                     <div className="grid grid-cols-7 gap-1">
                         {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(d => (
@@ -293,10 +293,11 @@ export default function AgentAgendaPage() {
                                                 onClick={() => openAddEventForDay(selectedDay)}
                                                 className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-all"
                                                 title="Ajouter un événement"
+                                                aria-label="Ajouter un événement"
                                             >
                                                 <Plus size={14} />
                                             </button>
-                                            <button type="button" onClick={() => setSelectedDay(null)} className="text-gray-500 hover:text-white" title="Fermer">
+                                            <button type="button" onClick={() => setSelectedDay(null)} className="text-gray-500 hover:text-white" title="Fermer" aria-label="Fermer">
                                                 <X size={14} />
                                             </button>
                                         </div>
@@ -313,7 +314,7 @@ export default function AgentAgendaPage() {
                                                     const Icon = config.icon
                                                     return (
                                                         <div key={event.id} className={`p-3 rounded-xl border ${config.color} group relative`}>
-                                                            <button type="button" onClick={() => handleDeleteEvent(event.id)} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-all" title="Supprimer"><Trash2 size={11} /></button>
+                                                            <button type="button" onClick={() => handleDeleteEvent(event.id)} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-all" title="Supprimer" aria-label="Supprimer l'événement"><Trash2 size={11} /></button>
                                                             <div className="flex items-start gap-2">
                                                                 <Icon size={13} className="mt-0.5 flex-shrink-0" />
                                                                 <div>
@@ -384,7 +385,7 @@ export default function AgentAgendaPage() {
                                             const Icon = config.icon
                                             return (
                                                 <div key={event.id} className={`p-3 rounded-xl border ${config.color} group relative`}>
-                                                    <button type="button" onClick={() => handleDeleteEvent(event.id)} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-all" title="Supprimer"><X size={12} /></button>
+                                                    <button type="button" onClick={() => handleDeleteEvent(event.id)} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-all" title="Supprimer" aria-label="Supprimer l'événement"><X size={12} /></button>
                                                     <div className="flex items-start gap-2">
                                                         <Icon size={14} className="mt-0.5 flex-shrink-0" />
                                                         <div>
@@ -411,7 +412,7 @@ export default function AgentAgendaPage() {
                         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} className="bg-[#0a0f14] border border-white/10 rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-lg font-bold text-white">Demande de Rendez-vous</h3>
-                                <button type="button" onClick={() => { setSelectedRDV(null); setReplyMode(false); setReplyMsg(''); setEmailSent(false) }} className="text-gray-500 hover:text-white" title="Fermer"><X size={18} /></button>
+                                <button type="button" onClick={() => { setSelectedRDV(null); setReplyMode(false); setReplyMsg(''); setEmailSent(false) }} className="text-gray-500 hover:text-white" title="Fermer" aria-label="Fermer"><X size={18} /></button>
                             </div>
                             <div className="space-y-3">
                                 {/* Statut */}
@@ -529,7 +530,7 @@ export default function AgentAgendaPage() {
                                     <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} title="Date" className="bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white text-sm focus:outline-none focus:border-emerald-500/50" />
                                     <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)} title="Heure" className="bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white text-sm focus:outline-none focus:border-emerald-500/50" />
                                 </div>
-                                <select value={newType} onChange={e => setNewType(e.target.value)} title="Type" className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white text-sm focus:outline-none focus:border-emerald-500/50">
+                                <select value={newType} onChange={e => setNewType(e.target.value)} title="Type" aria-label="Type d'événement" className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white text-sm focus:outline-none focus:border-emerald-500/50">
                                     <option value="rdv_client">RDV Client</option>
                                     <option value="appel">Appel</option>
                                     <option value="visite">Visite Terrain</option>

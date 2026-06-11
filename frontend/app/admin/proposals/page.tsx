@@ -285,6 +285,7 @@ export default function AdminProposalsPage() {
                         value={statusFilter}
                         onChange={e => setStatusFilter(e.target.value)}
                         className="bg-slate-900/80 border border-slate-800 rounded-xl px-10 py-3 text-white focus:outline-none focus:border-[#FCD116] transition-colors appearance-none"
+                        aria-label="Filtrer par statut"
                     >
                         <option value="all">Tous les statuts</option>
                         <option value="paid">Payé</option>

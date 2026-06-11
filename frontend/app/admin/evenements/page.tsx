@@ -149,6 +149,7 @@ export default function AdminEventsPage() {
                                                         onChange={e => handleStatusChange(evt.id, e.target.value)}
                                                         className="appearance-none px-3 py-1.5 pr-7 rounded-full text-[10px] font-bold border cursor-pointer"
                                                         style={{ background: `${st.color}15`, borderColor: `${st.color}30`, color: st.color }}
+                                                        aria-label="Changer le statut"
                                                     >
                                                         <option value="draft"><T>Brouillon</T></option>
                                                         <option value="published"><T>Publié</T></option>
@@ -161,19 +162,19 @@ export default function AdminEventsPage() {
                                             <td className="px-5 py-4">
                                                 <div className="flex items-center justify-end gap-1">
                                                     <Link href={`/evenements/${evt.slug}`}
-                                                        className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-[#008751] hover:bg-[#008751]/10 transition-colors" title={t("Voir")}>
+                                                        className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-[#008751] hover:bg-[#008751]/10 transition-colors" title={t("Voir")} aria-label={t("Voir l'événement en ligne")}>
                                                         <ExternalLink size={13} />
                                                     </Link>
                                                     <Link href={`/admin/evenements/edit/${evt.id}`}
-                                                        className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-[#FCD116] hover:bg-[#FCD116]/10 transition-colors" title={t("Modifier")}>
+                                                        className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-[#FCD116] hover:bg-[#FCD116]/10 transition-colors" title={t("Modifier")} aria-label={t("Modifier l'événement")}>
                                                         <Edit size={13} />
                                                     </Link>
                                                     <Link href={`/admin/evenements/${evt.id}/registrations`}
-                                                        className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors" title={t("Inscrits")}>
+                                                        className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors" title={t("Inscrits")} aria-label={t("Voir les inscriptions de l'événement")}>
                                                         <Users size={13} />
                                                     </Link>
                                                     <button onClick={() => handleDelete(evt.id)} disabled={deleting === evt.id}
-                                                        className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer disabled:opacity-30" title={t("Supprimer")}>
+                                                        className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer disabled:opacity-30" title={t("Supprimer")} aria-label={t("Supprimer l'événement")}>
                                                         <Trash2 size={13} />
                                                     </button>
                                                 </div>

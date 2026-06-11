@@ -96,7 +96,7 @@ export default function CeoEvenements() {
                     <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-90" style={{ background: GOLD, color: BG }}>
                         <Plus size={14}/> Créer
                     </button>
-                    <button onClick={() => setRefresh(r => r + 1)} className="px-3 py-2 rounded-xl hover:opacity-80" style={{ background: `${GREEN}25`, color: GREEN_L }}>
+                    <button onClick={() => setRefresh(r => r + 1)} className="px-3 py-2 rounded-xl hover:opacity-80" style={{ background: `${GREEN}25`, color: GREEN_L }} aria-label="Actualiser">
                         <RefreshCw size={14} className={loading ? 'animate-spin' : ''}/>
                     </button>
                 </div>
@@ -148,8 +148,8 @@ export default function CeoEvenements() {
                                     </div>
                                 </div>
                                 <div className="flex gap-2 flex-shrink-0">
-                                    <button type="button" onClick={() => open(item)} className="p-2 rounded-xl hover:opacity-80" style={{ background: `${GOLD}15`, color: GOLD }}><Eye size={14}/></button>
-                                    <button type="button" onClick={() => toggle(item)} className="p-2 rounded-xl hover:opacity-80" style={{ background: item.is_published ? `${RED}15` : `${GREEN}20`, color: item.is_published ? RED : GREEN_L }}>
+                                    <button type="button" onClick={() => open(item)} className="p-2 rounded-xl hover:opacity-80" style={{ background: `${GOLD}15`, color: GOLD }} aria-label="Voir les détails"><Eye size={14}/></button>
+                                    <button type="button" onClick={() => toggle(item)} className="p-2 rounded-xl hover:opacity-80" style={{ background: item.is_published ? `${RED}15` : `${GREEN}20`, color: item.is_published ? RED : GREEN_L }} aria-label={item.is_published ? 'Dépublier' : 'Publier'}>
                                         {item.is_published ? <ToggleRight size={16}/> : <ToggleLeft size={16}/>}
                                     </button>
                                 </div>
@@ -169,7 +169,7 @@ export default function CeoEvenements() {
                                 className="w-full max-w-lg rounded-3xl p-6 max-h-[90vh] overflow-y-auto" style={{ background: PANEL, border: `1px solid ${GOLD}30` }}>
                                 <div className="flex items-center justify-between mb-5">
                                     <h3 className="font-black" style={{ color: GOLD }}>{modal.title}</h3>
-                                    <button type="button" onClick={modal.onClose} className="opacity-40 hover:opacity-70 p-1"><X size={18}/></button>
+                                    <button type="button" onClick={modal.onClose} className="opacity-40 hover:opacity-70 p-1" aria-label="Fermer"><X size={18}/></button>
                                 </div>
                                 <div className="space-y-3 mb-5">
                                     {[
@@ -193,13 +193,15 @@ export default function CeoEvenements() {
                                     <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: BG, border: `1px solid ${GOLD}20` }}>
                                         <span className="text-sm font-semibold">Publié</span>
                                         <button type="button" onClick={() => modal.setData({ ...(editData), is_published: !editData.is_published })}
-                                            className="w-12 h-6 rounded-full transition-all relative" style={{ background: editData.is_published ? GREEN : '#374151' }}>
+                                            className="w-12 h-6 rounded-full transition-all relative" style={{ background: editData.is_published ? GREEN : '#374151' }}
+                                            aria-label={editData.is_published ? 'Dépublier' : 'Publier'}
+                                            role="switch" aria-checked={!!editData.is_published}>
                                             <div className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all" style={{ left: editData.is_published ? '26px' : '4px' }}/>
                                         </button>
                                     </div>
                                 </div>
                                 <div className="flex gap-3">
-                                    {modal.onDel && <button type="button" onClick={modal.onDel} className="p-2.5 rounded-xl hover:opacity-80" style={{ background: `${RED}20`, color: RED }}><Trash2 size={16}/></button>}
+                                    {modal.onDel && <button type="button" onClick={modal.onDel} className="p-2.5 rounded-xl hover:opacity-80" style={{ background: `${RED}20`, color: RED }} aria-label="Supprimer l'événement"><Trash2 size={16}/></button>}
                                     <button type="button" onClick={modal.onSave} disabled={modal.saving}
                                         className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm hover:opacity-90"
                                         style={{ background: GREEN, color: '#fff' }}>
@@ -220,7 +222,7 @@ export default function CeoEvenements() {
                             className="w-full max-w-md rounded-3xl p-6" style={{ background: PANEL, border: `1px solid ${GOLD}30` }}>
                             <div className="flex items-center justify-between mb-5">
                                 <h3 className="font-black" style={{ color: GOLD }}>Nouvel événement</h3>
-                                <button type="button" onClick={() => setShowCreate(false)} className="opacity-40 hover:opacity-70 p-1"><X size={18}/></button>
+                                <button type="button" onClick={() => setShowCreate(false)} className="opacity-40 hover:opacity-70 p-1" aria-label="Fermer"><X size={18}/></button>
                             </div>
                             <div className="space-y-3 mb-5">
                                 {[
