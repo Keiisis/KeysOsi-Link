@@ -38,6 +38,8 @@ export default function BlogPage() {
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
     const [category, setCategory] = useState('all')
+    const [page, setPage] = useState(1)
+    const POSTS_PER_PAGE = 9
 
     useEffect(() => {
         const fetchPosts = async () => {
@@ -60,6 +62,12 @@ export default function BlogPage() {
         const matchCat = category === 'all' || p.category === category
         return matchSearch && matchCat
     })
+
+    // Reset page when search/category changes
+    useEffect(() => { setPage(1) }, [search, category])
+
+    const totalPages = Math.max(1, Math.ceil(filtered.length / POSTS_PER_PAGE))
+    const paginated = filtered.slice((page - 1) * POSTS_PER_PAGE, page * POSTS_PER_PAGE)
 
     return (
         <div className="min-h-screen bg-[#fafbfc]">
@@ -121,53 +129,78 @@ export default function BlogPage() {
                         <p className="text-sm"><T>Aucun article trouvé</T></p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filtered.map((post, i) => (
-                            <motion.div
-                                key={post.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.1 }}
-                            >
-                                <Link href={`/blog/${post.slug}`} className="group block">
-                                    <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden hover:border-emerald-500/20 hover:shadow-[0_10px_30px_rgba(0,0,0,0.04)] transition-all duration-300">
-                                        {/* Cover */}
-                                        <div className="relative h-48 overflow-hidden bg-slate-50">
-                                            {post.cover_image ? (
-                                                <Image
-                                                    src={post.cover_image}
-                                                    alt={post.title}
-                                                    fill
-                                                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                                                />
-                                            ) : (
-                                                <div className="w-full h-full bg-gradient-to-br from-emerald-500/10 to-yellow-500/10 flex items-center justify-center">
-                                                    <BookOpen size={40} className="text-emerald-500/20" />
+                    <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {paginated.map((post, i) => (
+                                <motion.div
+                                    key={post.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: i * 0.05 }}
+                                >
+                                    <Link href={`/blog/${post.slug}`} className="group block">
+                                        <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden hover:border-emerald-500/20 hover:shadow-[0_10px_30px_rgba(0,0,0,0.04)] transition-all duration-300">
+                                            {/* Cover */}
+                                            <div className="relative h-48 overflow-hidden bg-slate-50">
+                                                {post.cover_image ? (
+                                                    <Image
+                                                        src={post.cover_image}
+                                                        alt={post.title}
+                                                        fill
+                                                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full bg-gradient-to-br from-emerald-500/10 to-yellow-500/10 flex items-center justify-center">
+                                                        <BookOpen size={40} className="text-emerald-500/20" />
+                                                    </div>
+                                                )}
+                                                <div className="absolute top-3 left-3">
+                                                    <span className="text-[10px] font-bold uppercase bg-white/90 backdrop-blur-md text-emerald-700 px-2.5 py-1 rounded-full border border-slate-200 shadow-sm">
+                                                        {t(post.category)}
+                                                    </span>
                                                 </div>
-                                            )}
-                                            <div className="absolute top-3 left-3">
-                                                <span className="text-[10px] font-bold uppercase bg-white/90 backdrop-blur-md text-emerald-700 px-2.5 py-1 rounded-full border border-slate-200 shadow-sm">
-                                                    {t(post.category)}
-                                                </span>
+                                            </div>
+                                            {/* Content */}
+                                            <div className="p-5">
+                                                <h2 className="text-base font-bold text-slate-800 group-hover:text-emerald-600 transition-colors line-clamp-2 mb-2">{t(post.title)}</h2>
+                                                <p className="text-xs text-slate-500 line-clamp-3 mb-4">{t(post.excerpt)}</p>
+                                                <div className="flex items-center justify-between text-[10px] text-slate-400">
+                                                    <span className="flex items-center gap-1"><Clock size={10} /> {new Date(post.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                                    <span className="flex items-center gap-1"><Eye size={10} /> {post.views} {t("vues")}</span>
+                                                </div>
+                                                <div className="mt-4 flex items-center gap-1 text-xs font-bold text-emerald-600 group-hover:gap-2 transition-all">
+                                                    <T>Lire l&apos;article</T> <ArrowRight size={12} />
+                                                </div>
                                             </div>
                                         </div>
-                                        {/* Content */}
-                                        <div className="p-5">
-                                            <h2 className="text-base font-bold text-slate-800 group-hover:text-emerald-600 transition-colors line-clamp-2 mb-2">{t(post.title)}</h2>
-                                            <p className="text-xs text-slate-500 line-clamp-3 mb-4">{t(post.excerpt)}</p>
-                                            <div className="flex items-center justify-between text-[10px] text-slate-400">
-                                                <span className="flex items-center gap-1"><Clock size={10} /> {new Date(post.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                                                <span className="flex items-center gap-1"><Eye size={10} /> {post.views} {t("vues")}</span>
-                                            </div>
-                                            <div className="mt-4 flex items-center gap-1 text-xs font-bold text-emerald-600 group-hover:gap-2 transition-all">
-                                                <T>Lire l&apos;article</T> <ArrowRight size={12} />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Link>
-                            </motion.div>
-                        ))}
-                    </div>
+                                    </Link>
+                                </motion.div>
+                            ))}
+                        </div>
+
+                        {/* Pagination */}
+                        {totalPages > 1 && (
+                            <div className="flex items-center justify-center gap-3 mt-12">
+                                <button
+                                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                                    disabled={page === 1}
+                                    className="text-xs font-bold px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+                                >
+                                    ← {t("Précédent")}
+                                </button>
+                                <span className="text-xs text-slate-500 font-medium">
+                                    {page} / {totalPages}
+                                </span>
+                                <button
+                                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={page === totalPages}
+                                    className="text-xs font-bold px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+                                >
+                                    {t("Suivant")} →
+                                </button>
+                            </div>
+                        )}
+                    </>
                 )}
             </section>
         </div>

@@ -5,8 +5,9 @@ import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, Clock, Eye, Share2, BookOpen, Tag } from 'lucide-react'
+import { ArrowLeft, Clock, Eye, BookOpen, Tag } from 'lucide-react'
 import { useTranslation, T } from '@/lib/translation'
+import ShareButtons from '@/components/blog/ShareButtons'
 
 interface BlogPost {
     id: string
@@ -25,6 +26,7 @@ interface BlogPost {
 export default function BlogPostClient({ slug }: { slug: string }) {
     const { t } = useTranslation()
     const [post, setPost] = useState<BlogPost | null>(null)
+    const [relatedPosts, setRelatedPosts] = useState<BlogPost[]>([])
     const [loading, setLoading] = useState(true)
     const [mounted, setMounted] = useState(false)
 
@@ -59,6 +61,21 @@ export default function BlogPostClient({ slug }: { slug: string }) {
                     }
                 } catch (err) {
                     console.error('Failed to increment views:', err)
+                }
+
+                // Fetch related posts by category
+                try {
+                    const { data: related } = await supabase
+                        .from('blog_posts')
+                        .select('id, title, slug, excerpt, cover_image, category, created_at')
+                        .eq('is_published', true)
+                        .eq('category', data.category)
+                        .neq('id', data.id)
+                        .order('created_at', { ascending: false })
+                        .limit(3)
+                    if (related) setRelatedPosts(related as BlogPost[])
+                } catch {
+                    // silently fail
                 }
             }
             setLoading(false)
@@ -225,12 +242,14 @@ export default function BlogPostClient({ slug }: { slug: string }) {
                         <span className="flex items-center gap-1"><Eye size={12} /> {post.views} {t("vues")}</span>
                         <span className="flex items-center gap-1"><Clock size={12} /> {readingTime} min {t("de lecture")}</span>
                         <span>{t("Par")} {post.author || 'Retour Gagnant'}</span>
-                        <button
-                            onClick={() => navigator.clipboard.writeText(window.location.href)}
-                            className="ml-auto flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-semibold transition-colors"
-                        >
-                            <Share2 size={12} /> <T>Partager</T>
-                        </button>
+                    </div>
+
+                    {/* Share Buttons */}
+                    <div className="mb-8">
+                        <ShareButtons
+                            url={typeof window !== 'undefined' ? window.location.href : `https://www.retourgagnantbenin.bj/blog/${slug}`}
+                            title={post.title}
+                        />
                     </div>
 
                     {/* Article body */}
@@ -267,6 +286,47 @@ export default function BlogPostClient({ slug }: { slug: string }) {
                                     >
                                         {tag}
                                     </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Related Articles */}
+                    {relatedPosts.length > 0 && (
+                        <div className="mt-12 pt-8 border-t border-slate-100">
+                            <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <BookOpen size={18} className="text-emerald-600" />
+                                <T>Articles similaires</T>
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                {relatedPosts.map((rp) => (
+                                    <Link
+                                        key={rp.id}
+                                        href={`/blog/${rp.slug}`}
+                                        className="group bg-white rounded-xl border border-slate-100 overflow-hidden hover:shadow-md transition-all"
+                                    >
+                                        <div className="h-28 relative bg-slate-50 overflow-hidden">
+                                            {rp.cover_image ? (
+                                                <img
+                                                    src={rp.cover_image}
+                                                    alt={rp.title}
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full bg-gradient-to-br from-emerald-50 to-yellow-50 flex items-center justify-center">
+                                                    <BookOpen size={24} className="text-emerald-300" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="p-3">
+                                            <span className="text-[9px] font-bold uppercase text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                                                {rp.category}
+                                            </span>
+                                            <h4 className="text-sm font-bold text-slate-800 mt-2 line-clamp-2 group-hover:text-emerald-700 transition-colors">
+                                                {rp.title}
+                                            </h4>
+                                        </div>
+                                    </Link>
                                 ))}
                             </div>
                         </div>

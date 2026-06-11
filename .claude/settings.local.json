@@ -244,7 +244,16 @@
       "Bash(cp \"RETOUR GAGNANT TEMPLATE/frontend/lib/waf/core/body-scanner.ts\" WAF_KeysO/src/core/)",
       "Bash(cp \"RETOUR GAGNANT TEMPLATE/frontend/lib/waf/core/ownership.ts\" WAF_KeysO/src/core/)",
       "Bash(cp \"RETOUR GAGNANT TEMPLATE/frontend/lib/waf/adapters/nextjs.ts\" WAF_KeysO/src/adapters/)",
-      "Bash(git config *)"
+      "Bash(git config *)",
+      "PowerShell(Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip = [System.IO.Compression.ZipFile]::OpenRead\\(\"c:\\\\Users\\\\HP\\\\Desktop\\\\WAF_KeysO\\\\wordpress-plugin\\\\keyso-waf.zip\"\\); $zip.Entries | Select-Object -ExpandProperty FullName; $zip.Dispose\\(\\))",
+      "Bash(git -C \"c:/Users/HP/Desktop/RETOUR GAGNANT TEMPLATE\" config --get http.sslBackend)",
+      "Bash(git -C \"c:/Users/HP/Desktop/WAF_KeysO\" config --get http.sslBackend)",
+      "Bash(git tag *)",
+      "Bash(node --test test/)",
+      "Bash(node --test test/*.test.mjs)",
+      "Bash(echo \"=== sslCAInfo configuré ? ===\" && git config --global --get http.sslCAInfo; echo \"\\(vide=non\\)\"; echo \"=== Git install dir / CA bundle présent ? ===\" && ls \"C:/Program Files/Git/mingw64/etc/ssl/certs/ca-bundle.crt\" 2>&1 | head -1; ls \"C:/Program Files/Git/mingw64/ssl/certs/ca-bundle.crt\" 2>&1 | head -1)",
+      "Read(//c/Program Files/Git/mingw64/etc/ssl/certs/**)",
+      "Read(//c/Program Files/Git/mingw64/ssl/certs/**)"
     ],
     "additionalDirectories": [
       "c:\\Users\\HP\\Desktop\\RETOUR GAGNANT TEMPLATE\\frontend\\app\\api\\admin\\users"

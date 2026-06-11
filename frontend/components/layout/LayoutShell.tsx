@@ -5,6 +5,9 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import AudioPlayer from '@/components/layout/AudioPlayer'
 import ChatAssistant from '@/components/chat/ChatAssistant'
+import CookieConsent from '@/components/layout/CookieConsent'
+import WhatsAppButton from '@/components/layout/WhatsAppButton'
+import Breadcrumbs from '@/components/layout/Breadcrumbs'
 import { CartDrawer } from '@/components/boutique/CartDrawer'
 import { VisitorTracker } from '@/components/analytics/VisitorTracker'
 
@@ -23,7 +26,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
         return <>{children}</>
     }
 
-    // Routes publiques : Header + Footer + AudioPlayer + Chat
+    // Routes publiques : Header + Footer + AudioPlayer + Chat + WhatsApp + Cookies
     return (
         <>
             <VisitorTracker />
@@ -31,10 +34,14 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
             <AudioPlayer />
             <CartDrawer />
             <main className="min-h-screen pt-20">
+                <Breadcrumbs />
                 {children}
             </main>
             <ChatAssistant />
+            <WhatsAppButton />
+            <CookieConsent />
             <Footer />
         </>
     )
 }
+
