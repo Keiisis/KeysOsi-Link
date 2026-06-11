@@ -51,7 +51,7 @@ export default function CeoDocuments() {
     const [refresh, setRefresh] = useState(0)
 
     const load = useCallback(async () => {
-        setLoading(true)
+        if (!loading) setLoading(true)
         try {
             const res = await fetch('/api/ceo/documents', { cache: 'no-store' })
             if (res.ok) {
@@ -60,9 +60,9 @@ export default function CeoDocuments() {
             }
         } catch { /* silent */ }
         setLoading(false)
-    }, [refresh])
+    }, [loading])
 
-    useEffect(() => { load() }, [load])
+    useEffect(() => { load() }, [load, refresh])
 
     const filtered = docs.filter(d => {
         if (!search) return true
@@ -168,11 +168,11 @@ export default function CeoDocuments() {
                                             <td className="px-5 py-3 text-xs opacity-50">{fmtDate(d.created_at)}</td>
                                             <td className="px-5 py-3">
                                                 <div className="flex items-center gap-1.5">
-                                                    <button onClick={() => setSelected(d)} title="Détails" className="p-1.5 rounded-lg hover:opacity-80 transition-opacity" style={{ background: `${GOLD}15` }}>
+                                                    <button onClick={() => setSelected(d)} title="Détails" aria-label="Détails du document" className="p-1.5 rounded-lg hover:opacity-80 transition-opacity" style={{ background: `${GOLD}15` }}>
                                                         <Eye size={12} style={{ color: GOLD }} />
                                                     </button>
                                                     {d.file_url && (
-                                                        <a href={d.file_url} target="_blank" rel="noopener noreferrer" title="Télécharger"
+                                                        <a href={d.file_url} target="_blank" rel="noopener noreferrer" title="Télécharger" aria-label="Télécharger le document"
                                                             className="p-1.5 rounded-lg hover:opacity-80 transition-opacity" style={{ background: `${GREEN_L}15` }}>
                                                             <Download size={12} style={{ color: GREEN_L }} />
                                                         </a>
@@ -194,7 +194,7 @@ export default function CeoDocuments() {
                         className="w-full max-w-md rounded-3xl p-6" style={{ background: '#0D2615', border: `1px solid ${GOLD}30` }}>
                         <div className="flex items-center justify-between mb-5">
                             <h3 className="font-black" style={{ color: GOLD }}>Détail document</h3>
-                            <button onClick={() => setSelected(null)} title="Fermer" className="opacity-40 hover:opacity-70 p-1"><X size={18} /></button>
+                            <button onClick={() => setSelected(null)} title="Fermer" aria-label="Fermer" className="opacity-40 hover:opacity-70 p-1"><X size={18} /></button>
                         </div>
                         {[
                             ['Nom', selected.file_name || '—'],

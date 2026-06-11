@@ -359,7 +359,7 @@ export default function AdminOrdersPage() {
                                 {/* Statut */}
                                 <div>
                                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
-                                        <T>Statut d'expedition</T>
+                                        <T>{"Statut d'expédition"}</T>
                                     </label>
                                     <select
                                         aria-label={t("Statut d'expedition")}

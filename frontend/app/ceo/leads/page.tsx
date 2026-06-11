@@ -41,14 +41,14 @@ export default function CeoLeads() {
     const [refresh, setRefresh] = useState(0)
 
     const load = useCallback(async () => {
-        setLoading(true)
+        if (!loading) setLoading(true)
         const res = await fetch('/api/ceo/leads', { cache: 'no-store' })
         const data = res.ok ? await res.json() : {}
         setLeads(data.leads || [])
         setLoading(false)
-    }, [refresh])
+    }, [loading])
 
-    useEffect(() => { load() }, [load])
+    useEffect(() => { load() }, [load, refresh])
 
     const toggleContacted = async (lead: Lead) => {
         const val = !lead.is_contacted
@@ -82,7 +82,7 @@ export default function CeoLeads() {
                 </div>
                 <div className="flex gap-2 items-center">
                     <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher..." className="px-4 py-2 rounded-xl text-sm outline-none w-44" style={{ background: PANEL, border: `1px solid ${GOLD}20`, color: TEXT }}/>
-                    <button onClick={() => setRefresh(r => r + 1)} className="px-3 py-2 rounded-xl hover:opacity-80" style={{ background: `${GREEN}25`, color: GREEN_L }}>
+                    <button onClick={() => setRefresh(r => r + 1)} title="Actualiser" aria-label="Actualiser" className="px-3 py-2 rounded-xl hover:opacity-80" style={{ background: `${GREEN}25`, color: GREEN_L }}>
                         <RefreshCw size={14} className={loading ? 'animate-spin' : ''}/>
                     </button>
                 </div>
@@ -157,7 +157,7 @@ export default function CeoLeads() {
                                                     <button type="button" onClick={() => toggleContacted(lead)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold hover:opacity-80" style={{ background: lead.is_contacted ? `${RED}15` : `${GREEN}20`, color: lead.is_contacted ? RED : GREEN_L }}>
                                                         <CheckCircle2 size={13}/> {lead.is_contacted ? 'Marquer non contacté' : 'Marquer contacté'}
                                                     </button>
-                                                    <button type="button" onClick={() => del(lead.id)} className="ml-auto p-2 rounded-xl hover:opacity-80" style={{ background: `${RED}12`, color: RED }}><Trash2 size={14}/></button>
+                                                    <button type="button" onClick={() => del(lead.id)} title="Supprimer" aria-label="Supprimer" className="ml-auto p-2 rounded-xl hover:opacity-80" style={{ background: `${RED}12`, color: RED }}><Trash2 size={14}/></button>
                                                 </div>
                                             </div>
                                         </motion.div>

@@ -32,7 +32,7 @@ export default function CeoFacturation() {
     const [refresh, setRefresh] = useState(0)
 
     const load = useCallback(async () => {
-        setLoading(true)
+        if (!loading) setLoading(true)
         try {
             const res = await fetch('/api/ceo/facturation', { cache: 'no-store' })
             if (res.ok) {
@@ -41,9 +41,9 @@ export default function CeoFacturation() {
             }
         } catch { /* silent */ }
         setLoading(false)
-    }, [refresh])
+    }, [loading])
 
-    useEffect(() => { load() }, [load])
+    useEffect(() => { load() }, [load, refresh])
 
     const filtered = docs.filter(d => {
         const matchType = docType === 'all' || d.type === docType

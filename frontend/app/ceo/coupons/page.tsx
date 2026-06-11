@@ -29,14 +29,14 @@ export default function CeoCoupons() {
     const [copied, setCopied] = useState<string | null>(null)
 
     const load = useCallback(async () => {
-        setLoading(true)
+        if (!loading) setLoading(true)
         const res = await fetch('/api/ceo/coupons', { cache: 'no-store' })
         const data = res.ok ? await res.json() : {}
         setItems(data.coupons || [])
         setLoading(false)
-    }, [refresh])
+    }, [loading])
 
-    useEffect(() => { load() }, [load])
+    useEffect(() => { load() }, [load, refresh])
 
     const open = (item: Coupon) => { setSelected(item); setEditData(item) }
 
@@ -177,35 +177,35 @@ export default function CeoCoupons() {
                                 <button type="button" onClick={() => setSelected(null)} className="opacity-40 hover:opacity-70 p-1" aria-label="Fermer"><X size={18}/></button>
                             </div>
                             <div className="space-y-3 mb-5">
-                                <div>
-                                    <label className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Code</label>
-                                    <input type="text" value={editData.code || ''} onChange={e => setEditData(p => ({ ...p, code: e.target.value.toUpperCase() }))} className={inp} style={inpStyle}/>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Type</label>
-                                        <select value={editData.discount_type || 'percent'} onChange={e => setEditData(p => ({ ...p, discount_type: e.target.value as 'percent' | 'fixed' }))}
-                                            className="w-full px-4 py-2.5 rounded-xl text-sm outline-none" style={inpStyle}>
-                                            <option value="percent">Pourcentage (%)</option>
-                                            <option value="fixed">Fixe (FCFA)</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Valeur</label>
-                                        <input type="number" value={editData.discount_value || 0} onChange={e => setEditData(p => ({ ...p, discount_value: Number(e.target.value) }))} className={inp} style={inpStyle}/>
-                                    </div>
-                                </div>
-                                {[{ key: 'min_order', label: 'Commande min (FCFA)', type: 'number' }, { key: 'max_uses', label: 'Utilisations max', type: 'number' }].map(f => (
-                                    <div key={f.key}>
-                                        <label className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">{f.label}</label>
-                                        <input type={f.type} value={String((editData as Record<string, unknown>)[f.key] || 0)}
-                                            onChange={e => setEditData(p => ({ ...p, [f.key]: Number(e.target.value) }))} className={inp} style={inpStyle}/>
-                                    </div>
-                                ))}
-                                <div>
-                                    <label className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Date d&apos;expiration</label>
-                                    <input type="date" value={editData.expires_at ? editData.expires_at.slice(0, 10) : ''} onChange={e => setEditData(p => ({ ...p, expires_at: e.target.value }))} className={inp} style={inpStyle}/>
-                                </div>
+                                 <div>
+                                     <label htmlFor="edit-code" className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Code</label>
+                                     <input id="edit-code" type="text" value={editData.code || ''} onChange={e => setEditData(p => ({ ...p, code: e.target.value.toUpperCase() }))} className={inp} style={inpStyle}/>
+                                 </div>
+                                 <div className="grid grid-cols-2 gap-3">
+                                     <div>
+                                         <label htmlFor="edit-type" className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Type</label>
+                                         <select id="edit-type" value={editData.discount_type || 'percent'} onChange={e => setEditData(p => ({ ...p, discount_type: e.target.value as 'percent' | 'fixed' }))}
+                                             className="w-full px-4 py-2.5 rounded-xl text-sm outline-none" style={inpStyle}>
+                                             <option value="percent">Pourcentage (%)</option>
+                                             <option value="fixed">Fixe (FCFA)</option>
+                                         </select>
+                                     </div>
+                                     <div>
+                                         <label htmlFor="edit-value" className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Valeur</label>
+                                         <input id="edit-value" type="number" value={editData.discount_value || 0} onChange={e => setEditData(p => ({ ...p, discount_value: Number(e.target.value) }))} className={inp} style={inpStyle}/>
+                                     </div>
+                                 </div>
+                                 {[{ key: 'min_order', label: 'Commande min (FCFA)', type: 'number' }, { key: 'max_uses', label: 'Utilisations max', type: 'number' }].map(f => (
+                                     <div key={f.key}>
+                                         <label htmlFor={`edit-${f.key}`} className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">{f.label}</label>
+                                         <input id={`edit-${f.key}`} type={f.type} value={String((editData as Record<string, unknown>)[f.key] || 0)}
+                                             onChange={e => setEditData(p => ({ ...p, [f.key]: Number(e.target.value) }))} className={inp} style={inpStyle}/>
+                                     </div>
+                                 ))}
+                                 <div>
+                                     <label htmlFor="edit-expires" className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Date d&apos;expiration</label>
+                                     <input id="edit-expires" type="date" value={editData.expires_at ? editData.expires_at.slice(0, 10) : ''} onChange={e => setEditData(p => ({ ...p, expires_at: e.target.value }))} className={inp} style={inpStyle}/>
+                                 </div>
                             </div>
                             <div className="flex gap-3">
                                 <button type="button" onClick={() => del(selected.id)} className="p-2.5 rounded-xl hover:opacity-80" style={{ background: `${RED}20`, color: RED }} aria-label="Supprimer le coupon"><Trash2 size={16}/></button>
@@ -231,44 +231,44 @@ export default function CeoCoupons() {
                                 <button type="button" onClick={() => setShowCreate(false)} className="opacity-40 hover:opacity-70 p-1" aria-label="Fermer"><X size={18}/></button>
                             </div>
                             <div className="space-y-3 mb-5">
-                                <div className="flex gap-2">
-                                    <div className="flex-1">
-                                        <label className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Code *</label>
-                                        <input type="text" value={newItem.code} onChange={e => setNewItem(p => ({ ...p, code: e.target.value.toUpperCase() }))} className={inp} style={inpStyle}/>
-                                    </div>
-                                    <button type="button" onClick={() => setNewItem(p => ({ ...p, code: randomCode() }))} className="mt-6 px-3 py-2.5 rounded-xl text-xs opacity-40 hover:opacity-70" style={{ background: `${GOLD}15`, color: GOLD }} aria-label="Générer un nouveau code">
-                                        ⟳
-                                    </button>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Type</label>
-                                        <select value={newItem.discount_type} onChange={e => setNewItem(p => ({ ...p, discount_type: e.target.value as 'percent' | 'fixed' }))}
-                                            className="w-full px-4 py-2.5 rounded-xl text-sm outline-none" style={inpStyle}>
-                                            <option value="percent">% Pourcentage</option>
-                                            <option value="fixed">FCFA Fixe</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Valeur *</label>
-                                        <input type="number" value={newItem.discount_value} onChange={e => setNewItem(p => ({ ...p, discount_value: Number(e.target.value) }))} className={inp} style={inpStyle}/>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Commande min</label>
-                                        <input type="number" value={newItem.min_order} onChange={e => setNewItem(p => ({ ...p, min_order: Number(e.target.value) }))} className={inp} style={inpStyle}/>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Max utilisations</label>
-                                        <input type="number" value={newItem.max_uses} onChange={e => setNewItem(p => ({ ...p, max_uses: Number(e.target.value) }))} className={inp} style={inpStyle}/>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Expiration</label>
-                                    <input type="date" value={newItem.expires_at} onChange={e => setNewItem(p => ({ ...p, expires_at: e.target.value }))} className={inp} style={inpStyle}/>
-                                </div>
-                            </div>
+                                 <div className="flex gap-2">
+                                     <div className="flex-1">
+                                         <label htmlFor="new-code" className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Code *</label>
+                                         <input id="new-code" type="text" value={newItem.code} onChange={e => setNewItem(p => ({ ...p, code: e.target.value.toUpperCase() }))} className={inp} style={inpStyle}/>
+                                     </div>
+                                     <button type="button" onClick={() => setNewItem(p => ({ ...p, code: randomCode() }))} className="mt-6 px-3 py-2.5 rounded-xl text-xs opacity-40 hover:opacity-70" style={{ background: `${GOLD}15`, color: GOLD }} aria-label="Générer un nouveau code">
+                                         ⟳
+                                     </button>
+                                 </div>
+                                 <div className="grid grid-cols-2 gap-3">
+                                     <div>
+                                         <label htmlFor="new-type" className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Type</label>
+                                         <select id="new-type" value={newItem.discount_type} onChange={e => setNewItem(p => ({ ...p, discount_type: e.target.value as 'percent' | 'fixed' }))}
+                                             className="w-full px-4 py-2.5 rounded-xl text-sm outline-none" style={inpStyle}>
+                                             <option value="percent">% Pourcentage</option>
+                                             <option value="fixed">FCFA Fixe</option>
+                                         </select>
+                                     </div>
+                                     <div>
+                                         <label htmlFor="new-value" className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Valeur *</label>
+                                         <input id="new-value" type="number" value={newItem.discount_value} onChange={e => setNewItem(p => ({ ...p, discount_value: Number(e.target.value) }))} className={inp} style={inpStyle}/>
+                                     </div>
+                                 </div>
+                                 <div className="grid grid-cols-2 gap-3">
+                                     <div>
+                                         <label htmlFor="new-min" className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Commande min</label>
+                                         <input id="new-min" type="number" value={newItem.min_order} onChange={e => setNewItem(p => ({ ...p, min_order: Number(e.target.value) }))} className={inp} style={inpStyle}/>
+                                     </div>
+                                     <div>
+                                         <label htmlFor="new-max" className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Max utilisations</label>
+                                         <input id="new-max" type="number" value={newItem.max_uses} onChange={e => setNewItem(p => ({ ...p, max_uses: Number(e.target.value) }))} className={inp} style={inpStyle}/>
+                                     </div>
+                                 </div>
+                                 <div>
+                                     <label htmlFor="new-expires" className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Expiration</label>
+                                     <input id="new-expires" type="date" value={newItem.expires_at} onChange={e => setNewItem(p => ({ ...p, expires_at: e.target.value }))} className={inp} style={inpStyle}/>
+                                 </div>
+                             </div>
                             <button type="button" onClick={create} disabled={creating || !newItem.code}
                                 className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm hover:opacity-90 disabled:opacity-40"
                                 style={{ background: GOLD, color: BG }}>

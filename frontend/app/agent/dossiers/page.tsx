@@ -35,6 +35,17 @@ interface Dossier {
     dossier_ref_id?: string
 }
 
+interface DossierDoc {
+    id: string
+    dossier_id: string
+    file_name?: string
+    filename?: string
+    file_url?: string
+    url?: string
+    storage_path?: string
+    sourceTable: string
+}
+
 interface ChatMsg {
     id: string
     role: string
@@ -59,7 +70,7 @@ export default function AgentDossiersPage() {
     const [noteText, setNoteText] = useState('')
     const [docRequest, setDocRequest] = useState('')
     const [chatMsgs, setChatMsgs] = useState<ChatMsg[]>([])
-    const [dossierDocs, setDossierDocs] = useState<any[]>([])
+    const [dossierDocs, setDossierDocs] = useState<DossierDoc[]>([])
     const [loadingDocs, setLoadingDocs] = useState(false)
     const [chatInput, setChatInput] = useState('')
     const [chatSending, setChatSending] = useState(false)
@@ -131,7 +142,7 @@ export default function AgentDossiersPage() {
         setLoadingDocs(false)
     }
 
-    const handleDeleteDossierDoc = async (doc: any) => {
+    const handleDeleteDossierDoc = async (doc: DossierDoc) => {
         if (!confirm('Supprimer définitivement ce document et son fichier physique ?')) return;
 
         if (doc.file_url) {
@@ -328,7 +339,7 @@ export default function AgentDossiersPage() {
 
         // ── Sync to dossiers table (mobile table) via dossier_ref_id ──
         const dossierEntry = dossiers.find(x => x.id === dossierId);
-        const dossierRefId = (dossierEntry as any)?.dossier_ref_id;
+        const dossierRefId = dossierEntry?.dossier_ref_id;
         if (dossierRefId) {
             const mobileStatusMap: Record<DossierStatus, string> = {
                 reception: 'soumis',

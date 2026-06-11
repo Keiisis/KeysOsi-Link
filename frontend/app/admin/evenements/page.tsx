@@ -2,11 +2,10 @@
 
 import { useTranslation, T } from '@/lib/translation';
 import { useState, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import {
-    Calendar, Plus, Trash2, Edit, Eye, Users,
-    CheckCircle2, XCircle, Clock, Crown, Ticket, Search,
+    Calendar, Plus, Trash2, Edit, Users,
+    CheckCircle2, XCircle, Clock, Crown, Search,
     ChevronDown, ExternalLink,
 } from 'lucide-react'
 
@@ -39,13 +38,13 @@ export default function AdminEventsPage() {
     const [deleting, setDeleting] = useState<string | null>(null)
 
     const fetchEvents = useCallback(() => {
-        setLoading(true)
+        if (!loading) setLoading(true)
         fetch('/api/events?admin=true')
             .then(r => r.json())
             .then(d => setEvents(d.events || []))
             .catch(() => { })
             .finally(() => setLoading(false))
-    }, [])
+    }, [loading])
 
     useEffect(() => { fetchEvents() }, [fetchEvents])
 
@@ -123,7 +122,6 @@ export default function AdminEventsPage() {
                             <tbody>
                                 {filtered.map(evt => {
                                     const st = STATUS_MAP[evt.status] || STATUS_MAP.draft
-                                    const StIcon = st.icon
                                     return (
                                         <tr key={evt.id} className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors">
                                             <td className="px-5 py-4">

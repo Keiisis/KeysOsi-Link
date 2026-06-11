@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-    Handshake, RefreshCw, Loader2, X, Save, Trash2, Eye,
+    Handshake, RefreshCw, Loader2, Trash2,
     CheckCircle2, Clock, Ban, MessageSquare, Mail, Phone,
     ChevronDown, ChevronUp, Building2, ToggleLeft, ToggleRight
 } from 'lucide-react'
@@ -48,7 +48,7 @@ export default function CeoPartenaires() {
     const [refresh, setRefresh] = useState(0)
 
     const load = useCallback(async () => {
-        setLoading(true)
+        if (!loading) setLoading(true)
         const [pRes, aRes] = await Promise.all([
             fetch('/api/ceo/partenaires?type=partners', { cache: 'no-store' }),
             fetch('/api/ceo/partenaires?type=applications', { cache: 'no-store' }),
@@ -58,9 +58,9 @@ export default function CeoPartenaires() {
         setPartners(pData.partners || [])
         setApplications(aData.applications || [])
         setLoading(false)
-    }, [refresh])
+    }, [loading])
 
-    useEffect(() => { load() }, [load])
+    useEffect(() => { load() }, [load, refresh])
 
     const updateAppStatus = async (id: string, status: Application['status']) => {
         setSaving(id)
@@ -160,12 +160,12 @@ export default function CeoPartenaires() {
                             </div>
                             {p.description && <p className="text-[12px] opacity-50 line-clamp-2">{p.description}</p>}
                             <div className="flex gap-2 pt-2 border-t border-white/5">
-                                {p.email && <a href={`mailto:${p.email}`} className="p-2 rounded-xl hover:opacity-80" style={{ background: '#3b82f615', color: '#3b82f6' }}><Mail size={14}/></a>}
-                                {p.phone && <a href={`https://wa.me/${p.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="p-2 rounded-xl hover:opacity-80" style={{ background: `${GREEN}15`, color: GREEN_L }}><Phone size={14}/></a>}
-                                <button type="button" onClick={() => togglePartner(p)} className="p-2 rounded-xl hover:opacity-80" style={{ background: p.is_active ? `${RED}12` : `${GREEN}15`, color: p.is_active ? RED : GREEN_L }}>
+                                {p.email && <a href={`mailto:${p.email}`} title="Envoyer un e-mail" aria-label="Envoyer un e-mail" className="p-2 rounded-xl hover:opacity-80" style={{ background: '#3b82f615', color: '#3b82f6' }}><Mail size={14}/></a>}
+                                {p.phone && <a href={`https://wa.me/${p.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" title="Contacter par WhatsApp" aria-label="Contacter par WhatsApp" className="p-2 rounded-xl hover:opacity-80" style={{ background: `${GREEN}15`, color: GREEN_L }}><Phone size={14}/></a>}
+                                <button type="button" onClick={() => togglePartner(p)} title={p.is_active ? "Désactiver le partenaire" : "Activer le partenaire"} aria-label={p.is_active ? "Désactiver le partenaire" : "Activer le partenaire"} className="p-2 rounded-xl hover:opacity-80" style={{ background: p.is_active ? `${RED}12` : `${GREEN}15`, color: p.is_active ? RED : GREEN_L }}>
                                     {p.is_active ? <ToggleRight size={16}/> : <ToggleLeft size={16}/>}
                                 </button>
-                                <button type="button" onClick={() => delPartner(p.id)} className="ml-auto p-2 rounded-xl hover:opacity-80" style={{ background: `${RED}12`, color: RED }}>
+                                <button type="button" onClick={() => delPartner(p.id)} title="Supprimer le partenaire" aria-label="Supprimer le partenaire" className="ml-auto p-2 rounded-xl hover:opacity-80" style={{ background: `${RED}12`, color: RED }}>
                                     <Trash2 size={14}/>
                                 </button>
                             </div>
