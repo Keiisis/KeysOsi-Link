@@ -32,16 +32,25 @@ const DEFAULT_TIERS: TarpitTier[] = [
 // Max absolu pour fonctions serverless (Vercel = 10-30s timeout)
 const MAX_TARPIT_MS = 8000
 
+// Plafond de tarpits SIMULTANÉS par instance — anti auto-DoS.
+// Un await sleep occupe la fonction serverless (concurrence + facturation).
+// Sous flood, sans plafond, on saturerait notre propre concurrence.
+const MAX_CONCURRENT_TARPITS = 50
+let activeTarpits = 0
+
 // ── Métriques de tarpitting ──────────────────────────────────
 let totalTarpitRequests = 0
 let totalTarpitDelayMs  = 0
 let maxTarpitDelayMs    = 0
+let skippedTarpits      = 0
 
 export function getTarpitMetrics(): {
     totalRequests: number
     totalDelayMs:  number
     maxDelayMs:    number
     avgDelayMs:    number
+    active:        number
+    skipped:       number
 } {
     return {
         totalRequests: totalTarpitRequests,
@@ -50,6 +59,8 @@ export function getTarpitMetrics(): {
         avgDelayMs:    totalTarpitRequests > 0
             ? Math.round(totalTarpitDelayMs / totalTarpitRequests)
             : 0,
+        active:        activeTarpits,
+        skipped:       skippedTarpits,
     }
 }
 
@@ -84,15 +95,29 @@ export function calculateTarpitDelay(trustScore: number): TarpitDecision {
 // ── Appliquer le tarpit (promesse qui dort) ──────────────────
 // Retourne une promesse qui résout après le délai spécifié
 // Utilisé dans le middleware : await applyTarpit(delay)
-export function applyTarpit(delayMs: number): Promise<void> {
-    if (delayMs <= 0) return Promise.resolve()
+export async function applyTarpit(delayMs: number): Promise<void> {
+    if (delayMs <= 0) return
+
+    // ── Plafond de concurrence : anti auto-DoS ──
+    // Si trop de tarpits sont déjà actifs sur cette instance, on renonce au
+    // délai (la requête reste traitée/bloquée par ailleurs) plutôt que de
+    // saturer notre propre concurrence serverless.
+    if (activeTarpits >= MAX_CONCURRENT_TARPITS) {
+        skippedTarpits++
+        return
+    }
 
     // Métriques
     totalTarpitRequests++
     totalTarpitDelayMs += delayMs
     if (delayMs > maxTarpitDelayMs) maxTarpitDelayMs = delayMs
 
-    return new Promise(resolve => setTimeout(resolve, delayMs))
+    activeTarpits++
+    try {
+        await new Promise<void>(resolve => setTimeout(resolve, delayMs))
+    } finally {
+        activeTarpits--
+    }
 }
 
 // ── Décision de tarpit depuis les données RPC ────────────────

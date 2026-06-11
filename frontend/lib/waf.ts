@@ -185,15 +185,33 @@ export function invalidateIpCache(ip: string): void {
 // ══════════════════════════════════════════════════════════════
 const VALID_IP_RE = /^(?:(?:25[0-5]|2[0-4]\d|\d{1,3})\.){3}(?:25[0-5]|2[0-4]\d|\d{1,3})$|^[0-9a-f:]+$/i
 
+// ── Anti-spoofing IP ──────────────────────────────────────────
+// Un attaquant peut envoyer de FAUX en-têtes (x-forwarded-for, x-real-ip…)
+// pour usurper une IP (évasion de ban) ou empoisonner l'IP d'un tiers.
+// Mitigation : l'opérateur épingle le header AUTORITAIRE — celui que la
+// plateforme/CDN contrôle et que le client ne peut pas falsifier — via
+// la variable d'env WAF_TRUE_IP_HEADER (ex: 'x-vercel-forwarded-for' sur
+// Vercel, 'cf-connecting-ip' derrière Cloudflare). Si défini, on ne fait
+// confiance QU'À ce header. Sinon, ordre de repli prudent.
 export function extractIp(headers: Headers): string {
-    const realIp = headers.get('x-real-ip')?.trim()
-    if (realIp && VALID_IP_RE.test(realIp)) return realIp
+    const pinned = process.env.WAF_TRUE_IP_HEADER?.trim().toLowerCase()
+    if (pinned) {
+        const v = headers.get(pinned)?.split(',')[0]?.trim()
+        if (v && VALID_IP_RE.test(v)) return v
+        // Header autoritaire absent/invalide → on NE retombe PAS sur des
+        // headers spoofables : 'unknown' (le WAF traitera prudemment).
+        return 'unknown'
+    }
+
+    // Pas de header épinglé : ordre de repli (plateforme d'abord).
+    const vercelIp = headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim()
+    if (vercelIp && VALID_IP_RE.test(vercelIp)) return vercelIp
 
     const cfIp = headers.get('cf-connecting-ip')?.trim()
     if (cfIp && VALID_IP_RE.test(cfIp)) return cfIp
 
-    const vercelIp = headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim()
-    if (vercelIp && VALID_IP_RE.test(vercelIp)) return vercelIp
+    const realIp = headers.get('x-real-ip')?.trim()
+    if (realIp && VALID_IP_RE.test(realIp)) return realIp
 
     const xff = headers.get('x-forwarded-for')?.split(',')[0]?.trim()
     if (xff && VALID_IP_RE.test(xff)) return xff
