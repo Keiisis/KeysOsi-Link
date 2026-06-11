@@ -135,6 +135,7 @@ export default function CeoUtilisateurs() {
                         <Plus size={14} /> Nouveau
                     </button>
                     <button onClick={() => setRefresh(r => r + 1)}
+                        title="Actualiser" aria-label="Actualiser"
                         className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-80"
                         style={{ background: `${GREEN}25`, color: GREEN_L }}>
                         <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
@@ -224,7 +225,7 @@ export default function CeoUtilisateurs() {
                                         </td>
                                         <td className="px-5 py-3 text-xs opacity-50">{fmtDate(u.created_at)}</td>
                                         <td className="px-5 py-3">
-                                            <button onClick={() => openUser(u)}
+                                            <button onClick={() => openUser(u)} title="Voir les détails" aria-label="Voir les détails"
                                                 className="p-1.5 rounded-lg hover:opacity-80" style={{ background: `${GOLD}15` }}>
                                                 <Eye size={12} style={{ color: GOLD }} />
                                             </button>
@@ -250,7 +251,7 @@ export default function CeoUtilisateurs() {
                                     <h3 className="font-black" style={{ color: GOLD }}>{selected.full_name}</h3>
                                     <p className="text-xs opacity-50">{selected.email}</p>
                                 </div>
-                                <button onClick={() => setSelected(null)} className="opacity-40 hover:opacity-70 p-1"><X size={18} /></button>
+                                <button onClick={() => setSelected(null)} title="Fermer" aria-label="Fermer" className="opacity-40 hover:opacity-70 p-1"><X size={18} /></button>
                             </div>
                             <div className="mb-4">
                                 <label className="text-xs opacity-50 uppercase tracking-wider block mb-2">Rôle</label>
@@ -271,6 +272,8 @@ export default function CeoUtilisateurs() {
                             <div className="flex items-center justify-between mb-5 p-3 rounded-xl" style={{ background: '#0B1F0D', border: `1px solid ${GOLD}20` }}>
                                 <span className="text-sm font-semibold">Compte actif</span>
                                 <button onClick={() => setEditActive(!editActive)}
+                                    title={editActive ? "Désactiver le compte" : "Activer le compte"}
+                                    aria-label={editActive ? "Désactiver le compte" : "Activer le compte"}
                                     className="w-12 h-6 rounded-full transition-all relative"
                                     style={{ background: editActive ? GREEN : '#374151' }}>
                                     <div className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all"
@@ -279,6 +282,7 @@ export default function CeoUtilisateurs() {
                             </div>
                             <div className="flex gap-3">
                                 <button onClick={() => deleteUser(selected.id)}
+                                    title="Supprimer le compte" aria-label="Supprimer le compte"
                                     className="p-2.5 rounded-xl hover:opacity-80" style={{ background: `${RED}20`, color: RED }}>
                                     <Trash2 size={16} />
                                 </button>
@@ -304,31 +308,33 @@ export default function CeoUtilisateurs() {
                             className="w-full max-w-md rounded-3xl p-6" style={{ background: PANEL, border: `1px solid ${GOLD}30` }}>
                             <div className="flex items-center justify-between mb-5">
                                 <h3 className="font-black" style={{ color: GOLD }}>Nouvel utilisateur</h3>
-                                <button onClick={() => setShowCreate(false)} className="opacity-40 hover:opacity-70 p-1"><X size={18} /></button>
+                                <button onClick={() => setShowCreate(false)} title="Fermer" aria-label="Fermer" className="opacity-40 hover:opacity-70 p-1"><X size={18} /></button>
                             </div>
                             <div className="space-y-3 mb-4">
                                 <div>
-                                    <label className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Nom complet *</label>
-                                    <input type="text" value={newUser.full_name}
+                                    <label htmlFor="newUserFullName" className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Nom complet *</label>
+                                    <input id="newUserFullName" type="text" value={newUser.full_name}
                                         onChange={e => setNewUser(p => ({ ...p, full_name: e.target.value }))}
                                         className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
                                         style={{ background: '#0B1F0D', border: `1px solid ${GOLD}25`, color: TEXT }} />
                                 </div>
                                 <div>
-                                    <label className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Email *</label>
-                                    <input type="email" value={newUser.email}
+                                    <label htmlFor="newUserEmail" className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Email *</label>
+                                    <input id="newUserEmail" type="email" value={newUser.email}
                                         onChange={e => setNewUser(p => ({ ...p, email: e.target.value }))}
                                         className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
                                         style={{ background: '#0B1F0D', border: `1px solid ${GOLD}25`, color: TEXT }} />
                                 </div>
                                 <div>
-                                    <label className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Mot de passe *</label>
+                                    <label htmlFor="newUserPassword" className="text-xs opacity-50 uppercase tracking-wider block mb-1.5">Mot de passe *</label>
                                     <div className="relative">
-                                        <input type={showPwd ? 'text' : 'password'} value={newUser.password}
+                                        <input id="newUserPassword" type={showPwd ? 'text' : 'password'} value={newUser.password}
                                             onChange={e => setNewUser(p => ({ ...p, password: e.target.value }))}
                                             className="w-full px-4 py-2.5 pr-10 rounded-xl text-sm outline-none"
                                             style={{ background: '#0B1F0D', border: `1px solid ${GOLD}25`, color: TEXT }} />
                                         <button type="button" onClick={() => setShowPwd(!showPwd)}
+                                            title={showPwd ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                                            aria-label={showPwd ? "Masquer le mot de passe" : "Afficher le mot de passe"}
                                             className="absolute right-3 top-1/2 -translate-y-1/2 opacity-40 hover:opacity-70">
                                             {showPwd ? <EyeOff size={14} /> : <Eye size={14} />}
                                         </button>

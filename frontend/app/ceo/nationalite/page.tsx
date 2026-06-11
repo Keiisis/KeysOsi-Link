@@ -112,7 +112,7 @@ export default function CeoNationalite() {
                             <motion.div key={item.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 10) * 0.04 }}
                                 className="rounded-2xl overflow-hidden" style={{ background: PANEL, border: `1px solid ${meta.color}20` }}>
                                 <div className="flex items-center gap-4 p-5 cursor-pointer focus:outline-none focus:bg-white/[0.02]" 
-                                    role="button" aria-expanded={isOpen} tabIndex={0}
+                                    role="button" aria-expanded={isOpen ? "true" : "false"} tabIndex={0}
                                     onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded(isOpen ? null : item.id); } }}
                                     onClick={() => setExpanded(isOpen ? null : item.id)}>
                                     <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: meta.bg }}>
@@ -168,7 +168,7 @@ export default function CeoNationalite() {
                                                                 rows={2} className="w-full px-4 py-3 rounded-xl text-sm outline-none resize-none" style={{ background: BG, border: `1px solid ${GOLD}25`, color: TEXT }}/>
                                                         </div>
                                                         <div className="flex gap-2">
-                                                            <button type="button" onClick={() => setEditing(null)} className="px-4 py-2 rounded-xl text-sm opacity-40 hover:opacity-70"><X size={14}/></button>
+                                                            <button type="button" onClick={() => setEditing(null)} title="Annuler" aria-label="Annuler" className="px-4 py-2 rounded-xl text-sm opacity-40 hover:opacity-70"><X size={14}/></button>
                                                             <button type="button" onClick={() => save(item.id)} disabled={saving}
                                                                 className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm"
                                                                 style={{ background: GREEN, color: '#fff' }}>

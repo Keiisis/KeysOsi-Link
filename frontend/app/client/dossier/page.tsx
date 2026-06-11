@@ -536,7 +536,7 @@ export default function ClientDossierPage() {
                                         <div className="p-5">
                                             <button type="button"
                                                 onClick={() => setExpandedDossier(expandedDossier === dossier.id ? null : dossier.id)}
-                                                aria-expanded={expandedDossier === dossier.id}
+                                                aria-expanded={expandedDossier === dossier.id ? "true" : "false"}
                                                 className="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-3 hover:text-gray-300 transition-colors w-full text-left">
                                                 Étapes du traitement
                                                 <ChevronDown size={12} className={`ml-auto transition-transform ${expandedDossier === dossier.id ? 'rotate-180' : ''}`} />
@@ -574,7 +574,7 @@ export default function ClientDossierPage() {
                                             <div className="mx-5 mb-4 p-4 bg-amber-500/8 border border-amber-500/20 rounded-xl">
                                                 <p className="text-xs font-black text-amber-400 flex items-center gap-2 mb-3">
                                                     <AlertCircle size={13} /> Documents requis
-                                                </p>
+                                                 </p>
                                                 <ul className="space-y-1.5">
                                                     {dossier.documents_manquants.map((doc, i) => (
                                                         <li key={i} className="flex items-center gap-2 text-sm text-gray-300">
@@ -599,7 +599,7 @@ export default function ClientDossierPage() {
                                             <div className="flex items-center justify-between mb-3">
                                                 <button type="button"
                                                     onClick={() => setExpandedDossier(expandedDossier === `docs-${dossier.id}` ? null : `docs-${dossier.id}`)}
-                                                    aria-expanded={expandedDossier === `docs-${dossier.id}`}
+                                                    aria-expanded={expandedDossier === `docs-${dossier.id}` ? "true" : "false"}
                                                     className="flex items-center gap-2 text-[11px] font-bold text-gray-400 hover:text-white transition-colors">
                                                     <Paperclip size={12} />
                                                     Mes fichiers ({docsByDossier[dossier.id]?.length || 0})
