@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { scanUpload, checkOrigin } from '@/lib/waf'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
@@ -14,6 +15,19 @@ export async function POST(request: NextRequest) {
     try {
         if (!supabaseUrl || !supabaseServiceKey) {
             return NextResponse.json({ error: 'Configuration Supabase manquante (URL ou Service Role Key)' }, { status: 500 })
+        }
+
+        // ── WAF CSRF : refuse une origine cross-site (forgery navigateur) ──
+        // Mode sûr : on ne bloque QUE si un Origin est présent et ne correspond
+        // pas (les clients API/mobile sans Origin ne sont pas impactés).
+        const origin = request.headers.get('origin')
+        if (origin) {
+            const host = request.headers.get('host') || ''
+            const allowed = [host, 'retourgagnantbenin.bj', 'www.retourgagnantbenin.bj'].filter(Boolean)
+            const csrf = checkOrigin('POST', origin, null, allowed)
+            if (!csrf.valid) {
+                return NextResponse.json({ error: 'Origine non autorisée.' }, { status: 403 })
+            }
         }
 
         const supabase = createClient(supabaseUrl, supabaseServiceKey)
@@ -38,6 +52,21 @@ export async function POST(request: NextRequest) {
 
         const bytes = await file.arrayBuffer()
         const buffer = Buffer.from(bytes)
+
+        // ── WAF : analyse du fichier (SVG XSS, polyglote, double-ext, MIME mismatch) ──
+        // Les SVG sont autorisés ici → vecteur XSS stocké réel : on scanne le contenu.
+        const uploadVerdict = scanUpload({
+            filename: file.name,
+            mime: file.type,
+            bytes: new Uint8Array(buffer),
+            text: file.type.includes('svg') ? buffer.toString('utf-8') : undefined,
+        })
+        if (!uploadVerdict.safe) {
+            return NextResponse.json(
+                { error: 'Fichier rejeté par le pare-feu applicatif.', threat: uploadVerdict.threat },
+                { status: 400 }
+            )
+        }
 
         // Auto-create the 'blog-assets' bucket if it is missing
         const { error: bucketError } = await supabase.storage.createBucket('blog-assets', {

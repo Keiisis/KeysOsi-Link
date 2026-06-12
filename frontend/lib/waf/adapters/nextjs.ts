@@ -146,3 +146,29 @@ export async function assertOwnership(
     }
     return { verdict, rejection: wafReject('Accès refusé.', 403) }
 }
+
+// ── Garde centrale : rend le body-scan obligatoire par wrapper ──
+type RouteHandler = (req: Request, ctx?: unknown) => Promise<Response> | Response
+
+export interface WafGuardOptions {
+    scan?: Partial<BodyScanOptions> | false
+    onBodyThreat?: (verdict: BodyScanVerdict) => void
+}
+
+/**
+ * Enveloppe un handler de route App Router en imposant l'analyse de body
+ * AVANT lui (impossible à oublier).
+ *   export const POST = withWafGuard(async (req) => { ... })
+ */
+export function withWafGuard(handler: RouteHandler, options: WafGuardOptions = {}): RouteHandler {
+    return async (req: Request, ctx?: unknown): Promise<Response> => {
+        if (options.scan !== false && /^(POST|PUT|PATCH|DELETE)$/i.test(req.method)) {
+            const { rejection } = await scanRequestBody(req, {
+                scan: options.scan || undefined,
+                onThreat: options.onBodyThreat,
+            })
+            if (rejection) return rejection
+        }
+        return handler(req, ctx)
+    }
+}

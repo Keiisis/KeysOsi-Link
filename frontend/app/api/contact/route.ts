@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { sendEmail, getEmailTemplates, getEmailConfig } from '@/lib/email';
 import { fetchWithGroqRotation, GROQ_KEYS } from '@/lib/groq';
 import { rateLimit, getClientIp, rateLimitHeaders, CONTACT_LIMIT } from '@/lib/rate-limit';
+import { withWafGuard } from '@/lib/waf';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -37,7 +38,9 @@ async function generateAutoReply(clientName: string, subject: string, message: s
     }
 }
 
-export async function POST(req: NextRequest) {
+// Le handler est enveloppé par withWafGuard (analyse de body automatique :
+// prototype pollution / RCE / SSRF / DoS) — voir export en bas de fichier.
+async function handleContact(req: NextRequest) {
     try {
         // ═══ RATE LIMITING ════════════════════════════════════════════
         // Strict : protège le quota email (Groq + SMTP) et la table messages.
@@ -153,3 +156,8 @@ export async function POST(req: NextRequest) {
         );
     }
 }
+
+// Route POST gardée : body-scan WAF automatique avant le handler.
+export const POST = withWafGuard(
+    handleContact as unknown as (r: Request) => Promise<Response>
+);

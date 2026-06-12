@@ -18,6 +18,8 @@ import {
     getCustomRulesCache,
     checkIpTrustScore,
     checkSubnetBanned,
+    recordLocalViolation,
+    isLocallyBlocked,
     isHoneypotPath,
     updateIpMemory,
     createAlert,
@@ -676,7 +678,14 @@ export async function middleware(request: NextRequest) {
 
         // 5a. Check sous-réseau banni + IP bloquée + trust score
         if (!isIpWhitelisted && !isInternalPanelPath) {
+            // ── Fail-safe : blocage LOCAL des récidivistes (Supabase down) ──
+            // Même sans DB, un attaquant qui a déjà multiplié les violations sur
+            // cette instance est bloqué via la mémoire comportementale RAM.
+            if (isLocallyBlocked(ip)) {
+                return wafBlock('Accès refusé.', 403)
+            }
             if (checkSubnetBanned(ip)) {
+                recordLocalViolation(ip)
                 return wafBlock('Accès refusé.', 403)
             }
             if (ip !== 'unknown' && await isIpBlocked(ip)) {
@@ -785,6 +794,8 @@ export async function middleware(request: NextRequest) {
                             })
                         }
                     }
+                    // Fail-safe : compte la violation en RAM (récidive bloquée même DB down)
+                    recordLocalViolation(ip)
                     return wafBlock('Requête bloquée par le pare-feu applicatif.', 403)
                 }
 

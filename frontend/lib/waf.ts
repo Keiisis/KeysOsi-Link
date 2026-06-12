@@ -63,13 +63,23 @@ export type { ResourceMap, ResourceMapEntry } from './waf/adapters/supabase-owne
 export {
     scanRequestBody,
     assertOwnership,
+    withWafGuard,
 } from './waf/adapters/nextjs'
 export type {
     ScanRequestBodyResult,
     ScanRequestBodyOptions,
     AssertOwnershipParams,
     AssertOwnershipResult,
+    WafGuardOptions,
 } from './waf/adapters/nextjs'
+
+// ── CSRF (origin + double-submit) ──
+export { checkOrigin, checkDoubleSubmit, generateCsrfToken, constantTimeEqual } from './waf/core/csrf'
+export type { CsrfOriginResult } from './waf/core/csrf'
+
+// ── Upload scanner (polyglotes, double-ext, SVG script, MIME mismatch) ──
+export { scanUpload } from './waf/core/upload-scanner'
+export type { UploadInput, UploadScanVerdict, UploadThreat } from './waf/core/upload-scanner'
 
 // ── Évaluation RPC centralisée (cerveau décisionnel SQL) ─────
 // Appelle waf_evaluate_request dans Supabase pour obtenir
@@ -248,6 +258,70 @@ export function getIpProfileFromCache(ip: string): IpProfile | null {
 
 export function setCachedIpProfile(ip: string, profile: Omit<IpProfile, 'ts'>): void {
     ipMemoryCache.set(ip, { ...profile, ts: Date.now() })
+}
+
+// ══════════════════════════════════════════════════════════════
+// 🧱 MÉMOIRE COMPORTEMENTALE LOCALE (fail-safe Supabase down)
+// ══════════════════════════════════════════════════════════════
+// Si Supabase est injoignable, le scoring comportemental DB disparaît
+// et le WAF retombait en "fail-open". Cette couche RAM (par instance)
+// garantit qu'un RÉCIDIVISTE est bloqué localement même sans DB :
+// chaque violation incrémente un compteur à fenêtre glissante ; au-delà
+// d'un seuil, l'IP est bloquée en mémoire pour une durée (TTL).
+//
+// Léger, borné (cap d'entrées + éviction LRU), zéro dépendance.
+interface LocalThreat { count: number; firstSeen: number; blockedUntil: number }
+
+const localThreatMem = new Map<string, LocalThreat>()
+const LOCAL_WINDOW_MS      = 10 * 60_000   // fenêtre de comptage : 10 min
+const LOCAL_BLOCK_THRESHOLD = 5            // 5 violations → blocage local
+const LOCAL_BLOCK_TTL_MS   = 30 * 60_000   // blocage local : 30 min
+const LOCAL_MEM_MAX        = 10_000        // cap anti-fuite mémoire
+
+function evictIfNeeded(): void {
+    if (localThreatMem.size <= LOCAL_MEM_MAX) return
+    // Évince les ~10% plus anciens (par firstSeen)
+    const entries = [...localThreatMem.entries()].sort((a, b) => a[1].firstSeen - b[1].firstSeen)
+    const toDrop = Math.ceil(LOCAL_MEM_MAX * 0.1)
+    for (let i = 0; i < toDrop && i < entries.length; i++) localThreatMem.delete(entries[i][0])
+}
+
+/** Enregistre une violation locale pour une IP ; renvoie true si seuil atteint. */
+export function recordLocalViolation(ip: string): boolean {
+    if (!ip || ip === 'unknown') return false
+    const now = Date.now()
+    let t = localThreatMem.get(ip)
+    if (!t || now - t.firstSeen > LOCAL_WINDOW_MS) {
+        t = { count: 0, firstSeen: now, blockedUntil: 0 }
+    }
+    t.count++
+    if (t.count >= LOCAL_BLOCK_THRESHOLD) {
+        t.blockedUntil = now + LOCAL_BLOCK_TTL_MS
+    }
+    localThreatMem.set(ip, t)
+    evictIfNeeded()
+    return t.blockedUntil > now
+}
+
+/** L'IP est-elle bloquée localement (récidiviste, mémoire RAM) ? */
+export function isLocallyBlocked(ip: string): boolean {
+    if (!ip || ip === 'unknown') return false
+    const t = localThreatMem.get(ip)
+    if (!t) return false
+    if (t.blockedUntil > Date.now()) return true
+    // expiré : purge si la fenêtre est aussi dépassée
+    if (Date.now() - t.firstSeen > LOCAL_WINDOW_MS && t.blockedUntil <= Date.now()) {
+        localThreatMem.delete(ip)
+    }
+    return false
+}
+
+/** Métriques (observabilité). */
+export function getLocalThreatMetrics(): { tracked: number; blocked: number } {
+    const now = Date.now()
+    let blocked = 0
+    for (const t of localThreatMem.values()) if (t.blockedUntil > now) blocked++
+    return { tracked: localThreatMem.size, blocked }
 }
 
 // Vérification trust score via Supabase (async)
