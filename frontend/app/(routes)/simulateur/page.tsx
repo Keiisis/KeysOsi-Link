@@ -163,7 +163,7 @@ export default function SimulateurPage() {
                 {/* Progress Bar */}
                 {!isResultStep && (
                     <div className="w-full max-w-xl mb-10">
-                        <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                             <motion.div
                                 className="h-full bg-gradient-to-r from-[#008751] to-[#FCD116] rounded-full"
                                 animate={{ width: `${progressPercent}%` }}
@@ -241,23 +241,23 @@ export default function SimulateurPage() {
                                         <div>
                                             <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1.5 block"><T>Nom</T></label>
                                             <input type="text" required value={nom} onChange={e => setNom(e.target.value)} placeholder={t("Votre nom")}
-                                                className="w-full px-4 py-3.5 bg-white/5 border border-gray-200 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751]" />
+                                                className="w-full px-4 py-3.5 bg-white border border-gray-300 rounded-xl text-slate-900 placeholder-gray-400 focus:outline-none focus:border-[#008751] focus:bg-slate-50/50" />
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1.5 block"><T>Prénom</T></label>
                                             <input type="text" value={prenom} onChange={e => setPrenom(e.target.value)} placeholder={t("Votre prénom")}
-                                                className="w-full px-4 py-3.5 bg-white/5 border border-gray-200 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751]" />
+                                                className="w-full px-4 py-3.5 bg-white border border-gray-300 rounded-xl text-slate-900 placeholder-gray-400 focus:outline-none focus:border-[#008751] focus:bg-slate-50/50" />
                                         </div>
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1.5 block"><T>Email</T></label>
                                         <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder={t("votre@email.com")}
-                                            className="w-full px-4 py-3.5 bg-white/5 border border-gray-200 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751]" />
+                                            className="w-full px-4 py-3.5 bg-white border border-gray-300 rounded-xl text-slate-900 placeholder-gray-400 focus:outline-none focus:border-[#008751] focus:bg-slate-50/50" />
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1.5 block"><T>WhatsApp (optionnel)</T></label>
                                         <input type="tel" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder={t("+229 XX XX XX XX")}
-                                            className="w-full px-4 py-3.5 bg-white/5 border border-gray-200 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#008751]" />
+                                            className="w-full px-4 py-3.5 bg-white border border-gray-300 rounded-xl text-slate-900 placeholder-gray-400 focus:outline-none focus:border-[#008751] focus:bg-slate-50/50" />
                                     </div>
 
                                     <button
@@ -293,10 +293,10 @@ export default function SimulateurPage() {
                                 {/* Score Ring */}
                                 <div className="relative w-40 h-40 mx-auto mb-8">
                                     <svg className="w-40 h-40 -rotate-90" viewBox="0 0 100 100">
-                                        <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="6" />
+                                        <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(0,135,81,0.1)" strokeWidth="6" />
                                         <motion.circle
                                             cx="50" cy="50" r="42" fill="none"
-                                            stroke="#FCD116"
+                                            stroke="#008751"
                                             strokeWidth="6"
                                             strokeLinecap="round"
                                             strokeDasharray={`${2 * Math.PI * 42}`}
@@ -306,7 +306,7 @@ export default function SimulateurPage() {
                                         />
                                     </svg>
                                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                        <span className="text-4xl font-black font-mono text-[#FCD116]">{result.score}</span>
+                                        <span className="text-4xl font-black font-mono text-[#008751]">{result.score}</span>
                                         <span className="text-[10px] uppercase tracking-widest text-gray-500 font-bold"><T>score</T></span>
                                     </div>
                                 </div>
@@ -316,9 +316,9 @@ export default function SimulateurPage() {
                                 </h2>
 
                                 {/* Recommendation Card */}
-                                <div className="bg-gradient-to-br from-[#008751]/20 to-[#008751]/5 border border-[#008751]/30 rounded-3xl p-8 mb-8 backdrop-blur-xl max-w-lg mx-auto">
-                                    <Sparkles size={32} className="text-[#FCD116] mx-auto mb-4" />
-                                    <h3 className="text-2xl font-black font-heading text-[#FCD116] mb-2">{t(result.service)}</h3>
+                                <div className="bg-gradient-to-br from-[#008751]/10 to-[#008751]/5 border border-[#008751]/20 rounded-3xl p-8 mb-8 backdrop-blur-xl max-w-lg mx-auto shadow-sm">
+                                    <Sparkles size={32} className="text-[#A68B3C] mx-auto mb-4" />
+                                    <h3 className="text-2xl font-black font-heading text-[#008751] mb-2">{t(result.service)}</h3>
                                     <p className="text-gray-500 text-sm leading-relaxed">
                                         {result.hasOrigins
                                             ? t('Vos origines béninoises renforcent votre éligibilité. Notre équipe est prête à vous accompagner dans cette démarche.')

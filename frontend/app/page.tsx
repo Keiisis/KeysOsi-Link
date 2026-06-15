@@ -2,7 +2,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import ServicesGrid from "@/components/home/ServicesGrid";
 import TestimonialsCarousel from "@/components/home/TestimonialsCarousel";
-import StatsSection from "@/components/home/StatsSection";
 import HeroSection from "@/components/home/HeroSection";
 import ProcessSteps from "@/components/home/ProcessSteps";
 import HeritageCarousel from "@/components/home/HeritageCarousel";
@@ -17,9 +16,6 @@ export default function Home() {
     <div className="bg-white">
       {/* Hero Section (Immersive Video/Particles) */}
       <HeroSection />
-
-      {/* Stats Section */}
-      <StatsSection />
 
       {/* Services Preview */}
       <section className="py-12 md:py-20 bg-background">

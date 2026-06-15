@@ -29,15 +29,15 @@ interface DossierData {
 
 const statusConfig: Record<string, { tw: { border: string, bg: string, text: string, bgAlpha: string, borderAlpha: string, shadow: string }, icon: typeof CheckCircle2, label: string }> = {
     completed: {
-        tw: { border: 'border-[#008751]', bg: 'bg-[#008751]', text: 'text-[#008751]', bgAlpha: 'bg-[#008751]/15', borderAlpha: 'border-[#008751]/30', shadow: 'shadow-[0_0_20px_rgba(0,135,81,0.4)]' },
+        tw: { border: 'border-[#008751]', bg: 'bg-[#008751]', text: 'text-[#008751]', bgAlpha: 'bg-[#008751]/15', borderAlpha: 'border-[#008751]/30', shadow: 'shadow-[0_0_20px_rgba(0,135,81,0.2)]' },
         icon: CheckCircle2, label: 'Terminé'
     },
     in_progress: {
-        tw: { border: 'border-[#FCD116]', bg: 'bg-[#FCD116]', text: 'text-[#FCD116]', bgAlpha: 'bg-[#FCD116]/15', borderAlpha: 'border-[#FCD116]/30', shadow: 'shadow-[0_0_20px_rgba(252,209,22,0.4)]' },
+        tw: { border: 'border-[#A68B3C]', bg: 'bg-[#A68B3C]', text: 'text-[#A68B3C]', bgAlpha: 'bg-[#A68B3C]/15', borderAlpha: 'border-[#A68B3C]/30', shadow: 'shadow-[0_0_20px_rgba(166,139,60,0.2)]' },
         icon: Zap, label: 'En cours'
     },
     pending: {
-        tw: { border: 'border-gray-500', bg: 'bg-gray-500', text: 'text-gray-500', bgAlpha: 'bg-gray-500/15', borderAlpha: 'border-gray-500/30', shadow: 'shadow-none' },
+        tw: { border: 'border-gray-300', bg: 'bg-gray-300', text: 'text-gray-500', bgAlpha: 'bg-gray-500/10', borderAlpha: 'border-gray-500/20', shadow: 'shadow-none' },
         icon: Clock, label: 'En attente'
     },
 }
@@ -253,19 +253,19 @@ export default function SuiviDossierPage() {
                                 </button>
 
                                 {/* Dossier Header Card */}
-                                <div className="bg-gradient-to-br from-[#008751]/20 to-[#008751]/5 border border-[#008751]/30 rounded-3xl p-8 mb-10 backdrop-blur-xl">
+                                <div className="bg-gradient-to-br from-[#008751]/10 to-[#008751]/5 border border-[#008751]/20 rounded-3xl p-8 mb-10 backdrop-blur-xl shadow-sm">
                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                                         <div>
                                             <p className="text-[11px] font-black uppercase tracking-[4px] text-[#008751] mb-2"><T>Dossier N°</T></p>
-                                            <h2 className="text-3xl font-black font-mono tracking-wider text-white">{dossier.num_dossier}</h2>
+                                            <h2 className="text-3xl font-black font-mono tracking-wider text-slate-900">{dossier.num_dossier}</h2>
                                             <p className="text-gray-500 mt-2 text-sm">
-                                                {dossier.client_prenom} {dossier.client_nom} — <span className="text-[#FCD116]">{dossier.service_type}</span>
+                                                {dossier.client_prenom} {dossier.client_nom} — <span className="text-[#A68B3C] font-bold">{dossier.service_type}</span>
                                             </p>
                                         </div>
                                         <div className="text-center">
                                             <div className="relative w-24 h-24 mx-auto">
                                                 <svg className="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
-                                                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
+                                                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(0,135,81,0.1)" strokeWidth="8" />
                                                     <circle
                                                         cx="50" cy="50" r="42" fill="none"
                                                         stroke="#008751"
@@ -277,7 +277,7 @@ export default function SuiviDossierPage() {
                                                     />
                                                 </svg>
                                                 <div className="absolute inset-0 flex items-center justify-center">
-                                                    <span className="text-xl fond-black text-white font-mono">{dossier.progression}%</span>
+                                                    <span className="text-xl font-black text-slate-900 font-mono">{dossier.progression}%</span>
                                                 </div>
                                             </div>
                                             <p className="text-[10px] uppercase tracking-widest text-gray-500 mt-2 font-bold"><T>Progression</T></p>
@@ -290,23 +290,23 @@ export default function SuiviDossierPage() {
                                     <motion.div
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
-                                        className="mb-10 bg-red-500/10 border-2 border-red-500/30 rounded-3xl p-6 md:p-8 backdrop-blur-md relative overflow-hidden"
+                                        className="mb-10 bg-red-500/5 border-2 border-red-500/20 rounded-3xl p-6 md:p-8 relative overflow-hidden"
                                     >
-                                        <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/20 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                                        <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
                                         
                                         <div className="flex items-start gap-4 mb-6 relative z-10">
-                                            <div className="w-12 h-12 rounded-2xl bg-red-500/20 flex items-center justify-center shrink-0 shadow-[0_0_30px_rgba(239,68,68,0.4)] relative">
-                                                <FileWarning size={24} className="text-red-400 animate-pulse" />
+                                            <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(239,68,68,0.1)] relative">
+                                                <FileWarning size={24} className="text-red-600 animate-pulse" />
                                                 <span className="absolute -top-1 -right-1 flex h-4 w-4">
                                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                                                     <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-[9px] font-bold items-center justify-center text-white">{dossier.documents_manquants.length}</span>
                                                 </span>
                                             </div>
                                             <div>
-                                                <h3 className="text-xl font-black text-red-500 flex items-center gap-2">
+                                                <h3 className="text-xl font-black text-red-600 flex items-center gap-2">
                                                     Action Requise
                                                 </h3>
-                                                <p className="text-red-300/80 text-sm mt-1">
+                                                <p className="text-red-800 text-sm mt-1">
                                                     Afin de poursuivre le traitement de votre dossier, veuillez nous fournir les documents suivants de toute urgence.
                                                 </p>
                                             </div>
@@ -314,10 +314,10 @@ export default function SuiviDossierPage() {
 
                                         <div className="space-y-4 relative z-10">
                                             {dossier.documents_manquants.map((doc, idx) => (
-                                                <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-red-500/20 rounded-2xl p-4 md:px-6">
+                                                <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-red-500/20 rounded-2xl p-4 md:px-6 animate-fadeIn shadow-sm">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-2 h-2 rounded-full bg-red-500" />
-                                                        <span className="font-bold text-gray-200">{doc}</span>
+                                                        <span className="font-bold text-slate-800">{doc}</span>
                                                     </div>
                                                     
                                                     <div className="relative">
@@ -332,8 +332,8 @@ export default function SuiviDossierPage() {
                                                             htmlFor={`upload-${idx}`}
                                                             className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm cursor-pointer transition-all ${
                                                                 uploadingDoc === doc 
-                                                                ? 'bg-gray-800 text-gray-500 cursor-not-allowed' 
-                                                                : 'bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-gray-900 shadow-[0_4px_20px_rgba(239,68,68,0.2)]'
+                                                                ? 'bg-slate-200 text-slate-500 cursor-not-allowed' 
+                                                                : 'bg-red-500/10 text-red-600 hover:bg-red-600 hover:text-white shadow-sm'
                                                             }`}
                                                         >
                                                             {uploadingDoc === doc ? (
@@ -367,7 +367,7 @@ export default function SuiviDossierPage() {
                                             >
                                                 {/* Node */}
                                                 <div
-                                                    className={`absolute -left-8 top-1 w-8 h-8 rounded-full flex items-center justify-center border-2 z-10 ${config.tw.border} ${etape.status === 'completed' ? config.tw.bg : 'bg-[#0a0f18]'} ${etape.status !== 'pending' ? config.tw.shadow : ''}`}
+                                                    className={`absolute -left-8 top-1 w-8 h-8 rounded-full flex items-center justify-center border-2 z-10 ${config.tw.border} ${etape.status === 'completed' ? config.tw.bg : 'bg-white'} ${etape.status !== 'pending' ? config.tw.shadow : ''}`}
                                                 >
                                                     <Icon size={14} className={etape.status === 'completed' ? 'text-white' : config.tw.text} />
                                                 </div>
@@ -408,27 +408,27 @@ export default function SuiviDossierPage() {
                                 </div>
 
                                 {/* Documents Manquants */}
-                                {dossier.documents_manquants && dossier.documents_manquants.length > 0 && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.8 }}
-                                        className="mt-10 p-6 rounded-2xl bg-[#E8112D]/10 border border-[#E8112D]/20"
-                                    >
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <AlertTriangle size={20} className="text-[#E8112D]" />
-                                            <h4 className="font-black text-[15px] text-[#E8112D]"><T>Documents manquants</T></h4>
-                                        </div>
-                                        <ul className="space-y-2">
-                                            {dossier.documents_manquants.map((doc, i) => (
-                                                <li key={i} className="flex items-center gap-3 text-sm text-gray-300">
-                                                    <FileCheck size={14} className="text-[#E8112D]/60" />
-                                                    {doc}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </motion.div>
-                                )}
+                                                {dossier.documents_manquants && dossier.documents_manquants.length > 0 && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 20 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        transition={{ delay: 0.8 }}
+                                                        className="mt-10 p-6 rounded-2xl bg-[#E8112D]/5 border border-[#E8112D]/20 shadow-sm"
+                                                    >
+                                                        <div className="flex items-center gap-3 mb-4">
+                                                            <AlertTriangle size={20} className="text-[#E8112D]" />
+                                                            <h4 className="font-black text-[15px] text-[#E8112D]"><T>Documents manquants</T></h4>
+                                                        </div>
+                                                        <ul className="space-y-2">
+                                                            {dossier.documents_manquants.map((doc, i) => (
+                                                                <li key={i} className="flex items-center gap-3 text-sm text-slate-800 font-medium">
+                                                                    <FileCheck size={14} className="text-[#E8112D]/80" />
+                                                                    {doc}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </motion.div>
+                                                )}
 
                                 {/* Contact CTA */}
                                 <motion.div
@@ -442,9 +442,9 @@ export default function SuiviDossierPage() {
                                     </p>
                                     <a
                                         href="/contact"
-                                        className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-white/5 border border-gray-200 text-gray-900 font-bold text-sm hover:bg-gray-100 transition-all"
+                                        className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-slate-50 border border-gray-200 text-gray-900 font-bold text-sm hover:bg-slate-100 transition-all shadow-sm"
                                     >
-                                        <Sparkles size={16} className="text-[#FCD116]" />
+                                        <Sparkles size={16} className="text-[#A68B3C]" />
                                         <T>Contacter un conseiller</T>
                                     </a>
                                 </motion.div>
