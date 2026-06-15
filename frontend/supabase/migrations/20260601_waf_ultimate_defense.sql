@@ -80,6 +80,26 @@ CREATE TABLE IF NOT EXISTS public.waf_device_fingerprints (
     CONSTRAINT fp_stab_range  CHECK (stability_score >= 0 AND stability_score <= 100)
 );
 
+-- Auto-réparation : si la table existe déjà depuis un run antérieur avec un
+-- schéma plus ancien, CREATE TABLE IF NOT EXISTS la saute SANS ajouter les
+-- colonnes manquantes. On garantit donc chaque colonne avant les index/triggers.
+ALTER TABLE public.waf_device_fingerprints
+    ADD COLUMN IF NOT EXISTS components      JSONB NOT NULL DEFAULT '{}',
+    ADD COLUMN IF NOT EXISTS associated_ips  TEXT[] NOT NULL DEFAULT '{}',
+    ADD COLUMN IF NOT EXISTS asn_history     INTEGER[] NOT NULL DEFAULT '{}',
+    ADD COLUMN IF NOT EXISTS country_history TEXT[] NOT NULL DEFAULT '{}',
+    ADD COLUMN IF NOT EXISTS first_seen      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    ADD COLUMN IF NOT EXISTS last_seen       TIMESTAMPTZ NOT NULL DEFAULT now(),
+    ADD COLUMN IF NOT EXISTS trust_score     NUMERIC(6,2) NOT NULL DEFAULT 50,
+    ADD COLUMN IF NOT EXISTS stability_score NUMERIC(6,2) NOT NULL DEFAULT 50,
+    ADD COLUMN IF NOT EXISTS total_requests  BIGINT NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS blocked_count   BIGINT NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS deceived_count  BIGINT NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS distinct_ips    INTEGER NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS is_known_bad    BOOLEAN NOT NULL DEFAULT false,
+    ADD COLUMN IF NOT EXISTS tags            TEXT[] NOT NULL DEFAULT '{}',
+    ADD COLUMN IF NOT EXISTS campaign_id     UUID;
+
 CREATE INDEX IF NOT EXISTS idx_waf_fp_trust
     ON public.waf_device_fingerprints(trust_score) WHERE trust_score < 30;
 CREATE INDEX IF NOT EXISTS idx_waf_fp_bad
