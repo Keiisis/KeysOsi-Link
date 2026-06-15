@@ -12,6 +12,29 @@
 -- Idempotente.
 -- ══════════════════════════════════════════════════════════════
 
+-- ──────────────────────────────────────────────────────────────
+-- 0. Filet de sécurité : table créée si la migration 20260601 n'a pas
+--    encore été appliquée. Rend ce script autonome (ordre indépendant).
+--    Définition identique à 20260601_waf_ultimate_defense.sql.
+-- ──────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.waf_idor_tracking (
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ip               TEXT NOT NULL,
+    fingerprint_hash TEXT DEFAULT '',
+    endpoint_pattern TEXT NOT NULL,
+    distinct_ids     INTEGER DEFAULT 1,
+    accessed_ids     TEXT[] DEFAULT '{}',
+    time_window_start TIMESTAMPTZ DEFAULT now(),
+    time_window_end  TIMESTAMPTZ DEFAULT now(),
+    is_suspicious    BOOLEAN DEFAULT false,
+    escalated        BOOLEAN DEFAULT false,
+    created_at       TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_waf_idor_ip
+    ON public.waf_idor_tracking(ip, endpoint_pattern, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_waf_idor_suspicious
+    ON public.waf_idor_tracking(is_suspicious) WHERE is_suspicious = true;
+
 -- Fenêtre de corrélation (minutes) et seuils — alignés avec lib/waf/idor.ts
 -- IDOR_WINDOW_MS = 5 min · IDOR_MAX_IDS = 8 · IDOR_RAPID_THRESHOLD = 15
 
