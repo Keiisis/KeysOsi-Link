@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useTranslation } from '@/lib/translation'
 import { exportRegistreComptable, RegistreRecette, RegistreDepense } from '@/lib/exportRegistreComptable'
+import { toXOF } from '@/lib/currency-convert'
 import { 
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
     AreaChart, Area
@@ -250,10 +251,11 @@ export default function AgentComptabilitePage() {
     const stats = useMemo(() => {
         const getStats = (list: DocumentFinancier[], expList: Depense[]) => {
             const invoices = list.filter(d => d.type === 'facture')
-            const encaisse = invoices.filter(d => d.status === 'paye').reduce((acc, d) => acc + d.total, 0)
-            const facture = invoices.reduce((acc, d) => acc + d.total, 0)
-            const attente = invoices.filter(d => d.status === 'envoye' || d.status === 'accepte').reduce((acc, d) => acc + d.total, 0)
-            const totalDepenses = expList.reduce((acc, e) => acc + Number(e.montant), 0)
+            // Agrégats normalisés en XOF (parité EUR fixe) — cf. lib/currency-convert.ts
+            const encaisse = invoices.filter(d => d.status === 'paye').reduce((acc, d) => acc + toXOF(d.total, d.currency), 0)
+            const facture = invoices.reduce((acc, d) => acc + toXOF(d.total, d.currency), 0)
+            const attente = invoices.filter(d => d.status === 'envoye' || d.status === 'accepte').reduce((acc, d) => acc + toXOF(d.total, d.currency), 0)
+            const totalDepenses = expList.reduce((acc, e) => acc + Number(e.montant), 0)  // dépenses en XOF
             const beneficeNet = encaisse - totalDepenses
             return { 
                 encaisse, facture, attente, 

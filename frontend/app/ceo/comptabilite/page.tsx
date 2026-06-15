@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { Calculator, RefreshCw, Loader2, TrendingUp, TrendingDown, DollarSign, FileText, Download, Users, Banknote, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { exportToExcelMultiSheet } from '@/lib/exportExcel'
 import ComptaLockPanel, { type ClotureRow } from '@/components/comptabilite/ComptaLockPanel'
+import { toXOF } from '@/lib/currency-convert'
 
 // ── Périodes ──────────────────────────────────────────────────
 type Period = string
@@ -167,16 +168,17 @@ export default function CeoComptabilite() {
     const paiements = paiementsByAgent.filter(p => inPeriod(p.date_paiement))
     const orders = allOrders.filter(o => inPeriod(o.created_at))
 
-    const totalFacture = docs.filter(d => d.type === 'facture').reduce((a, d) => a + (d.total || 0), 0)
-    const totalManuellement = paiements.reduce((a, p) => a + Number(p.montant || 0), 0)
-    const totalOrders = orders.filter(o => PAID_STATUSES.includes((o.payment_status || '').toLowerCase())).reduce((a, o) => a + (o.amount || 0), 0)
-    const totalEncaisseDocs = docs.filter(d => d.type === 'facture' && PAID_STATUSES.includes(d.status?.toLowerCase())).reduce((a, d) => a + (d.total || 0), 0)
+    // Agrégats normalisés en XOF (parité EUR fixe) — cf. lib/currency-convert.ts
+    const totalFacture = docs.filter(d => d.type === 'facture').reduce((a, d) => a + toXOF(d.total, d.currency), 0)
+    const totalManuellement = paiements.reduce((a, p) => a + Number(p.montant || 0), 0)  // paiements en XOF
+    const totalOrders = orders.filter(o => PAID_STATUSES.includes((o.payment_status || '').toLowerCase())).reduce((a, o) => a + toXOF(o.amount, o.currency), 0)
+    const totalEncaisseDocs = docs.filter(d => d.type === 'facture' && PAID_STATUSES.includes(d.status?.toLowerCase())).reduce((a, d) => a + toXOF(d.total, d.currency), 0)
     const totalRevenue = totalEncaisseDocs + totalOrders + totalManuellement
-    const totalDepenses = depenses.reduce((a, d) => a + (d.montant || 0), 0)
+    const totalDepenses = depenses.reduce((a, d) => a + (d.montant || 0), 0)  // dépenses en XOF
     const profit = totalRevenue - totalDepenses
 
     const pendingDocs = docs.filter(d => d.type === 'facture' && !PAID_STATUSES.includes(d.status?.toLowerCase()) && d.status !== 'annule' && d.status !== 'refuse' && d.status !== 'brouillon')
-    const pendingTotal = pendingDocs.reduce((a, d) => a + d.total, 0)
+    const pendingTotal = pendingDocs.reduce((a, d) => a + toXOF(d.total, d.currency), 0)
 
     // Agrégation par agent (filtrée par période, tous agents confondus)
     const perAgent = useMemo(() => {
@@ -195,9 +197,9 @@ export default function CeoComptabilite() {
         allDocs.filter(d => inPeriod(d.created_at)).forEach(d => {
             const r = ensure(d.agent_id)
             if (d.type === 'facture') {
-                r.facture += d.total || 0
+                r.facture += toXOF(d.total, d.currency)
                 r.nbDocs += 1
-                if (PAID_STATUSES.includes(d.status?.toLowerCase())) r.encaisse += d.total || 0
+                if (PAID_STATUSES.includes(d.status?.toLowerCase())) r.encaisse += toXOF(d.total, d.currency)
             }
         })
         allPaiements.filter(p => inPeriod(p.date_paiement)).forEach(p => {

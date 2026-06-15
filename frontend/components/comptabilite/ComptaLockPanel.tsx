@@ -13,11 +13,17 @@ export interface ClotureRow {
     total_depenses: number
     total_tva: number
     benefice_net: number
+    total_commissions?: number | null
+    benefice_net_final?: number | null
     nb_documents: number
     nb_paiements: number
     nb_depenses: number
     notes: string | null
     hash_integrite: string | null
+    status?: string | null              // 'closed' | 'reopened'
+    reopened_at?: string | null
+    reopened_par_nom?: string | null
+    reopen_count?: number | null
 }
 
 interface Props {
@@ -53,8 +59,9 @@ export default function ComptaLockPanel({
     const [error, setError] = useState<string | null>(null)
 
     const cloture = clotures.find(c => c.periode === currentPeriod)
-    const isLocked = !!cloture
-    const canClose = isMonthPeriod && !isLocked
+    const isReopened = !!cloture && (cloture.status ?? 'closed') === 'reopened'
+    const isLocked = !!cloture && !isReopened
+    const canClose = isMonthPeriod && !isLocked         // inclut la re-clôture d'une période rouverte
     const canReopen = isMonthPeriod && isLocked
 
     const doClose = async () => {
@@ -78,7 +85,7 @@ export default function ComptaLockPanel({
     }
 
     const doReopen = async () => {
-        if (!confirm(`Rouvrir la période ${periodLabel} ?\n\nCela supprime le verrou et autorise à nouveau les modifications.`)) return
+        if (!confirm(`Rouvrir la période ${periodLabel} ?\n\nLe verrou est levé et les modifications redeviennent possibles. Le snapshot et le hash d'origine sont conservés ; la réouverture est tracée dans le journal d'audit.`)) return
         setSaving(true); setError(null)
         try {
             const res = await fetch(`/api/admin/comptabilite/cloture?periode=${currentPeriod}`, { method: 'DELETE' })
@@ -113,10 +120,16 @@ export default function ComptaLockPanel({
                             </p>
                         </div>
                     </div>
-                    <div className="flex-1 grid grid-cols-3 gap-3 text-[10px]">
+                    <div className="flex-1 grid grid-cols-3 md:grid-cols-5 gap-3 text-[10px]">
                         <div><p className="text-gray-500">Encaissé</p><p className="text-white font-bold text-xs">{fmt(cloture.total_encaisse)}</p></div>
                         <div><p className="text-gray-500">Dépenses</p><p className="text-red-400 font-bold text-xs">{fmt(cloture.total_depenses)}</p></div>
                         <div><p className="text-gray-500">Bénéfice net</p><p className={`font-bold text-xs ${cloture.benefice_net >= 0 ? 'text-[#00c870]' : 'text-red-400'}`}>{fmt(cloture.benefice_net)}</p></div>
+                        {cloture.total_commissions != null && (
+                            <div><p className="text-gray-500">Commissions</p><p className="text-[#C9A84C] font-bold text-xs">− {fmt(cloture.total_commissions)}</p></div>
+                        )}
+                        {cloture.benefice_net_final != null && (
+                            <div><p className="text-gray-500">Net final</p><p className={`font-bold text-xs ${cloture.benefice_net_final >= 0 ? 'text-[#00c870]' : 'text-red-400'}`}>{fmt(cloture.benefice_net_final)}</p></div>
+                        )}
                     </div>
                     {canReopen && (
                         <button
@@ -131,16 +144,37 @@ export default function ComptaLockPanel({
                 </div>
             )}
 
-            {/* Bouton clôturer (période en cours non verrouillée) */}
+            {/* Bandeau période ROUVERTE (verrou levé, en attente de reclôture) */}
+            {isReopened && cloture && (
+                <div className="bg-gradient-to-r from-[#E8112D]/15 via-[#E8112D]/8 to-transparent border border-[#E8112D]/30 rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center gap-4 mb-3">
+                    <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-xl bg-[#E8112D]/20 flex items-center justify-center shrink-0">
+                            <Unlock className="w-6 h-6 text-[#E8112D]" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#E8112D]">Période rouverte — verrou levé</p>
+                            <p className="text-white font-black mt-0.5">{periodLabel}</p>
+                            <p className="text-[10px] text-gray-500 mt-0.5">
+                                Rouverte{cloture.reopened_at ? ` le ${new Date(cloture.reopened_at).toLocaleString('fr-FR')}` : ''}
+                                {cloture.reopened_par_nom ? ` par ${cloture.reopened_par_nom}` : ''}
+                                {cloture.reopen_count ? ` · ${cloture.reopen_count} réouverture${cloture.reopen_count > 1 ? 's' : ''}` : ''}
+                                {' · '}Reclôturez après vérification (l\'écart de hash sera tracé).
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Bouton clôturer / reclôturer (période non verrouillée) */}
             {canClose && (
                 <div className="bg-[#0a0f18] border border-white/5 rounded-2xl p-4 flex items-center gap-4">
                     <div className="w-10 h-10 rounded-xl bg-[#FCD116]/15 flex items-center justify-center shrink-0">
                         <Lock className="w-5 h-5 text-[#FCD116]" />
                     </div>
                     <div className="flex-1">
-                        <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">Clôture mensuelle</p>
+                        <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">{isReopened ? 'Reclôture mensuelle' : 'Clôture mensuelle'}</p>
                         <p className="text-white text-sm mt-0.5">
-                            Verrouiller <strong>{periodLabel}</strong> après exportation du rapport comptable.
+                            {isReopened ? 'Refermer' : 'Verrouiller'} <strong>{periodLabel}</strong> après {isReopened ? 'vérification des corrections' : 'exportation du rapport comptable'}.
                         </p>
                         <p className="text-[10px] text-gray-600 mt-0.5">
                             Plus aucune écriture (paiement, dépense, facture) ne pourra être modifiée pour ce mois.
@@ -151,7 +185,7 @@ export default function ComptaLockPanel({
                         onClick={() => setShowConfirm(true)}
                         className="flex items-center gap-2 bg-[#FCD116] text-[#0a0f18] hover:bg-[#e6bc00] font-black text-[11px] px-4 py-2.5 rounded-xl transition-all"
                     >
-                        <Lock size={12} /> Clôturer la période
+                        <Lock size={12} /> {isReopened ? 'Reclôturer la période' : 'Clôturer la période'}
                     </button>
                 </div>
             )}
