@@ -215,6 +215,16 @@ export async function middleware(request: NextRequest) {
         pathname.startsWith('/api/ceo')
     )
 
+    // ─── 1b. COURT-CIRCUIT ANTI-DoS (avant tout appel Supabase) ───
+    // Si l'IP est déjà bloquée localement (récidiviste prouvé via violations),
+    // on renvoie 403 IMMÉDIATEMENT, sans toucher à Supabase (ni RPC, ni log,
+    // ni fingerprint). Effet : sous flood, après quelques hits l'attaquant est
+    // servi 100% depuis la RAM → la DB n'est plus saturée (corrige le DoS qui
+    // menait au fail-open) et le TTFB reste minimal.
+    if (!emergencyBypass && !isIpWhitelisted && !isInternalPanelPath && ip !== 'unknown' && isLocallyBlocked(ip)) {
+        return wafBlock('Accès refusé.', 403)
+    }
+
     // ─── 2. FINGERPRINT EXTRACTION ─────────────────────────────
     // Extraire l'empreinte navigateur depuis les headers HTTP
     // Utilisé pour traquer les attaquants même après changement d'IP
@@ -284,6 +294,7 @@ export async function middleware(request: NextRequest) {
                         supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
                     })
                     trackViolation(ip, SUPA_URL, SUPA_KEY, { threatType: 'protocol_attack' })
+                    recordLocalViolation(ip)
                 }
                 return wafBlock('Requête invalide.', 400)
             }
@@ -372,6 +383,7 @@ export async function middleware(request: NextRequest) {
                         score: evalResult.risk_score ? Math.round(evalResult.risk_score) : 0,
                         supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
                     })
+                    recordLocalViolation(ip) // escalade RAM → court-circuit anti-DoS
                     return wafBlock('Accès refusé.', 403)
                 }
 
@@ -511,6 +523,7 @@ export async function middleware(request: NextRequest) {
                     supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
                 })
                 trackViolation(ip, SUPA_URL, SUPA_KEY, { threatType: 'ssrf' })
+                recordLocalViolation(ip)
                 return wafBlock('Requête bloquée par le pare-feu applicatif.', 403)
             }
         } catch { /* non-critique */ }
@@ -537,6 +550,7 @@ export async function middleware(request: NextRequest) {
                     supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
                 })
                 trackViolation(ip, SUPA_URL, SUPA_KEY, { threatType: 'command_injection' })
+                recordLocalViolation(ip)
                 return wafBlock('Requête bloquée par le pare-feu applicatif.', 403)
             }
         } catch { /* non-critique */ }
@@ -564,6 +578,7 @@ export async function middleware(request: NextRequest) {
                         supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
                     })
                     trackViolation(ip, SUPA_URL, SUPA_KEY, { threatType: 'enumeration' })
+                    recordLocalViolation(ip)
                     return wafBlock('Accès refusé — activité suspecte détectée.', 403)
                 }
 
@@ -593,6 +608,7 @@ export async function middleware(request: NextRequest) {
                         supabaseUrl: SUPA_URL, serviceKey: SUPA_KEY,
                     })
                     trackViolation(ip, SUPA_URL, SUPA_KEY, { threatType: 'enumeration' })
+                    recordLocalViolation(ip)
                     return wafBlock('Accès refusé — activité suspecte détectée.', 403)
                 }
 
