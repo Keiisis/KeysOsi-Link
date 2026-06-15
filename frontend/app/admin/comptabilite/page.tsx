@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { exportToExcelMultiSheet } from '@/lib/exportExcel'
+import { toXOF } from '@/lib/currency-convert'
 import ComptaLockPanel, { type ClotureRow } from '@/components/comptabilite/ComptaLockPanel'
 import {
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -441,16 +442,19 @@ export default function AdminComptabilitePage() {
     const kpis = useMemo(() => {
         const calc = (dList: DocRow[], oList: OrderRow[], deps: DepRow[]) => {
             const invoices = dList.filter(d => d.type === 'facture')
+            // Tous les agrégats sont normalisés en XOF (devise de référence).
+            // Sans ça, une facture en EUR (ex. recherche-ancestrale 250 €) était
+            // additionnée brute au XOF → KPI faux. cf. lib/currency-convert.ts
             // Commission calculée sur le montant NET (total - remise)
             const payees = invoices.filter(d => d.status === 'paye')
-            const encaisseFactu = payees.reduce((a, d) => a + (d.total - (Number(d.remise) || 0)), 0)
-            const enAttente     = invoices.filter(d => ['envoye', 'accepte'].includes(d.status)).reduce((a, d) => a + d.total, 0)
-            const boutique      = oList.filter(o => o.payment_status === 'completed').reduce((a, o) => a + o.amount, 0)
+            const encaisseFactu = payees.reduce((a, d) => a + toXOF(d.total - (Number(d.remise) || 0), d.currency), 0)
+            const enAttente     = invoices.filter(d => ['envoye', 'accepte'].includes(d.status)).reduce((a, d) => a + toXOF(d.total, d.currency), 0)
+            const boutique      = oList.filter(o => o.payment_status === 'completed').reduce((a, o) => a + toXOF(o.amount, o.currency), 0)
             const totalEncaisse = encaisseFactu + boutique
             const commission    = Math.round(encaisseFactu * commissionRate)
-            const totalDeps     = deps.reduce((a, d) => a + Number(d.montant), 0)
-            const caEmis        = invoices.reduce((a, d) => a + d.total, 0)
-            const totalTVA      = invoices.reduce((a, d) => a + (Number(d.total_tva) || 0), 0)
+            const totalDeps     = deps.reduce((a, d) => a + Number(d.montant), 0)  // dépenses déjà en XOF
+            const caEmis        = invoices.reduce((a, d) => a + toXOF(d.total, d.currency), 0)
+            const totalTVA      = invoices.reduce((a, d) => a + toXOF(Number(d.total_tva) || 0, d.currency), 0)
             const jours         = Math.max(1, (end.getTime() - start.getTime()) / 864e5)
             const nbFactPaye    = payees.length
             const nbFactTotal   = invoices.length

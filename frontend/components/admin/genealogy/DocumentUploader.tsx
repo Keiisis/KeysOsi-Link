@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { DocType } from '@/lib/genealogy/types';
+import { EXPIRABLE_DOC_TYPES } from '@/lib/genealogy/expiry';
 import { Upload, FileText, Calendar, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -65,7 +66,7 @@ export default function DocumentUploader({
         .from('genealogia-docs')
         .createSignedUrl(path, 60 * 60 * 24 * 7); // Valid for 7 days
 
-      const isExpirable = ['address_proof', 'criminal_record', 'identity', 'profession_proof', 'afro_descent_proof'].includes(docType);
+      const isExpirable = EXPIRABLE_DOC_TYPES.includes(docType);
 
       // Insert record inside documents table
       const { error: insErr } = await supabase.from('genealogy_documents').insert({
@@ -208,7 +209,7 @@ export default function DocumentUploader({
       </div>
 
       {/* Requirements alerts */}
-      {['address_proof', 'criminal_record', 'identity', 'profession_proof', 'afro_descent_proof'].includes(docType) && (
+      {EXPIRABLE_DOC_TYPES.includes(docType) && (
         <div className="flex items-start gap-2 bg-[#fffbeb]/5 border border-[#b45309]/20 p-3 rounded-xl">
           <AlertCircle size={14} className="text-[#FCD116] mt-0.5 shrink-0" />
           <p className="text-[10px] text-gray-400 font-medium leading-relaxed">

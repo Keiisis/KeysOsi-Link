@@ -1,19 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { EXPIRY_MONTHS } from '@/lib/genealogy/expiry'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
-// Règles d'expiration par type de document (en mois)
-// Source : conventions admin béninoises pour les pièces officielles.
-const EXPIRATION_RULES_MONTHS: Record<string, number> = {
-    casier_judiciaire: 3,
-    certificat_residence: 3,
-    acte_naissance: 6,
-    certificat_nationalite: 6,
-    cip: 60,                  // 5 ans
-    passeport: 60,            // 5 ans (à partir d'issued_date)
-}
+// Règles d'expiration : SOURCE UNIQUE partagée avec engine.ts et l'uploader
+// (lib/genealogy/expiry.ts). Avant, ce cron utilisait un vocabulaire
+// (`acte_naissance`, `casier_judiciaire`…) qui ne correspondait JAMAIS aux
+// doc_type réellement écrits par l'uploader → aucune notification ne partait.
+const EXPIRATION_RULES_MONTHS: Record<string, number> = EXPIRY_MONTHS as Record<string, number>
 
 // Seuil d'alerte avant expiration (jours)
 const WARN_DAYS_BEFORE = 30

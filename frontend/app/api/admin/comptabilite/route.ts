@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
             .in('role', ['agent', 'admin', 'ceo', 'super_admin']),
         supabase
             .from('clotures_mensuelles')
-            .select('id,periode,date_cloture,cloture_par_nom,total_encaisse,total_depenses,total_tva,benefice_net,nb_documents,nb_paiements,nb_depenses,notes,hash_integrite')
+            .select('id,periode,date_cloture,cloture_par_nom,total_encaisse,total_depenses,total_tva,benefice_net,total_commissions,benefice_net_final,nb_documents,nb_paiements,nb_depenses,notes,hash_integrite,status,reopened_at,reopened_par_nom,reopen_count')
             .order('periode', { ascending: false }),
     ])
 

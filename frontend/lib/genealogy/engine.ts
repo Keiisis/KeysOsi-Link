@@ -5,14 +5,15 @@ import {
 import {
   DOSSIER_DEFS, RequirementDef, BIRTH_OR_DEATH_KEYS, ROLE_LABELS,
 } from './requirements';
+import { isDocExpired, expiryMonthsFor } from './expiry';
 
-const THREE_MONTHS_MS = 1000 * 60 * 60 * 24 * 92; // ~3 mois
-
-/** Un document est-il périmé selon la règle des 3 mois ? */
+/**
+ * Un document est-il périmé ? Délègue à la source unique de vérité
+ * (lib/genealogy/expiry.ts). Les actes historiques (naissance, décès…)
+ * ne périment jamais ; seuls les justificatifs « à fraîcheur » expirent.
+ */
 function isExpired(doc: DocumentItem): boolean {
-  if (!doc.issued_date) return false;
-  const issued = new Date(doc.issued_date).getTime();
-  return Date.now() - issued > THREE_MONTHS_MS;
+  return isDocExpired(doc.doc_type, doc.issued_date);
 }
 
 /** Trouve la personne correspondant à un rôle généalogique. */
@@ -52,7 +53,8 @@ function evaluateRequirement(
   if (missingPerson) {
     message = `Ajoutez d'abord ${ROLE_LABELS[def.targetRole] ?? 'cette personne'} dans l'arbre.`;
   } else if (expiredOnly) {
-    message = `Document périmé (doit dater de moins de 3 mois). À renouveler.`;
+    const months = expiryMonthsFor(def.docType) ?? 3;
+    message = `Document périmé (doit dater de moins de ${months} mois). À renouveler.`;
   } else if (!fulfilled && !def.optional) {
     const who = def.targetRole === 'self' ? 'vous' : ROLE_LABELS[def.targetRole];
     message = `Manquant : ${def.label} (${who}).`;
@@ -124,15 +126,50 @@ export function buildAllReports(persons: Person[], documents: DocumentItem[]) {
  */
 export function detectInconsistencies(persons: Person[]): Alert[] {
   const alerts: Alert[] = [];
+  const byId = new Map(persons.map(p => [p.id, p]));
+  const YEAR = 1000 * 60 * 60 * 24 * 365.25;
+  const NINE_MONTHS = 1000 * 60 * 60 * 24 * 274;
+
+  // Aligné sur le trigger SQL fn_check_person_timeline : on contrôle
+  // père ET mère, l'écart d'âge plausible et la conception post-mortem.
+  const checkParent = (
+    p: Person,
+    parent: Person | undefined,
+    rel: 'père' | 'mère',
+  ) => {
+    if (!parent || !parent.birth_date || !p.birth_date) return;
+    const childTs = new Date(p.birth_date).getTime();
+    const parentTs = new Date(parent.birth_date).getTime();
+    const name = p.first_name ?? 'Personne';
+
+    // 1. Enfant né avant/le même jour que le parent
+    if (childTs <= parentTs) {
+      alerts.push({ level: 'warning', message: `⚠️ ${name} serait né(e) avant ou en même temps que ${rel === 'père' ? 'son père' : 'sa mère'}.` });
+      return;
+    }
+    // 2. Parent trop jeune (< 12 ans) ou trop âgé (> 70 ans) à la naissance
+    const ageAtBirth = (childTs - parentTs) / YEAR;
+    if (ageAtBirth < 12) {
+      alerts.push({ level: 'warning', message: `⚠️ ${rel === 'père' ? 'Le père' : 'La mère'} de ${name} aurait moins de 12 ans à sa naissance (écart improbable).` });
+    } else if (ageAtBirth > 70) {
+      alerts.push({ level: 'info', message: `ℹ️ ${rel === 'père' ? 'Le père' : 'La mère'} de ${name} aurait plus de 70 ans à sa naissance — à vérifier.` });
+    }
+    // 3. Conception après le décès du parent (tolérance 9 mois pour le père)
+    if (parent.death_date) {
+      const deathTs = new Date(parent.death_date).getTime();
+      const limit = rel === 'père' ? deathTs + NINE_MONTHS : deathTs;
+      if (childTs > limit) {
+        alerts.push({ level: 'warning', message: `⚠️ ${name} serait né(e) après le décès de ${rel === 'père' ? 'son père' : 'sa mère'}.` });
+      }
+    }
+  };
+
   for (const p of persons) {
     if (p.birth_date && p.death_date && new Date(p.death_date) < new Date(p.birth_date)) {
       alerts.push({ level: 'warning', message: `⚠️ ${p.first_name ?? 'Personne'} : date de décès antérieure à la naissance.` });
     }
-    const father = persons.find(x => x.id === p.father_id);
-    if (father && father.birth_date && p.birth_date &&
-        new Date(p.birth_date) <= new Date(father.birth_date)) {
-      alerts.push({ level: 'warning', message: `⚠️ ${p.first_name ?? 'Personne'} serait né(e) avant ou en même temps que son père.` });
-    }
+    checkParent(p, byId.get(p.father_id ?? ''), 'père');
+    checkParent(p, byId.get(p.mother_id ?? ''), 'mère');
   }
   return alerts;
 }
@@ -148,10 +185,12 @@ export function buildResearchHints(persons: Person[]): Alert[] {
 
   if (oldest?.birth_date) {
     const year = new Date(oldest.birth_date).getFullYear();
-    if (year > 1848) {
-      hints.push({ level: 'info', message: `🔍 Votre ancêtre le plus ancien est né en ${year}. Pour franchir 1848, consultez les registres des "nouveaux libres" (ANOM).` });
+    if (year > 1894) {
+      // Période coloniale française du Dahomey (1894–1960)
+      hints.push({ level: 'info', message: `🔍 Votre ancêtre le plus ancien est né en ${year}. Pour remonter avant 1894, consultez les registres de l'état civil colonial du Dahomey (ANOM, Archives Nationales du Bénin à Porto-Novo).` });
     } else {
-      hints.push({ level: 'info', message: `🔍 Vous avez atteint la période de l'abolition (${year}). Explorez les registres d'individualité et les actes notariés d'habitation.` });
+      // Avant l'établissement colonial : traite atlantique & royaumes (Danxomè)
+      hints.push({ level: 'info', message: `🔍 Vous atteignez la période précoloniale (${year}). Explorez les registres de la traite atlantique, les archives missionnaires et la mémoire orale des royaumes (Danxomè, Porto-Novo, Allada).` });
     }
   } else {
     hints.push({ level: 'info', message: `🔍 Commencez par renseigner les dates de naissance pour activer les pistes d'archives.` });
