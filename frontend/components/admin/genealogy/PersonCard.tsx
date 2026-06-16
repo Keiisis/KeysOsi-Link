@@ -132,21 +132,21 @@ export default function PersonCard({ person, status, onClick, selected, childNum
 
         <div className="flex flex-col items-center justify-center text-center gap-0.5 w-full">
           {/* First name */}
-          <p className="w-full truncate text-[11px] font-black leading-tight text-black dark:text-white">
+          <p className="w-full truncate text-[11px] font-black leading-tight text-[#1a2332] dark:text-white">
             {person.first_name || 'Sans prénom'}
           </p>
           {/* Last name */}
-          <p className="w-full truncate text-[9px] font-black uppercase tracking-wide leading-tight text-black dark:text-white">
+          <p className="w-full truncate text-[9px] font-black uppercase tracking-wide leading-tight text-[#1a2332] dark:text-white">
             {person.last_name || 'Sans nom'}
           </p>
           {/* Role */}
           <span className="w-full truncate text-[7px] font-bold uppercase tracking-[0.1em] leading-snug"
-            style={{ color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)' }}
+            style={{ color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(26,35,50,0.6)' }}
           >
             {roleLabel}
           </span>
           {/* Date only */}
-          <p className="w-full truncate font-mono text-[8px] font-bold text-black dark:text-white leading-snug mt-0.5">
+          <p className="w-full truncate font-mono text-[8px] font-bold text-[#1a2332] dark:text-white leading-snug mt-0.5">
             {dateDisplay || '—'}
           </p>
         </div>
@@ -196,33 +196,33 @@ export default function PersonCard({ person, status, onClick, selected, childNum
       {/* ── Content: Names prominent, no avatar ── */}
       <div className="flex flex-col items-center justify-center text-center gap-1 w-full">
         {/* First name — large and bold */}
-        <p className="w-full truncate text-[19px] font-black leading-tight text-black dark:text-white">
+        <p className="w-full truncate text-[19px] font-black leading-tight text-[#1a2332] dark:text-white">
           {person.first_name || 'Sans prénom'}
         </p>
         {/* Last name — slightly smaller, uppercase */}
-        <p className="w-full truncate text-[15px] font-black uppercase tracking-wide leading-tight text-black dark:text-white">
+        <p className="w-full truncate text-[15px] font-black uppercase tracking-wide leading-tight text-[#1a2332] dark:text-white">
           {person.last_name || 'Sans nom'}
         </p>
 
         {/* Role label — gendered */}
         <span className="mt-1 w-full truncate text-[10px] font-black uppercase tracking-[0.12em] leading-snug"
-          style={{ color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)' }}
+          style={{ color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(26,35,50,0.6)' }}
         >
           {roleLabel}
         </span>
 
         {/* Birth place — bold, black/white, visible */}
         <div className="flex items-center justify-center gap-1.5 w-full mt-1.5 px-1">
-          <MapPin size={14} className="shrink-0 text-black dark:text-white" />
-          <p className="truncate text-[13px] font-black text-black dark:text-white leading-snug">
+          <MapPin size={14} className="shrink-0 text-[#1a2332] dark:text-white" />
+          <p className="truncate text-[13px] font-black text-[#1a2332] dark:text-white leading-snug">
             {person.birth_place || 'Lieu inconnu'}
           </p>
         </div>
 
         {/* Birth / death dates — bold, black/white, visible */}
         <div className="flex items-center justify-center gap-1.5 w-full mt-0.5 px-1">
-          <Calendar size={14} className="shrink-0 text-black dark:text-white" />
-          <p className="truncate font-mono text-[13px] font-black text-black dark:text-white leading-snug">
+          <Calendar size={14} className="shrink-0 text-[#1a2332] dark:text-white" />
+          <p className="truncate font-mono text-[13px] font-black text-[#1a2332] dark:text-white leading-snug">
             {dateDisplay || 'Dates inconnues'}
           </p>
         </div>

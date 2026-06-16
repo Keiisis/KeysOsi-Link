@@ -21,6 +21,25 @@ import { useTheme } from '@/lib/theme/ThemeContext';
 
 /* ─── Dimensions (moved inside component for dynamic scaling) ─── */
 
+/**
+ * Ordre généalogique d'une fratrie/descendance : aîné → cadet.
+ * Avant, le tri se faisait sur l'UUID (`id`) → ordre visuel aléatoire et
+ * instable. On ordonne par date de naissance (les datés d'abord), puis par
+ * nom, et enfin par id pour la stabilité.
+ */
+function byBirthOrder(a: Person, b: Person): number {
+  const at = a.birth_date ? new Date(a.birth_date).getTime() : NaN;
+  const bt = b.birth_date ? new Date(b.birth_date).getTime() : NaN;
+  const aok = !isNaN(at);
+  const bok = !isNaN(bt);
+  if (aok && bok && at !== bt) return at - bt;     // aîné d'abord
+  if (aok !== bok) return aok ? -1 : 1;            // ceux avec date avant ceux sans
+  const an = `${a.last_name ?? ''} ${a.first_name ?? ''}`.trim().toLowerCase();
+  const bn = `${b.last_name ?? ''} ${b.first_name ?? ''}`.trim().toLowerCase();
+  if (an && bn && an !== bn) return an.localeCompare(bn);
+  return a.id.localeCompare(b.id);                 // stabilité
+}
+
 /* ─── Types internes ─── */
 interface TreeNode {
   id: string;
@@ -110,7 +129,7 @@ export default function FamilyTree({
         (mother && p.mother_id === mother.id)
       )
       .filter((value, index, selfArr) => selfArr.findIndex(t => t.id === value.id) === index)
-      .sort((a, b) => a.id.localeCompare(b.id));
+      .sort(byBirthOrder);
   }, [persons, father, mother]);
 
   const paternalUncles = useMemo(() => {
@@ -122,7 +141,7 @@ export default function FamilyTree({
       )
       .filter(p => p.relation_role !== 'father' && p.relation_role !== 'paternal_grandfather' && p.relation_role !== 'paternal_grandmother')
       .filter((value, index, selfArr) => selfArr.findIndex(t => t.id === value.id) === index)
-      .sort((a, b) => a.id.localeCompare(b.id));
+      .sort(byBirthOrder);
   }, [persons, paternalGrandfather, paternalGrandmother]);
 
   const maternalUncles = useMemo(() => {
@@ -134,7 +153,7 @@ export default function FamilyTree({
       )
       .filter(p => p.relation_role !== 'mother' && p.relation_role !== 'maternal_grandfather' && p.relation_role !== 'maternal_grandmother')
       .filter((value, index, selfArr) => selfArr.findIndex(t => t.id === value.id) === index)
-      .sort((a, b) => a.id.localeCompare(b.id));
+      .sort(byBirthOrder);
   }, [persons, maternalGrandfather, maternalGrandmother]);
 
   const childPersons = useMemo(() => {
@@ -144,7 +163,7 @@ export default function FamilyTree({
         (self && (p.father_id === self.id || p.mother_id === self.id))
       )
       .filter((value, index, selfArr) => selfArr.findIndex(t => t.id === value.id) === index)
-      .sort((a, b) => a.id.localeCompare(b.id));
+      .sort(byBirthOrder);
   }, [persons, self]);
 
   /* ─── Partners (husband, wife, fiancé, fiancée) ─── */
@@ -152,7 +171,7 @@ export default function FamilyTree({
     return persons
       .filter(p => ['husband', 'wife', 'fiance', 'fiancee'].includes(p.relation_role || ''))
       .filter((value, index, selfArr) => selfArr.findIndex(t => t.id === value.id) === index)
-      .sort((a, b) => a.id.localeCompare(b.id));
+      .sort(byBirthOrder);
   }, [persons]);
 
   /* ─── GG-level siblings: persons with sibling_of_* roles or ancestors sharing parents ─── */
