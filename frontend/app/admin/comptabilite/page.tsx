@@ -368,6 +368,7 @@ export default function AdminComptabilitePage() {
     const [loading, setLoading]     = useState(true)
     const [refreshing, setRefreshing] = useState(false)
     const [exporting, setExporting] = useState(false)
+    const [fecExporting, setFecExporting] = useState(false)
 
     const [agents, setAgents]       = useState<AgentRow[]>([])
     const [docs, setDocs]           = useState<DocRow[]>([])
@@ -688,6 +689,30 @@ export default function AdminComptabilitePage() {
         if (action === 'retard' || action === 'agents') { setJournalTab('docs'); setAlertFilter(action === 'retard' ? 'retard' : null); setJournalPage(1) }
         if (action === 'boutique') { setJournalTab('boutique'); setAlertFilter('boutique'); setJournalPage(1) }
         document.getElementById('journal-section')?.scrollIntoView({ behavior: 'smooth' })
+    }
+
+    // ── Export FEC / SYSCOHADA (écritures partie double pour expert-comptable) ──
+    const handleFecExport = async () => {
+        setFecExporting(true)
+        try {
+            const qs = isMonth(period) ? `periode=${period}` : `annee=${new Date().getFullYear()}`
+            const res = await fetch(`/api/admin/comptabilite/fec?${qs}`, { credentials: 'same-origin' })
+            if (!res.ok) {
+                const j = await res.json().catch(() => ({}))
+                throw new Error(j.error || `Erreur ${res.status}`)
+            }
+            const blob = await res.blob()
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `RGB_FEC_${isMonth(period) ? period : new Date().getFullYear()}.txt`
+            document.body.appendChild(a); a.click(); a.remove()
+            setTimeout(() => URL.revokeObjectURL(url), 1000)
+        } catch (e) {
+            alert('Échec export FEC : ' + (e instanceof Error ? e.message : 'erreur'))
+        } finally {
+            setFecExporting(false)
+        }
     }
 
     // ── Export Excel multi-feuilles (LOT 1 : HT/TVA/TTC, Journal, entête légal, totaux formule) ──
@@ -1197,6 +1222,12 @@ export default function AdminComptabilitePage() {
                         className="flex items-center gap-2 bg-[#FCD116] text-[#0a0f18] hover:bg-[#e6bc00] font-black text-xs px-5 py-3 rounded-xl transition-all disabled:opacity-60 shadow-[0_0_24px_rgba(252,209,22,0.2)]">
                         {exporting ? <div className="w-4 h-4 border-2 border-[#0a0f18] border-t-transparent rounded-full animate-spin" /> : <Download size={14} />}
                         Export comptable mensuel
+                    </button>
+                    <button type="button" onClick={handleFecExport} disabled={fecExporting}
+                        title="Export FEC / SYSCOHADA — écritures en partie double, pour votre expert-comptable"
+                        className="flex items-center gap-2 bg-white/5 border border-[#008751]/40 text-[#00c870] hover:bg-[#008751]/15 font-black text-xs px-5 py-3 rounded-xl transition-all disabled:opacity-60">
+                        {fecExporting ? <div className="w-4 h-4 border-2 border-[#00c870] border-t-transparent rounded-full animate-spin" /> : <Download size={14} />}
+                        Export FEC (comptable)
                     </button>
                 </div>
             </div>
