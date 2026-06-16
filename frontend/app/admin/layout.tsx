@@ -124,6 +124,7 @@ function AdminLayoutContent({
         { title: 'FAQ Nationalité', icon: HelpCircle, href: '/admin/nationalite/faq' },
 
         { title: 'Emails', icon: Mail, href: '/admin/email-templates' },
+        { title: 'Newsletter', icon: Megaphone, href: '/admin/newsletter' },
         { title: 'Comptabilité', icon: Landmark, href: '/admin/comptabilite' },
         { title: 'Facturation (ERP)', icon: Calculator, href: '/admin/facturation' },
         { title: 'Inventaire', icon: Box, href: '/admin/inventory' },

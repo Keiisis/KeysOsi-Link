@@ -13,11 +13,23 @@ export async function POST(request: Request) {
         const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
         const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-        // Upsert to avoid duplicates
+        const clean = email.toLowerCase().trim()
+        // Validation plus stricte
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) {
+            return NextResponse.json({ error: 'Email invalide' }, { status: 400 })
+        }
+
+        // Upsert : réabonne (status active) si l'email existait déjà / était désinscrit
         const { error } = await supabase
             .from('newsletter_subscribers')
             .upsert(
-                { email: email.toLowerCase().trim(), subscribed_at: new Date().toISOString() },
+                {
+                    email: clean,
+                    status: 'active',
+                    unsubscribed_at: null,
+                    subscribed_at: new Date().toISOString(),
+                    source: 'site',
+                },
                 { onConflict: 'email' }
             )
 
