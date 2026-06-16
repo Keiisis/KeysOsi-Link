@@ -131,6 +131,21 @@ CREATE TABLE IF NOT EXISTS public.waf_attack_campaigns (
     notes           TEXT DEFAULT '',
     CONSTRAINT camp_sev CHECK (severity BETWEEN 1 AND 10)
 );
+
+-- Auto-réparation schéma (table possiblement créée par un run antérieur)
+ALTER TABLE public.waf_attack_campaigns
+    ADD COLUMN IF NOT EXISTS label          TEXT NOT NULL DEFAULT 'auto-detected',
+    ADD COLUMN IF NOT EXISTS signature_hash TEXT,
+    ADD COLUMN IF NOT EXISTS attack_classes waf_attack_class[] DEFAULT '{}',
+    ADD COLUMN IF NOT EXISTS distinct_ips   INTEGER DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS distinct_fps   INTEGER DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS total_events   BIGINT DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS severity       INTEGER DEFAULT 1,
+    ADD COLUMN IF NOT EXISTS is_active      BOOLEAN DEFAULT true,
+    ADD COLUMN IF NOT EXISTS first_seen     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    ADD COLUMN IF NOT EXISTS last_seen      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    ADD COLUMN IF NOT EXISTS notes          TEXT DEFAULT '';
+
 CREATE INDEX IF NOT EXISTS idx_waf_camp_active
     ON public.waf_attack_campaigns(is_active, severity DESC) WHERE is_active = true;
 CREATE INDEX IF NOT EXISTS idx_waf_camp_sig
@@ -153,6 +168,18 @@ CREATE TABLE IF NOT EXISTS public.waf_tarpit_config (
     CONSTRAINT delay_positive CHECK (delay_ms >= 0 AND delay_ms <= 30000),
     CONSTRAINT backoff_pos    CHECK (backoff_factor >= 1.0)
 );
+
+-- Auto-réparation schéma (table possiblement créée par un run antérieur)
+ALTER TABLE public.waf_tarpit_config
+    ADD COLUMN IF NOT EXISTS trust_min      INTEGER,
+    ADD COLUMN IF NOT EXISTS trust_max      INTEGER,
+    ADD COLUMN IF NOT EXISTS delay_ms       INTEGER,
+    ADD COLUMN IF NOT EXISTS jitter_ms      INTEGER DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS backoff_factor NUMERIC(4,2) DEFAULT 1.0,
+    ADD COLUMN IF NOT EXISTS max_delay_ms   INTEGER DEFAULT 30000,
+    ADD COLUMN IF NOT EXISTS drip_bytes     INTEGER DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS description    TEXT NOT NULL DEFAULT '',
+    ADD COLUMN IF NOT EXISTS enabled        BOOLEAN DEFAULT true;
 
 INSERT INTO public.waf_tarpit_config
     (trust_min, trust_max, delay_ms, jitter_ms, backoff_factor, drip_bytes, description) VALUES
@@ -180,6 +207,22 @@ CREATE TABLE IF NOT EXISTS public.waf_deception_payloads (
     created_at       TIMESTAMPTZ DEFAULT now() NOT NULL,
     CONSTRAINT dec_weight CHECK (rotation_weight >= 0)
 );
+
+-- Auto-réparation schéma (table possiblement créée par un run antérieur)
+ALTER TABLE public.waf_deception_payloads
+    ADD COLUMN IF NOT EXISTS attack_type      waf_attack_class,
+    ADD COLUMN IF NOT EXISTS payload_name     TEXT,
+    ADD COLUMN IF NOT EXISTS status_code      INTEGER DEFAULT 200,
+    ADD COLUMN IF NOT EXISTS content_type     TEXT DEFAULT 'text/html',
+    ADD COLUMN IF NOT EXISTS response_body    TEXT,
+    ADD COLUMN IF NOT EXISTS response_headers JSONB DEFAULT '{}',
+    ADD COLUMN IF NOT EXISTS description      TEXT DEFAULT '',
+    ADD COLUMN IF NOT EXISTS rotation_weight  INTEGER DEFAULT 1,
+    ADD COLUMN IF NOT EXISTS served_count     BIGINT DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS bait_tokens      TEXT[] DEFAULT '{}',
+    ADD COLUMN IF NOT EXISTS enabled          BOOLEAN DEFAULT true,
+    ADD COLUMN IF NOT EXISTS created_at       TIMESTAMPTZ NOT NULL DEFAULT now();
+
 CREATE INDEX IF NOT EXISTS idx_waf_deception_type
     ON public.waf_deception_payloads(attack_type, enabled) WHERE enabled = true;
 
@@ -210,6 +253,22 @@ CREATE TABLE IF NOT EXISTS public.waf_honeypot_interactions (
     engagement_depth INTEGER DEFAULT 1,      -- nb d'étapes suivies dans le piège
     created_at       TIMESTAMPTZ DEFAULT now() NOT NULL
 );
+
+-- Auto-réparation schéma (table possiblement créée par un run antérieur)
+ALTER TABLE public.waf_honeypot_interactions
+    ADD COLUMN IF NOT EXISTS fingerprint_hash TEXT DEFAULT '',
+    ADD COLUMN IF NOT EXISTS campaign_id      UUID,
+    ADD COLUMN IF NOT EXISTS path             TEXT,
+    ADD COLUMN IF NOT EXISTS method           TEXT DEFAULT 'GET',
+    ADD COLUMN IF NOT EXISTS attack_class     waf_attack_class DEFAULT 'honeypot',
+    ADD COLUMN IF NOT EXISTS payload_used     TEXT DEFAULT '',
+    ADD COLUMN IF NOT EXISTS request_headers  JSONB DEFAULT '{}',
+    ADD COLUMN IF NOT EXISTS request_body     TEXT DEFAULT '',
+    ADD COLUMN IF NOT EXISTS captured_creds   JSONB DEFAULT '{}',
+    ADD COLUMN IF NOT EXISTS duration_ms      INTEGER DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS engagement_depth INTEGER DEFAULT 1,
+    ADD COLUMN IF NOT EXISTS created_at       TIMESTAMPTZ NOT NULL DEFAULT now();
+
 CREATE INDEX IF NOT EXISTS idx_waf_hp_ip   ON public.waf_honeypot_interactions(ip, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_waf_hp_date ON public.waf_honeypot_interactions(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_waf_hp_camp ON public.waf_honeypot_interactions(campaign_id) WHERE campaign_id IS NOT NULL;
@@ -375,6 +434,20 @@ CREATE TABLE IF NOT EXISTS public.waf_honey_records (
     ))
 );
 
+-- Auto-réparation schéma (table possiblement créée par un run antérieur)
+ALTER TABLE public.waf_honey_records
+    ADD COLUMN IF NOT EXISTS table_name       TEXT,
+    ADD COLUMN IF NOT EXISTS record_id        UUID,
+    ADD COLUMN IF NOT EXISTS canary_token     TEXT,
+    ADD COLUMN IF NOT EXISTS trap_type        TEXT NOT NULL DEFAULT 'fake_user',
+    ADD COLUMN IF NOT EXISTS description      TEXT DEFAULT '',
+    ADD COLUMN IF NOT EXISTS access_count     INTEGER DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS last_accessed_by TEXT DEFAULT '',
+    ADD COLUMN IF NOT EXISTS last_accessed_at TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS alerted          BOOLEAN DEFAULT false,
+    ADD COLUMN IF NOT EXISTS auto_destroy     BOOLEAN DEFAULT true,
+    ADD COLUMN IF NOT EXISTS created_at       TIMESTAMPTZ NOT NULL DEFAULT now();
+
 CREATE INDEX IF NOT EXISTS idx_waf_honey_table
     ON public.waf_honey_records(table_name, record_id);
 CREATE INDEX IF NOT EXISTS idx_waf_honey_token
@@ -403,6 +476,19 @@ CREATE TABLE IF NOT EXISTS public.waf_canary_tokens (
     ))
 );
 
+-- Auto-réparation schéma (table possiblement créée par un run antérieur)
+ALTER TABLE public.waf_canary_tokens
+    ADD COLUMN IF NOT EXISTS token_type      TEXT NOT NULL DEFAULT 'data_leak',
+    ADD COLUMN IF NOT EXISTS embedded_in     TEXT DEFAULT '',
+    ADD COLUMN IF NOT EXISTS source_payload  UUID,
+    ADD COLUMN IF NOT EXISTS triggered_count INTEGER DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS first_triggered TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS last_triggered  TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS source_ip       TEXT DEFAULT '',
+    ADD COLUMN IF NOT EXISTS source_context  JSONB DEFAULT '{}',
+    ADD COLUMN IF NOT EXISTS is_active       BOOLEAN DEFAULT true,
+    ADD COLUMN IF NOT EXISTS created_at      TIMESTAMPTZ NOT NULL DEFAULT now();
+
 CREATE INDEX IF NOT EXISTS idx_waf_canary_active
     ON public.waf_canary_tokens(is_active) WHERE is_active = true;
 CREATE INDEX IF NOT EXISTS idx_waf_canary_triggered
@@ -425,6 +511,18 @@ CREATE TABLE IF NOT EXISTS public.waf_idor_tracking (
     escalated        BOOLEAN DEFAULT false,         -- alerte envoyée
     created_at       TIMESTAMPTZ DEFAULT now() NOT NULL
 );
+
+-- Auto-réparation schéma (table possiblement créée par un run antérieur)
+ALTER TABLE public.waf_idor_tracking
+    ADD COLUMN IF NOT EXISTS fingerprint_hash  TEXT DEFAULT '',
+    ADD COLUMN IF NOT EXISTS endpoint_pattern  TEXT,
+    ADD COLUMN IF NOT EXISTS distinct_ids      INTEGER DEFAULT 1,
+    ADD COLUMN IF NOT EXISTS accessed_ids      TEXT[] DEFAULT '{}',
+    ADD COLUMN IF NOT EXISTS time_window_start TIMESTAMPTZ DEFAULT now(),
+    ADD COLUMN IF NOT EXISTS time_window_end   TIMESTAMPTZ DEFAULT now(),
+    ADD COLUMN IF NOT EXISTS is_suspicious     BOOLEAN DEFAULT false,
+    ADD COLUMN IF NOT EXISTS escalated         BOOLEAN DEFAULT false,
+    ADD COLUMN IF NOT EXISTS created_at        TIMESTAMPTZ NOT NULL DEFAULT now();
 
 CREATE INDEX IF NOT EXISTS idx_waf_idor_ip
     ON public.waf_idor_tracking(ip, endpoint_pattern, created_at DESC);
