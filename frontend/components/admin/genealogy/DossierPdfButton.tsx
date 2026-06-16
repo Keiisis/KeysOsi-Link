@@ -39,7 +39,7 @@ async function captureTreeAsBase64(el: HTMLElement | null): Promise<string | nul
 export default function DossierPdfButton({
     treeId,
     treeContainer,
-    suggestedFilename = 'dossier-genealogique',
+    suggestedFilename = 'Plan-de-Composition-Familiale',
     isDark = false,
 }: Props) {
     const [generating, setGenerating] = useState(false)

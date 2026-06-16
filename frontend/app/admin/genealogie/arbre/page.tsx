@@ -1263,7 +1263,7 @@ export default function DedicatedTreePage() {
             <DossierPdfButton
               treeId={treeId}
               treeContainer={compactTreeRef.current}
-              suggestedFilename={`dossier-genealogique-${clientName.replace(/[^a-zA-Z0-9-]/g, '_')}`}
+              suggestedFilename={`Plan-de-Composition-Familiale-${clientName.replace(/[^a-zA-Z0-9-]/g, '_')}`}
               isDark={isDark}
             />
           )}
