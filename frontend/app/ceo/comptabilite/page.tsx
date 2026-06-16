@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import { Calculator, RefreshCw, Loader2, TrendingUp, TrendingDown, DollarSign, FileText, Download, Users, Banknote, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { exportToExcelMultiSheet } from '@/lib/exportExcel'
 import ComptaLockPanel, { type ClotureRow } from '@/components/comptabilite/ComptaLockPanel'
-import { toXOF } from '@/lib/currency-convert'
+import { toXOF, loadExchangeRates } from '@/lib/currency-convert'
 
 // ── Périodes ──────────────────────────────────────────────────
 type Period = string
@@ -130,6 +130,7 @@ export default function CeoComptabilite() {
 
     const load = useCallback(async () => {
         setLoading(true)
+        await loadExchangeRates()  // taux réels avant normalisation XOF des KPI
         const res = await fetch('/api/admin/comptabilite', { cache: 'no-store' })
         if (res.ok) {
             const json = await res.json()

@@ -52,3 +52,36 @@ export function sumXOF<T>(
 ): number {
     return rows.reduce((s, r) => s + toXOF(amount(r), currency(r)), 0)
 }
+
+/**
+ * Alimente les taux depuis la table `currencies` (source de vérité projet).
+ * `exchange_rate_to_base` = nb de XOF pour 1 unité de la devise.
+ * Rafraîchie quotidiennement par /api/cron/exchange-rates depuis une vraie API FX.
+ */
+export function setRatesFromCurrencies(
+    rows: Array<{ code?: string | null; exchange_rate_to_base?: number | string | null; is_base?: boolean | null }>,
+) {
+    const overrides: Record<string, number> = {}
+    for (const r of rows) {
+        if (!r.code) continue
+        const rate = r.is_base ? 1 : Number(r.exchange_rate_to_base)
+        if (isFinite(rate) && rate > 0) overrides[r.code.toUpperCase()] = rate
+    }
+    if (Object.keys(overrides).length > 0) setRates(overrides)
+}
+
+/**
+ * Charge les taux réels depuis l'API projet (`/api/settings/currency`) et les
+ * applique via setRates(). À appeler au montage des pages compta (côté client).
+ * Échec silencieux : on retombe sur les taux par défaut (EUR exact + indicatifs).
+ */
+export async function loadExchangeRates(): Promise<void> {
+    try {
+        const res = await fetch('/api/settings/currency')
+        if (!res.ok) return
+        const rows = await res.json()
+        if (Array.isArray(rows)) setRatesFromCurrencies(rows)
+    } catch {
+        /* taux par défaut conservés */
+    }
+}

@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { useTranslation } from '@/lib/translation'
 import { exportRegistreComptable, RegistreRecette, RegistreDepense } from '@/lib/exportRegistreComptable'
-import { toXOF } from '@/lib/currency-convert'
+import { toXOF, loadExchangeRates } from '@/lib/currency-convert'
 import { 
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
     AreaChart, Area
@@ -164,6 +164,7 @@ export default function AgentComptabilitePage() {
 
     const fetchAllData = async () => {
         setLoading(true)
+        await loadExchangeRates()  // taux réels avant normalisation XOF des KPI
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) { setLoading(false); return }
 

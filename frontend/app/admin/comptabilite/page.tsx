@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { exportToExcelMultiSheet } from '@/lib/exportExcel'
-import { toXOF } from '@/lib/currency-convert'
+import { toXOF, loadExchangeRates } from '@/lib/currency-convert'
 import ComptaLockPanel, { type ClotureRow } from '@/components/comptabilite/ComptaLockPanel'
 import {
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -396,7 +396,9 @@ export default function AdminComptabilitePage() {
     // ── Fetch ─────────────────────────────────────────────────────
     const fetchAll = useCallback(async () => {
         setRefreshing(true)
-        const [usersRes, erpRes] = await Promise.all([
+        // Taux de change réels (table currencies) AVANT calcul des KPI normalisés XOF
+        const [, usersRes, erpRes] = await Promise.all([
+            loadExchangeRates(),
             fetch('/api/admin/users').then(r => r.ok ? r.json() : { users: [] }),
             fetch('/api/admin/comptabilite').then(r => r.ok ? r.json() : { docs: [], orders: [], depenses: [], commissionRate: 0.10 }),
         ])
