@@ -478,6 +478,30 @@ export default function AdminComptabilitePage() {
         }
     }, [pDocs, pOrders, pDeps, pvDocs, pvOrders, pvDeps, commissionRate, period, start, end])
 
+    // ── Balance âgée des créances (aged receivables) — toutes périodes ─
+    // Feature ERP type-Odoo : qui doit combien, et depuis combien de temps.
+    // Montants normalisés XOF. Buckets : 0-30 / 31-60 / 61-90 / 90+ jours.
+    const agedBalance = useMemo(() => {
+        const CLOSED = ['paye', 'paid', 'completed', 'annule', 'refuse', 'brouillon']
+        const now = Date.now()
+        type Bk = 'b0' | 'b30' | 'b60' | 'b90'
+        const buckets = { b0: 0, b30: 0, b60: 0, b90: 0, total: 0 }
+        const byClient = new Map<string, { client: string; b0: number; b30: number; b60: number; b90: number; total: number; oldest: number }>()
+        docs.filter(d => d.type === 'facture' && !CLOSED.includes((d.status || '').toLowerCase())).forEach(d => {
+            const gross = toXOF(d.total - (Number(d.remise) || 0), d.currency)
+            const due = Math.max(0, gross - (paiements[d.id] || 0))
+            if (due <= 0) return
+            const ageDays = Math.floor((now - new Date(d.created_at).getTime()) / 864e5)
+            const bk: Bk = ageDays <= 30 ? 'b0' : ageDays <= 60 ? 'b30' : ageDays <= 90 ? 'b60' : 'b90'
+            buckets[bk] += due; buckets.total += due
+            const key = `${d.client_nom || ''} ${d.client_prenom || ''}`.trim() || '—'
+            const row = byClient.get(key) || { client: key, b0: 0, b30: 0, b60: 0, b90: 0, total: 0, oldest: 0 }
+            row[bk] += due; row.total += due; row.oldest = Math.max(row.oldest, ageDays)
+            byClient.set(key, row)
+        })
+        return { buckets, rows: Array.from(byClient.values()).sort((a, b) => b.total - a.total) }
+    }, [docs, paiements])
+
     // ── Score santé financière ────────────────────────────────────
     const scoreSante = useMemo(() => {
         const tauxEncaissement = kpis.caEmis > 0 ? (kpis.encaisseFactu / kpis.caEmis) * 100 : 0
@@ -1491,6 +1515,65 @@ export default function AdminComptabilitePage() {
                     </motion.div>
                 )
             })()}
+
+            {/* ── Balance âgée des créances (aged receivables) ── */}
+            {agedBalance.buckets.total > 0 && (
+                <div className="bg-[#0a0f18] border border-white/5 rounded-2xl overflow-hidden">
+                    <div className="p-5 border-b border-white/5 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <AlertTriangle size={16} className="text-[#FCD116]" />
+                            <h2 className="text-sm font-black text-white">Balance âgée des créances</h2>
+                        </div>
+                        <span className="text-[10px] text-gray-500 font-mono bg-white/5 px-2 py-0.5 rounded">
+                            {agedBalance.rows.length} client(s) · {fmt(agedBalance.buckets.total)} dû
+                        </span>
+                    </div>
+                    {/* Récap par tranche d'ancienneté */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-white/5">
+                        {([
+                            ['0–30 j', agedBalance.buckets.b0, '#00c870'],
+                            ['31–60 j', agedBalance.buckets.b30, '#FCD116'],
+                            ['61–90 j', agedBalance.buckets.b60, '#E07B54'],
+                            ['+90 j', agedBalance.buckets.b90, '#EF4444'],
+                        ] as const).map(([label, val, color]) => (
+                            <div key={label} className="bg-[#0a0f18] p-4">
+                                <p className="text-[9px] font-black uppercase tracking-wider text-gray-500">{label}</p>
+                                <p className="text-base font-black font-mono mt-1" style={{ color }}>{fmt(val)}</p>
+                            </div>
+                        ))}
+                    </div>
+                    {/* Détail par client (top 8) */}
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-[11px]">
+                            <thead>
+                                <tr className="text-gray-500 border-b border-white/5">
+                                    <th className="text-left font-bold px-5 py-2.5">Client</th>
+                                    <th className="text-right font-bold px-3 py-2.5">0–30</th>
+                                    <th className="text-right font-bold px-3 py-2.5">31–60</th>
+                                    <th className="text-right font-bold px-3 py-2.5">61–90</th>
+                                    <th className="text-right font-bold px-3 py-2.5 text-[#EF4444]">+90</th>
+                                    <th className="text-right font-bold px-5 py-2.5">Total dû</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {agedBalance.rows.slice(0, 8).map(r => (
+                                    <tr key={r.client} className="border-b border-white/[0.03] hover:bg-white/[0.02]">
+                                        <td className="px-5 py-2.5 text-white font-semibold truncate max-w-[200px]">{r.client}</td>
+                                        <td className="px-3 py-2.5 text-right font-mono text-gray-400">{r.b0 ? fmt(r.b0) : '—'}</td>
+                                        <td className="px-3 py-2.5 text-right font-mono text-gray-400">{r.b30 ? fmt(r.b30) : '—'}</td>
+                                        <td className="px-3 py-2.5 text-right font-mono text-gray-400">{r.b60 ? fmt(r.b60) : '—'}</td>
+                                        <td className="px-3 py-2.5 text-right font-mono" style={{ color: r.b90 ? '#EF4444' : '#6b7280' }}>{r.b90 ? fmt(r.b90) : '—'}</td>
+                                        <td className="px-5 py-2.5 text-right font-mono font-black text-[#FCD116]">{fmt(r.total)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <p className="text-[9px] text-gray-600 px-5 py-2.5 border-t border-white/5">
+                        Créances clients non soldées, par ancienneté de la facture. Au-delà de 90 jours = risque d&apos;impayé — prioriser la relance.
+                    </p>
+                </div>
+            )}
 
             <div id="journal-section" className="bg-[#0a0f18] border border-white/5 rounded-2xl overflow-hidden">
                 <div className="p-5 border-b border-white/5 space-y-4">
