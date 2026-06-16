@@ -376,16 +376,18 @@ BEGIN
         'waf_device_fingerprints','waf_tarpit_config','waf_deception_payloads',
         'waf_honeypot_interactions','waf_attack_campaigns'
     ] LOOP
-        EXECUTE format($f$
-            CREATE POLICY %1$I ON public.%2$I FOR ALL TO authenticated
-            USING (EXISTS (SELECT 1 FROM public.user_profiles
-                   WHERE id = auth.uid()
-                   AND role IN ('admin','super_admin','superadmin','ceo')));
-        $f$, 'admin_'||t, t);
-        EXECUTE format($f$
-            CREATE POLICY %1$I ON public.%2$I FOR ALL TO service_role USING (true);
-        $f$, 'service_'||t, t);
-    EXCEPTION WHEN duplicate_object THEN NULL;
+        BEGIN
+            EXECUTE format($f$
+                CREATE POLICY %1$I ON public.%2$I FOR ALL TO authenticated
+                USING (EXISTS (SELECT 1 FROM public.user_profiles
+                       WHERE id = auth.uid()
+                       AND role IN ('admin','super_admin','superadmin','ceo')));
+            $f$, 'admin_'||t, t);
+            EXECUTE format($f$
+                CREATE POLICY %1$I ON public.%2$I FOR ALL TO service_role USING (true);
+            $f$, 'service_'||t, t);
+        EXCEPTION WHEN duplicate_object THEN NULL;
+        END;
     END LOOP;
 END $$;
 
@@ -540,16 +542,18 @@ BEGIN
     FOREACH t IN ARRAY ARRAY[
         'waf_honey_records','waf_canary_tokens','waf_idor_tracking'
     ] LOOP
-        EXECUTE format($f$
-            CREATE POLICY %1$I ON public.%2$I FOR ALL TO authenticated
-            USING (EXISTS (SELECT 1 FROM public.user_profiles
-                   WHERE id = auth.uid()
-                   AND role IN ('admin','super_admin','superadmin','ceo')));
-        $f$, 'admin_'||t, t);
-        EXECUTE format($f$
-            CREATE POLICY %1$I ON public.%2$I FOR ALL TO service_role USING (true);
-        $f$, 'service_'||t, t);
-    EXCEPTION WHEN duplicate_object THEN NULL;
+        BEGIN
+            EXECUTE format($f$
+                CREATE POLICY %1$I ON public.%2$I FOR ALL TO authenticated
+                USING (EXISTS (SELECT 1 FROM public.user_profiles
+                       WHERE id = auth.uid()
+                       AND role IN ('admin','super_admin','superadmin','ceo')));
+            $f$, 'admin_'||t, t);
+            EXECUTE format($f$
+                CREATE POLICY %1$I ON public.%2$I FOR ALL TO service_role USING (true);
+            $f$, 'service_'||t, t);
+        EXCEPTION WHEN duplicate_object THEN NULL;
+        END;
     END LOOP;
 END $$;
 
