@@ -277,22 +277,41 @@ export default function NationaliteFormPage() {
             setPaymentError(t('Le module de paiement n\'est pas encore chargé. Patientez quelques secondes puis réessayez.'))
             return
         }
+        const isSandbox = paymentSettings.kkiapay_sandbox === 'true'
+        const kkiapayKey = isSandbox
+            ? (paymentSettings.kkiapay_sandbox_public_key || paymentSettings.kkiapay_public_key)
+            : paymentSettings.kkiapay_public_key
+        // Kkiapay exige un montant ENTIER positif en FCFA (XOF, sans décimales)
+        const rawXOF = formCurrency === 'XOF' ? formAmount : convertCurrency(formAmount, formCurrency, 'XOF')
+        const amountXOF = Math.round(Number(rawXOF))
+
+        // Garde-fous : éviter le « Paramètres manquants ou invalides » du widget
+        if (!kkiapayKey) {
+            setPaymentError(t('Clé de paiement Kkiapay manquante. Contactez-nous pour finaliser votre paiement.'))
+            return
+        }
+        if (!Number.isFinite(amountXOF) || amountXOF <= 0) {
+            setPaymentError(t('Montant de paiement invalide. Veuillez rafraîchir la page et réessayer.'))
+            return
+        }
+
         setPaymentProcessing(true); setPaymentError(''); setPaymentProvider('kkiapay')
-        // Convertir le montant en FCFA pour les passerelles africaines
-        const amountXOF = formCurrency === 'XOF' ? formAmount : convertCurrency(formAmount, formCurrency, 'XOF')
         try {
             // Listeners enregistrés AVANT l'ouverture, une seule fois (pas d'empilement)
             bindKkiapayListeners()
+            // Configuration minimale et conforme : pas de `paymentmethod` (tableau
+            // rejeté par le widget → « paramètres invalides ») ni de `callback`
+            // (forcerait une redirection qui contourne le listener de succès).
+            // Le widget propose nativement Mobile Money ET carte bancaire.
             window.openKkiapayWidget({
-                amount: amountXOF, position: 'center',
-                key: paymentSettings.kkiapay_sandbox === 'true'
-                    ? (paymentSettings.kkiapay_sandbox_public_key || paymentSettings.kkiapay_public_key)
-                    : paymentSettings.kkiapay_public_key,
-                sandbox: paymentSettings.kkiapay_sandbox === 'true', phone: form.telephone || undefined,
-                email: form.email || undefined, name: `${form.prenom || ''} ${form.nom || ''}`.trim() || undefined,
-                paymentmethod: ['momo', 'card'],
+                amount: amountXOF,
+                position: 'center',
+                key: kkiapayKey,
+                sandbox: isSandbox,
+                phone: form.telephone || undefined,
+                email: form.email || undefined,
+                name: `${form.prenom || ''} ${form.nom || ''}`.trim() || undefined,
                 data: JSON.stringify({ context: 'nationality', email: form.email }),
-                callback: `${window.location.origin}/nationalite/formulaire`,
             })
         } catch { setPaymentError(t('Impossible d\'ouvrir Kkiapay')); setPaymentProcessing(false) }
     }
