@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
@@ -47,6 +47,7 @@ function ComplementAncestralContent() {
     const [paymentTxId, setPaymentTxId] = useState('')
     const [paymentProcessing, setPaymentProcessing] = useState(false)
     const [paymentError, setPaymentError] = useState('')
+    const kkiapayBound = useRef(false)
     const [submitting, setSubmitting] = useState(false)
     const [submitted, setSubmitted] = useState(false)
     const [error, setError] = useState('')
@@ -78,9 +79,28 @@ function ComplementAncestralContent() {
 
     const amountXOF = Math.round(RESEARCH_PRICE * EUR_TO_XOF)
 
+    const bindKkiapayListeners = () => {
+        if (kkiapayBound.current) return
+        if (typeof window.addKkiapayListener !== 'function') return
+        kkiapayBound.current = true
+        window.addKkiapayListener('success', (response) => {
+            setPaymentTxId(String(response.transactionId || ''))
+            setPaymentDone(true); setPaymentProcessing(false)
+        })
+        window.addKkiapayListener('failed', () => {
+            setPaymentError(t('Le paiement a échoué ou a été refusé. Si vous utilisez une carte bancaire hors zone UEMOA (Canada, Europe…), essayez le Mobile Money ou un autre moyen de paiement.'))
+            setPaymentProcessing(false)
+        })
+    }
+
     const handleKkiapay = () => {
+        if (typeof window.openKkiapayWidget !== 'function') {
+            setPaymentError(t('Le module de paiement n\'est pas encore chargé. Patientez quelques secondes puis réessayez.'))
+            return
+        }
         setPaymentProcessing(true); setPaymentError(''); setPaymentProvider('kkiapay')
         try {
+            bindKkiapayListeners()
             window.openKkiapayWidget({
                 amount: amountXOF, position: 'center',
                 key: paymentSettings.kkiapay_sandbox === 'true'
@@ -88,13 +108,6 @@ function ComplementAncestralContent() {
                     : paymentSettings.kkiapay_public_key,
                 sandbox: paymentSettings.kkiapay_sandbox === 'true',
                 data: JSON.stringify({ context: 'recherche-ancestrale', ref }),
-            })
-            window.addKkiapayListener('success', (response) => {
-                setPaymentTxId(String(response.transactionId || ''))
-                setPaymentDone(true); setPaymentProcessing(false)
-            })
-            window.addKkiapayListener('failed', () => {
-                setPaymentError(t('Le paiement a échoué.')); setPaymentProcessing(false)
             })
         } catch { setPaymentError(t('Impossible d\'ouvrir Kkiapay')); setPaymentProcessing(false) }
     }
@@ -325,6 +338,14 @@ function ComplementAncestralContent() {
                             <div className="flex flex-col items-center py-6">
                                 <Loader2 size={28} className="animate-spin text-[#FCD116]" />
                                 <p className="text-sm text-gray-500 mt-3">Traitement en cours...</p>
+                                <p className="text-xs text-gray-400 mt-2 text-center max-w-xs">{t('Finalisez le paiement dans la fenêtre sécurisée. Avec une carte bancaire hors zone UEMOA (Canada, Europe…), privilégiez le Mobile Money.')}</p>
+                                <button
+                                    type="button"
+                                    onClick={() => { setPaymentProcessing(false); setPaymentError(t('Paiement annulé. Vous pouvez réessayer ou choisir un autre moyen de paiement.')) }}
+                                    className="mt-4 text-xs font-bold text-gray-500 underline hover:text-[#008751]"
+                                >
+                                    {t('La fenêtre s\'est fermée ou reste bloquée ? Cliquez ici pour réessayer')}
+                                </button>
                             </div>
                         ) : (
                             <div className="space-y-3">

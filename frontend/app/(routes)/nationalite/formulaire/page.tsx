@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import Script from 'next/script'
@@ -102,6 +102,9 @@ export default function NationaliteFormPage() {
     const [paymentTxId, setPaymentTxId] = useState('')
     const [paymentProcessing, setPaymentProcessing] = useState(false)
     const [paymentError, setPaymentError] = useState('')
+    // Garde : les listeners Kkiapay ne doivent être enregistrés qu'UNE fois
+    // (sinon empilement de callbacks à chaque clic — piège connu du SDK k.js)
+    const kkiapayBound = useRef(false)
 
     // ── Types ──────────────────────────────────────────────────────────────────
     interface DocSlot {
@@ -255,11 +258,31 @@ export default function NationaliteFormPage() {
         { id: 'zeyow' as PaymentProvider, name: 'Zeyow', subtitle: t('Carte Virtuelle'), color: 'bg-[#FF6B35]/20 border-[#FF6B35]/40 text-[#FF6B35]', isReady: paymentSettings.zeyow_enabled === 'true' && !!paymentSettings.zeyow_redirect_url },
     ].filter(p => p.isReady)
 
+    // Enregistre les listeners Kkiapay une seule fois (idempotent)
+    const bindKkiapayListeners = () => {
+        if (kkiapayBound.current) return
+        if (typeof window.addKkiapayListener !== 'function') return
+        kkiapayBound.current = true
+        window.addKkiapayListener('success', (response) => {
+            setPaymentTxId(String(response.transactionId || '')); setPaymentDone(true); setPaymentProcessing(false)
+        })
+        window.addKkiapayListener('failed', () => {
+            setPaymentError(t('Le paiement a échoué ou a été refusé. Si vous utilisez une carte bancaire hors zone UEMOA (Canada, Europe…), essayez le Mobile Money ou un autre moyen de paiement.'))
+            setPaymentProcessing(false)
+        })
+    }
+
     const handleKkiapay = () => {
+        if (typeof window.openKkiapayWidget !== 'function') {
+            setPaymentError(t('Le module de paiement n\'est pas encore chargé. Patientez quelques secondes puis réessayez.'))
+            return
+        }
         setPaymentProcessing(true); setPaymentError(''); setPaymentProvider('kkiapay')
         // Convertir le montant en FCFA pour les passerelles africaines
         const amountXOF = formCurrency === 'XOF' ? formAmount : convertCurrency(formAmount, formCurrency, 'XOF')
         try {
+            // Listeners enregistrés AVANT l'ouverture, une seule fois (pas d'empilement)
+            bindKkiapayListeners()
             window.openKkiapayWidget({
                 amount: amountXOF, position: 'center',
                 key: paymentSettings.kkiapay_sandbox === 'true'
@@ -270,12 +293,6 @@ export default function NationaliteFormPage() {
                 paymentmethod: ['momo', 'card'],
                 data: JSON.stringify({ context: 'nationality', email: form.email }),
                 callback: `${window.location.origin}/nationalite/formulaire`,
-            })
-            window.addKkiapayListener('success', (response) => {
-                setPaymentTxId(String(response.transactionId || '')); setPaymentDone(true); setPaymentProcessing(false)
-            })
-            window.addKkiapayListener('failed', () => {
-                setPaymentError(t('Le paiement Kkiapay a échoué.')); setPaymentProcessing(false)
             })
         } catch { setPaymentError(t('Impossible d\'ouvrir Kkiapay')); setPaymentProcessing(false) }
     }
@@ -903,7 +920,18 @@ export default function NationaliteFormPage() {
                                         {paymentTxId && <p className="text-[10px] text-gray-500 mt-1 font-mono">TX: {paymentTxId}</p>}
                                     </div>
                                 ) : paymentProcessing ? (
-                                    <div className="flex flex-col items-center py-8"><Loader2 size={32} className="animate-spin text-[#008751]" /><p className="text-sm text-gray-500 mt-3"><T>Traitement en cours...</T></p></div>
+                                    <div className="flex flex-col items-center py-8">
+                                        <Loader2 size={32} className="animate-spin text-[#008751]" />
+                                        <p className="text-sm text-gray-500 mt-3"><T>Traitement en cours...</T></p>
+                                        <p className="text-xs text-gray-400 mt-2 text-center max-w-xs"><T>Finalisez le paiement dans la fenêtre sécurisée. Avec une carte bancaire hors zone UEMOA (Canada, Europe…), privilégiez le Mobile Money.</T></p>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setPaymentProcessing(false); setPaymentError(t('Paiement annulé. Vous pouvez réessayer ou choisir un autre moyen de paiement.')) }}
+                                            className="mt-4 text-xs font-bold text-gray-500 underline hover:text-[#008751]"
+                                        >
+                                            <T>La fenêtre s&apos;est fermée ou reste bloquée ? Cliquez ici pour réessayer</T>
+                                        </button>
+                                    </div>
                                 ) : (
                                     <div className="space-y-3">
                                         <p className="text-xs text-gray-500 font-bold"><T>Sélectionnez votre moyen de paiement :</T></p>
