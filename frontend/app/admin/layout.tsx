@@ -141,6 +141,7 @@ function AdminLayoutContent({
         { title: 'Réglages ERP', icon: ShieldCheck, href: '/admin/settings/erp' },
         { title: 'Sécurité WAF', icon: ShieldAlert, href: '/admin/securite' },
         { title: '2FA — Auth Admin', icon: KeyRound, href: '/admin/settings/2fa' },
+        { title: 'Centre RGPD', icon: ShieldCheck, href: '/admin/rgpd' },
     ]
 
     if (isLoginPage) {

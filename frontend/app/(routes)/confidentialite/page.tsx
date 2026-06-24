@@ -114,7 +114,10 @@ export default function ConfidentialitePage() {
                                 <li><strong>Droit d&apos;opposition :</strong> vous opposer au traitement de vos données</li>
                                 <li><strong>Droit à la portabilité :</strong> recevoir vos données dans un format structuré</li>
                             </ul>
-                            <p className="mt-3">Pour exercer ces droits, contactez-nous à : <a href="mailto:contact@retourgagnantbenin.bj" className="text-[#008751] hover:underline">contact@retourgagnantbenin.bj</a></p>
+                            <p className="mt-3">
+                                Vous pouvez exercer vous-même vos droits d&apos;accès et de suppression, en toute autonomie, depuis notre espace sécurisé <a href="/mes-donnees" className="text-[#008751] font-medium hover:underline">« Mes données »</a> (une vérification par e-mail vous est demandée).
+                            </p>
+                            <p className="mt-2">Vous pouvez aussi nous écrire à : <a href="mailto:contact@retourgagnantbenin.bj" className="text-[#008751] hover:underline">contact@retourgagnantbenin.bj</a></p>
                         </div>
                     </section>
 

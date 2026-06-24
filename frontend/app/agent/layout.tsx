@@ -413,6 +413,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
             label: t('COMPTE'),
             items: [
                 { title: t('Ma Carte de Visite'), icon: CreditCard, href: '/agent/ma-carte-de-visite' },
+                { title: t('Espace RGPD'), icon: Shield, href: '/agent/rgpd' },
                 { title: t('Mon Profil'), icon: UserCog, href: '/agent/profil' },
             ],
         },
