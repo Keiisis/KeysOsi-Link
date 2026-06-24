@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { verifyApiAuth } from '@/lib/api-auth'
 
 /* ════════════════════════════════════════════════════════════════════════════
    PATCH /api/admin/orders/:id/tracking
@@ -37,6 +38,8 @@ const STATUS_DEFAULT_LABEL: Record<string, string> = {
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
     try {
+        const auth = await verifyApiAuth(req, 'agent')
+        if (!auth.authenticated) return auth.error!
         const { id: orderId } = await ctx.params
         if (!orderId) return NextResponse.json({ error: 'order id manquant' }, { status: 400 })
 

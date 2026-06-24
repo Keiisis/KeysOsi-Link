@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { verifyApiAuth } from '@/lib/api-auth'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
@@ -15,6 +16,8 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const auth = await verifyApiAuth(request, 'admin')
+        if (!auth.authenticated) return auth.error!
         const supabase = getSupabase()
         const body = await request.json()
         const { id } = await params
@@ -80,10 +83,12 @@ export async function PATCH(
 
 // DELETE /api/admin/testimonials/[id] — supprimer un témoignage
 export async function DELETE(
-    _request: NextRequest,
+    request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const auth = await verifyApiAuth(request, 'admin')
+        if (!auth.authenticated) return auth.error!
         const supabase = getSupabase()
         const { id } = await params
         const { error } = await supabase

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { verifyApiAuth } from '@/lib/api-auth'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
@@ -12,6 +13,8 @@ function getSupabase() {
 // GET /api/admin/testimonials — liste tous les témoignages
 export async function GET(request: NextRequest) {
     try {
+        const auth = await verifyApiAuth(request, 'admin')
+        if (!auth.authenticated) return auth.error!
         const supabase = getSupabase()
         const { searchParams } = new URL(request.url)
         const status = searchParams.get('status') // 'approved' | 'pending' | null
@@ -52,6 +55,8 @@ export async function GET(request: NextRequest) {
 // POST /api/admin/testimonials — créer un témoignage (depuis admin)
 export async function POST(request: NextRequest) {
     try {
+        const auth = await verifyApiAuth(request, 'admin')
+        if (!auth.authenticated) return auth.error!
         const supabase = getSupabase()
         const body = await request.json()
 

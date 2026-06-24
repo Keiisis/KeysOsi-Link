@@ -823,6 +823,51 @@ export async function middleware(request: NextRequest) {
         }
     }
 
+    // ─── 5bis. AUTH DES API DE PANELS (admin / ceo / agent) ───────
+    // Ces routes utilisent la service role key (bypass RLS) et n'étaient PAS
+    // protégées par le bloc page-auth ci-dessous (qui ne cible que /admin, /agent…
+    // et pas /api/admin…). Sans ce garde, n'importe qui pouvait lire/écrire des
+    // données sensibles (messages clients, dossiers, sécurité…) via /api/ceo/*.
+    // On exige une session valide + le bon rôle, sinon 401/403 JSON.
+    // /api/client reste PUBLIC (register, resend-confirmation, etc.).
+    const isAdminApi = pathname.startsWith('/api/admin')
+    const isCeoApi   = pathname.startsWith('/api/ceo')
+    const isAgentApi = pathname.startsWith('/api/agent')
+    if ((isAdminApi || isCeoApi || isAgentApi) && SUPA_URL && SUPA_KEY) {
+        try {
+            const supaApi = createServerClient(
+                SUPA_URL,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+                { cookies: { getAll: () => request.cookies.getAll(), setAll: () => {} } }
+            )
+            const { data: { user: apiUser } } = await supaApi.auth.getUser()
+            if (!apiUser) {
+                return new NextResponse(JSON.stringify({ error: 'Non authentifié' }), {
+                    status: 401, headers: { 'Content-Type': 'application/json' },
+                })
+            }
+            const adminApi = createClient(SUPA_URL, SUPA_KEY)
+            const { data: prof } = await adminApi
+                .from('user_profiles').select('role').eq('id', apiUser.id).maybeSingle()
+            const apiRole = prof?.role || ''
+            const ADMIN_ROLES = ['admin', 'super_admin', 'superadmin', 'ceo']
+            const apiOk = isAgentApi
+                ? (apiRole === 'agent' || ADMIN_ROLES.includes(apiRole))
+                : ADMIN_ROLES.includes(apiRole)
+            if (!apiOk) {
+                return new NextResponse(JSON.stringify({ error: 'Accès non autorisé' }), {
+                    status: 403, headers: { 'Content-Type': 'application/json' },
+                })
+            }
+            return response
+        } catch {
+            // Fail-closed sur ces routes sensibles : on bloque en cas de doute.
+            return new NextResponse(JSON.stringify({ error: 'Erreur d\'authentification' }), {
+                status: 401, headers: { 'Content-Type': 'application/json' },
+            })
+        }
+    }
+
     // ─── 6. AUTH SUPABASE ─────────────────────────────────────
     const isAgentRoute  = pathname.startsWith('/agent')
     const isAdminRoute  = pathname.startsWith('/admin')
