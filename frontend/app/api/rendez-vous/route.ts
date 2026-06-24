@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendEmail, getEmailTemplates, getEmailConfig } from '@/lib/email';
 import { fetchWithGroqRotation, GROQ_KEYS } from '@/lib/groq';
+import { sendWhatsAppNotification } from '@/lib/whatsapp';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -185,6 +186,21 @@ export async function POST(req: NextRequest) {
                 }
             } catch (emailErr) {
                 console.log('[RDV] Email send failed (non-blocking):', emailErr);
+            }
+
+            // Notification WhatsApp automatique (no-op si non configuré)
+            try {
+                await sendWhatsAppNotification(
+                    `📅 Nouveau RDV — Retour Gagnant\n` +
+                    `Client : ${clientName}\n` +
+                    `Service : ${service || 'Consultation'}\n` +
+                    `Tél : ${telephone || 'non communiqué'}\n` +
+                    `Email : ${email}\n` +
+                    (date ? `Date souhaitée : ${date} ${timeSlot || ''}\n` : '') +
+                    (message ? `Message : ${message.slice(0, 300)}` : '')
+                );
+            } catch (waErr) {
+                console.log('[RDV] WhatsApp non-blocking:', waErr);
             }
         })();
 

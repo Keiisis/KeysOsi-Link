@@ -4,6 +4,7 @@ import { sendEmail, getEmailTemplates, getEmailConfig } from '@/lib/email';
 import { fetchWithGroqRotation, GROQ_KEYS } from '@/lib/groq';
 import { rateLimit, getClientIp, rateLimitHeaders, CONTACT_LIMIT } from '@/lib/rate-limit';
 import { withWafGuard } from '@/lib/waf';
+import { sendWhatsAppNotification } from '@/lib/whatsapp';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -124,6 +125,19 @@ async function handleContact(req: NextRequest) {
                 }
             } catch (emailErr) {
                 console.log('[CONTACT] Email send failed (non-blocking):', emailErr);
+            }
+
+            // Notification WhatsApp automatique (no-op si non configuré)
+            try {
+                await sendWhatsAppNotification(
+                    `🔔 Nouveau message de contact — Retour Gagnant\n` +
+                    `De : ${clientName}\n` +
+                    `Email : ${email}\n` +
+                    `Sujet : ${sujet || 'Contact'}\n` +
+                    `Message : ${String(message).slice(0, 300)}`
+                );
+            } catch (waErr) {
+                console.log('[CONTACT] WhatsApp non-blocking:', waErr);
             }
         })();
 

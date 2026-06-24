@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { T, useTranslation } from '@/lib/translation'
+import PaymentPrivacyNotice from '@/components/shared/PaymentPrivacyNotice'
 
 type PaymentProvider = 'kkiapay' | 'fedapay' | 'zeyow'
 
@@ -375,6 +376,7 @@ function ComplementAncestralContent() {
                                         <AlertCircle size={12} /> {paymentError}
                                     </p>
                                 )}
+                                <PaymentPrivacyNotice />
                             </div>
                         )}
 

@@ -13,6 +13,7 @@ import Link from 'next/link'
 import { Price, useCurrency } from '@/components/ui/Price'
 import { CurrencyCode, convertCurrency } from '@/lib/currency'
 import { useTranslation, T } from '@/lib/translation'
+import PaymentPrivacyNotice from '@/components/shared/PaymentPrivacyNotice'
 
 type PaymentProvider = 'kkiapay' | 'fedapay' | 'zeyow'
 
@@ -964,6 +965,7 @@ export default function NationaliteFormPage() {
                                             </button>
                                         ))}
                                         {paymentError && <p className="text-xs text-red-700 flex items-center gap-2"><AlertCircle size={12} /> {paymentError}</p>}
+                                        <PaymentPrivacyNotice />
                                         <div className="flex items-center gap-2 text-gray-400 justify-center mt-2"><Shield size={14} /><span className="text-[10px] font-bold uppercase tracking-widest"><T>Transaction 100% sécurisée</T></span></div>
                                     </div>
                                 )}

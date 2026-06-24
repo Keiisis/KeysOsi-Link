@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { sendEmail, getEmailTemplates, getEmailConfig } from '@/lib/email'
+import { sendWhatsAppNotification } from '@/lib/whatsapp'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
@@ -101,6 +102,19 @@ export async function POST(req: NextRequest) {
                 }
             } catch (e) {
                 console.log('[NAT-LEAD] Email send failed (non-blocking):', e)
+            }
+
+            // Notification WhatsApp automatique (no-op si non configuré)
+            try {
+                await sendWhatsAppNotification(
+                    `🇧🇯 Nouveau prospect nationalité — Retour Gagnant\n` +
+                    `Nom : ${clientName}\n` +
+                    `Email : ${cleanEmail}\n` +
+                    `Tél : ${telephone || 'non communiqué'}\n` +
+                    `Pays : ${pays_residence || 'non précisé'}`
+                )
+            } catch (waErr) {
+                console.log('[NAT-LEAD] WhatsApp non-blocking:', waErr)
             }
         })()
 
