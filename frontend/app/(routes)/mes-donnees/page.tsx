@@ -75,7 +75,7 @@ function RequestForm() {
                     envoyé. Ouvrez-le pour consulter et, si vous le souhaitez, supprimer vos données.
                     Pensez à vérifier vos spams. Le lien est valable 1 heure.
                 </p>
-                <button onClick={() => { setSent(false); setEmail('') }} className="mt-5 text-sm text-emerald-700 hover:underline">
+                <button type="button" onClick={() => { setSent(false); setEmail('') }} className="mt-5 text-sm text-emerald-700 hover:underline">
                     Utiliser une autre adresse
                 </button>
             </div>
@@ -121,7 +121,11 @@ function VerifiedView({ token }: { token: string }) {
     const load = useCallback(async () => {
         setLoading(true); setError('')
         try {
-            const res = await fetch(`/api/rgpd/data?token=${encodeURIComponent(token)}`)
+            const res = await fetch('/api/rgpd/data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token }),
+            })
             const json = await res.json()
             if (!res.ok) { setError(json.error || 'Lien invalide ou expiré.'); setPreview(null) }
             else setPreview(json)
@@ -187,7 +191,7 @@ function VerifiedView({ token }: { token: string }) {
                         sont conservées sous forme <strong>anonymisée</strong> et ne vous sont plus rattachées.
                         Pour vous en assurer, relancez une vérification ci-dessous.
                     </p>
-                    <button onClick={load}
+                    <button type="button" onClick={load}
                         className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-emerald-200 text-emerald-700 font-medium hover:bg-emerald-50">
                         <RefreshCw className="w-4 h-4" /> Vérifier à nouveau
                     </button>
@@ -272,18 +276,18 @@ function VerifiedView({ token }: { token: string }) {
                     Cette action efface définitivement vos données (les pièces comptables légalement obligatoires sont anonymisées). Elle est <strong>irréversible</strong>.
                 </p>
                 {!confirmOpen ? (
-                    <button onClick={() => setConfirmOpen(true)}
+                    <button type="button" onClick={() => setConfirmOpen(true)}
                         className="px-5 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold flex items-center gap-2">
                         <Trash2 className="w-4 h-4" /> Supprimer mes données
                     </button>
                 ) : (
                     <div className="flex flex-col sm:flex-row gap-3">
-                        <button onClick={doDelete} disabled={deleting}
+                        <button type="button" onClick={doDelete} disabled={deleting}
                             className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-60">
                             {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                             Oui, supprimer définitivement
                         </button>
-                        <button onClick={() => setConfirmOpen(false)} disabled={deleting}
+                        <button type="button" onClick={() => setConfirmOpen(false)} disabled={deleting}
                             className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50">
                             Annuler
                         </button>

@@ -267,7 +267,7 @@ export default function RechercheAncestralePage() {
                                         </p>
                                     </div>
                                     <div>
-                                        <Link href="/rendez-vous" className="block">
+                                        <Link href="/rendez-vous?service=recherche-ancestrale" className="block">
                                             <Button className="w-full bg-[#1a2332] hover:bg-[#2c3b55] text-white font-bold h-12 rounded-xl transition-all shadow-md hover:shadow-lg">
                                                 {t(content.cta_button_text)}
                                             </Button>

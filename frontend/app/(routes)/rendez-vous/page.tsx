@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,6 +10,7 @@ import { MapPin, CheckCircle, Calendar, Phone, Video, MessagesSquare, MessageCir
 import { COMPANY_INFO } from '@/lib/constants/company-info';
 import { useTranslation, T } from '@/lib/translation';
 import ConsentCheckbox from '@/components/shared/ConsentCheckbox';
+import { RDV_SERVICES, serviceSlugToLabel, DEFAULT_RDV_SERVICE } from '@/lib/constants/rdv-services';
 
 // Benin cities — real positions on viewBox 0 0 1000 1000
 const beninCities = [
@@ -24,11 +26,14 @@ const beninCities = [
     { name: "Malanville", x: 701, y: 91, main: false },
 ];
 
-export default function RendezVousPage() {
+function RendezVousContent() {
     const { t } = useTranslation();
+    const searchParams = useSearchParams();
+    // Pré-sélection du service depuis l'URL (ex. clic « Prendre Rendez-vous » sur une page service)
+    const preselectedService = serviceSlugToLabel(searchParams.get('service'));
     const [step, setStep] = useState(1);
     const [form, setForm] = useState({
-        nom: '', prenom: '', email: '', telephone: '', service: 'Passeport / Administratif', message: '',
+        nom: '', prenom: '', email: '', telephone: '', service: preselectedService || DEFAULT_RDV_SERVICE, message: '',
         date: '', timeSlot: '', contactMethod: 'Appel WhatsApp',
     });
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -248,13 +253,9 @@ export default function RendezVousPage() {
                                                         <label htmlFor="service-select" className="text-sm font-medium text-gray-700"><T>Type de Service</T></label>
                                                         <select id="service-select" title={t("Type de Service")} value={form.service} onChange={e => setForm(p => ({ ...p, service: e.target.value }))}
                                                             className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#008751] outline-none bg-white">
-                                                            <option>{t("Passeport / Administratif")}</option>
-                                                            <option>{t("Logement / Immobilier")}</option>
-                                                            <option>{t("Création d'Entreprise")}</option>
-                                                            <option>{t("Guide Culturel")}</option>
-                                                            <option>{t("Construction")}</option>
-                                                            <option>{t("Investissement")}</option>
-                                                            <option>{t("Autre")}</option>
+                                                            {RDV_SERVICES.map(s => (
+                                                                <option key={s.slug} value={s.label}>{t(s.label)}</option>
+                                                            ))}
                                                         </select>
                                                     </div>
                                                     <div className="space-y-2">
@@ -384,5 +385,13 @@ export default function RendezVousPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function RendezVousPage() {
+    return (
+        <Suspense fallback={null}>
+            <RendezVousContent />
+        </Suspense>
     );
 }

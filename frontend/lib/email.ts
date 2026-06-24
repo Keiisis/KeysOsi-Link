@@ -448,7 +448,7 @@ export const getEmailTemplates = async (locale: string = 'fr') => {
     `, locale),
 
         /** Confirmation de demande de RDV — sans CTA "réserver" (redondant et illogique) */
-        rdvConfirmation: (clientName: string, service: string, date: string | null, timeSlot: string, contactMethod: string, aiMessage: string) => EMAIL_WRAPPER(`
+        rdvConfirmation: (clientName: string, service: string, date: string | null, timeSlot: string, contactMethod: string, aiMessage: string, clientMessage: string = '') => EMAIL_WRAPPER(`
         <h2 style="margin:0 0 16px;font-size:22px;color:#1B2A4A;font-weight:800;letter-spacing:-0.3px;">✅ Demande reçue, ${clientName} !</h2>
         <p style="color:#3E4A65;font-size:14.5px;line-height:1.8;margin:0 0 22px;">
             Votre demande de rendez-vous a bien été enregistrée. Votre agent va l'examiner et vous confirmera le créneau très prochainement.
@@ -472,10 +472,14 @@ export const getEmailTemplates = async (locale: string = 'fr') => {
                     <td style="padding:7px 0;color:#8B94A6;font-size:12px;">Mode de contact</td>
                     <td style="padding:7px 0;color:#1B2A4A;font-size:13px;">${contactMethod || 'À définir'}</td>
                 </tr>
+                ${clientMessage && clientMessage.trim() ? `<tr>
+                    <td style="padding:7px 0;color:#8B94A6;font-size:12px;vertical-align:top;">Votre message</td>
+                    <td style="padding:7px 0;color:#1B2A4A;font-size:13px;font-style:italic;">${clientMessage.trim().replace(/</g, '&lt;')}</td>
+                </tr>` : ''}
             </table>
         </div>
         <div style="background:#F4FAF6;border-left:3px solid #008751;padding:18px 22px;border-radius:0 12px 12px 0;margin:0 0 22px;">
-            <p style="margin:0;font-size:13.5px;color:#3E4A65;font-style:italic;line-height:1.75;">${aiMessage}</p>
+            <p style="margin:0;font-size:13.5px;color:#3E4A65;line-height:1.75;white-space:pre-wrap;">${aiMessage}</p>
         </div>
         <div style="background:#FFFBEB;border:1px solid rgba(201,168,76,0.3);border-radius:12px;padding:14px 18px;text-align:center;">
             <p style="margin:0;font-size:12.5px;color:#5A6680;line-height:1.65;">
@@ -516,16 +520,20 @@ export const getEmailTemplates = async (locale: string = 'fr') => {
     `, 'fr'),
 
         /** Notification admin — nouvelle demande de RDV (sans score Oracle) */
-        rdvAdminNotification: (clientName: string, clientEmail: string, service: string, date: string | null, timeSlot: string, contactMethod: string) => EMAIL_WRAPPER(`
+        rdvAdminNotification: (clientName: string, clientEmail: string, service: string, date: string | null, timeSlot: string, contactMethod: string, telephone: string = '', clientMessage: string = '', aiReply: string = '') => EMAIL_WRAPPER(`
         <h2 style="margin:0 0 18px;font-size:22px;color:#1B2A4A;font-weight:800;letter-spacing:-0.3px;">📅 Nouvelle demande de RDV</h2>
-        <table style="width:100%;border-collapse:collapse;margin:0 0 26px;">
+        <table style="width:100%;border-collapse:collapse;margin:0 0 22px;">
             <tr>
               <td style="padding:11px 0;color:#8B94A6;font-size:13px;border-bottom:1px solid rgba(27,42,74,0.08);width:140px;">Client</td>
               <td style="padding:11px 0;color:#1B2A4A;font-size:13.5px;font-weight:700;border-bottom:1px solid rgba(27,42,74,0.08);">${clientName}</td>
             </tr>
             <tr>
               <td style="padding:11px 0;color:#8B94A6;font-size:13px;border-bottom:1px solid rgba(27,42,74,0.08);">Email</td>
-              <td style="padding:11px 0;color:#1B2A4A;font-size:13px;border-bottom:1px solid rgba(27,42,74,0.08);">${clientEmail}</td>
+              <td style="padding:11px 0;color:#1B2A4A;font-size:13px;border-bottom:1px solid rgba(27,42,74,0.08);"><a href="mailto:${clientEmail}" style="color:#008751;text-decoration:none;">${clientEmail}</a></td>
+            </tr>
+            <tr>
+              <td style="padding:11px 0;color:#8B94A6;font-size:13px;border-bottom:1px solid rgba(27,42,74,0.08);">Téléphone / WhatsApp</td>
+              <td style="padding:11px 0;color:#1B2A4A;font-size:13px;font-weight:700;border-bottom:1px solid rgba(27,42,74,0.08);">${telephone ? telephone.replace(/</g, '&lt;') : 'Non communiqué'}</td>
             </tr>
             <tr>
               <td style="padding:11px 0;color:#8B94A6;font-size:13px;border-bottom:1px solid rgba(27,42,74,0.08);">Service demandé</td>
@@ -544,6 +552,14 @@ export const getEmailTemplates = async (locale: string = 'fr') => {
               <td style="padding:11px 0;color:#1B2A4A;font-size:13px;">${contactMethod || 'Non précisé'}</td>
             </tr>
         </table>
+        ${clientMessage && clientMessage.trim() ? `<div style="background:#FAF6EC;border:1px solid rgba(201,168,76,0.25);border-radius:12px;padding:16px 18px;margin:0 0 18px;">
+            <p style="margin:0 0 8px;font-size:11px;font-weight:800;color:#8B94A6;text-transform:uppercase;letter-spacing:0.15em;">📝 Message du client</p>
+            <p style="margin:0;font-size:13.5px;color:#1B2A4A;line-height:1.7;white-space:pre-wrap;">${clientMessage.trim().replace(/</g, '&lt;')}</p>
+        </div>` : ''}
+        ${aiReply && aiReply.trim() ? `<div style="background:#F4FAF6;border-left:3px solid #008751;padding:14px 18px;border-radius:0 10px 10px 0;margin:0 0 24px;">
+            <p style="margin:0 0 6px;font-size:11px;font-weight:800;color:#008751;text-transform:uppercase;letter-spacing:0.15em;">🤖 Réponse automatique déjà envoyée au client</p>
+            <p style="margin:0;font-size:12.5px;color:#3E4A65;line-height:1.7;white-space:pre-wrap;">${aiReply.trim().replace(/</g, '&lt;')}</p>
+        </div>` : ''}
         <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
           <tr><td>
             <a href="${SITE_URL}/agent/agenda" style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#B89538);color:#FFFFFF;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:800;font-size:13px;box-shadow:0 6px 18px rgba(201,168,76,0.32);">
