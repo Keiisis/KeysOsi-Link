@@ -77,16 +77,16 @@ export default function ConfidentialitePage() {
                             5. Partage des données
                         </h2>
                         <p className="text-gray-600 pl-4 leading-relaxed">
-                            Vos données ne sont jamais vendues à des tiers. Elles peuvent être partagées avec nos sous-traitants techniques, uniquement dans le cadre strict de la fourniture de nos services et sous obligation de confidentialité :
+                            Vos données ne sont jamais vendues. Elles peuvent être communiquées, uniquement dans la stricte mesure nécessaire à la fourniture de nos services et sous obligation contractuelle de confidentialité, aux <strong>catégories de destinataires</strong> suivantes :
                         </p>
                         <ul className="list-disc pl-10 mt-3 space-y-1.5 text-gray-600 leading-relaxed">
-                            <li><strong>Vercel</strong> — hébergement du site.</li>
-                            <li><strong>Supabase</strong> — base de données, authentification et stockage de fichiers.</li>
-                            <li><strong>Groq</strong> — traduction automatique du contenu (textes envoyés pour traduction multilingue).</li>
-                            <li><strong>Prestataires de paiement</strong> — Kkiapay, FedaPay, Zeyow, Stripe et PayPal traitent les transactions que vous initiez (données de paiement transmises directement au prestataire choisi).</li>
+                            <li>nos sous-traitants techniques d&apos;<strong>hébergement et d&apos;infrastructure</strong> ;</li>
+                            <li>nos prestataires de <strong>traitement et de stockage des données</strong> ;</li>
+                            <li>les <strong>prestataires de paiement agréés</strong>, pour les seules transactions que vous initiez ;</li>
+                            <li>le cas échéant, les <strong>autorités administratives ou judiciaires</strong> compétentes, sur réquisition légale.</li>
                         </ul>
                         <p className="text-gray-600 pl-4 leading-relaxed mt-3">
-                            Certains de ces prestataires peuvent être situés hors de l&apos;Union européenne ; les transferts sont encadrés par les garanties appropriées (clauses contractuelles types ou équivalent).
+                            Tous nos sous-traitants sont liés par un contrat conforme à la réglementation. Lorsque des données sont transférées hors de l&apos;Union européenne, ces transferts sont encadrés par des garanties appropriées (clauses contractuelles types ou mécanisme équivalent). La liste détaillée et nominative de nos sous-traitants est tenue à jour dans notre registre interne et peut vous être communiquée sur demande à <a href="mailto:contact@retourgagnantbenin.bj" className="text-[#008751] hover:underline">contact@retourgagnantbenin.bj</a>.
                         </p>
                     </section>
 
