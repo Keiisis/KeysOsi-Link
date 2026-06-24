@@ -199,6 +199,11 @@ export default function SuiviDossierPage() {
                                                 />
                                             </div>
 
+                                            <p className="text-[11px] leading-relaxed text-gray-500">
+                                                Les informations saisies servent uniquement à retrouver votre dossier, conformément à la{' '}
+                                                <a href="/confidentialite" target="_blank" rel="noopener noreferrer" className="text-[#008751] underline">politique de confidentialité</a>.
+                                            </p>
+
                                             <button
                                                 type="submit"
                                                 disabled={isSearching}

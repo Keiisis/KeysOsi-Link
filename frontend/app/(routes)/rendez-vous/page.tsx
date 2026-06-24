@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, CheckCircle, Calendar, Phone, Video, MessagesSquare, MessageCircle } from 'lucide-react';
 import { COMPANY_INFO } from '@/lib/constants/company-info';
 import { useTranslation, T } from '@/lib/translation';
+import ConsentCheckbox from '@/components/shared/ConsentCheckbox';
 
 // Benin cities — real positions on viewBox 0 0 1000 1000
 const beninCities = [
@@ -347,6 +348,10 @@ export default function RendezVousPage() {
                                                     </div>
                                                     <p className="text-gray-500 text-sm"><T>Un conseiller vous recontactera sous 24h.</T></p>
                                                 </motion.div>
+                                            )}
+
+                                            {step === 4 && (
+                                                <ConsentCheckbox id="rdv-consent" purpose="afin de planifier mon rendez-vous et de me recontacter" className="pt-2" />
                                             )}
 
                                             {status === 'error' && (

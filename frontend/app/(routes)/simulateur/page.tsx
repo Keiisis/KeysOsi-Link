@@ -5,6 +5,7 @@ import { useTranslation, T } from "@/lib/translation"
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, Sparkles, Globe, Target, Calendar, Wallet, Award, Loader2, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
+import ConsentCheckbox from '@/components/shared/ConsentCheckbox'
 
 interface OracleResult {
     service: string
@@ -90,6 +91,7 @@ export default function SimulateurPage() {
     const [nom, setNom] = useState('')
     const [prenom, setPrenom] = useState('')
     const [email, setEmail] = useState('')
+    const [consent, setConsent] = useState(false)
     const [whatsapp, setWhatsapp] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [result, setResult] = useState<OracleResult | null>(null)
@@ -110,7 +112,7 @@ export default function SimulateurPage() {
     }
 
     const handleSubmit = async () => {
-        if (!nom.trim() || !email.trim()) return
+        if (!nom.trim() || !email.trim() || !consent) return
         setIsSubmitting(true)
 
         try {
@@ -260,9 +262,12 @@ export default function SimulateurPage() {
                                             className="w-full px-4 py-3.5 bg-white border border-gray-300 rounded-xl text-slate-900 placeholder-gray-400 focus:outline-none focus:border-[#008751] focus:bg-slate-50/50" />
                                     </div>
 
+                                    <ConsentCheckbox id="simulateur-consent" checked={consent} onChange={setConsent}
+                                        purpose="afin d'analyser mon profil et de me recontacter au sujet de mes besoins" className="mt-4" />
+
                                     <button
                                         onClick={handleSubmit}
-                                        disabled={isSubmitting || !nom.trim() || !email.trim()}
+                                        disabled={isSubmitting || !nom.trim() || !email.trim() || !consent}
                                         className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#FCD116] to-[#E5BD14] text-black font-black uppercase tracking-[3px] text-[13px] hover:shadow-[0_8px_30px_rgba(252,209,22,0.3)] transition-all disabled:opacity-50 flex items-center justify-center gap-3 mt-6"
                                     >
                                         {isSubmitting ? (

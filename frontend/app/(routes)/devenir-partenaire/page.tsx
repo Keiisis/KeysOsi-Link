@@ -14,6 +14,7 @@ import {
 import { cn } from '@/lib/utils'
 import FileUpload from '@/components/ui/FileUpload'
 import { useTranslation, T } from '@/lib/translation'
+import ConsentCheckbox from '@/components/shared/ConsentCheckbox'
 
 // ─── Category definitions with real icons ────────────────────────────────────
 
@@ -223,6 +224,7 @@ export default function DevenirPartenairePage() {
     const [submitting, setSubmitting] = useState(false)
     const [submitted, setSubmitted] = useState(false)
     const [error, setError] = useState('')
+    const [consent, setConsent] = useState(false)
 
     const set = (key: keyof FormData, value: string | string[]) =>
         setForm(prev => ({ ...prev, [key]: value }))
@@ -237,7 +239,7 @@ export default function DevenirPartenairePage() {
         if (step === 0) return !!(form.company_name && form.contact_name && form.category && form.location)
         if (step === 1) return !!(form.activity_description && form.partnership_types.length > 0)
         if (step === 2) return !!form.email
-        if (step === 3) return !!form.why_partner
+        if (step === 3) return !!form.why_partner && consent
         return true
     }
 
@@ -744,6 +746,9 @@ export default function DevenirPartenairePage() {
                                                 ))}
                                             </div>
                                         </div>
+
+                                        <ConsentCheckbox id="partner-consent" checked={consent} onChange={setConsent}
+                                            purpose="afin d'étudier ma candidature de partenariat et de me recontacter" />
                                     </div>
                                 )}
 

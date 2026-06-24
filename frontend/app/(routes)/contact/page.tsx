@@ -7,6 +7,7 @@ import { Mail, MapPin, Phone, Send, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { COMPANY_INFO } from "@/lib/constants/company-info";
 import { useTranslation, T } from '@/lib/translation';
+import ConsentCheckbox from '@/components/shared/ConsentCheckbox';
 
 export default function ContactPage() {
     const { t } = useTranslation();
@@ -199,6 +200,8 @@ export default function ContactPage() {
                                             {status === 'error' && (
                                                 <p className="text-[#E8112D] text-sm"><T>Une erreur est survenue. Réessayez.</T></p>
                                             )}
+
+                                            <ConsentCheckbox id="contact-consent" purpose="afin de répondre à votre demande de contact" />
 
                                             <Button
                                                 type="submit"
