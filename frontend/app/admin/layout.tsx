@@ -117,6 +117,7 @@ function AdminLayoutContent({
         { title: 'Frontend', icon: Palette, href: '/admin/frontend' },
         { title: 'Dossiers', icon: FileText, href: '/admin/dossiers' },
         { title: 'Leads Oracle', icon: Compass, href: '/admin/leads-oracle' },
+        { title: 'Classement Client', icon: BarChart3, href: '/admin/classement-client' },
         { title: 'Documents', icon: FolderOpen, href: '/admin/documents' },
         { title: 'Contrats', icon: FileSignature, href: '/admin/contrats' },
         { title: 'Demandes Nat.', icon: Globe, href: '/admin/nationalite' },

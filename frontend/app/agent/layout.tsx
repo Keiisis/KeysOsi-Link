@@ -394,6 +394,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                 { title: t('Événements'), icon: CalendarDays, href: '/agent/evenements' },
                 { title: t('Documents'), icon: FolderOpen, href: '/agent/documents' },
                 { title: t('Clients'), icon: UsersIcon, href: '/agent/clients' },
+                { title: t('Classement Client'), icon: TrendingUp, href: '/agent/classement-client' },
                 { title: t('Partenaires'), icon: Handshake, href: '/agent/partenaires', badge: unreadPartenaires },
             ],
         },

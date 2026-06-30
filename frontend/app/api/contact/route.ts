@@ -5,6 +5,7 @@ import { fetchWithGroqRotation, GROQ_KEYS } from '@/lib/groq';
 import { rateLimit, getClientIp, rateLimitHeaders, CONTACT_LIMIT } from '@/lib/rate-limit';
 import { withWafGuard } from '@/lib/waf';
 import { sendWhatsAppNotification } from '@/lib/whatsapp';
+import { trackClient } from '@/lib/classement/track';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -139,6 +140,9 @@ async function handleContact(req: NextRequest) {
             } catch (waErr) {
                 console.log('[CONTACT] WhatsApp non-blocking:', waErr);
             }
+
+            // Classement Client automatique (CRM)
+            await trackClient({ email, full_name: clientName, phone: body?.telephone || null, serviceLabel: sujet, source: 'contact' });
         })();
 
         // 3. Auto-create Nexus Tracker entry for contact tracking

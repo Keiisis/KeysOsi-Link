@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { sendEmail, getEmailTemplates, getEmailConfig } from '@/lib/email';
 import { fetchWithGroqRotation, GROQ_KEYS } from '@/lib/groq';
 import { sendWhatsAppNotification } from '@/lib/whatsapp';
+import { trackClient } from '@/lib/classement/track';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -202,6 +203,9 @@ export async function POST(req: NextRequest) {
             } catch (waErr) {
                 console.log('[RDV] WhatsApp non-blocking:', waErr);
             }
+
+            // Classement Client automatique (CRM)
+            await trackClient({ email, full_name: clientName, phone: telephone, serviceLabel: service, source: 'rdv' });
         })();
 
         return NextResponse.json({ success: true, message: 'Demande de rendez-vous envoyée !' });
