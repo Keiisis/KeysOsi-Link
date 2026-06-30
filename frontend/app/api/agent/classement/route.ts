@@ -90,10 +90,24 @@ export async function POST(request: NextRequest) {
         const known = new Set((existingRows || []).map(r => (r.email || '').toLowerCase()))
         const toInsert = new Map<string, Record<string, unknown>>()
 
+        // Ajoute/fusionne : conserve la date la plus ANCIENNE (ancienneté réelle),
+        // complète les champs manquants, et améliore la catégorie si « autres ».
         const add = (email: string, row: Record<string, unknown>) => {
             const e = (email || '').toLowerCase().trim()
-            if (!e || !isEmail(e) || known.has(e) || toInsert.has(e)) return
-            toInsert.set(e, { ...row, email: e })
+            if (!e || !isEmail(e) || known.has(e)) return
+            const prev = toInsert.get(e)
+            if (!prev) { toInsert.set(e, { ...row, email: e }); return }
+            const merged: Record<string, unknown> = { ...prev }
+            const prevDate = prev.first_contact_at ? new Date(String(prev.first_contact_at)).getTime() : Infinity
+            const newDate = row.first_contact_at ? new Date(String(row.first_contact_at)).getTime() : Infinity
+            if (newDate < prevDate) merged.first_contact_at = row.first_contact_at
+            if (!prev.full_name && row.full_name) merged.full_name = row.full_name
+            if (!prev.phone && row.phone) merged.phone = row.phone
+            if ((!prev.service_category || prev.service_category === 'autres') && row.service_category && row.service_category !== 'autres') {
+                merged.service_category = row.service_category
+                merged.service_label = row.service_label || prev.service_label
+            }
+            toInsert.set(e, merged)
         }
 
         // 1) Prospects nationalité / éligibilité
@@ -141,6 +155,70 @@ export async function POST(request: NextRequest) {
                     phone: null,
                     service_category: categorize(r.sujet),
                     service_label: r.sujet || null,
+                    source: 'backfill', status: 'nouveau',
+                    first_contact_at: r.created_at || new Date().toISOString(),
+                })
+            }
+        } catch { /* table absente */ }
+
+        // 4) Suivi de dossiers — service_type bien catégorisable
+        try {
+            const { data } = await supabase.from('dossier_tracking')
+                .select('client_nom, client_prenom, client_email, service_type, service, created_at')
+            for (const r of data || []) {
+                add(r.client_email, {
+                    full_name: `${r.client_prenom || ''} ${r.client_nom || ''}`.trim() || null,
+                    phone: null,
+                    service_category: categorize(r.service_type || r.service),
+                    service_label: r.service_type || r.service || null,
+                    source: 'backfill', status: 'nouveau',
+                    first_contact_at: r.created_at || new Date().toISOString(),
+                })
+            }
+        } catch { /* table absente */ }
+
+        // 5) Commandes boutique (clients ayant acheté)
+        try {
+            const { data } = await supabase.from('orders')
+                .select('customer_email, customer_name, email, full_name, phone, created_at')
+            for (const r of data || []) {
+                add(r.customer_email || r.email, {
+                    full_name: r.customer_name || r.full_name || null,
+                    phone: r.phone || null,
+                    service_category: 'autres',
+                    service_label: 'Commande boutique',
+                    source: 'backfill', status: 'converti',
+                    first_contact_at: r.created_at || new Date().toISOString(),
+                })
+            }
+        } catch { /* table absente */ }
+
+        // 6) Profils clients (comptes créés)
+        try {
+            const { data } = await supabase.from('client_profiles')
+                .select('email, full_name, first_name, last_name, phone, created_at')
+            for (const r of data || []) {
+                add(r.email, {
+                    full_name: r.full_name || `${r.first_name || ''} ${r.last_name || ''}`.trim() || null,
+                    phone: r.phone || null,
+                    service_category: 'autres',
+                    service_label: 'Compte client',
+                    source: 'backfill', status: 'en_cours',
+                    first_contact_at: r.created_at || new Date().toISOString(),
+                })
+            }
+        } catch { /* table absente */ }
+
+        // 7) Inscriptions aux événements
+        try {
+            const { data } = await supabase.from('event_registrations')
+                .select('email, full_name, phone, whatsapp, created_at')
+            for (const r of data || []) {
+                add(r.email, {
+                    full_name: r.full_name || null,
+                    phone: r.phone || r.whatsapp || null,
+                    service_category: 'culture',
+                    service_label: 'Événement communautaire',
                     source: 'backfill', status: 'nouveau',
                     first_contact_at: r.created_at || new Date().toISOString(),
                 })

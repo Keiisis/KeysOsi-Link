@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
     Users, Search, RefreshCw, Loader2, AlertCircle, Clock, BellRing,
     ChevronDown, Save, Phone, Mail, DownloadCloud, CheckCircle2, Inbox,
+    UserPlus, X,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import {
@@ -80,6 +81,13 @@ export default function ClassementBoard({ theme }: { theme: Theme }) {
     const [backfilling, setBackfilling] = useState(false)
     const [flash, setFlash] = useState('')
 
+    // Ajout manuel
+    const emptyAdd = { full_name: '', email: '', phone: '', service_category: 'passeport', service_label: '', first_contact_at: '', notes: '' }
+    const [addOpen, setAddOpen] = useState(false)
+    const [addForm, setAddForm] = useState(emptyAdd)
+    const [adding, setAdding] = useState(false)
+    const [addError, setAddError] = useState('')
+
     const load = useCallback(async () => {
         setLoading(true); setError('')
         try {
@@ -130,6 +138,34 @@ export default function ClassementBoard({ theme }: { theme: Theme }) {
         } finally { setSaving(false) }
     }
 
+    const submitAdd = async () => {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addForm.email.trim())) { setAddError('Email invalide.'); return }
+        setAdding(true); setAddError('')
+        try {
+            const res = await fetch('/api/agent/classement', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+                body: JSON.stringify({
+                    action: 'add',
+                    full_name: addForm.full_name.trim() || null,
+                    email: addForm.email.trim(),
+                    phone: addForm.phone.trim() || null,
+                    service_category: addForm.service_category,
+                    service_label: addForm.service_label.trim() || null,
+                    notes: addForm.notes.trim() || null,
+                    first_contact_at: addForm.first_contact_at ? new Date(addForm.first_contact_at).toISOString() : undefined,
+                }),
+            })
+            const json = await res.json()
+            if (res.ok) {
+                setAddOpen(false); setAddForm(emptyAdd); setFlash('Client ajouté avec succès.'); await load()
+            } else {
+                setAddError(json.error || 'Ajout impossible.')
+            }
+        } catch { setAddError('Erreur de connexion.') }
+        finally { setAdding(false) }
+    }
+
     // Filtrage
     const filtered = useMemo(() => {
         const q = search.toLowerCase().trim()
@@ -178,11 +214,17 @@ export default function ClassementBoard({ theme }: { theme: Theme }) {
                         <p className={`text-sm ${p.sub}`}>Suivi intelligent par service · relances automatiques 15 → 90 jours</p>
                     </div>
                 </div>
-                <button onClick={backfill} disabled={backfilling}
-                    className="self-start md:self-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold disabled:opacity-60 active:scale-[0.98] transition">
-                    {backfilling ? <Loader2 className="w-4 h-4 animate-spin" /> : <DownloadCloud className="w-4 h-4" />}
-                    Importer les clients existants
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                    <button type="button" onClick={() => { setAddForm(emptyAdd); setAddError(''); setAddOpen(true) }}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1a2332] hover:bg-[#2c3b55] text-white text-sm font-semibold active:scale-[0.98] transition">
+                        <UserPlus className="w-4 h-4" /> Ajouter un client
+                    </button>
+                    <button type="button" onClick={backfill} disabled={backfilling}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold disabled:opacity-60 active:scale-[0.98] transition">
+                        {backfilling ? <Loader2 className="w-4 h-4 animate-spin" /> : <DownloadCloud className="w-4 h-4" />}
+                        Importer l&apos;existant
+                    </button>
+                </div>
             </header>
 
             {flash && <p className="mb-4 text-sm text-emerald-500 flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> {flash}</p>}
@@ -361,6 +403,81 @@ export default function ClassementBoard({ theme }: { theme: Theme }) {
                     )}
                 </div>
             )}
+
+            {/* ── Modal : ajout manuel d'un client ── */}
+            <AnimatePresence>
+                {addOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+                        onClick={() => !adding && setAddOpen(false)}>
+                        <motion.div
+                            initial={{ scale: 0.95, y: 12, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.97, opacity: 0 }}
+                            transition={{ type: 'spring', stiffness: 220, damping: 22 }}
+                            onClick={e => e.stopPropagation()}
+                            className={`w-full max-w-lg rounded-2xl border overflow-hidden ${p.dark ? 'bg-[#0f141e] border-white/10' : 'bg-white border-gray-100'} ${p.page}`}>
+                            <div className="h-1 w-full bg-gradient-to-r from-[#008751] via-[#FCD116] to-[#E8112D]" />
+                            <div className="flex items-center justify-between px-5 py-4">
+                                <h3 className="font-bold flex items-center gap-2"><UserPlus className="w-5 h-5 text-emerald-500" /> Ajouter un client</h3>
+                                <button type="button" onClick={() => setAddOpen(false)} className={p.faint} title="Fermer"><X className="w-5 h-5" /></button>
+                            </div>
+                            <div className={`px-5 pb-5 space-y-3 border-t ${p.divider} pt-4`}>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label className={`block text-xs font-semibold mb-1 ${p.sub}`}>Nom complet</label>
+                                        <input value={addForm.full_name} onChange={e => setAddForm(f => ({ ...f, full_name: e.target.value }))}
+                                            placeholder="Nom et prénom" className={`w-full px-3 py-2 rounded-lg border outline-none focus:border-emerald-500 text-sm ${p.input}`} />
+                                    </div>
+                                    <div>
+                                        <label className={`block text-xs font-semibold mb-1 ${p.sub}`}>Email *</label>
+                                        <input type="email" value={addForm.email} onChange={e => setAddForm(f => ({ ...f, email: e.target.value }))}
+                                            placeholder="client@exemple.com" className={`w-full px-3 py-2 rounded-lg border outline-none focus:border-emerald-500 text-sm ${p.input}`} />
+                                    </div>
+                                    <div>
+                                        <label className={`block text-xs font-semibold mb-1 ${p.sub}`}>Téléphone</label>
+                                        <input value={addForm.phone} onChange={e => setAddForm(f => ({ ...f, phone: e.target.value }))}
+                                            placeholder="+229…" className={`w-full px-3 py-2 rounded-lg border outline-none focus:border-emerald-500 text-sm ${p.input}`} />
+                                    </div>
+                                    <div>
+                                        <label className={`block text-xs font-semibold mb-1 ${p.sub}`}>Premier contact</label>
+                                        <input type="date" title="Premier contact" value={addForm.first_contact_at} onChange={e => setAddForm(f => ({ ...f, first_contact_at: e.target.value }))}
+                                            max={new Date().toISOString().split('T')[0]}
+                                            className={`w-full px-3 py-2 rounded-lg border outline-none focus:border-emerald-500 text-sm ${p.input}`} />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className={`block text-xs font-semibold mb-1 ${p.sub}`}>Catégorie de service</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {SERVICE_CATEGORIES.map(cat => (
+                                            <button key={cat.slug} type="button" onClick={() => setAddForm(f => ({ ...f, service_category: cat.slug }))}
+                                                className="px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition"
+                                                style={addForm.service_category === cat.slug
+                                                    ? { backgroundColor: cat.color, borderColor: cat.color, color: '#fff' }
+                                                    : { borderColor: `${cat.color}55`, color: cat.color }}>
+                                                {cat.emoji} {cat.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className={`block text-xs font-semibold mb-1 ${p.sub}`}>Notes (facultatif)</label>
+                                    <textarea value={addForm.notes} onChange={e => setAddForm(f => ({ ...f, notes: e.target.value }))} rows={3}
+                                        placeholder="Contexte, demande, problèmes…" className={`w-full px-3 py-2 rounded-lg border outline-none focus:border-emerald-500 resize-y text-sm ${p.input}`} />
+                                </div>
+                                {addError && <p className="text-sm text-red-500 flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {addError}</p>}
+                                <div className="flex gap-2 pt-1">
+                                    <button type="button" onClick={submitAdd} disabled={adding}
+                                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold disabled:opacity-60 active:scale-[0.98] transition">
+                                        {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Enregistrer le client
+                                    </button>
+                                    <button type="button" onClick={() => setAddOpen(false)} disabled={adding}
+                                        className={`px-4 py-2.5 rounded-xl border text-sm font-medium ${p.chip}`}>Annuler</button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     )
 }
