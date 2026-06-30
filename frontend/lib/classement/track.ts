@@ -19,6 +19,39 @@ export interface TrackInput {
     source?: string
 }
 
+/**
+ * Marque un client comme « converti » (paiement réussi).
+ * Crée la fiche si elle n'existe pas encore. Fire-and-forget, tolérant.
+ */
+export async function markClientConverted(input: TrackInput): Promise<void> {
+    const email = (input.email || '').toLowerCase().trim()
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return
+    if (!supabaseUrl || !serviceKey) return
+    try {
+        const supabase = createClient(supabaseUrl, serviceKey)
+        const { data: existing } = await supabase
+            .from('client_classement').select('id').eq('email', email).maybeSingle()
+        if (existing) {
+            await supabase.from('client_classement')
+                .update({ status: 'converti', last_review_at: new Date().toISOString() })
+                .eq('id', existing.id)
+        } else {
+            await supabase.from('client_classement').insert({
+                email,
+                full_name: input.full_name || null,
+                phone: input.phone || null,
+                service_category: categorize(input.serviceLabel),
+                service_label: input.serviceLabel || null,
+                source: input.source || 'paiement',
+                status: 'converti',
+                first_contact_at: new Date().toISOString(),
+            })
+        }
+    } catch (e) {
+        console.log('[CLASSEMENT] markConverted non-blocking:', e instanceof Error ? e.message : e)
+    }
+}
+
 export async function trackClient(input: TrackInput): Promise<void> {
     const email = (input.email || '').toLowerCase().trim()
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return

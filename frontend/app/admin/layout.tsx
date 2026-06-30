@@ -80,6 +80,7 @@ function AdminLayoutContent({
     // Unread Counters
     const [unreadMessages, setUnreadMessages] = useState(0)
     const [unreadNotifications, setUnreadNotifications] = useState(0)
+    const [relancesDue, setRelancesDue] = useState(0)
 
     useEffect(() => {
         if (isLoginPage) return
@@ -94,7 +95,20 @@ function AdminLayoutContent({
             setUnreadNotifications(notifRes.count || 0)
         }
 
+        // Relances Classement Client à faire (badge)
+        const fetchRelances = async () => {
+            try {
+                const { data: { session } } = await supabase.auth.getSession()
+                const res = await fetch('/api/agent/classement/count', {
+                    headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+                    cache: 'no-store',
+                })
+                if (res.ok) { const j = await res.json(); setRelancesDue(j.due || 0) }
+            } catch { /* silencieux */ }
+        }
+
         fetchUnread()
+        fetchRelances()
 
         // Realtime Subscription
         const channel = supabase.channel('admin_layout_badges')
@@ -117,7 +131,7 @@ function AdminLayoutContent({
         { title: 'Frontend', icon: Palette, href: '/admin/frontend' },
         { title: 'Dossiers', icon: FileText, href: '/admin/dossiers' },
         { title: 'Leads Oracle', icon: Compass, href: '/admin/leads-oracle' },
-        { title: 'Classement Client', icon: BarChart3, href: '/admin/classement-client' },
+        { title: 'Classement Client', icon: BarChart3, href: '/admin/classement-client', badge: relancesDue },
         { title: 'Documents', icon: FolderOpen, href: '/admin/documents' },
         { title: 'Contrats', icon: FileSignature, href: '/admin/contrats' },
         { title: 'Demandes Nat.', icon: Globe, href: '/admin/nationalite' },

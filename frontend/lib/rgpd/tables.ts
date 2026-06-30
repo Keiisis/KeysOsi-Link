@@ -38,6 +38,7 @@ export const RGPD_TABLES: RgpdTable[] = [
     { table: 'partners',               emailCols: ['email'],                        mode: 'delete',    kind: 'data',     label: 'Candidature partenaire' },
     { table: 'ai_prospection_leads',   emailCols: ['email'],                        mode: 'delete',    kind: 'data',     label: 'Prospection' },
     { table: 'testimonials',           emailCols: ['email'],                        mode: 'delete',    kind: 'data',     label: 'Avis & témoignages' },
+    { table: 'client_classement',      emailCols: ['email'],                        mode: 'delete',    kind: 'data',     label: 'Suivi client (CRM)' },
 
     // ── Comptes & profils : anonymisés (préserve l'intégrité référentielle) ──
     { table: 'client_profiles',        emailCols: ['email', 'client_email'],        mode: 'anonymize', kind: 'data',     label: 'Profil client' },

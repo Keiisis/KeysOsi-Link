@@ -7,20 +7,21 @@ export interface ServiceCategory {
     slug: string
     label: string
     color: string   // couleur d'accent (hex)
-    emoji: string
+    icon: string    // nom d'icône lucide-react (résolu côté UI, pas d'emoji)
 }
 
 // Les 9 services officiels + « Autres ». slug aligné sur les pages service.
+// `icon` = nom d'un composant lucide-react (mappé dans l'UI).
 export const SERVICE_CATEGORIES: ServiceCategory[] = [
-    { slug: 'passeport',             label: 'Passeport & Documents', color: '#10B981', emoji: '🛂' },
-    { slug: 'logement',              label: 'Immobilier & Foncier',  color: '#0EA5E9', emoji: '🏠' },
-    { slug: 'business',              label: "Création d'Entreprise",  color: '#6366F1', emoji: '💼' },
-    { slug: 'culture',               label: 'Tourisme & Culture',     color: '#F59E0B', emoji: '🌍' },
-    { slug: 'construction',          label: 'Suivi de Chantier',      color: '#EF4444', emoji: '🏗️' },
-    { slug: 'investissement',        label: 'Investissement',         color: '#14B8A6', emoji: '📈' },
-    { slug: 'nationalite-vip',       label: 'Nationalité VIP',        color: '#C9A84C', emoji: '🇧🇯' },
-    { slug: 'recherche-ancestrale',  label: 'Recherche Ancestrale',   color: '#A855F7', emoji: '🧬' },
-    { slug: 'autres',                label: 'Autres Services',        color: '#64748B', emoji: '✨' },
+    { slug: 'passeport',             label: 'Passeport & Documents', color: '#10B981', icon: 'FileText' },
+    { slug: 'logement',              label: 'Immobilier & Foncier',  color: '#0EA5E9', icon: 'Home' },
+    { slug: 'business',              label: "Création d'Entreprise",  color: '#6366F1', icon: 'Briefcase' },
+    { slug: 'culture',               label: 'Tourisme & Culture',     color: '#F59E0B', icon: 'Globe' },
+    { slug: 'construction',          label: 'Suivi de Chantier',      color: '#EF4444', icon: 'HardHat' },
+    { slug: 'investissement',        label: 'Investissement',         color: '#14B8A6', icon: 'TrendingUp' },
+    { slug: 'nationalite-vip',       label: 'Nationalité VIP',        color: '#C9A84C', icon: 'Award' },
+    { slug: 'recherche-ancestrale',  label: 'Recherche Ancestrale',   color: '#A855F7', icon: 'Dna' },
+    { slug: 'autres',                label: 'Autres Services',        color: '#64748B', icon: 'LayoutGrid' },
 ]
 
 const CATEGORY_BY_SLUG = new Map(SERVICE_CATEGORIES.map(c => [c.slug, c]))

@@ -114,6 +114,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
     const [unreadNotifications, setUnreadNotifications] = useState(0)
     const [unreadVoices, setUnreadVoices] = useState(0)
     const [unreadPartenaires, setUnreadPartenaires] = useState(0)
+    const [relancesDue, setRelancesDue] = useState(0)
 
     // Sound notification refs
     const prevUnreadRef = useRef<number | null>(null)
@@ -279,7 +280,19 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
             setUnreadPartenaires(partRes.count || 0)
         }
 
+        const fetchRelances = async () => {
+            try {
+                const { data: { session } } = await supabase.auth.getSession()
+                const res = await fetch('/api/agent/classement/count', {
+                    headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+                    cache: 'no-store',
+                })
+                if (res.ok) { const j = await res.json(); setRelancesDue(j.due || 0) }
+            } catch { /* silencieux */ }
+        }
+
         fetchUnread()
+        fetchRelances()
 
         // Realtime Subscription
         const channel = supabase.channel('agent_layout_badges')
@@ -394,7 +407,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                 { title: t('Événements'), icon: CalendarDays, href: '/agent/evenements' },
                 { title: t('Documents'), icon: FolderOpen, href: '/agent/documents' },
                 { title: t('Clients'), icon: UsersIcon, href: '/agent/clients' },
-                { title: t('Classement Client'), icon: TrendingUp, href: '/agent/classement-client' },
+                { title: t('Classement Client'), icon: TrendingUp, href: '/agent/classement-client', badge: relancesDue },
                 { title: t('Partenaires'), icon: Handshake, href: '/agent/partenaires', badge: unreadPartenaires },
             ],
         },

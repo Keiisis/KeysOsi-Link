@@ -82,11 +82,11 @@ function buildEmail(c: ClientRow, days: number, milestone: number, suggestions: 
       <div style="height:5px;background:linear-gradient(90deg,#008751 0 33%,#FCD116 33% 66%,#E8112D 66% 100%)"></div>
       <div style="padding:26px 28px">
         <p style="margin:0 0 4px;color:#047857;font-size:13px;font-weight:800">Retour Gagnant Bénin — Suivi Client</p>
-        <h1 style="margin:0 0 6px;color:#1B2A4A;font-size:20px;font-weight:800">🔔 Relance à ${milestone} jours — ${c.full_name || c.email}</h1>
+        <h1 style="margin:0 0 6px;color:#1B2A4A;font-size:20px;font-weight:800">Relance à ${milestone} jours — ${c.full_name || c.email}</h1>
         <p style="margin:0 0 18px;color:#8B94A6;font-size:13px">Il est temps de faire le point sur ce dossier.</p>
 
         <table style="width:100%;border-collapse:collapse;background:#F8FAF9;border-radius:10px;overflow:hidden;margin:0 0 18px">
-          <tr><td style="padding:9px 14px;color:#8B94A6;font-size:12px;width:150px">Service</td><td style="padding:9px 14px;color:#1B2A4A;font-size:13px;font-weight:700">${cat.emoji} ${cat.label}</td></tr>
+          <tr><td style="padding:9px 14px;color:#8B94A6;font-size:12px;width:150px">Service</td><td style="padding:9px 14px;color:#1B2A4A;font-size:13px;font-weight:700"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${cat.color};margin-right:7px"></span>${cat.label}</td></tr>
           <tr><td style="padding:9px 14px;color:#8B94A6;font-size:12px">Statut</td><td style="padding:9px 14px;color:${statut.color};font-size:13px;font-weight:700">${statut.label}</td></tr>
           <tr><td style="padding:9px 14px;color:#8B94A6;font-size:12px">Depuis le 1er contact</td><td style="padding:9px 14px;color:#1B2A4A;font-size:13px;font-weight:700">${days} jours</td></tr>
           <tr><td style="padding:9px 14px;color:#8B94A6;font-size:12px">Email</td><td style="padding:9px 14px;color:#1B2A4A;font-size:13px">${c.email}</td></tr>
@@ -94,12 +94,12 @@ function buildEmail(c: ClientRow, days: number, milestone: number, suggestions: 
         </table>
 
         <div style="background:#FAF6EC;border:1px solid rgba(201,168,76,0.25);border-radius:10px;padding:14px 16px;margin:0 0 18px">
-          <p style="margin:0 0 6px;font-size:11px;font-weight:800;color:#8B94A6;text-transform:uppercase;letter-spacing:.15em">📝 Où en est-on (notes)</p>
+          <p style="margin:0 0 6px;font-size:11px;font-weight:800;color:#8B94A6;text-transform:uppercase;letter-spacing:.15em">Où en est-on (notes)</p>
           <p style="margin:0;font-size:13.5px;color:#1B2A4A;line-height:1.7;white-space:pre-wrap">${(c.notes?.trim() || 'Aucune note renseignée pour ce client.').replace(/</g, '&lt;')}</p>
         </div>
 
         <div style="background:#F4FAF6;border-left:3px solid #008751;border-radius:0 10px 10px 0;padding:14px 16px;margin:0 0 20px">
-          <p style="margin:0 0 6px;font-size:11px;font-weight:800;color:#008751;text-transform:uppercase;letter-spacing:.15em">🤖 Suggestions de l'assistant IA</p>
+          <p style="margin:0 0 6px;font-size:11px;font-weight:800;color:#008751;text-transform:uppercase;letter-spacing:.15em">Suggestions de l'assistant IA</p>
           <ul style="margin:0;padding-left:18px">${suggestionsHtml}</ul>
         </div>
 
@@ -136,7 +136,7 @@ async function run() {
         try {
             await sendEmail({
                 to: toLine,
-                subject: `🔔 Relance ${milestone}j — ${c.full_name || c.email} (${getCategory(c.service_category).label})`,
+                subject: `Relance ${milestone}j — ${c.full_name || c.email} (${getCategory(c.service_category).label})`,
                 html: buildEmail(c, days, milestone, suggestions),
                 context: 'client_relance',
                 relatedId: c.id,

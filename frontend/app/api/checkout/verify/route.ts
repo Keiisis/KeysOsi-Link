@@ -3,6 +3,7 @@ import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 import { rateLimit, getClientIp, rateLimitHeaders, VERIFY_LIMIT } from '@/lib/rate-limit'
 import { sendInvoiceEmail } from '@/lib/send-invoice-email'
+import { markClientConverted } from '@/lib/classement/track'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -458,6 +459,12 @@ export async function POST(request: Request) {
         // Aucune ligne modifiée = commande n'était pas pending (idempotence silencieuse)
         if (!updatedRows || updatedRows.length === 0) {
             return NextResponse.json({ success: true, message: 'Already verified' })
+        }
+
+        // ── Classement Client : passage automatique en « converti » ──
+        if (existingOrder.customer_email) {
+            markClientConverted({ email: existingOrder.customer_email, serviceLabel: 'Commande boutique', source: 'paiement' })
+                .catch(() => {})
         }
 
         // ── Envoi email facture (best-effort, fire-and-forget) ──
