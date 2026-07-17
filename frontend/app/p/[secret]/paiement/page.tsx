@@ -669,10 +669,12 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
                                 onClick={() => {
                                     if (!customerName.trim()) { setErrorMessage('Veuillez saisir votre nom'); return }
                                     if (!customerPhone.trim()) { setErrorMessage('Veuillez saisir votre téléphone'); return }
+                                    if (payableTotal <= 0) { setErrorMessage('Sélectionnez au moins une prestation'); return }
                                     setErrorMessage('')
                                     setStep('payment')
                                 }}
-                                className="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 py-4 rounded-2xl font-black text-base transition-all shadow-lg shadow-amber-900/20 flex items-center justify-center gap-2"
+                                disabled={payableTotal <= 0}
+                                className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed text-slate-900 py-4 rounded-2xl font-black text-base transition-all shadow-lg shadow-amber-900/20 flex items-center justify-center gap-2"
                             >
                                 Continuer vers le paiement <CreditCard className="w-5 h-5" />
                             </button>
@@ -691,14 +693,14 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
                                 <div className="flex items-center justify-center gap-3 mt-2">
                                     <p className="text-slate-400 text-sm">Montant : <span className="text-amber-400 font-bold">
                                         {selectedCurrency === 'XOF'
-                                            ? <Price amount={proposal.total_amount} currency="XOF" forceDisplayCurrency="XOF" />
-                                            : formatPriceWithMargin(proposal.total_amount, selectedCurrency)
+                                            ? <Price amount={payableTotal} currency="XOF" forceDisplayCurrency="XOF" />
+                                            : formatPriceWithMargin(payableTotal, selectedCurrency)
                                         }
                                     </span></p>
                                     <CurrencySelector
                                         value={selectedCurrency}
                                         onChange={setSelectedCurrency}
-                                        baseAmountXOF={proposal.total_amount}
+                                        baseAmountXOF={payableTotal}
                                     />
                                 </div>
                                 {selectedCurrency !== 'XOF' && (
@@ -750,7 +752,7 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
                                 </div>
                                 {errorMessage && <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl text-sm mb-4">{errorMessage}</div>}
                                 <button type="button" onClick={confirmStripePayment} disabled={!stripeReady || stripeSubmitting} className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-900 py-4 rounded-2xl font-black transition-all flex items-center justify-center gap-2">
-                                    <Lock className="w-4 h-4" /> Payer <Price amount={proposal.total_amount} currency="XOF" forceDisplayCurrency={(proposal.currency as CurrencyCode) || 'XOF'} />
+                                    <Lock className="w-4 h-4" /> Payer <Price amount={payableTotal} currency="XOF" forceDisplayCurrency={(proposal.currency as CurrencyCode) || 'XOF'} />
                                 </button>
                                 <button type="button" onClick={() => setStep('payment')} className="w-full text-slate-400 hover:text-white py-3 text-sm mt-2">← Autre moyen de paiement</button>
                             </div>
@@ -802,7 +804,7 @@ export default function ProposalPaymentPage({ params }: { params: Promise<{ secr
                             <div className="bg-white/5 border border-white/10 rounded-2xl p-6 w-full max-w-sm text-center">
                                 <p className="text-xs text-slate-500 mb-1">Montant payé</p>
                                 <p className="text-2xl font-black text-amber-400">
-                                    <Price amount={proposal.total_amount} currency="XOF" forceDisplayCurrency={(proposal.currency as CurrencyCode) || 'XOF'} />
+                                    <Price amount={payableTotal} currency="XOF" forceDisplayCurrency={(proposal.currency as CurrencyCode) || 'XOF'} />
                                 </p>
                             </div>
                             <Link href="/" className="bg-amber-500 hover:bg-amber-400 text-slate-900 px-8 py-3 rounded-xl font-black transition-all">
