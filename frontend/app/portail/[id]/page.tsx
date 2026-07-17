@@ -397,7 +397,7 @@ export default function ClientPortalPage() {
             // Fetch ERP Templates
             let devisHeader = "RETOUR GAGNANT BÉNIN\nRCCM : RB/COT/26 B 42001 | IFU : 3202644573981\nHaie-Vive Cocotiers, Cotonou, Bénin\n+229 01 60 32 21 21 / +229 01 94 35 50 50\ncontact@retourgagnantbenin.bj"
             let devisFooter = "RETOUR GAGNANT BÉNIN - RCCM: RB/COT/26 B 42001 - IFU: 3202644573981 - Haie-Vive Cocotiers, Cotonou - contact@retourgagnantbenin.bj\nDocument N° - Généré le"
-            let presidentName = "N. R. G"
+            let presidentName = "Nathalie RIFFERT GERMANY"
             let presidentTitle = "LA DIRECTION GÉNÉRALE"
 
             try {
@@ -1067,7 +1067,7 @@ export default function ClientPortalPage() {
                                         <div className="text-center z-10">
                                             <p className="text-[10px] text-gray-400 font-bold mb-1">RETOUR GAGNANT BÉNIN</p>
                                             <p className="text-[9px] text-emerald-600 font-black uppercase">La Présidente Directrice Générale</p>
-                                            <p className="text-sm text-gray-900 font-bold mt-1">N. R. G</p>
+                                            <p className="text-sm text-gray-900 font-bold mt-1">Nathalie RIFFERT GERMANY</p>
                                         </div>
                                         {STAMP_BASE64 && (
                                             <Image 
