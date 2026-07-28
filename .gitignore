@@ -20,3 +20,6 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# Reglages Claude Code locaux (contiennent des cles API) — jamais versionnes
+.claude/settings.local.json
