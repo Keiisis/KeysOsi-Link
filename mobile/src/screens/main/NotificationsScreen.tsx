@@ -64,43 +64,43 @@ const TYPE_CONFIG: Record<string, {
     dossier: {
         icon: 'folder-open',
         color: C.primary,
-        bgRgba: 'rgba(0, 135, 81, 0.08)',
-        borderRgba: 'rgba(0, 135, 81, 0.18)',
+        bgRgba: C.surfaceSoft,
+        borderRgba: C.border,
         label: 'DOSSIER',
     },
     message: {
         icon: 'chatbubble-ellipses',
         color: C.info,
-        bgRgba: 'rgba(0, 100, 60, 0.10)',
-        borderRgba: 'rgba(0, 100, 60, 0.25)',
+        bgRgba: C.surfaceSoft,
+        borderRgba: C.border,
         label: 'MESSAGE',
     },
     payment: {
         icon: 'card',
         color: C.success,
-        bgRgba: 'rgba(0, 135, 81, 0.10)',
-        borderRgba: 'rgba(0, 135, 81, 0.25)',
+        bgRgba: C.surfaceSoft,
+        borderRgba: C.border,
         label: 'PAIEMENT',
     },
     appointment: {
         icon: 'calendar',
         color: C.purple,
-        bgRgba: 'rgba(138, 109, 8, 0.10)',
-        borderRgba: 'rgba(138, 109, 8, 0.25)',
+        bgRgba: C.accentSoft,
+        borderRgba: C.border,
         label: 'RENDEZ-VOUS',
     },
     event: {
         icon: 'sparkles',
         color: C.accent,
-        bgRgba: 'rgba(252, 209, 22, 0.10)',
-        borderRgba: 'rgba(252, 209, 22, 0.25)',
+        bgRgba: C.accentSoft,
+        borderRgba: C.border,
         label: 'ÉVÉNEMENT',
     },
     system: {
         icon: 'information-circle',
         color: C.textSec,
-        bgRgba: 'rgba(138, 138, 138, 0.08)',
-        borderRgba: 'rgba(138, 138, 138, 0.18)',
+        bgRgba: C.surfaceAlt,
+        borderRgba: C.border,
         label: 'SYSTÈME',
     },
 }
@@ -531,7 +531,7 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
                             <Switch
                                 value={pushEnabled}
                                 onValueChange={handleTogglePush}
-                                trackColor={{ false: '#E4E4E4', true: C.accent }}
+                                trackColor={{ false: C.borderStrong, true: C.accent }}
                                 thumbColor={C.surfaceSolid}
                                 ios_backgroundColor="#E4E4E4"
                             />
@@ -548,21 +548,21 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
                         </View>
                         <View style={styles.statsGrid}>
                             <View style={styles.statCard}>
-                                <View style={[styles.statIcon, { backgroundColor: 'rgba(252, 209, 22, 0.10)', borderColor: C.border }]}>
+                                <View style={[styles.statIcon, { backgroundColor: C.accentSoft, borderColor: C.border }]}>
                                     <Ionicons name="notifications-outline" size={14} color={C.accent} />
                                 </View>
                                 <Text style={styles.statValue}>{notifications.length}</Text>
                                 <Text style={styles.statLabel}>{t('TOTAL')}</Text>
                             </View>
                             <View style={styles.statCard}>
-                                <View style={[styles.statIcon, { backgroundColor: 'rgba(0, 135, 81, 0.08)', borderColor: 'rgba(0, 135, 81, 0.18)' }]}>
+                                <View style={[styles.statIcon, { backgroundColor: C.surfaceSoft, borderColor: C.border }]}>
                                     <Ionicons name="mail-unread-outline" size={14} color={C.primary} />
                                 </View>
                                 <Text style={styles.statValue}>{unreadCount}</Text>
                                 <Text style={styles.statLabel}>{t('NON LUES')}</Text>
                             </View>
                             <View style={styles.statCard}>
-                                <View style={[styles.statIcon, { backgroundColor: 'rgba(0, 135, 81, 0.10)', borderColor: C.border }]}>
+                                <View style={[styles.statIcon, { backgroundColor: C.surfaceSoft, borderColor: C.border }]}>
                                     <Ionicons name="checkmark-done" size={14} color={C.success} />
                                 </View>
                                 <Text style={styles.statValue}>{notifications.length - unreadCount}</Text>
@@ -650,7 +650,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing.xs,
-        backgroundColor: 'rgba(252, 209, 22, 0.10)',
+        backgroundColor: C.accentSoft,
         borderRadius: radius.pill,
         paddingHorizontal: 12,
         paddingVertical: spacing.xs,
@@ -697,7 +697,7 @@ const styles = StyleSheet.create({
     },
     pushCardActive: {
         borderColor: C.border,
-        backgroundColor: 'rgba(0, 135, 81, 0.03)',
+        backgroundColor: C.surfaceSoft,
     },
     pushIconWrap: {
         width: 44,
@@ -722,7 +722,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing.xs,
-        backgroundColor: 'rgba(0, 135, 81, 0.10)',
+        backgroundColor: C.surfaceSoft,
         borderRadius: radius.pill,
         paddingHorizontal: spacing.sm,
         paddingVertical: spacing.xxs,
@@ -836,7 +836,7 @@ const styles = StyleSheet.create({
         color: C.primaryText,
     },
     filterCount: {
-        backgroundColor: 'rgba(0, 135, 81, 0.08)',
+        backgroundColor: C.surfaceSoft,
         borderRadius: radius.xs,
         paddingHorizontal: spacing.xs,
         paddingVertical: spacing.xxs,
@@ -844,7 +844,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     filterCountActive: {
-        backgroundColor: 'rgba(252, 209, 22, 0.25)',
+        backgroundColor: C.accentSoft,
     },
     filterCountText: {
         ...typography.button, fontSize: 12,
@@ -857,7 +857,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing.xs,
-        backgroundColor: 'rgba(252, 209, 22, 0.10)',
+        backgroundColor: C.accentSoft,
         borderRadius: radius.sm,
         paddingHorizontal: 12,
         paddingVertical: spacing.sm,
@@ -951,7 +951,7 @@ const styles = StyleSheet.create({
         width: 60,
         height: 60,
         borderRadius: radius.xl,
-        backgroundColor: 'rgba(0, 135, 81, 0.10)',
+        backgroundColor: C.surfaceSoft,
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1.5,

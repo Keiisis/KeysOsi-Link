@@ -919,7 +919,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.34)',
     },
     familyBannerText: {
-        ...typography.overline, fontSize: 13, color: '#FFFFFF',
+        ...typography.overline, fontSize: 13, color: C.primaryText,
         paddingHorizontal: spacing.md, paddingBottom: spacing.md,
     },
 

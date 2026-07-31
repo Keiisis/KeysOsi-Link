@@ -211,7 +211,7 @@ function SwitchRow({ label, value, onValueChange, icon, highlight }: any) {
             <Switch
                 value={value}
                 onValueChange={onValueChange}
-                trackColor={{ false: '#E4E4E4', true: C.accent }}
+                trackColor={{ false: C.borderStrong, true: C.accent }}
                 thumbColor={C.surfaceSolid}
                 ios_backgroundColor="#E4E4E4"
             />
@@ -1696,7 +1696,7 @@ const styles = StyleSheet.create({
         elevation: 8,
     },
     primaryBtnDisabled: {
-        backgroundColor: '#E4E4E4',
+        backgroundColor: C.borderStrong,
         shadowOpacity: 0,
         elevation: 0,
         borderColor: 'transparent',

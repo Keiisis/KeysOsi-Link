@@ -73,10 +73,10 @@ const TYPE_CONFIG = {
 }
 
 const STATUS_CONFIG = {
-    confirmed: { label: 'Confirmé', color: C.success, bg: 'rgba(0, 135, 81, 0.10)', dot: C.success },
-    pending: { label: 'En attente', color: C.accentDark, bg: 'rgba(252, 209, 22, 0.10)', dot: C.accent },
-    cancelled: { label: 'Annulé', color: C.error, bg: 'rgba(232, 17, 45, 0.08)', dot: C.error },
-    completed: { label: 'Terminé', color: C.textSec, bg: 'rgba(138, 138, 138, 0.10)', dot: C.textSec },
+    confirmed: { label: 'Confirmé', color: C.success, bg: C.surfaceSoft, dot: C.success },
+    pending: { label: 'En attente', color: C.accentDark, bg: C.accentSoft, dot: C.accent },
+    cancelled: { label: 'Annulé', color: C.error, bg: C.dangerSoft, dot: C.error },
+    completed: { label: 'Terminé', color: C.textSec, bg: C.surfaceAlt, dot: C.textSec },
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -881,7 +881,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing.xs,
-        backgroundColor: 'rgba(252, 209, 22, 0.18)',
+        backgroundColor: C.accentSoft,
         borderRadius: radius.pill,
         paddingHorizontal: spacing.sm,
         paddingVertical: spacing.xs,
@@ -922,7 +922,7 @@ const styles = StyleSheet.create({
         width: 26,
         height: 26,
         borderRadius: 13,
-        backgroundColor: 'rgba(252, 209, 22, 0.15)',
+        backgroundColor: C.accentSoft,
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
@@ -1018,7 +1018,7 @@ const styles = StyleSheet.create({
         width: 72,
         height: 72,
         borderRadius: radius.xl,
-        backgroundColor: 'rgba(252, 209, 22, 0.10)',
+        backgroundColor: C.accentSoft,
         borderWidth: 1,
         borderColor: C.border,
         alignItems: 'center',
@@ -1072,10 +1072,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: spacing.sm,
-        backgroundColor: 'rgba(0, 135, 81, 0.06)',
+        backgroundColor: C.surfaceSoft,
         borderRadius: radius.xs,
         borderWidth: 1,
-        borderColor: 'rgba(0, 135, 81, 0.08)',
+        borderColor: C.border,
     },
     rdvDay: {
         ...typography.h3, fontSize: 18,
@@ -1153,7 +1153,7 @@ const styles = StyleSheet.create({
     },
     modalBg: {
         ...StyleSheet.absoluteFill,
-        backgroundColor: 'rgba(0, 135, 81, 0.55)',
+        backgroundColor: C.surfaceSoft,
     },
     modalSheet: {
         backgroundColor: C.bg,
@@ -1266,20 +1266,20 @@ const styles = StyleSheet.create({
     },
     typeBtnActive: {
         borderColor: C.accent,
-        backgroundColor: 'rgba(252, 209, 22, 0.06)',
+        backgroundColor: C.accentSoft,
     },
     typeIconWrap: {
         width: 40,
         height: 40,
         borderRadius: radius.sm,
-        backgroundColor: 'rgba(0, 135, 81, 0.06)',
+        backgroundColor: C.surfaceSoft,
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
-        borderColor: 'rgba(0, 135, 81, 0.08)',
+        borderColor: C.border,
     },
     typeIconWrapActive: {
-        backgroundColor: 'rgba(252, 209, 22, 0.15)',
+        backgroundColor: C.accentSoft,
         borderColor: C.border,
     },
     typeBtnText: {
@@ -1334,7 +1334,7 @@ const styles = StyleSheet.create({
         ...shadows.card,
     },
     submitBtnDisabled: {
-        backgroundColor: '#E4E4E4',
+        backgroundColor: C.borderStrong,
         shadowOpacity: 0,
         elevation: 0,
     },

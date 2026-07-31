@@ -555,7 +555,7 @@ const styles = StyleSheet.create({
         width: 30,
         height: 30,
         borderRadius: 15,
-        backgroundColor: 'rgba(0, 135, 81, 0.06)',
+        backgroundColor: C.surfaceSoft,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -598,7 +598,7 @@ const styles = StyleSheet.create({
         width: 24,
         height: 24,
         borderRadius: 12,
-        backgroundColor: 'rgba(0, 135, 81, 0.12)',
+        backgroundColor: C.surfaceSoft,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -681,7 +681,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.gutter,
     },
     btnDisabled: {
-        backgroundColor: '#E4E4E4',
+        backgroundColor: C.borderStrong,
         shadowOpacity: 0,
         elevation: 0,
     },
@@ -691,7 +691,7 @@ const styles = StyleSheet.create({
                 letterSpacing: 0.2,
     },
     btnTextDisabled: {
-        color: '#F5F5F5',
+        color: C.surfaceAlt,
     },
     btnSecondary: {
         flexDirection: 'row',
@@ -748,7 +748,7 @@ const styles = StyleSheet.create({
         paddingVertical: spacing.sm,
         borderBottomWidth: 1,
         borderBottomColor: C.border,
-        backgroundColor: 'rgba(252, 209, 22, 0.04)',
+        backgroundColor: C.accentSoft,
     },
     canvasGuideText: {
         ...typography.overline,

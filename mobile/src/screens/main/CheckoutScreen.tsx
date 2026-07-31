@@ -984,7 +984,7 @@ const styles = StyleSheet.create({
         elevation: 8,
     },
     payBtnDisabled: {
-        backgroundColor: '#E4E4E4',
+        backgroundColor: C.borderStrong,
         shadowOpacity: 0,
         elevation: 0,
     },
