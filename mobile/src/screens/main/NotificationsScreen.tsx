@@ -8,7 +8,7 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as Haptics from 'expo-haptics'
-import { Ionicons } from '@expo/vector-icons'
+import { LucideIcon } from '../../components/Icon'
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -55,7 +55,7 @@ interface AppNotification {
 
 /* ── Config visuelle par type ── */
 const TYPE_CONFIG: Record<string, {
-    icon: keyof typeof Ionicons.glyphMap
+    icon: string
     color: string
     bgRgba: string
     borderRgba: string
@@ -173,7 +173,7 @@ function NotifCard({
                         styles.notifIcon,
                         { backgroundColor: cfg.bgRgba, borderColor: cfg.borderRgba },
                     ]}>
-                        <Ionicons name={cfg.icon} size={18} color={cfg.color} />
+                        <LucideIcon name={cfg.icon} size={18} color={cfg.color} />
                     </View>
 
                     {/* Contenu */}
@@ -394,13 +394,13 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
                     hitSlop={6}
                     accessibilityLabel={t('Retour')}>
                     <View style={styles.iconContainer}>
-                        <Ionicons name="arrow-back" size={22} color={C.primary} />
+                        <LucideIcon name="arrow-back" size={22} color={C.primary} />
                     </View>
                 </Pressable>
 
                 <View style={styles.navCounter}>
                     <Animated.View style={bellPulseStyle}>
-                        <Ionicons name="notifications" size={12} color={C.accent} />
+                        <LucideIcon name="notifications" size={12} color={C.accent} />
                     </Animated.View>
                     <Text style={styles.navCounterText}>
                         {unreadCount > 0
@@ -447,7 +447,7 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
                             <View style={styles.emptyHero}>
                                 <View style={styles.emptyHeroGlow} />
                                 <View style={styles.emptyIconWrap}>
-                                    <Ionicons name="notifications-off-outline" size={36} color={C.accent} />
+                                    <LucideIcon name="notifications-off-outline" size={36} color={C.accent} />
                                 </View>
                             </View>
                             <Text style={styles.emptyTitle}>{t('Aucune notification')}</Text>
@@ -458,7 +458,7 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
                     ) : (
                         <View style={styles.emptyFilterState}>
                             <View style={styles.emptyFilterIcon}>
-                                <Ionicons name="checkmark-done" size={28} color={C.success} />
+                                <LucideIcon name="checkmark-done" size={28} color={C.success} />
                             </View>
                             <Text style={styles.emptyFilterTitle}>{t('Tout est lu')}</Text>
                             <Text style={styles.emptyFilterText}>
@@ -501,7 +501,7 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
                             { backgroundColor: pushEnabled ? 'rgba(0, 135, 81, 0.10)' : 'rgba(138, 138, 138, 0.08)' },
                             { borderColor: pushEnabled ? 'rgba(0, 135, 81, 0.25)' : 'rgba(138, 138, 138, 0.18)' },
                         ]}>
-                            <Ionicons
+                            <LucideIcon
                                 name={pushEnabled ? 'notifications' : 'notifications-off-outline'}
                                 size={20}
                                 color={pushEnabled ? C.success : C.textSec}
@@ -549,21 +549,21 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
                         <View style={styles.statsGrid}>
                             <View style={styles.statCard}>
                                 <View style={[styles.statIcon, { backgroundColor: C.accentSoft, borderColor: C.border }]}>
-                                    <Ionicons name="notifications-outline" size={14} color={C.accent} />
+                                    <LucideIcon name="notifications-outline" size={14} color={C.accent} />
                                 </View>
                                 <Text style={styles.statValue}>{notifications.length}</Text>
                                 <Text style={styles.statLabel}>{t('TOTAL')}</Text>
                             </View>
                             <View style={styles.statCard}>
                                 <View style={[styles.statIcon, { backgroundColor: C.surfaceSoft, borderColor: C.border }]}>
-                                    <Ionicons name="mail-unread-outline" size={14} color={C.primary} />
+                                    <LucideIcon name="mail-unread-outline" size={14} color={C.primary} />
                                 </View>
                                 <Text style={styles.statValue}>{unreadCount}</Text>
                                 <Text style={styles.statLabel}>{t('NON LUES')}</Text>
                             </View>
                             <View style={styles.statCard}>
                                 <View style={[styles.statIcon, { backgroundColor: C.surfaceSoft, borderColor: C.border }]}>
-                                    <Ionicons name="checkmark-done" size={14} color={C.success} />
+                                    <LucideIcon name="checkmark-done" size={14} color={C.success} />
                                 </View>
                                 <Text style={styles.statValue}>{notifications.length - unreadCount}</Text>
                                 <Text style={styles.statLabel}>{t('LUES')}</Text>
@@ -617,7 +617,7 @@ export default function NotificationsScreen({ navigation }: { navigation: Nav })
                                     accessibilityRole="button"
                                     hitSlop={6}
                                 >
-                                    <Ionicons name="checkmark-done" size={14} color={C.accent} />
+                                    <LucideIcon name="checkmark-done" size={14} color={C.accent} />
                                     <Text style={styles.markAllText}>{t('Tout lire')}</Text>
                                 </TouchableOpacity>
                             )}

@@ -5,7 +5,7 @@ import {
     Platform, Linking, Image, Pressable, Dimensions,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Ionicons } from '@expo/vector-icons'
+import { LucideIcon } from '../../components/Icon'
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -89,7 +89,7 @@ function AnimatedSection({
 function LinkItem({
     icon, label, onPress, isLast,
 }: {
-    icon: keyof typeof Ionicons.glyphMap
+    icon: string
     label: string
     onPress: () => void
     isLast: boolean
@@ -112,10 +112,10 @@ function LinkItem({
         >
             <Animated.View style={[styles.linkItem, !isLast && styles.linkItemBorder, animStyle]}>
                 <View style={styles.linkIconWrap}>
-                    <Ionicons name={icon} size={18} color={C.primary} />
+                    <LucideIcon name={icon} size={18} color={C.primary} />
                 </View>
                 <Text style={styles.linkLabel}>{label}</Text>
-                <Ionicons name="open-outline" size={16} color={C.textMuted} />
+                <LucideIcon name="open-outline" size={16} color={C.textMuted} />
             </Animated.View>
         </Pressable>
     )
@@ -170,7 +170,7 @@ export default function AboutScreen({ navigation }: { navigation: Nav }) {
                     hitSlop={6}
                     accessibilityLabel={t('Retour')}>
                     <View style={styles.iconContainer}>
-                        <Ionicons name="arrow-back" size={22} color={C.primary} />
+                        <LucideIcon name="arrow-back" size={22} color={C.primary} />
                     </View>
                 </Pressable>
             </View>
@@ -227,7 +227,7 @@ export default function AboutScreen({ navigation }: { navigation: Nav }) {
                     <View style={styles.card}>
                         <View style={styles.cardHeader}>
                             <View style={styles.cardHeaderBadge}>
-                                <Ionicons name="book-outline" size={15} color={C.primary} />
+                                <LucideIcon name="book-outline" size={15} color={C.primary} />
                             </View>
                             <Text style={styles.cardLabel}>{t('NOTRE HISTOIRE')}</Text>
                         </View>
@@ -293,7 +293,7 @@ export default function AboutScreen({ navigation }: { navigation: Nav }) {
                                 hitSlop={6}
                             >
                                 <View style={styles.socialIconWrap}>
-                                    <Ionicons name={s.icon} size={22} color={C.primary} />
+                                    <LucideIcon name={s.icon} size={22} color={C.primary} />
                                 </View>
                                 <Text style={styles.socialLabel}>{s.label}</Text>
                             </TouchableOpacity>

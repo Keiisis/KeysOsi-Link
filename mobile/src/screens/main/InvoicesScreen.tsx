@@ -6,7 +6,7 @@ import {
     RefreshControl, Platform, ActivityIndicator, Linking, Pressable, Dimensions,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Ionicons } from '@expo/vector-icons'
+import { LucideIcon } from '../../components/Icon'
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -63,7 +63,7 @@ const STATUS_CONFIG: Record<string, {
     label: string
     color: string
     bg: string
-    icon: keyof typeof Ionicons.glyphMap
+    icon: string
 }> = {
     paid: {
         label: 'Payée',
@@ -127,7 +127,7 @@ function FilterPill({
     label, icon, count, active, onPress,
 }: {
     label: string
-    icon: keyof typeof Ionicons.glyphMap
+    icon: string
     count: number
     active: boolean
     onPress: () => void
@@ -148,7 +148,7 @@ function FilterPill({
             accessibilityRole="button"
             hitSlop={6}>
             <Animated.View style={[styles.filterPill, pillStyle]}>
-                <Ionicons
+                <LucideIcon
                     name={icon}
                     size={13}
                     color={active ? C.accent : C.textSec}
@@ -222,13 +222,13 @@ function InvoiceCard({
 
                     {/* Icône statut */}
                     <View style={[styles.statusIconWrap, { backgroundColor: cfg.bg }]}>
-                        <Ionicons name={cfg.icon} size={22} color={cfg.color} />
+                        <LucideIcon name={cfg.icon} size={22} color={cfg.color} />
                     </View>
 
                     {/* Contenu */}
                     <View style={styles.invInfo}>
                         <View style={styles.refRow}>
-                            <Ionicons name="receipt-outline" size={11} color={C.accentDark} />
+                            <LucideIcon name="receipt-outline" size={11} color={C.accentDark} />
                             <Text style={styles.invRef}>{invoice.invoice_ref}</Text>
                         </View>
 
@@ -237,13 +237,13 @@ function InvoiceCard({
                         </Text>
 
                         <View style={styles.metaRow}>
-                            <Ionicons name="calendar-outline" size={10} color={C.textMuted} />
+                            <LucideIcon name="calendar-outline" size={10} color={C.textMuted} />
                             <Text style={styles.invDate}>{formatDate(invoice.issued_at)}</Text>
 
                             {invoice.sent_to_email && (
                                 <>
                                     <View style={styles.metaDot} />
-                                    <Ionicons name="mail-outline" size={10} color={C.success} />
+                                    <LucideIcon name="mail-outline" size={10} color={C.success} />
                                     <Text style={styles.emailText}>{t('Envoyée')}</Text>
                                 </>
                             )}
@@ -264,7 +264,7 @@ function InvoiceCard({
                         </View>
 
                         <View style={styles.openHint}>
-                            <Ionicons
+                            <LucideIcon
                                 name={invoice.pdf_url ? 'download-outline' : 'open-outline'}
                                 size={12}
                                 color={C.accent}
@@ -388,13 +388,13 @@ export default function InvoicesScreen({ navigation }: { navigation: Nav }) {
                     hitSlop={6}
                     accessibilityLabel={t('Retour')}>
                     <View style={styles.iconContainer}>
-                        <Ionicons name="arrow-back" size={22} color={C.primary} />
+                        <LucideIcon name="arrow-back" size={22} color={C.primary} />
                     </View>
                 </Pressable>
 
                 {!loading && invoices.length > 0 && (
                     <View style={styles.navCounter}>
-                        <Ionicons name="receipt" size={12} color={C.accent} />
+                        <LucideIcon name="receipt" size={12} color={C.accent} />
                         <Text style={styles.navCounterText}>
                             {invoices.length} {invoices.length > 1 ? t('factures') : t('facture')}
                         </Text>
@@ -435,7 +435,7 @@ export default function InvoicesScreen({ navigation }: { navigation: Nav }) {
                     ) : invoices.length === 0 ? (
                         <View style={styles.emptyCard}>
                             <View style={styles.emptyIconWrap}>
-                                <Ionicons name="receipt-outline" size={42} color={C.accent} />
+                                <LucideIcon name="receipt-outline" size={42} color={C.accent} />
                             </View>
                             <Text style={styles.emptyTitle}>
                                 {t('Aucune facture')}
@@ -459,7 +459,7 @@ export default function InvoicesScreen({ navigation }: { navigation: Nav }) {
                     ) : (
                         <View style={styles.emptyCatWrap}>
                             <View style={styles.emptyCatIcon}>
-                                <Ionicons name="filter-outline" size={28} color={C.textMuted} />
+                                <LucideIcon name="filter-outline" size={28} color={C.textMuted} />
                             </View>
                             <Text style={styles.emptyCatTitle}>
                                 {t('Aucune facture')}
@@ -476,7 +476,7 @@ export default function InvoicesScreen({ navigation }: { navigation: Nav }) {
                                 <Text style={styles.emptyCatBtnText}>
                                     {t('Voir toutes')}
                                 </Text>
-                                <Ionicons name="arrow-forward" size={13} color={C.accent} />
+                                <LucideIcon name="arrow-forward" size={13} color={C.accent} />
                             </Pressable>
                         </View>
                     )
@@ -504,7 +504,7 @@ export default function InvoicesScreen({ navigation }: { navigation: Nav }) {
                                         <View style={styles.patternDot2} />
 
                                         <View style={styles.totalBadge}>
-                                            <Ionicons name="wallet-outline" size={11} color={C.accent} />
+                                            <LucideIcon name="wallet-outline" size={11} color={C.accent} />
                                             <Text style={styles.totalBadgeText}>
                                                 {t('TOTAL FACTURÉ')}
                                             </Text>
@@ -524,7 +524,7 @@ export default function InvoicesScreen({ navigation }: { navigation: Nav }) {
                                         <View style={styles.totalSplit}>
                                             <View style={styles.totalSplitItem}>
                                                 <View style={styles.totalSplitDot}>
-                                                    <Ionicons name="checkmark" size={10} color={C.primary} />
+                                                    <LucideIcon name="checkmark" size={10} color={C.primary} />
                                                 </View>
                                                 <View>
                                                     <Text style={styles.totalSplitLabel}>{t('Payé')}</Text>
@@ -538,7 +538,7 @@ export default function InvoicesScreen({ navigation }: { navigation: Nav }) {
 
                                             <View style={styles.totalSplitItem}>
                                                 <View style={[styles.totalSplitDot, { backgroundColor: C.accentSoft }]}>
-                                                    <Ionicons name="time-outline" size={10} color={C.accent} />
+                                                    <LucideIcon name="time-outline" size={10} color={C.accent} />
                                                 </View>
                                                 <View>
                                                     <Text style={styles.totalSplitLabel}>{t('En attente')}</Text>
@@ -595,7 +595,7 @@ export default function InvoicesScreen({ navigation }: { navigation: Nav }) {
                         <AnimatedSection delay={500}>
                             <View style={styles.infoBox}>
                                 <View style={styles.infoIconWrap}>
-                                    <Ionicons name="information-circle" size={18} color={C.info} />
+                                    <LucideIcon name="information-circle" size={18} color={C.info} />
                                 </View>
                                 <View style={{ flex: 1 }}>
                                     <Text style={styles.infoTitle}>

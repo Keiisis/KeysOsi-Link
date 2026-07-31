@@ -8,7 +8,7 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as Haptics from 'expo-haptics'
-import { Ionicons } from '@expo/vector-icons'
+import { LucideIcon } from '../../components/Icon'
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -153,12 +153,12 @@ function AppointmentCard({
                 {/* Infos */}
                 <View style={styles.rdvInfo}>
                     <View style={styles.rdvTypeRow}>
-                        <Ionicons name={tc.icon} size={13} color={C.accent} />
+                        <LucideIcon name={tc.icon} size={13} color={C.accent} />
                         <Text style={styles.rdvType}>{t(tc.label)}</Text>
                     </View>
 
                     <View style={styles.rdvMeta}>
-                        <Ionicons name="time-outline" size={11} color={C.textMuted} />
+                        <LucideIcon name="time-outline" size={11} color={C.textMuted} />
                         <Text style={styles.rdvMetaText}>30 min</Text>
                         {appt.agent_name && (
                             <>
@@ -187,7 +187,7 @@ function AppointmentCard({
                         accessibilityRole="button"
                         accessibilityLabel={t('Annuler ce rendez-vous')}
                     >
-                        <Ionicons name="close-circle-outline" size={22} color={C.error} />
+                        <LucideIcon name="close-circle-outline" size={22} color={C.error} />
                     </Pressable>
                 )}
             </View>
@@ -463,14 +463,14 @@ export default function AppointmentsScreen({ navigation, route }: { navigation: 
                     hitSlop={6}
                     accessibilityLabel={t('Retour')}>
                     <View style={styles.iconContainer}>
-                        <Ionicons name="arrow-back" size={22} color={C.primary} />
+                        <LucideIcon name="arrow-back" size={22} color={C.primary} />
                     </View>
                 </Pressable>
 
                 <Pressable onPress={() => setShowModal(true)} style={styles.navAddBtn}
                     accessibilityRole="button"
                     hitSlop={6}>
-                    <Ionicons name="add" size={18} color={C.accent} />
+                    <LucideIcon name="add" size={18} color={C.accent} />
                     <Text style={styles.navAddText}>{t('Demander')}</Text>
                 </Pressable>
             </View>
@@ -503,7 +503,7 @@ export default function AppointmentsScreen({ navigation, route }: { navigation: 
                     ) : (
                         <View style={styles.emptyCard}>
                             <View style={styles.emptyIconWrap}>
-                                <Ionicons name="calendar-outline" size={36} color={C.accent} />
+                                <LucideIcon name="calendar-outline" size={36} color={C.accent} />
                             </View>
                             <Text style={styles.emptyTitle}>
                                 {tab === 'upcoming'
@@ -523,9 +523,9 @@ export default function AppointmentsScreen({ navigation, route }: { navigation: 
                                     accessibilityRole="button"
                                     hitSlop={6}
                                 >
-                                    <Ionicons name="calendar" size={16} color={C.accent} style={{ marginRight: 8 }} />
+                                    <LucideIcon name="calendar" size={16} color={C.accent} style={{ marginRight: 8 }} />
                                     <Text style={styles.emptyBtnText}>{t('Prendre rendez-vous')}</Text>
-                                    <Ionicons name="arrow-forward" size={16} color={C.accent} style={{ marginLeft: 8 }} />
+                                    <LucideIcon name="arrow-forward" size={16} color={C.accent} style={{ marginLeft: 8 }} />
                                 </TouchableOpacity>
                             )}
                         </View>
@@ -565,7 +565,7 @@ export default function AppointmentsScreen({ navigation, route }: { navigation: 
 
                             <View style={styles.nextRdvRow}>
                                 <View style={styles.nextRdvIconWrap}>
-                                    <Ionicons name="calendar-outline" size={14} color={C.accent} />
+                                    <LucideIcon name="calendar-outline" size={14} color={C.accent} />
                                 </View>
                                 <Text style={styles.nextRdvDate}>
                                     {formatDateTime(nextRdv.scheduled_at)}
@@ -575,7 +575,7 @@ export default function AppointmentsScreen({ navigation, route }: { navigation: 
                             {nextRdv.agent_name && (
                                 <View style={styles.nextRdvRow}>
                                     <View style={styles.nextRdvIconWrap}>
-                                        <Ionicons name="person-outline" size={14} color={C.accent} />
+                                        <LucideIcon name="person-outline" size={14} color={C.accent} />
                                     </View>
                                     <Text style={styles.nextRdvDate}>
                                         {t('Avec')} {nextRdv.agent_name}
@@ -585,7 +585,7 @@ export default function AppointmentsScreen({ navigation, route }: { navigation: 
 
                             <View style={styles.nextRdvRow}>
                                 <View style={styles.nextRdvIconWrap}>
-                                    <Ionicons
+                                    <LucideIcon
                                         name={TYPE_CONFIG[nextRdv.type]?.icon || 'call-outline'}
                                         size={14}
                                         color={C.accent}
@@ -657,7 +657,7 @@ export default function AppointmentsScreen({ navigation, route }: { navigation: 
                                     accessibilityRole="button"
                                     hitSlop={6}
                                     accessibilityLabel={t('Fermer')}>
-                                    <Ionicons name="close" size={20} color={C.primary} />
+                                    <LucideIcon name="close" size={20} color={C.primary} />
                                 </Pressable>
                             </View>
 
@@ -680,7 +680,7 @@ export default function AppointmentsScreen({ navigation, route }: { navigation: 
                                             hitSlop={6}
                                         >
                                             <View style={[styles.typeIconWrap, active && styles.typeIconWrapActive]}>
-                                                <Ionicons
+                                                <LucideIcon
                                                     name={cfg.icon}
                                                     size={18}
                                                     color={active ? C.accent : C.textSec}
@@ -691,7 +691,7 @@ export default function AppointmentsScreen({ navigation, route }: { navigation: 
                                             </Text>
                                             {active && (
                                                 <View style={styles.typeCheckBadge}>
-                                                    <Ionicons name="checkmark" size={10} color={C.primaryText} />
+                                                    <LucideIcon name="checkmark" size={10} color={C.primaryText} />
                                                 </View>
                                             )}
                                         </TouchableOpacity>
@@ -800,9 +800,9 @@ export default function AppointmentsScreen({ navigation, route }: { navigation: 
                                     <ActivityIndicator color={C.primaryText} size="small" />
                                 ) : (
                                     <>
-                                        <Ionicons name="paper-plane-outline" size={18} color={C.accent} style={{ marginRight: 8 }} />
+                                        <LucideIcon name="paper-plane-outline" size={18} color={C.accent} style={{ marginRight: 8 }} />
                                         <Text style={styles.submitBtnText}>{t('Envoyer la demande')}</Text>
-                                        <Ionicons name="arrow-forward" size={18} color={C.accent} style={{ marginLeft: 8 }} />
+                                        <LucideIcon name="arrow-forward" size={18} color={C.accent} style={{ marginLeft: 8 }} />
                                     </>
                                 )}
                             </TouchableOpacity>

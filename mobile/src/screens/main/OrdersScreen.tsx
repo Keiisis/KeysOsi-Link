@@ -7,7 +7,7 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as Haptics from 'expo-haptics'
-import { Ionicons } from '@expo/vector-icons'
+import { LucideIcon } from '../../components/Icon'
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -64,7 +64,7 @@ export interface OrderListItem {
 
 const SHIPPING_CONFIG: Record<string, {
     label: string
-    icon: keyof typeof Ionicons.glyphMap
+    icon: string
     color: string
     bgRgba: string
     borderRgba: string
@@ -223,7 +223,7 @@ function OrderCard({
                                 <Text style={styles.orderRef}>#{shortRef}</Text>
                             </View>
                             <View style={[styles.orderStatusPill, { backgroundColor: cfg.bgRgba, borderColor: cfg.borderRgba }]}>
-                                <Ionicons name={cfg.icon} size={11} color={cfg.color} />
+                                <LucideIcon name={cfg.icon} size={11} color={cfg.color} />
                                 <Text style={[styles.orderStatusText, { color: cfg.color }]}>
                                     {t(cfg.label)}
                                 </Text>
@@ -243,14 +243,14 @@ function OrderCard({
                         {/* Meta line */}
                         <View style={styles.orderMetaRow}>
                             <View style={styles.orderMetaItem}>
-                                <Ionicons name="cube-outline" size={11} color={C.textMuted} />
+                                <LucideIcon name="cube-outline" size={11} color={C.textMuted} />
                                 <Text style={styles.orderMetaText}>
                                     {itemsCount} {itemsCount > 1 ? t('articles') : t('article')}
                                 </Text>
                             </View>
                             <View style={styles.orderMetaDot} />
                             <View style={styles.orderMetaItem}>
-                                <Ionicons name="calendar-outline" size={11} color={C.textMuted} />
+                                <LucideIcon name="calendar-outline" size={11} color={C.textMuted} />
                                 <Text style={styles.orderMetaText}>{formatDate(order.created_at)}</Text>
                             </View>
                         </View>
@@ -259,7 +259,7 @@ function OrderCard({
                         {order.tracking_code ? (
                             <View style={styles.orderTrackingRow}>
                                 <View style={styles.orderTrackingIcon}>
-                                    <Ionicons name="paper-plane" size={10} color={C.accent} />
+                                    <LucideIcon name="paper-plane" size={10} color={C.accent} />
                                 </View>
                                 <Text style={styles.orderTrackingText} numberOfLines={1}>
                                     {order.tracking_code}
@@ -282,7 +282,7 @@ function OrderCard({
                                 <Text style={styles.orderAmount}>{formatPrice(order.amount, order.currency)}</Text>
                             </View>
                             <View style={styles.orderArrow}>
-                                <Ionicons name="arrow-forward" size={16} color={C.accent} />
+                                <LucideIcon name="arrow-forward" size={16} color={C.accent} />
                             </View>
                         </View>
                     </View>
@@ -407,12 +407,12 @@ export default function OrdersScreen({ navigation }: { navigation: Nav }) {
                     hitSlop={6}
                     accessibilityLabel={t('Retour')}>
                     <View style={styles.iconContainer}>
-                        <Ionicons name="arrow-back" size={22} color={C.primary} />
+                        <LucideIcon name="arrow-back" size={22} color={C.primary} />
                     </View>
                 </Pressable>
 
                 <View style={styles.navCounter}>
-                    <Ionicons name="cube" size={12} color={C.accent} />
+                    <LucideIcon name="cube" size={12} color={C.accent} />
                     <Text style={styles.navCounterText}>{t('Mes commandes')}</Text>
                 </View>
 
@@ -424,7 +424,7 @@ export default function OrdersScreen({ navigation }: { navigation: Nav }) {
                     hitSlop={6}
                 >
                     <View style={styles.iconContainer}>
-                        <Ionicons name="storefront-outline" size={20} color={C.primary} />
+                        <LucideIcon name="storefront-outline" size={20} color={C.primary} />
                     </View>
                 </Pressable>
             </View>
@@ -466,7 +466,7 @@ export default function OrdersScreen({ navigation }: { navigation: Nav }) {
                             <View style={styles.emptyHero}>
                                 <View style={styles.emptyHeroGlow} />
                                 <View style={styles.emptyIconWrap}>
-                                    <Ionicons name="bag-outline" size={36} color={C.accent} />
+                                    <LucideIcon name="bag-outline" size={36} color={C.accent} />
                                 </View>
                             </View>
                             <Text style={styles.emptyTitle}>{t('Aucune commande')}</Text>
@@ -480,15 +480,15 @@ export default function OrdersScreen({ navigation }: { navigation: Nav }) {
                                 accessibilityRole="button"
                                 hitSlop={6}
                             >
-                                <Ionicons name="storefront" size={16} color={C.accent} style={{ marginRight: 8 }} />
+                                <LucideIcon name="storefront" size={16} color={C.accent} style={{ marginRight: 8 }} />
                                 <Text style={styles.shopBtnText}>{t('Visiter la boutique')}</Text>
-                                <Ionicons name="arrow-forward" size={16} color={C.accent} style={{ marginLeft: 8 }} />
+                                <LucideIcon name="arrow-forward" size={16} color={C.accent} style={{ marginLeft: 8 }} />
                             </TouchableOpacity>
                         </View>
                     ) : (
                         <View style={styles.emptyFilterState}>
                             <View style={styles.emptyFilterIcon}>
-                                <Ionicons name="filter-outline" size={28} color={C.textSec} />
+                                <LucideIcon name="filter-outline" size={28} color={C.textSec} />
                             </View>
                             <Text style={styles.emptyFilterTitle}>{t('Aucun résultat')}</Text>
                             <Text style={styles.emptyFilterText}>
@@ -535,7 +535,7 @@ export default function OrdersScreen({ navigation }: { navigation: Nav }) {
                     <View style={styles.searchCard}>
                         <View style={styles.searchHeader}>
                             <View style={styles.searchHeaderIcon}>
-                                <Ionicons name="paper-plane" size={14} color={C.accent} />
+                                <LucideIcon name="paper-plane" size={14} color={C.accent} />
                             </View>
                             <View style={{ flex: 1 }}>
                                 <Text style={styles.searchHeaderBadge}>{t('SUIVI RAPIDE')}</Text>
@@ -545,7 +545,7 @@ export default function OrdersScreen({ navigation }: { navigation: Nav }) {
 
                         <View style={styles.searchInputRow}>
                             <Animated.View style={[styles.searchInputWrap, searchInputStyle]}>
-                                <Ionicons
+                                <LucideIcon
                                     name="barcode-outline"
                                     size={18}
                                     color={searchFocused ? C.accent : C.placeholder}
@@ -576,7 +576,7 @@ export default function OrdersScreen({ navigation }: { navigation: Nav }) {
                                 {searching ? (
                                     <ActivityIndicator color={C.primaryText} size="small" />
                                 ) : (
-                                    <Ionicons name="search" size={20} color={C.primaryText} />
+                                    <LucideIcon name="search" size={20} color={C.primaryText} />
                                 )}
                             </TouchableOpacity>
                         </View>
@@ -638,7 +638,7 @@ function FilterPill({
 }: {
     label: string
     count: number
-    icon: keyof typeof Ionicons.glyphMap
+    icon: string
     active: boolean
     onPress: () => void
     color?: string
@@ -660,7 +660,7 @@ function FilterPill({
             accessibilityRole="button"
             hitSlop={6}>
             <Animated.View style={[styles.filterPill, pillStyle]}>
-                <Ionicons
+                <LucideIcon
                     name={icon}
                     size={13}
                     color={active ? useColor : C.textSec}
