@@ -29,7 +29,7 @@ const IMG_BY_SLUG: Record<string, string> = {
 }
 
 const FALLBACK_SERVICES: ServiceItem[] = [
-    { id: 'f-1', slug: 'passeport', title: 'Passeport & Documents', description: "Passeport, acte de naissance, légalisation et apostille — vos démarches officielles prises en charge de bout en bout.", imageUrl: '/assets/icones/icone_Passeport_Documents.png' },
+    { id: 'f-1', slug: 'passeport', title: 'Passeport & Documents', description: "Passeport, acte de naissance, légalisation et apostille : vos démarches officielles prises en charge de bout en bout.", imageUrl: '/assets/icones/icone_Passeport_Documents.png' },
     { id: 'f-2', slug: 'logement', title: 'Acheter ou Louer', description: "Acquisition, location longue durée et sécurisation foncière de vos biens au Bénin.", imageUrl: '/assets/icones/icone_Acheter_ou_louer.png' },
     { id: 'f-3', slug: 'business', title: "Création d'Entreprise", description: "Immatriculation RCCM, compte professionnel et formalités de création.", imageUrl: '/assets/icones/icone_Creation_d_Entreprise.png' },
     { id: 'f-4', slug: 'culture', title: 'Tourisme & Culture', description: "Circuits, visites patrimoniales et séjours dans le Bénin authentique.", imageUrl: '/assets/icones/icone_Guide_culturel.png' },
