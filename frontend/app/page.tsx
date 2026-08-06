@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
 import ServicesGrid from "@/components/home/ServicesGrid";
 import TestimonialsCarousel from "@/components/home/TestimonialsCarousel";
@@ -17,24 +18,24 @@ export default function Home() {
       {/* Hero Section (Immersive Video/Particles) */}
       <HeroSection />
 
-      {/* Services Preview */}
-      <section className="py-12 md:py-20 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-10 md:mb-16 space-y-4">
-            <h2 className="text-3xl md:text-4xl font-bold font-heading text-primary text-balance"><T>Nos Solutions Clés en Main</T></h2>
-            <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto">
-              <T>Nous avons conçu une gamme de services pour simplifier chaque étape de votre retour, de l&apos;administratif à l&apos;investissement.</T>
-            </p>
-            <div className="w-24 h-1.5 bg-secondary mx-auto rounded-full mt-4" />
-          </div>
-          <ServicesGrid />
-          <div className="text-center mt-12">
-            <Link href="/services">
-              <Button variant="outline" size="lg" className="rounded-full px-8 border-primary text-primary hover:bg-primary hover:text-white transition-all">
-                <T>Voir tous les services</T>
-              </Button>
+      {/* Services — bento asymétrique */}
+      <section className="bg-[#FBFAF7] py-20 md:py-28">
+        <div className="mx-auto max-w-[1400px] px-5 md:px-8">
+          <div className="mb-12 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+            <div className="max-w-2xl">
+              <h2 className="font-fraunces text-4xl font-semibold leading-[1.05] tracking-[-0.02em] text-[#0d1a12] md:text-5xl">
+                <T>Tout votre retour</T>, <span className="italic text-[#008751]"><T>un seul partenaire.</T></span>
+              </h2>
+              <p className="mt-4 max-w-xl font-geist text-lg leading-relaxed text-[#4a5751]">
+                <T>De l&apos;administratif à l&apos;investissement, chaque étape est prise en charge par une équipe qui connaît le terrain.</T>
+              </p>
+            </div>
+            <Link href="/services" className="group inline-flex shrink-0 items-center gap-2 font-geist text-[15px] font-semibold text-[#0d1a12] underline decoration-[#FCD116] decoration-2 underline-offset-[6px] transition-colors hover:text-[#008751]">
+              <T>Voir tous les services</T>
+              <ArrowRight size={15} weight="bold" className="transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
+          <ServicesGrid />
         </div>
       </section>
 
