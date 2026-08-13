@@ -578,8 +578,16 @@ const FAMILY_OF: Record<string, Family> = {
     'recherche-ancestrale': 'racines',
     'consultation-fa-racines': 'racines',
     'langues-racines': 'racines',
+    'permis-conduire': 'installation',
     'autres': 'installation',
 }
+
+/* Repli : tout service dont le slug n'est pas explicitement mappe ci-dessus est
+   rattache a « Installation & logement » plutot que de disparaitre de la liste.
+   Evite qu'un nouveau service ajoute en base (ex. permis-conduire) devienne
+   invisible faute de categorie. */
+const familyOf = (id: string): Exclude<Family, 'all'> =>
+    (FAMILY_OF[id] as Exclude<Family, 'all'>) || 'installation'
 
 /* ═══════════════════════════════════════════════════════════
    COMPOSANT : SKELETON CARD
@@ -632,14 +640,14 @@ export default function ServicesScreen({ navigation }: any) {
     const visibleSections = React.useMemo(() => {
         const q = query.trim().toLowerCase()
         const matches = services.filter((svc) => {
-            if (family !== 'all' && FAMILY_OF[svc.id] !== family) return false
+            if (family !== 'all' && familyOf(svc.id) !== family) return false
             if (!q) return true
             return [svc.title, svc.subtitle, svc.desc]
                 .some((f) => String(f || '').toLowerCase().includes(q))
         })
         return FAMILY_ORDER
             .filter((f) => f !== 'all')
-            .map((fam) => ({ fam, items: matches.filter((s) => FAMILY_OF[s.id] === fam) }))
+            .map((fam) => ({ fam, items: matches.filter((s) => familyOf(s.id) === fam) }))
             .filter((sec) => sec.items.length > 0)
     }, [services, query, family])
     const { t, lang, isTranslating, preloadTexts } = useLang()
