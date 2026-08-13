@@ -768,6 +768,8 @@ export default function ServicesScreen({ navigation }: any) {
         if (svc.id === 'business') { navigation.navigate('Business'); return }
         if (svc.id === 'investissement') { navigation.navigate('Investissement'); return }
         if (svc.id === 'culture') { navigation.navigate('Culture'); return }
+        if (svc.id === 'passeport') { navigation.navigate('Passeport'); return }
+        if (svc.id === 'construction') { navigation.navigate('Construction'); return }
         navigation.navigate('ServiceDetails', {
             serviceId: svc.id,
             title: svc.title,
