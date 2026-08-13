@@ -45,6 +45,8 @@ import PasseportScreen from '../screens/main/PasseportScreen'
 import ConstructionScreen from '../screens/main/ConstructionScreen'
 import LanguesScreen from '../screens/main/LanguesScreen'
 import RechercheAncestraleScreen from '../screens/main/RechercheAncestraleScreen'
+import AutresScreen from '../screens/main/AutresScreen'
+import NationaliteVipScreen from '../screens/main/NationaliteVipScreen'
 import GenealogieScreen from '../screens/main/GenealogieScreen'
 
 /* ── Types de navigation ── */
@@ -124,6 +126,8 @@ export type RootStackParamList = {
     Construction: undefined
     Langues: undefined
     RechercheAncestrale: undefined
+    Autres: undefined
+    NationaliteVip: undefined
     Genealogie: undefined
 }
 
@@ -353,6 +357,8 @@ export default function AppNavigator() {
                         <Stack.Screen name="Construction" component={ConstructionScreen} />
                         <Stack.Screen name="Langues" component={LanguesScreen} />
                         <Stack.Screen name="RechercheAncestrale" component={RechercheAncestraleScreen} />
+                        <Stack.Screen name="Autres" component={AutresScreen} />
+                        <Stack.Screen name="NationaliteVip" component={NationaliteVipScreen} />
                         <Stack.Screen name="Genealogie" component={GenealogieScreen} />
                     </Stack.Group>
 

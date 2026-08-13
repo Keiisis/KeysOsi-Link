@@ -77,6 +77,8 @@ export interface RdvLandingContent {
     }
     /** Si vrai, le bouton de la barre collante scrolle vers le sélecteur au lieu du RDV. */
     stickyScrollToSelector?: boolean
+    /** Si vrai, l'action principale = « Nous contacter » (RDV en secondaire). Ex. Autres Services. */
+    primaryContact?: boolean
 }
 
 export default function ServiceRdvLanding({ navigation, content: k }: {
@@ -108,9 +110,16 @@ export default function ServiceRdvLanding({ navigation, content: k }: {
     }
     const scrollToSelector = () =>
         scrollRef.current?.scrollTo({ y: Math.max(0, bodyY + selY - 16), animated: true })
+
     // « Messages » est un onglet imbriqué (route 'Main') : on le cible via les tabs.
     const goContact = () => navigation.navigate('Main', { screen: 'Messages' })
     const onShare = () => Share.share({ message: k.shareMessage }).catch(() => {})
+
+    // Autres Services : l'action principale est « Nous contacter ».
+    const primaryAction = k.primaryContact ? goContact : goRdv
+    const secondaryAction = k.primaryContact ? goRdv : goContact
+    const secondaryLabel = k.primaryContact ? 'Prendre rendez-vous' : 'Nous contacter'
+    const stickyAction = k.primaryContact ? goContact : (k.stickyScrollToSelector ? scrollToSelector : goRdv)
 
     const toggleFaq = (i: number) => {
         LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity'))
@@ -333,12 +342,12 @@ export default function ServiceRdvLanding({ navigation, content: k }: {
                     <View style={styles.finalCard}>
                         <Text style={styles.finalTitle}>{t(k.finalTitle)}</Text>
                         <Text style={styles.finalText}>{t(k.finalText)}</Text>
-                        <Pressable onPress={goRdv} style={({ pressed }) => [styles.finalBtn, pressed && { transform: [{ scale: 0.98 }] }]} accessibilityRole="button">
+                        <Pressable onPress={primaryAction} style={({ pressed }) => [styles.finalBtn, pressed && { transform: [{ scale: 0.98 }] }]} accessibilityRole="button">
                             <Text style={styles.finalBtnText}>{t(k.primaryCtaLabel)}</Text>
-                            <Calendar size={19} color={C.primaryText} />
+                            {!k.primaryContact && <Calendar size={19} color={C.primaryText} />}
                         </Pressable>
-                        <Pressable onPress={goContact} style={({ pressed }) => [styles.finalBtnGhost, pressed && { transform: [{ scale: 0.98 }] }]} accessibilityRole="button">
-                            <Text style={styles.finalBtnGhostText}>{t('Nous contacter')}</Text>
+                        <Pressable onPress={secondaryAction} style={({ pressed }) => [styles.finalBtnGhost, pressed && { transform: [{ scale: 0.98 }] }]} accessibilityRole="button">
+                            <Text style={styles.finalBtnGhostText}>{t(secondaryLabel)}</Text>
                         </Pressable>
                         <Text style={styles.finalNote}>{t(k.finalNote)}</Text>
                     </View>
@@ -351,7 +360,7 @@ export default function ServiceRdvLanding({ navigation, content: k }: {
                     <Text style={styles.stickyLabel}>{t(k.stickyLabel)}</Text>
                     <Text style={styles.stickyValue}>{t(k.stickyValue)}</Text>
                 </View>
-                <Pressable onPress={k.stickyScrollToSelector ? scrollToSelector : goRdv} style={({ pressed }) => [styles.stickyBtn, pressed && { transform: [{ scale: 0.96 }] }]} accessibilityRole="button">
+                <Pressable onPress={stickyAction} style={({ pressed }) => [styles.stickyBtn, pressed && { transform: [{ scale: 0.96 }] }]} accessibilityRole="button">
                     <Text style={styles.stickyBtnText}>{t(k.stickyBtnLabel)}</Text>
                 </Pressable>
             </View>
