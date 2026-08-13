@@ -53,6 +53,9 @@ export interface RdvLandingContent {
     prestaTitle: string
     presta: string[]
     prestaNote: string
+    /** Optionnel : « Détail des services » en cartes riches (icône + titre + desc)
+        au lieu de la simple checklist. Ex. Autres Services. */
+    prestaCards?: { icon: LucideIcon; title: string; desc: string }[]
     reassurance: { icon: LucideIcon; title: string; desc: string }[]
     faqEyebrow: string
     faq: { q: string; r: string }[]
@@ -299,15 +302,34 @@ export default function ServiceRdvLanding({ navigation, content: k }: {
                     <View style={styles.section}>
                         <Text style={styles.eyebrow}>{t(k.prestaEyebrow)}</Text>
                         <Text style={styles.h2}>{t(k.prestaTitle)}</Text>
-                        <View style={styles.prestaCard}>
-                            {k.presta.map((p, i) => (
-                                <View key={i} style={styles.prestaRow}>
-                                    <View style={styles.prestaCheck}><Check size={16} color={C.primary} strokeWidth={2.5} /></View>
-                                    <Text style={styles.prestaText}>{t(p)}</Text>
-                                </View>
-                            ))}
-                            {!!k.prestaNote && <Text style={styles.prestaNote}>{t(k.prestaNote)}</Text>}
-                        </View>
+                        {k.prestaCards ? (
+                            <>
+                                {k.prestaCards.map(({ icon: Icon, title, desc }) => (
+                                    <View key={title} style={styles.detailCard}>
+                                        <View style={styles.detailIcon}><Icon size={22} color={C.primary} strokeWidth={2} /></View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={styles.detailTitle}>{t(title)}</Text>
+                                            <Text style={styles.detailDesc}>{t(desc)}</Text>
+                                        </View>
+                                    </View>
+                                ))}
+                                {!!k.prestaNote && (
+                                    <View style={styles.detailNoteBox}>
+                                        <Text style={styles.detailNoteText}>{t(k.prestaNote)}</Text>
+                                    </View>
+                                )}
+                            </>
+                        ) : (
+                            <View style={styles.prestaCard}>
+                                {k.presta.map((p, i) => (
+                                    <View key={i} style={styles.prestaRow}>
+                                        <View style={styles.prestaCheck}><Check size={16} color={C.primary} strokeWidth={2.5} /></View>
+                                        <Text style={styles.prestaText}>{t(p)}</Text>
+                                    </View>
+                                ))}
+                                {!!k.prestaNote && <Text style={styles.prestaNote}>{t(k.prestaNote)}</Text>}
+                            </View>
+                        )}
                     </View>
 
                     {/* Réassurance */}
@@ -428,6 +450,14 @@ const styles = StyleSheet.create({
     prestaCheck: { width: 30, height: 30, borderRadius: radius.sm, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center' },
     prestaText: { flex: 1, fontSize: 14, fontFamily: fonts.semibold, color: C.text },
     prestaNote: { fontSize: 11, fontStyle: 'italic', color: C.textMuted, marginTop: spacing.sm },
+
+    /* Détail des services (cartes riches) */
+    detailCard: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start', backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: radius.xl, padding: spacing.md, marginBottom: spacing.sm, ...shadows.card },
+    detailIcon: { width: 48, height: 48, borderRadius: radius.lg, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center' },
+    detailTitle: { fontSize: 15, fontFamily: fonts.bold, color: C.text, marginBottom: 3 },
+    detailDesc: { fontSize: 12, lineHeight: 18, color: C.textMuted },
+    detailNoteBox: { borderWidth: 1, borderColor: C.border, borderStyle: 'dashed', borderRadius: radius.xl, backgroundColor: C.surfaceAlt, padding: spacing.md, marginTop: spacing.sm, alignItems: 'center' },
+    detailNoteText: { fontSize: 12, fontFamily: fonts.medium, color: C.textMuted, textAlign: 'center' },
 
     /* Choisir mon format */
     selectorCard: { backgroundColor: C.surfaceAlt, borderRadius: radius.xxl, borderWidth: 1, borderColor: C.border, padding: spacing.lg, marginBottom: spacing.xxl },
