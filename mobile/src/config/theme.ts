@@ -197,7 +197,10 @@ export const spacing = {
 
 /* ── Rayons : base 16 px, comme le design (--radius: 1rem) ── */
 export const radius = {
-    xs: 8, sm: 12, md: 14, lg: 16, xl: 20, xxl: 24, pill: 999, full: 999,
+    // Rafraîchissement global 2026-08 : rayons plus généreux, alignés sur les
+    // maquettes Sleek (cartes rounded-[2rem]=32, rounded-3xl=24). Un seul point
+    // de vérité → toute l'app devient plus arrondie/premium d'un coup.
+    xs: 10, sm: 14, md: 18, lg: 22, xl: 28, xxl: 32, pill: 999, full: 999,
 } as const
 
 /* ── Ombres douces, TEINTÉES du gris de texte, jamais du noir pur.
