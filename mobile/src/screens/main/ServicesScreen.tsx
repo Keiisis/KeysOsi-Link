@@ -754,6 +754,11 @@ export default function ServicesScreen({ navigation }: any) {
             navigation.navigate('Fa')
             return
         }
+        // Permis : écran dédié (choix de catégorie + auto-école + prix serveur).
+        if (svc.id === 'permis-conduire') {
+            navigation.navigate('Permis')
+            return
+        }
         navigation.navigate('ServiceDetails', {
             serviceId: svc.id,
             title: svc.title,

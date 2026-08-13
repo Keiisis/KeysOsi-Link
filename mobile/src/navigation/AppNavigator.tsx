@@ -36,6 +36,7 @@ import InvoicesScreen from '../screens/main/InvoicesScreen'
 import NationaliteFormScreen from '../screens/main/NationaliteFormScreen'
 import LegalScreen from '../screens/main/LegalScreen'
 import FaScreen from '../screens/main/FaScreen'
+import PermisScreen from '../screens/main/PermisScreen'
 import GenealogieScreen from '../screens/main/GenealogieScreen'
 
 /* ── Types de navigation ── */
@@ -106,6 +107,7 @@ export type RootStackParamList = {
     NationaliteForm: undefined
     Legal: undefined
     Fa: undefined
+    Permis: undefined
     Genealogie: undefined
 }
 
@@ -206,7 +208,7 @@ export default function AppNavigator() {
 
     useEffect(() => {
         Promise.all([
-            AsyncStorage.getItem('onboarding_complete'),
+            AsyncStorage.getItem('onboarding_complete_v2'),
             AsyncStorage.getItem('lang_chosen'),
         ]).then(([obVal, langVal]) => {
             setOnboardingDone(obVal === 'true')
@@ -258,7 +260,7 @@ export default function AppNavigator() {
                     children={() => (
                         <OnboardingScreen
                             onComplete={async () => {
-                                await AsyncStorage.setItem('onboarding_complete', 'true')
+                                await AsyncStorage.setItem('onboarding_complete_v2', 'true')
                                 setOnboardingDone(true)
                             }}
                         />
@@ -326,6 +328,7 @@ export default function AppNavigator() {
                         <Stack.Screen name="Signature" component={SignatureScreen} />
                         <Stack.Screen name="Call" component={CallScreen} />
                         <Stack.Screen name="Fa" component={FaScreen} />
+                        <Stack.Screen name="Permis" component={PermisScreen} />
                         <Stack.Screen name="Genealogie" component={GenealogieScreen} />
                     </Stack.Group>
 
