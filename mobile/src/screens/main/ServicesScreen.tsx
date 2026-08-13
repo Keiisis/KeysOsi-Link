@@ -759,6 +759,11 @@ export default function ServicesScreen({ navigation }: any) {
             navigation.navigate('Permis')
             return
         }
+        // Logement : écran dédié (catalogue + mise en relation SIMAU, sans paiement).
+        if (svc.id === 'logement') {
+            navigation.navigate('Logement')
+            return
+        }
         navigation.navigate('ServiceDetails', {
             serviceId: svc.id,
             title: svc.title,
