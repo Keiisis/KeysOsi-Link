@@ -987,42 +987,55 @@ export default function NationaliteFormScreen({ navigation }: any) {
             case 6:
                 return (
                     <AnimatedSection delay={0}>
-                        <View style={styles.successCard}>
-                            <View style={styles.successSeal}>
-                                <View style={styles.successSealGlow} />
-                                <View style={styles.successSealInner}>
-                                    <LucideIcon name="checkmark" size={42} color={C.primaryText} />
+                        <View style={styles.successWrap}>
+                            <View style={styles.successCheck}>
+                                <LucideIcon name="checkmark-circle" size={48} color={C.primary} />
+                            </View>
+
+                            <Text style={styles.successTitleNew}>{t('Dossier déposé avec succès')}</Text>
+                            <Text style={styles.successSubNew}>
+                                {t('Votre demande de nationalité béninoise a été transmise à notre équipe juridique. Un conseiller dédié va prendre en charge votre dossier.')}
+                            </Text>
+
+                            <View style={styles.refCard}>
+                                <View style={styles.refCardHead}>
+                                    <Text style={styles.refCardLabel}>{t('Référence dossier')}</Text>
+                                    <Text style={styles.refCardValue}>{savedRef || t('En cours…')}</Text>
                                 </View>
-                                <View style={styles.successSealBadge}>
-                                    <LucideIcon name="ribbon" size={12} color={C.primaryText} />
+                                <Text style={styles.stepsTitle}>{t('Prochaines étapes')}</Text>
+                                <View style={styles.stepRow}>
+                                    <View style={styles.stepIcon}><LucideIcon name="time-outline" size={14} color={C.primary} /></View>
+                                    <Text style={styles.stepText}>
+                                        <Text style={styles.stepBold}>{t('Sous 48 h : ')}</Text>
+                                        {t('premier retour par email pour validation des pièces.')}
+                                    </Text>
+                                </View>
+                                <View style={styles.stepRow}>
+                                    <View style={styles.stepIcon}><LucideIcon name="call-outline" size={14} color={C.primary} /></View>
+                                    <Text style={styles.stepText}>
+                                        <Text style={styles.stepBold}>{t('Étape 2 : ')}</Text>
+                                        {t('appel de calage avec votre conseiller dédié.')}
+                                    </Text>
                                 </View>
                             </View>
 
-                            <Text style={styles.successBadge}>{t('DOSSIER OFFICIEL')}</Text>
-                            <Text style={styles.successTitle}>{t('Dossier scellé')}</Text>
-                            <Text style={styles.successSubtitle}>
-                                {t('Votre requête a été transmise à nos agents et est désormais dans nos archives pour étude. Un email de confirmation vous a été envoyé.')}
-                            </Text>
-
-                            {savedRef && (
-                                <View style={styles.refBox}>
-                                    <View style={styles.refLabel}>
-                                        <LucideIcon name="finger-print" size={12} color={C.primaryText} />
-                                        <Text style={styles.refLabelText}>{t('RÉFÉRENCE OFFICIELLE')}</Text>
-                                    </View>
-                                    <Text style={styles.refValue}>{savedRef}</Text>
-                                </View>
-                            )}
-
                             <TouchableOpacity
-                                style={styles.successBtn}
-                                onPress={() => navigation.navigate('Main')}
-                                activeOpacity={0.85}
+                                style={styles.successBtnPrimary}
+                                onPress={() => navigation.navigate('Main', { screen: 'Dossier' })}
+                                activeOpacity={0.9}
                                 accessibilityRole="button"
                                 hitSlop={6}
                             >
-                                <Text style={styles.successBtnText}>{t("Retourner à l'accueil")}</Text>
-                                <LucideIcon name="arrow-forward" size={18} color={C.primaryText} style={{ marginLeft: 8 }} />
+                                <Text style={styles.successBtnPrimaryText}>{t('Suivre mon dossier')}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.successBtnGhost}
+                                onPress={() => navigation.navigate('Main', { screen: 'Home' })}
+                                activeOpacity={0.9}
+                                accessibilityRole="button"
+                                hitSlop={6}
+                            >
+                                <Text style={styles.successBtnGhostText}>{t("Retour à l'accueil")}</Text>
                             </TouchableOpacity>
                         </View>
                     </AnimatedSection>
@@ -1895,4 +1908,23 @@ const styles = StyleSheet.create({
         ...typography.button, fontSize: 14.5,
         letterSpacing: 0.2,
     },
+
+    /* ── Succès (maquette Sleek) ── */
+    successWrap: { alignItems: 'center', paddingHorizontal: spacing.md, paddingTop: spacing.xl },
+    successCheck: { width: 96, height: 96, borderRadius: radius.xxl, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xl },
+    successTitleNew: { fontFamily: 'PlayfairDisplay_700Bold', fontSize: 28, lineHeight: 34, color: C.text, textAlign: 'center', marginBottom: spacing.md },
+    successSubNew: { ...typography.bodySmall, color: C.textMuted, textAlign: 'center', lineHeight: 21, marginBottom: spacing.xl, paddingHorizontal: spacing.sm },
+    refCard: { width: '100%', backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: radius.xxl, padding: spacing.lg, marginBottom: spacing.xl, ...shadows.card },
+    refCardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: spacing.md, marginBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: C.border },
+    refCardLabel: { fontSize: 10, fontFamily: fonts.bold, color: C.textMuted, letterSpacing: 1, textTransform: 'uppercase' },
+    refCardValue: { fontSize: 13, fontFamily: fonts.extrabold, color: C.primary },
+    stepsTitle: { fontSize: 10, fontFamily: fonts.bold, color: C.text, letterSpacing: 1, textTransform: 'uppercase', marginBottom: spacing.md },
+    stepRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md, alignItems: 'flex-start' },
+    stepIcon: { width: 26, height: 26, borderRadius: 13, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center' },
+    stepText: { flex: 1, fontSize: 11.5, lineHeight: 17, color: C.textMuted },
+    stepBold: { fontFamily: fonts.bold, color: C.text },
+    successBtnPrimary: { width: '100%', backgroundColor: C.primary, borderRadius: radius.xl, paddingVertical: 18, alignItems: 'center', ...shadows.cardRaised },
+    successBtnPrimaryText: { color: C.primaryText, ...typography.button, fontSize: 16 },
+    successBtnGhost: { width: '100%', backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: radius.xl, paddingVertical: 18, alignItems: 'center', marginTop: spacing.sm },
+    successBtnGhostText: { color: C.text, ...typography.button, fontSize: 16 },
 })
