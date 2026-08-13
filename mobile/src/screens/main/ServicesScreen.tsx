@@ -770,6 +770,8 @@ export default function ServicesScreen({ navigation }: any) {
         if (svc.id === 'culture') { navigation.navigate('Culture'); return }
         if (svc.id === 'passeport') { navigation.navigate('Passeport'); return }
         if (svc.id === 'construction') { navigation.navigate('Construction'); return }
+        if (svc.id === 'langues-racines') { navigation.navigate('Langues'); return }
+        if (svc.id === 'recherche-ancestrale') { navigation.navigate('RechercheAncestrale'); return }
         navigation.navigate('ServiceDetails', {
             serviceId: svc.id,
             title: svc.title,

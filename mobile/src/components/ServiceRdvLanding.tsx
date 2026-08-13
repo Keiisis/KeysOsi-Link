@@ -9,7 +9,7 @@
    (onglet Messages). Charte v2, aucun prix.
 ═══════════════════════════════════════════════════════════ */
 
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import {
     View, Text, StyleSheet, ScrollView, Pressable, Share,
     LayoutAnimation, Platform, UIManager,
@@ -63,6 +63,20 @@ export interface RdvLandingContent {
     stickyLabel: string
     stickyValue: string
     stickyBtnLabel: string
+    /** Optionnel : bloc « Choisir mon format » (ex. Langues & Racines). */
+    formatSelector?: {
+        eyebrow: string
+        title: string
+        formatLabel: string
+        formats: { icon: LucideIcon; label: string }[]
+        languesLabel: string
+        langues: string[]
+        niveauLabel: string
+        niveaux: string[]
+        note: string
+    }
+    /** Si vrai, le bouton de la barre collante scrolle vers le sélecteur au lieu du RDV. */
+    stickyScrollToSelector?: boolean
 }
 
 export default function ServiceRdvLanding({ navigation, content: k }: {
@@ -74,7 +88,26 @@ export default function ServiceRdvLanding({ navigation, content: k }: {
     const { t } = useLang()
     const [openFaq, setOpenFaq] = useState<number | null>(null)
 
-    const goRdv = () => navigation.navigate('Appointments', { openRequest: true, serviceLabel: k.serviceLabel })
+    const scrollRef = useRef<ScrollView>(null)
+    const fs = k.formatSelector
+    const [fmtIdx, setFmtIdx] = useState(0)
+    const [langueIdx, setLangueIdx] = useState(0)
+    const [niveauIdx, setNiveauIdx] = useState(0)
+    const [bodyY, setBodyY] = useState(0)
+    const [selY, setSelY] = useState(0)
+
+    const goRdv = () => {
+        let label = k.serviceLabel
+        if (fs) {
+            const fmt = fs.formats[fmtIdx]?.label || ''
+            const lg = fs.langues[langueIdx] || ''
+            const nv = fs.niveaux[niveauIdx] || ''
+            label = `${k.serviceLabel} (${fmt}, ${lg}, niveau ${nv})`
+        }
+        navigation.navigate('Appointments', { openRequest: true, serviceLabel: label })
+    }
+    const scrollToSelector = () =>
+        scrollRef.current?.scrollTo({ y: Math.max(0, bodyY + selY - 16), animated: true })
     // « Messages » est un onglet imbriqué (route 'Main') : on le cible via les tabs.
     const goContact = () => navigation.navigate('Main', { screen: 'Messages' })
     const onShare = () => Share.share({ message: k.shareMessage }).catch(() => {})
@@ -101,7 +134,7 @@ export default function ServiceRdvLanding({ navigation, content: k }: {
                 </Pressable>
             </View>
 
-            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+            <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
                 {/* Hero */}
                 <Animated.View entering={FadeInUp.duration(420)} style={styles.hero}>
                     <View style={styles.heroIcon}><HeroIcon size={30} color={C.primary} strokeWidth={2} /></View>
@@ -139,7 +172,7 @@ export default function ServiceRdvLanding({ navigation, content: k }: {
                     ))}
                 </View>
 
-                <View style={styles.body}>
+                <View style={styles.body} onLayout={e => setBodyY(e.nativeEvent.layout.y)}>
                     {/* Mission */}
                     <View style={styles.section}>
                         <Text style={styles.eyebrow}>{t(k.missionEyebrow)}</Text>
@@ -204,6 +237,54 @@ export default function ServiceRdvLanding({ navigation, content: k }: {
                             ))}
                         </View>
                     </View>
+
+                    {/* Choisir mon format (optionnel) */}
+                    {fs && (
+                        <View style={styles.selectorCard} onLayout={e => setSelY(e.nativeEvent.layout.y)}>
+                            <Text style={styles.eyebrow}>{t(fs.eyebrow)}</Text>
+                            <Text style={styles.selectorTitle}>{t(fs.title)}</Text>
+
+                            <Text style={styles.selectorLabel}>{t(fs.formatLabel)}</Text>
+                            <View style={styles.fmtRow}>
+                                {fs.formats.map((f, i) => {
+                                    const active = fmtIdx === i
+                                    const Ic = f.icon
+                                    return (
+                                        <Pressable key={f.label} onPress={() => setFmtIdx(i)} style={[styles.fmtCard, active && styles.fmtCardActive]} accessibilityRole="button" accessibilityState={{ selected: active }}>
+                                            <Ic size={24} color={active ? C.primary : C.textMuted} strokeWidth={2} />
+                                            <Text style={[styles.fmtText, active && { color: C.primary }]}>{t(f.label)}</Text>
+                                        </Pressable>
+                                    )
+                                })}
+                            </View>
+
+                            <Text style={styles.selectorLabel}>{t(fs.languesLabel)}</Text>
+                            <View style={styles.pillWrap}>
+                                {fs.langues.map((lg, i) => {
+                                    const a = langueIdx === i
+                                    return (
+                                        <Pressable key={lg} onPress={() => setLangueIdx(i)} style={[styles.pill, a && styles.pillActive]} accessibilityRole="button" accessibilityState={{ selected: a }}>
+                                            <Text style={[styles.pillText, a && styles.pillTextActive]}>{t(lg)}</Text>
+                                        </Pressable>
+                                    )
+                                })}
+                            </View>
+
+                            <Text style={styles.selectorLabel}>{t(fs.niveauLabel)}</Text>
+                            <View style={styles.pillWrap}>
+                                {fs.niveaux.map((nv, i) => {
+                                    const a = niveauIdx === i
+                                    return (
+                                        <Pressable key={nv} onPress={() => setNiveauIdx(i)} style={[styles.pill, a && styles.pillActive]} accessibilityRole="button" accessibilityState={{ selected: a }}>
+                                            <Text style={[styles.pillText, a && styles.pillTextActive]}>{t(nv)}</Text>
+                                        </Pressable>
+                                    )
+                                })}
+                            </View>
+
+                            <Text style={styles.selectorNote}>{t(fs.note)}</Text>
+                        </View>
+                    )}
 
                     {/* Prestations */}
                     <View style={styles.section}>
@@ -270,7 +351,7 @@ export default function ServiceRdvLanding({ navigation, content: k }: {
                     <Text style={styles.stickyLabel}>{t(k.stickyLabel)}</Text>
                     <Text style={styles.stickyValue}>{t(k.stickyValue)}</Text>
                 </View>
-                <Pressable onPress={goRdv} style={({ pressed }) => [styles.stickyBtn, pressed && { transform: [{ scale: 0.96 }] }]} accessibilityRole="button">
+                <Pressable onPress={k.stickyScrollToSelector ? scrollToSelector : goRdv} style={({ pressed }) => [styles.stickyBtn, pressed && { transform: [{ scale: 0.96 }] }]} accessibilityRole="button">
                     <Text style={styles.stickyBtnText}>{t(k.stickyBtnLabel)}</Text>
                 </Pressable>
             </View>
@@ -338,6 +419,21 @@ const styles = StyleSheet.create({
     prestaCheck: { width: 30, height: 30, borderRadius: radius.sm, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center' },
     prestaText: { flex: 1, fontSize: 14, fontFamily: fonts.semibold, color: C.text },
     prestaNote: { fontSize: 11, fontStyle: 'italic', color: C.textMuted, marginTop: spacing.sm },
+
+    /* Choisir mon format */
+    selectorCard: { backgroundColor: C.surfaceAlt, borderRadius: radius.xxl, borderWidth: 1, borderColor: C.border, padding: spacing.lg, marginBottom: spacing.xxl },
+    selectorTitle: { ...typography.h2, fontSize: 20, color: C.text, marginBottom: spacing.lg },
+    selectorLabel: { fontSize: 10, fontFamily: fonts.bold, color: C.textMuted, letterSpacing: 1, textTransform: 'uppercase', marginBottom: spacing.sm, marginTop: spacing.md },
+    fmtRow: { flexDirection: 'row', gap: spacing.sm },
+    fmtCard: { flex: 1, alignItems: 'center', gap: spacing.sm, backgroundColor: C.surface, borderWidth: 2, borderColor: C.border, borderRadius: radius.lg, paddingVertical: spacing.md },
+    fmtCardActive: { borderColor: C.primary, backgroundColor: C.primarySoft },
+    fmtText: { fontSize: 12, fontFamily: fonts.bold, color: C.textMuted },
+    pillWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    pill: { paddingHorizontal: spacing.md, paddingVertical: 10, borderRadius: radius.pill, borderWidth: 1, borderColor: C.border, backgroundColor: C.surface },
+    pillActive: { borderColor: C.primary, backgroundColor: C.primary },
+    pillText: { fontSize: 12, fontFamily: fonts.bold, color: C.textSec },
+    pillTextActive: { color: C.primaryText },
+    selectorNote: { fontSize: 11, fontStyle: 'italic', color: C.textMuted, textAlign: 'center', marginTop: spacing.lg },
 
     reassureRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.xxl },
     reassure: { flex: 1, alignItems: 'center' },
