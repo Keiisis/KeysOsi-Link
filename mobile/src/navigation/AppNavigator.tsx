@@ -38,6 +38,7 @@ import LegalScreen from '../screens/main/LegalScreen'
 import FaScreen from '../screens/main/FaScreen'
 import PermisScreen from '../screens/main/PermisScreen'
 import LogementScreen from '../screens/main/LogementScreen'
+import BusinessScreen from '../screens/main/BusinessScreen'
 import GenealogieScreen from '../screens/main/GenealogieScreen'
 
 /* ── Types de navigation ── */
@@ -110,6 +111,7 @@ export type RootStackParamList = {
     Fa: undefined
     Permis: undefined
     Logement: undefined
+    Business: undefined
     Genealogie: undefined
 }
 
@@ -332,6 +334,7 @@ export default function AppNavigator() {
                         <Stack.Screen name="Fa" component={FaScreen} />
                         <Stack.Screen name="Permis" component={PermisScreen} />
                         <Stack.Screen name="Logement" component={LogementScreen} />
+                        <Stack.Screen name="Business" component={BusinessScreen} />
                         <Stack.Screen name="Genealogie" component={GenealogieScreen} />
                     </Stack.Group>
 
