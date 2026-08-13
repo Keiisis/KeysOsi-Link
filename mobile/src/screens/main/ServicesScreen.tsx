@@ -764,11 +764,10 @@ export default function ServicesScreen({ navigation }: any) {
             navigation.navigate('Logement')
             return
         }
-        // Création d'Entreprise : écran dédié éditorial (RDV/devis, sans paiement).
-        if (svc.id === 'business') {
-            navigation.navigate('Business')
-            return
-        }
+        // Services par devis/RDV (sans paiement) : écrans éditoriaux dédiés.
+        if (svc.id === 'business') { navigation.navigate('Business'); return }
+        if (svc.id === 'investissement') { navigation.navigate('Investissement'); return }
+        if (svc.id === 'culture') { navigation.navigate('Culture'); return }
         navigation.navigate('ServiceDetails', {
             serviceId: svc.id,
             title: svc.title,
