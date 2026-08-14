@@ -22,6 +22,7 @@ import { authHeaders } from '../../config/api'
 import { fetchWithTimeout } from '../../lib/fetch'
 import { colors, typography, spacing, radius, shadows } from '../../config/theme'
 import { FlagBar, Card, IconTile } from '../../components/ui'
+import { thankYouMessage } from '../../lib/serviceCompletion'
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
 
@@ -267,7 +268,7 @@ export default function HomeScreen({ navigation }: { navigation: { navigate: (ro
 
                             <Text style={[styles.dossierHint, dossier.status === 'termine' && { color: colors.primary }]}>
                                 {dossier.status === 'termine'
-                                    ? t("Merci d'avoir fait confiance à Retour Gagnant Bénin pour l'obtention de votre {s}.").replace('{s}', dossier.service_type || t('dossier'))
+                                    ? t(thankYouMessage(dossier.service_type))
                                     : t(STATUS_HINT[dossier.status] || STATUS_LABEL[dossier.status] || dossier.status)}
                             </Text>
                         </Card>

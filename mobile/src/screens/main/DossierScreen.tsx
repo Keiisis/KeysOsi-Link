@@ -29,6 +29,7 @@ import { supabase } from '../../config/supabase'
 import { authHeaders } from '../../config/api'
 import { fetchWithTimeout } from '../../lib/fetch'
 import { screenColors, typography, spacing, radius, shadows, fonts } from '../../config/theme'
+import { thankYouMessage } from '../../lib/serviceCompletion'
 import { FlagBar } from '../../components/ui'
 
 /* ═══════════════════════════════════════════════════════════
@@ -551,7 +552,7 @@ export default function DossierScreen({ navigation }: any) {
                                                             <LucideIcon name="checkmark-circle" size={22} color={C.primaryText} />
                                                         </View>
                                                         <Text style={styles.completionText}>
-                                                            {t("Merci d'avoir fait confiance à Retour Gagnant Bénin pour l'obtention de votre {s}.").replace('{s}', selected.service_type || t('dossier'))}
+                                                            {t(thankYouMessage(selected.service_type))}
                                                         </Text>
                                                     </View>
                                                 )}
