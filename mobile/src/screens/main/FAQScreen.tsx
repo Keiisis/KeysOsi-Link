@@ -838,7 +838,7 @@ const styles = StyleSheet.create({
                 color: C.textSec,
     },
     topicCountTextActive: {
-        color: C.primary,
+        color: C.primaryText,
     },
 
     /* ── Results count ── */

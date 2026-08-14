@@ -138,7 +138,7 @@ function TicketCard({
                 {/* Bandeau VIP doré */}
                 {isVip && (
                     <View style={ticketStyles.vipBanner}>
-                        <LucideIcon name="star" size={9} color={C.primary} />
+                        <LucideIcon name="star" size={9} color={C.primaryText} />
                         <Text style={ticketStyles.vipBannerText}>RECOMMANDÉ</Text>
                     </View>
                 )}
@@ -213,7 +213,7 @@ const ticketStyles = StyleSheet.create({
         zIndex: 2,
     },
     vipBannerText: {
-        color: C.primary,
+        color: C.primaryText,
         ...typography.button, fontSize: 12,
         letterSpacing: 0.6,
     },

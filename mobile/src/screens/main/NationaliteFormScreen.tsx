@@ -1609,7 +1609,7 @@ const styles = StyleSheet.create({
     },
     docCounterBadgeText: {
         ...typography.button, fontSize: 13,
-        color: C.primary,
+        color: C.primaryText,
     },
 
     /* ── Doc Slot ── */

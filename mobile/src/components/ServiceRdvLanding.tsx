@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
     stepDotGold: { backgroundColor: C.accent },
     stepDotGreen: { backgroundColor: C.primary },
     stepNum: { fontSize: 13, fontFamily: fonts.extrabold, color: '#FFFFFF' },
-    stepNumGold: { color: C.text },
+    stepNumGold: { color: '#FFFFFF' },
     stepBody: { flex: 1, paddingTop: 3 },
     stepTitle: { fontSize: 15, fontFamily: fonts.bold, color: C.text, marginBottom: 2 },
     stepDesc: { fontSize: 13, lineHeight: 19, color: C.textMuted },

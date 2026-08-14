@@ -990,7 +990,7 @@ const styles = StyleSheet.create({
                 color: C.textSec,
     },
     tabBadgeTextActive: {
-        color: C.primary,
+        color: C.primaryText,
     },
 
     /* ── Loading ── */
