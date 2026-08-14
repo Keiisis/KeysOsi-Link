@@ -182,13 +182,11 @@ export default function AboutScreen({ navigation }: { navigation: Nav }) {
             >
                 {/* ═══ EN-TÊTE MARQUE (style export) ═══ */}
                 <Animated.View style={[styles.brandHeader, styleHeader]}>
-                    <View style={styles.brandIconBox}>
-                        <Image
-                            source={require('../../../assets/icon.png')}
-                            style={styles.brandLogo}
-                            resizeMode="contain"
-                        />
-                    </View>
+                    <Image
+                        source={require('../../../assets/images/logo-transparent.png')}
+                        style={styles.brandLogo}
+                        resizeMode="contain"
+                    />
                     <Text style={styles.brandName}>{t('Retour Gagnant Bénin')}</Text>
                     <Text style={styles.brandTagline}>{t('Expertise & Racines')}</Text>
                 </Animated.View>
@@ -214,7 +212,7 @@ export default function AboutScreen({ navigation }: { navigation: Nav }) {
                     </View>
                     <View style={[styles.valueCard, { marginTop: 16 }]}>
                         <View style={styles.valueIconBox}>
-                            <LucideIcon name="sparkles" size={22} color={C.primary} />
+                            <LucideIcon name="construct-outline" size={22} color={C.primary} />
                         </View>
                         <Text style={styles.valueTitle}>{t('Héritage Culturel')}</Text>
                         <Text style={styles.valueDesc}>
@@ -296,22 +294,15 @@ const styles = StyleSheet.create({
         paddingTop: spacing.lg,
         paddingBottom: spacing.xl,
     },
-    brandIconBox: {
-        width: 80,
-        height: 80,
-        borderRadius: 24,
-        backgroundColor: C.primarySoft,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: spacing.lg,
-    },
     brandLogo: {
-        width: 52,
-        height: 52,
+        width: 116,
+        height: 116,
+        marginBottom: spacing.md,
     },
     brandName: {
-        fontFamily: 'PlayfairDisplay_700Bold',
-        fontSize: 24,
+        ...typography.h2,
+        fontFamily: fonts.extrabold,
+        fontSize: 23,
         color: C.text,
         textAlign: 'center',
         letterSpacing: -0.3,
