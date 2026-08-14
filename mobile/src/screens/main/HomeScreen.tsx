@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
     Bell, FolderOpen, MessageSquare, FileText, CreditCard,
     Calendar, Headphones, HelpCircle, ShieldCheck, ShoppingBag,
-    BadgeCheck, ChevronRight, ArrowRight, FileCheck2, Phone, Clock,
+    BadgeCheck, ChevronRight, ArrowRight, FileCheck2, Phone,
 } from 'lucide-react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import Animated, {
@@ -26,33 +26,6 @@ import { FlagBar, Card, IconTile } from '../../components/ui'
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
 
 interface DossierInfo { status: string; progress: number; service_type: string | null }
-interface RdvInfo { id: string; date: string | null; heure: string | null; type: string; statut: string; motif: string | null; notes: string | null }
-
-/* RDV : libellés d'affichage (source rdv_requests, statuts partagés avec le web). */
-const RDV_STATUT_LABEL: Record<string, string> = {
-    en_attente: 'En attente de confirmation',
-    confirme: 'Rendez-vous confirmé', confirmed: 'Rendez-vous confirmé',
-}
-const RDV_TYPE_LABEL: Record<string, string> = {
-    visio: 'Visioconférence', telephone: 'Par téléphone', presentiel: 'En présentiel',
-}
-/* Titre du RDV : on récupère le service depuis les notes (« Demande concernant : X. »)
-   posées à la prise de RDV, sinon le motif, sinon un libellé générique. */
-function rdvServiceLabel(r: RdvInfo): string {
-    const notes = r.notes || ''
-    const m = notes.match(/Demande concernant\s*:\s*([^.\n]+)/i)
-    if (m) return m[1].trim()
-    if (r.motif) return r.motif
-    return 'Consultation'
-}
-function rdvWhen(r: RdvInfo): string {
-    if (!r.date) return ''
-    const d = new Date(`${r.date}T${(r.heure || '09:00').slice(0, 5)}:00`)
-    if (isNaN(d.getTime())) return ''
-    const jour = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
-    const heure = (r.heure || '').slice(0, 5)
-    return heure ? `${jour} à ${heure}` : jour
-}
 
 /* Étapes réelles du cycle de vie d'un dossier (voir mobile/CLAUDE.md).
    Sert à afficher « Étape n sur 5 » sans inventer de valeur. */
@@ -86,7 +59,6 @@ export default function HomeScreen({ navigation }: { navigation: { navigate: (ro
     const { profile } = useAuth()
     const { t } = useLang()
     const [dossier, setDossier] = useState<DossierInfo | null>(null)
-    const [rdv, setRdv] = useState<RdvInfo | null>(null)
     const [unreadMessages, setUnreadMessages] = useState(0)
     const [unreadNotifs, setUnreadNotifs] = useState(0)
     const [advisor, setAdvisor] = useState<string | null>(null)
@@ -106,17 +78,9 @@ export default function HomeScreen({ navigation }: { navigation: { navigate: (ro
     const fetchData = async () => {
         if (!profile) return
         try {
-            const [dossierRes, rdvRes, notifRes, conversationRes] = await Promise.all([
+            const [dossierRes, notifRes, conversationRes] = await Promise.all([
                 supabase.from('dossiers').select('status, progress, service_type')
                     .eq('client_id', profile.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
-                /* RDV/consultation actif le plus récent : source `rdv_requests`
-                   (même table que « Mes rendez-vous »). On surface le dernier
-                   pris pour qu'il soit visible dès la prise, avant même
-                   l'ouverture d'un dossier facturé. */
-                supabase.from('rdv_requests').select('id, date, heure, type, statut, motif, notes')
-                    .or(`client_id.eq.${profile.id},client_email.eq.${profile.email}`)
-                    .in('statut', ['en_attente', 'confirme', 'confirmed'])
-                    .order('created_at', { ascending: false }).limit(1).maybeSingle(),
                 supabase.from('notifications').select('*', { count: 'exact', head: true })
                     .eq('user_id', profile.id).eq('is_read', false),
                 supabase.from('messages').select('id')
@@ -124,7 +88,6 @@ export default function HomeScreen({ navigation }: { navigation: { navigate: (ro
                     .order('created_at', { ascending: false }).limit(1).maybeSingle(),
             ])
             if (dossierRes.data) setDossier(dossierRes.data as DossierInfo)
-            setRdv(rdvRes.data ? (rdvRes.data as RdvInfo) : null)
             setUnreadNotifs(notifRes.count || 0)
             if (conversationRes.data?.id) {
                 const lastSeenKey = `@rg_chat_last_seen_${profile.id}`
@@ -142,20 +105,6 @@ export default function HomeScreen({ navigation }: { navigation: { navigate: (ro
        non lus fige : `profile` n'ayant pas change, fetchData ne rejouait pas. */
     useEffect(() => { fetchData() }, [profile])
     useFocusEffect(useCallback(() => { fetchData() }, [profile]))
-
-    /* Temps réel : dès qu'un agent confirme/refuse un RDV (rdv_requests) ou fait
-       évoluer un dossier, la carte « Suivi » se met à jour en direct, sans avoir
-       à quitter l'accueil. La notification in-app arrive en parallèle (cloche). */
-    useEffect(() => {
-        if (!profile?.id) return
-        const ch = supabase
-            .channel('home-suivi')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'rdv_requests', filter: `client_id=eq.${profile.id}` }, () => fetchData())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'dossiers', filter: `client_id=eq.${profile.id}` }, () => fetchData())
-            .subscribe()
-        return () => { supabase.removeChannel(ch) }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [profile?.id])
 
     /* Conseiller reellement assigne (dossier_tracking.agent_assigne, expose par
        /api/mobile/dossiers). Sans assignation, on garde « Equipe RGB » : on
@@ -260,15 +209,13 @@ export default function HomeScreen({ navigation }: { navigation: { navigate: (ro
                     </Pressable>
                 </AnimatedSection>
 
-                {/* ── Suivi : dossier OU rendez-vous ── */}
+                {/* ── Dossier en cours ── */}
                 <AnimatedSection delay={80} style={styles.section}>
                     <View style={styles.sectionRow}>
-                        <Text style={styles.sectionTitle}>
-                            {dossier ? t('Dossier en cours') : rdv ? t('Votre rendez-vous') : t('Dossier en cours')}
-                        </Text>
-                        {(dossier || rdv) && (
+                        <Text style={styles.sectionTitle}>{t('Dossier en cours')}</Text>
+                        {dossier && (
                             <Pressable
-                                onPress={() => navigation.navigate(dossier ? 'Dossier' : 'Appointments')}
+                                onPress={() => navigation.navigate('Dossier')}
                                 accessibilityRole="button"
                                 hitSlop={8}
                                 style={styles.linkRow}
@@ -282,14 +229,11 @@ export default function HomeScreen({ navigation }: { navigation: { navigate: (ro
                     {dossier ? (
                         <Card flagTop raised onPress={() => navigation.navigate('Dossier')}>
                             <View style={styles.dossierTop}>
-                                <View style={styles.typeBadge}>
-                                    <FolderOpen size={11} color={colors.primary} strokeWidth={2.5} />
-                                    <Text style={styles.typeBadgeText}>{t('DOSSIER')}</Text>
-                                </View>
                                 <View style={styles.stepBadge}>
                                     <FileCheck2 size={14} color={colors.primary} strokeWidth={2.2} />
                                     <Text style={styles.stepBadgeText}>{stepLabel}</Text>
                                 </View>
+                                <IconTile icon={FolderOpen} tone="primary" size={48} />
                             </View>
 
                             <Text style={styles.dossierTitle} numberOfLines={2}>
@@ -308,34 +252,6 @@ export default function HomeScreen({ navigation }: { navigation: { navigate: (ro
                             <Text style={styles.dossierHint}>
                                 {t(STATUS_HINT[dossier.status] || STATUS_LABEL[dossier.status] || dossier.status)}
                             </Text>
-                        </Card>
-                    ) : rdv ? (
-                        <Card flagTop raised onPress={() => navigation.navigate('Appointments')}>
-                            <View style={styles.dossierTop}>
-                                <View style={styles.typeBadgeRdv}>
-                                    <Calendar size={11} color={colors.primary} strokeWidth={2.5} />
-                                    <Text style={styles.typeBadgeText}>{t('RENDEZ-VOUS')}</Text>
-                                </View>
-                                <IconTile icon={Calendar} tone="primary" size={44} />
-                            </View>
-
-                            <Text style={styles.dossierTitle} numberOfLines={2}>
-                                {t(rdvServiceLabel(rdv))}
-                            </Text>
-
-                            <View style={styles.rdvMetaRow}>
-                                <Clock size={13} color={colors.textMuted} strokeWidth={2} />
-                                <Text style={styles.rdvMetaText} numberOfLines={1}>
-                                    {rdvWhen(rdv)}{rdv.type ? ` · ${t(RDV_TYPE_LABEL[rdv.type] || rdv.type)}` : ''}
-                                </Text>
-                            </View>
-
-                            <View style={[styles.rdvStatus, rdv.statut.startsWith('confirm') && styles.rdvStatusOk]}>
-                                <View style={[styles.rdvDot, rdv.statut.startsWith('confirm') && styles.rdvDotOk]} />
-                                <Text style={[styles.rdvStatusText, rdv.statut.startsWith('confirm') && styles.rdvStatusTextOk]}>
-                                    {t(RDV_STATUT_LABEL[rdv.statut] || 'En attente de confirmation')}
-                                </Text>
-                            </View>
                         </Card>
                     ) : (
                         <Card flagTop onPress={() => navigation.navigate('Services')}>
@@ -531,38 +447,6 @@ const styles = StyleSheet.create({
         borderRadius: radius.pill, alignSelf: 'flex-start',
     },
     stepBadgeText: { ...typography.label, color: colors.primary },
-
-    /* ── Badges de TYPE (distinction chic Dossier / Rendez-vous) ── */
-    typeBadge: {
-        flexDirection: 'row', alignItems: 'center', gap: 6,
-        backgroundColor: colors.primarySoft,
-        paddingHorizontal: spacing.md, paddingVertical: 7,
-        borderRadius: radius.pill, alignSelf: 'flex-start',
-    },
-    typeBadgeRdv: {
-        flexDirection: 'row', alignItems: 'center', gap: 6,
-        backgroundColor: colors.surface,
-        borderWidth: 1.5, borderColor: colors.primary,
-        paddingHorizontal: spacing.md, paddingVertical: 6,
-        borderRadius: radius.pill, alignSelf: 'flex-start',
-    },
-    typeBadgeText: { ...typography.label, fontSize: 10, color: colors.primary, letterSpacing: 1.2 },
-
-    /* ── Carte Rendez-vous ── */
-    rdvMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: spacing.sm },
-    rdvMetaText: { ...typography.body, fontSize: 13, color: colors.textMuted, flex: 1 },
-    rdvStatus: {
-        flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start',
-        backgroundColor: colors.surfaceMuted,
-        paddingHorizontal: spacing.md, paddingVertical: 7,
-        borderRadius: radius.pill, marginTop: spacing.md,
-    },
-    rdvStatusOk: { backgroundColor: colors.primarySoft },
-    rdvDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.textMuted },
-    rdvDotOk: { backgroundColor: colors.primary },
-    rdvStatusText: { ...typography.label, fontSize: 12, color: colors.textMuted },
-    rdvStatusTextOk: { color: colors.primary },
-
     dossierTitle: { ...typography.h2, color: colors.text, marginTop: spacing.md },
     progressBg: {
         height: 8, borderRadius: radius.pill, overflow: 'hidden',
