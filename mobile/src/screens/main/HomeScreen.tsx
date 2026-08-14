@@ -226,7 +226,9 @@ export default function HomeScreen({ navigation }: { navigation: { navigate: (ro
                 {/* ── Dossier en cours ── */}
                 <AnimatedSection delay={80} style={styles.section}>
                     <View style={styles.sectionRow}>
-                        <Text style={styles.sectionTitle}>{t('Dossier en cours')}</Text>
+                        <Text style={styles.sectionTitle}>
+                            {dossier?.status === 'termine' ? t('Dossier terminé') : t('Dossier en cours')}
+                        </Text>
                         {dossier && (
                             <Pressable
                                 onPress={() => navigation.navigate('Dossier')}
@@ -263,8 +265,10 @@ export default function HomeScreen({ navigation }: { navigation: { navigate: (ro
                                 <Animated.View style={[styles.progressFill, progressBarStyle]} />
                             </View>
 
-                            <Text style={styles.dossierHint}>
-                                {t(STATUS_HINT[dossier.status] || STATUS_LABEL[dossier.status] || dossier.status)}
+                            <Text style={[styles.dossierHint, dossier.status === 'termine' && { color: colors.primary }]}>
+                                {dossier.status === 'termine'
+                                    ? t("Merci d'avoir fait confiance à Retour Gagnant Bénin pour l'obtention de votre {s}.").replace('{s}', dossier.service_type || t('dossier'))
+                                    : t(STATUS_HINT[dossier.status] || STATUS_LABEL[dossier.status] || dossier.status)}
                             </Text>
                         </Card>
                     ) : (
