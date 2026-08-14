@@ -9,7 +9,7 @@
    La version AUTOMATIQUE (proposée après le paiement nationalité quand les
    pièces ancestrales manquent) vit dans AncestralProposalScreen.
 ═══════════════════════════════════════════════════════════ */
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
     View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator,
 } from 'react-native'
@@ -21,15 +21,18 @@ import { toast } from '../../lib/feedback'
 import { useLang } from '../../contexts/LangContext'
 import { fetchWithTimeout } from '../../lib/fetch'
 import { authHeaders } from '../../config/api'
+import { supabase } from '../../config/supabase'
 import { FlagBar } from '../../components/ui'
 import { screenColors as C, spacing, radius, typography, shadows, fonts } from '../../config/theme'
 import KkiapayModal from '../../components/KkiapayModal'
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
 
-const ANCESTRAL_EUR = 250
 const EUR_TO_XOF = 655.957
-const amountXof = Math.round(ANCESTRAL_EUR * EUR_TO_XOF)
+const CURRENCY_SYMBOL: Record<string, string> = { EUR: '€', USD: '$', GBP: '£', XOF: 'FCFA', XAF: 'FCFA' }
+function toXof(amount: number, currency: string): number {
+    return (currency || 'EUR').toUpperCase() === 'EUR' ? Math.round(amount * EUR_TO_XOF) : Math.round(amount)
+}
 
 const INCLUS = [
     { icon: Search, title: 'Recherche en archives', desc: "Investigation dans les registres d'état civil béninois et les archives coloniales." },
@@ -44,6 +47,21 @@ export default function RechercheAncestraleScreen({ navigation }: { navigation: 
     const { t } = useLang()
     const [loading, setLoading] = useState(false)
     const [showKkiapay, setShowKkiapay] = useState(false)
+    // Montant configurable admin (bloc form_settings de la page nationalité).
+    const [amountEur, setAmountEur] = useState(250)
+    const [currency, setCurrency] = useState('EUR')
+    const symbol = CURRENCY_SYMBOL[currency.toUpperCase()] || currency
+    const amountXof = toXof(amountEur, currency)
+
+    useEffect(() => {
+        (async () => {
+            const { data } = await supabase.from('page_sections').select('content')
+                .eq('page', 'nationalite').eq('section_key', 'form_settings').single()
+            const c = (data?.content || {}) as Record<string, unknown>
+            if (c.recherche_ancestrale_amount) setAmountEur(Number(c.recherche_ancestrale_amount))
+            if (c.recherche_ancestrale_currency) setCurrency(String(c.recherche_ancestrale_currency))
+        })().catch(() => { /* repli 250 € */ })
+    }, [])
 
     const onPaid = async (transactionId: string) => {
         setShowKkiapay(false)
@@ -123,7 +141,7 @@ export default function RechercheAncestraleScreen({ navigation }: { navigation: 
                     <View style={styles.priceTop}>
                         <View style={{ flex: 1 }}>
                             <Text style={styles.priceLabel}>{t('Forfait recherche ancestrale')}</Text>
-                            <Text style={styles.priceAmount}>{ANCESTRAL_EUR} €</Text>
+                            <Text style={styles.priceAmount}>{amountEur} {symbol}</Text>
                         </View>
                         <View style={styles.priceSecure}>
                             <Lock size={12} color={C.primaryText} strokeWidth={2} />
@@ -149,7 +167,7 @@ export default function RechercheAncestraleScreen({ navigation }: { navigation: 
                     ) : (
                         <>
                             <Lock size={17} color={C.primaryText} strokeWidth={2} />
-                            <Text style={styles.payBtnText}>{t('Payer {a} € et lancer', { a: ANCESTRAL_EUR })}</Text>
+                            <Text style={styles.payBtnText}>{t('Payer {a} {s} et lancer', { a: amountEur, s: symbol })}</Text>
                         </>
                     )}
                 </Pressable>

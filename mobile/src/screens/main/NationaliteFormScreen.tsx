@@ -396,6 +396,9 @@ export default function NationaliteFormScreen({ navigation }: any) {
     const [lawAccepted, setLawAccepted] = useState(false)
     const [formAmount, setFormAmount] = useState(150000)
     const [formCurrency, setFormCurrency] = useState('XOF')
+    // Forfait recherche ancestrale (configurable admin, même bloc form_settings).
+    const [ancestralAmount, setAncestralAmount] = useState(250)
+    const [ancestralCurrency, setAncestralCurrency] = useState('EUR')
 
     /* ── Animations Corporate ── */
     const headerAnim = useSharedValue(0)
@@ -422,6 +425,8 @@ export default function NationaliteFormScreen({ navigation }: any) {
                 const c = data.content as Record<string, unknown>
                 if (c.amount) setFormAmount(Number(c.amount))
                 if (c.currency) setFormCurrency(String(c.currency))
+                if (c.recherche_ancestrale_amount) setAncestralAmount(Number(c.recherche_ancestrale_amount))
+                if (c.recherche_ancestrale_currency) setAncestralCurrency(String(c.recherche_ancestrale_currency))
             }
         }
         fetchSettings()
@@ -630,11 +635,14 @@ export default function NationaliteFormScreen({ navigation }: any) {
             const ancestralSlots = DEFAULT_DOC_SLOTS.filter(s => s.ancestral)
             const uploadedKeys = new Set(rawDocs.map(d => d.key))
             const missingAncestral = ancestralSlots.filter(s => !uploadedKeys.has(s.key))
-            if (result.reference && ancestralSlots.length > 0 && missingAncestral.length === ancestralSlots.length) {
+            // Il suffit qu'UNE seule pièce ancestrale manque pour proposer la recherche.
+            if (result.reference && missingAncestral.length > 0) {
                 setTimeout(() => {
                     navigation.navigate('AncestralProposal', {
                         ref: result.reference,
-                        missing: missingAncestral.slice(0, 4).map(s => s.label),
+                        missing: missingAncestral.slice(0, 6).map(s => s.label),
+                        amount: ancestralAmount,
+                        currency: ancestralCurrency,
                     })
                 }, 400)
             }
@@ -898,13 +906,36 @@ export default function NationaliteFormScreen({ navigation }: any) {
                             </View>
                         </View>
 
-                        {DEFAULT_DOC_SLOTS
-                            .filter(slot => !slot.conditional || (slot.conditional === 'has_children' && Number(formData.nombre_enfants) > 0))
-                            .map((slot, index) => {
+                        {(() => {
+                            const visible = DEFAULT_DOC_SLOTS.filter(slot => !slot.conditional || (slot.conditional === 'has_children' && Number(formData.nombre_enfants) > 0))
+                            // Nationalité d'abord, ancestraux (facultatifs) ensuite.
+                            const ordered = [...visible.filter(s => !s.ancestral), ...visible.filter(s => s.ancestral)]
+                            const firstAncestralIdx = ordered.findIndex(s => s.ancestral)
+                            return ordered.map((slot, index) => {
                             const uploadedFiles = rawDocs.filter(d => d.key === slot.key)
                             const hasFiles = uploadedFiles.length > 0
                             return (
-                                <AnimatedSection key={slot.key} delay={50 + index * 30}>
+                                <React.Fragment key={slot.key}>
+                                    {index === 0 && (
+                                        <Text style={styles.docGroupLabel}>{t('DOCUMENTS DE LA DEMANDE')}</Text>
+                                    )}
+                                    {firstAncestralIdx > 0 && index === firstAncestralIdx && (
+                                        <View style={styles.ancestralBanner}>
+                                            <View style={styles.ancestralBannerIcon}>
+                                                <LucideIcon name="git-branch" size={18} color={C.primary} />
+                                            </View>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={styles.ancestralBannerTitle}>
+                                                    {t('Documents ancestraux')}
+                                                    <Text style={styles.ancestralBannerOpt}>  ·  {t('facultatif')}</Text>
+                                                </Text>
+                                                <Text style={styles.ancestralBannerDesc}>
+                                                    {t("Ces actes concernent vos ancêtres (grands-parents, arrière-grands-parents). Non obligatoires au dépôt : si vous ne les avez pas, notre équipe pourra les retrouver via la recherche ancestrale.")}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    )}
+                                <AnimatedSection delay={50 + index * 30}>
                                     <View style={[styles.docSlot, hasFiles && styles.docSlotActive]}>
                                         <View style={styles.docSlotHeader}>
                                             <View style={[styles.docSlotIcon, hasFiles && styles.docSlotIconActive]}>
@@ -972,8 +1003,10 @@ export default function NationaliteFormScreen({ navigation }: any) {
                                         )}
                                     </View>
                                 </AnimatedSection>
+                                </React.Fragment>
                             )
-                        })}
+                        })
+                        })()}
                     </AnimatedSection>
                 )
 
@@ -1675,6 +1708,29 @@ const styles = StyleSheet.create({
     },
 
     /* ── Doc Slot ── */
+    /* Séparation des groupes de documents */
+    docGroupLabel: {
+        ...typography.caption, fontSize: 10, color: C.primary,
+        textTransform: 'uppercase', letterSpacing: 2,
+        marginTop: spacing.md, marginBottom: spacing.sm, marginLeft: 2,
+    },
+    ancestralBanner: {
+        flexDirection: 'row', alignItems: 'flex-start', gap: 12,
+        backgroundColor: C.primarySoft,
+        borderWidth: 1, borderColor: C.border,
+        borderRadius: radius.lg,
+        padding: spacing.md,
+        marginTop: spacing.lg, marginBottom: spacing.sm,
+    },
+    ancestralBannerIcon: {
+        width: 36, height: 36, borderRadius: radius.sm,
+        backgroundColor: C.surface,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    ancestralBannerTitle: { ...typography.button, fontSize: 13, color: C.text },
+    ancestralBannerOpt: { ...typography.caption, fontSize: 11, color: C.primary },
+    ancestralBannerDesc: { ...typography.caption, fontSize: 11, color: C.textSec, lineHeight: 16, marginTop: 3 },
+
     docSlot: {
         backgroundColor: C.surface,
         borderRadius: radius.md,

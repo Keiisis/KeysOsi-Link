@@ -116,7 +116,7 @@ export type RootStackParamList = {
     Signature: undefined
     Invoices: undefined
     NationaliteForm: undefined
-    AncestralProposal: { ref?: string; missing?: string[] } | undefined
+    AncestralProposal: { ref?: string; missing?: string[]; amount?: number; currency?: string } | undefined
     Legal: undefined
     Fa: undefined
     Permis: undefined

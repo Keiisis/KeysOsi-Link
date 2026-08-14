@@ -32,10 +32,13 @@ import KkiapayModal from '../../components/KkiapayModal'
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
 
-/* Prix canonique de la recherche ancestrale (défaut identique à la route web). */
-const ANCESTRAL_EUR = 250
+/* Prix : par défaut 250 € (canonique) mais surchargé par la config admin,
+   transmise en paramètre depuis le formulaire nationalité. */
 const EUR_TO_XOF = 655.957
-const amountXof = Math.round(ANCESTRAL_EUR * EUR_TO_XOF)
+const CURRENCY_SYMBOL: Record<string, string> = { EUR: '€', USD: '$', GBP: '£', XOF: 'FCFA', XAF: 'FCFA' }
+function toXof(amount: number, currency: string): number {
+    return (currency || 'EUR').toUpperCase() === 'EUR' ? Math.round(amount * EUR_TO_XOF) : Math.round(amount)
+}
 
 const INCLUS = [
     { icon: Search, title: 'Recherche en archives', desc: "Investigation poussée dans les registres d'état civil béninois et archives coloniales." },
@@ -60,6 +63,10 @@ export default function AncestralProposalScreen({ navigation, route }: { navigat
             'Acte de naissance du grand-père paternel',
             'Justificatifs de filiation des arrière-grands-parents',
         ]
+    const amountEur: number = Number(route?.params?.amount) || 250
+    const currency: string = String(route?.params?.currency || 'EUR')
+    const symbol = CURRENCY_SYMBOL[currency.toUpperCase()] || currency
+    const amountXof = toXof(amountEur, currency)
 
     const goHome = () => navigation.navigate('Main', { screen: 'Home' })
 
@@ -77,7 +84,7 @@ export default function AncestralProposalScreen({ navigation, route }: { navigat
                         ref,
                         payment_provider: 'kkiapay',
                         payment_tx_id: transactionId,
-                        amount: ANCESTRAL_EUR,
+                        amount: amountEur,
                         amount_xof: amountXof,
                     }),
                 }).catch(() => { /* non bloquant : le dossier suit */ })
@@ -186,7 +193,7 @@ export default function AncestralProposalScreen({ navigation, route }: { navigat
                     <View style={styles.priceTop}>
                         <View style={{ flex: 1 }}>
                             <Text style={styles.priceLabel}>{t('Forfait recherche ancestrale')}</Text>
-                            <Text style={styles.priceAmount}>{ANCESTRAL_EUR} €</Text>
+                            <Text style={styles.priceAmount}>{amountEur} {symbol}</Text>
                         </View>
                         <View style={styles.priceSecure}>
                             <Lock size={12} color={C.primaryText} strokeWidth={2} />
@@ -212,7 +219,7 @@ export default function AncestralProposalScreen({ navigation, route }: { navigat
                         <ActivityIndicator color={C.primaryText} size="small" />
                     ) : (
                         <>
-                            <Text style={styles.acceptBtnText}>{t('Accepter et payer {a} €', { a: ANCESTRAL_EUR })}</Text>
+                            <Text style={styles.acceptBtnText}>{t('Accepter et payer {a} {s}', { a: amountEur, s: symbol })}</Text>
                             <ArrowRight size={18} color={C.primaryText} strokeWidth={2.2} />
                         </>
                     )}
