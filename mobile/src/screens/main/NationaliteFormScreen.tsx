@@ -71,6 +71,33 @@ const STEPS_META = [
     { key: 'recap', label: 'Sceau', icon: 'ribbon' as const },
 ]
 
+/* Devise : Kkiapay n'encaisse QUE du XOF. Le franc CFA est fixé à l'euro à
+   1 EUR = 655,957 XOF (parité fixe garantie). On convertit donc tout montant
+   configuré en EUR vers XOF avant de charger Kkiapay, sinon 260 EUR devenait
+   260 XOF (~0,40 EUR) : perte sèche. L'affichage garde la devise d'origine. */
+const EUR_TO_XOF = 655.957
+const CURRENCY_SYMBOL: Record<string, string> = { EUR: '€', USD: '$', GBP: '£', XOF: 'FCFA', XAF: 'FCFA' }
+function fmtMoney(amount: number, currency: string): string {
+    const c = (currency || 'XOF').toUpperCase()
+    return `${amount.toLocaleString('fr-FR')} ${CURRENCY_SYMBOL[c] || c}`
+}
+function toXof(amount: number, currency: string): number {
+    const c = (currency || 'XOF').toUpperCase()
+    if (c === 'EUR') return Math.round(amount * EUR_TO_XOF)
+    return Math.round(amount) // XOF/XAF : déjà en francs CFA
+}
+
+/* Masque de saisie de date : l'utilisateur tape seulement des chiffres, le « / »
+   s'insère tout seul -> JJ/MM/AAAA. Gère aussi l'effacement (backspace). */
+function formatDateInput(text: string): string {
+    const d = (text || '').replace(/\D/g, '').slice(0, 8)
+    const parts: string[] = []
+    if (d.length > 0) parts.push(d.slice(0, 2))
+    if (d.length > 2) parts.push(d.slice(2, 4))
+    if (d.length > 4) parts.push(d.slice(4, 8))
+    return parts.join('/')
+}
+
 /* ═══════════════════════════════════════════════════════════
    COMPOSANT : ANIMATED SECTION
 ═══════════════════════════════════════════════════════════ */
@@ -137,7 +164,8 @@ function PremiumStepper({ current, total }: { current: number; total: number }) 
 /* ═══════════════════════════════════════════════════════════
    COMPOSANT : FIELD (input premium avec focus or)
 ═══════════════════════════════════════════════════════════ */
-function Field({ label, icon, value, onChangeText, placeholder, textArea, required, keyboardType, ...rest }: any) {
+function Field({ label, icon, value, onChangeText, placeholder, textArea, required, keyboardType, date, ...rest }: any) {
+    const handleChange = date ? (txt: string) => onChangeText(formatDateInput(txt)) : onChangeText
     const [focused, setFocused] = useState(false)
     const focusAnim = useSharedValue(0)
 
@@ -173,12 +201,13 @@ function Field({ label, icon, value, onChangeText, placeholder, textArea, requir
                     placeholder={placeholder}
                     placeholderTextColor={C.placeholder}
                     value={value}
-                    onChangeText={onChangeText}
+                    onChangeText={handleChange}
                     onFocus={() => setFocused(true)}
                     onBlur={() => setFocused(false)}
                     selectionColor={C.primary}
                     multiline={textArea}
-                    keyboardType={keyboardType}
+                    keyboardType={date ? 'number-pad' : keyboardType}
+                    maxLength={date ? 10 : rest.maxLength}
                     {...rest}
                 />
             </Animated.View>
@@ -690,7 +719,7 @@ export default function NationaliteFormScreen({ navigation }: any) {
                                     <Field icon="person-outline" label={t('Prénom')}
                                         value={(formData as any)[`ancestor${n}_prenom`]}
                                         onChangeText={(v: string) => updateField(`ancestor${n}_prenom` as any, v)} />
-                                    <Field icon="calendar-outline" label={t('Date de naissance')} placeholder="JJ/MM/AAAA"
+                                    <Field icon="calendar-outline" label={t('Date de naissance')} date placeholder="JJ/MM/AAAA"
                                         value={(formData as any)[`ancestor${n}_date_naissance`]}
                                         onChangeText={(v: string) => updateField(`ancestor${n}_date_naissance` as any, v)} />
                                     <SelectField icon="git-branch" label={t('Lien de parenté')} options={LIENS} value={(formData as any)[`ancestor${n}_lien_parente`] || ''} onSelect={(v: string) => updateField(`ancestor${n}_lien_parente` as any, v)} />
@@ -735,7 +764,7 @@ export default function NationaliteFormScreen({ navigation }: any) {
                         <Field icon="person-outline" label={t('Prénom')} required value={formData.prenom} onChangeText={(v: string) => updateField('prenom', v)} />
                         <Field icon="mail-outline" label={t('Email')} required value={formData.email} onChangeText={(v: string) => updateField('email', v)} keyboardType="email-address" />
                         <SelectField icon="male-female-outline" label={t('Genre')} required options={GENRES} value={formData.genre} onSelect={(v: string) => updateField('genre', v)} />
-                        <Field icon="calendar-outline" label={t('Date de naissance')} required placeholder="JJ/MM/AAAA" value={formData.date_naissance} onChangeText={(v: string) => updateField('date_naissance', v)} />
+                        <Field icon="calendar-outline" label={t('Date de naissance')} required date placeholder="JJ/MM/AAAA" value={formData.date_naissance} onChangeText={(v: string) => updateField('date_naissance', v)} />
                         <SelectField icon="earth-outline" label={t('Pays de naissance')} options={PAYS} value={formData.pays_naissance} onSelect={(v: string) => updateField('pays_naissance', v)} />
                         <Field icon="location-outline" label={t('Ville de naissance')} value={formData.ville_naissance} onChangeText={(v: string) => updateField('ville_naissance', v)} />
                         <SelectField icon="flag-outline" label={t('Nationalité actuelle')} required options={PAYS} value={formData.nationalite} onSelect={(v: string) => updateField('nationalite', v)} />
@@ -772,7 +801,7 @@ export default function NationaliteFormScreen({ navigation }: any) {
 
                         <SelectField icon="card-outline" label={''} required options={TYPES_DOCUMENT} value={formData.type_document_identite} onSelect={(v: string) => updateField('type_document_identite', v)} />
                         <Field icon="barcode-outline" label={t('Numéro du document')} value={formData.numero_document} onChangeText={(v: string) => updateField('numero_document', v)} />
-                        <Field icon="calendar-outline" label={t("Date d'expiration")} placeholder="JJ/MM/AAAA" value={formData.date_expiration_document} onChangeText={(v: string) => updateField('date_expiration_document', v)} />
+                        <Field icon="calendar-outline" label={t("Date d'expiration")} date placeholder="JJ/MM/AAAA" value={formData.date_expiration_document} onChangeText={(v: string) => updateField('date_expiration_document', v)} />
                         <SelectField icon="earth-outline" label={t('Pays de délivrance')} options={PAYS} value={formData.pays_delivrance} onSelect={(v: string) => updateField('pays_delivrance', v)} />
                         <Field icon="location-outline" label={t('Lieu de délivrance')} value={formData.lieu_delivrance} onChangeText={(v: string) => updateField('lieu_delivrance', v)} />
                         <Field icon="business-outline" label={t('Autorité de délivrance')} value={formData.autorite_delivrance} onChangeText={(v: string) => updateField('autorite_delivrance', v)} />
@@ -793,7 +822,7 @@ export default function NationaliteFormScreen({ navigation }: any) {
                                 </View>
                                 <Field icon="person-outline" label={t('Nom')} value={(formData as any)[`${p.prefix}_nom`]} onChangeText={(v: string) => updateField(`${p.prefix}_nom` as any, v)} />
                                 <Field icon="person-outline" label={t('Prénom')} value={(formData as any)[`${p.prefix}_prenom`]} onChangeText={(v: string) => updateField(`${p.prefix}_prenom` as any, v)} />
-                                <Field icon="calendar-outline" label={t('Date de naissance')} placeholder="JJ/MM/AAAA" value={(formData as any)[`${p.prefix}_date_naissance`]} onChangeText={(v: string) => updateField(`${p.prefix}_date_naissance` as any, v)} />
+                                <Field icon="calendar-outline" label={t('Date de naissance')} date placeholder="JJ/MM/AAAA" value={(formData as any)[`${p.prefix}_date_naissance`]} onChangeText={(v: string) => updateField(`${p.prefix}_date_naissance` as any, v)} />
                             </View>
                         ))}
 
@@ -983,8 +1012,14 @@ export default function NationaliteFormScreen({ navigation }: any) {
                             </View>
                             <Text style={styles.paymentLabel}>{t('Frais de dossier')}</Text>
                             <Text style={styles.paymentAmount}>
-                                {formAmount.toLocaleString('fr-FR')} <Text style={styles.paymentCurrency}>{formCurrency}</Text>
+                                {formAmount.toLocaleString('fr-FR')}{' '}
+                                <Text style={styles.paymentCurrency}>{CURRENCY_SYMBOL[(formCurrency || 'XOF').toUpperCase()] || formCurrency}</Text>
                             </Text>
+                            {(formCurrency || '').toUpperCase() === 'EUR' && (
+                                <Text style={styles.paymentXof}>
+                                    {t('Soit environ {x} FCFA', { x: toXof(formAmount, formCurrency).toLocaleString('fr-FR') })}
+                                </Text>
+                            )}
                             <View style={styles.paymentDivider} />
                             <View style={styles.paymentFeatures}>
                                 <View style={styles.paymentFeature}>
@@ -1144,7 +1179,7 @@ export default function NationaliteFormScreen({ navigation }: any) {
                             <>
                                 <Text style={styles.primaryBtnText}>
                                     {currentStep === 5
-                                        ? t('Payer {amount} {currency}', { amount: formAmount.toLocaleString('fr-FR'), currency: formCurrency })
+                                        ? t('Payer {amount}', { amount: fmtMoney(formAmount, formCurrency) })
                                         : t('Poursuivre')}
                                 </Text>
                                 <LucideIcon
@@ -1161,7 +1196,7 @@ export default function NationaliteFormScreen({ navigation }: any) {
 
             <KkiapayModal
                 visible={showKkiapay}
-                amount={String(formAmount)}
+                amount={String(toXof(formAmount, formCurrency))}
                 serviceName="Nationalité VIP"
                 onClose={() => setShowKkiapay(false)}
                 onSuccess={handlePaymentSuccess}
@@ -1465,9 +1500,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         height: 56,
         borderWidth: 1,
-        borderRadius: radius.md,
+        borderColor: C.border,
+        backgroundColor: C.surface,
+        borderRadius: radius.lg,
         paddingHorizontal: spacing.md,
-        ...shadows.card,
+        ...shadows.xs,
     },
     fieldContainerTextArea: {
         height: 110,
@@ -1479,7 +1516,7 @@ const styles = StyleSheet.create({
     },
     fieldInput: {
         flex: 1,
-        color: C.primary,
+        color: C.text,
         ...typography.body, fontSize: 14.5,
         paddingVertical: 0,
     },
@@ -1812,8 +1849,13 @@ const styles = StyleSheet.create({
         letterSpacing: -1,
     },
     paymentCurrency: {
-        ...typography.h3, fontSize: 18,
-        color: C.primary,
+        ...typography.h3, fontSize: 20,
+        color: C.primaryText,
+    },
+    paymentXof: {
+        ...typography.caption, fontSize: 12,
+        color: 'rgba(255, 255, 255, 0.85)',
+        marginTop: 4,
     },
     paymentDivider: {
         height: 1,
