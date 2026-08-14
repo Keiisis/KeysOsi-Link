@@ -45,21 +45,28 @@ const { width } = Dimensions.get('window')
 const C = screenColors
 
 // Document slots
-const DEFAULT_DOC_SLOTS = [
+/* Aligné EXACTEMENT sur le formulaire web (source de vérité,
+   app/(routes)/nationalite/formulaire) : mêmes clés, libellés et obligations,
+   pour que l'agent/admin reçoive les mêmes pièces quelle que soit la plateforme.
+   Ajouts par rapport à l'ancienne liste mobile : « Votre extrait de naissance »
+   (naissance_demandeur), livret_mineur (conditionnel : si enfants), actes_ascendants. */
+const DEFAULT_DOC_SLOTS: Array<{ key: string; label: string; required: boolean; multi: boolean; ancestral?: boolean; conditional?: string }> = [
     { key: 'identite', label: "Pièce d'identité en cours de validité", required: true, multi: false },
-    { key: 'domicile', label: "Justificatif de domicile", required: true, multi: false },
+    { key: 'naissance_demandeur', label: "Votre extrait de naissance", required: true, multi: false },
+    { key: 'afro_descendance', label: "Preuve d'afro-descendance (ADN, acte notarié, archives, arbre généalogique…)", required: true, multi: true },
     { key: 'profession', label: "Preuve de profession", required: true, multi: false },
-    { key: 'afro_descendance', label: "Preuve d'afro descendance (ADN, archives, généalogie…)", required: true, multi: true },
-    { key: 'casier', label: "Casier judiciaire", required: true, multi: false },
-    { key: 'photo', label: "Photo d'identité récente", required: true, multi: false },
-    { key: 'naissance_pere', label: "Extrait de naissance du père", required: false, multi: false, ancestral: true },
-    { key: 'naissance_mere', label: "Extrait de naissance de la mère", required: false, multi: false, ancestral: true },
-    { key: 'livret_parents', label: "Livret de famille des parents", required: false, multi: false },
-    { key: 'agp_paternel', label: "Acte de naissance : AG paternel", required: false, multi: false, ancestral: true },
-    { key: 'agm_paternelle', label: "Acte de naissance : AGM paternelle", required: false, multi: false, ancestral: true },
-    { key: 'agp_maternel', label: "Acte de naissance : AG maternel", required: false, multi: false, ancestral: true },
-    { key: 'agm_maternelle', label: "Acte de naissance : AGM maternelle", required: false, multi: false, ancestral: true },
-    { key: 'autres', label: "Autres documents", required: false, multi: true },
+    { key: 'domicile', label: "Justificatif de domicile", required: true, multi: false },
+    { key: 'casier', label: "Casier judiciaire (extrait récent)", required: true, multi: false },
+    { key: 'naissance_pere', label: "Extrait de naissance du père", required: true, multi: false },
+    { key: 'naissance_mere', label: "Extrait de naissance de la mère", required: true, multi: false },
+    { key: 'livret_parents', label: "Copie du livret de famille de vos parents", required: true, multi: false },
+    { key: 'agp_paternel', label: "Extrait de naissance : arrière-grand-père (paternel)", required: false, multi: false, ancestral: true },
+    { key: 'agm_paternelle', label: "Extrait de naissance : arrière-grand-mère (paternel)", required: false, multi: false, ancestral: true },
+    { key: 'agp_maternel', label: "Extrait de naissance : arrière-grand-père (maternel)", required: false, multi: false, ancestral: true },
+    { key: 'agm_maternelle', label: "Extrait de naissance : arrière-grand-mère (maternel)", required: false, multi: false, ancestral: true },
+    { key: 'livret_mineur', label: "Copie de votre livret de famille (si enfant mineur)", required: false, multi: false, conditional: 'has_children' },
+    { key: 'actes_ascendants', label: "Autres actes des grands-parents et arrière-grands-parents", required: false, multi: true },
+    { key: 'photo', label: "Photo d'identité récente (moins de 6 mois)", required: false, multi: false },
 ]
 
 const STEPS_META = [
@@ -184,7 +191,7 @@ function Field({ label, icon, value, onChangeText, placeholder, textArea, requir
             {label && (
                 <Text style={styles.fieldLabel}>
                     {label}
-                    {required && <Text style={{ color: C.primary }}> *</Text>}
+                    {required && <Text style={{ color: C.error }}> *</Text>}
                 </Text>
             )}
             <Animated.View style={[styles.fieldContainer, textArea && styles.fieldContainerTextArea, rStyle]}>
@@ -293,7 +300,7 @@ function SelectField({
             {label && (
                 <Text style={styles.fieldLabel}>
                     {label}
-                    {required && <Text style={{ color: C.primary }}> *</Text>}
+                    {required && <Text style={{ color: C.error }}> *</Text>}
                 </Text>
             )}
 
@@ -875,7 +882,9 @@ export default function NationaliteFormScreen({ navigation }: any) {
                             </View>
                         </View>
 
-                        {DEFAULT_DOC_SLOTS.map((slot, index) => {
+                        {DEFAULT_DOC_SLOTS
+                            .filter(slot => !slot.conditional || (slot.conditional === 'has_children' && Number(formData.nombre_enfants) > 0))
+                            .map((slot, index) => {
                             const uploadedFiles = rawDocs.filter(d => d.key === slot.key)
                             const hasFiles = uploadedFiles.length > 0
                             return (
@@ -892,7 +901,7 @@ export default function NationaliteFormScreen({ navigation }: any) {
                                             <View style={{ flex: 1 }}>
                                                 <Text style={styles.docSlotTitle}>
                                                     {t(slot.label)}
-                                                    {slot.required && <Text style={{ color: C.primary }}> *</Text>}
+                                                    {slot.required && <Text style={{ color: C.error }}> *</Text>}
                                                 </Text>
                                                 <View style={styles.docSlotTags}>
                                                     {slot.ancestral && (
@@ -1811,6 +1820,8 @@ const styles = StyleSheet.create({
         backgroundColor: C.primary,
         borderRadius: radius.xl,
         padding: spacing.gutter,
+        borderTopWidth: 4,
+        borderTopColor: '#FCD116', // liseré jaune Bénin (accent flag premium)
         borderWidth: 1,
         borderColor: C.border,
         marginTop: spacing.xs,
