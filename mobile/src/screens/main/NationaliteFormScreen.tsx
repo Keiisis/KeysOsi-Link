@@ -90,6 +90,7 @@ function AnimatedSection({ children, delay = 0, style }: any) {
    COMPOSANT : STEPPER PREMIUM
 ═══════════════════════════════════════════════════════════ */
 function PremiumStepper({ current, total }: { current: number; total: number }) {
+    const { t } = useLang()
     const progress = useSharedValue(0)
     useEffect(() => {
         progress.value = withSpring(current / (total - 1), { damping: 18, stiffness: 90 })
@@ -99,13 +100,33 @@ function PremiumStepper({ current, total }: { current: number; total: number }) 
         width: `${progress.value * 100}%`,
     }))
 
-    /* Une seule barre, fine, à la façon de celle du dossier sur l'accueil.
-       Les six pastilles numérotées ont été retirées : elles répétaient le
-       « chapitre n sur 6 » du sur-titre sans rien apporter, puisqu'on ne peut
-       pas sauter d'étape. Trois indicateurs pour une même information, c'est
-       ce qui donnait au formulaire son air chargé. */
+    /* Fidèle à la maquette Sleek : rangée de 6 pastilles-icônes (Loi → Sceau)
+       reliées, état actif/fait/à-venir, puis barre de progression sous la rangée. */
     return (
         <View style={styles.stepperWrap}>
+            <View style={styles.stepsRow}>
+                {STEPS_META.map((s, i) => {
+                    const done = i < current
+                    const active = i === current
+                    return (
+                        <React.Fragment key={s.key}>
+                            {i > 0 && <View style={[styles.stepLine, (done || active) && styles.stepLineDone]} />}
+                            <View style={styles.stepItem}>
+                                <View style={[styles.stepCircle, active && styles.stepCircleActive, done && styles.stepCircleDone]}>
+                                    <LucideIcon
+                                        name={s.icon}
+                                        size={15}
+                                        color={active ? C.primaryText : done ? C.primary : C.textMuted}
+                                    />
+                                </View>
+                                <Text style={[styles.stepLabel, (active || done) && styles.stepLabelActive]} numberOfLines={1}>
+                                    {t(s.label)}
+                                </Text>
+                            </View>
+                        </React.Fragment>
+                    )
+                })}
+            </View>
             <View style={styles.progressTrack}>
                 <Animated.View style={[styles.progressFill, fillStyle]} />
             </View>
@@ -1258,7 +1279,58 @@ const styles = StyleSheet.create({
     stepperWrap: {
         marginTop: spacing.md,
     },
-    /* Fine et sobre, a l'image de la barre du dossier sur l'accueil. */
+    /* Rangée de pastilles (style Sleek) */
+    stepsRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        marginBottom: spacing.md,
+    },
+    stepItem: {
+        alignItems: 'center',
+        width: 42,
+    },
+    stepCircle: {
+        width: 32,
+        height: 32,
+        borderRadius: radius.pill,
+        backgroundColor: C.surfaceSoft,
+        borderWidth: 1,
+        borderColor: C.border,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    stepCircleActive: {
+        backgroundColor: C.primary,
+        borderColor: C.primary,
+        ...shadows.card,
+    },
+    stepCircleDone: {
+        backgroundColor: C.primarySoft,
+        borderColor: C.primary,
+    },
+    stepLabel: {
+        fontSize: 8,
+        fontFamily: fonts.bold,
+        color: C.textMuted,
+        textTransform: 'uppercase',
+        letterSpacing: 0.3,
+        marginTop: 5,
+    },
+    stepLabelActive: {
+        color: C.primary,
+    },
+    stepLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: C.border,
+        marginTop: 16,
+        marginHorizontal: 2,
+    },
+    stepLineDone: {
+        backgroundColor: C.primary,
+        opacity: 0.4,
+    },
+    /* Barre de progression sous la rangée */
     progressTrack: {
         height: 6,
         backgroundColor: C.surfaceAlt,
