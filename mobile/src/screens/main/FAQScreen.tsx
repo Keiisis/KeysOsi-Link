@@ -178,11 +178,11 @@ function FaqItem({
     const iconBgStyle = useAnimatedStyle(() => ({
         backgroundColor: interpolateColor(
             anim.value, [0, 1],
-            ['rgba(0, 135, 81, 0.06)', 'rgba(252, 209, 22, 0.15)']
+            ['rgba(0, 135, 81, 0.06)', 'rgba(0, 135, 81, 0.15)']
         ),
         borderColor: interpolateColor(
             anim.value, [0, 1],
-            ['rgba(0, 135, 81, 0.08)', 'rgba(252, 209, 22, 0.35)']
+            ['rgba(0, 135, 81, 0.08)', 'rgba(0, 135, 81, 0.35)']
         ),
     }))
 

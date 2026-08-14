@@ -66,7 +66,7 @@ function SuggestionChip({ text, onPress, delay = 0 }: { text: string; onPress: (
     const pressStyle = useAnimatedStyle(() => ({
         backgroundColor: interpolateColor(
             pressAnim.value, [0, 1],
-            [C.surface, 'rgba(252, 209, 22, 0.08)']
+            [C.surface, 'rgba(0, 135, 81, 0.08)']
         ),
         borderColor: interpolateColor(
             pressAnim.value, [0, 1],
