@@ -1,4 +1,4 @@
-/* Langues & Racines — contenu (RDV, sans paiement) + bloc « Choisir mon format ».
+/* Langues & Racines - contenu (RDV, sans paiement) + bloc « Choisir mon format ».
    Gabarit partagé ServiceRdvLanding. Fidèle à la maquette Sleek exportée. */
 import React from 'react'
 import {

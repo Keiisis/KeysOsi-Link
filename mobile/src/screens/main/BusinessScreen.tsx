@@ -1,4 +1,4 @@
-/* Création d'Entreprise — contenu (RDV/devis, sans paiement). Gabarit partagé
+/* Création d'Entreprise - contenu (RDV/devis, sans paiement). Gabarit partagé
    ServiceRdvLanding. Fidèle à la maquette Sleek validée. */
 import React from 'react'
 import {

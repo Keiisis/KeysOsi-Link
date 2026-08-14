@@ -52,7 +52,7 @@ interface Priest {
 interface PricingOption { label: string; price: string }
 type Mode = 'presentiel' | 'visio'
 
-const PLAYFAIR = 'PlayfairDisplay_700Bold'
+const PLAYFAIR = fonts.extrabold
 
 const PILIERS = [
     { icon: Award, title: 'Authenticité', desc: 'Rites et procédés transmis depuis des millénaires.' },
@@ -268,7 +268,7 @@ export default function FaScreen({ navigation }: { navigation: any }) {
             <View style={styles.pilierBand}>
                 {PILIERS.map(({ icon: Ic, title, desc }) => (
                     <View key={title} style={styles.pilier}>
-                        <View style={styles.pilierIcon}><Ic size={22} color={C.gold} strokeWidth={2} /></View>
+                        <View style={styles.pilierIcon}><Ic size={22} color={"#FFFFFF"} strokeWidth={2} /></View>
                         <Text style={styles.pilierTitle}>{t(title)}</Text>
                         <Text style={styles.pilierDesc}>{t(desc)}</Text>
                     </View>

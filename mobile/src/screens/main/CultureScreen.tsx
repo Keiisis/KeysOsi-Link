@@ -1,4 +1,4 @@
-/* Guide Culturel — contenu (RDV/devis, sans paiement). Gabarit ServiceRdvLanding.
+/* Guide Culturel - contenu (RDV/devis, sans paiement). Gabarit ServiceRdvLanding.
    Contenu fidèle au web (DEFAULT_CULTURE). */
 import React from 'react'
 import {

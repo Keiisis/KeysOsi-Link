@@ -1,4 +1,4 @@
-/* Recherche Ancestrale — contenu (RDV, sans paiement à l'écran ; le forfait est
+/* Recherche Ancestrale - contenu (RDV, sans paiement à l'écran ; le forfait est
    fixé plus tard, par dossier, par l'équipe). Gabarit partagé ServiceRdvLanding.
    Fidèle à la maquette Sleek exportée + contenu web (DEFAULT_RECHERCHE_ANCESTRALE). */
 import React from 'react'

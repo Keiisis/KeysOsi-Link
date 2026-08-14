@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   Permis de Conduire Béninois — réservation mobile (fidèle maquette Sleek).
+   Permis de Conduire Béninois - réservation mobile (fidèle maquette Sleek).
    Editorial (hero, piliers, métier, étapes, contraste) + 3 étapes interactives :
    1. catégorie (prix serveur, /api/permis-types) · 2. auto-école (/api/driving-
    schools, facultatif) · 3. coordonnées → /api/services/permis-checkout →
@@ -28,7 +28,7 @@ import KkiapayModal from '../../components/KkiapayModal'
 import { fetchWithTimeout } from '../../lib/fetch'
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://www.retourgagnantbenin.bj'
-const PLAYFAIR = 'PlayfairDisplay_700Bold'
+const PLAYFAIR = fonts.extrabold
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true)
@@ -242,7 +242,7 @@ export default function PermisScreen({ navigation }: { navigation: any }) {
                 <View style={styles.pilierBand}>
                     {PILIERS.map(({ icon: Ic, title, desc }) => (
                         <View key={title} style={styles.pilier}>
-                            <View style={styles.pilierIcon}><Ic size={22} color={C.accent} strokeWidth={2} /></View>
+                            <View style={styles.pilierIcon}><Ic size={22} color={"#FFFFFF"} strokeWidth={2} /></View>
                             <Text style={styles.pilierTitle}>{t(title)}</Text>
                             <Text style={styles.pilierDesc}>{t(desc)}</Text>
                         </View>

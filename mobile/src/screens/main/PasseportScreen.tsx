@@ -1,4 +1,4 @@
-/* Passeport & Documents — contenu (RDV/devis, sans paiement). Gabarit partagé.
+/* Passeport & Documents - contenu (RDV/devis, sans paiement). Gabarit partagé.
    Contenu fidèle au web (DEFAULT_PASSEPORT). */
 import React from 'react'
 import {

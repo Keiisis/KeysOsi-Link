@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   ServiceRdvLanding — gabarit d'écran de service SANS paiement (RDV / devis).
+   ServiceRdvLanding - gabarit d'écran de service SANS paiement (RDV / devis).
    Même présentation que la maquette Sleek « Création d'Entreprise » :
    hero éditorial + bande verte de piliers + mission + timeline 01/02/03 +
    contraste Solo vs RGB + prestations + réassurance + FAQ accordéon + CTA +
@@ -177,7 +177,7 @@ export default function ServiceRdvLanding({ navigation, content: k }: {
                 <View style={styles.pilierBand}>
                     {k.piliers.map(({ icon: Icon, title, desc }) => (
                         <View key={title} style={styles.pilier}>
-                            <Icon size={24} color={C.accent} strokeWidth={2} />
+                            <Icon size={24} color={C.primaryText} strokeWidth={2} />
                             <Text style={styles.pilierTitle}>{t(title)}</Text>
                             <Text style={styles.pilierDesc}>{t(desc)}</Text>
                         </View>

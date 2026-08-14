@@ -1,4 +1,4 @@
-/* Construction — contenu (RDV/devis, sans paiement). Gabarit partagé.
+/* Construction - contenu (RDV/devis, sans paiement). Gabarit partagé.
    Contenu fidèle au web (DEFAULT_CONSTRUCTION). */
 import React from 'react'
 import {

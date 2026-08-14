@@ -1984,7 +1984,7 @@ const styles = StyleSheet.create({
     /* ── Succès (maquette Sleek) ── */
     successWrap: { alignItems: 'center', paddingHorizontal: spacing.md, paddingTop: spacing.xl },
     successCheck: { width: 96, height: 96, borderRadius: radius.xxl, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xl },
-    successTitleNew: { fontFamily: 'PlayfairDisplay_700Bold', fontSize: 28, lineHeight: 34, color: C.text, textAlign: 'center', marginBottom: spacing.md },
+    successTitleNew: { fontFamily: fonts.extrabold, fontSize: 28, lineHeight: 34, color: C.text, textAlign: 'center', marginBottom: spacing.md },
     successSubNew: { ...typography.bodySmall, color: C.textMuted, textAlign: 'center', lineHeight: 21, marginBottom: spacing.xl, paddingHorizontal: spacing.sm },
     refCard: { width: '100%', backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: radius.xxl, padding: spacing.lg, marginBottom: spacing.xl, ...shadows.card },
     refCardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: spacing.md, marginBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: C.border },

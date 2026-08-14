@@ -693,7 +693,7 @@ export default function ServicesScreen({ navigation }: any) {
                         subtitle: s.subtitle || staticMatch?.subtitle || '',
                         desc: s.subtitle || s.description || staticMatch?.desc || '',
                         fullDescription: s.description || staticMatch?.fullDescription || '',
-                        duration: staticMatch?.duration || '4–8 semaines',
+                        duration: staticMatch?.duration || '4-8 semaines',
                         price: s.price_display || staticMatch?.price || 'Sur devis',
                         documents: staticMatch?.documents || ["Pièce d'identité valide", 'Documents selon le service'],
                         features: (Array.isArray(s.features) && s.features.length > 0)

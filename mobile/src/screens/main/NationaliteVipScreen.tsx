@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   Nationalité Béninoise VIP — landing du service phare (RDV/formulaire).
+   Nationalité Béninoise VIP - landing du service phare (RDV/formulaire).
    Fidèle à la maquette Sleek : hero editorial, bande verte, engagement +
    timeline, contraste, MINI-QUIZ d'éligibilité (indicatif, rien enregistré),
    pièces à fournir, réassurance, FAQ, DOUBLE CTA. Aucun paiement ici : le
@@ -25,7 +25,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
     UIManager.setLayoutAnimationEnabledExperimental(true)
 }
 
-const PLAYFAIR = 'PlayfairDisplay_700Bold'
+const PLAYFAIR = fonts.extrabold
 
 const CHIPS = [
     { icon: CheckCircle2, label: 'De A à Z' },
@@ -155,7 +155,7 @@ export default function NationaliteVipScreen({ navigation }: { navigation: any }
                 <View style={styles.pilierBand}>
                     {PILIERS.map(({ icon: Ic, title, desc }) => (
                         <View key={title} style={styles.pilier}>
-                            <View style={styles.pilierIcon}><Ic size={22} color={C.accent} strokeWidth={2} /></View>
+                            <View style={styles.pilierIcon}><Ic size={22} color={"#FFFFFF"} strokeWidth={2} /></View>
                             <Text style={styles.pilierTitle}>{t(title)}</Text>
                             <Text style={styles.pilierDesc}>{t(desc)}</Text>
                         </View>

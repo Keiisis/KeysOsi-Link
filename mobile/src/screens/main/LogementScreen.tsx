@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   Logement (Acheter ou Louer) — catalogue + mise en relation.
+   Logement (Acheter ou Louer) - catalogue + mise en relation.
    Service SANS paiement : RGB accompagne, les prospects sont transmis au
    partenaire SIMAU. Miroir du web /services/logement :
    /api/logements (catalogue) + /api/logements/lead (capture prospect).

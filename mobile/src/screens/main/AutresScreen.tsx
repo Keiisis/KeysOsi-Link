@@ -1,4 +1,4 @@
-/* Autres Services — contenu (contact-first, sans paiement). Gabarit partagé.
+/* Autres Services - contenu (contact-first, sans paiement). Gabarit partagé.
    Fidèle à la maquette Sleek complète (détail des services en cartes). */
 import React from 'react'
 import {

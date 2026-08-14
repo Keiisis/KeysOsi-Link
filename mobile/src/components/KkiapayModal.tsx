@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
     },
     amountValue: {
         fontSize: 28,
-        fontFamily: 'PlayfairDisplay_700Bold',
+        fontFamily: 'PlusJakartaSans_800ExtraBold',
         color: colors.primary,
         marginTop: 4,
     },

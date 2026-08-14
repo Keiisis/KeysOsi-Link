@@ -1,4 +1,4 @@
-/* Investissement — contenu (RDV/devis, sans paiement). Gabarit ServiceRdvLanding.
+/* Investissement - contenu (RDV/devis, sans paiement). Gabarit ServiceRdvLanding.
    Contenu fidèle au web (DEFAULT_INVESTISSEMENT). */
 import React from 'react'
 import {
