@@ -477,7 +477,7 @@ export default function ProfilScreen() {
             <ScrollView
                 style={{ flex: 1 }}
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 96 }]}
+                contentContainerStyle={styles.scroll}
             >
                 {/* LISERÉ TRICOLORE */}
                 <View style={[styles.topFlag, { marginTop: insets.top + 8 }]}>
