@@ -356,6 +356,30 @@ export default function AppointmentsScreen({ navigation, route }: { navigation: 
 
         setSubmitting(true)
         try {
+            // ── Anti-doublon : on ne commande pas deux fois le même service. ──
+            // Si un dossier ACTIF existe déjà pour ce service, on n'ouvre ni RDV
+            // ni nouveau dossier : le client interagit via la messagerie.
+            if (serviceLabel) {
+                const { data: existingDossier } = await supabase.from('dossiers')
+                    .select('id')
+                    .eq('client_id', profile!.id)
+                    .eq('service_type', serviceLabel)
+                    .in('status', ['soumis', 'en_attente', 'verifie', 'en_cours', 'traitement', 'validation'])
+                    .limit(1)
+                    .maybeSingle()
+                if (existingDossier) {
+                    setSubmitting(false)
+                    confirm({
+                        title: t('Dossier déjà ouvert'),
+                        message: t('Vous avez déjà un dossier en cours pour ce service. Pour toute question ou mise à jour, contactez votre conseiller par message.'),
+                        confirmLabel: t('Envoyer un message'),
+                        cancelLabel: t('Fermer'),
+                        onConfirm: () => { setShowModal(false); (navigation as any).navigate('Main', { screen: 'Messages' }) },
+                    })
+                    return
+                }
+            }
+
             const rdvType = APPT_TYPE_TO_RDV[formType]
             const clientName = `${profile!.prenom || ''} ${profile!.nom || ''}`.trim() || (profile!.email || '')
 
