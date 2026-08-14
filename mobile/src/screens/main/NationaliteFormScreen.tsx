@@ -622,6 +622,22 @@ export default function NationaliteFormScreen({ navigation }: any) {
 
             setSavedRef(result.reference || null)
             setCurrentStep(6)
+
+            /* Proposition Recherche Ancestrale : UNIQUEMENT après le paiement de
+               la nationalité, et seulement si AUCUNE pièce ancestrale (grands-parents
+               / arrière-grands-parents) n'a été fournie. Le client accepte (paie
+               250 €) ou décline depuis l'écran dédié. */
+            const ancestralSlots = DEFAULT_DOC_SLOTS.filter(s => s.ancestral)
+            const uploadedKeys = new Set(rawDocs.map(d => d.key))
+            const missingAncestral = ancestralSlots.filter(s => !uploadedKeys.has(s.key))
+            if (result.reference && ancestralSlots.length > 0 && missingAncestral.length === ancestralSlots.length) {
+                setTimeout(() => {
+                    navigation.navigate('AncestralProposal', {
+                        ref: result.reference,
+                        missing: missingAncestral.slice(0, 4).map(s => s.label),
+                    })
+                }, 400)
+            }
         } catch (e: any) {
             console.error('[Nationalité] Submit failed:', e)
             toast(t('Erreur enregistrement'), t('Le paiement a été reçu (réf : {tx}) mais la soumission du dossier a échoué : {err}. Contactez le support.', {
