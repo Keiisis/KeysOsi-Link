@@ -51,7 +51,7 @@ const SOCIALS = [
     { icon: 'logo-facebook' as const, label: 'Facebook', url: 'https://facebook.com' },
     { icon: 'logo-instagram' as const, label: 'Instagram', url: 'https://instagram.com' },
     { icon: 'logo-youtube' as const, label: 'YouTube', url: 'https://youtube.com' },
-    { icon: 'logo-whatsapp' as const, label: 'WhatsApp', url: 'https://wa.me/' },
+    { icon: 'logo-whatsapp' as const, label: 'WhatsApp', url: 'https://wa.me/2290194355050' },
 ]
 
 /* ═══════════════════════════════════════════════════════════
@@ -177,7 +177,7 @@ export default function AboutScreen({ navigation }: { navigation: Nav }) {
 
             <ScrollView
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.scroll}
+                contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing.lg }]}
                 bounces={true}
             >
                 {/* HEADER TITRE */}
@@ -298,23 +298,6 @@ export default function AboutScreen({ navigation }: { navigation: Nav }) {
                                 <Text style={styles.socialLabel}>{s.label}</Text>
                             </TouchableOpacity>
                         ))}
-                    </View>
-                </AnimatedSection>
-
-                {/* ═══ COPYRIGHT ═══ */}
-                <AnimatedSection delay={850}>
-                    <View style={styles.copyrightWrap}>
-                        <View style={styles.copyrightDivider}>
-                            <View style={styles.dividerLine} />
-                            <View style={styles.dividerDot} />
-                            <View style={styles.dividerLine} />
-                        </View>
-                        <Text style={styles.copyright}>
-                            © {new Date().getFullYear()} Retour Gagnant Bénin
-                        </Text>
-                        <Text style={styles.copyrightSub}>
-                            {t('Tous droits réservés · Fait avec excellence à Cotonou')}
-                        </Text>
                     </View>
                 </AnimatedSection>
             </ScrollView>

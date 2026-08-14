@@ -458,7 +458,7 @@ export default function FAQScreen() {
 
             <ScrollView
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.scroll}
+                contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing.lg }]}
                 keyboardShouldPersistTaps="handled"
             >
                 {/* HEADER TITRE */}
@@ -676,7 +676,7 @@ export default function FAQScreen() {
                             </Text>
                         </Pressable>
 
-                        <Pressable style={styles.channelCard} onPress={() => Linking.openURL('https://wa.me/2290160322121')}
+                        <Pressable style={styles.channelCard} onPress={() => Linking.openURL('https://wa.me/2290194355050')}
                             accessibilityRole="button"
                             hitSlop={6}>
                             <View style={styles.channelIconWrap}>
@@ -684,11 +684,11 @@ export default function FAQScreen() {
                             </View>
                             <Text style={styles.channelLabel}>WhatsApp</Text>
                             <Text style={styles.channelValue}>
-                                +229 01 60 32 21 21
+                                +229 01 94 35 50 50
                             </Text>
                         </Pressable>
 
-                        <Pressable style={styles.channelCard} onPress={() => Linking.openURL('tel:+2290160322121')}
+                        <Pressable style={styles.channelCard} onPress={() => Linking.openURL('tel:+2290194355050')}
                             accessibilityRole="button"
                             hitSlop={6}>
                             <View style={styles.channelIconWrap}>
@@ -696,7 +696,7 @@ export default function FAQScreen() {
                             </View>
                             <Text style={styles.channelLabel}>{t('Téléphone')}</Text>
                             <Text style={styles.channelValue}>
-                                +229 01 60 32 21 21
+                                +229 01 94 35 50 50
                             </Text>
                         </Pressable>
                     </View>
