@@ -477,7 +477,7 @@ export default function ProfilScreen() {
             <ScrollView
                 style={{ flex: 1 }}
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.scroll}
+                contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 96 }]}
             >
                 {/* LISERÉ TRICOLORE */}
                 <View style={[styles.topFlag, { marginTop: insets.top + 8 }]}>
@@ -568,19 +568,6 @@ export default function ProfilScreen() {
                         <LucideIcon name="log-out-outline" size={18} color={C.error} />
                         <Text style={styles.logoutText}>{t('Se déconnecter')}</Text>
                     </TouchableOpacity>
-                </AnimatedSection>
-
-                {/* ═══ FOOTER ═══ */}
-                <AnimatedSection delay={750}>
-                    <View style={styles.footerWrap}>
-                        <View style={styles.footerDivider}>
-                            <View style={styles.dividerLine} />
-                            <View style={styles.dividerDot} />
-                            <View style={styles.dividerLine} />
-                        </View>
-                        <Text style={styles.version}>Retour Gagnant Bénin</Text>
-                        <Text style={styles.versionSub}>v1.0.0 · {t('Fait avec excellence à Cotonou')}</Text>
-                    </View>
                 </AnimatedSection>
             </ScrollView>
 
