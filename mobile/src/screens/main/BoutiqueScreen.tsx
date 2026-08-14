@@ -836,8 +836,8 @@ export default function BoutiqueScreen({ navigation }: { navigation: Nav }) {
 
                         <View style={styles.sheetHeader}>
                             <View>
-                                <Text style={styles.sheetSubtitle}>{t('Votre panier')}</Text>
-                                <Text style={styles.sheetTitle}>{t('Vos Merveilles')}</Text>
+                                <Text style={styles.sheetSubtitle}>{cartCount} {cartCount > 1 ? t('articles') : t('article')}</Text>
+                                <Text style={styles.sheetTitle}>{t('Votre Panier')}</Text>
                             </View>
                             <Pressable onPress={() => setShowCart(false)} style={styles.closeBtn}
                                 accessibilityRole="button"
@@ -906,6 +906,14 @@ export default function BoutiqueScreen({ navigation }: { navigation: Nav }) {
                         <View style={styles.sheetFooter}>
                             <View style={styles.totalRow}>
                                 <Text style={styles.totalLabel}>{t('Sous-total')}</Text>
+                                <Text style={styles.totalValueMuted}>{formatPrice(cartTotal)}</Text>
+                            </View>
+                            <View style={styles.totalRowNote}>
+                                <Text style={styles.totalNote}>{t('Livraison calculée au paiement')}</Text>
+                            </View>
+                            <View style={styles.totalDivider} />
+                            <View style={styles.totalRow}>
+                                <Text style={styles.totalLabelStrong}>{t('Total')}</Text>
                                 <Text style={styles.totalValue}>{formatPrice(cartTotal)}</Text>
                             </View>
 
@@ -1368,6 +1376,27 @@ const styles = StyleSheet.create({
         ...typography.h1, fontSize: 26,
         color: C.primary,
         letterSpacing: -0.5,
+    },
+    totalValueMuted: {
+        ...typography.button, fontSize: 14,
+        color: C.text,
+    },
+    totalLabelStrong: {
+        ...typography.button, fontSize: 15,
+        color: C.text,
+    },
+    totalRowNote: {
+        marginTop: -8,
+        marginBottom: 12,
+    },
+    totalNote: {
+        ...typography.caption, fontSize: 11,
+        color: C.textMuted,
+    },
+    totalDivider: {
+        height: 1,
+        backgroundColor: C.border,
+        marginBottom: 14,
     },
     checkoutBtn: {
         flexDirection: 'row',
