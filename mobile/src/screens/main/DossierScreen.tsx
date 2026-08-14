@@ -58,6 +58,30 @@ interface Dossier {
     notes?: string; created_at: string; documents: DossierDoc[]
 }
 
+/* RDV / consultations (source rdv_requests, même table que « Mes rendez-vous »).
+   Affichés ici pour que la prise de RDV soit visible dès l'accueil du dossier,
+   AVANT l'ouverture d'un dossier facturé, avec une distinction chic. */
+interface RdvLite { id: string; date: string | null; heure: string | null; type: string; statut: string; motif: string | null; notes: string | null }
+const RDV_STATUT_LABEL: Record<string, string> = {
+    en_attente: 'En attente de confirmation', confirme: 'Confirmé', confirmed: 'Confirmé',
+}
+const RDV_TYPE_LABEL: Record<string, string> = {
+    visio: 'Visioconférence', telephone: 'Par téléphone', presentiel: 'En présentiel',
+}
+function rdvServiceLabel(r: RdvLite): string {
+    const m = (r.notes || '').match(/Demande concernant\s*:\s*([^.\n]+)/i)
+    if (m) return m[1].trim()
+    return r.motif || 'Consultation'
+}
+function rdvWhen(r: RdvLite): string {
+    if (!r.date) return ''
+    const d = new Date(`${r.date}T${(r.heure || '09:00').slice(0, 5)}:00`)
+    if (isNaN(d.getTime())) return ''
+    const jour = d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })
+    const h = (r.heure || '').slice(0, 5)
+    return h ? `${jour} · ${h}` : jour
+}
+
 const STEPS = [
     { label: 'Soumis', key: 'soumis' },
     { label: 'Vérifié', key: 'verifie' },
@@ -135,6 +159,7 @@ export default function DossierScreen({ navigation }: any) {
     const { t } = useLang()
     const insets = useSafeAreaInsets()
     const [dossiers, setDossiers] = useState<Dossier[]>([])
+    const [rdvs, setRdvs] = useState<RdvLite[]>([])
     const [selected, setSelected] = useState<Dossier | null>(null)
     const [refreshing, setRefreshing] = useState(false)
     const [loading, setLoading] = useState(true)
@@ -174,7 +199,22 @@ export default function DossierScreen({ navigation }: any) {
         } catch { /* silent */ } finally { setLoading(false) }
     }, [profile])
 
-    useEffect(() => { fetchDossiers() }, [fetchDossiers])
+    /* RDV actifs (en attente / confirmés) : même source que « Mes rendez-vous ». */
+    const fetchRdvs = useCallback(async () => {
+        if (!profile) return
+        try {
+            const { data } = await supabase
+                .from('rdv_requests')
+                .select('id, date, heure, type, statut, motif, notes')
+                .or(`client_id.eq.${profile.id},client_email.eq.${profile.email}`)
+                .in('statut', ['en_attente', 'confirme', 'confirmed'])
+                .order('created_at', { ascending: false })
+                .limit(10)
+            setRdvs((data as RdvLite[]) || [])
+        } catch { /* silent */ }
+    }, [profile])
+
+    useEffect(() => { fetchDossiers(); fetchRdvs() }, [fetchDossiers, fetchRdvs])
 
     useEffect(() => {
         if (!profile?.id) return
@@ -184,12 +224,16 @@ export default function DossierScreen({ navigation }: any) {
                 event: '*', schema: 'public', table: 'dossiers',
                 filter: `client_id=eq.${profile.id}`,
             }, () => { fetchDossiers() })
+            .on('postgres_changes', {
+                event: '*', schema: 'public', table: 'rdv_requests',
+                filter: `client_id=eq.${profile.id}`,
+            }, () => { fetchRdvs() })
             .subscribe()
         return () => { supabase.removeChannel(channel) }
-    }, [profile?.id, fetchDossiers])
+    }, [profile?.id, fetchDossiers, fetchRdvs])
 
     const onRefresh = async () => {
-        setRefreshing(true); await fetchDossiers(); setRefreshing(false)
+        setRefreshing(true); await Promise.all([fetchDossiers(), fetchRdvs()]); setRefreshing(false)
     }
 
     const progressFromStatus = (status: string) => {
@@ -363,6 +407,42 @@ export default function DossierScreen({ navigation }: any) {
                                 : `${dossiers.length} ${t('dossier')}${dossiers.length > 1 ? 's' : ''} ${t('en cours de traitement par nos équipes.')}`}
                     </Text>
                 </Animated.View>
+
+                {/* ═══ VOS RENDEZ-VOUS (consultations, distinct des dossiers) ═══ */}
+                {!loading && rdvs.length > 0 && (
+                    <AnimatedSection delay={80}>
+                        <View style={styles.rdvSectionHead}>
+                            <LucideIcon name="calendar-outline" size={14} color={C.primary} />
+                            <Text style={styles.rdvSectionTitle}>{t('VOS RENDEZ-VOUS')}</Text>
+                        </View>
+                        {rdvs.map((r) => (
+                            <TouchableOpacity
+                                key={r.id}
+                                style={styles.rdvCard}
+                                onPress={() => navigation?.navigate?.('Appointments')}
+                                activeOpacity={0.85}
+                                accessibilityRole="button"
+                                accessibilityLabel={`${t('Rendez-vous')} ${rdvServiceLabel(r)}`}
+                                hitSlop={4}
+                            >
+                                <View style={styles.rdvCardIcon}>
+                                    <LucideIcon name="calendar" size={18} color={C.primary} />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.rdvCardTitle} numberOfLines={1}>{t(rdvServiceLabel(r))}</Text>
+                                    <Text style={styles.rdvCardMeta} numberOfLines={1}>
+                                        {rdvWhen(r)}{r.type ? ` · ${t(RDV_TYPE_LABEL[r.type] || r.type)}` : ''}
+                                    </Text>
+                                </View>
+                                <View style={[styles.rdvChip, r.statut.startsWith('confirm') && styles.rdvChipOk]}>
+                                    <Text style={[styles.rdvChipText, r.statut.startsWith('confirm') && styles.rdvChipTextOk]} numberOfLines={1}>
+                                        {t(RDV_STATUT_LABEL[r.statut] || 'En attente')}
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                        ))}
+                    </AnimatedSection>
+                )}
 
                 {/* ═══ LOADING SKELETON ═══ */}
                 {loading ? (
@@ -893,6 +973,38 @@ const styles = StyleSheet.create({
         color: C.textSec,
         marginTop: spacing.md,
     },
+
+    /* ── Vos rendez-vous (consultations) ── */
+    rdvSectionHead: {
+        flexDirection: 'row', alignItems: 'center', gap: 8,
+        marginTop: spacing.lg, marginBottom: spacing.sm, marginLeft: 2,
+    },
+    rdvSectionTitle: { ...typography.button, fontSize: 11, color: C.primary, letterSpacing: 1.5 },
+    rdvCard: {
+        flexDirection: 'row', alignItems: 'center', gap: 12,
+        backgroundColor: C.surface,
+        borderRadius: radius.xl,
+        borderWidth: 1, borderColor: C.primary,
+        borderStyle: 'dashed',
+        padding: spacing.md,
+        marginBottom: spacing.sm,
+    },
+    rdvCardIcon: {
+        width: 40, height: 40, borderRadius: radius.md,
+        backgroundColor: C.primarySoft,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    rdvCardTitle: { ...typography.button, fontSize: 14, color: C.text },
+    rdvCardMeta: { ...typography.caption, fontSize: 11, color: C.textMuted, marginTop: 2 },
+    rdvChip: {
+        backgroundColor: C.surfaceAlt,
+        borderRadius: radius.pill,
+        paddingHorizontal: 10, paddingVertical: 5,
+        maxWidth: 96,
+    },
+    rdvChipOk: { backgroundColor: C.primarySoft },
+    rdvChipText: { ...typography.caption, fontSize: 9.5, color: C.textSec, letterSpacing: 0.2 },
+    rdvChipTextOk: { color: C.primary },
 
     /* ── Tabs sélecteur ── */
     tabsHeader: {
